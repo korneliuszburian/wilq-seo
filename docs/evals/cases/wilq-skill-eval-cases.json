@@ -457,8 +457,8 @@
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
-    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że product ROAS, product revenue recovery, price change impact, approval restored oraz feed write są zablokowane bez odpowiednich kontraktów.",
-    "messy_task_pl": "Czy feed jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj odzyskania approval/revenue.",
+    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis do feedu są zablokowane bez odpowiednich kontraktów.",
+    "messy_task_pl": "Czy feed jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj ponownego zatwierdzenia ani odzyskanego przychodu.",
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
       "Merchant Center",
@@ -478,15 +478,15 @@
       "act_review_merchant_feed_issues",
       "merchant_feed_issue_review_preview_v1",
       "do sprawdzenia w WILQ",
-      "price impact",
-      "product ROAS"
+      "wpływ zmiany ceny",
+      "zwrot z reklam na poziomie produktu"
     ],
     "blocked_claim_terms": [
-      "product ROAS",
-      "product revenue recovery",
-      "price change impact",
-      "approval restored",
-      "feed write"
+      "zwrot z reklam na poziomie produktu",
+      "odzyskany przychód produktu",
+      "wpływ zmiany ceny",
+      "ponowne zatwierdzenie produktu",
+      "zapis do feedu"
     ],
     "expected_action_ids": ["act_review_merchant_feed_issues"],
     "expected_validated_action_ids": ["act_review_merchant_feed_issues"]

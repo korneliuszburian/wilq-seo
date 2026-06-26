@@ -281,9 +281,9 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                     "require_human_confirm_before_apply",
                 ],
                 "blocked_claims": [
-                    "approval restored",
-                    "revenue recovered",
-                    "automatic feed edit",
+                    "ponowne zatwierdzenie produktu",
+                    "odzyskany przychód",
+                    "automatyczna zmiana feedu",
                 ],
                 "destructive": False,
             },
@@ -823,13 +823,13 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                     "require_human_confirm_before_apply",
                 ],
                 "blocked_claims": [
-                    "approval restored",
-                    "revenue recovered",
-                    "automatic feed edit",
-                    "primary feed overwrite",
-                    "feed write",
-                    "product data mutation",
-                    "automatic approval fix",
+                    "ponowne zatwierdzenie produktu",
+                    "odzyskany przychód",
+                    "automatyczna zmiana feedu",
+                    "nadpisanie głównego feedu",
+                    "zapis do feedu",
+                    "zmiana danych produktu",
+                    "automatyczna naprawa zatwierdzenia",
                 ],
                 "apply_allowed": False,
                 "destructive": False,
@@ -1111,7 +1111,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             human_diagnosis=(
                 "Google Ads ma fakty wyszukiwanych haseł, które tworzą powtarzające się "
                 "tematy n-gram. WILQ może przygotować kolejkę oceny intencji, ale "
-                "nie może traktować n-gramów jako gotowych wykluczeń ani claimować "
+                "nie może traktować n-gramów jako gotowych wykluczeń ani obiecywać "
                 "zmarnowanego budżetu bez sprawdzenia."
             ),
             recommended_reason=(
@@ -1599,13 +1599,13 @@ def _merchant_issue_payload_preview(
                     "mutation_audit_required",
                 ],
                 "blocked_claims": [
-                    "approval restored",
-                    "revenue recovered",
-                    "automatic feed edit",
-                    "primary feed overwrite",
-                    "feed write",
-                    "product data mutation",
-                    "automatic approval fix",
+                    "ponowne zatwierdzenie produktu",
+                    "odzyskany przychód",
+                    "automatyczna zmiana feedu",
+                    "nadpisanie głównego feedu",
+                    "zapis do feedu",
+                    "zmiana danych produktu",
+                    "automatyczna naprawa zatwierdzenia",
                 ],
                 "evidence_ids": cluster.get("evidence_ids", []),
                 "api_mutation_ready": False,
@@ -1886,7 +1886,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "require_human_review_before_apply",
         ],
         "candidate_inputs": _social_candidate_inputs(social_metrics),
-        "blocked_claims": ["ROAS", "revenue", "conversion uplift", "product fix applied"],
+        "blocked_claims": ["ROAS", "revenue", "conversion uplift", "wdrożona poprawka produktu"],
         "destructive": False,
     }
     for connector_id, action_type, title in (

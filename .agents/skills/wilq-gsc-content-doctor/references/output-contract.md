@@ -46,4 +46,4 @@ Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak r
 
 ## Bezpieczeństwo treści
 
-`act_prepare_content_refresh_queue` jest przygotowanie bez zapisu. Może wspierać planowanie refresh/create/merge/block, podgląd zmian i sprawdzenie w WILQ. Nie może claimować edycji WordPress, automatycznej publikacji, wzrostu pozycji, lead uplift ani gwarancji braku duplikacji bez przyszłego wsparcia zapisu zmian i audytu.
+`act_prepare_content_refresh_queue` jest przygotowanie bez zapisu. Może wspierać planowanie refresh/create/merge/block, podgląd zmian i sprawdzenie w WILQ. Nie może obiecywać edycji WordPress, automatycznej publikacji, wzrostu pozycji, wzrostu leadów ani gwarancji braku duplikacji bez przyszłego wsparcia zapisu zmian i audytu.

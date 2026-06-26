@@ -1,6 +1,6 @@
 ---
 name: wilq-localo-operator
-description: Obsługuje workflow Localo i lokalnej widoczności dla Ekologus przez WILQ API readiness i dowody Localo. Użyj, gdy marketer pyta "jak poprawić lokalną widoczność?", "sprawdź Localo/GBP", "które lokalne frazy spadły?", "porównaj widoczność z konkurencją", "zrób lokalny SEO plan", albo pyta o lokalne rankingi, widoczność Google Business Profile, reviews, lokalnych konkurentów, akcji do sprawdzenia GBP post lub blokery dostępu Localo. Nie wolno claimować Localo metrics bez WILQ dowodów z WILQ API.
+description: Obsługuje workflow Localo i lokalnej widoczności dla Ekologus przez WILQ API readiness i dowody Localo. Użyj, gdy marketer pyta "jak poprawić lokalną widoczność?", "sprawdź Localo/GBP", "które lokalne frazy spadły?", "porównaj widoczność z konkurencją", "zrób lokalny SEO plan", albo pyta o lokalne rankingi, widoczność Google Business Profile, reviews, lokalnych konkurentów, akcji do sprawdzenia GBP post lub blokery dostępu Localo. Nie wolno obiecywać metryk Localo bez WILQ dowodów z WILQ API.
 ---
 
 # WILQ Localo Operator

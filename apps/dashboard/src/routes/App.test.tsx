@@ -3922,7 +3922,7 @@ const tacticalQueue = {
       },
       diagnosis: "Merchant issue availability_updated dotyczy atrybutu n:availability.",
       next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego feedu.",
-      blocked_claims: ["automatic feed edit", "approval restored"],
+      blocked_claims: ["automatyczna zmiana feedu", "ponowne zatwierdzenie produktu"],
       action_ids: ["act_review_merchant_feed_issues"]
     }
   ],
@@ -3965,7 +3965,7 @@ const tacticalQueue = {
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["automatic feed edit", "approval restored"]
+      blocked_claims: ["automatyczna zmiana feedu", "ponowne zatwierdzenie produktu"]
     }
   ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc", "ev_refresh_merchant_feed"],
@@ -4031,18 +4031,18 @@ const merchantDiagnostics = {
         "WILQ może przygotować kolejkę review po klastrach i pokazać próbki, ale nie wolno traktować sum raportowych jako unikalnych produktów.",
       next_step:
         "Użyj próbek do ręcznego review, a pełną listę produktów potwierdź w Merchant Center albo osobnym read contract.",
-      blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+      blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
     },
     {
       id: "merchant_product_performance_join_missing",
-      title: "Brak joinu produktów Merchant z Ads/GA4",
+      title: "Brak połączenia produktów Merchant z Ads/GA4",
       reason:
         "Merchant diagnostics ma przykładowe produkty, ale brakuje dopasowanych faktów Ads/GA4 po product_id albo item_id.",
       impact:
-        "WILQ może prowadzić review feedu, ale nie może wskazać ROAS produktu ani wpływu naprawy na przychód.",
+        "WILQ może prowadzić review feedu, ale nie może wskazać zwrotu z reklam na poziomie produktu ani wpływu naprawy na przychód.",
       next_step:
-        "Dodać product performance dla Google Ads Shopping/PMax i GA4 item ecommerce.",
-      blocked_claims: ["product ROAS", "product revenue recovery", "product fix impact"]
+        "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 item ecommerce.",
+      blocked_claims: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"]
     }
   ],
   product_sample_readiness: {
@@ -4061,7 +4061,7 @@ const merchantDiagnostics = {
       "Merchant diagnostics ma przykładowe produkty do review, ale nie jest pełną listą SKU do edycji.",
     next_step:
       "Użyj próbek jako punktu startu przeglądu i nie zapisuj zmian feedu bez podglądu zmian.",
-    blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+    blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
   },
   product_performance_readiness: {
     id: "merchant_product_performance_readiness",
@@ -4087,16 +4087,16 @@ const merchantDiagnostics = {
     source_connectors: ["google_merchant_center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
     summary:
-      "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych product-level faktów Ads/GA4.",
+      "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych faktów produktu z Ads/GA4.",
     next_step:
-      "Dodać product performance dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
+      "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
     blocked_claims: [
-      "product ROAS",
-      "product revenue recovery",
-      "product fix impact",
+      "zwrot z reklam na poziomie produktu",
+      "odzyskany przychód produktu",
+      "efekt naprawy produktu",
       "Shopping/PMax product scaling",
-      "approval restored",
-      "feed write"
+      "ponowne zatwierdzenie produktu",
+      "zapis do feedu"
     ]
   },
   price_impact_readiness: {
@@ -4126,8 +4126,8 @@ const merchantDiagnostics = {
     summary:
       "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
     next_step:
-      "Dodać historię ceny i product performance window przed oceną price impact.",
-    blocked_claims: ["price impact", "product ROAS", "product revenue recovery"]
+      "Dodać historię ceny i okno skuteczności produktu przed oceną wpływu zmiany ceny.",
+    blocked_claims: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"]
   },
   operator_summary: {
     id: "merchant_operator_summary",
@@ -4150,10 +4150,10 @@ const merchantDiagnostics = {
     evidence_ids: ["ev_refresh_merchant_feed"],
     action_ids: ["act_review_merchant_feed_issues"],
     blocked_claims: [
-      "approval restored",
-      "revenue recovered",
-      "automatic feed edit",
-      "primary feed overwrite"
+      "ponowne zatwierdzenie produktu",
+      "odzyskany przychód",
+      "automatyczna zmiana feedu",
+      "nadpisanie głównego feedu"
     ]
   },
   issue_clusters: [
@@ -4172,7 +4172,7 @@ const merchantDiagnostics = {
       sample_unavailable_reason: null,
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
-      blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
@@ -4207,7 +4207,7 @@ const merchantDiagnostics = {
       evidence_ids: ["ev_refresh_merchant_feed"],
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
       rationale:
         "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
@@ -4228,7 +4228,7 @@ const merchantDiagnostics = {
       metric_facts: [metricFacts[2], metricFacts[3]],
       tactical_items: [],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["approval restored", "revenue recovered"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
       risk: "medium"
     },
     {
@@ -4244,7 +4244,7 @@ const merchantDiagnostics = {
       metric_facts: [metricFacts[3]],
       tactical_items: [tacticalQueue.items[2]],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["automatic feed edit", "primary feed overwrite"],
+      blocked_claims: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
       risk: "medium"
     }
   ],
@@ -5604,7 +5604,7 @@ function mockFetch() {
                   blockery: 0
                 },
                 co_widzimy:
-                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że approval, przychód albo dane produktu zostały już naprawione.",
+                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że zatwierdzenie, przychód albo dane produktu zostały już naprawione.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
@@ -5624,7 +5624,7 @@ function mockFetch() {
                   "ev_refresh_merchant_issue_clusters"
                 ],
                 action_ids: ["act_review_merchant_feed_issues"],
-                blocked_claims: ["approval restored", "automatic feed edit"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
                 risk: "medium"
               },
               {
@@ -5718,7 +5718,7 @@ function mockFetch() {
                   decyzje: 8,
                   blockery: 0
                 },
-                blocked_claims: ["approval restored", "automatic feed edit"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
                 risk: "medium"
               },
               {
@@ -5811,7 +5811,7 @@ function mockFetch() {
                   "ev_refresh_merchant_issue_clusters"
                 ],
                 action_ids: ["act_review_merchant_feed_issues"],
-                blocked_claims: ["approval restored", "automatic feed edit"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
                 risk: "medium"
               },
               {
@@ -6475,8 +6475,6 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Braki:/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Zakazane obietnice:/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/approval restored/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/revenue recovered/)).not.toBeInTheDocument();
     expect(screen.queryByText(/conversion uplift/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
@@ -6629,23 +6627,23 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
     ).toBeInTheDocument();
-    expect(screen.getByText("Join produktów z Ads/GA4")).toBeInTheDocument();
-    expect(screen.getByText("łączenie z Ads/GA4 zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("Produkty połączone z Ads/GA4")).toBeInTheDocument();
+    expect(screen.getByText("dane Ads/GA4 zablokowane")).toBeInTheDocument();
     expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
     expect(screen.getByText("Wpływ ceny produktu")).toBeInTheDocument();
     expect(screen.getByText("wpływ ceny zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Zmiany ceny")).toBeInTheDocument();
     expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
     expect(screen.getAllByText(/google_ads_shopping_product_price_history/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ROAS produktu/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Brak joinu produktów Merchant z Ads/GA4")).toBeInTheDocument();
+    expect(screen.getAllByText(/zwrot z reklam na poziomie produktu/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Brak połączenia produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getAllByText("Dowody").length).toBeGreaterThan(0);
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
     expect(screen.getByText("Przykładowe produkty do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/surowy opis techniczny|techniczny model akcji/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/automatyczna zmiana feedu/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Sprawdź w WILQ" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"

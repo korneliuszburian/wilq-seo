@@ -386,6 +386,46 @@ FORBIDDEN_PHRASES = (
         "Use werdykt skuteczności in marketer-facing copy.",
     ),
     ForbiddenPhrase(
+        "product ROAS",
+        "Use zwrot z reklam na poziomie produktu in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "product revenue recovery",
+        "Use odzyskany przychód produktu in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "product fix impact",
+        "Use efekt naprawy produktu in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "price change impact",
+        "Use wpływ zmiany ceny in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "product profitability",
+        "Use opłacalność produktu in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "performance metrics",
+        "Use metryki skuteczności in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "performance rows",
+        "Use wiersze skuteczności in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "before/after",
+        "Use sprzed i po zmianie in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "claimować",
+        "Use obiecywać / twierdzić in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "claimujemy",
+        "Use obiecujemy / twierdzimy in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
         "revenue albo lead uplift",
         "Use plain Polish: przychód / wzrost leadów, and only as blocked claims.",
     ),

@@ -4485,9 +4485,6 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
     serialized = json.dumps(payload, ensure_ascii=False)
-    assert "approval restored" not in serialized
-    assert "revenue recovered" not in serialized
-    assert "automatic feed edit" not in serialized
     assert "conversion uplift" not in serialized
     assert "wasted budget" not in serialized
     assert "target CPA verdict" not in serialized
@@ -11084,7 +11081,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     ]
     assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
     assert "products.list" in sample_readiness["next_step"]
-    assert "feed write" in sample_readiness["blocked_claims"]
+    assert "zapis do feedu" in sample_readiness["blocked_claims"]
     performance_readiness = payload["product_performance_readiness"]
     assert performance_readiness["id"] == "merchant_product_performance_readiness"
     assert performance_readiness["status"] == "blocked"
@@ -11109,9 +11106,9 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert refresh_response.json()["evidence_ids"][-1] in performance_readiness[
         "evidence_ids"
     ]
-    assert "product ROAS" in performance_readiness["blocked_claims"]
-    assert "product revenue recovery" in performance_readiness["blocked_claims"]
-    assert "product fix impact" in performance_readiness["blocked_claims"]
+    assert "zwrot z reklam na poziomie produktu" in performance_readiness["blocked_claims"]
+    assert "odzyskany przychód produktu" in performance_readiness["blocked_claims"]
+    assert "efekt naprawy produktu" in performance_readiness["blocked_claims"]
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
@@ -11135,7 +11132,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     ]
     assert cluster["sample_titles"] == ["Sorbent chemiczny 10 kg"]
     assert cluster["sample_unavailable_reason"] is None
-    assert "approval restored" in cluster["blocked_claims"]
+    assert "ponowne zatwierdzenie produktu" in cluster["blocked_claims"]
     assert payload["decision_queue"]
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "merchant_operator_summary"
@@ -11156,7 +11153,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["source_connectors"] == ["google_merchant_center"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
-    assert "approval restored" in operator_summary["blocked_claims"]
+    assert "ponowne zatwierdzenie produktu" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     decision = payload["decision_queue"][0]
@@ -11301,7 +11298,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
         sample_titles=["Sorbent chemiczny 10 kg"],
         source_connectors=["google_merchant_center"],
         evidence_ids=["ev_merchant_issue"],
-        blocked_claims=["approval restored"],
+        blocked_claims=["ponowne zatwierdzenie produktu"],
         action_id="act_review_merchant_feed_issues",
         next_step="Review produktu.",
     )
@@ -11410,8 +11407,8 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
     assert row.ga4_ecommerce_purchases == 2.0
     assert row.ga4_purchase_revenue == 410.0
     assert row.missing_metrics == []
-    assert "product fix impact" in row.blocked_claims
-    assert "feed write" in row.blocked_claims
+    assert "efekt naprawy produktu" in row.blocked_claims
+    assert "zapis do feedu" in row.blocked_claims
 
 
 def test_merchant_product_performance_readiness_reports_ready_ads_contract_without_rows(
@@ -11431,7 +11428,7 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         sample_titles=["Sorbent chemiczny 10 kg"],
         source_connectors=["google_merchant_center"],
         evidence_ids=["ev_merchant_issue"],
-        blocked_claims=["approval restored"],
+        blocked_claims=["ponowne zatwierdzenie produktu"],
         action_id="act_review_merchant_feed_issues",
         next_step="Review produktu.",
         risk=ActionRisk.medium,
@@ -11526,7 +11523,7 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
         sample_titles=["Dywan sorpcyjny"],
         source_connectors=["google_merchant_center"],
         evidence_ids=["ev_merchant_issue"],
-        blocked_claims=["approval restored"],
+        blocked_claims=["ponowne zatwierdzenie produktu"],
         action_id="act_review_merchant_feed_issues",
         next_step="Review produktu.",
         risk=ActionRisk.medium,
@@ -11606,8 +11603,8 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
         "google_ads_shopping_product_performance",
         "ga4_item_product_performance",
     ]
-    assert "product-state join" in readiness.summary
-    assert "Product ROAS" in readiness.next_step
+    assert "stan produktu z Ads" in readiness.summary
+    assert "Zwrot z reklam" in readiness.next_step
     row = readiness.performance_rows[0]
     assert row.issue_type == "availability_updated"
     assert row.affected_attribute == "n:availability"
@@ -11764,7 +11761,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "NOT_ELIGIBLE": 1,
         "OUT_OF_STOCK": 1,
     }
-    assert "product ROAS" in decision["blocked_claims"]
+    assert "zwrot z reklam na poziomie produktu" in decision["blocked_claims"]
     assert decision["payload_preview"][0]["preview_contract"] == (
         "merchant_product_state_review_preview_v1"
     )
@@ -11887,8 +11884,8 @@ def test_merchant_price_impact_blocks_snapshot_history_without_price_change() ->
             source_connectors=["google_merchant_center", "google_ads"],
             evidence_ids=["ev_merchant", "ev_ads_product_state"],
             summary="State-only price snapshot.",
-            next_step="Keep price impact blocked.",
-            blocked_claims=["price change impact"],
+            next_step="Zatrzymaj ocenę wpływu ceny.",
+            blocked_claims=["wpływ zmiany ceny"],
         )
     )
 
@@ -15327,7 +15324,7 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
     assert preview["destructive"] is False
-    assert "feed write" in preview["blocked_claims"]
+    assert "zapis do feedu" in preview["blocked_claims"]
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
@@ -16286,8 +16283,6 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "Localo visibility review" not in serialized
     assert "workflow jako" not in serialized
     assert "ROAS verdict" not in serialized
-    assert "approval restored" not in serialized
-    assert "revenue recovered" not in serialized
     assert "conversion uplift" not in serialized
     assert "local ranking uplift" not in serialized
     assert "GBP performance verdict" not in serialized

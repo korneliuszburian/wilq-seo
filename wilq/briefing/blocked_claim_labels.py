@@ -3,9 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 BLOCKED_CLAIM_LABELS: dict[str, str] = {
-    "approval restored": "ponowne zatwierdzenie produktu",
-    "automatic approval fix": "automatyczna naprawa zatwierdzenia",
-    "automatic feed edit": "automatyczna zmiana feedu",
     "audience size": "wielkość grupy odbiorców",
     "budget change": "zmiana budżetu",
     "budget optimization": "optymalizacja budżetu",
@@ -27,8 +24,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "creative quality verdict": "werdykt jakości kreacji",
     "Demand Gen launch ready": "gotowość uruchomienia Demand Gen",
     "duplicate-free guarantee": "gwarancja braku duplikatów",
-    "feed issue resolved": "rozwiązany problem feedu",
-    "feed write": "zapis feedu",
     "GBP performance verdict": "werdykt skuteczności profilu firmy",
     "GBP write": "zapis zmian w profilu firmy",
     "zapis zmian GBP": "zapis zmian w profilu firmy",
@@ -42,9 +37,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "negative keyword addition": "dodanie wykluczających słów kluczowych",
     "new article without inventory check": "nowy artykuł bez kontroli spisu treści",
     "post published": "opublikowany post",
-    "primary feed overwrite": "nadpisanie głównego feedu",
-    "product fix applied": "wdrożona poprawka produktu",
-    "product-level fix": "poprawka na poziomie produktu",
     "profitability": "opłacalność",
     "profitability verdict": "werdykt opłacalności",
     "profit uplift": "wzrost zysku",
@@ -53,7 +45,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "recommendation write": "zapis rekomendacji",
     "revenue": "przychód",
     "revenue impact": "wpływ na przychód",
-    "revenue recovered": "odzyskany przychód",
     "ROAS": "zwrot z wydatków reklamowych",
     "ROAS verdict": "werdykt zwrotu z wydatków reklamowych",
     "search-term waste": "marnowanie budżetu na zapytaniach",

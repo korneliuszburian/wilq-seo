@@ -166,8 +166,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "act_review_merchant_feed_issues",
                 "merchant_feed_issue_review_preview_v1",
                 "do sprawdzenia w WILQ",
-                "price impact",
-                "product ROAS",
+                "wpływ zmiany ceny",
+                "zwrot z reklam na poziomie produktu",
             },
             "action_ids": {"act_review_merchant_feed_issues"},
             "validated_action_ids": {"act_review_merchant_feed_issues"},
@@ -459,11 +459,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         assert term in localo_case["blocked_claim_terms"]
 
     merchant_case = cases["wilq-merchant-feed-operator"]
-    assert "product ROAS" in merchant_case["blocked_claim_terms"]
-    assert "product revenue recovery" in merchant_case["blocked_claim_terms"]
-    assert "price change impact" in merchant_case["blocked_claim_terms"]
-    assert "approval restored" in merchant_case["blocked_claim_terms"]
-    assert "feed write" in merchant_case["blocked_claim_terms"]
+    assert "zwrot z reklam na poziomie produktu" in merchant_case["blocked_claim_terms"]
+    assert "odzyskany przychód produktu" in merchant_case["blocked_claim_terms"]
+    assert "wpływ zmiany ceny" in merchant_case["blocked_claim_terms"]
+    assert "ponowne zatwierdzenie produktu" in merchant_case["blocked_claim_terms"]
+    assert "zapis do feedu" in merchant_case["blocked_claim_terms"]
 
     for skill in (
         "wilq-content-strategist",

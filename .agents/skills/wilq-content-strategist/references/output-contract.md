@@ -54,4 +54,4 @@ Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak r
 
 ## Bezpieczeństwo treści
 
-Używaj `act_prepare_content_refresh_queue` wyłącznie jako przygotowanie bez zapisu. Skill może sugerować planowanie refresh/create/merge/block i podgląd zmian, ale nie może claimować edycji WordPress, publikacji, wzrostu pozycji, lead uplift ani gwarancji braku duplikacji bez sprawdzonej w WILQ ścieżki zapisu zmian i audytu.
+Używaj `act_prepare_content_refresh_queue` wyłącznie jako przygotowanie bez zapisu. Skill może sugerować planowanie refresh/create/merge/block i podgląd zmian, ale nie może obiecywać edycji WordPress, publikacji, wzrostu pozycji, wzrostu leadów ani gwarancji braku duplikacji bez sprawdzonej w WILQ ścieżki zapisu zmian i audytu.

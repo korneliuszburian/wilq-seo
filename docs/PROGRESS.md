@@ -63,6 +63,10 @@ Date: 2026-06-27
   Polglish such as `landing page`, `source/medium`, `message match`, `impact
   metrics`, `Target ROAS/CPA`, `developer token` and `target verdict`. The guard
   now blocks those phrases in active source and skill/eval contracts.
+- Merchant product/performance and price-readiness blocked claims now use
+  Polish source values from API/action/knowledge contracts. Dashboard fixtures
+  and route labels no longer depend on Merchant legacy claim translators such
+  as old feed/write and approval-recovery values.
 
 ## Latest Proof Pointers
 
@@ -132,6 +136,17 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4 or ads_business_context or keyword_match" --maxfail=1`
   - `rtk pnpm --dir apps/dashboard test src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   - `rtk pnpm --dir apps/dashboard typecheck`
+- Merchant product/performance language cleanup without live API/browser proof
+  in current session:
+  - Focused stale-term scan for old Merchant feed/approval/product/price claim
+    language across active API, dashboard, tests, evals and Merchant skill files
+    found no active hits.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python -m py_compile wilq/briefing/merchant_diagnostics.py wilq/actions/service.py wilq/briefing/tactical_queue.py wilq/briefing/blocked_claim_labels.py scripts/marketer_language_guard.py .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_exposes_feed_issue_queue or merchant_product_performance_readiness or merchant_diagnostics_promotes_ads_product_state_review_decision or merchant_price_impact_blocks_snapshot_history_without_price_change or codex_context_pack_scopes_merchant_payload_preview" --maxfail=1` passed: 7 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_marketer_uat_packet.py -q --maxfail=1` passed: 7 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/CommandCenterRoute.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "merchant route renders dedicated feed diagnostics|Command Center|action detail|Zakazane obietnice|connector status renders" --testTimeout=20000` passed: 3 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.
 - Generic surface registry fallback removal:

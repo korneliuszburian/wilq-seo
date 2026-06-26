@@ -498,7 +498,7 @@ const socialDraftActionFixture: ActionObject = {
       "no_performance_claims_without_source_metric",
       "require_human_review_before_apply"
     ],
-    blocked_claims: ["ROAS", "revenue", "conversion uplift", "product fix applied"],
+    blocked_claims: ["ROAS", "revenue", "conversion uplift", "wdrożona poprawka produktu"],
     destructive: false
   }
 };

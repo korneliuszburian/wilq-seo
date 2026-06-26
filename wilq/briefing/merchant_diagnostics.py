@@ -43,12 +43,12 @@ MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS = [
     "ga4_item_product_performance",
 ]
 MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
-    "product ROAS",
-    "product revenue recovery",
-    "product fix impact",
-    "Shopping/PMax product scaling",
-    "approval restored",
-    "feed write",
+    "zwrot z reklam na poziomie produktu",
+    "odzyskany przychód produktu",
+    "efekt naprawy produktu",
+    "skalowanie produktu w Shopping/PMax",
+    "ponowne zatwierdzenie produktu",
+    "zapis do feedu",
 ]
 MERCHANT_KNOWLEDGE_CARD_IDS = [
     "card_merchant_feed_optimization_playbook",
@@ -72,7 +72,7 @@ MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS = [
     "google_ads_or_ga4_product_performance_window",
 ]
 MERCHANT_REQUIRED_VALIDATION_LABELS = {
-    "confirm_before_after_performance_window": "potwierdź okno porównania przed/po",
+    "confirm_before_after_performance_window": "potwierdź okno porównania sprzed i po zmianie",
     "confirm_price_change_date": "potwierdź datę zmiany ceny",
     "confirm_price_snapshot_history": "potwierdź historię ceny",
     "confirm_source_of_truth_values": "potwierdź wartości ze źródła prawdy",
@@ -380,7 +380,11 @@ def _merchant_unknowns(
                         "Dodać osobny read contract dla bezpiecznych przykładów produktów "
                         "albo otworzyć Merchant Center podczas sprawdzenia."
                     ),
-                    blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+                    blocked_claims=[
+                        "naprawa pojedynczego produktu",
+                        "zapis do feedu",
+                        "automatyczna zmiana feedu",
+                    ],
                 )
             )
         unknowns.append(
@@ -393,24 +397,27 @@ def _merchant_unknowns(
                     "niż raz."
                 ),
                 impact=(
-                    "Decision queue musi używać max zgłoszeń jako skali i traktować "
-                    "sumę raportów wyłącznie jako drilldown."
+                    "Kolejka decyzji musi używać największej liczby zgłoszeń jako skali i traktować "
+                    "sumę raportów wyłącznie jako szczegóły raportowania."
                 ),
                 next_step=(
-                    "Grupować decyzje po decision_queue, a issue_clusters pokazywać "
+                    "Grupować decyzje po kolejce decyzji, a klastry problemów pokazywać "
                     "jako szczegóły raportowania."
                 ),
-                blocked_claims=["unique product count", "approval restored"],
+                blocked_claims=[
+                    "liczba unikalnych produktów",
+                    "ponowne zatwierdzenie produktu",
+                ],
             )
         )
     if product_performance_readiness.status == "blocked":
         unknowns.append(
             MerchantUnknownFact(
                 id="merchant_product_performance_join_missing",
-                title="Brak joinu produktów Merchant z Ads/GA4",
+                title="Brak połączenia produktów Merchant z Ads/GA4",
                 reason=(
-                    "WILQ ma Merchant sample product IDs albo kolejkę problemów feedu, "
-                    "ale nie ma dopasowanych faktów Ads/GA4 z product_id/item_id dla "
+                    "WILQ ma próbki ID produktów Merchant albo kolejkę problemów feedu, "
+                    "ale nie ma dopasowanych faktów Ads/GA4 z ID produktu dla "
                     "tych produktów."
                 ),
                 impact=(
@@ -418,8 +425,8 @@ def _merchant_unknowns(
                     "które produkty mają ROAS, przychód, koszt albo efekt naprawy."
                 ),
                 next_step=(
-                    "Dodać kontrakty odczytu product performance dla Google Ads "
-                    "Shopping/PMax i GA4 item ecommerce, z jawnie wspólnym kluczem produktu."
+                    "Dodać kontrakty odczytu skuteczności produktu dla Google Ads "
+                    "Shopping/PMax i GA4 ecommerce, z jawnie wspólnym kluczem produktu."
                 ),
                 blocked_claims=product_performance_readiness.blocked_claims,
             )
@@ -450,14 +457,14 @@ def _merchant_product_sample_readiness(
             ],
             source_endpoint="aggregateProductStatuses",
             summary=(
-                "Merchant read zwraca przykładowe product IDs dla części problemów. "
-                "Tytuły są dostępne tylko wtedy, gdy products.list enrichment je zwróci."
+                "Odczyt Merchant zwraca przykładowe ID produktów dla części problemów. "
+                "Tytuły są dostępne tylko wtedy, gdy wzbogacenie products.list je zwróci."
             ),
             next_step=(
                 "Użyj próbek do sprawdzenia. Dla tytułów/SKU/statusów dodaj odczyt "
                 "products.list/productStatus albo reports.search product_view."
             ),
-            blocked_claims=["feed write", "automatic feed edit"],
+            blocked_claims=["zapis do feedu", "automatyczna zmiana feedu"],
         )
 
     if issue_clusters or decisions:
@@ -471,15 +478,19 @@ def _merchant_product_sample_readiness(
             ],
             source_endpoint="aggregateProductStatuses",
             summary=(
-                "Obecny Merchant read contract daje aggregate issue queue, ale nie "
-                "zwraca product IDs, SKU ani tytułów do pracy produkt-po-produkcie."
+                "Obecny kontrakt odczytu Merchant daje zagregowaną kolejkę problemów, ale nie "
+                "zwraca ID produktów, SKU ani tytułów do pracy produkt-po-produkcie."
             ),
             next_step=(
                 "Dodać osobny kontrakt odczytu przez products.list/productStatus "
                 "albo reports.search product_view z filtrem issue, zanim WILQ pokaże "
                 "konkretne produkty do poprawy."
             ),
-            blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+            blocked_claims=[
+                "naprawa pojedynczego produktu",
+                "zapis do feedu",
+                "automatyczna zmiana feedu",
+            ],
         )
 
     return MerchantProductSampleReadiness(
@@ -493,7 +504,11 @@ def _merchant_product_sample_readiness(
         source_endpoint="aggregateProductStatuses",
         summary="Brak Merchant issue queue, więc nie ma też próbek produktów.",
         next_step="Najpierw uruchom odczyt danych Merchant.",
-        blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+        blocked_claims=[
+            "naprawa pojedynczego produktu",
+            "zapis do feedu",
+            "automatyczna zmiana feedu",
+        ],
     )
 
 
@@ -651,24 +666,24 @@ def _merchant_product_performance_readiness(
         if rows_with_metrics:
             status: Literal["ready", "blocked"] = "ready"
             summary = (
-                "WILQ ma dopasowane product-level facts dla części Merchant sample IDs. "
-                "To wspiera review produktu z metrykami Ads/GA4, ale nie oznacza "
+                "WILQ ma dopasowane fakty produktu dla części próbek Merchant. "
+                "To wspiera przegląd produktu z metrykami Ads/GA4, ale nie oznacza "
                 "automatycznej naprawy feedu ani efektu po zmianie."
             )
             next_step = (
-                "Użyj performance_rows do priorytetyzacji przeglądu. Do obietnic o efekcie "
-                "naprawy potrzebny jest osobny audyt przed/po."
+                "Użyj wierszy produktu do ustalenia kolejności przeglądu. Do obietnic o efekcie "
+                "naprawy potrzebny jest osobny audyt sprzed i po zmianie."
             )
         else:
             status = "blocked"
             summary = (
-                "WILQ ma dopasowany Ads product-state join dla części Merchant sample IDs, "
-                "ale nie ma jeszcze performance metrics Ads/GA4 dla tych produktów."
+                "WILQ ma dopasowany stan produktu z Ads dla części próbek Merchant, "
+                "ale nie ma jeszcze metryk skuteczności Ads/GA4 dla tych produktów."
             )
             next_step = (
-                "Użyj product-state rows tylko do potwierdzenia mapowania ID. Product ROAS, "
-                "revenue recovery i fix impact zostają zablokowane do czasu performance "
-                "facts albo before/after audit."
+                "Użyj wierszy stanu produktu tylko do potwierdzenia mapowania ID. Zwrot z reklam "
+                "na poziomie produktu, odzyskany przychód i efekt naprawy pozostają zablokowane "
+                "do czasu metryk skuteczności albo audytu sprzed i po zmianie."
             )
         return MerchantProductPerformanceReadiness(
             status=status,
@@ -816,8 +831,8 @@ def _merchant_price_impact_readiness(
         rows_with_performance=len(rows_with_performance),
     )
     next_step = (
-        "Jeżeli produkt ma cenę bieżącą, historię ceny i metryki performance, "
-        "przygotuj porównanie przed/po. W przeciwnym razie pokaż brakujące "
+        "Jeżeli produkt ma cenę bieżącą, historię ceny i metryki skuteczności, "
+        "przygotuj porównanie sprzed i po zmianie. W przeciwnym razie pokaż brakujące "
         "kontrakty i nie oceniaj wpływu ceny."
     )
     return MerchantPriceImpactReadiness(
@@ -842,12 +857,12 @@ def _merchant_price_impact_readiness(
         summary=summary,
         next_step=next_step,
         blocked_claims=[
-            "price change impact",
-            "product ROAS",
-            "product profitability",
-            "revenue recovered",
-            "approval restored",
-            "feed write",
+            "wpływ zmiany ceny",
+            "zwrot z reklam na poziomie produktu",
+            "opłacalność produktu",
+            "odzyskany przychód",
+            "ponowne zatwierdzenie produktu",
+            "zapis do feedu",
         ],
     )
 
@@ -882,9 +897,9 @@ def _merchant_price_impact_summary(
 ) -> str:
     if status == "ready":
         return (
-            "WILQ ma bieżącą cenę, historię ceny i performance metrics dla "
-            "części produktów Merchant. To pozwala przygotować review "
-            "before/after, ale nadal bez automatycznego claimu o wpływie ceny."
+            "WILQ ma bieżącą cenę, historię ceny i metryki skuteczności dla "
+            "części produktów Merchant. To pozwala przygotować przegląd "
+            "sprzed i po zmianie, ale nadal bez automatycznej obietnicy wpływu ceny."
         )
     if rows_with_current_price and not rows_with_previous_price:
         return (
@@ -896,16 +911,16 @@ def _merchant_price_impact_summary(
         return (
             f"WILQ widzi historię ceny dla {rows_with_previous_price} produktów, "
             f"w tym {rows_with_unchanged_price_history} bez wykrytej zmiany ceny. "
-            "Price impact pozostaje zablokowany do czasu faktycznego zdarzenia "
-            "zmiany ceny i performance window."
+            "Wpływ ceny pozostaje zablokowany do czasu faktycznego zdarzenia "
+            "zmiany ceny i okna skuteczności."
         )
     if rows_with_previous_price and not rows_with_performance:
         return (
             f"WILQ widzi zmianę ceny dla {rows_with_price_change} produktów, "
-            "ale nie ma dopasowanych metryk performance w oknie before/after."
+            "ale nie ma dopasowanych metryk skuteczności w oknie sprzed i po zmianie."
         )
     return (
-        "WILQ nie ma wystarczających price/performance facts, żeby ocenić wpływ "
+        "WILQ nie ma wystarczających faktów ceny i skuteczności, żeby ocenić wpływ "
         "ceny produktu."
     )
 
@@ -960,12 +975,12 @@ def _merchant_price_impact_payload_preview(
             "human_review_before_action",
         ],
         "blocked_claims": [
-            "price change impact",
-            "product ROAS",
-            "product profitability",
-            "revenue recovered",
-            "approval restored",
-            "feed write",
+            "wpływ zmiany ceny",
+            "zwrot z reklam na poziomie produktu",
+            "opłacalność produktu",
+            "odzyskany przychód",
+            "ponowne zatwierdzenie produktu",
+            "zapis do feedu",
         ],
         "evidence_ids": evidence_ids,
         "api_mutation_ready": False,
@@ -994,7 +1009,7 @@ def _product_performance_blocked_reason(
 ) -> str:
     if not sample_product_ids:
         return (
-            "Merchant read nie daje sample product IDs, więc WILQ nie ma klucza "
+            "Odczyt Merchant nie daje próbek ID produktów, więc WILQ nie ma klucza "
             "do połączenia problemów feedu z Ads/GA4."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
@@ -1004,19 +1019,19 @@ def _product_performance_blocked_reason(
             else ""
         )
         return (
-            "Merchant read zwraca sample product IDs, GA4 ma item facts, a Ads "
-            f"shopping_performance_view jest gotowy{lookback_label}, ale bieżący "
-            "Ads read zwrócił 0 product performance rows. WILQ nie ma więc "
-            "dopasowanych Ads facts dla próbek Merchant."
+            "Odczyt Merchant zwraca próbki ID produktów, GA4 ma fakty produktu, a Ads "
+            f"ma gotowy widok skuteczności zakupowej{lookback_label}, ale bieżący "
+            "odczyt Ads zwrócił 0 wierszy skuteczności produktu. WILQ nie ma więc "
+            "dopasowanych faktów Ads dla próbek Merchant."
         )
     if ga4_product_facts and not ads_product_facts:
         return (
-            "Merchant read zwraca sample product IDs i GA4 ma item facts, ale WILQ "
-            "nie ma dopasowanych product-level facts z Ads dla tych IDs."
+            "Odczyt Merchant zwraca próbki ID produktów i GA4 ma fakty produktu, ale WILQ "
+            "nie ma dopasowanych faktów produktu z Ads dla tych ID."
         )
     return (
-        "Merchant read zwraca sample product IDs, ale WILQ nie ma dopasowanych "
-        "product-level facts z Ads albo GA4 dla tych IDs."
+        "Odczyt Merchant zwraca próbki ID produktów, ale WILQ nie ma dopasowanych "
+        "faktów produktu z Ads albo GA4 dla tych ID."
     )
 
 
@@ -1030,20 +1045,20 @@ def _product_performance_next_step(
 ) -> str:
     if not sample_product_ids:
         return (
-            "Dodać próbki produktów Merchant z product ID/SKU, zanim WILQ "
-            "spróbuje łączyć feed z performance."
+            "Dodać próbki produktów Merchant z ID produktu lub SKU, zanim WILQ "
+            "spróbuje łączyć feed ze skutecznością."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
         if ads_shopping_lookback_days is not None and ads_shopping_lookback_days >= 90:
             return (
                 "Dodaj aktualny `shopping_product` state read albo mapowanie Merchant "
-                "offer ID -> Ads product_item_id, zamiast claimować produktowy "
-                "performance z pustej historii emisji."
+                "offer ID -> Ads product_item_id, zamiast obiecywać skuteczność produktu "
+                "z pustej historii emisji."
             )
         return (
             "Sprawdź, czy produkty miały emisję w Ads w ostatnich 30 dniach; jeśli "
             "nie, dodaj dłuższy lookback albo aktualny `shopping_product` state read "
-            "zamiast claimować produktowy performance."
+            "zamiast obiecywać skuteczność produktu."
         )
     if ga4_product_facts and not ads_product_facts:
         return (
@@ -1051,7 +1066,7 @@ def _product_performance_next_step(
             "wspólny product_id/item_id jako join key."
         )
     return (
-        "Dodać product performance dla Google Ads Shopping/PMax i GA4 "
+        "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 "
         "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
     )
 
@@ -1364,7 +1379,11 @@ def _feed_health_section(
         evidence_ids=_unique(fact.evidence_id for fact in product_facts or facts),
         metric_facts=(product_facts or facts)[:10],
         action_ids=action_ids,
-        blocked_claims=["approval restored", "revenue recovered", "profit uplift"],
+        blocked_claims=[
+            "ponowne zatwierdzenie produktu",
+            "odzyskany przychód",
+            "wzrost zysku",
+        ],
         risk=ActionRisk.medium,
     )
 
@@ -1395,7 +1414,7 @@ def _issue_queue_section(
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["feed fix candidate", "product-level fix"],
+            blocked_claims=["propozycja naprawy feedu", "naprawa pojedynczego produktu"],
             risk=ActionRisk.medium,
         )
 
@@ -1446,7 +1465,11 @@ def _issue_queue_section(
         metric_facts=issue_facts[:10],
         tactical_items=tactical_items[:6],
         action_ids=action_ids,
-        blocked_claims=["automatic feed edit", "primary feed overwrite", "approval restored"],
+        blocked_claims=[
+            "automatyczna zmiana feedu",
+            "nadpisanie głównego feedu",
+            "ponowne zatwierdzenie produktu",
+        ],
         risk=ActionRisk.medium,
     )
 
@@ -1511,7 +1534,11 @@ def _merchant_issue_clusters(
                 ),
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_unique(fact.evidence_id for fact in group_facts),
-                blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
+                blocked_claims=[
+                    "ponowne zatwierdzenie produktu",
+                    "odzyskany przychód",
+                    "automatyczna zmiana feedu",
+                ],
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
                 next_step=(
@@ -1969,10 +1996,10 @@ def _merchant_supplemental_feed_review_payload_preview(
         "blocked_claims": _unique(
             [
                 *MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
-                "primary feed overwrite",
-                "supplemental feed write",
-                "product data mutation",
-                "automatic approval fix",
+                "nadpisanie głównego feedu",
+                "zapis do feedu uzupełniającego",
+                "zmiana danych produktu",
+                "automatyczna naprawa zatwierdzenia",
             ]
         ),
         "evidence_ids": evidence_ids,
@@ -2304,13 +2331,13 @@ def _merchant_decision_payload_preview(
             "mutation_audit_required",
         ],
         "blocked_claims": [
-            "approval restored",
-            "revenue recovered",
-            "automatic feed edit",
-            "primary feed overwrite",
-            "feed write",
-            "product data mutation",
-            "automatic approval fix",
+            "ponowne zatwierdzenie produktu",
+            "odzyskany przychód",
+            "automatyczna zmiana feedu",
+            "nadpisanie głównego feedu",
+            "zapis do feedu",
+            "zmiana danych produktu",
+            "automatyczna naprawa zatwierdzenia",
         ],
         "evidence_ids": evidence_ids,
         "api_mutation_ready": False,
@@ -2386,7 +2413,11 @@ def _merchant_aggregate_feed_status_decision(
         ),
         metric_facts=metric_facts[:6],
         action_ids=action_ids,
-        blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
+        blocked_claims=[
+            "ponowne zatwierdzenie produktu",
+            "odzyskany przychód",
+            "automatyczna zmiana feedu",
+        ],
         rationale=(
             "Merchant ma aggregate product/feed facts, ale bieżący odczyt nie "
             "dostarcza wymiarowych issue clusters. Marketer może rozpocząć review "
@@ -2521,7 +2552,11 @@ def _product_action_safety_section(
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=action_ids,
-        blocked_claims=["feed write", "product data mutation", "automatic approval fix"],
+        blocked_claims=[
+            "zapis do feedu",
+            "zmiana danych produktu",
+            "automatyczna naprawa zatwierdzenia",
+        ],
         risk=ActionRisk.medium,
     )
 

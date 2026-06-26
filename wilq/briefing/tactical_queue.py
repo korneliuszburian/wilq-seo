@@ -690,7 +690,11 @@ def _merchant_feed_items(
                     "Nie zmieniaj danych produktu bez sprawdzenia propozycji "
                     "w WILQ i zgody operatora."
                 ),
-                blocked_claims=["product fix applied", "approval restored", "revenue recovered"],
+                blocked_claims=[
+                    "wdrożona poprawka produktu",
+                    "ponowne zatwierdzenie produktu",
+                    "odzyskany przychód",
+                ],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),
             )
         )
@@ -719,7 +723,10 @@ def _merchant_feed_items(
                     f"expiring_products={expiring or 0} dla {country}/{reporting_context}."
                 ),
                 next_step="Sprawdź statusy produktów i przygotuj kolejkę ręcznego sprawdzenia.",
-                blocked_claims=["approval restored", "feed issue resolved"],
+                blocked_claims=[
+                    "ponowne zatwierdzenie produktu",
+                    "rozwiązany problem feedu",
+                ],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),
             )
         )

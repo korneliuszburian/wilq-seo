@@ -39,7 +39,7 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
                     "next_step": "Sprawdź atrybut.",
                 }
             ],
-            "blocked_claims": ["approval restored", "revenue recovered"],
+            "blocked_claims": ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
             "action_ids": ["act_review_merchant_feed_issues"],
         },
         "content": {

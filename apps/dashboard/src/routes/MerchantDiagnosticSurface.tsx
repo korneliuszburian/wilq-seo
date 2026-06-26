@@ -429,12 +429,12 @@ function merchantMetricTileValue(decision: MerchantDecisionItem, key: string) {
 
 function merchantMerchantMeasurementPlan(decision: MerchantDecisionItem) {
   if (decision.decision_type === "review_product_state_mapping") {
-    return "Po ręcznym przeglądzie porównamy kolejne odczyty Merchant i stan produktów w Ads dla tych samych produktów. Bez pełnego okna po zmianie WILQ nie będzie claimował ROAS, przychodu ani wpływu naprawy.";
+    return "Po ręcznym przeglądzie porównamy kolejne odczyty Merchant i stan produktów w Ads dla tych samych produktów. Bez pełnego okna po zmianie WILQ nie będzie obiecywał zwrotu z reklam, przychodu ani wpływu naprawy.";
   }
   if (decision.decision_type === "review_feed_status") {
     return "Po zatwierdzonym działaniu sprawdzimy kolejny odczyt Merchant: status feedu, liczbę zgłoszeń i czy problem nadal występuje w tych samych kontekstach raportowania.";
   }
-  return "Po ręcznym przeglądzie i ewentualnie zatwierdzonym podglądzie zmian sprawdzimy kolejny odczyt Merchant: czy ten sam typ problemu, atrybut i kontekst raportowania nadal występują. Nie claimujemy odzyskanego zatwierdzenia ani wpływu na przychód bez audytu i danych po zmianie.";
+  return "Po ręcznym przeglądzie i ewentualnie zatwierdzonym podglądzie zmian sprawdzimy kolejny odczyt Merchant: czy ten sam typ problemu, atrybut i kontekst raportowania nadal występują. Nie obiecujemy odzyskanego zatwierdzenia ani wpływu na przychód bez audytu i danych po zmianie.";
 }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
@@ -696,14 +696,14 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
 function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
   const readiness = data.product_performance_readiness;
   const statusLabel =
-    readiness.status === "ready" ? "łączenie z Ads/GA4 dostępne" : "łączenie z Ads/GA4 zablokowane";
+    readiness.status === "ready" ? "dane Ads/GA4 dostępne" : "dane Ads/GA4 zablokowane";
   const visibleRows = readiness.performance_rows.slice(0, 4);
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Join produktów z Ads/GA4
+            Produkty połączone z Ads/GA4
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             {readiness.summary}
@@ -714,14 +714,14 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Status" value={statusLabel} />
-          <MetricTile label="Join" value={readiness.joined_product_count} />
+          <MetricTile label="Połączone produkty" value={readiness.joined_product_count} />
           <MetricTile label="Próbki" value={readiness.merchant_sample_count} />
         </div>
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Obecne kontrakty" values={readiness.current_read_contracts} />
         <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
-        <TraceLine label="Klucze joinu" values={readiness.join_key_candidates} />
+        <TraceLine label="Klucze połączenia danych" values={readiness.join_key_candidates} />
         <TraceLine label="Źródła" values={readiness.source_connectors} empty="brak" />
         <LinkedTraceLine
           label="Dowody"
@@ -734,9 +734,9 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
         />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-        <MetricTile label="Ads facts" value={readiness.ads_product_fact_count} />
-        <MetricTile label="GA4 facts" value={readiness.ga4_product_fact_count} />
-        <MetricTile label="Sample IDs" value={readiness.sample_product_ids.length} />
+        <MetricTile label="Fakty Ads" value={readiness.ads_product_fact_count} />
+        <MetricTile label="Fakty GA4" value={readiness.ga4_product_fact_count} />
+        <MetricTile label="Próbki ID" value={readiness.sample_product_ids.length} />
         <MetricTile label="Wiersze" value={readiness.performance_rows.length} />
       </div>
       {visibleRows.length > 0 ? (
@@ -1154,21 +1154,8 @@ function merchantSectionLabel(sectionId: string) {
 
 function merchantBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "approval restored": "produkt zatwierdzony ponownie",
-    "automatic approval fix": "automatyczna naprawa zatwierdzenia",
-    "automatic feed edit": "automatyczna zmiana feedu",
-    "feed fix candidate": "propozycja naprawy feedu",
     "feed health": "ocena stanu feedu",
-    "feed write": "zapis do feedu",
-    "primary feed overwrite": "nadpisanie głównego feedu",
     "product approval": "zatwierdzenie produktu",
-    "product data mutation": "zmiana danych produktu",
-    "product fix impact": "efekt naprawy produktu",
-    "product-level fix": "naprawa pojedynczego produktu",
-    "product revenue recovery": "odzyskany przychód produktu",
-    "product ROAS": "ROAS produktu",
-    "profit uplift": "wzrost zysku",
-    "revenue recovered": "odzyskany przychód",
     "Shopping/PMax product scaling": "skalowanie produktu w Shopping/PMax"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));

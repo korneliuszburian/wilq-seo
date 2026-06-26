@@ -130,10 +130,10 @@ def main() -> int:
     elif performance_status == "blocked":
         blocked_claims = set(product_performance_readiness.get("blocked_claims") or [])
         if not {
-            "product ROAS",
-            "product revenue recovery",
-            "product fix impact",
-            "feed write",
+            "zwrot z reklam na poziomie produktu",
+            "odzyskany przychód produktu",
+            "efekt naprawy produktu",
+            "zapis do feedu",
         }.issubset(blocked_claims):
             raise SystemExit(
                 "Blocked product_performance_readiness must block product revenue/ROAS claims"
@@ -150,7 +150,7 @@ def main() -> int:
         "merchant_price_change_event_or_snapshot",
         "google_ads_or_ga4_product_performance_window",
     }.issubset(required_price_contracts):
-        raise SystemExit("Merchant price_impact_readiness must name price impact read contracts")
+        raise SystemExit("Merchant price_impact_readiness must name price readiness read contracts")
     price_status = price_impact_readiness.get("status")
     price_preview = price_impact_readiness.get("payload_preview") or []
     if price_status == "ready":
@@ -165,10 +165,10 @@ def main() -> int:
     elif price_status == "blocked":
         blocked_claims = set(price_impact_readiness.get("blocked_claims") or [])
         if not {
-            "price change impact",
-            "product ROAS",
-            "product profitability",
-            "feed write",
+            "wpływ zmiany ceny",
+            "zwrot z reklam na poziomie produktu",
+            "opłacalność produktu",
+            "zapis do feedu",
         }.issubset(blocked_claims):
             raise SystemExit("Blocked price_impact_readiness must block price/ROAS claims")
         if not price_impact_readiness.get("missing_read_contracts"):
@@ -180,16 +180,18 @@ def main() -> int:
             price_preview[0].get("preview_contract")
             != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
         ):
-            raise SystemExit("Merchant price impact preview contract mismatch")
+            raise SystemExit("Merchant price readiness preview contract mismatch")
         if price_preview[0].get("apply_allowed") is not False:
-            raise SystemExit("Merchant price impact preview must keep apply_allowed=false")
+            raise SystemExit("Merchant price readiness preview must keep apply_allowed=false")
         if price_preview[0].get("api_mutation_ready") is not False:
-            raise SystemExit("Merchant price impact preview must keep api_mutation_ready=false")
+            raise SystemExit(
+                "Merchant price readiness preview must keep api_mutation_ready=false"
+            )
         products = price_preview[0].get("products") or []
         if products:
             first_product = products[0]
             if "has_price_change" not in first_product:
-                raise SystemExit("Merchant price impact preview must expose has_price_change")
+                raise SystemExit("Merchant price readiness preview must expose has_price_change")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     packed_decision_queue = packed_merchant.get("decision_queue") or []
@@ -255,9 +257,11 @@ def main() -> int:
             ):
                 raise SystemExit(f"{surface_name} price decision preview contract mismatch")
             decision_claims = set(price_decision.get("blocked_claims") or [])
-            if not {"price change impact", "product ROAS", "feed write"}.issubset(
-                decision_claims
-            ):
+            if not {
+                "wpływ zmiany ceny",
+                "zwrot z reklam na poziomie produktu",
+                "zapis do feedu",
+            }.issubset(decision_claims):
                 raise SystemExit(f"{surface_name} price decision must block price claims")
     merchant_action = next(
         (

@@ -299,11 +299,11 @@ playbooks:
     expert_rule_ids:
       - merchant_feed_rules_v1
       - merchant_product_diagnostics_v1
-    compact_playbook: Prepare feed and product copy actions only from product data and diagnostics. Preserve factual attributes and validate before any write.
+    compact_playbook: Przygotuj działania dla feedu i opisów produktów tylko z danych produktu oraz diagnostyki. Zachowaj faktyczne atrybuty i sprawdź propozycję przed każdym zapisem.
     refusal_rules:
-      - Refuse product claims not present in product data.
-      - Refuse feed writes without validation and audit.
-    output_contract: Merchant feed or product optimization action with product evidence.
+      - Odmów twierdzeń o produkcie, których nie ma w danych produktu.
+      - Odmów zapisu do feedu bez sprawdzenia i audytu.
+    output_contract: Akcja dla feedu lub opisu produktu z dowodami produktu.
 
   - id: linkedin_content_playbook
     family: linkedin_content_playbook
