@@ -1,6 +1,6 @@
 ---
 name: wilq-ga4-analyst
-description: Analizuje zachowanie GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "które landing pages działają słabo?", "czy ruch z kampanii ma sens?", "czemu użytkownicy nie angażują się?", "czy tracking jest zepsuty?", "porównaj źródła ruchu", albo pyta o engagement, sessions, jakość campaign/source, conversion diagnostics lub tracking gaps. Musi cytować GA4 evidence IDs i nie wolno zmyślać wartości analytics.
+description: Analizuje zachowanie GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "które strony wejścia działają słabo?", "czy ruch z kampanii ma sens?", "czemu użytkownicy nie angażują się?", "czy pomiar jest zepsuty?", "porównaj źródła ruchu", albo pyta o zaangażowanie, sesje, jakość kampanii/źródła, diagnostykę konwersji lub braki pomiaru. Musi cytować GA4 evidence IDs i nie wolno zmyślać wartości analytics.
 ---
 
 # WILQ GA4 Analyst
@@ -17,10 +17,10 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 <triggers>
 
-- "Które landing pages w Ekologus są najsłabsze?"
+- "Które strony wejścia w Ekologus są najsłabsze?"
 - "Sprawdź jakość ruchu z kampanii i źródeł."
 - "Czy GA4 pokazuje problem marketingowy czy problem pomiaru?"
-- "Znajdź tracking gaps, zanim ocenimy kampanie."
+- "Znajdź braki pomiaru, zanim ocenimy kampanie."
 
 </triggers>
 
@@ -30,7 +30,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem GA4 behavior, jakości landingów, conversion readiness lub tracking blockers.
+3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem zachowania GA4, jakości stron wejścia, gotowości konwersji lub blokad pomiaru.
 4. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji i zachowaj typy/statusy zwrócone przez API, np. `fix_measurement`, `review_landing_mapping`, `review_traffic_quality`. Nie klasyfikuj GA4 itemów samodzielnie poza kontraktem API.
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ga4-analyst"}` i potwierdź, że osadzony kontrakt `ga4_diagnostics` zgadza się z route.
 6. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.

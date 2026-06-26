@@ -398,7 +398,7 @@ export function actionGateLabel(value: string) {
     human_review_before_apply: "sprawdzenie przez człowieka przed zapisem",
     human_confirm_before_apply: "potwierdzenie człowieka przed zapisem",
     compare_90_day_safety_read: "porównaj z 90-dniową kontrolą bezpieczeństwa",
-    confirm_developer_token_approval: "potwierdź akceptację developer token",
+    confirm_developer_token_approval: "potwierdź akceptację tokena deweloperskiego",
     review_campaign_activity: "sprawdź aktywność kampanii",
     verify_account_currency: "sprawdź walutę konta",
     budget_pacing: "sprawdź tempo wydawania budżetu",
@@ -431,15 +431,15 @@ export function actionGateLabel(value: string) {
     reject_brand_or_low_intent_terms: "odrzuć brandowe lub niskointencyjne frazy",
     rerun_google_ads_data_read: "uruchom ponowny odczyt Google Ads",
     review_campaign_name_dimension: "sprawdź nazwę kampanii",
-    review_conversion_or_key_event_mapping: "sprawdź mapowanie konwersji lub key event",
+    review_conversion_or_key_event_mapping: "sprawdź mapowanie konwersji lub zdarzenia kluczowego",
     review_human_budget_goal: "sprawdź cel budżetu od człowieka",
-    review_landing_page_dimension: "sprawdź landing page",
+    review_landing_page_dimension: "sprawdź stronę wejścia",
     review_ngram_intent: "sprawdź intencję tematu zapytań",
     review_profit_margin_model: "sprawdź model marży",
-    review_source_medium_dimension: "sprawdź source / medium",
+    review_source_medium_dimension: "sprawdź źródło i medium ruchu",
     review_source_search_terms: "sprawdź źródłowe wyszukiwane hasła",
     review_source_terms: "sprawdź źródłowe hasła",
-    review_target_fit: "sprawdź dopasowanie targetu",
+    review_target_fit: "sprawdź dopasowanie do celu",
     verify_keyword_planner_idea_rows: "sprawdź wiersze Keyword Planner"
   };
   return labels[value] ?? adsMissingReadContractLabel(value);

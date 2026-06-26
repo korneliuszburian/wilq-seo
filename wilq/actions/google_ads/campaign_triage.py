@@ -164,10 +164,10 @@ def campaign_target_context(
         if cost_per_conversion_micros is not None:
             if cost_per_conversion_micros <= target_cpa_micros:
                 status: CampaignTargetStatus = "within_target"
-                label = "CPA w targetcie"
+                label = "koszt pozyskania celu w granicy celu"
             else:
                 status = "outside_target"
-                label = "CPA powyżej targetu"
+                label = "koszt pozyskania celu powyżej celu"
         elif (cost_micros or 0) > 0 and not conversions:
             status = "spend_without_conversions"
             label = "koszt bez konwersji"
@@ -178,10 +178,10 @@ def campaign_target_context(
         if roas is not None:
             if roas >= target_roas:
                 status = "within_target"
-                label = "ROAS w targetcie"
+                label = "zwrot z reklam w granicy celu"
             else:
                 status = "outside_target"
-                label = "ROAS poniżej targetu"
+                label = "zwrot z reklam poniżej celu"
         elif (cost_micros or 0) > 0 and not conversion_value:
             status = "spend_without_conversions"
             label = "koszt bez wartości konwersji"
@@ -190,7 +190,7 @@ def campaign_target_context(
             label = "brak ROAS do porównania"
     else:
         status = "no_target"
-        label = "brak targetu"
+        label = "brak celu"
 
     return {
         "target_status": status,

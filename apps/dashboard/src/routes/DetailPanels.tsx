@@ -293,7 +293,7 @@ function WordPressDraftHandoffPreviewCard({ item }: { item: Record<string, unkno
         <div>Źródło: {stringValue(item.source_public_url, "brak")}</div>
         <div>Kanoniczny: {stringValue(item.final_canonical_url, "brak")}</div>
         <div>Podgląd: {stringValue(item.preview_url, "brak")}</div>
-        <div>Canonical: {stringValue(item.canonical_gate_status, "brak")}</div>
+        <div>Kontrola URL-a kanonicznego: {stringValue(item.canonical_gate_status, "brak")}</div>
         <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
         <div>
           Przekazanie:{" "}
@@ -320,7 +320,7 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
         <div>
           <h3 className="text-sm font-semibold text-ink">Wykluczenie słowa do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.match_type, "match type")}
+            {stringValue(item.match_type, "typ dopasowania")}
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -355,7 +355,7 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>N-gram: {stringValue(item.ngram, "brak")}</div>
+        <div>Temat: {stringValue(item.ngram, "brak")}</div>
         <div>Rozmiar: {formatNumber(item.ngram_size)}</div>
         <div>Zapytania użytkowników: {formatNumber(item.source_search_term_count)}</div>
         <PreviewValues label="Przykłady" values={asStringArray(item.sample_search_terms)} />
@@ -383,14 +383,14 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
         <div>
           <h3 className="text-sm font-semibold text-ink">Segment odbiorców do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.member_type, "KEYWORD")}
+            {customSegmentMemberTypeLabel(stringValue(item.member_type, "KEYWORD"))}
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Nazwa: {stringValue(item.custom_segment_name, "brak")}</div>
-        <div>Typ członków: {stringValue(item.member_type, "brak")}</div>
+        <div>Typ odbiorców: {customSegmentMemberTypeLabel(stringValue(item.member_type, "brak"))}</div>
         <PreviewValues label="Hasła źródłowe" values={asStringArray(item.source_terms)} />
         <div>
           Kampania do sprawdzenia:{" "}
@@ -474,7 +474,7 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
         <div>Kampanie Demand Gen: {formatNumber(item.demand_gen_campaign_row_count)}</div>
         <div>Grupy reklam Demand Gen: {formatNumber(item.demand_gen_ad_group_ad_row_count)}</div>
         <div>Kreacje/assets: {formatNumber(item.demand_gen_creative_asset_row_count)}</div>
-        <div>Wiersze jakości landingów: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
+        <div>Wiersze jakości stron wejścia: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
         <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
         <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
@@ -498,13 +498,13 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Landing: {stringValue(item.landing_page, "brak")}</div>
+        <div>Strona wejścia: {stringValue(item.landing_page, "brak")}</div>
         <div>Źródło: {stringValue(item.source_medium, "brak")}</div>
         <div>Kampania: {stringValue(item.campaign_name, "brak")}</div>
         <div>Aktywni użytkownicy: {formatNumber(metricSnapshot.active_users)}</div>
         <div>Sesje: {formatNumber(metricSnapshot.sessions)}</div>
-        <div>Engagement rate: {formatPercent(metricSnapshot.engagement_rate)}</div>
-        <div>Eventy: {formatNumber(metricSnapshot.event_count)}</div>
+        <div>Współczynnik zaangażowania: {formatPercent(metricSnapshot.engagement_rate)}</div>
+        <div>Zdarzenia: {formatNumber(metricSnapshot.event_count)}</div>
         <div>Wyświetlenia stron: {formatNumber(metricSnapshot.screen_page_views)}</div>
         <PreviewValues label="Braki wymiarów" values={asStringArray(item.tracking_dimension_gaps)} />
         <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
@@ -621,12 +621,12 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
         <div>Marża: {formatPercent(context.profit_margin)}</div>
         <div>Cel biznesowy: {stringValue(context.business_goal, "brak")}</div>
         <div>Cel budżetu: {stringValue(context.budget_goal, "brak")}</div>
-        <div>Target ROAS: {formatMetricValue(context.target_roas)}</div>
-        <div>Target CPA: {formatMicrosAsPln(context.target_cpa_micros)}</div>
+        <div>Docelowy zwrot z reklam: {formatMetricValue(context.target_roas)}</div>
+        <div>Docelowy koszt pozyskania celu: {formatMicrosAsPln(context.target_cpa_micros)}</div>
         <PreviewValues label="Źródła konfiguracji" values={asStringArray(context.configured_sources)} />
         <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
         <PreviewValues
-          label="Opcje targetu"
+          label="Opcje celu"
           values={targetOptionValues(targetEnvOptions.target_roas_or_cpa)}
         />
         <PreviewValues
@@ -910,10 +910,19 @@ function readContractValues(value: unknown) {
 
 function targetOptionValues(value: unknown) {
   const labels: Record<string, string> = {
-    WILQ_ADS_TARGET_ROAS: "target ROAS",
-    WILQ_ADS_TARGET_CPA_MICROS: "target CPA"
+    WILQ_ADS_TARGET_ROAS: "docelowy zwrot z reklam",
+    WILQ_ADS_TARGET_CPA_MICROS: "docelowy koszt pozyskania celu"
   };
-  return asStringArray(value).map((item) => labels[item] ?? "opcja targetu do ustawienia");
+  return asStringArray(value).map((item) => labels[item] ?? "opcja celu do ustawienia");
+}
+
+function customSegmentMemberTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    KEYWORD: "słowa kluczowe",
+    URL: "adresy URL",
+    APP: "aplikacje"
+  };
+  return labels[value] ?? value.toLowerCase();
 }
 
 function actionStateLabel(value: string) {

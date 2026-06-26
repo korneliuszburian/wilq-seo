@@ -411,9 +411,9 @@ def _tactical_intent_label(intent: TacticalIntent) -> str:
         "content_create": "nowa treść",
         "content_merge": "scalenie treści",
         "content_block": "blokada treści",
-        "landing_page_quality": "jakość landing page",
+        "landing_page_quality": "jakość strony wejścia",
         "tracking_gap": "problem pomiaru",
-        "merchant_feed_triage": "triage feedu",
+        "merchant_feed_triage": "kolejność oceny feedu",
         "traffic_quality_review": "jakość ruchu",
     }
     return labels[intent]
@@ -1362,14 +1362,14 @@ def _ga4_diagnosis(
             "GA4 ma brakujące wymiary raportu: "
             f"landing_page=`{landing_page}`, source_medium=`{source_medium}`, "
             f"campaign_name=`{campaign_name}`. To jest problem pomiaru/atrybucji, "
-            "nie zwykła taktyka landing page. "
+            "nie zwykła taktyka strony wejścia. "
             f"active_users={_metric_or_missing(active_users)}, "
             f"sessions={_metric_or_missing(sessions)}, "
             f"engagement_rate={_metric_or_missing(engagement_rate)}. "
             f"{wordpress_note}"
         )
     return (
-        f"Landing `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
+        f"Strona wejścia `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
         f"active_users={_metric_or_missing(active_users)}, "
         f"sessions={_metric_or_missing(sessions)}, "
         f"engagement_rate={_metric_or_missing(engagement_rate)}. {wordpress_note}"
@@ -1383,12 +1383,12 @@ def _has_not_set_dimension(*values: str) -> bool:
 def _ga4_next_step(has_not_set_dimension: bool) -> str:
     if has_not_set_dimension:
         return (
-            "Napraw pomiar GA4: sprawdź landing page attribution, source/medium, "
+            "Napraw pomiar GA4: sprawdź stronę wejścia, źródło i medium ruchu, "
             "UTM-y i konfigurację raportu. Nie traktuj tego jako rekomendacji "
             "marketingowej dla strony."
         )
     return (
-        "Sprawdź landing page, message match i tracking. Nie oceniaj kampanii "
+        "Sprawdź stronę wejścia, dopasowanie komunikatu i pomiar. Nie oceniaj kampanii "
         "po samych użytkownikach bez konwersji."
     )
 

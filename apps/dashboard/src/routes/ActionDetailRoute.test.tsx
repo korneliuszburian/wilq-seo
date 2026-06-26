@@ -374,8 +374,8 @@ const ga4TrackingActionFixture: ActionObject = {
   connector: "google_analytics_4",
   risk: "low",
   evidence_ids: ["ev_refresh_ga4"],
-  human_diagnosis: "GA4 ma landing page, źródło i kampania wiersze do sprawdzenia jakości pomiaru.",
-  recommended_reason: "Sprawdź message match i mapowanie konwersji bez claimów ROAS.",
+  human_diagnosis: "GA4 ma wiersze strony wejścia, źródła ruchu i kampanii do sprawdzenia jakości pomiaru.",
+  recommended_reason: "Sprawdź dopasowanie komunikatu i mapowanie konwersji bez obietnic zwrotu z reklam.",
   payload: {
     action_type: "ga4_tracking_gap",
     preview_contract: "ga4_tracking_quality_review_v1",
@@ -396,7 +396,7 @@ const ga4TrackingActionFixture: ActionObject = {
           sessions: 77
         },
         reason:
-          "Lista sprawdzenia landing page, źródło i kampania do oceny jakości ruchu. To pozwala sprawdzić message match, ale nie odblokowuje claimów o ROAS ani revenue.",
+          "Lista sprawdzenia strony wejścia, źródła ruchu i kampanii do oceny jakości ruchu. To pozwala sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic zwrotu z reklam ani przychodu.",
         required_validation: [
           "review_landing_page_dimension",
           "review_source_medium_dimension",
@@ -511,8 +511,8 @@ const keywordPlannerAccessActionFixture: ActionObject = {
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_google_ads"],
-  human_diagnosis: "Keyword Planner jest zablokowany przez stan developer tokena.",
-  recommended_reason: "Odblokuj dostęp zanim WILQ zacznie oceniać forecast i audience size.",
+  human_diagnosis: "Keyword Planner jest zablokowany przez stan tokena deweloperskiego.",
+  recommended_reason: "Odblokuj dostęp zanim WILQ zacznie oceniać prognozy i rozmiar odbiorców.",
   payload: {
     action_type: "configure_google_ads_keyword_planner_access",
     connector: "google_ads",
@@ -525,7 +525,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "keyword_planner_generate_ideas_allowed"
     ],
     helper_steps: [
-      "Sprawdź status Google Ads API developer token w Google Ads API Center.",
+      "Sprawdź status tokena deweloperskiego Google Ads API w Google Ads API Center.",
       "Po zmianie statusu wykonaj odczyt danych Google Ads."
     ],
     required_validation: [
@@ -543,13 +543,13 @@ const keywordPlannerAccessActionFixture: ActionObject = {
 const adsTargetGuardrailActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_ads_target_guardrails",
-  title: "Potwierdź target ROAS albo CPA dla Ads",
+  title: "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads",
   domain: "google_ads",
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_google_ads"],
-  human_diagnosis: "WILQ ma Ads facts, ale target ROAS/CPA wymaga potwierdzenia operatora.",
-  recommended_reason: "Potwierdź target zanim WILQ nazwie kampanie opłacalnymi albo nieopłacalnymi.",
+  human_diagnosis: "WILQ ma fakty Ads, ale docelowy zwrot z reklam albo koszt pozyskania celu wymaga potwierdzenia operatora.",
+  recommended_reason: "Potwierdź cel zanim WILQ nazwie kampanie opłacalnymi albo nieopłacalnymi.",
   payload: {
     action_type: "confirm_ads_target_guardrails",
     connector: "google_ads",
@@ -905,7 +905,7 @@ describe("Action detail route", () => {
     );
     expect(screen.getByText("Segment odbiorców do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Nazwa: WILQ search-term intent review/)).toBeInTheDocument();
-    expect(screen.getByText(/Typ członków: KEYWORD/)).toBeInTheDocument();
+    expect(screen.getByText(/Typ odbiorców: słowa kluczowe/)).toBeInTheDocument();
     expect(screen.getByText(/Hasła źródłowe: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania do sprawdzenia: Kompendium PPWR/)).toBeInTheDocument();
     expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
@@ -945,7 +945,7 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Temat zapytań do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/N-gram: asekol/)).toBeInTheDocument();
+    expect(screen.getByText(/Temat: asekol/)).toBeInTheDocument();
     expect(screen.getByText(/Rozmiar: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Zapytania użytkowników: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Przykłady: asekol pl organizacja odzysku/)).toBeInTheDocument();
@@ -988,14 +988,14 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Jakość pomiaru GA4 do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/Landing: \//)).toBeInTheDocument();
+    expect(screen.getByText(/Strona wejścia: \//)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
     expect(screen.getByText(/Aktywni użytkownicy: 49/)).toBeInTheDocument();
     expect(screen.getByText(/Sesje: 77/)).toBeInTheDocument();
-    expect(screen.getByText(/Engagement rate: 76,62%/)).toBeInTheDocument();
-    expect(screen.getByText(/Eventy: 1190/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: sprawdź landing page/)).toBeInTheDocument();
+    expect(screen.getByText(/Współczynnik zaangażowania: 76,62%/)).toBeInTheDocument();
+    expect(screen.getByText(/Zdarzenia: 1190/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź stronę wejścia/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: współczynnik konwersji/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
@@ -1061,8 +1061,8 @@ describe("Action detail route", () => {
     expect(
       screen.getByText(/Wymagany stan: brakujący odczyt techniczny/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Kroki: Sprawdź status Google Ads API developer token/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: potwierdź akceptację developer token/)).toBeInTheDocument();
+    expect(screen.getByText(/Kroki: Sprawdź status tokena deweloperskiego Google Ads API/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: potwierdź akceptację tokena deweloperskiego/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
@@ -1072,7 +1072,7 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Potwierdź target ROAS albo CPA dla Ads"
+          name: "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads"
         })
       ).toBeInTheDocument()
     );
@@ -1080,13 +1080,13 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
     expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
-    expect(screen.getByText(/Target ROAS: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Target CPA: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: target ROAS albo CPA/)).toBeInTheDocument();
-    expect(screen.getByText(/Opcje targetu: target ROAS, target CPA/)).toBeInTheDocument();
+    expect(screen.getByText(/Docelowy zwrot z reklam: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Docelowy koszt pozyskania celu: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: docelowy zwrot z reklam albo koszt pozyskania celu/)).toBeInTheDocument();
+    expect(screen.getByText(/Opcje celu: docelowy zwrot z reklam, docelowy koszt pozyskania celu/)).toBeInTheDocument();
     expect(screen.getByText(/Po potwierdzeniu: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: ocena KPI targetu przed potwierdzeniem/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: ocena KPI względem celu przed potwierdzeniem/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

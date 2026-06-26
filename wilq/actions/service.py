@@ -300,13 +300,14 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             status=ActionStatus.needs_validation,
             evidence_ids=[connector_evidence_id("google_analytics_4")],
             human_diagnosis=(
-                "GA4 jest core workflow WILQ. W clean runtime WILQ może tylko "
-                "przygotować przegląd pomiaru i zablokować twierdzenia o ROAS/revenue, "
-                "dopóki nie ma metric facts z landing page, źródło i kampania."
+                "GA4 jest głównym procesem pracy WILQ. W czystym runtime WILQ może tylko "
+                "przygotować przegląd pomiaru i zablokować twierdzenia o zwrocie z reklam "
+                "oraz przychodzie, dopóki nie ma faktów metrycznych ze stroną wejścia, "
+                "źródłem ruchu i kampanią."
             ),
             recommended_reason=(
-                "Zbierz zestawienie GA4 z landing page, źródeł i kampanii, "
-                "potem sprawdź tracking i message match bez oceniania kampanii "
+                "Zbierz zestawienie GA4 ze stroną wejścia, źródłem ruchu i kampanią, "
+                "potem sprawdź pomiar i dopasowanie komunikatu bez oceniania kampanii "
                 "po niepełnych danych."
             ),
             payload={
@@ -340,7 +341,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "metric_snapshot": {},
                         "reason": (
                             "Brak wymiarowych GA4 facts. Najpierw zbierz "
-                            "zestawienie landing page, źródła i kampanii z GA4."
+                            "zestawienie strony wejścia, źródła ruchu i kampanii z GA4."
                         ),
                         "required_validation": [
                             "review_landing_page_dimension",
@@ -616,11 +617,11 @@ def _google_ads_business_context_action() -> ActionObject | None:
         human_diagnosis=(
             "Google Ads ma live metryki, ale WILQ nie ma nie-sekretnych celów "
             "biznesowych Ekologus: marży, celu biznesowego, celu budżetu oraz "
-            "targetu ROAS albo CPA."
+            "docelowego zwrotu z reklam albo kosztu pozyskania celu."
         ),
         recommended_reason=(
             "Uzupełnij repo-local .env wartościami biznesowymi, potem sprawdź "
-            "business_context_read_contract. Do tego czasu WILQ blokuje obietnice "
+            "kontekst biznesowy Ads. Do tego czasu WILQ blokuje obietnice "
             "o rentowności, zmarnowanym budżecie i skalowaniu."
         ),
         payload=ads_business_context_payload(missing_read_contracts),
@@ -642,7 +643,7 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         return None
     return ActionObject(
         id=ADS_TARGET_CONFIRMATION_ACTION_ID,
-        title="Potwierdź target ROAS albo CPA dla Ads",
+        title="Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -656,11 +657,11 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         ),
         human_diagnosis=(
             "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
-            "potwierdzonego targetu ROAS albo CPA. WILQ może robić ocenę kampanii, "
+            "potwierdzonego zwrotu z reklam albo kosztu pozyskania celu. WILQ może robić ocenę kampanii, "
             "ale nie może wydać werdyktu KPI ani uruchamiać zapisu zmian budżetu lub rekomendacji."
         ),
         recommended_reason=(
-            "Potwierdź jeden guardrail targetu w repo-local .env. To nadal jest "
+            "Potwierdź jedną zasadę bezpieczeństwa celu w repo-local .env. To nadal jest "
             "krok bez zapisu zmian: bez mutacji Google Ads, bez automatycznego "
             "skalowania i bez werdyktu rentowności."
         ),
@@ -701,7 +702,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         human_diagnosis=(
             "Google Ads ma live metryki i lokalny kontekst biznesowy, ale brakuje "
             "zapisanego wyniku ludzkiej oceny strategii. WILQ nie powinien "
-            "traktować targetu ani KPI jako decyzji operacyjnej bez tego zapisu."
+            "traktować celu ani KPI jako decyzji operacyjnej bez tego zapisu."
         ),
         recommended_reason=(
             "Zapisz wynik oceny: zatwierdzone do dalszego przygotowania, wymaga "
@@ -746,7 +747,7 @@ def _google_ads_keyword_planner_access_action() -> ActionObject | None:
             "rozmiarze odbiorców."
         ),
         recommended_reason=(
-            "Dopóki developer token nie ma zatwierdzonego dostępu Keyword Planner, "
+            "Dopóki token deweloperski nie ma zatwierdzonego dostępu Keyword Planner, "
             "segmenty zostają bez prognozy i wzbogacenia. To jest zewnętrzny "
             "access blocker, nie brak promptu."
         ),
@@ -853,13 +854,13 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in ga4_action_metrics),
             metrics=ga4_action_metrics,
             human_diagnosis=(
-                "GA4 zwraca wymiarowe fakty landing page, źródła i kampanii, ale WILQ "
-                "nadal nie ma kontraktu na ROAS, revenue ani werdykt konwersji. "
+                "GA4 zwraca wymiarowe fakty strony wejścia, źródła ruchu i kampanii, ale WILQ "
+                "nadal nie ma kontraktu na zwrot z reklam, przychód ani werdykt konwersji. "
                 f"{_metric_sentence(ga4_action_metrics)}."
             ),
             recommended_reason=(
                 "Na /ga4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
-                "zestawienie landing page, źródła i kampanii, sprawdź propozycję w WILQ i nie "
+                "zestawienie strony wejścia, źródła ruchu i kampanii, sprawdź propozycję w WILQ i nie "
                 "oceniaj kampanii bez kontraktu konwersji."
             ),
             payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
@@ -1145,7 +1146,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             human_diagnosis=(
                 "Google Ads ma realne fakty z wyszukiwanych haseł. WILQ może przygotować "
                 "propozycje segmentów wyłącznie z tych terminów, ale nie może "
-                "twierdzić nic o rozmiarze odbiorców, ROAS ani performance bez "
+                "twierdzić nic o rozmiarze odbiorców, zwrocie z reklam ani skuteczności bez "
                 "dodatkowych kontraktów."
             ),
             recommended_reason=(
@@ -1366,7 +1367,7 @@ def _demand_gen_readiness_review_action(
             "WILQ ma kontekst Google Ads i GA4 do wstępnego przeglądu Demand Gen, "
             "ale nadal blokuje uruchomienie, przejście kampanii, werdykty kreatywne "
             "i zapis zmian bez osobnych odczytów assetów, kreacji, jakości "
-            "landingów i ograniczeń przejścia."
+            "stron wejścia i ograniczeń przejścia."
         ),
         recommended_reason=(
             "Na /ads-doctor/demand-gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
@@ -2690,7 +2691,7 @@ def _ads_target_confirmation_summary(
 ) -> str:
     if blockers:
         return (
-            "Potwierdzenie targetu Ads zablokowane: "
+            "Potwierdzenie celu Ads zablokowane: "
             f"{', '.join(blockers)}. "
             f"Notatka: {request.notes}. "
             "Ten krok nie zapisuje zmian w Google Ads."
@@ -2700,9 +2701,9 @@ def _ads_target_confirmation_summary(
     else:
         target_summary = f"target_cpa_micros={request.target_cpa_micros}"
     return (
-        f"Potwierdzono roboczy guardrail Ads: {target_summary}. "
+        f"Potwierdzono roboczą zasadę bezpieczeństwa celu Ads: {target_summary}. "
         f"Notatka: {request.notes}. "
-        "Ten zapis odblokowuje tylko kontekst przeglądu targetu; nie zapisuje zmian, "
+        "Ten zapis odblokowuje tylko kontekst przeglądu celu; nie zapisuje zmian, "
         "nie potwierdza rentowności i nie skaluje budżetu."
     )
 

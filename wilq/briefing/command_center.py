@@ -984,14 +984,16 @@ def _ads_business_context_item_from_facts(
         priority=18,
         summary=(
             "Ads ma live evidence, ale WILQ nie ma kompletnego kontekstu "
-            "biznesowego do decyzji budżetowych: marży, celu, target CPA/ROAS "
-            "i potwierdzonego review strategii. Bez tego KPI są tylko triage, "
+            "biznesowego do decyzji budżetowych: marży, celu, docelowego kosztu "
+            "pozyskania celu i docelowego zwrotu z reklam "
+            "i potwierdzonej oceny strategii. Bez tego KPI są tylko wstępnym przeglądem, "
             "nie werdyktem opłacalności."
         ),
         next_step=(
             "Otwórz widok Ads i uzupełnij marżę, cel biznesowy, cel budżetu "
-            "oraz target CPA/ROAS. Potem sprawdź w WILQ target guardrails i review "
-            "strategii zanim ocenisz opłacalność albo skalowanie budżetu."
+            "oraz docelowy koszt pozyskania celu albo zwrot z reklam. Potem sprawdź "
+            "w WILQ zasady bezpieczeństwa celu i ocenę strategii zanim ocenisz "
+            "opłacalność albo skalowanie budżetu."
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1013,8 +1015,8 @@ def _ads_business_context_item_from_facts(
             "opłacalność",
             "zmarnowany budżet",
             "skalowanie budżetu",
-            "werdykt target CPA",
-            "werdykt target ROAS",
+            "werdykt docelowego kosztu pozyskania celu",
+            "werdykt docelowego zwrotu z reklam",
         ],
         risk=ActionRisk.medium,
     )
@@ -1535,12 +1537,12 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"GA4 ma {landing_group_count} grup landing page, źródło i kampania, "
+            f"GA4 ma {landing_group_count} grup strona wejścia, źródło ruchu i kampania, "
             f"{measurement_issue_count} problemów pomiaru, "
             f"{traffic_quality_count} decyzji jakości ruchu i "
             f"{len(matched_items)} dopasowań WordPress. "
-            "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
-            "drop/tracking fixed, nie awarię źródła danych."
+            "Status blocked oznacza brak kontraktu na zwrot z reklam, przychód, spadek "
+            "konwersji i naprawiony pomiar, nie awarię źródła danych."
         ),
         next_step=(
             "Otwórz widok GA4, sprawdź kolejkę jakości ruchu i sprawdź przegląd GA4 "
@@ -1958,11 +1960,11 @@ def _action_plan_item(
             priority=14,
             category="GA4",
             why_it_matters=(
-                f"WILQ ma {landing_groups} grup landing page, źródło i kampania i "
+                f"WILQ ma {landing_groups} grup strona wejścia, źródło ruchu i kampania i "
                 f"{decision_count} decyzji GA4 do sprawdzenia: pomiar={measurement_count}, "
                 f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
-                "nie werdykt performance, bo ROAS/revenue/conversion drop/tracking "
-                "fixed pozostają zablokowane bez osobnych kontraktów."
+                "nie werdykt skuteczności, bo zwrot z reklam, przychód, spadek konwersji "
+                "i naprawiony pomiar pozostają zablokowane bez osobnych kontraktów."
             ),
             operator_action=(
                 "Otwórz widok GA4, przejdź przez kolejkę decyzji pomiaru i jakości "
@@ -1972,14 +1974,14 @@ def _action_plan_item(
             skill_id="wilq-ga4-analyst",
             codex_prompt=(
                 "Użyj skilla wilq-ga4-analyst. Sprawdź jakość ruchu Ekologus po "
-                "landing page, źródło i kampania z kolejki decyzji GA4, "
+                "stronie wejścia, źródle ruchu i kampanii z kolejki decyzji GA4, "
                 "rozdziel problem marketingowy od problemu pomiaru i nie wyciągaj "
-                "wniosków o ROAS, revenue ani konwersjach bez dowodów."
+                "wniosków o zwrocie z reklam, przychodzie ani konwersjach bez dowodów."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polska diagnoza GA4 z fakty landing page, źródła i kampanii, tracking "
-                "blockerami i akcją."
+                "Polska diagnoza GA4 z faktami strony wejścia, źródła ruchu i kampanii, "
+                "blokadami pomiaru i akcją."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -1997,14 +1999,16 @@ def _action_plan_item(
             category="Google Ads",
             why_it_matters=(
                 "Ads ma live metryki i kolejki review, ale bez marży, celu biznesowego, "
-                "celu budżetu oraz targetu ROAS albo CPA WILQ nie może uczciwie mówić "
-                "o rentowności, zmarnowanym budżecie ani skalowaniu."
+                "celu budżetu oraz docelowego zwrotu z reklam albo kosztu pozyskania "
+                "celu WILQ nie może uczciwie mówić o rentowności, zmarnowanym budżecie "
+                "ani skalowaniu."
             ),
             operator_action=(
                 "Otwórz widok Ads i uzupełnij WILQ_ADS_PROFIT_MARGIN, "
-                "WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz target CPA/ROAS. "
-                "Potem sprawdź w WILQ target guardrails i review strategii zanim ocenisz "
-                "opłacalność albo skalowanie budżetu."
+                "WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS "
+                "albo WILQ_ADS_TARGET_CPA_MICROS. Potem sprawdź w WILQ zasady "
+                "bezpieczeństwa celu i ocenę strategii zanim ocenisz opłacalność albo "
+                "skalowanie budżetu."
             ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
@@ -2292,11 +2296,12 @@ def _decision_observation(
             return brief_item.summary
         return (
             f"{brief_item.summary} Status blocked oznacza brak kontraktu na "
-            "ROAS/revenue/conversion drop/tracking fixed, nie awarię źródła danych."
+            "zwrot z reklam, przychód, spadek konwersji i naprawiony pomiar, "
+            "nie awarię źródła danych."
         )
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
-            f"{brief_item.summary} To blocker target-aware decyzji, nie awaria "
+            f"{brief_item.summary} To blokada decyzji zależnych od celu, nie awaria "
             "Google Ads ani brak live campaign facts."
         )
     if item.id == "plan_review_ads_campaign_metrics" and brief_item is not None:

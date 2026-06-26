@@ -314,6 +314,78 @@ FORBIDDEN_PHRASES = (
         "Use Nie wolno twierdzić / Nie wolno obiecać.",
     ),
     ForbiddenPhrase(
+        "key event",
+        "Use zdarzenie kluczowe in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "landing page",
+        "Use strona wejścia in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "landing pages",
+        "Use strony wejścia in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "landingów",
+        "Use stron wejścia in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "source/medium",
+        "Use źródło i medium ruchu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "source / medium",
+        "Use źródło i medium ruchu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "message match",
+        "Use dopasowanie komunikatu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "impact metrics",
+        "Use metryki wpływu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "match type",
+        "Use typ dopasowania in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "N-gram:",
+        "Use Temat in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "Canonical:",
+        "Use Kontrola URL-a kanonicznego in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "Engagement rate",
+        "Use współczynnik zaangażowania in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "Target ROAS",
+        "Use docelowy zwrot z reklam in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "target ROAS",
+        "Use docelowy zwrot z reklam in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "Target CPA",
+        "Use docelowy koszt pozyskania celu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "target CPA",
+        "Use docelowy koszt pozyskania celu in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "wzrost performance",
+        "Use wzrost skuteczności in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "werdykt performance",
+        "Use werdykt skuteczności in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
         "revenue albo lead uplift",
         "Use plain Polish: przychód / wzrost leadów, and only as blocked claims.",
     ),

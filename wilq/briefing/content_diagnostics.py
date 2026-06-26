@@ -580,7 +580,7 @@ def _content_marketer_why(decision: ContentDecisionItem) -> str:
         )
     if decision.decision_type == "block_as_tracking_not_content":
         return (
-            "Braki w wymiarach GA4 mogą fałszować ocenę landing page, więc najpierw "
+            "Braki w wymiarach GA4 mogą fałszować ocenę strony wejścia, więc najpierw "
             "trzeba poprawić pomiar."
         )
     if decision.decision_type == "review_ahrefs_gap_records":

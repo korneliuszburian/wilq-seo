@@ -135,7 +135,7 @@ def _reason(gaps: Sequence[str]) -> str:
             "wnioski o konwersjach i jakości kampanii do czasu sprawdzenia pomiaru."
         )
     return (
-        "Lista sprawdzenia jakości landing page, źródła i kampanii w WILQ. To pozwala "
+        "Lista sprawdzenia jakości strony wejścia, źródła ruchu i kampanii w WILQ. To pozwala "
         "sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic zwrotu z reklam ani przychodu."
     )
 

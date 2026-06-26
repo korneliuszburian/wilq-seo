@@ -15,9 +15,9 @@ export const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> =
   content_create: "nowa treść",
   content_merge: "scalenie treści",
   content_block: "blokada treści",
-  landing_page_quality: "jakość landing page",
+  landing_page_quality: "jakość strony wejścia",
   tracking_gap: "problem pomiaru",
-  merchant_feed_triage: "triage feedu",
+  merchant_feed_triage: "kolejność oceny feedu",
   traffic_quality_review: "jakość ruchu"
 };
 

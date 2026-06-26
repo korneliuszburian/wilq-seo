@@ -161,8 +161,8 @@ ADS_REVIEW_GATE_LABELS = {
     "configure_profit_margin_or_value_model": "uzupełnienie marży albo modelu wartości",
     "review_human_budget_goal": "sprawdzenie celu budżetu",
     "configure_human_budget_goal": "uzupełnienie celu budżetu",
-    "confirm_target_roas_or_cpa": "potwierdzenie targetu ROAS albo CPA",
-    "review_target_fit": "sprawdzenie dopasowania do targetu",
+    "confirm_target_roas_or_cpa": "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
+    "review_target_fit": "sprawdzenie dopasowania do celu",
     "review_campaign_goal": "sprawdzenie celu kampanii",
     "review_conversion_quality": "sprawdzenie jakości konwersji",
     "review_budget_context": "sprawdzenie kontekstu budżetu",
@@ -1229,8 +1229,8 @@ def _business_context_section(
         summary=business_context_read_contract.summary,
         diagnosis=(
             "WILQ oddziela wyliczone KPI od decyzji biznesowej. Marża, cel biznesowy, "
-            "cel budżetu i target ROAS/CPA są kontraktem operatora, nie danymi z "
-            "Google Ads."
+            "cel budżetu, docelowy zwrot z reklam i docelowy koszt pozyskania celu "
+            "są kontraktem operatora, nie danymi z Google Ads."
         ),
         next_step=business_context_read_contract.next_step,
         source_connectors=business_context_read_contract.source_connectors,
@@ -1468,9 +1468,9 @@ def _business_context_read_contract(
             else "brak",
             "cel biznesowy": business_goal or "brak",
             "cel budżetu": budget_goal or "brak",
-            "target ROAS": target_roas,
-            "target CPA": _format_micros(target_cpa_micros),
-            "target source": "potwierdzony"
+            "docelowy zwrot z reklam": target_roas,
+            "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
+            "źródło celu": "potwierdzone"
             if target_confirmation is not None
             else None,
             "ocena strategii": _strategy_review_label(strategy_review_status),
@@ -1488,24 +1488,26 @@ def _business_context_read_contract(
         if target_missing:
             summary = (
                 "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
-                "biznesowy i cel budżetu. Target ROAS/CPA jest celowo pusty, więc "
-                "KPI targetowe pozostają bez werdyktu i nie odblokowują skalowania "
+                "biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania "
+                "celu jest celowo pusty, więc "
+                "KPI względem celu pozostają bez werdyktu i nie odblokowują skalowania "
                 "ani zapisu zmian."
             )
             next_step = (
                 "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
-                "operator potwierdzi target ROAS albo CPA przez sprawdzoną akcję, WILQ "
-                "zapisze go w lokalnym state; do tego czasu target verdict zostaje "
+                "operator potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu "
+                "przez sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu "
+                "werdykt celu zostaje "
                 "zablokowany."
             )
         else:
             summary = (
                 "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
-                "budżetu oraz target ROAS albo CPA. To pozwala interpretować KPI "
-                "ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
+                "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. To pozwala "
+                "interpretować KPI ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
             )
             next_step = (
-                "Użyj potwierdzonego targetu jako kontekstu oceny kampanii i "
+                "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
                 "budżetu. Zapis zmian nadal wymaga akcji sprawdzonej w WILQ, podglądu zmian, "
                 "potwierdzenia i audytu."
             )
@@ -1513,7 +1515,8 @@ def _business_context_read_contract(
         summary = (
             "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego "
             "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
-            "targetu ROAS/CPA. Bez tego KPI są tylko triage, nie werdyktem."
+            "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego KPI są "
+            "tylko wstępnym przeglądem, nie werdyktem."
         )
         next_step = (
             "Uzupełnij nie-sekretne wartości w repo-local .env: "
@@ -1622,7 +1625,7 @@ def _strategy_review_readiness_contract(
     if strategy_review_approved:
         summary = (
             "Ocena strategii Ads przez człowieka jest zatwierdzona do przygotowania. To pozwala "
-            "używać targetu w ocenie, ale nie odblokowuje zapisu zmian ani automatycznej "
+            "używać potwierdzonego celu w ocenie, ale nie odblokowuje zapisu zmian ani automatycznej "
             "optymalizacji."
         )
         next_step = (
@@ -1635,12 +1638,12 @@ def _strategy_review_readiness_contract(
     else:
         summary = (
             "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może "
-            "tylko przygotować kolejki do oceny. Werdykt targetu, werdykt "
+            "tylko przygotować kolejki do oceny. Werdykt celu, werdykt "
             "opłacalności, skalowanie i zapis zmian pozostają zablokowane."
         )
         next_step = (
             "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel "
-            "budżetu i target ROAS/CPA, a potem zapisz wynik oceny."
+            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu, a potem zapisz wynik oceny."
         )
         status = "blocked"
         contract_missing = _unique(
@@ -1745,8 +1748,8 @@ def _business_target_interpretation(
     if target_missing:
         summary = (
             "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
-            "oceny, ale blokuje werdykt target KPI, werdykt profitability i zapis zmian "
-            "do czasu potwierdzenia target ROAS albo CPA."
+            "oceny, ale blokuje werdykt KPI względem celu, ocenę rentowności i zapis zmian "
+            "do czasu potwierdzenia docelowego zwrotu z reklam albo kosztu pozyskania celu."
         )
         blocked_uses = [
             "target_kpi_verdict",
@@ -1758,9 +1761,9 @@ def _business_target_interpretation(
         interpretation_status: Literal["ready", "preliminary", "blocked"] = "preliminary"
     elif not strategy_review_approved:
         summary = (
-            "WILQ ma potwierdzony target ROAS albo CPA, ale blokuje target KPI "
-            "verdict i zapis zmian, dopóki ocena strategii przez człowieka nie będzie "
-            "zatwierdzona."
+            "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu, "
+            "ale blokuje werdykt KPI względem celu i zapis zmian, dopóki ocena strategii "
+            "przez człowieka nie będzie zatwierdzona."
         )
         blocked_uses = [
             "target_kpi_verdict",
@@ -1776,8 +1779,8 @@ def _business_target_interpretation(
             allowed_uses.append("target_cpa_review_context")
     else:
         summary = (
-            "WILQ ma potwierdzony target ROAS albo CPA i może porównywać KPI do "
-            "targetu po zatwierdzeniu przez człowieka. Zapis zmian nadal wymaga "
+            "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
+            "i może porównywać KPI do celu po zatwierdzeniu przez człowieka. Zapis zmian nadal wymaga "
             "akcji sprawdzonej w WILQ, podglądu, potwierdzenia i audytu."
         )
         blocked_uses = [
@@ -2074,9 +2077,9 @@ def _derived_kpi_read_contract(
             1 for row in kpi_rows if row.target_status == "spend_without_conversions"
         )
         target_summary = (
-            f" Porównanie z targetem dostępne dla {rows_with_target_context} kampanii."
-            f" Triage targetu: w targetcie {rows_within_target},"
-            f" poza targetem {rows_outside_target}, koszt bez konwersji"
+            f" Porównanie z celem dostępne dla {rows_with_target_context} kampanii."
+            f" Wstępny przegląd celu: w celu {rows_within_target},"
+            f" poza celem {rows_outside_target}, koszt bez konwersji"
             f" {rows_with_spend_without_conversions}."
             if rows_with_target_context
             else ""
@@ -2111,7 +2114,7 @@ def _derived_kpi_read_contract(
             ),
             kpi_rows=kpi_rows,
             next_step=(
-                "Użyj KPI i ewentualnego porównania z targetem do triage kampanii. "
+                "Użyj KPI i ewentualnego porównania z celem do ustalenia kolejności oceny kampanii. "
                 "Przed decyzją budżetową sprawdź marżę, pacing budżetu, historię "
                 "zmian i rekomendacje."
             ),
@@ -2196,8 +2199,8 @@ def _target_triage(
     if target_cpa_micros is not None:
         if cost_per_conversion_micros is not None:
             if cost_per_conversion_micros <= target_cpa_micros:
-                return "within_target", "CPA w targetcie", 40
-            return "outside_target", "CPA powyżej targetu", 20
+                return "within_target", "koszt pozyskania celu w granicy celu", 40
+            return "outside_target", "koszt pozyskania celu powyżej celu", 20
         if (row.cost_micros or 0) > 0 and not row.conversions:
             return "spend_without_conversions", "koszt bez konwersji", 15
         return "insufficient_data", "brak CPA do porównania", 70
@@ -2205,13 +2208,13 @@ def _target_triage(
     if target_roas is not None:
         if roas is not None:
             if roas >= target_roas:
-                return "within_target", "ROAS w targetcie", 40
-            return "outside_target", "ROAS poniżej targetu", 20
+                return "within_target", "zwrot z reklam w granicy celu", 40
+            return "outside_target", "zwrot z reklam poniżej celu", 20
         if (row.cost_micros or 0) > 0 and not row.conversion_value:
             return "spend_without_conversions", "koszt bez wartości konwersji", 15
         return "insufficient_data", "brak ROAS do porównania", 70
 
-    return "no_target", "brak targetu", 90
+    return "no_target", "brak celu", 90
 
 
 def _budget_pacing_section(
@@ -3804,7 +3807,7 @@ def _keyword_match_context_read_contract(
             title="Google Ads: kontekst dopasowań keywords",
             summary=(
                 f"WILQ ma kontekst {len(rows)} istniejących keywordów "
-                f"z match types: {', '.join(match_types) if match_types else 'brak rows'}."
+                f"z typami dopasowań: {', '.join(match_types) if match_types else 'brak wierszy'}."
             ),
             allowed_metrics=[
                 "keyword_text",
@@ -3825,7 +3828,7 @@ def _keyword_match_context_read_contract(
             context_rows=rows,
             next_step=(
                 "Użyj tego jako kontekstu review: sprawdź, które istniejące "
-                "keywords i match types mogły wywołać search term. Nie traktuj "
+                "słowa kluczowe i typy dopasowań mogły wywołać wyszukiwane hasło. Nie traktuj "
                 "tego jako zgody na dodanie wykluczających słów kluczowych."
             ),
         )
@@ -4093,8 +4096,8 @@ def _keyword_match_context_section(
         status=keyword_match_context_read_contract.status,
         summary=keyword_match_context_read_contract.summary,
         diagnosis=(
-            "Ten kontrakt pokazuje istniejące keywords i match types w Google Ads. "
-            "Pomaga zrozumieć, skąd mógł przyjść search term, ale nie jest zgodą "
+            "Ten kontrakt pokazuje istniejące słowa kluczowe i typy dopasowań w Google Ads. "
+            "Pomaga zrozumieć, skąd mogło przyjść wyszukiwane hasło, ale nie jest zgodą "
             "na dodanie wykluczenia."
         ),
         next_step=keyword_match_context_read_contract.next_step,
@@ -4776,7 +4779,7 @@ def _custom_segments_section(
         diagnosis=(
             "WILQ może przygotować akcji do sprawdzenia segmentów tylko z realnych "
             "haseł źródłowych. Wzbogacenie Keyword Planner jest dodatkowym kontekstem, "
-            "ale rozmiar odbiorców i performance pozostają zablokowane bez osobnych "
+            "ale rozmiar odbiorców i skuteczność pozostają zablokowane bez osobnych "
             "kontraktów."
         ),
         next_step=custom_segments_read_contract.next_step,
@@ -5005,7 +5008,7 @@ def _negative_keyword_candidates(
                 validation_status="pending_validation",
                 blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
                 next_step=(
-                    "Sprawdź intencję terminu, istniejące keywords/match types i "
+                    "Sprawdź intencję terminu, istniejące słowa kluczowe, typy dopasowań i "
                     "90-dniową historię przed jakimkolwiek wykluczeniem."
                 ),
             )
@@ -5351,7 +5354,7 @@ def _ads_decision_queue(
             rationale=(
                 "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI. "
                 "WILQ używa lokalnego typed contractu z marżą, celem biznesowym, "
-                "celem budżetu oraz targetem ROAS/CPA jako kontekstu review, ale "
+                "celem budżetu oraz docelowym zwrotem z reklam albo kosztem pozyskania celu jako kontekstu oceny, ale "
                 "nadal blokuje zapis zmian i twarde werdykty bez pełnych kontraktów "
                 "pacingu, historii zmian, rekomendacji i audytu."
                 if business_context_read_contract.status == "ready"
@@ -6096,9 +6099,9 @@ def _ads_decision_metric_tiles(
             if row.target_status == "spend_without_conversions"
         )
         if rows_within_target:
-            tiles["w targetcie"] = rows_within_target
+            tiles["w celu"] = rows_within_target
         if rows_outside_target:
-            tiles["poza targetem"] = rows_outside_target
+            tiles["poza celem"] = rows_outside_target
         if rows_with_spend_without_conversions:
             tiles["koszt bez konw."] = rows_with_spend_without_conversions
         return _clean_metric_tiles(tiles)

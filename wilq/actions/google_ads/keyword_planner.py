@@ -26,10 +26,10 @@ def keyword_planner_access_payload(blocker: str) -> dict[str, Any]:
             "keyword_planner_generate_ideas_allowed",
         ],
         "helper_steps": [
-            "Sprawdź status Google Ads API developer token w Google Ads API Center.",
+            "Sprawdź status tokena deweloperskiego Google Ads API w Google Ads API Center.",
             (
                 "Jeśli token jest w Basic Access albo niezatwierdzony, przejdź proces "
-                "akceptacji Google przed forecast/enrichment workflow."
+                "akceptacji Google przed procesem prognozy i wzbogacania."
             ),
             (
                 "Po zmianie statusu wykonaj ponowny odczyt danych Google Ads przez WILQ CLI "

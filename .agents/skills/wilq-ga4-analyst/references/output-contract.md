@@ -35,7 +35,7 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
-- `ga4_diagnostics.live_data_available=false`, a użytkownik prosi o jakość landingów, conversion readiness, tracking gap, jakość kampanii albo behavior recommendations.
+- `ga4_diagnostics.live_data_available=false`, a użytkownik prosi o jakość stron wejścia, gotowość konwersji, brak pomiaru, jakość kampanii albo rekomendacje zachowania.
 - Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
 
 ## Reguły evidence
@@ -49,5 +49,5 @@ Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak r
 Reguły `decision_queue`:
 
 - `fix_measurement` oznacza najpierw przegląd trackingu/raportowania; nie zamieniaj tego w rekomendację contentową ani kampanijną.
-- `review_landing_mapping` oznacza, że trzeba potwierdzić mapowanie URL/WordPress przed oceną landing page.
+- `review_landing_mapping` oznacza, że trzeba potwierdzić mapowanie URL/WordPress przed oceną strony wejścia.
 - `review_traffic_quality` oznacza, że dowody mogą wspierać przegląd jakości ruchu i dopasowania komunikatu, ale nie obietnice zwrotu z reklam, przychodu ani opłacalności.

@@ -121,8 +121,8 @@ def ads_target_confirmation_payload(
         "missing_read_contracts": list(missing_read_contracts),
         "helper_commands": [
             (
-                "Ustal z operatorem czy guardrail Ads ma być target ROAS "
-                "czy target CPA."
+                "Ustal z operatorem czy zasada bezpieczeństwa Ads ma być "
+                "docelowym zwrotem z reklam czy docelowym kosztem pozyskania celu."
             ),
             (
                 "Potwierdź target przez potwierdzenie akcji albo ustaw repo-local "
@@ -367,7 +367,10 @@ def validate_ads_target_confirmation_payload(payload: dict[str, Any]) -> list[st
     elif set(target_env_options.get("target_roas_or_cpa", [])) != set(
         ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS
     ):
-        errors.append("confirm_ads_target_guardrails requires target ROAS/CPA env options.")
+        errors.append(
+            "confirm_ads_target_guardrails requires WILQ_ADS_TARGET_ROAS or "
+            "WILQ_ADS_TARGET_CPA_MICROS env options."
+        )
     missing_read_contracts = payload.get("missing_read_contracts")
     if (
         not isinstance(missing_read_contracts, list)

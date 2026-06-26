@@ -47,7 +47,7 @@ export function DemandGenDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii
             Ads i GA4 od prawdziwych kontraktów Demand Gen: assetów, kreacji,
-            jakości landingów per kampania, ograniczeń przejścia i akcji do sprawdzenia.
+            jakości stron wejścia według kampanii, ograniczeń przejścia i akcji do sprawdzenia.
           </p>
         </div>
         {metricTileEntries.length > 0 ? (
@@ -206,7 +206,7 @@ export function DemandGenDiagnosticSurface() {
                 className="rounded-md border border-line bg-white p-3"
               >
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Odczyt jakości landingów
+                  Odczyt jakości stron wejścia
                 </div>
                 <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -321,13 +321,13 @@ function demandGenContractLabel(contract: string) {
     demand_gen_ad_group_ad_rows: "wiersze reklam Demand Gen",
     demand_gen_campaign_rows: "wiersze kampanii Demand Gen/Discovery",
     demand_gen_creative_asset_rows: "wiersze assetów kreacji",
-    demand_gen_landing_quality_by_campaign: "jakość landingów per kampania",
+    demand_gen_landing_quality_by_campaign: "jakość stron wejścia według kampanii",
     demand_gen_transition_constraints: "ograniczenia przejścia",
     demand_gen_readiness_review_action_object: "akcja do sprawdzenia",
     demand_gen_specific_evidence_required: "wymagane konkretne evidence Demand Gen",
     already_demand_gen_review_only: "już Demand Gen, bez zapisu zmian",
     discovery_to_demand_gen_requires_human_review: "Discovery wymaga ręcznego sprawdzenia",
-    ga4_landing_source_campaign_quality: "GA4 landing page, źródło i kampania quality",
+    ga4_landing_source_campaign_quality: "jakość GA4: strona wejścia, źródło ruchu i kampania",
     google_ads_budget_context: "kontekst budżetowy Google Ads",
     google_ads_campaign_activity: "aktywność kampanii Google Ads",
     google_ads_impression_share_context: "udział w wyświetleniach Google Ads",
@@ -335,19 +335,19 @@ function demandGenContractLabel(contract: string) {
     human_strategy_review: "sprawdzenie strategii przez człowieka",
     review_ads_campaign_channel_context: "sprawdzenie kanałów kampanii Ads",
     review_demand_gen_missing_contracts: "sprawdzenie brakujących kontraktów Demand Gen",
-    review_ga4_landing_source_campaign_context: "sprawdzenie GA4 landing page, źródło i kampania"
+    review_ga4_landing_source_campaign_context: "sprawdzenie GA4: strona wejścia, źródło ruchu i kampania"
   };
   return labels[contract] ?? contract;
 }
 
 function demandGenBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "asset performance verdict": "werdykt performance assetów",
+    "asset performance verdict": "werdykt skuteczności assetów",
     "zapis kampanii": "zapis kampanii",
     "creative quality verdict": "werdykt jakości kreacji",
     "Demand Gen launch recommendation": "rekomendacja launchu Demand Gen",
     "Demand Gen transition ready": "gotowość przejścia Demand Gen",
-    "performance uplift": "wzrost performance"
+    "performance uplift": "wzrost skuteczności"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

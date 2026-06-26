@@ -18,7 +18,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 <triggers>
 
 - "Czy Demand Gen ma sens dla Ekologus na podstawie obecnych danych?"
-- "Sprawdź jakość ruchu z kampanii i dopasowanie landingów."
+- "Sprawdź jakość ruchu z kampanii i dopasowanie stron wejścia."
 - "Przygotuj brief gotowości przejścia bez zapisu zmian."
 - "Jakie assets/kreacje wymagają poprawy według evidence?"
 

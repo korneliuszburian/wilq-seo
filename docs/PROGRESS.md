@@ -9,7 +9,7 @@ Active goal: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-06-26
+Date: 2026-06-27
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -44,8 +44,11 @@ Date: 2026-06-26
   action review-gate condensation, Ads context condensation, secondary route
   condensation, Knowledge, Workflows and Settings have runtime or browser proof
   from the current cleanup goal.
-- The latest live API context confirmed WILQ API reachability and connector
-  summary `total=12`, `configured=9`, `missing_credentials=2`.
+- The latest live API context in committed proof confirmed WILQ API reachability
+  and connector summary `total=12`, `configured=9`, `missing_credentials=2`.
+  Current session note: WILQ API is unreachable, so the latest language-cleanup
+  slice used static guards and focused tests only; do not claim fresh live API or
+  browser proof for that slice.
 - The current cleanup slice focuses on marketer-facing language, action safety
   wording, stale dev-preview strategy removal and full condensation of active
   operator surfaces.
@@ -56,6 +59,10 @@ Date: 2026-06-26
   derived from current content diagnostics. It answers preserve/refresh/merge/
   create/block before any future sales brief or draft work; draft and WordPress
   draft remain blocked in this slice.
+- Ads/GA4/Demand Gen action and route copy now removes active marketer-facing
+  Polglish such as `landing page`, `source/medium`, `message match`, `impact
+  metrics`, `Target ROAS/CPA`, `developer token` and `target verdict`. The guard
+  now blocks those phrases in active source and skill/eval contracts.
 
 ## Latest Proof Pointers
 
@@ -118,6 +125,13 @@ Date: 2026-06-26
   `.local-lab/proof/20260626-action-review-gate-safety-language-cleanup/summary.json`.
 - Content WordPress status language cleanup:
   `.local-lab/proof/20260626-content-wordpress-status-language-cleanup/summary.json`.
+- Ads/GA4 marketer-language cleanup without live API/browser proof in current
+  session:
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk uv run python -m py_compile wilq/briefing/ads_diagnostics.py wilq/briefing/ga4_diagnostics.py wilq/briefing/command_center.py wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/briefing/marketing_brief.py wilq/actions/service.py wilq/actions/google_ads/business_context.py wilq/actions/google_ads/campaign_triage.py wilq/actions/google_ads/demand_gen.py wilq/actions/google_ads/keyword_planner.py wilq/actions/ga4/tracking_quality.py scripts/marketer_language_guard.py`
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4 or ads_business_context or keyword_match" --maxfail=1`
+  - `rtk pnpm --dir apps/dashboard test src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  - `rtk pnpm --dir apps/dashboard typecheck`
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.
 - Generic surface registry fallback removal:

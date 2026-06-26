@@ -2600,7 +2600,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "human_strategy_review",
     ]
     assert "wstępny lokalny kontekst" in business_context_contract["summary"]
-    assert "target verdict zostaje zablokowany" in business_context_contract["next_step"]
+    assert "werdykt celu zostaje zablokowany" in business_context_contract["next_step"]
 
     business_context_section = next(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
@@ -2646,7 +2646,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     action_response = client.get(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}")
     assert action_response.status_code == 200
     action = action_response.json()
-    assert action["title"] == "Potwierdź target ROAS albo CPA dla Ads"
+    assert action["title"] == "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads"
     assert action["mode"] == "prepare"
     assert action["payload"]["action_type"] == "confirm_ads_target_guardrails"
     assert action["payload"]["mode"] == "prepare_only"
@@ -12412,7 +12412,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     ]
     assert "content_candidate" in zielony_lad_candidate["business_relevance_reasons"]
     assert zielony_lad_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
-    assert "Overlap: GSC: zielony ład" in zielony_lad_candidate["next_step"]
+    assert "Wspólne sygnały: GSC: zielony ład" in zielony_lad_candidate["next_step"]
     assert "branża.example" not in json.dumps(ahrefs_decision["ahrefs_candidate_rows"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]

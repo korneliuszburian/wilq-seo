@@ -47,7 +47,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok analityki zachowania i konwersji oparty o WILQ MarketingBrief. Pokazuje tylko metryki GA4 z dowodami.",
     focusTitle: "Jakość ruchu GA4",
     emptyMessage:
-      "Brak dowodów GA4 w /api/marketing/brief. Uruchom odczyt GA4, zanim WILQ oceni landing pages albo jakość ruchu.",
+      "Brak dowodów GA4 w /api/marketing/brief. Uruchom odczyt GA4, zanim WILQ oceni strony wejścia albo jakość ruchu.",
     safetyTitle: "Brama bezpieczeństwa GA4",
     safetyText:
       "GA4 służy do diagnozy jakości ruchu i problemów pomiaru. WILQ nie traktuje braku danych jako spadku marketingowego bez evidence.",

@@ -439,7 +439,7 @@
     "skill": "wilq-ga4-analyst",
     "surface_path": "/ga4",
     "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, akcję do sprawdzenia oraz twierdzenia, których nie wolno mówić.",
-    "messy_task_pl": "Czy te landing pages są słabe, czy tracking jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
+    "messy_task_pl": "Czy te strony wejścia są słabe, czy pomiar jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
     "expected_connectors": ["google_analytics_4"],
     "expected_terms_pl": [
       "GA4",

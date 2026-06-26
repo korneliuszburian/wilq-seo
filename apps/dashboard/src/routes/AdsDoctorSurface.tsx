@@ -881,7 +881,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Wspólne budżety" value={sharedBudgetRows.length} />
           <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Udział" value={impressionShareRows.length} />
-          <MetricTile label="Triage" value={campaignTriageRows.length} />
+          <MetricTile label="Kolejka oceny" value={campaignTriageRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
           <MetricTile label="Ocena zapytań" value={searchTermReview.total_search_term_count} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
@@ -1043,11 +1043,11 @@ function AdsBusinessTargetInterpretationPanel({
             value={adsStrategyContextValue(strategyReadiness.current_context.profit_margin)}
           />
           <MetricTile
-            label="Target ROAS"
+            label="Docelowy zwrot z reklam"
             value={adsStrategyContextValue(strategyReadiness.current_context.target_roas)}
           />
           <MetricTile
-            label="Target CPA"
+            label="Docelowy koszt pozyskania celu"
             value={adsStrategyContextValue(strategyReadiness.current_context.target_cpa_micros)}
           />
           <MetricTile label="Braki" value={strategyReadiness.missing_read_contracts.length} />
@@ -1272,12 +1272,12 @@ function AdsDerivedKpiRowsTable({
             <th className="py-2 pr-4 font-semibold">Śr. CPC</th>
             <th className="py-2 pr-4 font-semibold">Conv. rate</th>
             <th className="py-2 pr-4 font-semibold">CPA</th>
-            <th className="py-2 pr-4 font-semibold">Target CPA</th>
+            <th className="py-2 pr-4 font-semibold">Docelowy koszt pozyskania celu</th>
             <th className="py-2 pr-4 font-semibold">Różnica CPA</th>
             <th className="py-2 pr-4 font-semibold">ROAS</th>
-            <th className="py-2 pr-4 font-semibold">Target ROAS</th>
+            <th className="py-2 pr-4 font-semibold">Docelowy zwrot z reklam</th>
             <th className="py-2 pr-4 font-semibold">Różnica ROAS</th>
-            <th className="py-2 pr-4 font-semibold">Triage</th>
+            <th className="py-2 pr-4 font-semibold">Ocena</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -1673,7 +1673,7 @@ function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }
 function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak wierszy historii zmian. WILQ nie może łączyć performance ze zmianami kampanii bez change_event facts." />
+      <BlockerNotice message="Brak wierszy historii zmian. WILQ nie może łączyć skuteczności ze zmianami kampanii bez faktów change_event." />
     );
   }
   return (
@@ -2441,7 +2441,7 @@ function adsDecisionSummary(decision: AdsDecisionItem) {
     review_budget_context:
       "WILQ pokazuje koszt kampanii względem budżetu dziennego i ostatnich 7 dni. To jest kontekst do oceny, nie decyzja o skalowaniu.",
     review_business_context:
-      "WILQ ma wstępny lokalny kontekst biznesowy: marżę, cel biznesowy i cel budżetu. Target ROAS albo CPA wymaga osobnego potwierdzenia.",
+      "WILQ ma wstępny lokalny kontekst biznesowy: marżę, cel biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania celu wymaga osobnego potwierdzenia.",
     review_campaign_activity:
       "WILQ pokazuje aktywność kampanii: kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji.",
     review_campaign_triage:
@@ -2464,7 +2464,7 @@ function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
     return `${decision.campaign_rows.length} kampanii z odczytem aktywności. Koszt w tej karcie: ${cost}.`;
   }
   if (decision.decision_type === "review_business_context") {
-    return "Najpierw potwierdź marżę, cel biznesowy i target CPA/ROAS, zanim ktokolwiek nazwie wynik opłacalnym.";
+    return "Najpierw potwierdź marżę, cel biznesowy, docelowy koszt pozyskania celu i docelowy zwrot z reklam, zanim ktokolwiek nazwie wynik opłacalnym.";
   }
   if (decision.decision_type === "review_derived_kpi") {
     return `${decision.derived_kpi_rows.length} wierszy KPI do oceny. To nadal sygnał do sprawdzenia, nie werdykt CPA/ROAS.`;
@@ -2505,13 +2505,13 @@ function adsDecisionNextStep(decision: AdsDecisionItem) {
     review_budget_context:
       "Użyj tego jako kontekstu przy ocenie kampanii. Nie skaluj budżetu bez sprawdzenia w WILQ.",
     review_business_context:
-      "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Target ROAS albo CPA zapisz dopiero po sprawdzeniu i zatwierdzeniu w WILQ.",
+      "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Docelowy zwrot z reklam albo koszt pozyskania celu zapisz dopiero po sprawdzeniu i zatwierdzeniu w WILQ.",
     review_campaign_activity:
       "Sprawdź kampanie z największym kosztem i ruchem. Decyzje budżetowe zostają za bramką sprawdzenia.",
     review_campaign_triage:
       "Przejrzyj kampanie od góry kolejki: cel, jakość konwersji, budżet, wyszukiwane hasła i rekomendacje.",
     review_derived_kpi:
-      "Użyj KPI jako sygnału do triage. Przed decyzją sprawdź marżę, tempo budżetu, historię zmian i rekomendacje.",
+      "Użyj KPI jako sygnału do kolejności oceny. Przed decyzją sprawdź marżę, tempo budżetu, historię zmian i rekomendacje.",
     review_search_terms:
       "Zacznij od haseł z największym kosztem. Wykluczenia przygotuj tylko po ocenie intencji, historii 90 dni i sprawdzenia w WILQ."
   };
@@ -2612,11 +2612,11 @@ function adsBusinessUseLabel(value: string) {
     human_strategy_review_context: "kontekst strategii człowieka",
     margin_context: "kontekst marży",
     business_goal_alignment: "dopasowanie do celu biznesowego",
-    budget_goal_guardrail: "guardrail celu budżetu",
-    target_roas_review: "ocena target ROAS",
-    target_cpa_review: "ocena target CPA",
+    budget_goal_guardrail: "zasada bezpieczeństwa celu budżetu",
+    target_roas_review: "ocena docelowego zwrotu z reklam",
+    target_cpa_review: "ocena docelowego kosztu pozyskania celu",
     profitability_verdict: "ocena rentowności",
-    target_kpi_verdict: "ocena KPI targetu",
+    target_kpi_verdict: "ocena KPI względem celu",
     budget_scaling: "skalowanie budżetu",
     budget_apply: "zmiana budżetu",
     recommendation_apply: "zapis rekomendacji",
@@ -2639,8 +2639,8 @@ function adsAllowedMetricLabel(value: string) {
     profit_margin: "marża",
     business_goal: "cel biznesowy",
     human_budget_goal: "cel budżetu",
-    target_roas: "target ROAS",
-    target_cpa_micros: "target CPA",
+    target_roas: "docelowy zwrot z reklam",
+    target_cpa_micros: "docelowy koszt pozyskania celu",
     budget_amount_micros: "budżet",
     cost_micros_7d: "koszt 7 dni",
     seven_day_budget_micros: "budżet 7 dni",

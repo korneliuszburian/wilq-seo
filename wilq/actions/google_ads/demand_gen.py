@@ -82,7 +82,7 @@ def demand_gen_readiness_review_payload(
             "Podgląd gotowości Demand Gen do sprawdzenia w WILQ. WILQ może pokazać "
             "kontekst kanałów kampanii Ads i GA4, ale nadal blokuje uruchomienie, "
             "przejście kampanii, werdykty kreatywne i zapis zmian bez osobnych "
-            "odczytów assetów, kreacji, jakości landingów i ograniczeń przejścia."
+            "odczytów assetów, kreacji, jakości stron wejścia i ograniczeń przejścia."
         ),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
         "blocked_claims": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,

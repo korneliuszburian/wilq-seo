@@ -170,7 +170,7 @@ def _operator_summary(
     return Ga4OperatorSummary(
         title="Co marketer ma sprawdzić teraz w jakości ruchu",
         summary=(
-            "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. "
+            "WILQ pokazuje grupy ruchu do kontroli stron wejścia, źródeł ruchu i kampanii. "
             f"{conversion_note}"
             f"{freshness_note}"
         ),
@@ -216,7 +216,7 @@ def _operator_summary(
 def _operator_conversion_note(contract: Ga4ConversionReadinessContract) -> str:
     if contract.status == "ready":
         return (
-            "WILQ ma metryki konwersji/key events w evidence, ale ROAS, "
+            "WILQ ma metryki konwersji i zdarzeń kluczowych w dowodach, ale ROAS, "
             "profitability, spadek konwersji i wina kampanii nadal wymagają "
             "osobnych dowodów oraz kontekstu kosztów, historii i atrybucji."
         )
@@ -256,7 +256,7 @@ def _ga4_freshness_assessment(
                     ),
                     next_step=(
                         "Uruchom odczyt danych GA4, jeśli pytanie dotyczy "
-                        "aktualnego stanu landingów, źródeł albo kampanii."
+                        "aktualnego stanu stron wejścia, źródeł ruchu albo kampanii."
                     ),
                 )
             return Ga4FreshnessAssessment(
@@ -320,7 +320,7 @@ def _ga4_freshness_assessment(
             ),
             next_step=(
                 "Uruchom odczyt danych GA4, jeśli pytanie dotyczy aktualnego "
-                "stanu landingów, źródeł albo kampanii."
+                "stanu stron wejścia, źródeł ruchu albo kampanii."
             ),
         )
 
@@ -353,36 +353,36 @@ def _landing_behavior_section(
     if not dimensioned_facts and not tactical_items:
         return Ga4DiagnosticSection(
             id="ga4_landing_behavior",
-            title="GA4: brak zestawienie landing page, źródła i kampanii",
+            title="GA4: brak zestawienia strony wejścia, źródła ruchu i kampanii",
             status="blocked",
             summary=_ga4_blocker_reason(latest_refresh),
             diagnosis=(
-                "WILQ nie ma metryk GA4 z landing page, źródłem i kampanią, "
-                "więc nie może ocenić jakości landingów ani kampanii bez zmyślania."
+                "WILQ nie ma metryk GA4 ze stroną wejścia, źródłem ruchu i kampanią, "
+                "więc nie może ocenić jakości stron wejścia ani kampanii bez zmyślania."
             ),
-            next_step="Uruchom odczyt GA4 i zbierz metryki landingów, źródeł i kampanii.",
+            next_step="Uruchom odczyt GA4 i zbierz metryki stron wejścia, źródeł ruchu i kampanii.",
             source_connectors=[GA4_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["landing page quality", "campaign quality", "message match"],
+            blocked_claims=["jakość strony wejścia", "jakość kampanii", "dopasowanie komunikatu"],
             risk=ActionRisk.medium,
         )
     if not dimensioned_facts:
         return Ga4DiagnosticSection(
             id="ga4_landing_behavior",
-            title="GA4: jakość ruchu z landingów",
+            title="GA4: jakość ruchu ze stron wejścia",
             status="ready",
             summary=(
                 f"WILQ ma {_tactical_landing_group_count(tactical_items)} "
-                "grup ruchu landing/źródło/kampania. Pełne metryki są "
+                "grup ruchu strona wejścia/źródło/kampania. Pełne metryki są "
                 "dostępne w kolejce decyzji GA4."
             ),
             diagnosis=(
-                "GA4 pozwala wskazać landing page do kontroli jakości "
+                "GA4 pozwala wskazać stronę wejścia do kontroli jakości "
                 "ruchu. To nadal nie jest dowód konwersji, ROAS ani opłacalności."
             ),
             next_step=(
-                "Sprawdź landing, źródło i kampanię w kolejce decyzji oraz oddziel "
+                "Sprawdź stronę wejścia, źródło ruchu i kampanię w kolejce decyzji oraz oddziel "
                 "problem pomiaru od problemu strony."
             ),
             source_connectors=[GA4_CONNECTOR_ID],
@@ -397,19 +397,19 @@ def _landing_behavior_section(
         )
     return Ga4DiagnosticSection(
         id="ga4_landing_behavior",
-        title="GA4: jakość ruchu z landingów",
+        title="GA4: jakość ruchu ze stron wejścia",
         status="ready",
         summary=(
             f"WILQ ma {_landing_group_count(dimensioned_facts)} grup ruchu "
-            f"landing/źródło/kampania i {len(dimensioned_facts)} metryk GA4."
+            f"strona wejścia/źródło/kampania i {len(dimensioned_facts)} metryk GA4."
         ),
         diagnosis=(
-            "GA4 behavior facts pozwalają wskazać landing pages do kontroli jakości ruchu. "
+            "Fakty zachowania z GA4 pozwalają wskazać strony wejścia do kontroli jakości ruchu. "
             "To nadal nie jest dowód konwersji, ROAS ani opłacalności."
         ),
         next_step=(
-            "Najpierw sprawdź grupy z niskim engagement i dopiero potem oceniaj "
-            "message match."
+            "Najpierw sprawdź grupy z niskim zaangażowaniem i dopiero potem oceniaj "
+            "dopasowanie komunikatu."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_unique(
@@ -457,7 +457,7 @@ def _tracking_readiness_section(
         status="ready" if conversion_like_facts else "missing",
         summary=(
             f"WILQ ma {len(dimensioned_facts)} metryk zachowania, "
-            f"{tactical_group_count} grup landingów i "
+            f"{tactical_group_count} grup stron wejścia i "
             f"{len(conversion_like_facts)} metryk konwersji albo kluczowych zdarzeń."
         ),
         diagnosis=(
@@ -508,11 +508,11 @@ def _conversion_readiness_contract(
     )
     return Ga4ConversionReadinessContract(
         status=status,
-        title="GA4: kontrakt konwersji i key events",
+        title="GA4: kontrakt konwersji i zdarzeń kluczowych",
         summary=(
             "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, "
             "zwrotu z reklam, przychodu i opłacalności wymagają osobnych metryk konwersji "
-            "albo key events."
+            "albo zdarzeń kluczowych."
         ),
         allowed_metrics=sorted(GA4_CONVERSION_METRIC_NAMES),
         available_read_contracts=(
@@ -530,7 +530,7 @@ def _conversion_readiness_contract(
         blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
         next_step=(
             "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie "
-            "konwersji/key events przed wnioskami o opłacalności."
+            "konwersji i zdarzeń kluczowych przed wnioskami o opłacalności."
         ),
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
     )
@@ -548,7 +548,7 @@ def _ga4_action_safety_section(
         status="ready" if facts or tactical_items else "blocked",
         summary="Akcje GA4 pozostają w trybie przygotowania i nie zapisują zmian w pomiarze.",
         diagnosis=(
-            "WILQ może przygotować checklistę jakości pomiaru i review landingów. Nie może "
+            "WILQ może przygotować listę sprawdzenia jakości pomiaru i przegląd stron wejścia. Nie może "
             "zmieniać konfiguracji GA4 ani twierdzić, że naprawił pomiar bez osobnego "
             "kontraktu akcji, sprawdzenia i audytu."
         ),
@@ -583,32 +583,32 @@ def _ga4_decision_queue(
                 "albo atrybucji, nie gotowa rekomendacja marketingowa."
             )
             next_step = (
-                "Sprawdź landing page, source/medium, UTM-y i konfigurację raportu. "
+                "Sprawdź stronę wejścia, źródło i medium ruchu, UTM-y i konfigurację raportu. "
                 "Nie oceniaj kampanii ani strony po tym wierszu."
             )
             risk = ActionRisk.medium
         elif wordpress_match == "missing":
             decision_type = "review_landing_mapping"
-            title = f"Sprawdź mapowanie landing page: {landing_page or 'brak landing page'}"
+            title = f"Sprawdź mapowanie strony wejścia: {landing_page or 'brak strony wejścia'}"
             rationale = (
-                "GA4 widzi ruch, ale inventory WordPress nie potwierdza tej strony. "
+                "GA4 widzi ruch, ale spis treści WordPress nie potwierdza tej strony. "
                 "Najpierw trzeba sprawdzić mapowanie URL, zanim powstanie wniosek o treści."
             )
             next_step = (
-                "Zweryfikuj, czy landing istnieje w WordPress lub sitemap, a potem sprawdź "
-                "message match dla kampanii."
+                "Zweryfikuj, czy strona wejścia istnieje w WordPress lub mapie strony, a potem sprawdź "
+                "dopasowanie komunikatu dla kampanii."
             )
             risk = ActionRisk.medium
         else:
             decision_type = "review_traffic_quality"
-            title = f"Sprawdź jakość ruchu: {landing_page or 'brak landing page'}"
+            title = f"Sprawdź jakość ruchu: {landing_page or 'brak strony wejścia'}"
             rationale = (
-                "GA4 pokazuje ruch dla potwierdzonego landing page. To wystarcza do "
+                "GA4 pokazuje ruch dla potwierdzonej strony wejścia. To wystarcza do "
                 "oceny jakości ruchu i dopasowania komunikatu, ale nie do obietnic konwersji."
             )
             next_step = (
-                "Porównaj landing, źródło i kampanię z intencją strony. Nie oceniaj ROAS "
-                "ani revenue bez osobnych metryk konwersji i kosztów."
+                "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. Nie oceniaj zwrotu z reklam "
+                "ani przychodu bez osobnych metryk konwersji i kosztów."
             )
             risk = ActionRisk.low
         decisions.append(
@@ -688,10 +688,10 @@ def _ga4_decisions_from_dimensioned_facts(
             title = _ga4_measurement_title(landing_page, source_medium)
             rationale = (
                 "GA4 ma wymiar `(not set)`, więc najpierw trzeba sprawdzić pomiar, "
-                "UTM-y i atrybucję zamiast oceniać kampanię lub landing."
+                "UTM-y i atrybucję zamiast oceniać kampanię lub stronę wejścia."
             )
             next_step = (
-                "Zweryfikuj landing page, source/medium i campaign_name w GA4. "
+                "Zweryfikuj stronę wejścia, źródło i medium ruchu oraz nazwę kampanii w GA4. "
                 "Nie oceniaj jakości kampanii po wierszu z brakującymi wymiarami."
             )
             risk = ActionRisk.medium
@@ -699,11 +699,11 @@ def _ga4_decisions_from_dimensioned_facts(
             decision_type = "review_traffic_quality"
             title = f"Sprawdź jakość ruchu: {landing_page}"
             rationale = (
-                "GA4 ma fakty landing page, źródła i kampanii. To wystarcza do sprawdzenia jakości "
+                "GA4 ma fakty strony wejścia, źródła ruchu i kampanii. To wystarcza do sprawdzenia jakości "
                 "ruchu i dopasowania komunikatu, ale nie do obietnic zwrotu z reklam albo przychodu."
             )
             next_step = (
-                "Porównaj landing, źródło i kampanię z intencją strony. Jeśli trzeba, "
+                "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. Jeśli trzeba, "
                 "sprawdź w WILQ `act_review_ga4_tracking_quality` jako akcję do sprawdzenia w WILQ."
             )
             risk = ActionRisk.low
@@ -741,8 +741,8 @@ def _ga4_decisions_from_dimensioned_facts(
 
 
 def _ga4_measurement_title(landing_page: str | None, source_medium: str | None) -> str:
-    landing_label = landing_page or "brak landing page"
-    source_label = source_medium or "brak source/medium"
+    landing_label = landing_page or "brak strony wejścia"
+    source_label = source_medium or "brak źródła i medium ruchu"
     return f"GA4: napraw pomiar - {landing_label} / {source_label}"
 
 

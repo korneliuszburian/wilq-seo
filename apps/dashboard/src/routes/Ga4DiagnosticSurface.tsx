@@ -89,7 +89,7 @@ export function Ga4DiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">GA4</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu z landingów,
+            Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu ze stron wejścia,
             dopasowanie WordPress i problemy pomiaru bez udawania konwersji, ROAS
             albo revenue.
           </p>
@@ -209,7 +209,7 @@ function Ga4ExpandableReviewPanel({
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
                 Kolejka akcji do sprawdzenia. Pokazuje co sprawdzić w
-                landing page, źródło i kampania i nie zapisuje zmian w GA4.
+                strona wejścia, źródło ruchu i kampania i nie zapisuje zmian w GA4.
               </p>
             </div>
             <MetricTile label="Pozycje" value={trackingPreviewItems.length} />
@@ -404,7 +404,7 @@ function Ga4OperatorSummary({
               empty="brak"
             />
             <TraceLine
-              label="Konwersje / key events"
+              label="Konwersje i zdarzenia kluczowe"
               values={[
                 ga4ConversionReadinessStatusLabel(conversionReadiness.status),
                 conversionReadiness.summary
@@ -528,7 +528,7 @@ function Ga4TrackingQualityPreviewCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">
-            {preview.landing_page ? `Landing ${preview.landing_page}` : "Brak landing page"}
+            {preview.landing_page ? `Strona wejścia ${preview.landing_page}` : "Brak strony wejścia"}
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {ga4OperationLabel(preview.operation_type)} /{" "}
@@ -539,7 +539,7 @@ function Ga4TrackingQualityPreviewCard({
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{preview.reason}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Źródło" values={[preview.source_medium ?? "brak source/medium"]} />
+        <TraceLine label="Źródło" values={[preview.source_medium ?? "brak źródła i medium ruchu"]} />
         <TraceLine label="Kampania" values={[preview.campaign_name ?? "brak kampanii"]} />
         <TraceLine
           label="Braki wymiarów"
@@ -729,7 +729,7 @@ function ga4DecisionStatusLabel(status: Ga4DecisionItem["status"]) {
 }
 
 function ga4SectionLabel(sectionId: string) {
-  if (sectionId === "ga4_landing_behavior") return "Jakość ruchu z landingów";
+  if (sectionId === "ga4_landing_behavior") return "Jakość ruchu ze stron wejścia";
   if (sectionId === "ga4_tracking_readiness") return "Gotowość pomiaru konwersji";
   if (sectionId === "ga4_action_safety") return "Bezpieczeństwo akcji GA4";
   return sectionId;
@@ -750,16 +750,16 @@ function ga4ConversionReadinessStatusLabel(status: string) {
 
 function ga4ReadContractLabel(value: string) {
   const labels: Record<string, string> = {
-    conversion_or_key_event_mapping: "mapowanie konwersji / key events",
-    conversion_or_key_event_metric_facts: "metryki konwersji / key events"
+    conversion_or_key_event_mapping: "mapowanie konwersji i zdarzeń kluczowych",
+    conversion_or_key_event_metric_facts: "metryki konwersji i zdarzeń kluczowych"
   };
   return labels[value] ?? value;
 }
 
 function ga4TrackingDimensionLabel(value: string) {
   const labels: Record<string, string> = {
-    landing_page: "landing page",
-    source_medium: "source / medium",
+    landing_page: "strona wejścia",
+    source_medium: "źródło i medium ruchu",
     campaign_name: "kampania"
   };
   return labels[value] ?? value;
@@ -774,10 +774,10 @@ function ga4OperationLabel(value: string) {
 
 function ga4ValidationLabel(value: string) {
   const labels: Record<string, string> = {
-    review_landing_page_dimension: "sprawdź landing page",
-    review_source_medium_dimension: "sprawdź source / medium",
+    review_landing_page_dimension: "sprawdź stronę wejścia",
+    review_source_medium_dimension: "sprawdź źródło i medium ruchu",
     review_campaign_name_dimension: "sprawdź kampanię",
-    review_conversion_or_key_event_mapping: "sprawdź konwersje / key events",
+    review_conversion_or_key_event_mapping: "sprawdź konwersje i zdarzenia kluczowe",
     human_confirm_before_tracking_change: "potwierdź sprawdzenie przez człowieka"
   };
   return labels[value] ?? value;
@@ -815,8 +815,6 @@ function ga4BlockedClaimLabels(claims: string[]) {
     "funnel diagnosis": "diagnoza lejka",
     "funnel dropoff": "spadek w lejku",
     "GA4 write": "zapis do GA4",
-    "landing page quality": "jakość landing page",
-    "message match": "message match",
     "profitability": "opłacalność",
     "revenue": "revenue",
     "ROAS": "ROAS",

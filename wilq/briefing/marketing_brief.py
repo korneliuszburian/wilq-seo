@@ -802,7 +802,7 @@ def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_search_console":
         return "Pobierz rozbicie query/page i zbuduj kolejkę odświeżenia albo nowej treści."
     if connector_id == "google_analytics_4":
-        return "Rozbij GA4 po landing page i źródle ruchu, zanim ocenimy jakość kampanii."
+        return "Rozbij GA4 po stronie wejścia i źródle ruchu, zanim ocenimy jakość kampanii."
     if connector_id.startswith("wordpress"):
         return (
             "Połącz spis treści z GSC/GA4 i oznacz strony do zachowania, "
