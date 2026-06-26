@@ -663,6 +663,32 @@ Date: 2026-06-26
   - `rtk uv run python -m py_compile wilq/briefing/content_diagnostics.py wilq/actions/content_refresh.py scripts/marketer_language_guard.py`
     passed.
   - `rtk git diff --check` passed.
+- Cross-dashboard `claimy` language cleanup:
+  - Tactical Queue, Ads Doctor, GA4, Merchant, Knowledge, BriefWorkflow, GA4
+    skill prompts, Social skill trigger text, Codex skill eval wording and
+    touched API/domain copy now use `twierdzenia`, `obietnice`,
+    `ryzykowne obietnice` or `Nie wolno twierdzić` instead of `claimy`,
+    `claimów`, `Zablokowane claimy` and `Blokady claimów`.
+  - `scripts/marketer_language_guard.py` now blocks `claimy`, `claimów`,
+    `Blokady claimów` and `Zablokowane claimy` in active scanned sources.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - Focused dashboard route test passed: `App.test.tsx -t "tactical|ga4|merchant|ads|content route"`
+    with 5 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1`
+    passed: 5 tests.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4 or merchant or ads or ahrefs or command_center" --maxfail=1`
+    passed.
+  - Browser proof after `scripts/local_stack.sh restart`:
+    `.local-lab/proof/20260626-claimy-language-clean/browser/{command-center,ads-doctor,merchant,ga4}-snapshot.txt`
+    showed plain Polish labels such as `Nie wolno twierdzić`; scan found no
+    `claimy`, `claimów`, `Zablokowane claimy`, `Blokady claimów`,
+    `Blokuje claimy`, `sales brief`, `claim review`, `revenue albo lead uplift`,
+    `revenue/lead uplift`, `Overlap:`, `target_site`, `migration-map`,
+    `mapping-review`, `Dry-run`, `ActionObjecty`, `payload` or `WILQ API`.
+  - `rtk uv run python -m py_compile wilq/briefing/ads_diagnostics.py wilq/briefing/ga4_diagnostics.py wilq/briefing/merchant_diagnostics.py wilq/briefing/ahrefs_diagnostics.py wilq/briefing/command_center.py wilq/actions/service.py wilq/actions/ga4/tracking_quality.py scripts/marketer_language_guard.py`
+    passed.
+  - `rtk git diff --check` passed.
 - Ledger condensation:
   - `docs/PROGRESS.md` was reduced back to a short recovery ledger.
   - `rtk git diff --check` passed after the latest cleanup slices.

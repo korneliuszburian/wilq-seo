@@ -104,7 +104,7 @@ export function TacticalQueuePanel({
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
               ? "Skondensowana kolejka decyzji z WILQ. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
-              : "Gotowe taktyki z danych WILQ. Każda karta pokazuje źródła, dowody, akcje i claimy, których WILQ nie wolno dopowiadać."}
+              : "Gotowe taktyki z danych WILQ. Każda karta pokazuje źródła, dowody, akcje i twierdzenia, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
@@ -156,7 +156,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
           values={group.action_ids.length > 0 ? [`${group.action_ids.length}`] : []}
           empty="brak"
         />
-        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={marketerBlockedClaimLabels(group.blocked_claims)} />
       </div>
     </article>
   );
@@ -190,7 +190,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={item.source_connectors} />
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(item.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={marketerBlockedClaimLabels(item.blocked_claims)} />
       </div>
       {tacticalContextPairs(item).length > 0 ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">

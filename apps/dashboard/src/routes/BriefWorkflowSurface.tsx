@@ -31,7 +31,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ads-doctor": {
     title: "Ads Doctor",
     description:
-      "Widok Google Ads oparty o WILQ. Pokazuje dowody, decyzje i blokady claimów; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
+      "Widok Google Ads oparty o WILQ. Pokazuje dowody, decyzje i twierdzenia, których nie wolno używać; jeśli Ads jest zablokowany, pokazuje blokadę zamiast diagnozy wydatków.",
     focusTitle: "Decyzje Ads",
     emptyMessage:
       "Brak dowodów Google Ads w /api/marketing/brief. WILQ nie pokaże rekomendacji o spendzie ani kampaniach bez odczytu Ads API.",
@@ -90,7 +90,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Brak dowodów contentowych w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
     safetyTitle: "Brama bezpieczeństwa treści",
     safetyText:
-      "Briefy, rewrites i drafty wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje claimów bez pokrycia w danych.",
+      "Briefy, przepisywanie treści i szkice wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje obietnic bez pokrycia w danych.",
     connectorIds: [
       "google_search_console",
       "google_analytics_4",

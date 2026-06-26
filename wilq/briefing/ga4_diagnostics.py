@@ -316,7 +316,7 @@ def _ga4_freshness_assessment(
             requires_refresh=True,
             summary=(
                 f"Ostatni odczyt danych GA4 ma około {age_hours:.1f}h i jest do odświeżenia. "
-                "To wystarcza do stale review, ale nie do claimów o bieżącym stanie ruchu."
+                "To wystarcza do przeglądu nieświeżych danych, ale nie do obietnic o bieżącym stanie ruchu."
             ),
             next_step=(
                 "Uruchom odczyt danych GA4, jeśli pytanie dotyczy aktualnego "
@@ -510,8 +510,8 @@ def _conversion_readiness_contract(
         status=status,
         title="GA4: kontrakt konwersji i key events",
         summary=(
-            "WILQ może oceniać jakość ruchu z GA4, ale claimy o konwersjach, "
-            "ROAS, revenue i profitability wymagają osobnych metryk konwersji "
+            "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, "
+            "zwrotu z reklam, przychodu i opłacalności wymagają osobnych metryk konwersji "
             "albo key events."
         ),
         allowed_metrics=sorted(GA4_CONVERSION_METRIC_NAMES),
@@ -604,7 +604,7 @@ def _ga4_decision_queue(
             title = f"Sprawdź jakość ruchu: {landing_page or 'brak landing page'}"
             rationale = (
                 "GA4 pokazuje ruch dla potwierdzonego landing page. To wystarcza do "
-                "oceny jakości ruchu i message match, ale nie do claimów o konwersjach."
+                "oceny jakości ruchu i dopasowania komunikatu, ale nie do obietnic konwersji."
             )
             next_step = (
                 "Porównaj landing, źródło i kampanię z intencją strony. Nie oceniaj ROAS "
@@ -700,7 +700,7 @@ def _ga4_decisions_from_dimensioned_facts(
             title = f"Sprawdź jakość ruchu: {landing_page}"
             rationale = (
                 "GA4 ma fakty landing page, źródła i kampanii. To wystarcza do sprawdzenia jakości "
-                "ruchu i message match, ale nie do claimów o ROAS albo revenue."
+                "ruchu i dopasowania komunikatu, ale nie do obietnic zwrotu z reklam albo przychodu."
             )
             next_step = (
                 "Porównaj landing, źródło i kampanię z intencją strony. Jeśli trzeba, "

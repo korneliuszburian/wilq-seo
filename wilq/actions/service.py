@@ -620,7 +620,7 @@ def _google_ads_business_context_action() -> ActionObject | None:
         ),
         recommended_reason=(
             "Uzupełnij repo-local .env wartościami biznesowymi, potem sprawdź "
-            "business_context_read_contract. Do tego czasu WILQ blokuje claimy "
+            "business_context_read_contract. Do tego czasu WILQ blokuje obietnice "
             "o rentowności, zmarnowanym budżecie i skalowaniu."
         ),
         payload=ads_business_context_payload(missing_read_contracts),
@@ -984,7 +984,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             recommended_reason=(
                 "Na /ads-doctor przejrzyj kampanie z największym kosztem i ruchem. "
                 "Traktuj podgląd jako materiał do sprawdzenia: bez pauzowania, "
-                "skalowania budżetu ani claimów o rentowności."
+                "skalowania budżetu ani obietnic rentowności."
             ),
             payload=campaign_review_payload,
             validation_status="not_validated",
@@ -1071,7 +1071,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             recommended_reason=(
                 "Na /ads-doctor sprawdź co zmieniono, na jakim zasobie i które "
                 "pola ruszono. Traktuj podgląd jako materiał do sprawdzenia: bez "
-                "zapisu zmian, bez skalowania i bez claimów o poprawie wyniku."
+                "zapisu zmian, bez skalowania i bez obietnic poprawy wyniku."
             ),
             payload=change_history_payload,
             validation_status="not_validated",
@@ -1917,7 +1917,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             ),
             recommended_reason=(
                 "Na /social-publisher pokaż tylko propozycje szkiców z dowodami. "
-                "Nie publikuj, nie planuj wysyłki i nie dopisuj claimów bez metryk."
+                "Nie publikuj, nie planuj wysyłki i nie dopisuj obietnic bez metryk."
             ),
             payload={
                 **common_payload,

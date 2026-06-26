@@ -1907,7 +1907,7 @@ def _action_plan_item(
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
                 "Polski brief przeglądu problemów feedu z evidence IDs, akcją "
-                "i blockerami claimów."
+                "i listą twierdzeń, których nie wolno używać."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2015,7 +2015,7 @@ def _action_plan_item(
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
                 "Polski blocker handoff Ads z brakującymi polami kontekstu biznesowego, "
-                "evidence IDs i listą claimów, których nie wolno dopowiadać."
+                "evidence IDs i listą twierdzeń, których nie wolno dopowiadać."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2189,7 +2189,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski Localo readiness report z blockerami i bez claimów o rankingach."
+                "Polski Localo readiness report z blockerami i bez obietnic o rankingach."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,

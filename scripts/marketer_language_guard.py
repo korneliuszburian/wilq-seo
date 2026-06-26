@@ -298,6 +298,22 @@ FORBIDDEN_PHRASES = (
         "Use sprawdzenie ryzykownych obietnic.",
     ),
     ForbiddenPhrase(
+        "claimy",
+        "Use twierdzenia, obietnice or ryzykowne obietnice in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "claimów",
+        "Use twierdzeń, obietnic or ryzykownych obietnic in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "Blokady claimów",
+        "Use Nie wolno twierdzić / Nie wolno obiecać.",
+    ),
+    ForbiddenPhrase(
+        "Zablokowane claimy",
+        "Use Nie wolno twierdzić / Nie wolno obiecać.",
+    ),
+    ForbiddenPhrase(
         "revenue albo lead uplift",
         "Use plain Polish: przychód / wzrost leadów, and only as blocked claims.",
     ),

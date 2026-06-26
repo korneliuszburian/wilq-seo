@@ -287,7 +287,7 @@ function PlaybookItem({ playbook }: { playbook: MarketingPlaybook }) {
       </button>
       {showDetails ? (
         <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-          <p>Ta zasada pracy może wspierać decyzję tylko wtedy, gdy WILQ ma wymagane dowody i blokady claimów.</p>
+          <p>Ta zasada pracy może wspierać decyzję tylko wtedy, gdy WILQ ma wymagane dowody i listę twierdzeń, których nie wolno używać.</p>
           <p className="mt-2">Wymagane dowody: {formatCount(playbook.required_evidence.length, "element")}</p>
           <p className="mt-2">
             Akcje do sprawdzenia: {formatCount(playbook.maps_to_action_types.length, "typ")}

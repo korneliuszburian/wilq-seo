@@ -2810,7 +2810,7 @@ def _optimizer_readiness_contract(
             f"WILQ ma {ready_area_count} obszarów gotowych do oceny i "
             f"{blocked_area_count} obszarów zablokowanych. To jest tryb "
             "sprawdzenia bez zapisu zmian: porządkuje pracę marketera, ale nie "
-            "odblokowuje zapisów zmian, claimów o wpływie ani decyzji o rentowności."
+            "odblokowuje zapisów zmian, obietnic wpływu ani decyzji o rentowności."
         ),
         ready_area_count=ready_area_count,
         blocked_area_count=blocked_area_count,
@@ -3215,7 +3215,7 @@ def _search_terms_read_contract(
             search_term_rows=rows,
             next_step=(
                 "Użyj wierszy zapytań jako przeglądu danych z reklam. Nie twórz "
-                "wykluczeń ani claimów o waste bez kontekstu dopasowania, 90-dniowego "
+                "wykluczeń ani obietnic o marnowaniu budżetu bez kontekstu dopasowania, 90-dniowego "
                 "checku i sprawdzonej akcji."
             ),
         )
@@ -5493,7 +5493,7 @@ def _ads_decision_queue(
                 rationale=(
                     "Impression share pokazuje, czy kampania traci ekspozycję przez "
                     "budżet albo ranking. WILQ może to pokazać jako kontekst review, "
-                    "ale blokuje skalowanie budżetu i claimy o wasted budget bez "
+                    "ale blokuje skalowanie budżetu i obietnice o marnowaniu budżetu bez "
                     "historii zmian, celu biznesowego i podglądu zmian."
                 ),
                 next_step=impression_share_read_contract.next_step,
@@ -5534,7 +5534,7 @@ def _ads_decision_queue(
                     "Historia zmian mówi, co ostatnio zmieniano w koncie. Jeśli "
                     "Google Ads nie zwrócił żadnych zdarzeń, sam odczyt jest "
                     "poprawny, ale nie wolno przypisywać wyników kampanii do zmian. "
-                    "Jeśli zdarzenia istnieją, WILQ nadal blokuje claimy o wpływie "
+                    "Jeśli zdarzenia istnieją, WILQ nadal blokuje obietnice o wpływie "
                     "zmian na wynik bez porównania przed/po i sprawdzenia przez człowieka."
                 ),
                 next_step=change_history_read_contract.next_step,
@@ -5565,7 +5565,7 @@ def _ads_decision_queue(
                 rationale=(
                     "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia "
                     "i konwersje. To pozwala zrobić kontrolę jakości zapytań, ale nie "
-                    "wystarcza do claimów o waste ani do zapisu wykluczeń."
+                    "wystarcza do obietnic o marnowaniu budżetu ani do zapisu wykluczeń."
                 ),
                 next_step=(
                     "Przejrzyj zapytania z najwyższym kosztem. Jeśli chcesz wykluczenia, "

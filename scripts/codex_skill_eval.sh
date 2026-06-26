@@ -149,7 +149,7 @@ surface_instruction = (
 messy_task_instruction = (
     "\n<messy_marketer_prompt>\n"
     "To jest realistyczne, nieprecyzyjne pytanie marketera. Skill ma je "
-    "obsłużyć przez WILQ API evidence, bez zmyślania danych i bez overclaimów: "
+    "obsłużyć przez WILQ API evidence, bez zmyślania danych i bez nadmiernych obietnic: "
     f"{messy_task_pl}\n"
     "</messy_marketer_prompt>\n"
     if messy_task_pl
@@ -251,9 +251,9 @@ Oczekiwane connector surfaces: {connectors}
 - Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
 - Każda rekomendacja musi mieć evidence_ids i source_connectors z WILQ API.
 - Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
-- Jeżeli `expected_blocker` podaje claimy zablokowane, nie umieszczaj tych
-  claimów w `recommendations[].label_pl` ani w nieblokowanych action labels.
-  Jeżeli musisz wymienić zablokowany claim przy konkretnej rekomendacji, ustaw
+- Jeżeli `expected_blocker` podaje zablokowane twierdzenia, nie umieszczaj tych
+  twierdzeń w `recommendations[].label_pl` ani w nieblokowanych action labels.
+  Jeżeli musisz wymienić zablokowane twierdzenie przy konkretnej rekomendacji, ustaw
   dla niej niepusty `blocked_reason`; preferuj jednak top-level
   `blocked_reason`, `notes` albo action candidate ze stanem `blocked`.
 - Nie proponuj write/apply bez validated ActionObject i jawnej zgody użytkownika.
@@ -265,7 +265,7 @@ Oczekiwane connector surfaces: {connectors}
     blocker z repair path albo konkretny wybór następnego kroku.
   - `safe_next_step_present=true`, gdy `operator_next_step` mówi, co marketer
     ma zrobić dalej bez write/apply poza kontraktem.
-  - `blocked_claims_handled=true`, gdy unsupported claimy są jawnie zablokowane
+  - `blocked_claims_handled=true`, gdy niewspierane twierdzenia są jawnie zablokowane
     albo nie występują w danym workflow.
   - `workflow_specific_interpretation=true`, gdy odpowiedź używa właściwego
     route/diagnostics/action contract zamiast generycznej porady marketingowej.

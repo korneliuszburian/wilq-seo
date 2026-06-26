@@ -219,7 +219,7 @@ function MerchantFeedSafetyPanel({ data }: { data: MerchantDiagnosticsResponse }
           </div>
         </div>
         <TraceLine
-          label="Zablokowane claimy"
+          label="Nie wolno twierdzić"
           values={merchantBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </section>
@@ -387,7 +387,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
             Najpierw ręczny przegląd, podgląd zmian, zgoda operatora i audyt.
           </p>
           <TraceLine
-            label="Zablokowane claimy"
+            label="Nie wolno twierdzić"
             values={merchantBlockedClaimLabels([
               ...summary.blocked_claims,
               ...primaryDecision.blocked_claims
@@ -411,7 +411,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
               "ponowny odczyt Merchant",
               "audit zmiany",
               "porównanie statusów problemu",
-              "brak revenue/ROAS claimów bez danych po zmianie"
+              "brak obietnic przychodu albo zwrotu z reklam bez danych po zmianie"
             ]}
           />
         </div>
@@ -633,7 +633,7 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
             <p className="mt-2 text-sm font-medium text-ink">{unknown.next_step}</p>
             <div className="mt-2 text-xs text-slate-600">
               <TraceLine
-                label="Blokuje claimy"
+                label="Nie wolno twierdzić"
                 values={merchantBlockedClaimLabels(unknown.blocked_claims)}
               />
             </div>
@@ -685,7 +685,7 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
         />
         <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
         <TraceLine
-          label="Blokuje claimy"
+          label="Nie wolno twierdzić"
           values={merchantBlockedClaimLabels(readiness.blocked_claims)}
         />
       </div>
@@ -729,7 +729,7 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
           kind="evidence"
         />
         <TraceLine
-          label="Blokuje claimy"
+          label="Nie wolno twierdzić"
           values={merchantBlockedClaimLabels(readiness.blocked_claims)}
         />
       </div>
@@ -835,7 +835,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
           empty="brak"
         />
         <TraceLine
-          label="Blokuje claimy"
+          label="Nie wolno twierdzić"
           values={merchantBlockedClaimLabels(readiness.blocked_claims)}
         />
       </div>
@@ -1129,7 +1129,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
           values={[formatMerchantIdCount(data.action_ids.length, "akcja", "akcji")]}
           empty="brak akcji"
         />
-        <TraceLine label="Zablokowane claimy" values={blockedClaims} />
+        <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
       </div>
     </section>
   );

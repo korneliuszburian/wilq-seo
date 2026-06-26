@@ -395,7 +395,7 @@ const actions = [
     validation_status: "not_validated",
     human_diagnosis:
       "Google Ads ma search-term metryki do review, ale apply wymaga 90-day safety check.",
-    recommended_reason: "Przygotuj kolejkę do sprawdzenia bez claimów o waste.",
+    recommended_reason: "Przygotuj kolejkę do sprawdzenia bez obietnic o marnowaniu budżetu.",
     payload: {
       action_type: "negative_keyword_candidate",
       connector: "google_ads",
@@ -2490,7 +2490,7 @@ const adsDiagnostics = {
       summary:
         "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii.",
       rationale:
-        "Triage pokazuje, którą kampanię sprawdzić najpierw, bez claimów o waste albo opłacalności.",
+        "Triage pokazuje, którą kampanię sprawdzić najpierw, bez obietnic o marnowaniu budżetu albo opłacalności.",
       next_step:
         "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
       priority: 18,
@@ -3548,7 +3548,7 @@ const adsDiagnostics = {
       status: "ready",
       summary: "Metryki z dowodami: clicks=107, impressions=2783.",
       diagnosis: "Są live campaign rows, ale CPA/ROAS wymagają osobnego read contract.",
-      next_step: "Sprawdź kampanie bez claimów CPA/ROAS.",
+      next_step: "Sprawdź kampanie bez obietnic kosztu pozyskania celu ani zwrotu z wydatków reklamowych.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [
@@ -4660,7 +4660,7 @@ const ga4Diagnostics = {
     status: "blocked",
     title: "GA4: kontrakt konwersji i key events",
     summary:
-      "WILQ może oceniać jakość ruchu z GA4, ale claimy o konwersjach, ROAS, revenue i profitability wymagają osobnych metryk konwersji albo key events.",
+      "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, zwrotu z wydatków reklamowych, przychodu i opłacalności wymagają osobnych metryk konwersji albo key events.",
     allowed_metrics: ["conversions", "key_events", "purchase_revenue", "total_revenue", "transactions"],
     available_read_contracts: [],
     missing_read_contracts: ["conversion_or_key_event_mapping"],

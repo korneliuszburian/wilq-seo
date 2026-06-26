@@ -343,7 +343,7 @@ function AdsCondensedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Czego WILQ nie powie</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Zablokowane claimy" values={blockedClaims.slice(0, 6)} />
+            <TraceLine label="Nie wolno twierdzić" values={blockedClaims.slice(0, 6)} />
             <TraceLine label="Brakujące wejścia" values={missingInputs.slice(0, 6)} />
           </div>
         </div>
@@ -871,7 +871,7 @@ function AdsMetricEvidencePanel({
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             To jest skrót źródeł i blokad w WILQ. Decyzje dla marketera są powyżej;
-            tutaj widać kampanie, zapytania i blokady claimów.
+            tutaj widać kampanie, zapytania i twierdzenia, których nie wolno używać.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">

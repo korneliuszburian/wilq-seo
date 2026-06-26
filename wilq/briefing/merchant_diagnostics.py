@@ -330,7 +330,7 @@ def _merchant_freshness_assessment(
             requires_refresh=True,
             summary=(
                 f"Ostatni odczyt danych Merchant ma około {age_hours:.1f}h. "
-                "To wystarcza do stale review, ale nie do claimów o bieżącym stanie feedu."
+                "To wystarcza do przeglądu nieświeżych danych, ale nie do obietnic o bieżącym stanie feedu."
             ),
             next_step=(
                 "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy "
@@ -656,8 +656,8 @@ def _merchant_product_performance_readiness(
                 "automatycznej naprawy feedu ani efektu po zmianie."
             )
             next_step = (
-                "Użyj performance_rows do priorytetyzacji review. Do claimów o efekcie "
-                "naprawy potrzebny jest osobny before/after audit."
+                "Użyj performance_rows do priorytetyzacji przeglądu. Do obietnic o efekcie "
+                "naprawy potrzebny jest osobny audyt przed/po."
             )
         else:
             status = "blocked"

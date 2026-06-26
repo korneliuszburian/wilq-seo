@@ -993,7 +993,7 @@ def _ahrefs_decision_queue(
                 priority=12,
                 metric_tiles={
                     "brakujące dane": len(missing_gap_contracts),
-                    "blokady claimów": len(
+                    "nie wolno twierdzić": len(
                         _blocked_claims_for_missing_contracts(missing_gap_contracts)
                     ),
                 },

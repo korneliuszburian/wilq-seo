@@ -44,10 +44,10 @@ Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak r
 
 ## Bezpieczeństwo GA4
 
-`active_users`, `sessions` i `engagement_rate` wspierają traffic-quality review, nie claimy ROAS, revenue, conversion-drop ani profitability. Jeśli brakuje conversion-like facts, powiedz to wprost i utrzymaj następny krok jako review/przygotowanie bez zapisu.
+`active_users`, `sessions` i `engagement_rate` wspierają przegląd jakości ruchu, nie obietnice zwrotu z reklam, przychodu, spadku konwersji ani opłacalności. Jeśli brakuje metryk podobnych do konwersji, powiedz to wprost i utrzymaj następny krok jako przegląd/przygotowanie bez zapisu.
 
 Reguły `decision_queue`:
 
 - `fix_measurement` oznacza najpierw przegląd trackingu/raportowania; nie zamieniaj tego w rekomendację contentową ani kampanijną.
 - `review_landing_mapping` oznacza, że trzeba potwierdzić mapowanie URL/WordPress przed oceną landing page.
-- `review_traffic_quality` oznacza, że evidence może wspierać traffic-quality/message-match review, ale nie claimy ROAS/revenue/profitability.
+- `review_traffic_quality` oznacza, że dowody mogą wspierać przegląd jakości ruchu i dopasowania komunikatu, ale nie obietnice zwrotu z reklam, przychodu ani opłacalności.

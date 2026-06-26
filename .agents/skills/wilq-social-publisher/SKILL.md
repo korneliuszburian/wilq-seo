@@ -1,6 +1,6 @@
 ---
 name: wilq-social-publisher
-description: Przygotowuje bezpiecznych do review akcji do sprawdzenia treści LinkedIn/Facebook dla Ekologus przez WILQ API evidence i sprawdzenie w WILQ. Użyj, gdy marketer pyta "przygotuj post z tych danych", "co opublikować na LinkedIn/Facebook?", "zamień insight z GSC/GA4/Merchant/Ads na post", "zrób social queue", albo pyta o adaptację campaign-to-social, social drafts oparte na evidence, content repurposing lub gotowość publikacji. Nie wolno publikować ani draftować niewspartych claimów bez WILQ evidence.
+description: Przygotowuje bezpiecznych do review akcji do sprawdzenia treści LinkedIn/Facebook dla Ekologus przez WILQ API evidence i sprawdzenie w WILQ. Użyj, gdy marketer pyta "przygotuj post z tych danych", "co opublikować na LinkedIn/Facebook?", "zamień insight z GSC/GA4/Merchant/Ads na post", "zrób social queue", albo pyta o adaptację campaign-to-social, social drafts oparte na evidence, content repurposing lub gotowość publikacji. Nie wolno publikować ani draftować niewspartych obietnic bez WILQ evidence.
 ---
 
 # WILQ Social Publisher
@@ -19,7 +19,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Przygotuj post LinkedIn z tej karty contentowej."
 - "Co opublikować na Facebooku na podstawie GSC/GA4/Merchant?"
-- "Zrób social queue, ale pokaż claimy, których nie wolno użyć."
+- "Zrób social queue, ale pokaż twierdzenia, których nie wolno użyć."
 - "Czy możemy publikować, czy brakuje permissions?"
 
 </triggers>

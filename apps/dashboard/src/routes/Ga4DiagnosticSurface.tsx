@@ -239,7 +239,7 @@ function Ga4ExpandableReviewPanel({
           </div>
         </div>
         <TraceLine
-          label="Zablokowane claimy"
+          label="Nie wolno twierdzić"
           values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
           </section>
@@ -667,7 +667,7 @@ function Ga4DiagnosticProof({
         <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, connectorStatuses)} />
         <TraceLine label="Akcje" values={[formatGa4ActionCount(data.action_ids.length)]} />
         <TraceLine
-          label="Zablokowane claimy"
+          label="Nie wolno twierdzić"
           values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </div>
