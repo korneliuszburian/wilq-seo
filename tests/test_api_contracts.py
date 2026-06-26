@@ -27,7 +27,7 @@ from wilq.briefing.ads_diagnostics import (
     _custom_segment_source_quality,
     build_ads_diagnostics,
 )
-from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_diagnostics import (
@@ -12042,6 +12042,16 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert "automatyczna publikacja" in diagnostics.marketer_decision.blocked_claims
     assert all("_" not in value for value in diagnostics.marketer_decision.missing_inputs)
 
+    preflight = build_content_preflight(diagnostics)
+    assert preflight.primary_item is not None
+    assert preflight.primary_item.recommended_mode == "block"
+    assert preflight.primary_item.status == "blocked"
+    assert preflight.primary_item.create_allowed is False
+    assert preflight.primary_item.draft_allowed is False
+    assert preflight.primary_item.wordpress_draft_allowed is False
+    assert preflight.primary_item.sales_brief_allowed is False
+    assert preflight.blocker_count == 1
+
 
 def test_content_diagnostics_exposes_query_page_inventory_queue(
     monkeypatch: pytest.MonkeyPatch,
@@ -12190,9 +12200,12 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
 
     response = client.get("/api/content/diagnostics")
+    preflight_response = client.get("/api/content/preflight")
 
     assert response.status_code == 200
+    assert preflight_response.status_code == 200
     payload = response.json()
+    preflight_payload = preflight_response.json()
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
     assert payload["query_page_count"] >= 1
@@ -12333,6 +12346,29 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "content_duplication_rules_v1",
         "content_brief_rules_v1",
     ]
+    preflight_item = next(
+        item
+        for item in preflight_payload["items"]
+        if item["technical_decision_id"] == first_decision["id"]
+    )
+    assert preflight_payload["primary_item"] == preflight_item
+    assert preflight_item["recommended_mode"] == "refresh"
+    assert preflight_item["status"] == "review_required"
+    assert preflight_item["create_allowed"] is False
+    assert preflight_item["draft_allowed"] is False
+    assert preflight_item["wordpress_draft_allowed"] is False
+    assert preflight_item["sales_brief_allowed"] is True
+    assert preflight_item["source_public_url"] == first_decision["source_public_url"]
+    assert preflight_item["final_canonical_url"] == first_decision["final_canonical_url"]
+    assert preflight_item["preview_url"] is None
+    assert preflight_item["inventory_gate_status"] == "confirmed_current_inventory"
+    assert preflight_item["canonical_gate_status"] == "current_url_confirmed"
+    assert preflight_item["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert preflight_item["similar_existing_urls"] == [
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    ]
+    assert "1 zapytań z GSC" in preflight_item["query_overlap_summary"]
+    assert "sprawdzeniu claimów" in preflight_item["next_step"]
     ahrefs_decision = next(
         decision
         for decision in payload["decision_queue"]
@@ -12401,6 +12437,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_response.status_code == 200
     context_payload = context_response.json()
     assert context_payload["content_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
+    assert context_payload["content_preflight"]["primary_item"]["technical_decision_id"] == (
+        first_decision["id"]
+    )
+    assert context_payload["content_preflight"]["primary_item"]["recommended_mode"] == "refresh"
+    assert context_payload["content_preflight"]["primary_item"]["draft_allowed"] is False
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
     context_decision = next(
         decision

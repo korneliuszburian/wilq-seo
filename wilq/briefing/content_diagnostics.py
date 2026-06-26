@@ -24,6 +24,8 @@ from wilq.schemas import (
     ContentDiagnosticsResponse,
     ContentMarketerDecision,
     ContentOperatorSummary,
+    ContentPreflightItem,
+    ContentPreflightResponse,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -279,6 +281,28 @@ def build_content_diagnostics(
     )
 
 
+def build_content_preflight(
+    diagnostics: ContentDiagnosticsResponse | None = None,
+) -> ContentPreflightResponse:
+    diagnostics = diagnostics or build_content_diagnostics()
+    items = [_content_preflight_item(decision) for decision in diagnostics.decision_queue]
+    primary_item = next((item for item in items if item.status != "blocked"), None)
+    return ContentPreflightResponse(
+        strict_instruction=(
+            "ContentPreflight jest bramką przed briefem i szkicem. "
+            "Nie wolno pisać ani przygotowywać szkicu bez wyniku preflight, "
+            "sales brief, claim review i sprawdzenia przez człowieka."
+        ),
+        primary_item=primary_item or (items[0] if items else None),
+        items=items,
+        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
+        source_connectors=_unique(
+            connector for item in items for connector in item.source_connectors
+        ),
+        blocker_count=sum(1 for item in items if item.status == "blocked"),
+    )
+
+
 def _operator_summary(
     decisions: list[ContentDecisionItem],
     sections: list[ContentDiagnosticSection],
@@ -377,6 +401,106 @@ def _content_decision_final_canonical_url(decision: ContentDecisionItem) -> str 
     if decision.final_canonical_url:
         return decision.final_canonical_url
     return decision.intended_final_url or decision.source_public_url or decision.page
+
+
+def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightItem:
+    recommended_mode = _content_preflight_mode(decision)
+    status = _content_preflight_status(decision, recommended_mode)
+    source_public_url = decision.source_public_url or decision.page
+    final_canonical_url = _content_decision_final_canonical_url(decision)
+    missing_inputs = _content_marketer_missing_inputs(
+        decision,
+        final_canonical_url=final_canonical_url,
+    )
+    claim_gate_status = (
+        "needs_claim_review" if decision.blocked_claims else "ready_for_claim_review"
+    )
+    service_mapping_status = (
+        "needs_service_review"
+        if decision.decision_type in {"review_ahrefs_gap_records", "inventory_check_before_create"}
+        else "ready_for_service_review"
+    )
+    return ContentPreflightItem(
+        id=f"preflight_{decision.id}",
+        technical_decision_id=decision.id,
+        recommended_mode=recommended_mode,
+        status=status,
+        create_allowed=recommended_mode == "create" and status == "allowed",
+        draft_allowed=False,
+        wordpress_draft_allowed=False,
+        sales_brief_allowed=status in {"allowed", "review_required"}
+        and recommended_mode in {"preserve", "refresh", "merge"},
+        source_public_url=source_public_url,
+        preview_url=decision.preview_url,
+        intended_final_url=decision.intended_final_url or source_public_url,
+        final_canonical_url=final_canonical_url,
+        inventory_gate_status=decision.inventory_gate_status,
+        canonical_gate_status=decision.canonical_gate_status,
+        duplicate_gate_status=decision.duplicate_gate_status,
+        claim_gate_status=claim_gate_status,
+        service_mapping_status=service_mapping_status,
+        similar_existing_urls=_content_preflight_similar_urls(decision),
+        query_overlap_summary=_content_preflight_query_overlap(decision),
+        blocked_claims=_content_marketer_blocked_claims(decision.blocked_claims),
+        missing_inputs=missing_inputs,
+        evidence_ids=decision.evidence_ids,
+        source_connectors=decision.source_connectors,
+        next_step=_content_preflight_next_step(decision, recommended_mode, status),
+    )
+
+
+def _content_preflight_mode(
+    decision: ContentDecisionItem,
+) -> Literal["preserve", "refresh", "merge", "create", "block"]:
+    if decision.decision_type == "refresh_or_merge":
+        return "refresh"
+    if decision.decision_type == "merge_create_after_inventory_check":
+        return "merge"
+    if decision.decision_type == "inventory_check_before_create":
+        return "block"
+    return "block"
+
+
+def _content_preflight_status(
+    decision: ContentDecisionItem,
+    recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"],
+) -> Literal["allowed", "review_required", "blocked"]:
+    if decision.status == "blocked" or recommended_mode == "block":
+        return "blocked"
+    return "review_required"
+
+
+def _content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
+    urls = []
+    if decision.wordpress_match == "found":
+        urls.append(_content_decision_final_canonical_url(decision) or decision.source_public_url)
+    urls.extend(
+        url
+        for row in decision.ahrefs_candidate_rows
+        for url in row.wordpress_overlap_urls
+    )
+    return _unique(url for url in urls if url)
+
+
+def _content_preflight_query_overlap(decision: ContentDecisionItem) -> str:
+    if decision.query_count <= 0:
+        return "Brak potwierdzonego overlapu zapytań."
+    primary = f"; główne zapytanie: {decision.primary_query}" if decision.primary_query else ""
+    return f"{decision.query_count} zapytań z GSC{primary}."
+
+
+def _content_preflight_next_step(
+    decision: ContentDecisionItem,
+    recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"],
+    status: Literal["allowed", "review_required", "blocked"],
+) -> str:
+    if status == "blocked":
+        return decision.next_step
+    if recommended_mode == "refresh":
+        return "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+    if recommended_mode == "merge":
+        return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
+    return decision.next_step
 
 
 def _content_decision_url_semantics(

@@ -2256,6 +2256,44 @@ class ContentMarketerDecision(BaseModel):
     final_canonical_url: str | None = None
 
 
+class ContentPreflightItem(BaseModel):
+    id: str
+    technical_decision_id: str
+    recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"]
+    status: Literal["allowed", "review_required", "blocked"]
+    create_allowed: bool = False
+    draft_allowed: bool = False
+    wordpress_draft_allowed: bool = False
+    sales_brief_allowed: bool = False
+    source_public_url: str | None = None
+    preview_url: str | None = None
+    intended_final_url: str | None = None
+    final_canonical_url: str | None = None
+    inventory_gate_status: str | None = None
+    canonical_gate_status: str | None = None
+    duplicate_gate_status: str | None = None
+    claim_gate_status: str
+    service_mapping_status: str
+    similar_existing_urls: list[str] = Field(default_factory=list)
+    query_overlap_summary: str
+    blocked_claims: list[str] = Field(default_factory=list)
+    missing_inputs: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    next_step: str
+
+
+class ContentPreflightResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    primary_item: ContentPreflightItem | None = None
+    items: list[ContentPreflightItem] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"

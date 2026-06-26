@@ -50,7 +50,10 @@ from wilq.actions.service import (
 )
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
-from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.briefing.content_diagnostics import (
+    build_content_diagnostics,
+    build_content_preflight,
+)
 from wilq.briefing.daily_runtime import (
     build_daily_command_center,
     build_daily_marketing_brief,
@@ -119,6 +122,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorSummary,
     ContentDiagnosticsResponse,
+    ContentPreflightResponse,
     DailyDecision,
     DemandGenReadinessContract,
     Evidence,
@@ -1252,16 +1256,20 @@ def _actions_for_skill_scope(skill: str, actions: list[ActionObject]) -> list[Ac
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
     if skill == "wilq-content-strategist":
+        content = build_content_diagnostics()
         return {
             "content_diagnostics": _compact_content_diagnostics_for_context(
-                build_content_diagnostics().model_dump(mode="json")
-            )
+                content.model_dump(mode="json")
+            ),
+            "content_preflight": build_content_preflight(content).model_dump(mode="json"),
         }
     if skill == "wilq-gsc-content-doctor":
+        content = build_content_diagnostics()
         return {
             "content_diagnostics": _compact_gsc_content_diagnostics_for_context(
-                build_content_diagnostics().model_dump(mode="json")
-            )
+                content.model_dump(mode="json")
+            ),
+            "content_preflight": build_content_preflight(content).model_dump(mode="json"),
         }
     if skill == "wilq-ahrefs-gap-finder":
         return {
@@ -4074,6 +4082,11 @@ def merchant_diagnostics() -> MerchantDiagnosticsResponse:
 @app.get("/api/content/diagnostics", response_model=ContentDiagnosticsResponse)
 def content_diagnostics() -> ContentDiagnosticsResponse:
     return build_content_diagnostics()
+
+
+@app.get("/api/content/preflight", response_model=ContentPreflightResponse)
+def content_preflight() -> ContentPreflightResponse:
+    return build_content_preflight()
 
 
 @app.get("/api/ga4/diagnostics", response_model=Ga4DiagnosticsResponse)

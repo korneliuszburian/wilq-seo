@@ -1876,6 +1876,44 @@ export const ContentDiagnosticsResponseSchema = z.object({
   blocker_count: z.number()
 });
 
+export const ContentPreflightItemSchema = z.object({
+  id: z.string(),
+  technical_decision_id: z.string(),
+  recommended_mode: z.enum(["preserve", "refresh", "merge", "create", "block"]),
+  status: z.enum(["allowed", "review_required", "blocked"]),
+  create_allowed: z.boolean(),
+  draft_allowed: z.boolean(),
+  wordpress_draft_allowed: z.boolean(),
+  sales_brief_allowed: z.boolean(),
+  source_public_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  intended_final_url: z.string().nullable().optional(),
+  final_canonical_url: z.string().nullable().optional(),
+  inventory_gate_status: z.string().nullable().optional(),
+  canonical_gate_status: z.string().nullable().optional(),
+  duplicate_gate_status: z.string().nullable().optional(),
+  claim_gate_status: z.string(),
+  service_mapping_status: z.string(),
+  similar_existing_urls: z.array(z.string()),
+  query_overlap_summary: z.string(),
+  blocked_claims: z.array(z.string()),
+  missing_inputs: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  next_step: z.string()
+});
+
+export const ContentPreflightResponseSchema = z.object({
+  generated_at: z.string().nullable().optional(),
+  language: z.literal("pl-PL"),
+  strict_instruction: z.string(),
+  primary_item: ContentPreflightItemSchema.nullable().optional(),
+  items: z.array(ContentPreflightItemSchema),
+  evidence_ids: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  blocker_count: z.number()
+});
+
 export const Ga4DiagnosticSectionSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -2511,6 +2549,7 @@ export const ContextPackResponseSchema = z.object({
   ads_diagnostics: AdsDiagnosticsResponseSchema,
   merchant_diagnostics: MerchantDiagnosticsResponseSchema,
   content_diagnostics: ContentDiagnosticsResponseSchema,
+  content_preflight: ContentPreflightResponseSchema.optional(),
   ga4_diagnostics: Ga4DiagnosticsResponseSchema,
   localo_diagnostics: LocaloDiagnosticsResponseSchema.optional(),
   ahrefs_diagnostics: AhrefsDiagnosticsResponseSchema.optional(),
@@ -2578,6 +2617,7 @@ export type MerchantDecisionItem = z.infer<typeof MerchantDecisionItemSchema>;
 export type MerchantDiagnosticsResponse = z.infer<typeof MerchantDiagnosticsResponseSchema>;
 export type ContentDiagnosticSection = z.infer<typeof ContentDiagnosticSectionSchema>;
 export type ContentDiagnosticsResponse = z.infer<typeof ContentDiagnosticsResponseSchema>;
+export type ContentPreflightResponse = z.infer<typeof ContentPreflightResponseSchema>;
 export type Ga4DecisionItem = z.infer<typeof Ga4DecisionItemSchema>;
 export type Ga4DiagnosticSection = z.infer<typeof Ga4DiagnosticSectionSchema>;
 export type Ga4DiagnosticsResponse = z.infer<typeof Ga4DiagnosticsResponseSchema>;

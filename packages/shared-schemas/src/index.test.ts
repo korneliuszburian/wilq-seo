@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MerchantDiagnosticsResponseSchema } from "./index";
+import { ContentPreflightResponseSchema, MerchantDiagnosticsResponseSchema } from "./index";
 
 describe("MerchantDiagnosticsResponseSchema", () => {
   it("accepts Merchant price-impact readiness decisions returned by the API", () => {
@@ -145,6 +145,51 @@ describe("MerchantDiagnosticsResponseSchema", () => {
     };
 
     const result = MerchantDiagnosticsResponseSchema.safeParse(response);
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("ContentPreflightResponseSchema", () => {
+  it("accepts first-class content preflight contracts", () => {
+    const item = {
+      id: "preflight_content_decision_bdo",
+      technical_decision_id: "content_decision_bdo",
+      recommended_mode: "refresh",
+      status: "review_required",
+      create_allowed: false,
+      draft_allowed: false,
+      wordpress_draft_allowed: false,
+      sales_brief_allowed: true,
+      source_public_url: "https://www.ekologus.pl/bdo/",
+      preview_url: null,
+      intended_final_url: "https://www.ekologus.pl/bdo/",
+      final_canonical_url: "https://www.ekologus.pl/bdo/",
+      inventory_gate_status: "confirmed_current_inventory",
+      canonical_gate_status: "current_url_confirmed",
+      duplicate_gate_status: "refresh_or_merge_required",
+      claim_gate_status: "needs_claim_review",
+      service_mapping_status: "ready_for_service_review",
+      similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
+      query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
+      blocked_claims: ["ranking guarantee"],
+      missing_inputs: [],
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      next_step: "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+    };
+    const response = {
+      generated_at: "2026-06-26T08:00:00Z",
+      language: "pl-PL",
+      strict_instruction: "ContentPreflight is required before writing.",
+      primary_item: item,
+      items: [item],
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      blocker_count: 0
+    };
+
+    const result = ContentPreflightResponseSchema.safeParse(response);
 
     expect(result.success).toBe(true);
   });

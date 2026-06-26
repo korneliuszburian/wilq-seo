@@ -10,6 +10,7 @@ import {
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
+  ContentPreflightResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
@@ -43,6 +44,7 @@ import {
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
+  type ContentPreflightResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type DemandGenReadinessContract,
@@ -121,6 +123,10 @@ export function getMerchantDiagnostics(): Promise<MerchantDiagnosticsResponse> {
 
 export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
   return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
+}
+
+export function getContentPreflight(): Promise<ContentPreflightResponse> {
+  return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
 }
 
 export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {

@@ -52,6 +52,10 @@ Date: 2026-06-26
 - Daily/skill context-pack cleanup now avoids stale-field exception lists in the
   API. Audit events in compact operator context expose event type and a plain
   detail pointer; full notes and technical details stay in action detail.
+- First-class `ContentPreflight` contract is now started as a typed API layer
+  derived from current content diagnostics. It answers preserve/refresh/merge/
+  create/block before any future sales brief or draft work; draft and WordPress
+  draft remain blocked in this slice.
 
 ## Latest Proof Pointers
 
@@ -133,6 +137,18 @@ Date: 2026-06-26
 
 ## Latest Verification
 
+- ContentPreflight first contract slice:
+  - Added typed backend and shared-schema preflight response.
+  - Added `/api/content/preflight`.
+  - Added `content_preflight` to content strategist/GSC context packs.
+  - Existing-content fixture returns `recommended_mode=refresh`,
+    `create_allowed=false`, `draft_allowed=false`,
+    `wordpress_draft_allowed=false`, `sales_brief_allowed=true`.
+  - No-evidence fixture returns `recommended_mode=block`.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics_blocks_until_vendor_read or content_diagnostics_exposes_query_page_inventory_queue or codex_context_pack_scopes_content_strategist_payload" --maxfail=1`
+    passed: 3 tests.
+  - `rtk pnpm --filter @wilq/shared-schemas test -- --runInBand` passed.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Context-pack stale-field exception cleanup:
   - Removed active API filters that knew about old dev-preview/mapping field
     names.
