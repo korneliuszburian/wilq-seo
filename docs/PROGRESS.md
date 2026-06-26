@@ -49,6 +49,9 @@ Date: 2026-06-26
 - The current cleanup slice focuses on marketer-facing language, action safety
   wording, stale dev-preview strategy removal and full condensation of active
   operator surfaces.
+- Daily/skill context-pack cleanup now avoids stale-field exception lists in the
+  API. Audit events in compact operator context expose event type and a plain
+  detail pointer; full notes and technical details stay in action detail.
 
 ## Latest Proof Pointers
 
@@ -130,6 +133,14 @@ Date: 2026-06-26
 
 ## Latest Verification
 
+- Context-pack stale-field exception cleanup:
+  - Removed active API filters that knew about old dev-preview/mapping field
+    names.
+  - Updated context-pack tests so compact daily context preserves audit type and
+    review outcome without copying raw notes or detail keys.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "context_pack or content_public_url or dev_site or content_action_payload or wordpress_draft_handoff" --maxfail=1`
+    passed: 27 tests.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
 - Full cleanup verification on 2026-06-26:
   - `scripts/verify.sh` passed end-to-end.
   - Backend pytest: 214 passed.

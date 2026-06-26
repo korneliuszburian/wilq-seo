@@ -596,14 +596,6 @@ def _strip_raw_operator_context(value: Any) -> Any:
         return value
     stripped: dict[str, Any] = {}
     for key, item in value.items():
-        if key.startswith(("target_site_", "mapping_review_")):
-            continue
-        if key in {
-            "target_site_mapping_review",
-            "current_transition_candidate_url",
-            "current_migration_candidate_url",
-        }:
-            continue
         if key == "mode" and item == "vendor_read":
             continue
         stripped[key] = _strip_raw_operator_context(item)
@@ -654,25 +646,10 @@ def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
 def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
     if event is None:
         return None
-    details = event.get("details")
-    details_keys = sorted(details) if isinstance(details, dict) else []
-    details_keys = [
-        key
-        for key in details_keys
-        if not key.startswith(("target_site_", "mapping_review_"))
-        and key
-        not in {
-            "target_site_mapping_review",
-            "current_transition_candidate_url",
-            "current_migration_candidate_url",
-        }
-    ]
-    summary = _context_pack_text(event.get("summary"), limit=180)
-    if _contains_raw_history_terms(summary):
-        summary = (
-            f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
-            "szczegóły historyczne są dostępne w szczegółach akcji WILQ."
-        )
+    summary = (
+        f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
+        "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+    )
     return {
         "id": event.get("id"),
         "action_id": event.get("action_id"),
@@ -680,26 +657,7 @@ def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict
         "actor": event.get("actor"),
         "created_at": event.get("created_at"),
         "summary": summary,
-        "details_keys": details_keys,
     }
-
-
-def _contains_raw_history_terms(value: str | None) -> bool:
-    if not value:
-        return False
-    lowered = value.lower()
-    return any(
-        term in lowered
-        for term in (
-            "target-site",
-            "target_site",
-            "mapping_review",
-            "review-only",
-            "read-only",
-            "vendor_read",
-            "actionobject",
-        )
-    )
 
 
 def _compact_audit_event_for_skill_context(event: dict[str, Any] | None) -> dict[str, Any] | None:

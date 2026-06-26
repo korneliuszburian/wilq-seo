@@ -2232,7 +2232,10 @@ def test_daily_context_pack_preserves_action_preview_audit(
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     latest_audit_event = merchant_action["latest_audit_event"]
     assert latest_audit_event["event_type"] == "action_preview_generated"
-    assert "zapis zmian=zablokowany" in latest_audit_event["summary"]
+    assert "szczegóły techniczne są dostępne w szczegółach akcji WILQ" in (
+        latest_audit_event["summary"]
+    )
+    assert "details_keys" not in latest_audit_event
     assert merchant_action["review_gate"]["apply_allowed"] is False
 
 
@@ -2431,7 +2434,11 @@ def test_daily_context_pack_preserves_human_review_outcome(
     assert merchant_action["review_gate"]["apply_allowed"] is False
     serialized = json.dumps(merchant_action, ensure_ascii=False)
     assert "[REDACTED]" not in serialized
-    assert "Brakuje podglądu zmian" in serialized
+    assert "Brakuje podglądu zmian" not in serialized
+    assert merchant_action["latest_audit_event"]["event_type"] == "human_review_needs_changes"
+    assert "szczegóły techniczne są dostępne w szczegółach akcji WILQ" in (
+        merchant_action["latest_audit_event"]["summary"]
+    )
 
 
 def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
