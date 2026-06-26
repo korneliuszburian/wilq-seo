@@ -22,7 +22,8 @@ operator summary, brief cards and diagnostic proof sections.
 - Current WILQ API metrics: 8 queries, 44 clicks, 1044 impressions, CTR 2.78%.
 - Why it matters: WordPress inventory confirms an existing URL, so WILQ points
   to refresh/merge instead of creating a new page.
-- Safe next step: review old-to-new mapping before draft or staging.
+- Safe next step: review the public URL decision, preserve/refresh/merge mode
+  and optional design preview context before any draft or staging handoff.
 - Content direction: H1, H2, FAQ and CTA direction from the ActionObject brief
   preview.
 - Evidence/source summary: Google Search Console and WordPress Ekologus, 4
@@ -34,16 +35,16 @@ operator summary, brief cards and diagnostic proof sections.
 
 ## Domain semantics
 
-The panel now states the core migration rule explicitly:
+The panel now states the core URL rule explicitly:
 
 - `ekologus.pl` and `sklep.ekologus.pl` are source-of-truth and content
   inventory inputs.
-- `ekologus.dev.proudsite.pl` is a preview/design context for future mapping,
+- `ekologus.dev.proudsite.pl` is an optional preview/design context,
   not historical metric evidence.
 
-This matters because content should be preserved, refreshed, merged or mapped
-from the old real site into the new design context. WILQ must not treat the dev
-site as proof of historical performance or as a final canonical URL.
+This matters because most content decisions should preserve, refresh or merge
+real public content on `ekologus.pl`. WILQ must not treat the dev site as proof
+of historical performance, as a content source, or as a final canonical URL.
 
 ## Remaining work
 

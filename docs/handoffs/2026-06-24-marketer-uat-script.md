@@ -29,12 +29,12 @@ Limit czasu: 15 minut.
      naprawy.
 
 3. Content Planner
-   - Marketer ma wybrać jeden temat refresh/merge, np. BDO albo Zielony Ład.
-   - Pass: widzi source evidence, target context, inventory gate, canonical,
-     duplicate gate, H1/H2/FAQ/CTA direction, missing evidence i forbidden
-     claims.
+   - Marketer ma wybrać jeden istniejący temat do zachowania, odświeżenia albo
+     scalenia, np. BDO albo Zielony Ład.
+   - Pass: widzi publiczny URL na `ekologus.pl`, dowody z GSC/WordPress/Ahrefs,
+     bramki jakości, H1/H2/FAQ/CTA, brakujące dowody i zakazane obietnice.
    - Fail: uważa, że WILQ już wygenerował publish-ready artykuł albo że
-     `ekologus.dev.proudsite.pl` jest źródłem historycznej skuteczności.
+     dev preview jest źródłem historycznej skuteczności albo finalnym URL-em SEO.
 
 4. Ads Doctor
    - Marketer ma wskazać jedną kolejkę review: campaign, recommendations,
@@ -57,7 +57,8 @@ Zadaj marketerowi dokładnie te pytania:
 1. Czy wiesz, co zrobić jako następny krok?
 2. Który ekran dał Ci największy realny zysk?
 3. Gdzie musiałeś zgadywać znaczenie statusu albo pola?
-4. Czy Content Planner oszczędza Ci czas przy planowaniu treści na nową stronę?
+4. Czy Content Planner oszczędza Ci czas przy decyzji, co zachować, odświeżyć
+   albo scalić na `ekologus.pl`?
 5. Ile czasu realnie oszczędza ta ścieżka: 0, 15, 30, 60+ minut?
 
 ## Wynik

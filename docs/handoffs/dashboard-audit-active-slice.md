@@ -359,9 +359,9 @@ Command Center decision:
   cards in the operator section. Measurement issues stay in "PROBLEMY POMIARU
   GA4"; the operator section shows separate quality decisions. Proof:
   `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`.
-- `ready`: `/actions` now starts with "Najważniejsze ActionObjecty demo" for
+- `ready`: `/actions` now starts with "Najważniejsze akcje do sprawdzenia" for
   Merchant, Content, GA4 and Ads review, then keeps the rest under "Pełna lista
-  ActionObjectów - szczegóły". Proof:
+  akcji - szczegóły". Proof:
   `.local-lab/proof/dashboard/route-audit/actions-after-priority.txt`.
 - `ready`: `/knowledge` keeps API IDs/source fields intact but renders
   card/playbook display headings in Polish for the operator. Proof:

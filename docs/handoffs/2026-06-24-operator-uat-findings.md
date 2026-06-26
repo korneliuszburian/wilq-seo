@@ -22,9 +22,9 @@ Proof directory:
   available, and blocks feed write, approval recovery, product ROAS and revenue
   recovery claims.
 - Content Planner: pass for strongest current demo value. It exposes GSC/WP
-  refresh or merge candidates, target context for `ekologus.dev.proudsite.pl`,
-  canonical/duplicate gates, forbidden claims and the new
-  `missing_target_inventory` blocker for old-to-new migration candidates.
+  preserve, refresh or merge candidates, separates public content on
+  `ekologus.pl` from optional `ekologus.dev.proudsite.pl` design preview
+  context, shows canonical/duplicate gates and blocks forbidden claims.
 - Ads Doctor: pass as Ads review cockpit, not optimizer. It shows campaign,
   search-term, recommendation, negative keyword, segment and target guardrail
   queues while blocking CPA/ROAS/wasted-budget/apply claims without target and
@@ -45,6 +45,7 @@ without developer narration.
 - Run the same script with the actual marketer and record pass/fail per route.
 - Keep Command Center domain CTAs; do not regress to generic action wording.
 - Keep core domain navigation visible before registry routes.
-- Continue content depth through old-to-new dev-site mapping, not publish/apply.
+- Continue content depth through preserve-first public URL decisions, canonical
+  checks and optional design-preview context, not publish/apply.
 - Treat Social, Demand Gen, Knowledge and deeper BDOS automation as deferred
   unless the core demo path regresses.
