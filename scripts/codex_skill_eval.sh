@@ -142,7 +142,7 @@ api_instruction = (
 surface_instruction = (
     f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
     "Finalny JSON musi odzwierciedlać ten route w `notes`, `operator_next_step`, "
-    "rekomendacjach albo kandydatach działań.\n</surface>\n"
+    "rekomendacjach albo akcjach do sprawdzenia.\n</surface>\n"
     if surface_path
     else ""
 )
@@ -158,21 +158,21 @@ messy_task_instruction = (
 expected_terms_instruction = (
     "\n<expected_terms>\nTo są twarde marker terms walidowane po finalnym JSON. "
     "Jeżeli smoke/API wspiera dany marker, umieść go dosłownie w `notes`, "
-    "`operator_next_step`, rekomendacjach albo kandydatach działań. Nie pomijaj "
+    "`operator_next_step`, rekomendacjach albo akcjach do sprawdzenia. Nie pomijaj "
     f"markerów route/evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
     if expected_terms
     else ""
 )
 expected_actions_instruction = (
-    "\n<expected_action_ids>\nJeżeli WILQ API zwraca te ActionObject IDs, uwzględnij je "
+    "\n<expected_action_ids>\nJeżeli WILQ API zwraca te action IDs, uwzględnij je "
     f"w `action_candidates`: {', '.join(expected_action_ids)}.\n</expected_action_ids>\n"
     if expected_action_ids
     else ""
 )
 expected_validated_actions_instruction = (
-    "\n<expected_validated_action_ids>\nDla tych ActionObject IDs wykonaj walidację przez "
+    "\n<expected_validated_action_ids>\nDla tych action IDs wykonaj sprawdzenie w WILQ przez "
     "dozwolony endpoint skill/API i ustaw `validation_state=\"validated\"` tylko wtedy, "
-    f"gdy walidacja przejdzie: {', '.join(expected_validated_action_ids)}.\n"
+    f"gdy sprawdzenie w WILQ przejdzie: {', '.join(expected_validated_action_ids)}.\n"
     "</expected_validated_action_ids>\n"
     if expected_validated_action_ids
     else ""
@@ -210,7 +210,7 @@ expected_no_actions_instruction = (
     else ""
 )
 forbidden_actions_instruction = (
-    "\n<forbidden_action_ids>\nTe ActionObject IDs są z innych workflow i nie mogą trafić "
+    "\n<forbidden_action_ids>\nTe action IDs są z innych workflow i nie mogą trafić "
     f"do finalnego JSON: {', '.join(forbidden_action_ids)}.\n"
     "</forbidden_action_ids>\n"
     if forbidden_action_ids

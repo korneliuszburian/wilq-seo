@@ -19,7 +19,7 @@ SEARCH_TERM_NGRAM_REQUIRED_VALIDATION = [
 ]
 SEARCH_TERM_NGRAM_BLOCKED_CLAIMS = [
     "search-term waste",
-    "negative keyword apply",
+    "dodanie wykluczających słów kluczowych",
     "conversion loss",
     "CPA",
     "ROAS",
@@ -93,7 +93,7 @@ def search_term_ngram_payload_from_metric_facts(
         "evidence_ids": evidence_ids,
         "missing_read_contracts": [
             "human_intent_review",
-            "ngram_to_negative_keyword_payload_preview",
+            "ngram_to_negative_keyword_change_preview",
         ],
         "required_validation": SEARCH_TERM_NGRAM_REQUIRED_VALIDATION,
         "blocked_claims": SEARCH_TERM_NGRAM_BLOCKED_CLAIMS,
@@ -214,12 +214,12 @@ def _ngram_preview(
         "conversion_value": _sum_metric(facts, "search_term_conversion_value"),
         "operation_type": SEARCH_TERM_NGRAM_OPERATION_TYPE,
         "reason": (
-            "Review-only podgląd powtarzającego się tematu w search terms. "
+            "Podgląd powtarzającego się tematu w search terms do sprawdzenia w WILQ. "
             "To skraca analizę intencji, ale nie jest gotowym wykluczeniem."
         ),
         "missing_read_contracts": [
             "human_intent_review",
-            "ngram_to_negative_keyword_payload_preview",
+            "ngram_to_negative_keyword_change_preview",
         ],
         "required_validation": SEARCH_TERM_NGRAM_REQUIRED_VALIDATION,
         "blocked_claims": SEARCH_TERM_NGRAM_BLOCKED_CLAIMS,

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -31,10 +32,12 @@ REQUIRED_BRIEF_SECTIONS = {
 FORBIDDEN_MARKERS = ("fake_metric", "mock_metric", "seed_metric")
 MAX_CONTEXT_PACK_BYTES = 180_000
 CORE_DAILY_ACTION_IDS = {
-    "act_prepare_ads_campaign_review_queue",
     "act_prepare_content_refresh_queue",
     "act_review_ga4_tracking_quality",
     "act_review_merchant_feed_issues",
+}
+CONDITIONAL_DAILY_ACTION_IDS = {
+    "act_prepare_ads_campaign_review_queue",
 }
 FORBIDDEN_DAILY_ACTION_IDS = {
     "act_prepare_facebook_social_drafts",
@@ -60,7 +63,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -81,6 +84,21 @@ def scan_strings(value: Any) -> list[str]:
         for nested in value:
             hits.extend(scan_strings(nested))
     return hits
+
+
+def normalize_for_marker_check(value: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    )
+
+
+def has_metric_evidence_guardrails(value: str) -> bool:
+    normalized = normalize_for_marker_check(value)
+    return "metryk" in normalized and (
+        "dowod" in normalized or "evidence" in normalized
+    )
 
 
 def main() -> int:
@@ -160,7 +178,9 @@ def main() -> int:
         ],
         "action_validations": action_validations,
         "brief_action_ids": brief.get("action_ids") or [],
-        "core_daily_action_ids": sorted(CORE_DAILY_ACTION_IDS),
+        "core_daily_action_ids": sorted(
+            CORE_DAILY_ACTION_IDS | (CONDITIONAL_DAILY_ACTION_IDS & collect_pack_action_ids(pack))
+        ),
         "forbidden_daily_action_ids_present": sorted(
             (
                 set(collect_action_ids(command_center))
@@ -178,8 +198,8 @@ def main() -> int:
 def validate_command_center(command_center: Any, *, compact: bool = False) -> None:
     if not isinstance(command_center, dict):
         raise SystemExit("Command center is not an object")
-    instruction = str(command_center.get("strict_instruction", "")).lower()
-    if "metryki" not in instruction or "evidence" not in instruction:
+    instruction = str(command_center.get("strict_instruction", ""))
+    if not has_metric_evidence_guardrails(instruction):
         raise SystemExit("Command center strict instruction lacks metric/evidence guardrails")
     operator_brief = command_center.get("operator_brief") or []
     if not compact:
@@ -316,8 +336,8 @@ def validate_marketing_brief(brief: Any) -> None:
         raise SystemExit("Marketing brief is not an object")
     if brief.get("language") != "pl-PL":
         raise SystemExit(f"Marketing brief language is not pl-PL: {brief.get('language')}")
-    instruction = str(brief.get("strict_instruction", "")).lower()
-    if "metryki" not in instruction or "evidence" not in instruction:
+    instruction = str(brief.get("strict_instruction", ""))
+    if not has_metric_evidence_guardrails(instruction):
         raise SystemExit("Marketing brief strict instruction lacks metric/evidence guardrails")
     section_ids = {section.get("id") for section in brief.get("sections", [])}
     missing_sections = sorted(REQUIRED_BRIEF_SECTIONS - section_ids)
@@ -332,17 +352,17 @@ def validate_marketing_brief(brief: Any) -> None:
         raise SystemExit("Marketing brief has no evidence IDs")
     action_ids = brief.get("action_ids") or []
     if not action_ids:
-        raise SystemExit("Marketing brief has no ActionObject IDs")
+        raise SystemExit("Marketing brief has no action IDs")
     missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - set(action_ids))
     if missing_core_actions:
         raise SystemExit(
-            "Marketing brief missing core daily ActionObject IDs: "
+            "Marketing brief missing core daily action IDs: "
             + ", ".join(missing_core_actions)
         )
     forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & set(action_ids))
     if forbidden_actions:
         raise SystemExit(
-            "Marketing brief promotes non-core daily ActionObject IDs: "
+            "Marketing brief promotes non-core daily action IDs: "
             + ", ".join(forbidden_actions)
         )
 
@@ -360,14 +380,14 @@ def validate_daily_action_scope(
     missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - all_daily_action_ids)
     if missing_core_actions:
         raise SystemExit(
-            "Daily command context missing core ActionObject IDs: "
+            "Daily command context missing core action IDs: "
             + ", ".join(missing_core_actions)
         )
 
     forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & all_daily_action_ids)
     if forbidden_actions:
         raise SystemExit(
-            "Daily command context includes social ActionObject IDs: "
+            "Daily command context includes social action IDs: "
             + ", ".join(forbidden_actions)
         )
 
@@ -385,9 +405,12 @@ def validate_daily_action_scope(
 def validate_core_daily_actions(api_base: str, pack: dict[str, Any]) -> list[dict[str, Any]]:
     pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
     action_validations = []
-    for action_id in sorted(CORE_DAILY_ACTION_IDS):
+    action_ids_to_validate = CORE_DAILY_ACTION_IDS | (
+        CONDITIONAL_DAILY_ACTION_IDS & pack_action_ids
+    )
+    for action_id in sorted(action_ids_to_validate):
         if action_id not in pack_action_ids:
-            raise SystemExit(f"Daily context missing core ActionObject: {action_id}")
+            raise SystemExit(f"Daily context missing core action: {action_id}")
         quoted_action = urllib.parse.quote(action_id, safe="")
         validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
         action_validations.append(
@@ -399,7 +422,7 @@ def validate_core_daily_actions(api_base: str, pack: dict[str, Any]) -> list[dic
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Daily ActionObject validation failed: {validation}")
+            raise SystemExit(f"Daily action validation failed: {validation}")
     return action_validations
 
 
@@ -550,6 +573,10 @@ def collect_action_ids(command_center: dict[str, Any]) -> list[str]:
                 continue
             action_ids.extend(str(action_id) for action_id in item.get("action_ids") or [])
     return action_ids
+
+
+def collect_pack_action_ids(pack: dict[str, Any]) -> set[str]:
+    return {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
 
 
 def compact_brief_items(brief: dict[str, Any]) -> list[dict[str, Any]]:

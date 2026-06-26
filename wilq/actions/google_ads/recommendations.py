@@ -7,9 +7,9 @@ from wilq.schemas import MetricFact
 
 RECOMMENDATION_REVIEW_ACTION_ID = "act_prepare_google_ads_recommendation_review_queue"
 RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
-    "recommendation apply",
+    "zapis rekomendacji",
     "automatic recommendation accept",
-    "budget apply",
+    "zmiana budżetu",
     "campaign mutation",
     "performance uplift",
 ]
@@ -47,27 +47,27 @@ def validate_recommendation_review_payload(payload: dict[str, Any]) -> list[str]
         return errors
     for index, item in enumerate(preview_items):
         if not isinstance(item, dict):
-            errors.append(f"Recommendation payload preview item {index} must be object.")
+            errors.append(f"Recommendation podgląd zmian item {index} must be object.")
             continue
         if item.get("operation_type") != "ApplyRecommendationOperation":
             errors.append(
-                f"Recommendation payload preview item {index} must use "
+                f"Recommendation podgląd zmian item {index} must use "
                 "ApplyRecommendationOperation."
             )
         if item.get("apply_allowed") is not False:
             errors.append(
-                f"Recommendation payload preview item {index} must keep apply_allowed=false."
+                f"Recommendation podgląd zmian item {index} must keep apply_allowed=false."
             )
         if item.get("destructive") is not False:
             errors.append(
-                f"Recommendation payload preview item {index} must be non-destructive."
+                f"Recommendation podgląd zmian item {index} must be non-destructive."
             )
         if item.get("api_mutation_ready") is not False:
             errors.append(
-                f"Recommendation payload preview item {index} must not be API-mutation ready."
+                f"Recommendation podgląd zmian item {index} must not be API-mutation ready."
             )
         if not item.get("evidence_ids"):
-            errors.append(f"Recommendation payload preview item {index} requires evidence IDs.")
+            errors.append(f"Recommendation podgląd zmian item {index} requires evidence IDs.")
     return errors
 
 
@@ -163,9 +163,9 @@ def _recommendation_candidate(
         "campaign_budget_id": first_dimensions.get("campaign_budget_id"),
         "operation_type": "ApplyRecommendationOperation",
         "reason": (
-            "Review-only Google Ads recommendation apply operation preview. "
-            "WILQ must not apply it without human strategy review, RMF compliance "
-            "review, confirmation and audit support."
+            "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ. "
+            "WILQ nie może zapisać tej zmiany bez oceny strategii, sprawdzenia "
+            "zgodności z RMF, potwierdzenia człowieka i audytu."
         ),
         "evidence_ids": evidence_ids,
         "source_metric_names": source_metric_names,

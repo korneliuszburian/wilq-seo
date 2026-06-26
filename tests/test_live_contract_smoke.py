@@ -19,7 +19,7 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
     return {
         "health": {"status": "ok", "service": "wilq-api"},
         "command_center": {
-            "strict_instruction": "WILQ pokazuje tylko metryki z API/evidence.",
+            "strict_instruction": "WILQ pokazuje tylko metryki z danych źródłowych.",
             "daily_decisions": [
                 {
                     "id": "decision_review_ads",
@@ -56,7 +56,7 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
             ],
         },
         "marketing_brief": {
-            "strict_instruction": "WILQ pokazuje tylko metryki z API/evidence.",
+            "strict_instruction": "WILQ pokazuje tylko metryki z danych źródłowych.",
             "sections": [
                 {
                     "id": "what_we_know",

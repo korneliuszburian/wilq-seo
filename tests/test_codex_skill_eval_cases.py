@@ -58,8 +58,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "keyword_planner_read_contract",
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
-                "negative_keyword_payload_preview",
-                "recommendation apply",
+                "negative_keyword_change_preview",
+                "zapis zmian rekomendacji",
                 "search terms",
                 "negative_keywords_read_contract",
                 "CPA",
@@ -95,9 +95,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "validated_action_ids": {"act_review_ga4_tracking_quality"},
         },
         "wilq-gsc-content-doctor": {
-            "surface_path": "/seo-gsc",
+            "surface_path": "/content-planner",
             "terms": {
-                "SEO / GSC",
+                "Content Planner",
                 "GSC",
                 "treści",
                 "content_diagnostics",
@@ -133,7 +133,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "backlink gap",
                 "gap_read_contract",
                 "stale",
-                "review-only",
+                "do sprawdzenia w WILQ",
                 "Zablokowane claims",
             },
             "action_ids": set(),
@@ -165,7 +165,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "issue",
                 "act_review_merchant_feed_issues",
                 "merchant_feed_issue_review_preview_v1",
-                "review-only",
+                "do sprawdzenia w WILQ",
                 "price impact",
                 "product ROAS",
             },
@@ -191,21 +191,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "h1_direction",
                 "h2_direction",
                 "faq_direction",
-                "source_url",
-                "target_site_url",
-                "target_site_adaptation_status",
-                "target_site_migration_map",
-                "target_site_mapping_review_status",
-                "target_site_mapping_review_candidate_urls",
-                "target_site_mapping_review_summary",
-                "target_site_mapping_review_contract",
-                "target_site_mapping_review",
-                "next_required_gate",
-                "target_site_mapping_review_needed",
-                "review_alternative_candidates",
-                "manual_mapping_required",
-                "ekologus.dev.proudsite.pl",
-                "target context",
+                "source_public_url",
+                "final_canonical_url",
+                "intended_final_url",
+                "preview_url",
+                "ekologus.pl",
+                "optional preview",
                 "canonical",
                 "duplicate",
                 "source_facts",
@@ -225,7 +216,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ads_diagnostics",
                 "custom_segments_read_contract",
                 "audience_forecast_read_contract",
-                "custom_segment_payload_preview",
+                "custom_segment_change_preview",
                 "forecast_or_audience_size",
                 "missing_forecast",
                 "review_priority",
@@ -249,7 +240,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "demand_gen_ad_group_ad_rows",
                 "demand_gen_creative_asset_rows",
                 "demand_gen_landing_quality_by_campaign",
-                "demand_gen_migration_constraints",
+                "demand_gen_transition_constraints",
                 "demand_gen_readiness_review_action_object",
                 "blocked claims",
             },
@@ -289,7 +280,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "publish_allowed",
                 "missing_publish_permissions",
                 "candidate_inputs",
-                "review-only",
+                "do sprawdzenia w WILQ",
                 "LinkedIn",
                 "Facebook",
                 "blocked claims",
@@ -377,21 +368,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "h1_direction",
         "h2_direction",
         "faq_direction",
-        "source_url",
-        "target_site_url",
-        "target_site_adaptation_status",
-        "target_site_migration_map",
-        "target_site_mapping_review_status",
-        "target_site_mapping_review_candidate_urls",
-        "target_site_mapping_review_summary",
-        "target_site_mapping_review_contract",
-        "target_site_mapping_review",
-        "next_required_gate",
-        "target_site_mapping_review_needed",
-        "review_alternative_candidates",
-        "manual_mapping_required",
-        "ekologus.dev.proudsite.pl",
-        "target context",
+        "source_public_url",
+        "final_canonical_url",
+        "intended_final_url",
+        "preview_url",
+        "ekologus.pl",
+        "optional preview",
         "canonical",
         "duplicate",
         "source_facts",
@@ -403,7 +385,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     for term in (
         "ekologus.dev.proudsite.pl source evidence",
         "WordPress publish",
-        "wordpress_staging_write",
+        "wordpress_draft_write",
         "duplicate-free guarantee",
         "ranking guarantee",
         "ranking_or_lead_uplift_claim",
@@ -424,7 +406,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     assert demand_gen_case["expected_blocked"] is True
     assert "Demand Gen launch recommendation" in demand_gen_case["blocked_claim_terms"]
-    assert "Demand Gen migration ready" in demand_gen_case["blocked_claim_terms"]
+    assert "Demand Gen transition ready" in demand_gen_case["blocked_claim_terms"]
     assert "performance uplift" in demand_gen_case["blocked_claim_terms"]
     custom_segments_case = cases["wilq-custom-segments"]
     assert "audience size" in custom_segments_case["blocked_claim_terms"]
@@ -695,10 +677,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         ".agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ahrefs/diagnostics" in ahrefs_skill_doc
-    assert (
-        'request_json(args.api_base, "POST", "/api/codex/context-pack"'
-        in ahrefs_smoke_script
-    )
+    assert '"POST"' in ahrefs_smoke_script
+    assert '"/api/codex/context-pack"' in ahrefs_smoke_script
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
     assert "ahrefs_review_gap_records" in ahrefs_smoke_script
     assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script

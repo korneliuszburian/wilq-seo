@@ -29,12 +29,12 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 <workflow>
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
 3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem GA4 behavior, jakości landingów, conversion readiness lub tracking blockers.
 4. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji i zachowaj typy/statusy zwrócone przez API, np. `fix_measurement`, `review_landing_mapping`, `review_traffic_quality`. Nie klasyfikuj GA4 itemów samodzielnie poza kontraktem API.
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ga4-analyst"}` i potwierdź, że osadzony kontrakt `ga4_diagnostics` zgadza się z route.
-6. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
-7. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+6. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
+7. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
 8. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
 </workflow>
@@ -58,7 +58,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego read.
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego odczytu danych.
 
 </allowed_endpoints>
 
@@ -78,9 +78,9 @@ Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ AP
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
 
 </output_contract>
 
@@ -93,6 +93,6 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
-- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
-- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+- Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
+- Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.
 </safety_rules>

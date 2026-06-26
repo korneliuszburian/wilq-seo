@@ -176,7 +176,7 @@ def _operator_summary(
         ),
         next_step=(
             "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu "
-            "jakości ruchu i waliduj ActionObject tylko jako review-only."
+            "jakości ruchu i sprawdź propozycję w WILQ do sprawdzenia."
             f"{freshness_next_step}"
         ),
         top_decision_ids=[decision.id for decision in top_decisions],
@@ -255,7 +255,7 @@ def _ga4_freshness_assessment(
                         "i są do odświeżenia."
                     ),
                     next_step=(
-                        "Uruchom read-only GA4 vendor_read, jeśli pytanie dotyczy "
+                        "Uruchom odczyt danych GA4, jeśli pytanie dotyczy "
                         "aktualnego stanu landingów, źródeł albo kampanii."
                     ),
                 )
@@ -270,7 +270,7 @@ def _ga4_freshness_assessment(
                     f"Najnowsze GA4 metric facts mają około {age_hours:.1f}h i mieszczą się "
                     f"w progu {GA4_STALE_AFTER_HOURS}h."
                 ),
-                next_step="Można użyć danych GA4 do review bez dodatkowego refreshu.",
+                next_step="Można użyć danych GA4 do sprawdzenia bez dodatkowego odświeżenia.",
             )
         return Ga4FreshnessAssessment(
             state="missing",
@@ -279,8 +279,8 @@ def _ga4_freshness_assessment(
             age_hours=None,
             stale_after_hours=GA4_STALE_AFTER_HOURS,
             requires_refresh=True,
-            summary="Brak zapisanego read-only vendor_read GA4.",
-            next_step="Uruchom read-only GA4 vendor_read przed oceną aktualnej jakości ruchu.",
+            summary="Brak zapisanego odczytu danych GA4.",
+            next_step="Uruchom odczyt danych GA4 przed oceną aktualnej jakości ruchu.",
         )
 
     completed_at = latest_refresh.completed_at or latest_refresh.started_at
@@ -297,11 +297,11 @@ def _ga4_freshness_assessment(
             stale_after_hours=GA4_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary=(
-                "Ostatni odczyt GA4 nie zakończył się pełnym vendor_read z metrykami, "
+                "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk, "
                 f"tylko {latest_refresh.status.value}."
             ),
             next_step=(
-                "Napraw blocker odczytu i uruchom read-only GA4 vendor_read przed "
+                "Napraw blocker odczytu i uruchom ponownie odczyt danych GA4 przed "
                 "wnioskami o aktualnej jakości ruchu."
             ),
         )
@@ -315,11 +315,11 @@ def _ga4_freshness_assessment(
             stale_after_hours=GA4_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary=(
-                f"Ostatni GA4 vendor_read ma około {age_hours:.1f}h i jest do odświeżenia. "
+                f"Ostatni odczyt danych GA4 ma około {age_hours:.1f}h i jest do odświeżenia. "
                 "To wystarcza do stale review, ale nie do claimów o bieżącym stanie ruchu."
             ),
             next_step=(
-                "Uruchom read-only GA4 vendor_read, jeśli pytanie dotyczy aktualnego "
+                "Uruchom odczyt danych GA4, jeśli pytanie dotyczy aktualnego "
                 "stanu landingów, źródeł albo kampanii."
             ),
         )
@@ -332,10 +332,10 @@ def _ga4_freshness_assessment(
         stale_after_hours=GA4_STALE_AFTER_HOURS,
         requires_refresh=False,
         summary=(
-            f"Ostatni GA4 vendor_read ma około {age_hours:.1f}h i mieści się "
+            f"Ostatni odczyt danych GA4 ma około {age_hours:.1f}h i mieści się "
             f"w progu {GA4_STALE_AFTER_HOURS}h."
         ),
-        next_step="Można użyć danych GA4 do review bez dodatkowego refreshu.",
+        next_step="Można użyć danych GA4 do sprawdzenia bez dodatkowego odświeżenia.",
     )
 
 
@@ -353,7 +353,7 @@ def _landing_behavior_section(
     if not dimensioned_facts and not tactical_items:
         return Ga4DiagnosticSection(
             id="ga4_landing_behavior",
-            title="GA4: brak landing/source/campaign breakdown",
+            title="GA4: brak zestawienie landing page, źródła i kampanii",
             status="blocked",
             summary=_ga4_blocker_reason(latest_refresh),
             diagnosis=(
@@ -461,13 +461,13 @@ def _tracking_readiness_section(
             f"{len(conversion_like_facts)} metryk konwersji albo kluczowych zdarzeń."
         ),
         diagnosis=(
-            "Aktualne dane wspierają review jakości ruchu. Jeżeli brakuje metryk "
+            "Aktualne dane wspierają ocenę jakości ruchu. Jeżeli brakuje metryk "
             "konwersji albo kluczowych zdarzeń, WILQ musi oznaczyć konwersje jako "
             "brakujący wymiar analizy."
         ),
         next_step=(
-            "Waliduj ActionObject i przygotuj checklistę jakości pomiaru "
-            "bez wykonania zmian."
+            "Sprawdź propozycję w WILQ i przygotuj checklistę jakości pomiaru "
+            "bez zapisu zmian."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_unique(fact.evidence_id for fact in facts[:20]),
@@ -529,7 +529,7 @@ def _conversion_readiness_contract(
         action_ids=action_ids,
         blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
         next_step=(
-            "Waliduj `act_review_ga4_tracking_quality` i sprawdź mapowanie "
+            "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie "
             "konwersji/key events przed wnioskami o opłacalności."
         ),
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
@@ -546,13 +546,13 @@ def _ga4_action_safety_section(
         id="ga4_action_safety",
         title="Bezpieczeństwo akcji GA4",
         status="ready" if facts or tactical_items else "blocked",
-        summary="Akcje GA4 pozostają w trybie przygotowania i nie wykonują zmian w pomiarze.",
+        summary="Akcje GA4 pozostają w trybie przygotowania i nie zapisują zmian w pomiarze.",
         diagnosis=(
             "WILQ może przygotować checklistę jakości pomiaru i review landingów. Nie może "
             "zmieniać konfiguracji GA4 ani twierdzić, że naprawił pomiar bez osobnego "
-            "ActionObject, walidacji i audytu."
+            "kontraktu akcji, sprawdzenia i audytu."
         ),
-        next_step="Waliduj `act_review_ga4_tracking_quality` i zatrzymaj wykonanie zmian.",
+        next_step="Sprawdź `act_review_ga4_tracking_quality` w WILQ i zatrzymaj zapis zmian.",
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=action_ids,
@@ -604,7 +604,7 @@ def _ga4_decision_queue(
             title = f"Sprawdź jakość ruchu: {landing_page or 'brak landing page'}"
             rationale = (
                 "GA4 pokazuje ruch dla potwierdzonego landing page. To wystarcza do "
-                "review jakości ruchu i message match, ale nie do claimów o konwersjach."
+                "oceny jakości ruchu i message match, ale nie do claimów o konwersjach."
             )
             next_step = (
                 "Porównaj landing, źródło i kampanię z intencją strony. Nie oceniaj ROAS "
@@ -699,12 +699,12 @@ def _ga4_decisions_from_dimensioned_facts(
             decision_type = "review_traffic_quality"
             title = f"Sprawdź jakość ruchu: {landing_page}"
             rationale = (
-                "GA4 ma landing/source/campaign facts. To wystarcza do review jakości "
+                "GA4 ma fakty landing page, źródła i kampanii. To wystarcza do sprawdzenia jakości "
                 "ruchu i message match, ale nie do claimów o ROAS albo revenue."
             )
             next_step = (
                 "Porównaj landing, źródło i kampanię z intencją strony. Jeśli trzeba, "
-                "waliduj `act_review_ga4_tracking_quality` jako review-only."
+                "sprawdź w WILQ `act_review_ga4_tracking_quality` jako akcję do sprawdzenia w WILQ."
             )
             risk = ActionRisk.low
 

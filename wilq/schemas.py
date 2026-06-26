@@ -246,7 +246,7 @@ class ActionReviewGate(BaseModel):
         "ready_to_apply",
         "blocked_apply",
     ] = "pending_validation"
-    summary: str = "Wymaga walidacji ActionObject przed kolejnym krokiem."
+    summary: str = "Wymaga walidacji akcji przed kolejnym krokiem."
     required_checks: list[str] = Field(default_factory=list)
     operator_checklist: list[str] = Field(default_factory=list)
     apply_blockers: list[str] = Field(default_factory=list)
@@ -732,6 +732,7 @@ class AdsCampaignMetricRow(BaseModel):
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str = ""
     human_review_gates: list[str] = Field(default_factory=list)
+    human_review_gate_labels: list[str] = Field(default_factory=list)
 
 
 class AdsCampaignReadContract(BaseModel):
@@ -830,6 +831,7 @@ class AdsBusinessContextReadContract(BaseModel):
     configured_sources: list[str] = Field(default_factory=list)
     business_policy_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     target_interpretation: AdsBusinessTargetInterpretation
     strategy_review_readiness_contract: AdsStrategyReviewReadinessContract
     allowed_metrics: list[str] = Field(default_factory=list)
@@ -1018,6 +1020,7 @@ class AdsRecommendationRow(BaseModel):
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
+    human_review_gate_labels: list[str] = Field(default_factory=list)
     dismissed: bool = False
     campaign_id: str | None = None
     campaign_budget_id: str | None = None
@@ -1053,6 +1056,7 @@ class AdsRecommendationsReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1131,6 +1135,7 @@ class AdsCampaignTriageRow(BaseModel):
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     human_review_gates: list[str] = Field(default_factory=list)
+    human_review_gate_labels: list[str] = Field(default_factory=list)
 
 
 class AdsCampaignTriageReadContract(BaseModel):
@@ -1158,6 +1163,7 @@ class AdsOptimizerReadinessItem(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1177,6 +1183,7 @@ class AdsOptimizerReadinessContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1279,6 +1286,7 @@ class AdsSearchTermsReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1322,6 +1330,7 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1362,6 +1371,7 @@ class AdsSearchTermNgramReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1396,6 +1406,7 @@ class AdsSearchTermSafetyReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1426,6 +1437,7 @@ class AdsKeywordMatchContextReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1514,6 +1526,7 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     )
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1527,13 +1540,13 @@ def default_ads_custom_segment_audience_forecast_contract() -> (
         status="blocked",
         title="Forecast i audience size custom segments",
         summary=(
-            "Brak kandydatów custom segments do sprawdzenia forecastu albo audience size."
+            "Brak propozycji custom segments do sprawdzenia forecastu albo audience size."
         ),
         missing_read_contracts=["custom_segment_candidates", "forecast_or_audience_size"],
         operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
         blocked_claims=["audience size", "conversion uplift", "ROAS", "targeting applied"],
         next_step=(
-            "Najpierw zbuduj kandydatów custom segments z realnych source terms."
+            "Najpierw zbuduj propozycje custom segments z realnych source terms."
         ),
     )
 
@@ -1560,6 +1573,7 @@ class AdsKeywordPlannerReadContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1585,6 +1599,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
+    human_review_gate_labels: list[str] = Field(default_factory=list)
     source_terms: list[str] = Field(default_factory=list)
     rejected_terms: list[str] = Field(default_factory=list)
     rejection_reasons: list[str] = Field(default_factory=list)
@@ -1617,6 +1632,7 @@ class AdsCustomSegmentsReadContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
@@ -1651,6 +1667,7 @@ class AdsNegativeKeywordCandidate(BaseModel):
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
+    human_review_gate_labels: list[str] = Field(default_factory=list)
     campaign_id: str | None = None
     campaign_name: str | None = None
     ad_group_id: str | None = None
@@ -1727,6 +1744,7 @@ class AdsDecisionItem(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
@@ -1789,6 +1807,7 @@ class AdsOperatorSummary(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -1864,12 +1883,12 @@ class DemandGenLandingQualityRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
 
 
-class DemandGenMigrationConstraintRow(BaseModel):
+class DemandGenTransitionConstraintRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
     advertising_channel_type: str | None = None
-    migration_candidate: bool = False
+    transition_candidate: bool = False
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
 
@@ -2180,31 +2199,10 @@ class ContentDecisionItem(BaseModel):
     best_average_position: float | None = None
     wordpress_match: str | None = None
     wordpress_match_confidence: str | None = None
-    wordpress_content_url: str | None = None
-    source_url: str | None = None
-    source_site_host: str | None = None
-    target_site_url: str | None = None
-    target_site_host: str | None = None
-    target_site_adaptation_status: str | None = None
-    target_site_migration_candidate_url: str | None = None
-    target_site_migration_status: str | None = None
-    target_site_migration_summary: str | None = None
-    target_site_migration_candidate_inventory_status: str | None = None
-    target_site_migration_candidate_inventory_summary: str | None = None
-    target_site_alternative_candidate_urls: list[str] = Field(default_factory=list)
-    target_site_alternative_candidate_summary: str | None = None
-    target_site_mapping_review_status: str | None = None
-    target_site_mapping_review_summary: str | None = None
-    target_site_mapping_review_candidate_urls: list[str] = Field(default_factory=list)
-    target_site_review_requirements: list[str] = Field(default_factory=list)
-    target_site_inventory_content_type: str | None = None
-    target_site_inventory_status: str | None = None
-    target_site_inventory_source: str | None = None
-    target_site_inventory_modified_gmt: str | None = None
-    target_site_inventory_title_or_h1: str | None = None
-    target_site_inventory_canonical_url: str | None = None
-    target_site_inventory_missing_fields: list[str] = Field(default_factory=list)
-    target_site_inventory_summary: str | None = None
+    source_public_url: str | None = None
+    preview_url: str | None = None
+    intended_final_url: str | None = None
+    final_canonical_url: str | None = None
     inventory_gate_status: str | None = None
     canonical_gate_status: str | None = None
     duplicate_gate_status: str | None = None
@@ -2222,42 +2220,6 @@ class ContentDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
-class ContentTargetSiteMigrationMapItem(BaseModel):
-    decision_id: str
-    candidate_id: str | None = None
-    title: str
-    source_url: str | None = None
-    target_site_host: str | None = None
-    migration_candidate_url: str | None = None
-    candidate_inventory_status: str | None = None
-    mapping_review_status: str | None = None
-    mapping_review_candidate_urls: list[str] = Field(default_factory=list)
-    canonical_gate_status: str | None = None
-    duplicate_gate_status: str | None = None
-    next_required_gate: str
-    status_summary: str
-    source_connectors: list[str] = Field(default_factory=list)
-    evidence_ids: list[str] = Field(default_factory=list)
-    blocked_outputs: list[str] = Field(default_factory=list)
-
-
-class ContentTargetSiteMappingReviewInputItem(BaseModel):
-    decision_id: str
-    candidate_id: str
-    title: str
-    source_url: str | None = None
-    current_migration_candidate_url: str | None = None
-    candidate_target_urls: list[str] = Field(default_factory=list)
-    mapping_review_status: str | None = None
-    review_action_id: str
-    review_endpoint: str
-    allowed_outcomes: list[str] = Field(default_factory=list)
-    required_checked_items: list[str] = Field(default_factory=list)
-    review_payload_template: dict[str, object] = Field(default_factory=dict)
-    review_notes_prompt: str
-    blocked_outputs: list[str] = Field(default_factory=list)
-
-
 class ContentOperatorSummary(BaseModel):
     id: Literal["content_operator_summary"] = "content_operator_summary"
     title: str
@@ -2266,19 +2228,7 @@ class ContentOperatorSummary(BaseModel):
     top_decision_ids: list[str] = Field(default_factory=list)
     confirmed_wordpress_count: int = 0
     missing_wordpress_count: int = 0
-    target_site_host: str | None = None
-    target_site_alias_match_count: int = 0
     current_site_match_count: int = 0
-    target_site_mapping_review_count: int = 0
-    target_site_mapping_status: str | None = None
-    target_site_confirmed_candidate_inventory_count: int = 0
-    target_site_missing_candidate_inventory_count: int = 0
-    target_site_migration_map: list[ContentTargetSiteMigrationMapItem] = Field(
-        default_factory=list
-    )
-    target_site_mapping_review_inputs: list[
-        ContentTargetSiteMappingReviewInputItem
-    ] = Field(default_factory=list)
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2642,6 +2592,7 @@ class AhrefsGapReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
+    gap_record_count: int = 0
     next_step: str
     risk: ActionRisk = ActionRisk.medium
 
@@ -2798,7 +2749,7 @@ class DemandGenReadinessContract(BaseModel):
     demand_gen_landing_quality_rows: list[DemandGenLandingQualityRow] = Field(
         default_factory=list
     )
-    demand_gen_migration_constraint_rows: list[DemandGenMigrationConstraintRow] = Field(
+    demand_gen_transition_constraint_rows: list[DemandGenTransitionConstraintRow] = Field(
         default_factory=list
     )
     next_step: str

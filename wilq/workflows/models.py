@@ -32,7 +32,9 @@ class Workflow(BaseModel):
     description: str
     steps: list[WorkflowStep]
     status: Literal["ready", "blocked", "planned"] = "planned"
+    status_label: str | None = None
     route: str | None = None
+    route_label: str | None = None
     skill_id: str | None = None
     safe_next_step: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
@@ -42,6 +44,7 @@ class Workflow(BaseModel):
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     missing_contracts: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+    risk_label: str | None = None
 
 
 class WorkflowRun(BaseModel):

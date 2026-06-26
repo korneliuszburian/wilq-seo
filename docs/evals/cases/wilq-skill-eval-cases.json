@@ -2,7 +2,7 @@
   {
     "skill": "wilq-daily-command",
     "surface_path": "/command-center",
-    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, evidence IDs, core ActionObject IDs i jeden najbezpieczniejszy następny krok. Nie promuj social draftów ani Localo jako głównego daily taska, jeśli nie występują w command_center.daily_decisions.",
+    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, evidence IDs, core action IDs i jeden najbezpieczniejszy następny krok. Nie promuj social draftów ani Localo jako głównego daily taska, jeśli nie występują w command_center.daily_decisions.",
     "expected_terms_pl": [
       "Plan działań",
       "action_plan",
@@ -57,7 +57,7 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, recommendation apply, targeting/apply oraz negative keyword apply bez human review, potwierdzenia i apply/audit contract.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
     "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania CPA/ROAS, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
@@ -97,8 +97,8 @@
       "keyword_planner_read_contract",
       "keyword_planner_enrichment",
       "forecast_or_audience_size",
-      "negative_keyword_payload_preview",
-      "recommendation apply",
+      "negative_keyword_change_preview",
+      "zapis zmian rekomendacji",
       "negative_keywords_read_contract",
       "review_negative_keyword_safety",
       "90_day_safety_check"
@@ -106,8 +106,8 @@
     "forbidden_terms_pl": [
       "bez match context",
       "bez keyword match context",
-      "bez human review, match context",
-      "bez human review, potwierdzenia, match context",
+      "bez sprawdzenia przez człowieka, match context",
+      "bez sprawdzenia przez człowieka, potwierdzenia, match context",
       "match context missing",
       "keyword match context missing"
     ],
@@ -134,11 +134,11 @@
   },
   {
     "skill": "wilq-gsc-content-doctor",
-    "surface_path": "/seo-gsc",
+    "surface_path": "/content-planner",
     "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
     "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
     "expected_terms_pl": [
-      "SEO / GSC",
+      "Content Planner",
       "GSC",
       "treści",
       "content_diagnostics",
@@ -177,7 +177,7 @@
       "backlink gap",
       "gap_read_contract",
       "stale",
-      "review-only",
+      "do sprawdzenia w WILQ",
       "Zablokowane claims"
     ],
     "expected_blocked": false,
@@ -205,7 +205,7 @@
   {
     "skill": "wilq-localo-operator",
     "surface_path": "/localo",
-    "task_pl": "Oceń aktualne Localo evidence dla Ekologus: pokaż MCP access oraz read-only agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ API je zwraca. Jasno oddziel review agregatów od brakującego local_tasks contract, GBP write i local visibility uplift; nie twierdź, że zadania lokalne, write path albo wzrost widoczności są odblokowane.",
+    "task_pl": "Oceń aktualne dowody Localo dla Ekologus: pokaż dostęp MCP oraz agregaty read-only place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ je zwraca. Jasno oddziel przegląd agregatów od brakującego local_tasks contract, GBP write i local visibility uplift; nie twierdź, że zadania lokalne, write path albo wzrost widoczności są odblokowane.",
     "messy_task_pl": "Localo finalnie działa czy nie działa? Daj mi konkretnie co wiemy o lokalnej widoczności i czego nadal nie wolno obiecać.",
     "expected_connectors": ["localo"],
     "expected_terms_pl": [
@@ -242,8 +242,7 @@
   {
     "skill": "wilq-content-strategist",
     "surface_path": "/content-planner",
-    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników. Użyj content_diagnostics.decision_queue oraz operator_summary.target_site_migration_map z WILQ API, w tym inventory_check_before_create, merge_create_after_inventory_check albo block_as_tracking_not_content, gdy API je zwraca. Jeśli pojawia się ekologus.dev.proudsite.pl, traktuj go jako target context/adaptation target, nie jako źródło historycznej skuteczności; pokaż source_url, target_site_url, target_site_adaptation_status, target_site_migration_map, target_site_mapping_review_status, next_required_gate, inventory/canonical/duplicate check oraz zablokuj claimy publish/staging/ranking/lead uplift bez validated write/apply evidence.",
-    "messy_task_pl": "Co mamy pisać na nową stronę Ekologus, żeby nie robić SEO slopu? Weź BDO/Zielony Ład, sprawdź czy to refresh, merge czy nowe, i powiedz czego brakuje do draftu.",
+    "messy_task_pl": "Co mamy pisać na treści Ekologus, żeby nie robić SEO slopu? Weź BDO/Zielony Ład, sprawdź czy to odświeżenie, scalenie czy nową treść, i powiedz czego brakuje do draftu.",
     "expected_connectors": [
       "google_search_console",
       "google_analytics_4",
@@ -276,21 +275,12 @@
       "h1_direction",
       "h2_direction",
       "faq_direction",
-      "source_url",
-      "target_site_url",
-      "target_site_adaptation_status",
-      "target_site_migration_map",
-      "target_site_mapping_review_status",
-      "target_site_mapping_review_candidate_urls",
-      "target_site_mapping_review_summary",
-      "target_site_mapping_review_contract",
-      "target_site_mapping_review",
-      "next_required_gate",
-      "target_site_mapping_review_needed",
-      "review_alternative_candidates",
-      "manual_mapping_required",
-      "ekologus.dev.proudsite.pl",
-      "target context",
+      "source_public_url",
+      "final_canonical_url",
+      "intended_final_url",
+      "preview_url",
+      "ekologus.pl",
+      "optional preview",
       "canonical",
       "duplicate",
       "source_facts",
@@ -299,7 +289,7 @@
       "bdo co to",
       "zielony ład",
       "block_as_tracking_not_content",
-      "wordpress_staging_write",
+      "wordpress_draft_write",
       "ranking_or_lead_uplift_claim"
     ],
     "expected_action_ids": ["act_prepare_content_refresh_queue"],
@@ -308,7 +298,7 @@
     "blocked_claim_terms": [
       "ekologus.dev.proudsite.pl source evidence",
       "WordPress publish",
-      "wordpress_staging_write",
+      "wordpress_draft_write",
       "duplicate-free guarantee",
       "ranking guarantee",
       "ranking_or_lead_uplift_claim",
@@ -319,14 +309,14 @@
   {
     "skill": "wilq-social-publisher",
     "surface_path": "/social-publisher",
-    "task_pl": "Przygotuj review-safe kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
+    "task_pl": "Przygotuj bezpieczny do sprawdzenia kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
     "expected_connectors": ["linkedin", "facebook"],
     "expected_terms_pl": [
       "social_draft_context",
       "publish_allowed",
       "missing_publish_permissions",
       "candidate_inputs",
-      "review-only",
+      "do sprawdzenia w WILQ",
       "LinkedIn",
       "Facebook",
       "blocked claims"
@@ -350,7 +340,7 @@
   {
     "skill": "wilq-campaign-builder",
     "surface_path": "/ads-doctor",
-    "task_pl": "Oceń, czy można przygotować kandydat kampanii lub payload preview. Nie proponuj apply bez validated ActionObject.",
+    "task_pl": "Oceń, czy można przygotować propozycję kampanii albo podgląd zmian. Nie proponuj zapisu zmian bez akcji sprawdzonej w WILQ.",
     "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
     "expected_terms_pl": [
       "Campaign Builder",
@@ -358,8 +348,8 @@
       "content_landing_context",
       "query_page_candidates",
       "campaign_candidates",
-      "payload preview",
-      "review-only",
+      "podgląd zmian",
+      "Sprawdzenie w WILQ",
       "blocked claims"
     ],
     "expected_blocked": false,
@@ -367,7 +357,7 @@
       "campaign performance",
       "conversion uplift",
       "ranking guarantee",
-      "campaign apply"
+      "zmiana kampanii"
     ],
     "expected_action_ids": [
       "act_prepare_ads_campaign_review_queue",
@@ -389,7 +379,7 @@
       "ads_diagnostics",
       "custom_segments_read_contract",
       "audience_forecast_read_contract",
-      "custom_segment_payload_preview",
+      "custom_segment_change_preview",
       "forecast_or_audience_size",
       "missing_forecast",
       "review_priority",
@@ -422,17 +412,17 @@
       "demand_gen_ad_group_ad_rows",
       "demand_gen_creative_asset_rows",
       "demand_gen_landing_quality_by_campaign",
-      "demand_gen_migration_constraints",
+      "demand_gen_transition_constraints",
       "demand_gen_readiness_review_action_object",
       "blocked claims"
     ],
     "expected_blocked": true,
     "blocked_claim_terms": [
       "Demand Gen launch recommendation",
-      "Demand Gen migration ready",
+      "Demand Gen transition ready",
       "creative quality verdict",
       "asset performance verdict",
-      "campaign apply",
+      "zmiana kampanii",
       "performance uplift"
     ],
     "expected_action_ids": ["act_review_demand_gen_readiness"],
@@ -448,7 +438,7 @@
   {
     "skill": "wilq-ga4-analyst",
     "surface_path": "/ga4",
-    "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, ActionObject oraz claimy, których nie wolno mówić.",
+    "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, akcję do sprawdzenia oraz claimy, których nie wolno mówić.",
     "messy_task_pl": "Czy te landing pages są słabe, czy tracking jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
     "expected_connectors": ["google_analytics_4"],
     "expected_terms_pl": [
@@ -467,7 +457,7 @@
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
-    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że product ROAS, product revenue recovery, price change impact, approval restored oraz feed write są zablokowane bez odpowiednich kontraktów.",
+    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że product ROAS, product revenue recovery, price change impact, approval restored oraz feed write są zablokowane bez odpowiednich kontraktów.",
     "messy_task_pl": "Czy feed jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj odzyskania approval/revenue.",
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
@@ -487,7 +477,7 @@
       "issue",
       "act_review_merchant_feed_issues",
       "merchant_feed_issue_review_preview_v1",
-      "review-only",
+      "do sprawdzenia w WILQ",
       "price impact",
       "product ROAS"
     ],

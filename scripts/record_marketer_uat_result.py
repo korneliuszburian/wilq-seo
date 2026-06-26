@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 ROUTE_KEYS = ["command_center", "merchant", "content", "ads", "ga4"]
 ROUTE_LABELS = {
     "command_center": "Command Center",
@@ -90,8 +89,9 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
         "biggest_confusion": str(payload.get("biggest_confusion") or "").strip(),
         "task_candidates": task_candidates,
         "safety_note": (
-            "Ten raport zapisuje feedback UAT. Nie odblokowuje publish/apply, "
-            "Ads optimizera, feed repair, Localo uplift, CPA/ROAS ani revenue claims."
+            "Ten raport zapisuje feedback UAT. Nie odblokowuje publikacji ani "
+            "zapisu zmian, automatycznej optymalizacji Ads, naprawy feedu, "
+            "obietnic wzrostu Localo, CPA/ROAS ani twierdzeń o przychodach."
         ),
     }
 
@@ -168,7 +168,10 @@ def build_task_candidates(
             {
                 "category": "demo_readiness",
                 "source": "ready_without_developer",
-                "task": "Demo is not ready without developer support; classify and fix the blocking confusion before claiming UAT ready.",
+                "task": (
+                    "Demo is not ready without developer support; classify and "
+                    "fix the blocking confusion before claiming UAT ready."
+                ),
             }
         )
     for task in list_payload(payload.get("new_tasks")):

@@ -7,7 +7,7 @@ from wilq.schemas import (
     DemandGenAdGroupAdRow,
     DemandGenCreativeAssetRow,
     DemandGenLandingQualityRow,
-    DemandGenMigrationConstraintRow,
+    DemandGenTransitionConstraintRow,
     MetricFact,
 )
 
@@ -20,7 +20,7 @@ DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT = "demand_gen_campaign_rows"
 DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT = "demand_gen_ad_group_ad_rows"
 DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT = "demand_gen_creative_asset_rows"
 DEMAND_GEN_LANDING_QUALITY_CONTRACT = "demand_gen_landing_quality_by_campaign"
-DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT = "demand_gen_migration_constraints"
+DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT = "demand_gen_transition_constraints"
 DEMAND_GEN_AD_READ_STATUS_FACT = "demand_gen_ad_group_ad_status"
 DEMAND_GEN_AD_READ_ROW_COUNT_FACT = "demand_gen_ad_group_ad_row_count"
 DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT = "demand_gen_creative_asset_status"
@@ -34,10 +34,10 @@ DEMAND_GEN_READINESS_REQUIRED_VALIDATION = [
 ]
 DEMAND_GEN_READINESS_BLOCKED_CLAIMS = [
     "Demand Gen launch recommendation",
-    "Demand Gen migration ready",
+    "Demand Gen transition ready",
     "creative quality verdict",
     "asset performance verdict",
-    "campaign apply",
+    "zmiana kampanii",
     "performance uplift",
 ]
 
@@ -50,7 +50,7 @@ def demand_gen_readiness_review_payload(
     demand_gen_ad_group_ad_rows: list[dict[str, Any]],
     demand_gen_creative_asset_rows: list[dict[str, Any]],
     demand_gen_landing_quality_rows: list[dict[str, Any]],
-    demand_gen_migration_constraint_rows: list[dict[str, Any]],
+    demand_gen_transition_constraint_rows: list[dict[str, Any]],
     available_read_contracts: list[str],
     missing_read_contracts: list[str],
     source_connectors: list[str],
@@ -72,17 +72,17 @@ def demand_gen_readiness_review_payload(
         "demand_gen_creative_asset_rows": demand_gen_creative_asset_rows[:4],
         "demand_gen_landing_quality_row_count": len(demand_gen_landing_quality_rows),
         "demand_gen_landing_quality_rows": demand_gen_landing_quality_rows[:4],
-        "demand_gen_migration_constraint_row_count": len(
-            demand_gen_migration_constraint_rows
+        "demand_gen_transition_constraint_row_count": len(
+            demand_gen_transition_constraint_rows
         ),
-        "demand_gen_migration_constraint_rows": demand_gen_migration_constraint_rows[:4],
+        "demand_gen_transition_constraint_rows": demand_gen_transition_constraint_rows[:4],
         "available_read_contracts": available_read_contracts,
         "missing_read_contracts": missing_read_contracts,
         "reason": (
-            "Review-only podgląd gotowości Demand Gen. WILQ może pokazać kontekst "
-            "kanałów kampanii Ads i GA4, ale nadal blokuje launch, migrację, "
-            "werdykty kreatywne i apply bez osobnych kontraktów assetów, kreacji, "
-            "landing quality i migration constraints."
+            "Podgląd gotowości Demand Gen do sprawdzenia w WILQ. WILQ może pokazać "
+            "kontekst kanałów kampanii Ads i GA4, ale nadal blokuje uruchomienie, "
+            "przejście kampanii, werdykty kreatywne i zapis zmian bez osobnych "
+            "odczytów assetów, kreacji, jakości landingów i ograniczeń przejścia."
         ),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
         "blocked_claims": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
@@ -167,9 +167,9 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
             errors.append(
                 f"Demand Gen readiness preview item {index} requires landing rows."
             )
-        if not isinstance(preview.get("demand_gen_migration_constraint_rows"), list):
+        if not isinstance(preview.get("demand_gen_transition_constraint_rows"), list):
             errors.append(
-                f"Demand Gen readiness preview item {index} requires migration rows."
+                f"Demand Gen readiness preview item {index} requires transition rows."
             )
         if not isinstance(preview.get("missing_read_contracts"), list):
             errors.append(
@@ -280,33 +280,33 @@ def demand_gen_landing_quality_rows_from_facts(
     )
 
 
-def demand_gen_migration_constraint_rows_from_campaigns(
+def demand_gen_transition_constraint_rows_from_campaigns(
     demand_gen_campaign_rows: Iterable[dict[str, Any]],
-) -> list[DemandGenMigrationConstraintRow]:
-    rows: list[DemandGenMigrationConstraintRow] = []
+) -> list[DemandGenTransitionConstraintRow]:
+    rows: list[DemandGenTransitionConstraintRow] = []
     for campaign in demand_gen_campaign_rows:
         campaign_name = str(campaign.get("campaign_name") or "campaign").strip()
         channel = str(campaign.get("advertising_channel_type") or "").strip().upper()
         if channel == "DISCOVERY":
-            migration_candidate = True
+            transition_candidate = True
             reason = "discovery_to_demand_gen_requires_human_review"
         else:
-            migration_candidate = False
+            transition_candidate = False
             reason = "already_demand_gen_review_only"
         rows.append(
-            DemandGenMigrationConstraintRow(
+            DemandGenTransitionConstraintRow(
                 campaign_id=campaign.get("campaign_id"),
                 campaign_name=campaign_name,
                 campaign_status=campaign.get("campaign_status"),
                 advertising_channel_type=campaign.get("advertising_channel_type"),
-                migration_candidate=migration_candidate,
+                transition_candidate=transition_candidate,
                 reason=reason,
                 evidence_ids=unique_items(campaign.get("evidence_ids") or []),
             )
         )
     return sorted(
         rows,
-        key=lambda row: (row.migration_candidate, row.campaign_name),
+        key=lambda row: (row.transition_candidate, row.campaign_name),
         reverse=True,
     )
 

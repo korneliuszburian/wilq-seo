@@ -11,6 +11,7 @@ from wilq.actions.google_ads.negative_keywords import NEGATIVE_KEYWORD_ACTION_ID
 from wilq.actions.google_ads.recommendations import RECOMMENDATION_REVIEW_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
+from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import (
     GSC_QUERY_PAGE_FACT_LIMIT,
@@ -48,8 +49,8 @@ from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 STRICT_DAILY_INSTRUCTION = (
-    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
-    "nie domysł marketingowy."
+    "WILQ pokazuje tylko metryki i dowody z danych źródłowych. Brak danych "
+    "oznacza blocker, nie domysł marketingowy."
 )
 GA4_CONNECTOR_ID = "google_analytics_4"
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
@@ -110,11 +111,11 @@ LOCALO_COMMAND_CENTER_CONTRACT_ORDER = [
     "local_tasks",
 ]
 LOCALO_COMMAND_CENTER_CLAIM_BY_MISSING_CONTRACT = {
-    "local_rankings": "local ranking",
-    "gbp_visibility": "GBP performance",
-    "competitor_visibility": "competitor visibility",
-    "reviews": "review velocity",
-    "local_tasks": "local task completed",
+    "local_rankings": "lokalne rankingi",
+    "gbp_visibility": "wyniki profilu firmy w Google",
+    "competitor_visibility": "widoczność konkurencji",
+    "reviews": "tempo nowych opinii",
+    "local_tasks": "ukończone zadanie lokalne",
 }
 DAILY_DECISION_FRESH_AFTER_HOURS = 48
 DAILY_DECISION_METRIC_FACT_LIMIT = 8
@@ -126,12 +127,12 @@ PRIMARY_DAILY_PLAN_IDS = {
     "plan_fix_ads_oauth_before_spend_analysis",
 }
 CONFIGURE_GOOGLE_ADS_ACTION_ID = "act_configure_google_ads_env"
-DAILY_ADS_REVIEW_ACTION_IDS = {
+DAILY_ADS_REVIEW_ACTION_IDS = (
     CAMPAIGN_REVIEW_ACTION_ID,
     RECOMMENDATION_REVIEW_ACTION_ID,
     CUSTOM_SEGMENT_ACTION_ID,
     NEGATIVE_KEYWORD_ACTION_ID,
-}
+)
 
 
 def build_command_center_response(
@@ -158,6 +159,7 @@ def build_command_center_response(
         facts_by_connector=facts_by_connector,
         refresh_runs=refresh_runs,
     )
+    operator_brief = _operator_brief_for_marketer(operator_brief)
     action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
     return CommandCenterResponse(
         strict_instruction=STRICT_DAILY_INSTRUCTION,
@@ -180,6 +182,17 @@ def build_command_center_response(
         connector_health=connectors,
         codex_operator_status=codex_runtime_status(),
     )
+
+
+def _operator_brief_for_marketer(
+    items: list[CommandCenterBriefItem],
+) -> list[CommandCenterBriefItem]:
+    return [
+        item.model_copy(
+            update={"blocked_claims": operator_blocked_claims(item.blocked_claims)}
+        )
+        for item in items
+    ]
 
 
 def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
@@ -238,7 +251,7 @@ def _command_center_action_stubs() -> list[ActionObject]:
             domain=OpportunityDomain.content,
         ),
         _command_center_action_stub(
-            "act_prepare_wordpress_staging_draft",
+            "act_prepare_wordpress_draft_handoff",
             connector="wordpress_ekologus",
             domain=OpportunityDomain.content,
         ),
@@ -266,7 +279,7 @@ def _command_center_action_stub(
         status=ActionStatus.needs_validation,
         evidence_ids=[connector_evidence_id(connector)],
         human_diagnosis="Command Center lightweight action reference.",
-        recommended_reason="Use dedicated route for full ActionObject payload.",
+        recommended_reason="Użyj dedykowanego widoku dla pełnego zakresu akcji.",
         payload={},
         validation_status="not_validated",
         created_by="command_center_stub",
@@ -478,7 +491,7 @@ def _daily_decision_freshness_by_connector(
             state=state,
             last_success_at=completed_at,
             notes=(
-                f"Ostatni vendor_read: {completed_at.isoformat()}. "
+                f"Ostatni odczyt danych: {completed_at.isoformat()}. "
                 f"Próg świeżości: {DAILY_DECISION_FRESH_AFTER_HOURS}h."
             ),
         )
@@ -645,8 +658,8 @@ def _ads_item_from_facts(
     if live_data_available:
         action_ids = [
             action_id
-            for action_id in ads_action_ids
-            if action_id in DAILY_ADS_REVIEW_ACTION_IDS
+            for action_id in DAILY_ADS_REVIEW_ACTION_IDS
+            if action_id in ads_action_ids
         ]
     else:
         action_ids = [
@@ -719,7 +732,10 @@ def _ads_item_from_facts(
         next_step=(
             _ads_ready_next_step(metric_tiles)
             if live_data_available
-            else "Otwórz /ads-doctor i wykonaj bezpieczny repair path OAuth przez ActionObject."
+            else (
+                "Otwórz widok Ads i wykonaj bezpieczną ścieżkę naprawy OAuth "
+                "przez sprawdzoną akcję."
+            )
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -737,15 +753,15 @@ def _ads_item_from_facts(
             [
                 "CPA",
                 "ROAS",
-                "search-term waste",
-                "negative keyword apply",
-                "budget apply",
-                "recommendation apply",
-                "profitability",
-                "wasted budget",
+                "marnowanie budżetu na zapytaniach",
+                "dodanie wykluczających słów kluczowych",
+                "zmiana budżetu",
+                "zapis rekomendacji",
+                "opłacalność",
+                "zmarnowany budżet",
             ]
             if live_data_available
-            else ["spend", "CPA", "ROAS", "search terms", "wasted budget"]
+            else ["wydatki reklamowe", "CPA", "ROAS", "zapytania z reklam", "zmarnowany budżet"]
         ),
         risk=ActionRisk.medium,
     )
@@ -816,7 +832,7 @@ def _ads_derived_kpi_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
         if _ratio_or_none(row.get("conversion_value"), _micros_to_units(row.get("cost_micros")))
         is not None
     )
-    tiles = {"KPI do review": len(campaign_rows)}
+    tiles = {"KPI do sprawdzenia": len(campaign_rows)}
     if cpa_rows:
         tiles["wiersze CPA"] = cpa_rows
     if roas_rows:
@@ -973,9 +989,9 @@ def _ads_business_context_item_from_facts(
             "nie werdyktem opłacalności."
         ),
         next_step=(
-            "Otwórz /ads-doctor i uzupełnij marżę, cel biznesowy, cel budżetu "
-            "oraz target CPA/ROAS. Potem zwaliduj target guardrails i review "
-            "strategii zanim ocenisz profitability albo skalowanie budżetu."
+            "Otwórz widok Ads i uzupełnij marżę, cel biznesowy, cel budżetu "
+            "oraz target CPA/ROAS. Potem sprawdź w WILQ target guardrails i review "
+            "strategii zanim ocenisz opłacalność albo skalowanie budżetu."
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -994,11 +1010,11 @@ def _ads_business_context_item_from_facts(
             "cel biznesowy": "brak",
         },
         blocked_claims=[
-            "profitability",
-            "wasted budget",
-            "budget scaling",
-            "target CPA verdict",
-            "target ROAS verdict",
+            "opłacalność",
+            "zmarnowany budżet",
+            "skalowanie budżetu",
+            "werdykt target CPA",
+            "werdykt target ROAS",
         ],
         risk=ActionRisk.medium,
     )
@@ -1069,14 +1085,14 @@ def _merchant_item_from_tactical(
         status="ready" if live_data_available else "blocked",
         priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
         summary=(
-            f"{summary} To jest read-only queue, nie automatyczna naprawa feedu."
+            f"{summary} To jest kolejka do sprawdzenia, nie automatyczna naprawa feedu."
             if live_data_available
             else summary
         ),
         next_step=(
-            "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject."
+            "Otwórz widok Merchant i przejrzyj decyzje feedu przed sprawdzeniem propozycji w WILQ."
             if live_data_available
-            else "Uruchom read-only Merchant vendor_read, potem wróć do /merchant."
+            else "Uruchom odczyt danych Merchant, potem wróć do widoku Merchant."
         ),
         source_connectors=[GOOGLE_MERCHANT_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1096,10 +1112,14 @@ def _merchant_item_from_tactical(
             "decyzje": decision_count,
             "blockery": 0 if live_data_available else 1,
         },
-        blocked_claims=_unique(
-            claim for item in merchant_items for claim in item.blocked_claims
-        )
-        or ["approval restored", "revenue recovered", "automatic feed edit"],
+        blocked_claims=operator_blocked_claims(
+            _unique(claim for item in merchant_items for claim in item.blocked_claims)
+            or [
+                "ponowne zatwierdzenie produktu",
+                "odzyskany przychód",
+                "automatyczna zmiana feedu",
+            ]
+        ),
         risk=ActionRisk.medium,
     )
 
@@ -1266,7 +1286,7 @@ def _content_item_from_tactical(
             if top_item is not None
             else (
                 "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC zapytania/URL "
-                "i WordPress inventory."
+                "i spisu treści WordPress."
             )
         )
     )
@@ -1274,7 +1294,7 @@ def _content_item_from_tactical(
     next_step = (
         top_group.next_step
         if top_group is not None
-        else "Otwórz /content-planner i odśwież GSC oraz WordPress inventory."
+        else "Otwórz widok Treści i odśwież GSC oraz spis treści WordPress."
     )
     source_connectors = [
         *(
@@ -1379,7 +1399,7 @@ def _content_summary_with_ahrefs(
     if not ahrefs_metric_tiles:
         return tactical_summary
     ahrefs_summary = (
-        "Ahrefs ma kolejkę review luk SEO: "
+        "Ahrefs ma kolejkę sprawdzenia luk SEO: "
         f"rekordy={ahrefs_metric_tiles.get('rekordy Ahrefs', 0)}, "
         f"luki treści={ahrefs_metric_tiles.get('luki Ahrefs', 0)}, "
         f"luki linków={ahrefs_metric_tiles.get('luki linków', 0)}. "
@@ -1397,7 +1417,7 @@ def _content_tactical_summary(
     if item.dimensions.get("wordpress_match") == "found":
         return (
             f"{fallback_summary} WordPress potwierdza istniejącą stronę; "
-            "to jest kandydat do refresh/merge, nie tworzenia duplikatu."
+            "bezpieczny kierunek to odświeżenie albo scalenie, nie tworzenie duplikatu."
         ).strip()
     if item.diagnosis:
         return item.diagnosis
@@ -1425,14 +1445,14 @@ def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
         f"wartość konw.={metric_tiles.get('wartość konw.', 'brak')}, "
         f"podgląd budżetu={metric_tiles.get('podgląd budżetu', 0)}, "
         f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
-        f"KPI do review={metric_tiles.get('KPI do review', 0)}, "
+        f"KPI do sprawdzenia={metric_tiles.get('KPI do sprawdzenia', 0)}, "
         f"wiersze CPA={metric_tiles.get('wiersze CPA', 0)}, "
         f"wiersze ROAS={metric_tiles.get('wiersze ROAS', 0)}, "
         f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "
         f"segmenty={metric_tiles.get('segmenty', 0)}. "
-        "To są kolejki tylko do oceny z evidence i ActionObjectami. KPI są "
-        "tylko do review z bieżących metric facts; to nadal nie jest werdykt "
-        "opłacalności, CPA/ROAS ani ścieżka apply."
+        "To są kolejki oceny z evidence i akcjami do sprawdzenia. KPI są "
+        "sygnałem z bieżących metric facts; to nadal nie jest werdykt "
+        "opłacalności, CPA/ROAS ani ścieżka zapisu zmian."
     )
 
 
@@ -1442,7 +1462,7 @@ def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
         review_parts.append("budżety")
     if _numeric_tile(metric_tiles, "rekomendacje") > 0:
         review_parts.append("rekomendacje")
-    if _numeric_tile(metric_tiles, "KPI do review") > 0:
+    if _numeric_tile(metric_tiles, "KPI do sprawdzenia") > 0:
         review_parts.append("KPI kampanii")
     if _numeric_tile(metric_tiles, "wykluczenia") > 0:
         review_parts.append("wykluczenia")
@@ -1451,8 +1471,8 @@ def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
     if not review_parts:
         review_parts.append("kampanie i zapytania")
     return (
-        "Otwórz /ads-doctor i przejdź przez ocenę: "
-        f"{', '.join(review_parts)}. Nie wdrażaj apply bez walidacji, "
+        "Otwórz widok Ads i przejdź przez ocenę: "
+        f"{', '.join(review_parts)}. Zapis zmian wymaga sprawdzenia w WILQ, "
         "potwierdzenia i audytu."
     )
 
@@ -1515,16 +1535,16 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"GA4 ma {landing_group_count} grup landing/source/campaign, "
+            f"GA4 ma {landing_group_count} grup landing page, źródło i kampania, "
             f"{measurement_issue_count} problemów pomiaru, "
             f"{traffic_quality_count} decyzji jakości ruchu i "
             f"{len(matched_items)} dopasowań WordPress. "
             "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
-            "drop/tracking fixed, nie awarię connectora."
+            "drop/tracking fixed, nie awarię źródła danych."
         ),
         next_step=(
-            "Otwórz /ga4, sprawdź kolejkę jakości ruchu i waliduj review GA4 "
-            "jako ActionObject."
+            "Otwórz widok GA4, sprawdź kolejkę jakości ruchu i sprawdź przegląd GA4 "
+            "jako sprawdzoną akcję."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1601,7 +1621,7 @@ def _localo_item(
     missing = (
         ", ".join(connector.missing_credentials)
         if connector.missing_credentials
-        else "brak świeżego vendor_read proof z Localo MCP"
+        else "brak świeżego odczytu danych Localo"
     )
     evidence_ids = [connector_evidence_id("localo")]
     if successful_mcp_run is not None:
@@ -1612,15 +1632,16 @@ def _localo_item(
         item_id = "daily_localo_visibility_facts"
         title = "Localo: agregaty widoczności i recenzji są gotowe"
         summary = (
-            "Localo dostarczył read-only agregaty miejsc, monitorowanych fraz, "
-            "GBP, konkurencji i recenzji. WILQ nadal blokuje "
-            f"{missing_value_contracts_phrase}, write path i claim o wzroście "
-            "widoczności bez osobnych kontraktów albo effect evidence."
+            "Localo dostarczył agregaty miejsc, monitorowanych fraz, "
+            "profilu firmy w Google, konkurencji i recenzji. WILQ nadal blokuje "
+            f"{missing_value_contracts_phrase}, zapis zmian i obietnicę wzrostu "
+            "widoczności bez osobnych danych albo dowodu efektu."
         )
         next_step = (
-            "Otwórz /localo i przejrzyj agregaty fraz, grid positions oraz recenzji. "
-            f"Nie twierdź nic o {missing_value_contracts_phrase}, write path ani "
-            "wzroście widoczności bez dodatkowego evidence."
+            "Otwórz widok Localo i przejrzyj agregaty fraz, pozycje w siatce "
+            "lokalnej oraz recenzje. "
+            f"Nie twierdź nic o {missing_value_contracts_phrase}, zapisie zmian ani "
+            "wzroście widoczności bez dodatkowych dowodów."
         )
         priority = 18
         blocked_claims = _localo_blocked_claims_for_missing_contracts(
@@ -1628,24 +1649,32 @@ def _localo_item(
         )
     elif oauth_access_ready:
         item_id = "daily_localo_readiness"
-        title = "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
+        title = "Localo: dostęp działa, brakuje rankingów i danych profilu firmy w Google"
         summary = (
-            "Localo MCP initialize zwrócił 200. To potwierdza access, ale WILQ "
-            "nie ma jeszcze konkretnych rankingów, GBP visibility ani konkurencji."
+            "Localo potwierdził dostęp do odczytu danych, ale WILQ nie ma jeszcze "
+            "konkretnych rankingów, danych profilu firmy w Google ani konkurencji."
         )
         next_step = (
-            "Otwórz /localo tylko jako status źródła; lokalne rekomendacje wymagają "
-            "kolejnego read contractu z konkretnymi ranking/GBP facts."
+            "Otwórz widok Localo tylko jako status źródła; lokalne rekomendacje wymagają "
+            "odczytu danych rankingów, profilu firmy w Google, konkurencji i recenzji."
         )
         priority = 60
-        blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
+        blocked_claims = [
+            "lokalne rankingi",
+            "wyniki profilu firmy w Google",
+            "poprawa widoczności lokalnej",
+        ]
     else:
         item_id = "daily_localo_readiness"
         title = "Localo: brak dostępu przed lokalnymi rekomendacjami"
         summary = f"Localo nie ma pełnego dostępu: {missing}."
-        next_step = "Otwórz /localo i dokończ OAuth access token przez Localo MCP."
+        next_step = "Otwórz widok Localo i dokończ dostęp OAuth do danych Localo."
         priority = 20
-        blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
+        blocked_claims = [
+            "lokalne rankingi",
+            "wyniki profilu firmy w Google",
+            "poprawa widoczności lokalnej",
+        ]
     return CommandCenterBriefItem(
         id=item_id,
         title=title,
@@ -1719,22 +1748,22 @@ def _localo_blocked_claims_for_missing_contracts(
         for contract, claim in LOCALO_COMMAND_CENTER_CLAIM_BY_MISSING_CONTRACT.items()
         if contract in missing_contracts
     ]
-    claims.extend(["GBP write", "local visibility uplift"])
+    claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
     return _unique(claims)
 
 
 def _localo_contracts_phrase(contracts: list[str]) -> str:
     labels = {
-        "place_inventory": "place inventory",
+        "place_inventory": "miejsca i profile",
         "local_rankings": "lokalne rankingi",
-        "gbp_visibility": "GBP",
+        "gbp_visibility": "profil firmy w Google",
         "competitor_visibility": "konkurencję",
         "reviews": "recenzje",
-        "local_tasks": "local tasks",
+        "local_tasks": "zadania lokalne",
     }
     values = [labels.get(contract, contract) for contract in contracts]
     if not values:
-        return "write path"
+        return "brak"
     if len(values) == 1:
         return values[0]
     return f"{', '.join(values[:-1])} i {values[-1]}"
@@ -1742,17 +1771,17 @@ def _localo_contracts_phrase(contracts: list[str]) -> str:
 
 def _localo_claims_phrase(claims: list[str]) -> str:
     labels = {
-        "local ranking": "lokalne rankingi",
-        "GBP performance": "wynik GBP",
-        "competitor visibility": "widoczność konkurencji",
-        "review velocity": "tempo recenzji",
-        "local task completed": "wykonanie local tasks",
-        "GBP write": "GBP write path",
-        "local visibility uplift": "wzrost lokalnej widoczności",
+        "lokalne rankingi": "lokalne rankingi",
+        "wyniki profilu firmy w Google": "wyniki profilu firmy w Google",
+        "widoczność konkurencji": "widoczność konkurencji",
+        "tempo nowych opinii": "tempo nowych opinii",
+        "ukończone zadanie lokalne": "ukończone zadanie lokalne",
+        "zapis zmian w profilu firmy": "zapis zmian w profilu firmy",
+        "poprawa widoczności lokalnej": "poprawa widoczności lokalnej",
     }
     values = [labels.get(claim, claim) for claim in claims]
     if not values:
-        return "niepotwierdzone claimy"
+        return "niepotwierdzone obietnice"
     if len(values) == 1:
         return values[0]
     return f"{', '.join(values[:-1])} i {values[-1]}"
@@ -1779,9 +1808,9 @@ def _localo_metric_tiles(
 ) -> dict[str, int | float | str]:
     if not value_facts:
         return {
-            "MCP access": 1 if oauth_access_ready else 0,
-            "ranking facts": 0,
-            "GBP facts": 0,
+            "dostęp Localo": 1 if oauth_access_ready else 0,
+            "dane rankingów": 0,
+            "dane profilu firmy": 0,
         }
     return {
         "miejsca": _numeric_fact(value_facts, "localo_active_place_count"),
@@ -1837,7 +1866,7 @@ def _unique(values: Iterable[object]) -> list[str]:
 def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     for item in items:
         if item.id == "daily_merchant_feed" and item.status == "ready":
-            return "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu."
+            return "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu."
     for item in items:
         if item.status == "ready":
             return item.next_step
@@ -1863,10 +1892,10 @@ def _action_plan_item(
             why_it_matters=(
                 f"WILQ widzi {item.metric_tiles.get('produkty', 0)} produktów i "
                 f"{issue_count} zgłoszeń problemów feedu. To może blokować "
-                "widoczność produktów, ale wymaga ręcznego review przed zmianami."
+                "widoczność produktów, ale wymaga sprawdzenia przez człowieka przed zmianami."
             ),
             operator_action=(
-                "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject."
+                "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ."
             ),
             skill_id="wilq-merchant-feed-operator",
             codex_prompt=(
@@ -1877,7 +1906,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski brief przeglądu problemów feedu z evidence IDs, ActionObject "
+                "Polski brief przeglądu problemów feedu z evidence IDs, akcją "
                 "i blockerami claimów."
             ),
             source_connectors=item.source_connectors,
@@ -1895,14 +1924,15 @@ def _action_plan_item(
             priority=12,
             category="Content + SEO",
             why_it_matters=(
-                f"{item.summary} Pełny drilldown zapytań i URL-i jest w /content-planner."
+                f"{item.summary} Pełny drilldown zapytań i URL-i jest w widoku Treści."
             ),
             operator_action=item.next_step,
             skill_id="wilq-content-strategist",
             codex_prompt=(
-                "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh, "
-                "merge, create albo block dla Ekologus na podstawie GSC, WordPress, "
-                "GA4 i Ahrefs evidence. Nie obiecuj leadów, revenue ani wzrostów pozycji."
+                "Użyj skilla wilq-content-strategist. Zbuduj kolejkę zachowania, "
+                "odświeżenia, scalenia, nowej treści albo blokady dla Ekologus "
+                "na podstawie GSC, spisu treści WordPress, GA4 i Ahrefs evidence. "
+                "Nie obiecuj leadów, revenue ani wzrostów pozycji."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -1928,28 +1958,28 @@ def _action_plan_item(
             priority=14,
             category="GA4",
             why_it_matters=(
-                f"WILQ ma {landing_groups} grup landing/source/campaign i "
-                f"{decision_count} decyzji GA4 do review: pomiar={measurement_count}, "
+                f"WILQ ma {landing_groups} grup landing page, źródło i kampania i "
+                f"{decision_count} decyzji GA4 do sprawdzenia: pomiar={measurement_count}, "
                 f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
                 "nie werdykt performance, bo ROAS/revenue/conversion drop/tracking "
                 "fixed pozostają zablokowane bez osobnych kontraktów."
             ),
             operator_action=(
-                "Otwórz /ga4, przejdź przez kolejkę decyzji pomiaru i jakości "
-                "ruchu, a potem waliduj review GA4 jako ActionObject review-only. "
-                "Nie wdrażaj zmian ani nie oceniaj opłacalności."
+                "Otwórz widok GA4, przejdź przez kolejkę decyzji pomiaru i jakości "
+                "ruchu, a potem sprawdź przegląd GA4 jako akcję do sprawdzenia. "
+                "Zapis zmian wymaga sprawdzenia w WILQ. Nie oceniaj opłacalności."
             ),
             skill_id="wilq-ga4-analyst",
             codex_prompt=(
                 "Użyj skilla wilq-ga4-analyst. Sprawdź jakość ruchu Ekologus po "
-                "landing/source/campaign z /api/ga4/diagnostics decision_queue, "
+                "landing page, źródło i kampania z kolejki decyzji GA4, "
                 "rozdziel problem marketingowy od problemu pomiaru i nie wyciągaj "
                 "wniosków o ROAS, revenue ani konwersjach bez dowodów."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polska diagnoza GA4 z landing/source/campaign facts, tracking "
-                "blockerami i ActionObject."
+                "Polska diagnoza GA4 z fakty landing page, źródła i kampanii, tracking "
+                "blockerami i akcją."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -1971,10 +2001,10 @@ def _action_plan_item(
                 "o rentowności, zmarnowanym budżecie ani skalowaniu."
             ),
             operator_action=(
-                "Otwórz /ads-doctor i uzupełnij WILQ_ADS_PROFIT_MARGIN, "
+                "Otwórz widok Ads i uzupełnij WILQ_ADS_PROFIT_MARGIN, "
                 "WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz target CPA/ROAS. "
-                "Potem zwaliduj target guardrails i review strategii zanim ocenisz "
-                "profitability albo skalowanie budżetu."
+                "Potem sprawdź w WILQ target guardrails i review strategii zanim ocenisz "
+                "opłacalność albo skalowanie budżetu."
             ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
@@ -1997,23 +2027,23 @@ def _action_plan_item(
         if item.status == "ready":
             return CommandCenterActionPlanItem(
                 id="plan_review_ads_campaign_metrics",
-                title="Przejrzyj aktualny odczyt Ads bez apply",
+                title="Przejrzyj aktualny odczyt Ads bez zapisu zmian",
                 route=item.route,
                 status="ready",
                 priority=16,
                 category="Google Ads",
                 why_it_matters=(
                     f"{item.summary} To jest aktualny odczyt Ads i zestaw decyzji do "
-                    "review, a nie lista connectorów ani ścieżka apply: budżet, "
+                    "sprawdzenia, a nie lista źródeł danych ani ścieżka zapisu zmian: budżet, "
                     "rekomendacje, wykluczenia i segmenty mają evidence oraz "
-                    "ActionObjecty, ale wdrożenie pozostaje zablokowane."
+                    "akcje do sprawdzenia, ale zapis pozostaje zablokowany."
                 ),
                 operator_action=(
-                    "Otwórz /ads-doctor: aktualny odczyt wartości Ads jest na górze, "
+                    "Otwórz widok Ads: aktualny odczyt wartości Ads jest na górze, "
                     "a potem przejrzyj: podgląd budżetów, podgląd rekomendacji, "
                     "KPI kampanii, przegląd wykluczeń i podgląd segmentów. "
-                    "Waliduj ActionObjecty, ale nie traktuj KPI jako werdyktu "
-                    "opłacalności i nie wdrażaj zmian."
+                    "Sprawdź propozycje w WILQ, ale nie traktuj KPI jako werdyktu "
+                    "opłacalności i nie zapisuj zmian."
                 ),
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
@@ -2022,14 +2052,14 @@ def _action_plan_item(
                     "KPI kampanii, zapytania wyszukiwane, wykluczenia i segmenty "
                     "niestandardowe. "
                     "Cytuj evidence IDs i "
-                    "ActionObject IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
-                    "ani wdrożenia zmian; wskaż tylko bezpieczne decyzje tylko do "
-                    "oceny i brakujące kontrakty."
+                    "action IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
+                    "ani zapisu zmian; wskaż bezpieczne decyzje do sprawdzenia "
+                    "i brakujące kontrakty."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(
-                    "Polska kolejka oceny Ads z evidence IDs, ActionObjectami, "
-                    "zablokowanymi claimami i następnymi krokami bez apply."
+                    "Polska kolejka oceny Ads z evidence IDs, akcjami do sprawdzenia, "
+                    "zablokowanymi obietnicami i następnymi krokami bez zapisu zmian."
                 ),
                 source_connectors=item.source_connectors,
                 evidence_ids=item.evidence_ids,
@@ -2048,7 +2078,7 @@ def _action_plan_item(
                 "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, CPA, ROAS ani search "
                 "terms bez świeżego Ads evidence."
             ),
-            operator_action="Otwórz /ads-doctor i wykonaj repair path z ActionObject.",
+            operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzoną akcję.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj Ads blocker dla Ekologus "
@@ -2074,26 +2104,26 @@ def _action_plan_item(
             priority=20,
             category="Localo",
             why_it_matters=(
-                "Localo ma read-only agregaty miejsc, fraz, GBP, konkurencji i "
-                "recenzji. To pozwala zrobić review lokalnej widoczności, ale "
-                f"WILQ nadal blokuje claimy: {blocked_claims_phrase} bez osobnych "
-                "kontraktów albo effect evidence."
+                "Localo ma agregaty miejsc, fraz, profilu firmy w Google, konkurencji i "
+                "recenzji. To pozwala zrobić przegląd lokalnej widoczności, ale "
+                f"WILQ nadal blokuje obietnice: {blocked_claims_phrase} bez osobnych "
+                "danych albo dowodu efektu."
             ),
             operator_action=(
-                "Otwórz /localo i przejrzyj tylko agregaty widoczne w evidence. "
-                f"Nie używaj zablokowanych claimów: {blocked_claims_phrase}."
+                "Otwórz widok Localo i przejrzyj tylko agregaty widoczne w evidence. "
+                f"Nie używaj zablokowanych obietnic: {blocked_claims_phrase}."
             ),
             skill_id="wilq-localo-operator",
             codex_prompt=(
                 "Użyj skilla wilq-localo-operator. Przejrzyj agregaty Localo dla "
-                "Ekologus na podstawie WILQ API evidence i wskaż bezpieczne następne "
-                f"kroki. Nie używaj zablokowanych claimów: {blocked_claims_phrase}. "
+                "Ekologus na podstawie dowodów w WILQ i wskaż bezpieczne następne "
+                f"kroki. Nie używaj zablokowanych obietnic: {blocked_claims_phrase}. "
                 "Nie zdejmuj tych blokad bez osobnych "
-                "kontraktów albo effect evidence."
+                "danych albo dowodu efektu."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski Localo review z evidence IDs, agregatami i zablokowanymi claimami."
+                "Polski przegląd Localo z evidence IDs, agregatami i zablokowanymi obietnicami."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2105,29 +2135,33 @@ def _action_plan_item(
         if item.status == "ready":
             return CommandCenterActionPlanItem(
                 id="plan_localo_access_ready_wait_for_visibility_facts",
-                title="Localo access działa; nie ma jeszcze ranking/GBP facts",
+                title="Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google",
                 route=item.route,
                 status="ready",
                 priority=60,
                 category="Localo",
                 why_it_matters=(
-                    "WILQ potwierdził Localo MCP initialize=200, więc to nie jest już "
-                    "blokada OAuth. Nadal brakuje konkretnych local ranking, GBP visibility "
-                    "i competitor facts, więc lokalnych rekomendacji nie wolno dopowiadać."
+                    "WILQ potwierdził dostęp Localo, więc to nie jest już blokada OAuth. "
+                    "Nadal brakuje konkretnych lokalnych rankingów, danych profilu firmy "
+                    "w Google i danych konkurencji, więc lokalnych rekomendacji "
+                    "nie wolno dopowiadać."
                 ),
                 operator_action=(
-                    "Nie pokazuj tego jako pilnego zadania marketera. Traktuj /localo "
-                    "jako status źródła do czasu dodania read contractu dla ranking/GBP facts."
+                    "Nie pokazuj tego jako pilnego zadania marketera. Traktuj widok Localo "
+                    "jako status źródła do czasu dodania danych rankingów, profilu firmy "
+                    "w Google, konkurencji i recenzji."
                 ),
                 skill_id="wilq-localo-operator",
                 codex_prompt=(
-                    "Użyj skilla wilq-localo-operator. Potwierdź Localo MCP access dla "
-                    "Ekologus i wskaż, jakich konkretnych ranking/GBP facts brakuje do "
-                    "lokalnych rekomendacji. Nie twierdź nic o lokalnej widoczności bez evidence."
+                    "Użyj skilla wilq-localo-operator. Potwierdź dostęp Localo dla "
+                    "Ekologus i wskaż, jakich konkretnych danych rankingów i profilu firmy "
+                    "w Google brakuje do lokalnych rekomendacji. Nie twierdź nic o lokalnej "
+                    "widoczności bez dowodów."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(
-                    "Polski status Localo: access działa, ranking/GBP evidence jeszcze brak."
+                    "Polski status Localo: dostęp działa, danych rankingów i profilu firmy "
+                    "w Google jeszcze brak."
                 ),
                 source_connectors=item.source_connectors,
                 evidence_ids=item.evidence_ids,
@@ -2143,15 +2177,15 @@ def _action_plan_item(
             priority=20,
             category="Localo",
             why_it_matters=(
-                "Localo nie ma świeżego evidence lokalnej widoczności, więc WILQ blokuje "
-                "claimy o rankingach i GBP performance."
+                "Localo nie ma świeżych dowodów lokalnej widoczności, więc WILQ blokuje "
+                "obietnice o rankingach i wynikach profilu firmy w Google."
             ),
-            operator_action="Otwórz /localo i pokaż blocker dostępu zamiast metryk lokalnych.",
+            operator_action="Otwórz widok Localo i pokaż blocker dostępu zamiast metryk lokalnych.",
             skill_id="wilq-localo-operator",
             codex_prompt=(
                 "Użyj skilla wilq-localo-operator. Sprawdź stan Localo dla Ekologus "
-                "i pokaż tylko readiness/blockery, dopóki WILQ nie ma świeżego evidence "
-                "lokalnej widoczności, rankingów albo GBP."
+                "i pokaż tylko status oraz blokady, dopóki WILQ nie ma świeżych dowodów "
+                "lokalnej widoczności, rankingów albo profilu firmy w Google."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -2175,7 +2209,7 @@ def _action_plan_item(
         skill_id="wilq-daily-command",
         codex_prompt=(
             "Użyj skilla wilq-daily-command. Skondensuj ten element Command Center "
-            "do decyzji marketera po polsku, używając tylko WILQ API evidence."
+            "do decyzji marketera po polsku, używając tylko dowodów w WILQ."
         ),
         codex_context_endpoint="/api/codex/context-pack",
         expected_codex_output="Polska decyzja operatora z evidence IDs i następnym krokiem.",
@@ -2204,7 +2238,7 @@ def _ga4_tactic_summary(tactical_items: list[Any]) -> str:
             continue
         landings[landing] = landings.get(landing, 0) + 1
     if not landings:
-        return "Brak gotowych taktyk jakości ruchu; tracking gaps sprawdź w /ga4."
+        return "Brak gotowych taktyk jakości ruchu; tracking gaps sprawdź w widoku GA4."
     summary_parts = [
         f"{_short_landing_label(landing)} ({count} {_polish_group_label(count)})"
         for landing, count in list(landings.items())[:3]
@@ -2239,8 +2273,8 @@ def _decision_observation(
             prefix="Merchant Center ma",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
-                "To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że "
-                "approval, przychód albo dane produktu zostały już naprawione."
+                "To jest kolejka ręcznego sprawdzenia feedu; WILQ nie twierdzi, że "
+                "zatwierdzenie produktu, przychód albo dane produktu zostały już naprawione."
             ),
         )
     if item.id == "plan_prepare_content_refresh_queue" and brief_item is not None:
@@ -2248,8 +2282,9 @@ def _decision_observation(
             prefix="GSC i WordPress tworzą kolejkę SEO:",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
-                "To jest decyzja refresh/merge/create/block oparta o zapytania/URL "
-                "i inventory, nie obietnica leadów ani wzrostów pozycji."
+                "To jest decyzja zachowania, odświeżenia, scalenia, nowej treści "
+                "albo blokady oparta o zapytania/URL i spis treści, nie obietnica "
+                "leadów ani wzrostów pozycji."
             ),
         )
     if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
@@ -2257,7 +2292,7 @@ def _decision_observation(
             return brief_item.summary
         return (
             f"{brief_item.summary} Status blocked oznacza brak kontraktu na "
-            "ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora."
+            "ROAS/revenue/conversion drop/tracking fixed, nie awarię źródła danych."
         )
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
@@ -2269,19 +2304,20 @@ def _decision_observation(
             prefix="Google Ads ma kolejki do oceny:",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
-                "To są read-only kolejki budżetu, rekomendacji, wykluczeń i "
-                "segmentów oraz KPI kampanii do review. Wdrożenie zmian, ocena "
+                "To są kolejki oceny budżetu, rekomendacji, wykluczeń i "
+                "segmentów oraz KPI kampanii do sprawdzenia. Zapis zmian, ocena "
                 "rentowności i werdykty o CPA/ROAS albo przepalonym budżecie "
                 "pozostają zablokowane."
             ),
         )
     if item.id == "plan_review_localo_visibility_facts" and brief_item is not None:
         return _decision_metric_observation(
-            prefix="Localo ma read-only agregaty:",
+            prefix="Localo ma agregaty z odczytu:",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
                 "To pozwala zrobić ostrożny przegląd lokalnej widoczności, ale "
-                "GBP, konkurencja i uplift nadal wymagają osobnych kontraktów."
+                "profil firmy w Google, konkurencja i poprawa widoczności nadal "
+                "wymagają osobnych danych."
             ),
         )
     metric_sentence = ""

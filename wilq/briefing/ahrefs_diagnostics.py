@@ -253,8 +253,8 @@ def _operator_summary(
         title="Co marketer ma wiedzieć o Ahrefs",
         summary=(
             "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. "
-            "Autorytet domeny może być kontekstem, ale claimy o lukach contentowych "
-            "lub backlinkowych wymagają typed gap records."
+            "Autorytet domeny może być kontekstem, ale wnioski o lukach treści "
+            "lub backlinków wymagają konkretnych danych Ahrefs."
         ),
         next_step=_operator_summary_next_step(gap_read_contract),
         top_decision_ids=[decision.id for decision in top_decisions],
@@ -299,12 +299,12 @@ def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str
     if gap_read_contract.status == "ready":
         return (
             "Połącz kontekst autorytetu z rekordami luk Ahrefs, /content-planner i GSC. "
-            "Przygotuj review treści/linków bez obietnic wzrostu widoczności."
+            "Przygotuj sprawdzenie treści/linków bez obietnic wzrostu widoczności."
         )
     return (
         "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. "
-        "Nie twierdź o content gap, backlink gap ani wzroście widoczności bez "
-        "rekordów z gap read contract."
+        "Nie twierdź o lukach treści, lukach backlinków ani wzroście widoczności "
+        "bez konkretnych danych Ahrefs."
     )
 
 
@@ -344,10 +344,10 @@ def _ahrefs_gap_read_contract(
         available_contracts.extend(_available_gap_contracts(missing_contracts))
     return AhrefsGapReadContract(
         status="ready" if gap_records and not missing_contracts else "blocked",
-        title="Ahrefs gap records",
+        title="Luki SEO z Ahrefs",
         summary=(
-            f"WILQ ma {len(gap_records)} typed Ahrefs gap records. "
-            f"Brakujące kontrakty: {', '.join(missing_contracts) or 'brak'}."
+            f"WILQ ma {len(gap_records)} rekordów luk z Ahrefs. "
+            f"Brakujące dane: {_missing_gap_contracts_summary(missing_contracts)}."
         ),
         available_read_contracts=available_contracts,
         missing_read_contracts=missing_contracts,
@@ -361,12 +361,13 @@ def _ahrefs_gap_read_contract(
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=evidence_ids,
         gap_records=gap_records,
+        gap_record_count=len(gap_records),
         next_step=(
-            "Dodaj read-only records dla konkurencyjnych stron, luk treści, luk backlinków, "
-            "organicznych słów per URL i top pages konkurencji. Do tego czasu używaj Ahrefs "
-            "tylko jako kontekstu autorytetu."
+            "Dodaj odczyty danych dla konkurencyjnych stron, luk treści, luk backlinków, "
+            "organicznych słów per URL i najlepszych stron konkurencji. Do tego "
+            "czasu używaj Ahrefs tylko jako kontekstu autorytetu."
             if missing_contracts
-            else "Połącz gap records z GSC/WordPress i przygotuj kolejkę review."
+            else "Połącz luki Ahrefs z GSC/WordPress i przygotuj kolejkę sprawdzenia."
         ),
         risk=ActionRisk.medium,
     )
@@ -497,8 +498,8 @@ def _ahrefs_gap_record(
         gap_type=gap_type,
         title=title,
         summary=(
-            f"{title}. Fakty Ahrefs: {_gap_fact_summary(facts)}. "
-            "To jest read-only rekord do review, nie obietnica wzrostu ruchu."
+            f"{title}. Dane Ahrefs: {_gap_fact_summary(facts)}. "
+            "To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu."
         ),
         source_url=source_url,
         target_url=target_url,
@@ -577,8 +578,8 @@ def _gap_record_title(
         "competitor_page": "Strona konkurencji",
         "content_gap": "Luka treści",
         "backlink_gap": "Luka backlinków",
-        "organic_keyword_gap": "Luka organic keyword",
-        "top_page_gap": "Top page gap",
+        "organic_keyword_gap": "Luka słów organicznych",
+        "top_page_gap": "Luka najlepszych stron konkurencji",
     }
     return f"{labels[gap_type]}: {anchor}"
 
@@ -590,26 +591,43 @@ def _gap_fact_summary(facts: list[MetricFact]) -> str:
 
 def _gap_fact_label(name: str) -> str:
     labels = {
-        "ahrefs_competitor_page_count": "competitor_pages",
-        "ahrefs_content_gap_count": "content_gaps",
-        "ahrefs_backlink_gap_count": "backlink_gaps",
-        "ahrefs_referring_domain_gap_count": "referring_domain_gaps",
-        "ahrefs_organic_keyword_gap_count": "organic_keyword_gaps",
-        "ahrefs_top_page_gap_count": "top_page_gaps",
+        "ahrefs_competitor_page_count": "strony konkurencji",
+        "ahrefs_content_gap_count": "luki treści",
+        "ahrefs_backlink_gap_count": "luki backlinków",
+        "ahrefs_referring_domain_gap_count": "luki domen linkujących",
+        "ahrefs_organic_keyword_gap_count": "luki słów organicznych",
+        "ahrefs_top_page_gap_count": "luki najlepszych stron konkurencji",
     }
     return labels.get(name, name)
+
+
+def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
+    if not missing_contracts:
+        return "brak"
+    return ", ".join(_missing_gap_contract_label(contract) for contract in missing_contracts)
+
+
+def _missing_gap_contract_label(contract: str) -> str:
+    labels = {
+        "ahrefs_competitor_pages": "strony konkurencji",
+        "ahrefs_content_gap_records": "luki treści",
+        "ahrefs_backlink_gap_records": "luki backlinków",
+        "ahrefs_organic_keywords_by_url": "organiczne słowa per URL",
+        "ahrefs_top_pages_by_competitor": "najlepsze strony konkurencji",
+    }
+    return labels.get(contract, contract)
 
 
 def _gap_record_next_step(gap_type: AhrefsGapType) -> str:
     if gap_type == "backlink_gap":
         return (
             "Sprawdź ręcznie jakość domen/linków i nie planuj link buildingu bez "
-            "review ryzyka oraz źródła."
+            "sprawdzenia ryzyka oraz źródła."
         )
     if gap_type in {"content_gap", "organic_keyword_gap", "competitor_page", "top_page_gap"}:
         return (
-            "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, "
-            "create, merge albo block."
+            "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: "
+            "zachowanie, odświeżenie, scalenie, utworzenie albo blokada."
         )
     return "Przejrzyj rekord Ahrefs z operatorem przed jakąkolwiek rekomendacją."
 
@@ -733,7 +751,7 @@ def _ahrefs_sections(
         title="Ahrefs: kontekst autorytetu",
         status="ready" if authority_facts else ("blocked" if connector_missing else "missing"),
         summary=(
-            f"WILQ ma {len(authority_facts)} świeże fakty autorytetu z Ahrefs: "
+            f"WILQ ma {len(authority_facts)} świeże dane autorytetu z Ahrefs: "
             f"{_authority_summary(authority_facts)}. "
             f"{_competitor_read_summary(competitor_read_facts)}"
             if authority_facts
@@ -744,15 +762,15 @@ def _ahrefs_sections(
             "ale nie są samodzielnym dowodem luki treści, luki backlinków ani wzrostu ruchu."
             if authority_facts
             else (
-                "Bez faktów autorytetu z Ahrefs WILQ nie może nawet użyć "
+                "Bez danych autorytetu z Ahrefs WILQ nie może nawet użyć "
                 "Ahrefs jako kontekstu SEO."
             )
         ),
         next_step=(
-            "Użyj tych faktów jako pomocniczego kontekstu przy content/GSC review. "
-            "Nie zamieniaj ich w claim o luce konkurencyjnej."
+            "Użyj tych danych jako pomocniczego kontekstu przy sprawdzeniu treści i GSC. "
+            "Nie zamieniaj ich w obietnicę przewagi nad konkurencją."
             if authority_facts
-            else "Uruchom read-only Ahrefs vendor_read dla domain-rating, potem wróć do /ahrefs."
+            else "Uruchom odczyt danych Ahrefs dla domain-rating, potem wróć do /ahrefs."
         ),
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=_evidence_ids_for_facts_or_refresh(
@@ -770,25 +788,25 @@ def _ahrefs_sections(
         title="Ahrefs: rekordy luk SEO",
         status="ready" if gap_facts else "blocked",
         summary=(
-            f"WILQ ma {len(gap_facts)} rekordów luk z Ahrefs. Brakujące kontrakty: "
-            f"{', '.join(missing_gap_contracts) or 'brak'}."
+            f"WILQ ma {len(gap_facts)} rekordów luk z Ahrefs. Brakujące dane: "
+            f"{_missing_gap_contracts_summary(missing_gap_contracts)}."
             if gap_facts
             else "WILQ nie ma jeszcze rekordów luk konkurencji, treści ani backlinków z Ahrefs."
         ),
         diagnosis=(
-            "Rekordy luk można połączyć z GSC i WordPress inventory, ale tylko w zakresie "
-            "konkretnych records z evidence IDs."
+            "Rekordy luk można połączyć z GSC i spisem treści WordPress, ale tylko w zakresie "
+            "konkretnych danych z dowodami."
             if gap_facts
             else (
-                "To jest brak kontraktu odczytu, nie brak promptu. DR/rank nie mówi, "
+                "To jest brak danych, nie brak promptu. DR/rank nie mówi, "
                 "gdzie konkurencja ma przewagę ani które linki/treści trzeba zbudować."
             )
         ),
         next_step=(
-            "Połącz rekordy luk z GSC/WordPress i przygotuj kolejkę review treści/backlinków."
+            "Połącz rekordy luk z GSC/WordPress i przygotuj kolejkę sprawdzenia treści/backlinków."
             if gap_facts
             else (
-                "Dodaj typed Ahrefs read contracts dla stron konkurencji, luk treści "
+                "Dodaj odczyt danych Ahrefs dla stron konkurencji, luk treści "
                 "i luk backlinków."
             )
         ),
@@ -804,15 +822,15 @@ def _ahrefs_sections(
         title="Bezpieczeństwo decyzji Ahrefs",
         status="blocked" if not gap_facts else "ready",
         summary=(
-            "Ahrefs jest źródłem read-only. WILQ nie może robić claimów o luce treści, "
-            "luce backlinków ani wzroście ruchu bez konkretnych records i "
-            "walidacji przez operatora."
+            "Ahrefs jest źródłem danych do sprawdzenia. WILQ nie może obiecywać luki treści, "
+            "luki backlinków ani wzrostu ruchu bez konkretnych danych i "
+            "sprawdzenia przez operatora."
         ),
         diagnosis=(
             "Metryki autorytetu są pomocne, ale zbyt ogólne. Decyzje contentowe muszą przejść "
-            "przez Content Planner, GSC/WordPress inventory i ActionObject review."
+            "przez Content Planner, GSC, spis treści WordPress i przegląd akcji."
         ),
-        next_step="Zostaw apply/write path zablokowany. Najpierw dodaj brakujące read contracts.",
+        next_step="Zostaw zapis zmian zablokowany. Najpierw dodaj brakujące odczyty danych.",
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=_evidence_ids_for_facts_or_refresh(
             [*authority_facts, *gap_facts],
@@ -847,11 +865,11 @@ def _ahrefs_decision_queue(
                 ),
                 rationale=(
                     "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst "
-                    "autorytetu do SEO/content review. To nadal nie jest analiza luk."
+                    "autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk."
                 ),
                 next_step=(
                     "Połącz ten kontekst z rekordami luk Ahrefs, /content-planner i GSC. "
-                    "Review luk nadal wymaga kontroli GSC/WordPress i nie jest obietnicą "
+                    "Sprawdzenie luk nadal wymaga kontroli GSC/WordPress i nie jest obietnicą "
                     "wzrostu."
                     if gap_records
                     else (
@@ -891,19 +909,19 @@ def _ahrefs_decision_queue(
                 id="ahrefs_run_authority_read_before_gap_review",
                 decision_type="run_authority_read",
                 status="blocked",
-                title="Uruchom odczyt autorytetu Ahrefs przed review luk SEO",
+                title="Uruchom odczyt autorytetu Ahrefs przed sprawdzeniem luk SEO",
                 summary=_missing_authority_summary(connector_missing, latest_refresh),
                 rationale=(
-                    "Bez świeżych faktów autorytetu Ahrefs WILQ nie powinien nawet używać "
+                    "Bez świeżych danych autorytetu Ahrefs WILQ nie powinien nawet używać "
                     "Ahrefs jako kontekstu SEO."
                 ),
                 next_step=(
-                    "Sprawdź credential AHREFS_API_TOKEN i wykonaj read-only Ahrefs vendor_read."
+                    "Uzupełnij dostęp Ahrefs i wykonaj odczyt danych."
                     if connector_missing
-                    else "Wykonaj read-only Ahrefs vendor_read, potem wróć do /ahrefs."
+                    else "Wykonaj odczyt danych Ahrefs, potem wróć do /ahrefs."
                 ),
                 priority=10,
-                metric_tiles={"fakty Ahrefs": 0, "braki kontraktu": len(AHREFS_GAP_READ_CONTRACTS)},
+                metric_tiles={"dane Ahrefs": 0, "brakujące dane": len(AHREFS_GAP_READ_CONTRACTS)},
                 allowed_evidence=[],
                 missing_read_contracts=["domain_rating", *AHREFS_GAP_READ_CONTRACTS],
                 source_connectors=[AHREFS_CONNECTOR_ID],
@@ -923,17 +941,18 @@ def _ahrefs_decision_queue(
                 status="ready",
                 title="Przejrzyj rekordy luk Ahrefs",
                 summary=(
-                    f"WILQ ma {len(gap_records)} typed Ahrefs gap records. "
-                    f"Braki kontraktu: {', '.join(missing_gap_contracts) or 'brak'}."
+                    f"WILQ ma {len(gap_records)} rekordów luk z Ahrefs. "
+                    f"Brakujące dane: {_missing_gap_contracts_summary(missing_gap_contracts)}."
                 ),
                 rationale=(
                     "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do "
-                    "review SEO/content. Nadal wymagają połączenia z GSC i WordPress "
-                    "inventory przed decyzją publikacyjną."
+                    "sprawdzenia SEO/content. Nadal wymagają połączenia z GSC i spisem "
+                    "treści WordPress przed decyzją publikacyjną."
                 ),
                 next_step=(
                     "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress "
-                    "i przygotuj refresh/create/merge/block zamiast obiecywać uplift."
+                    "i przygotuj zachowanie, odświeżenie, scalenie, utworzenie albo blokadę "
+                    "zamiast obiecywać wzrost."
                 ),
                 priority=18,
                 metric_tiles=_gap_record_tiles(gap_records, missing_gap_contracts),
@@ -959,20 +978,21 @@ def _ahrefs_decision_queue(
                 status="blocked",
                 title="Nie wskazuj luk konkurencji bez rekordów Ahrefs",
                 summary=(
-                    "Brakuje typed records Ahrefs dla luk treści, luk backlinków, "
-                    "organicznych słów kluczowych i top pages konkurencji."
+                    "Brakuje danych Ahrefs dla luk treści, luk backlinków, "
+                    "organicznych słów kluczowych i najlepszych stron konkurencji."
                 ),
                 rationale=(
                     "DR/rank to metryki domeny. Nie mówią, które treści, linki albo "
                     "konkurenci tworzą realną przestrzeń do działania."
                 ),
                 next_step=(
-                    "Dodaj read-only contracts: strony konkurencji, rekordy luk treści, "
-                    "rekordy luk backlinków, organiczne słowa per URL i top pages konkurencji."
+                    "Dodaj odczyty danych: strony konkurencji, rekordy luk treści, "
+                    "rekordy luk backlinków, organiczne słowa per URL i najlepsze "
+                    "strony konkurencji."
                 ),
                 priority=12,
                 metric_tiles={
-                    "braki kontraktu": len(missing_gap_contracts),
+                    "brakujące dane": len(missing_gap_contracts),
                     "blokady claimów": len(
                         _blocked_claims_for_missing_contracts(missing_gap_contracts)
                     ),
@@ -1038,12 +1058,12 @@ def _missing_authority_summary(
 ) -> str:
     if connector_missing:
         return (
-            "Ahrefs connector ma brakujące credential names: "
-            f"{', '.join(connector_missing)}."
+            "Ahrefs ma braki dostępu: "
+            f"{len(connector_missing)}."
         )
     if latest_refresh and latest_refresh.status != ConnectorRefreshStatus.completed:
         return f"Ostatni Ahrefs refresh zakończył się statusem {latest_refresh.status.value}."
-    return "WILQ nie ma świeżych faktów autorytetu Ahrefs w metric store."
+    return "WILQ nie ma świeżych danych autorytetu Ahrefs."
 
 
 def _authority_tiles(
@@ -1067,8 +1087,8 @@ def _authority_tiles(
                 competitor_read_facts,
                 "organic_competitor_mode",
             ),
-            "fakty luk": len(gap_facts),
-            "braki kontraktu": len(_missing_gap_contracts(gap_facts)),
+            "luki Ahrefs": len(gap_facts),
+            "brakujące dane": len(_missing_gap_contracts(gap_facts)),
         }
     )
 
@@ -1083,12 +1103,12 @@ def _gap_record_tiles(
     return _clean_metric_tiles(
         {
             "rekordy luk": len(gap_records),
-            "content gaps": counts_by_type.get("content_gap"),
-            "backlink gaps": counts_by_type.get("backlink_gap"),
+            "luki treści": counts_by_type.get("content_gap"),
+            "luki backlinków": counts_by_type.get("backlink_gap"),
             "strony konkurencji": counts_by_type.get("competitor_page"),
-            "organic keywords": counts_by_type.get("organic_keyword_gap"),
-            "top pages": counts_by_type.get("top_page_gap"),
-            "braki kontraktu": len(missing_contracts),
+            "słowa organiczne": counts_by_type.get("organic_keyword_gap"),
+            "najlepsze strony": counts_by_type.get("top_page_gap"),
+            "brakujące dane": len(missing_contracts),
         }
     )
 

@@ -7,7 +7,7 @@ from wilq.schemas import MetricFact
 
 NEGATIVE_KEYWORD_ACTION_ID = "act_prepare_negative_keyword_review_queue"
 NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
-    "negative keyword apply",
+    "dodanie wykluczających słów kluczowych",
     "search-term waste",
     "conversion loss",
     "CPA",
@@ -37,27 +37,27 @@ def validate_negative_keyword_payload(payload: dict[str, Any]) -> list[str]:
         return errors
     for index, item in enumerate(preview_items):
         if not isinstance(item, dict):
-            errors.append(f"Negative keyword payload preview item {index} must be object.")
+            errors.append(f"Negative keyword podgląd zmian item {index} must be object.")
             continue
         if item.get("match_type") != "EXACT":
             errors.append(
-                f"Negative keyword payload preview item {index} must use EXACT match."
+                f"Negative keyword podgląd zmian item {index} must use EXACT match."
             )
         if item.get("apply_allowed") is not False:
             errors.append(
-                f"Negative keyword payload preview item {index} must keep apply_allowed=false."
+                f"Negative keyword podgląd zmian item {index} must keep apply_allowed=false."
             )
         if item.get("destructive") is not False:
             errors.append(
-                f"Negative keyword payload preview item {index} must be non-destructive."
+                f"Negative keyword podgląd zmian item {index} must be non-destructive."
             )
         if item.get("api_mutation_ready") is not False:
             errors.append(
-                f"Negative keyword payload preview item {index} must not be API-mutation ready."
+                f"Negative keyword podgląd zmian item {index} must not be API-mutation ready."
             )
         if not item.get("evidence_ids"):
             errors.append(
-                f"Negative keyword payload preview item {index} requires evidence IDs."
+                f"Negative keyword podgląd zmian item {index} requires evidence IDs."
             )
     return errors
 
@@ -87,7 +87,7 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
         "source_terms": terms[:20],
         "source_metric_names": _unique(fact.name for fact in candidate_facts),
         "evidence_ids": evidence_ids,
-        "preview_contract": "negative_keyword_payload_preview_v1",
+        "preview_contract": "negative_keyword_change_preview_v1",
         "api_mutation_ready": False,
         "payload_preview": payload_preview[:20],
         "keyword_match_context_available": bool(keyword_context),
@@ -96,7 +96,7 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
             "90_day_safety_check",
-            "negative_keyword_payload_preview",
+            "negative_keyword_change_preview",
             "human_confirm_before_apply",
         ],
         "blocked_claims": NEGATIVE_KEYWORD_BLOCKED_CLAIMS,

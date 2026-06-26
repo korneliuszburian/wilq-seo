@@ -41,7 +41,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -274,21 +274,21 @@ def main() -> int:
         merchant_action.get("validation_status") if merchant_action else None
     )
     if issue_clusters and merchant_action is None:
-        raise SystemExit("Merchant issue clusters must expose review ActionObject")
+        raise SystemExit("Merchant issue clusters must expose review action")
     if (
         issue_clusters
         and merchant_payload.get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
     ):
-        raise SystemExit("Merchant review ActionObject must expose typed preview contract")
+        raise SystemExit("Merchant review action must expose typed preview contract")
     if issue_clusters and not merchant_preview:
-        raise SystemExit("Merchant review ActionObject must keep compact payload preview")
+        raise SystemExit("Merchant review action must keep compact change preview")
     if (
         issue_clusters
         and merchant_preview[0].get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
     ):
-        raise SystemExit("Merchant payload preview contract mismatch")
+        raise SystemExit("Merchant change preview contract mismatch")
     if issue_clusters and merchant_preview[0].get("apply_allowed") is not False:
-        raise SystemExit("Merchant payload preview must keep apply_allowed=false")
+        raise SystemExit("Merchant change preview must keep apply_allowed=false")
 
     action_validations = []
     for action_id in merchant_diagnostics.get("action_ids", []):
@@ -303,7 +303,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Merchant ActionObject validation failed: {validation}")
+            raise SystemExit(f"Merchant action validation failed: {validation}")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [

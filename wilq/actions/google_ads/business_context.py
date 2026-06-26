@@ -67,7 +67,7 @@ def ads_business_context_payload(
             "profitability",
             "margin verdict",
             "budget scaling",
-            "budget apply",
+            "zmiana budżetu",
             "wasted budget",
         ],
         "apply_allowed": False,
@@ -125,7 +125,7 @@ def ads_target_confirmation_payload(
                 "czy target CPA."
             ),
             (
-                "Potwierdź target przez ActionObject confirm albo ustaw repo-local "
+                "Potwierdź target przez potwierdzenie akcji albo ustaw repo-local "
                 ".env: WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS."
             ),
             "scripts/local_stack.sh restart",
@@ -150,8 +150,8 @@ def ads_target_confirmation_payload(
             "target KPI verdict before confirmation",
             "profitability verdict",
             "budget scaling",
-            "budget apply",
-            "recommendation apply",
+            "zmiana budżetu",
+            "zapis rekomendacji",
         ],
         "apply_allowed": False,
         "destructive": False,
@@ -217,8 +217,8 @@ def ads_strategy_review_payload() -> dict[str, Any]:
         "blocked_claims": [
             "profitability verdict",
             "budget scaling",
-            "budget apply",
-            "recommendation apply",
+            "zmiana budżetu",
+            "zapis rekomendacji",
             "automatic optimization",
         ],
         "apply_allowed": False,

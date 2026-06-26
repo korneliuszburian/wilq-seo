@@ -2,9 +2,9 @@
 
 ## Cel
 
-Planowanie migracji/gotowości Demand Gen na podstawie Ads i GA4 evidence.
+Planowanie przejścia i gotowości Demand Gen na podstawie Ads i GA4 evidence.
 
-Oczekiwany wynik: ustalenia gotowości Demand Gen, blockery i zwalidowani kandydaci działań.
+Oczekiwany wynik: ustalenia gotowości Demand Gen, blockery i akcje sprawdzone w WILQ.
 
 ## Wymagany kontekst API
 
@@ -19,14 +19,14 @@ Wymagane connectory:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i action IDs zostaw bez zmian.
 
 
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
 2. `Dowody`: evidence IDs, connector IDs, notatki freshness i metric summaries wyłącznie z WILQ API.
 3. `Diagnoza`: co wspiera evidence, z niepewnością gdy evidence jest zagregowane, stare albo niepełne.
-4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
-5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
+4. `Akcje do sprawdzenia`: opportunity IDs i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub downgrade do blockera
@@ -35,9 +35,9 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
-- Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
+- Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
+- Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
 
 ## Reguły evidence
 
-Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.
+Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak akcji sprawdzonej w WILQ oznacza brak zapisu zmian. Brak audit event oznacza brak write.

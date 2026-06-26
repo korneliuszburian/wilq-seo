@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Ahrefs Gap Finder"
-  short_description: "Wyszukuje SEO/content/backlink gaps z Ahrefs evidence"
-  default_prompt: "Użyj $wilq-ahrefs-gap-finder: sprawdź, gdzie konkurencja ma przewagę SEO i czy Ahrefs potwierdza content gap."
+  short_description: "Wyszukuje luki SEO, treści i backlinków na podstawie danych Ahrefs"
+  default_prompt: "Użyj $wilq-ahrefs-gap-finder: sprawdź, gdzie konkurencja ma przewagę SEO i czy Ahrefs potwierdza luki treści."

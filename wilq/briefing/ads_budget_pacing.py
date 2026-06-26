@@ -42,10 +42,10 @@ def build_budget_pacing_read_contract(
     ]
     blocked_claims = [
         "budget scaling",
-        "budget apply",
+        "zmiana budżetu",
         "profitability",
         "wasted budget",
-        "recommendation apply",
+        "zapis rekomendacji",
     ]
     if rows:
         if all(row.budget_id for row in rows):
@@ -86,14 +86,14 @@ def build_budget_pacing_read_contract(
                 "Użyj tego jako kontekstu review: które kampanie mają koszt względem "
                 "budżetu dziennego, czy dzielą wspólny budżet i czy Google pokazuje "
                 "recommended budget. Nie skaluj budżetu bez historii zmian, impression "
-                "share, celu biznesowego i walidowanego ActionObject."
+                "share, celu biznesowego i akcji sprawdzonej w WILQ."
             ),
         )
 
     return AdsBudgetPacingReadContract(
         status="blocked",
         title="Google Ads: brak kontekstu budżetu kampanii",
-        summary="WILQ nie ma jeszcze budget metric facts z Google Ads campaign_budget.",
+        summary="WILQ nie ma jeszcze metryk budżetu kampanii z Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["campaign_budget", *missing_read_contracts],
         blocked_claims=["budget amount", "budget pacing", *blocked_claims],
@@ -104,7 +104,7 @@ def build_budget_pacing_read_contract(
         payload_preview=[],
         action_ids=[],
         next_step=(
-            "Uruchom read-only Google Ads vendor_read z campaign_budget fields. "
+            "Uruchom odczyt danych Google Ads z polami budżetu kampanii. "
             "Nie oceniaj tempa budżetu bez budget_amount_micros."
         ),
     )
@@ -305,12 +305,12 @@ def _budget_apply_preview(
         else None
     )
     reason = (
-        "Review-only podgląd CampaignBudgetOperation z Google recommended budget. "
-        "WILQ nie może zmienić budżetu bez celu budżetowego, review strategii, "
+        "Podgląd budżetu z rekomendacji Google do sprawdzenia. "
+        "WILQ nie może zmienić budżetu bez celu budżetowego, przeglądu strategii, "
         "potwierdzenia człowieka i audytu."
         if proposed_budget_amount_micros is not None
         else (
-            "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił "
+            "Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił "
             "recommended budget, więc WILQ pokazuje bieżący budżet i blokuje "
             "propozycję kwoty do czasu human_budget_goal."
         )

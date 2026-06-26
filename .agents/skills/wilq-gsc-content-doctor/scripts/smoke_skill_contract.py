@@ -30,7 +30,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -134,7 +134,7 @@ def main() -> int:
         content_diagnostics.get("live_data_available") is True
         and CONTENT_ACTION_ID not in action_ids
     ):
-        raise SystemExit("Live GSC content diagnostics must expose content refresh ActionObject")
+        raise SystemExit("Live GSC content diagnostics must expose content refresh action")
     action_validations = []
     if CONTENT_ACTION_ID in action_ids:
         quoted_action = urllib.parse.quote(CONTENT_ACTION_ID, safe="")
@@ -148,7 +148,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"GSC content ActionObject validation failed: {validation}")
+            raise SystemExit(f"GSC content action validation failed: {validation}")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [

@@ -1,0 +1,15 @@
+id: seo_ahrefs_capability_pack_v1
+name: Ahrefs SEO capability pack
+version: 1
+source_anchor: Ahrefs Site Explorer and gap diagnostics represented through WILQ API
+when_to_use: Interpret Ahrefs authority, content gap and backlink gap evidence without claiming traffic uplift.
+required_inputs: [ahrefs_metric_facts, gap_records, evidence_ids]
+diagnostic_logic: [separate_authority_context_from_gap_claims, require_gsc_wordpress_overlap]
+recommended_actions: [content_gap_review, backlink_gap_review, authority_context_review]
+risk_notes: Ahrefs gaps are review inputs, not traffic, ranking, lead or revenue uplift proof.
+capabilities:
+  - ahrefs_authority_context_review
+  - ahrefs_content_gap_review
+  - ahrefs_backlink_gap_review
+  - ahrefs_gap_claim_safety
+output_contract: Ahrefs review decisions with evidence IDs and blocked uplift claims.

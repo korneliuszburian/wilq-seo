@@ -50,8 +50,13 @@ WordPressMatchConfidence = Literal[
     "missing",
 ]
 WORDPRESS_CANONICAL_HOST_ALIASES = {
-    "www.ekologus.pl": {"ekologus.dev.proudsite.pl", "ekologus.pl"},
-    "ekologus.pl": {"ekologus.dev.proudsite.pl", "www.ekologus.pl"},
+    "www.ekologus.pl": {"ekologus.pl"},
+    "ekologus.pl": {"www.ekologus.pl"},
+}
+WORDPRESS_PUBLIC_CONTENT_HOSTS = {
+    "ekologus.pl",
+    "www.ekologus.pl",
+    "sklep.ekologus.pl",
 }
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_competitor_page_count",
@@ -392,7 +397,7 @@ def _priority_label(priority: int) -> str:
 
 def _tactical_domain_label(domain: OpportunityDomain) -> str:
     labels = {
-        OpportunityDomain.gsc_seo: "SEO / GSC",
+        OpportunityDomain.gsc_seo: "Content / GSC",
         OpportunityDomain.ga4: "GA4",
         OpportunityDomain.merchant: "Merchant",
         OpportunityDomain.content: "Content",
@@ -681,8 +686,9 @@ def _merchant_feed_items(
                     f"{severity}/{issue_type}/{resolution} dla kraju {country}."
                 ),
                 next_step=(
-                    "Przygotuj kolejkę przeglądu problemów feedu i payload preview. "
-                    "Nie zmieniaj danych produktu bez walidacji ActionObject i zgody operatora."
+                    "Przygotuj kolejkę przeglądu problemów feedu i podgląd zmian. "
+                    "Nie zmieniaj danych produktu bez sprawdzenia propozycji "
+                    "w WILQ i zgody operatora."
                 ),
                 blocked_claims=["product fix applied", "approval restored", "revenue recovered"],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),
@@ -712,7 +718,7 @@ def _merchant_feed_items(
                     f"Status feedu: disapproved_products={disapproved or 0}, "
                     f"expiring_products={expiring or 0} dla {country}/{reporting_context}."
                 ),
-                next_step="Sprawdź statusy produktów i przygotuj kolejkę manualnego review.",
+                next_step="Sprawdź statusy produktów i przygotuj kolejkę ręcznego sprawdzenia.",
                 blocked_claims=["approval restored", "feed issue resolved"],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),
             )
@@ -784,7 +790,7 @@ def _ahrefs_gap_items(
                     "authority improvement",
                     "ranking guarantee",
                     "lead uplift",
-                    "content brief without GSC/WordPress review",
+                    "content brief without GSC/WordPress check",
                 ],
                 action_ids=action_ids_by_connector.get("ahrefs", []),
             )
@@ -938,7 +944,7 @@ def _ahrefs_gap_diagnosis(
     return (
         f"Ahrefs wskazuje rekord `{gap_type}` dla tematu `{topic}`. "
         f"Fakty: {_ahrefs_fact_summary(facts)}.{context_text} "
-        f"{confirmation_text} To jest sygnał do review contentu, "
+        f"{confirmation_text} To jest sygnał do sprawdzenia contentu, "
         "nie samodzielna rekomendacja SEO."
     )
 
@@ -960,12 +966,12 @@ def _ahrefs_gap_next_step(
     if confirmation.gsc_overlap_terms and confirmation.wordpress_overlap_urls:
         return (
             f"Zweryfikuj `{topic}` na podstawie GSC i WordPress overlap, potem "
-            "wybierz refresh, merge, create albo block. Nie traktuj Ahrefs jako "
+            "wybierz odświeżenie, scalenie, nową treść albo blokadę. Nie traktuj Ahrefs jako "
             "samodzielnej obietnicy ruchu."
         )
     return (
-        f"Sprawdź ręcznie `{topic}` w GSC i WordPress inventory, potem wybierz "
-        "refresh, merge, create albo block. Bez overlapu nie twórz briefu tylko "
+        f"Sprawdź ręcznie `{topic}` w GSC i spisie treści WordPress, potem wybierz "
+        "odświeżenie, scalenie, nową treść albo blokadę. Bez overlapu nie twórz briefu tylko "
         "z Ahrefs."
     )
 
@@ -1131,7 +1137,12 @@ def _find_wordpress_match(index: WordPressContentIndex, page_or_path: str) -> Wo
             requested_url_key=requested_url_key,
             requested_path_key=path_key,
         )
-    path_candidates = index.paths.get(path_key, [])
+    requested_host = _url_host(page_or_path)
+    path_candidates = [
+        candidate
+        for candidate in index.paths.get(path_key, [])
+        if _wordpress_path_candidate_allowed_for_request(requested_host, candidate)
+    ]
     if path_key == "/" and not _url_host(page_or_path):
         path_match = _preferred_wordpress_path_match(path_candidates)
         if path_match:
@@ -1183,6 +1194,16 @@ def _set_wordpress_index(
 
 def _preferred_wordpress_path_match(candidates: list[MetricFact]) -> MetricFact | None:
     return max(candidates, key=_wordpress_path_match_score, default=None)
+
+
+def _wordpress_path_candidate_allowed_for_request(
+    requested_host: str | None,
+    fact: MetricFact,
+) -> bool:
+    if not requested_host:
+        return True
+    content_host = _url_host(fact.dimensions.get("content_url", ""))
+    return not (content_host and content_host not in WORDPRESS_PUBLIC_CONTENT_HOSTS)
 
 
 def _wordpress_path_match_score(fact: MetricFact) -> tuple[int, int, int]:
@@ -1381,8 +1402,11 @@ def _content_next_step(intent: TacticalIntent) -> str:
     if intent == "content_block":
         return "Oznacz jako niski priorytet; nie twórz zadania bez mocniejszego demand evidence."
     if intent == "content_merge":
-        return "Sprawdź overlap intencji i przygotuj merge plan z redirect/audit checklist."
-    return "Przygotuj refresh istniejącej strony: tytuł, H1/H2, sekcje brakujące i CTA."
+        return (
+            "Sprawdź overlap intencji i przygotuj plan scalenia z listą kontroli "
+            "przekierowania i audytu."
+        )
+    return "Przygotuj odświeżenie istniejącej strony: tytuł, H1/H2, sekcje brakujące i CTA."
 
 
 def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, str]:
@@ -1419,10 +1443,10 @@ def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, st
 def _wordpress_match_note(wordpress_match: WordPressMatch) -> str:
     wordpress_fact = wordpress_match.fact
     if wordpress_fact is None:
-        return "WordPress inventory nie potwierdza istniejącej strony w ostatnim odczycie."
+        return "Spis treści WordPress nie potwierdza istniejącej strony w ostatnim odczycie."
     dimensions = wordpress_fact.dimensions
     return (
-        "WordPress inventory potwierdza istniejący obiekt "
+        "Spis treści WordPress potwierdza istniejący obiekt "
         f"typu {dimensions.get('content_type', 'content')}, "
         f"status: {_wordpress_status_label(dimensions.get('status'))}, "
         f"dopasowanie: {_wordpress_match_confidence_label(wordpress_match.confidence)}."

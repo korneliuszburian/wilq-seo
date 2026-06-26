@@ -8,8 +8,7 @@ diagnostic_logic:
   - require_real_google_ads_evidence
   - classify_recommendation_by_cost_intent_risk
 recommended_actions:
-  - create_action_object_before_write
-  - validate_payload_before_apply
+  - create_validated_action_before_write
+  - validate_change_preview_before_write
 risk_notes: Paid media changes can affect spend and lead quality.
-output_contract: Opportunity plus optional ActionObject IDs.
-
+output_contract: Opportunity plus optional validated action IDs.

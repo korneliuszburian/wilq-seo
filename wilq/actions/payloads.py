@@ -55,7 +55,7 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         return errors
 
     if payload_connector is not None and payload_connector != connector_id:
-        errors.append("Action payload connector must match ActionObject connector.")
+        errors.append("Action payload connector must match Action object connector.")
 
     if action_type in INTERNAL_ACTION_TYPES:
         required_env = payload.get("required_env")

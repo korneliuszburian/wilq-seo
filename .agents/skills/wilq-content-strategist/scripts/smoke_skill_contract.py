@@ -25,7 +25,7 @@ REQUIRED_CONTEXT_KEYS = {
     "content_diagnostics",
 }
 CONTENT_ACTION_ID = "act_prepare_content_refresh_queue"
-WORDPRESS_STAGING_ACTION_ID = "act_prepare_wordpress_staging_draft"
+WORDPRESS_DRAFT_HANDOFF_ACTION_ID = "act_prepare_wordpress_draft_handoff"
 CONTENT_ACTION_DECISION_TYPES = {
     "block_until_vendor_read",
     "refresh_or_merge",
@@ -33,6 +33,15 @@ CONTENT_ACTION_DECISION_TYPES = {
     "inventory_check_before_create",
     "review_ahrefs_gap_records",
 }
+CURRENT_CONTENT_URL_KEYS = frozenset(
+    {
+        "source_public_url",
+        "final_canonical_url",
+        "intended_final_url",
+        "preview_url",
+    }
+)
+MARKETER_FACING_JARGON = ("action",)
 
 
 def request_json(
@@ -60,6 +69,20 @@ def request_json(
         raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
 
 
+def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
+    unexpected_url_keys = sorted(
+        key
+        for key in value
+        if (key.endswith("_url") or key.endswith("_host"))
+        and key not in CURRENT_CONTENT_URL_KEYS
+    )
+    if unexpected_url_keys:
+        raise SystemExit(
+            f"{label} exposes non-current content URL fields: "
+            + ", ".join(unexpected_url_keys)
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -85,6 +108,7 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+    validate_context_pack_condensation(pack)
 
     content_diagnostics = request_json(
         args.api_base,
@@ -119,7 +143,7 @@ def main() -> int:
         pack.get("active_action_objects"),
         require_preview=require_content_preview,
     )
-    validate_wordpress_staging_action_preview(pack.get("active_action_objects"))
+    validate_wordpress_draft_handoff_action_preview(pack.get("active_action_objects"))
 
     action_validations = []
     for action_id in content_diagnostics.get("action_ids", []):
@@ -139,7 +163,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Content ActionObject validation failed: {validation}")
+            raise SystemExit(f"Content action validation failed: {validation}")
 
     brief = request_json(
         args.api_base,
@@ -280,7 +304,7 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
         decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES
         for decision in decision_queue
     ):
-        raise SystemExit("Content decision_queue lacks review-safe content planning decision")
+        raise SystemExit("Content decision_queue lacks content planning decision safe for review")
     for decision in decision_queue:
         if not isinstance(decision, dict):
             continue
@@ -288,89 +312,47 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
             raise SystemExit("Content decision_queue item lacks evidence IDs")
         decision_action_ids = set(decision.get("action_ids") or [])
         if not decision_action_ids:
-            raise SystemExit("Content decision_queue item lacks ActionObject ID")
+            raise SystemExit("Content decision_queue item lacks action ID")
         if (
             decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES
             and CONTENT_ACTION_ID not in decision_action_ids
         ):
-            raise SystemExit("Content planning decision lacks content ActionObject ID")
+            raise SystemExit("Content planning decision lacks content action ID")
         if not decision.get("blocked_claims"):
             raise SystemExit("Content decision_queue item lacks blocked claims")
+        if decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES:
+            for field in (
+                "source_public_url",
+                "final_canonical_url",
+                "intended_final_url",
+            ):
+                if field not in decision:
+                    raise SystemExit(f"Content planning decision lacks {field}")
+            final_url = str(decision.get("final_canonical_url") or "")
+            if "ekologus.dev.proudsite.pl" in final_url:
+                raise SystemExit("Content final_canonical_url must not point to dev preview")
 
 
 def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> None:
     summary = content_diagnostics.get("operator_summary")
     if not isinstance(summary, dict):
         raise SystemExit("Content diagnostics lacks operator_summary")
-    decisions = [
-        item
-        for item in content_diagnostics.get("decision_queue", [])
-        if isinstance(item, dict)
+    assert_current_content_url_keys(summary, "Content operator_summary")
+    jargon_fields = ("title", "summary", "next_step")
+    jargon_hits = [
+        field
+        for field in jargon_fields
+        if any(term in str(summary.get(field, "")) for term in MARKETER_FACING_JARGON)
     ]
-    expected_confirmed = sum(
-        1
-        for decision in decisions
-        if decision.get("target_site_migration_candidate_inventory_status")
-        == "confirmed_target_inventory"
-    )
-    expected_missing = sum(
-        1
-        for decision in decisions
-        if decision.get("target_site_migration_candidate_inventory_status")
-        == "missing_target_inventory"
-    )
-    if summary.get("target_site_confirmed_candidate_inventory_count") != expected_confirmed:
+    if jargon_hits:
         raise SystemExit(
-            "Content operator_summary confirmed candidate inventory count differs from decision_queue"
+            "Content operator_summary exposes internal jargon in marketer-facing fields: "
+            + ", ".join(jargon_hits)
         )
-    if summary.get("target_site_missing_candidate_inventory_count") != expected_missing:
-        raise SystemExit(
-            "Content operator_summary missing candidate inventory count differs from decision_queue"
-        )
-    migration_map = summary.get("target_site_migration_map")
-    if not isinstance(migration_map, list):
-        raise SystemExit("Content operator_summary target_site_migration_map must be a list")
-    mapping_inputs = summary.get("target_site_mapping_review_inputs")
-    if not isinstance(mapping_inputs, list):
-        raise SystemExit(
-            "Content operator_summary target_site_mapping_review_inputs must be a list"
-        )
-    if migration_map and not mapping_inputs:
-        raise SystemExit(
-            "Content operator_summary lacks mapping review input packet for migration map"
-        )
-    for item in mapping_inputs[:4]:
-        if not isinstance(item, dict):
-            raise SystemExit("Content mapping review input item must be an object")
-        if not str(item.get("candidate_id") or "").startswith("content_brief_gsc_"):
-            raise SystemExit("Content mapping review input lacks traceable candidate_id")
-        if item.get("review_action_id") != CONTENT_ACTION_ID:
-            raise SystemExit("Content mapping review input lacks review ActionObject ID")
-        if item.get("review_endpoint") != f"/api/actions/{CONTENT_ACTION_ID}/review":
-            raise SystemExit("Content mapping review input lacks review endpoint")
-        if not isinstance(item.get("candidate_target_urls"), list):
-            raise SystemExit("Content mapping review input candidate_target_urls must be a list")
-        checked_items = item.get("required_checked_items")
-        if not isinstance(checked_items, list) or not any(
-            str(value).startswith("mapping_outcome:")
-            for value in checked_items
-        ):
-            raise SystemExit("Content mapping review input lacks mapping_outcome checked item")
-        review_payload = item.get("review_payload_template")
-        if not isinstance(review_payload, dict):
-            raise SystemExit("Content mapping review input lacks review payload template")
-        if review_payload.get("outcome") != "approved_for_prepare":
-            raise SystemExit("Content mapping review payload template has unsafe outcome")
-        if review_payload.get("checked_items") != checked_items:
-            raise SystemExit("Content mapping review payload template checked items differ")
-        payload_blockers = set(review_payload.get("blockers") or [])
-        if "wordpress_write_not_requested" not in payload_blockers:
-            raise SystemExit("Content mapping review payload template must block writes")
-        blocked_outputs = set(item.get("blocked_outputs") or [])
-        if not {"wordpress_publish", "ranking_or_lead_uplift_claim"}.issubset(
-            blocked_outputs
-        ):
-            raise SystemExit("Content mapping review input must block publish/uplift")
+    for decision in content_diagnostics.get("decision_queue", []):
+        if not isinstance(decision, dict):
+            continue
+        assert_current_content_url_keys(decision, "Content decision_queue")
 
 
 def validate_content_action_preview(
@@ -392,23 +374,24 @@ def validate_content_action_preview(
         raise SystemExit(f"Context pack missing active {CONTENT_ACTION_ID}")
     payload = content_action.get("payload")
     if not isinstance(payload, dict):
-        raise SystemExit("Content ActionObject payload must be an object")
-    mapping_contract = payload.get("target_site_mapping_review_contract")
-    if not isinstance(mapping_contract, dict):
-        raise SystemExit("Content ActionObject lacks target_site_mapping_review_contract")
-    if mapping_contract.get("contract") != "target_site_mapping_review_v1":
-        raise SystemExit("Content mapping review contract has invalid version")
-    if mapping_contract.get("scope") != "review_only":
-        raise SystemExit("Content mapping review contract must be review_only")
-    if "wordpress_publish" not in set(mapping_contract.get("blocked_outputs") or []):
-        raise SystemExit("Content mapping review contract must block wordpress_publish")
+        raise SystemExit("Content action payload must be an object")
+    url_contract = payload.get("content_url_review_contract")
+    if not isinstance(url_contract, dict):
+        raise SystemExit("Content action lacks content_url_review_contract")
+    if url_contract.get("contract") != "content_url_preflight_review_v1":
+        raise SystemExit("Content URL review contract has invalid version")
+    if url_contract.get("scope") != "review_only":
+        raise SystemExit("Content URL review contract must be review_only")
+    if "wordpress_publish" not in set(url_contract.get("blocked_outputs") or []):
+        raise SystemExit("Content URL review contract must block wordpress_publish")
+    assert_current_content_url_keys(payload, "Content action payload")
     previews = payload.get("content_brief_preview")
     if not require_preview and previews is None:
         return []
     if not isinstance(previews, list) or not previews:
-        raise SystemExit("Content ActionObject lacks content_brief_preview")
+        raise SystemExit("Content action lacks content_brief_preview")
     if int(payload.get("content_brief_preview_included") or 0) <= 0:
-        raise SystemExit("Content ActionObject context omits content_brief_preview")
+        raise SystemExit("Content action context omits content_brief_preview")
     first_preview = previews[0]
     if not isinstance(first_preview, dict):
         raise SystemExit("Content brief preview must be an object")
@@ -416,6 +399,10 @@ def validate_content_action_preview(
         raise SystemExit("Content brief preview must keep apply_allowed=false")
     if first_preview.get("api_mutation_ready") is not False:
         raise SystemExit("Content brief preview must keep api_mutation_ready=false")
+    for preview in previews:
+        if not isinstance(preview, dict):
+            continue
+        assert_current_content_url_keys(preview, "Content context-pack preview")
     if not first_preview.get("evidence_ids"):
         raise SystemExit("Content brief preview lacks evidence IDs")
     if "ranking guarantee" not in set(first_preview.get("blocked_claims") or []):
@@ -456,38 +443,22 @@ def validate_content_action_preview(
             raise SystemExit(f"Content brief preview lacks {field}")
     if "ranking guarantee" not in set(first_preview.get("forbidden_claims") or []):
         raise SystemExit("Content brief preview forbidden_claims must block ranking guarantee")
-    if "target_site_migration_status" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_migration_status")
-    if "target_site_migration_summary" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_migration_summary")
-    if "target_site_migration_candidate_inventory_status" not in first_preview:
-        raise SystemExit(
-            "Content brief preview lacks target_site_migration_candidate_inventory_status"
-        )
-    if "target_site_migration_candidate_inventory_summary" not in first_preview:
-        raise SystemExit(
-            "Content brief preview lacks target_site_migration_candidate_inventory_summary"
-        )
-    if "target_site_alternative_candidate_urls" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_alternative_candidate_urls")
-    if not isinstance(first_preview.get("target_site_alternative_candidate_urls"), list):
-        raise SystemExit("Content brief preview target_site_alternative_candidate_urls must be a list")
-    if "target_site_alternative_candidate_summary" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_alternative_candidate_summary")
-    if "target_site_mapping_review_status" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_mapping_review_status")
-    if "target_site_mapping_review_summary" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_mapping_review_summary")
-    if "target_site_mapping_review_candidate_urls" not in first_preview:
-        raise SystemExit("Content brief preview lacks target_site_mapping_review_candidate_urls")
-    if not isinstance(first_preview.get("target_site_mapping_review_candidate_urls"), list):
-        raise SystemExit("Content brief preview target_site_mapping_review_candidate_urls must be a list")
-    requirements = first_preview.get("target_site_review_requirements")
+    for field in (
+        "source_public_url",
+        "final_canonical_url",
+        "intended_final_url",
+    ):
+        if field not in first_preview:
+            raise SystemExit(f"Content brief preview lacks {field}")
+    if "ekologus.dev.proudsite.pl" in str(first_preview.get("final_canonical_url") or ""):
+        raise SystemExit("Content brief preview final_canonical_url must not point to dev preview")
+    requirements = first_preview.get("required_validation")
     if not isinstance(requirements, list) or not requirements:
-        raise SystemExit("Content brief preview lacks target_site_review_requirements")
+        raise SystemExit("Content brief preview lacks required_validation")
     if "duplicate_or_cannibalization_check" not in set(requirements):
         raise SystemExit(
-            "Content brief preview target_site_review_requirements must include duplicate_or_cannibalization_check"
+            "Content brief preview required_validation must include "
+            "duplicate_or_cannibalization_check"
         )
     gsc_preview = next(
         (
@@ -499,41 +470,17 @@ def validate_content_action_preview(
     )
     if isinstance(gsc_preview, dict):
         for field in (
-            "source_url",
-            "source_site_host",
-            "target_site_adaptation_status",
+            "source_public_url",
+            "final_canonical_url",
+            "intended_final_url",
+            "inventory_gate_status",
+            "canonical_gate_status",
+            "duplicate_gate_status",
         ):
             if not str(gsc_preview.get(field) or "").strip():
                 raise SystemExit(f"GSC content brief preview lacks {field}")
-        if gsc_preview.get("target_site_adaptation_status") != "needs_inventory_match":
-            for field in ("target_site_url", "target_site_host"):
-                if not str(gsc_preview.get(field) or "").strip():
-                    raise SystemExit(f"GSC content brief preview lacks {field}")
-        if gsc_preview.get("target_site_url") == "[REDACTED]":
-            raise SystemExit("GSC content brief target_site_url must not be redacted")
-        if "target_site_inventory_summary" not in gsc_preview:
-            raise SystemExit("GSC content brief preview lacks target_site_inventory_summary")
-        candidate_inventory_status = str(
-            gsc_preview.get("target_site_migration_candidate_inventory_status") or ""
-        )
-        if candidate_inventory_status not in {
-            "confirmed_target_inventory",
-            "missing_target_inventory",
-            "not_applicable",
-        }:
-            raise SystemExit(
-                "GSC content brief preview has invalid target_site_migration_candidate_inventory_status"
-            )
-        inventory_missing = gsc_preview.get("target_site_inventory_missing_fields")
-        canonical_url = str(gsc_preview.get("target_site_inventory_canonical_url") or "")
-        canonical_missing = (
-            isinstance(inventory_missing, list)
-            and "canonical_url" in set(inventory_missing)
-        )
-        if not canonical_missing and not canonical_url:
-            raise SystemExit(
-                "GSC content brief preview must expose canonical_url or mark it missing"
-            )
+        if "ekologus.dev.proudsite.pl" in str(gsc_preview.get("final_canonical_url") or ""):
+            raise SystemExit("GSC content brief final_canonical_url must not point to dev preview")
     return [
         {
             "topic": preview.get("topic"),
@@ -559,27 +506,10 @@ def validate_content_action_preview(
             "source_facts": (preview.get("source_facts") or [])[:4],
             "missing_evidence": (preview.get("missing_evidence") or [])[:3],
             "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
-            "target_site_inventory_summary": preview.get(
-                "target_site_inventory_summary"
-            ),
-            "target_site_migration_candidate_url": preview.get(
-                "target_site_migration_candidate_url"
-            ),
-            "target_site_migration_candidate_inventory_status": preview.get(
-                "target_site_migration_candidate_inventory_status"
-            ),
-            "target_site_migration_candidate_inventory_summary": preview.get(
-                "target_site_migration_candidate_inventory_summary"
-            ),
-            "target_site_inventory_missing_fields": (
-                preview.get("target_site_inventory_missing_fields") or []
-            )[:6],
-            "target_site_inventory_title_or_h1": preview.get(
-                "target_site_inventory_title_or_h1"
-            ),
-            "target_site_inventory_canonical_url": preview.get(
-                "target_site_inventory_canonical_url"
-            ),
+            "source_public_url": preview.get("source_public_url"),
+            "final_canonical_url": preview.get("final_canonical_url"),
+            "intended_final_url": preview.get("intended_final_url"),
+            "preview_url": preview.get("preview_url"),
             "evidence_ids": (preview.get("evidence_ids") or [])[:5],
         }
         for preview in previews[:3]
@@ -587,39 +517,40 @@ def validate_content_action_preview(
     ]
 
 
-def validate_wordpress_staging_action_preview(active_actions: Any) -> None:
+def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None:
     if not isinstance(active_actions, list):
         raise SystemExit("Context pack active_action_objects must be a list")
-    staging_action = next(
+    wordpress_draft_action = next(
         (
             action
             for action in active_actions
-            if isinstance(action, dict) and action.get("id") == WORDPRESS_STAGING_ACTION_ID
+            if isinstance(action, dict) and action.get("id") == WORDPRESS_DRAFT_HANDOFF_ACTION_ID
         ),
         None,
     )
-    if staging_action is None:
+    if wordpress_draft_action is None:
         return
-    if not isinstance(staging_action, dict):
-        raise SystemExit("WordPress staging ActionObject must be an object")
-    payload = staging_action.get("payload")
+    if not isinstance(wordpress_draft_action, dict):
+        raise SystemExit("WordPress draft handoff action must be an object")
+    payload = wordpress_draft_action.get("payload")
     if not isinstance(payload, dict):
-        raise SystemExit("WordPress staging ActionObject payload must be an object")
+        raise SystemExit("WordPress draft handoff action payload must be an object")
     if "post_publication_measurement_plan_v1" not in set(
         payload.get("required_input_contracts") or []
     ):
         raise SystemExit(
-            "WordPress staging ActionObject must require post_publication_measurement_plan_v1"
+            "WordPress draft handoff action must require post_publication_measurement_plan_v1"
         )
     previews = payload.get("payload_preview")
     if not isinstance(previews, list) or not previews:
-        raise SystemExit("WordPress staging ActionObject lacks payload_preview")
+        raise SystemExit("WordPress draft handoff action lacks payload_preview")
     first_preview = next((item for item in previews if isinstance(item, dict)), None)
     if not isinstance(first_preview, dict):
-        raise SystemExit("WordPress staging payload preview must be an object")
+        raise SystemExit("WordPress draft handoff change preview must be an object")
+    assert_current_content_url_keys(first_preview, "WordPress draft handoff context-pack preview")
     measurement_plan = first_preview.get("post_publication_measurement_plan")
     if not isinstance(measurement_plan, dict):
-        raise SystemExit("WordPress staging preview lacks post_publication_measurement_plan")
+        raise SystemExit("WordPress draft handoff preview lacks post_publication_measurement_plan")
     if (
         measurement_plan.get("contract_version")
         != "post_publication_measurement_plan_v1"
@@ -639,6 +570,54 @@ def validate_wordpress_staging_action_preview(active_actions: Any) -> None:
     if not {"ranking_gain_claim", "lead_uplift_claim"}.issubset(blocked_outputs):
         raise SystemExit(
             "Post-publication measurement plan must block uplift/ranking claims"
+        )
+
+
+def validate_context_pack_condensation(pack: dict[str, Any]) -> None:
+    compaction = pack.get("context_pack_compaction")
+    if not isinstance(compaction, dict):
+        raise SystemExit("Context pack must expose compaction metadata")
+    required_flags = {
+        "connector_refresh_runs_compacted",
+        "evidence_summaries_compacted",
+        "knowledge_card_summaries_compacted",
+        "raw_history_omitted",
+    }
+    missing_flags = sorted(
+        flag for flag in required_flags if compaction.get(flag) is not True
+    )
+    if missing_flags:
+        raise SystemExit(
+            "Context pack compaction is missing required flags: "
+            + ", ".join(missing_flags)
+        )
+    operator_context = {
+        "connector_status": pack.get("connector_status"),
+        "connector_refresh_runs": pack.get("connector_refresh_runs"),
+        "evidence_summaries": pack.get("evidence_summaries"),
+        "knowledge_card_summaries": pack.get("knowledge_card_summaries"),
+        "expert_rule_summaries": pack.get("expert_rule_summaries"),
+        "active_action_objects": pack.get("active_action_objects"),
+        "content_diagnostics_connectors": (pack.get("content_diagnostics") or {}).get(
+            "connectors"
+        ),
+        "content_diagnostics_latest_refreshes": (
+            pack.get("content_diagnostics") or {}
+        ).get("latest_refreshes"),
+    }
+    serialized = json.dumps(operator_context, ensure_ascii=False)
+    forbidden_terms = (
+        "vendor_read",
+        "Read-only",
+        "read-only",
+        "review-only",
+        "ActionObject",
+    )
+    leaked_terms = [term for term in forbidden_terms if term in serialized]
+    if leaked_terms:
+        raise SystemExit(
+            "Context pack leaked raw history or technical wording: "
+            + ", ".join(leaked_terms)
         )
 
 

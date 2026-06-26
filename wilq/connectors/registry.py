@@ -52,12 +52,12 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "google_ads_change_history_impact_review",
             "google_ads_search_term_ngram_review",
             "google_ads_demand_gen_readiness_review",
-            "demand_gen_migration_plan",
+            "demand_gen_transition_plan",
             "custom_segment_candidate",
         ),
         "Google Ads API quotas and mutate limits apply.",
         "External API usage may consume Google Ads API quota.",
-        "Write actions can affect paid media spend and must be validated.",
+        "Zapis zmian może wpływać na wydatki reklamowe i wymaga walidacji.",
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -153,7 +153,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         (
             "wordpress_content_refresh",
             "wordpress_draft_update",
-            "wordpress_staging_draft_apply",
+            "wordpress_draft_handoff",
         ),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
@@ -185,7 +185,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("linkedin_post_candidate",),
         "LinkedIn API permissions and organization roles apply.",
         "No direct API cost expected.",
-        "Publishing requires organization permission and human review.",
+        "Publishing requires organization permission and sprawdzenie przez człowieka.",
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -197,7 +197,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("facebook_post_candidate",),
         "Meta API permissions and app review apply.",
         "No direct API cost expected.",
-        "Publishing requires Page permission and human review.",
+        "Publishing requires Page permission and sprawdzenie przez człowieka.",
         "credential_presence",
     ),
     ConnectorDefinition(

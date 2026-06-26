@@ -30,7 +30,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -63,7 +63,7 @@ def main() -> int:
     if any(action_id != CUSTOM_SEGMENT_ACTION_ID for action_id in pack_ads_action_ids):
         raise SystemExit(
             "Context pack for custom segments must not expose campaign, recommendation, "
-            "negative keyword or business-context ActionObjects"
+            "negative keyword or business-context actions"
         )
     active_action_ids = [
         item.get("id")
@@ -149,15 +149,15 @@ def main() -> int:
             "kolejność oceny segmentu" not in review_reason
             or "nie dowód rozmiaru odbiorców" not in review_reason
         ):
-            raise SystemExit("Custom segment candidate must explain review-only triage")
+            raise SystemExit("Custom segment candidate must explain validation triage")
         if not first_candidate.get("human_review_gates"):
             raise SystemExit("Custom segment candidate must expose human_review_gates")
         if first_candidate["payload_preview"].get("apply_allowed") is not False:
-            raise SystemExit("Custom segment payload preview must keep apply_allowed=false")
-        if "custom_segment_payload_preview" in (
+            raise SystemExit("Custom segment change preview must keep apply_allowed=false")
+        if "custom_segment_change_preview" in (
             custom_segments_read_contract.get("missing_read_contracts") or []
         ):
-            raise SystemExit("Ready custom segments contract must not miss payload preview")
+            raise SystemExit("Ready custom segments contract must not miss change preview")
         if not custom_segments_read_contract.get("payload_preview"):
             raise SystemExit("Ready custom segments contract must expose payload_preview")
         payload_preview = custom_segments_read_contract["payload_preview"][0]
@@ -185,15 +185,15 @@ def main() -> int:
             )
         if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
             raise SystemExit(
-                "Custom segments read contract must expose custom segment ActionObject"
+                "Custom segments read contract must expose custom segment action"
             )
         if pack_ads_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
             raise SystemExit(
-                "Ready custom segments context must expose custom segment ActionObject"
+                "Ready custom segments context must expose custom segment action"
             )
         if active_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
             raise SystemExit(
-                "Ready custom segments active actions must expose custom segment ActionObject"
+                "Ready custom segments active actions must expose custom segment action"
             )
         if decision_ids != ["ads_prepare_custom_segments_from_search_terms"]:
             raise SystemExit(
@@ -207,7 +207,7 @@ def main() -> int:
         )
         if custom_segment_action_validation.get("valid") is not True:
             raise SystemExit(
-                "Custom segment ActionObject validation must pass when candidates exist"
+                "Custom segment action validation must pass when candidates exist"
             )
         action_validations.append(
             {

@@ -8,6 +8,7 @@ from uuid import uuid4
 from wilq.actions.content_refresh import (
     content_payload_with_reviewed_wordpress_draft_previews,
     content_refresh_payload_from_metric_facts,
+    content_url_review_contract,
     post_publication_measurement_plan,
 )
 from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
@@ -43,15 +44,15 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
     DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
     DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-    DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
-    demand_gen_migration_constraint_rows_from_campaigns,
     demand_gen_readiness_review_payload,
+    demand_gen_transition_constraint_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_ID,
@@ -174,6 +175,83 @@ def seed_static_actions() -> dict[str, ActionObject]:
 def seed_core_prepare_actions() -> dict[str, ActionObject]:
     actions = [
         ActionObject(
+            id=RECOMMENDATION_REVIEW_ACTION_ID,
+            title="Przygotuj sprawdzenie rekomendacji Google Ads",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=[connector_evidence_id("google_ads")],
+            human_diagnosis=(
+                "Rekomendacje Google Ads są core workflow WILQ. WILQ utrzymuje "
+                "kontrakt sprawdzenia, ale nie może akceptować ani odrzucać "
+                "rekomendacji bez danych rekomendacji w WILQ."
+            ),
+            recommended_reason=(
+                "Zbierz odczyt rekomendacji Google Ads, potem sprawdź typ "
+                "rekomendacji, wpływ, powiązane kampanie i strategię przed "
+                "jakimkolwiek zapisem zmian."
+            ),
+            payload={
+                "action_type": "google_ads_recommendation_review",
+                "connector": "google_ads",
+                "mode": "prepare_only",
+                "source_metric_names": ["connector_status"],
+                "recommendations": [
+                    {
+                        "recommendation_id": "google_ads_recommendations_read_required",
+                        "recommendation_type": "read_required",
+                        "campaign_id": None,
+                        "review_reason": (
+                            "Najpierw odśwież dane rekomendacji Google Ads; bez "
+                            "nich WILQ nie ocenia wpływu ani nie przygotowuje "
+                            "zapisu zmian."
+                        ),
+                        "evidence_ids": [connector_evidence_id("google_ads")],
+                        "source_metric_names": ["connector_status"],
+                    }
+                ],
+                "recommendations_total": 1,
+                "recommendations_included": 1,
+                "payload_preview": [
+                    {
+                        "operation_type": "ApplyRecommendationOperation",
+                        "recommendation_id": "google_ads_recommendations_read_required",
+                        "recommendation_type": "read_required",
+                        "apply_allowed": False,
+                        "api_mutation_ready": False,
+                        "destructive": False,
+                        "evidence_ids": [connector_evidence_id("google_ads")],
+                    }
+                ],
+                "payload_preview_total": 1,
+                "payload_preview_included": 1,
+                "evidence_ids": [connector_evidence_id("google_ads")],
+                "required_validation": [
+                    "review_recommendation_type",
+                    "review_impact_metrics",
+                    "review_change_history",
+                    "review_business_goal",
+                    "recommendation_apply_preview",
+                    "google_ads_rmf_compliance_review",
+                    "human_confirm_before_apply",
+                ],
+                "blocked_claims": [
+                    "zapis rekomendacji",
+                    "automatic recommendation accept",
+                    "zmiana budżetu",
+                    "campaign mutation",
+                    "performance uplift",
+                ],
+                "apply_allowed": False,
+                "api_mutation_ready": False,
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_core_seed",
+        ),
+        ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu feedu Merchant Center",
             domain=OpportunityDomain.merchant,
@@ -184,12 +262,12 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             evidence_ids=[connector_evidence_id("google_merchant_center")],
             human_diagnosis=(
                 "Merchant Center jest core workflow WILQ. W clean runtime WILQ może "
-                "przygotować tylko review-safe kolejkę, dopóki read-only refresh nie "
-                "dostarczy issue-level metric facts."
+                "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki odczyt nie "
+                "dostarczy metryk problemów feedu."
             ),
             recommended_reason=(
-                "Uruchom read-only Merchant refresh albo użyj istniejących evidence, "
-                "potem waliduj payload preview przed jakąkolwiek zmianą feedu."
+                "Uruchom odczyt danych Merchant albo użyj istniejących evidence, "
+                "potem sprawdź w WILQ podgląd zmian przed jakąkolwiek zmianą feedu."
             ),
             payload={
                 "action_type": "merchant_feed_issue",
@@ -223,12 +301,13 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             evidence_ids=[connector_evidence_id("google_analytics_4")],
             human_diagnosis=(
                 "GA4 jest core workflow WILQ. W clean runtime WILQ może tylko "
-                "przygotować tracking review i zablokować claimy o ROAS/revenue, "
-                "dopóki nie ma metric facts z landing/source/campaign."
+                "przygotować przegląd pomiaru i zablokować twierdzenia o ROAS/revenue, "
+                "dopóki nie ma metric facts z landing page, źródło i kampania."
             ),
             recommended_reason=(
-                "Zbierz read-only GA4 breakdown, potem sprawdź tracking i message "
-                "match bez oceniania kampanii po niepełnych danych."
+                "Zbierz zestawienie GA4 z landing page, źródeł i kampanii, "
+                "potem sprawdź tracking i message match bez oceniania kampanii "
+                "po niepełnych danych."
             ),
             payload={
                 "action_type": "ga4_tracking_gap",
@@ -261,7 +340,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "metric_snapshot": {},
                         "reason": (
                             "Brak wymiarowych GA4 facts. Najpierw zbierz "
-                            "read-only landing/source/campaign breakdown."
+                            "zestawienie landing page, źródła i kampanii z GA4."
                         ),
                         "required_validation": [
                             "review_landing_page_dimension",
@@ -296,12 +375,13 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             ],
             human_diagnosis=(
                 "Content jest core workflow WILQ. W clean runtime WILQ może "
-                "przygotować tylko review-safe kolejkę, dopóki GSC/WordPress/GA4 "
+                "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki GSC/WordPress/GA4 "
                 "nie dostarczą URL/query evidence."
             ),
             recommended_reason=(
-                "Zbierz GSC query/page i WordPress inventory, potem klasyfikuj "
-                "refresh/merge/create/block bez obietnic leadów ani rankingów."
+                "Zbierz GSC query/page i spis treści WordPress, potem klasyfikuj "
+                "zachowanie, odświeżenie, scalenie, nową treść albo blokadę bez "
+                "obietnic leadów ani rankingów."
             ),
             payload={
                 "action_type": "wordpress_content_refresh",
@@ -313,7 +393,100 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                     "collect_gsc_query_page_facts",
                     "join_wordpress_inventory_with_gsc",
                     "classify_refresh_create_merge_block",
+                    "review_public_final_url",
                     "require_human_confirm_before_wordpress_write",
+                ],
+                "content_url_review_contract": content_url_review_contract(),
+                "content_brief_preview": [
+                    {
+                        "preview_contract": "content_brief_preview_v1",
+                        "candidate_id": "content_brief_empty_state",
+                        "source_type": "empty_state",
+                        "mode": "block",
+                        "topic": "brak potwierdzonego tematu",
+                        "source_public_url": None,
+                        "preview_url": None,
+                        "intended_final_url": None,
+                        "final_canonical_url": None,
+                        "inventory_gate_status": "blocked_until_inventory_review",
+                        "canonical_gate_status": "blocked_until_inventory_review",
+                        "duplicate_gate_status": "create_blocked_until_duplicate_check",
+                        "content_gate_summary": (
+                            "Brak query/page i spisu treści WordPress w świeżym runtime. "
+                            "Najpierw zbierz dane źródłowe, potem oceniaj zachowanie, "
+                            "odświeżenie, scalenie albo utworzenie treści."
+                        ),
+                        "wordpress_inventory_match": "missing",
+                        "decision_options": ["block"],
+                        "metric_snapshot": {},
+                        "brief_goal": (
+                            "Zablokuj pisanie treści do czasu zebrania GSC "
+                            "i WordPress inventory."
+                        ),
+                        "intent": "brak intencji do pisania bez danych źródłowych",
+                        "content_angle": (
+                            "Nie przygotowuj tekstu bez potwierdzonego "
+                            "publicznego URL i dowodów."
+                        ),
+                        "audience": (
+                            "Marketer Ekologus sprawdzający gotowość danych "
+                            "przed pracą nad treścią."
+                        ),
+                        "key_objections": [
+                            "brak potwierdzonego tematu",
+                            "brak publicznego URL",
+                            "brak kontroli duplikacji",
+                        ],
+                        "h1_direction": "Nie ustalaj H1 bez potwierdzonego tematu i URL.",
+                        "seo_title_direction": "Nie ustalaj title bez potwierdzonego tematu i URL.",
+                        "meta_description_direction": (
+                            "Nie ustalaj meta description bez potwierdzonego "
+                            "tematu i URL."
+                        ),
+                        "h2_direction": ["najpierw zbierz dane GSC i WordPress"],
+                        "faq_direction": ["najpierw zbierz dane GSC i WordPress"],
+                        "schema_direction": "Nie planuj schema bez zatwierdzonego briefu.",
+                        "cta_direction": "Nie ustalaj CTA bez dopasowania usługi i intencji.",
+                        "internal_link_direction": ["najpierw potwierdź istniejące URL-e"],
+                        "legal_review_notes": [
+                            "brak treści do oceny prawnej przed zebraniem danych"
+                        ],
+                        "brand_voice_notes": ["brak szkicu do oceny tonu przed zebraniem danych"],
+                        "publication_readiness_status": "blocked_until_review",
+                        "publication_blockers": [
+                            "content_url_preflight_review",
+                            "canonical_review",
+                            "duplicate_or_cannibalization_check",
+                            "legal_factual_review",
+                            "human_confirm_before_wordpress_write",
+                        ],
+                        "source_facts": [
+                            "brak GSC query/page facts",
+                            "brak WordPress inventory facts",
+                        ],
+                        "missing_evidence": [
+                            "brak publicznego URL",
+                            "brak danych GSC",
+                            "brak spisu treści WordPress",
+                        ],
+                        "forbidden_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                        "required_validation": [
+                            "gsc_query_page_check",
+                            "wordpress_inventory_check",
+                            "content_url_preflight_review",
+                            "duplicate_or_cannibalization_check",
+                            "human_confirm_before_wordpress_write",
+                        ],
+                        "blocked_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                        "source_connectors": ["google_search_console", "wordpress_ekologus"],
+                        "evidence_ids": [
+                            connector_evidence_id("wordpress_ekologus"),
+                            connector_evidence_id("google_search_console"),
+                        ],
+                        "apply_allowed": False,
+                        "api_mutation_ready": False,
+                        "destructive": False,
+                    }
                 ],
                 "blocked_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
                 "destructive": False,
@@ -401,12 +574,19 @@ def _google_ads_live_data_available() -> bool:
 
 
 def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
-    latest_run = None
-    for run in list_connector_refresh_runs(connector_id="google_ads"):
-        if run.mode == ConnectorRefreshMode.vendor_read:
-            latest_run = run
-            break
-    return latest_run
+    runs = [
+        run
+        for run in list_connector_refresh_runs(connector_id="google_ads")
+        if run.mode == ConnectorRefreshMode.vendor_read
+    ]
+    if not runs:
+        return None
+    return max(runs, key=_connector_refresh_recency_key)
+
+
+def _connector_refresh_recency_key(run: ConnectorRefreshRun) -> tuple[str, str]:
+    timestamp = run.completed_at or run.started_at
+    return (timestamp.isoformat(), run.id)
 
 
 def _google_ads_business_context_action() -> ActionObject | None:
@@ -477,12 +657,12 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         human_diagnosis=(
             "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
             "potwierdzonego targetu ROAS albo CPA. WILQ może robić ocenę kampanii, "
-            "ale nie może wydać werdyktu KPI ani uruchamiać wdrożenia budżetu lub rekomendacji."
+            "ale nie może wydać werdyktu KPI ani uruchamiać zapisu zmian budżetu lub rekomendacji."
         ),
         recommended_reason=(
             "Potwierdź jeden guardrail targetu w repo-local .env. To nadal jest "
-            "prepare-only krok: bez mutacji Google Ads, bez automatycznego skalowania "
-            "i bez werdyktu rentowności."
+            "krok bez zapisu zmian: bez mutacji Google Ads, bez automatycznego "
+            "skalowania i bez werdyktu rentowności."
         ),
         payload=ads_target_confirmation_payload(missing_read_contracts),
         validation_status="not_validated",
@@ -525,7 +705,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         ),
         recommended_reason=(
             "Zapisz wynik oceny: zatwierdzone do dalszego przygotowania, wymaga "
-            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje wdrożenia ani "
+            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje zapisu zmian ani "
             "mutacji Google Ads."
         ),
         payload=ads_strategy_review_payload(),
@@ -617,14 +797,14 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
             metrics=merchant_action_metrics,
             human_diagnosis=(
-                "Merchant Center ma wymiarowe issue facts z WILQ API. "
+                "Merchant Center ma wymiarowe dane problemów w WILQ. "
                 f"{_metric_sentence(merchant_action_metrics)}. To uzasadnia "
-                "kolejkę review problemów feedu, ale nie automatyczną zmianę "
+                "kolejkę przeglądu problemów feedu, ale nie automatyczną zmianę "
                 "danych produktu."
             ),
             recommended_reason=(
-                "Na /merchant pokaż issue clusters jako prepare-only queue: "
-                "sprawdź typ problemu, atrybut, kraj, payload preview i walidację "
+                "Na /merchant pokaż grupy problemów jako kolejkę przygotowawczą: "
+                "sprawdź typ problemu, atrybut, kraj, podgląd zmian i sprawdzenie "
                 "przed jakąkolwiek zmianą feedu."
             ),
             payload={
@@ -673,13 +853,13 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in ga4_action_metrics),
             metrics=ga4_action_metrics,
             human_diagnosis=(
-                "GA4 zwraca wymiarowe landing/source/campaign facts, ale WILQ "
+                "GA4 zwraca wymiarowe fakty landing page, źródła i kampanii, ale WILQ "
                 "nadal nie ma kontraktu na ROAS, revenue ani werdykt konwersji. "
                 f"{_metric_sentence(ga4_action_metrics)}."
             ),
             recommended_reason=(
-                "Na /ga4 przygotuj review pomiaru i jakości ruchu: pokaż "
-                "landing/source/campaign breakdown, waliduj ActionObject i nie "
+                "Na /ga4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
+                "zestawienie landing page, źródła i kampanii, sprawdź propozycję w WILQ i nie "
                 "oceniaj kampanii bez kontraktu konwersji."
             ),
             payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
@@ -710,15 +890,16 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
             metrics=content_action_metrics,
             human_diagnosis=(
-                "WordPress inventory istnieje w WILQ API i można go zestawić z GSC/Ahrefs, "
-                "żeby planować refresh zamiast duplikować treści. "
+                "Spis treści WordPress istnieje w WILQ i można go zestawić z GSC/Ahrefs, "
+                "żeby planować odświeżenie zamiast duplikować treści. "
                 f"{_metric_sentence(content_facts)}."
             ),
             recommended_reason=(
-                "Na /content-planner przygotuj queue refresh/create/merge/block. "
-                "Traktuj podgląd briefu jako review-only: GSC/WordPress może dać "
-                "refresh/merge, a Ahrefs tylko kandydatów po dodatkowym sprawdzeniu "
-                "GSC demand i inventory."
+                "Na /content-planner przygotuj kolejkę zachowania, odświeżenia, scalenia, "
+                "nowej treści albo blokady. "
+                "Traktuj podgląd briefu jako materiał do sprawdzenia: GSC/WordPress może dać "
+                "odświeżenie albo scalenie, a Ahrefs tylko tematy do oceny po "
+                "dodatkowym sprawdzeniu popytu z GSC i spisu treści."
             ),
             payload=content_payload
             if content_payload is not None
@@ -728,11 +909,20 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "mode": "prepare_only",
                 "source_connectors": _unique(fact.source_connector for fact in content_facts),
                 "source_metric_names": _unique(fact.name for fact in content_facts),
+                "content_url_review_contract": content_url_review_contract(),
                 "queue_steps": [
                     "join_wordpress_inventory_with_gsc",
                     "classify_refresh_create_merge_block",
+                    "review_public_final_url",
                     "prepare_brief_preview",
                     "require_human_confirm_before_wordpress_write",
+                ],
+                "required_validation": [
+                    "gsc_query_page_check",
+                    "wordpress_inventory_check",
+                    "content_url_preflight_review",
+                    "duplicate_or_cannibalization_check",
+                    "human_confirm_before_wordpress_write",
                 ],
                 "destructive": False,
             },
@@ -740,12 +930,12 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             created_by="system_metric_seed",
         )
         actions[action.id] = action
-        staging_action = _wordpress_staging_draft_action(
+        wordpress_draft_action = _wordpress_draft_handoff_action(
             content_payload=content_payload,
             content_action_metrics=content_action_metrics,
         )
-        if staging_action is not None:
-            actions[staging_action.id] = staging_action
+        if wordpress_draft_action is not None:
+            actions[wordpress_draft_action.id] = wordpress_draft_action
 
     google_ads_facts = by_connector.get("google_ads", [])
     demand_gen_action = _demand_gen_readiness_review_action(
@@ -793,8 +983,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj kampanie z największym kosztem i ruchem. "
-                "Traktuj payload jako review-only: bez pause, budget scaling ani "
-                "claimów o rentowności."
+                "Traktuj podgląd jako materiał do sprawdzenia: bez pauzowania, "
+                "skalowania budżetu ani claimów o rentowności."
             ),
             payload=campaign_review_payload,
             validation_status="not_validated",
@@ -834,14 +1024,14 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             metrics=recommendation_metrics,
             human_diagnosis=(
                 "Google Ads ma aktywne fakty rekomendacji. WILQ może pokazać "
-                "podgląd wdrożenia tylko do oceny, ale nie może akceptować "
+                "podgląd zmian do sprawdzenia, ale nie może akceptować "
                 "rekomendacji bez strategii, oceny RMF/compliance, potwierdzenia "
                 "i audytu."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj typ rekomendacji, impact preview i "
-                "powiązane kampanie. Traktuj payload jako podgląd operacji, nie "
-                "zgodę na wdrożenie."
+                "Na /ads-doctor przejrzyj typ rekomendacji, podgląd wpływu i "
+                "powiązane kampanie. Traktuj podgląd jako materiał do decyzji, "
+                "nie zgodę na zapis zmian."
             ),
             payload=recommendation_review_payload,
             validation_status="not_validated",
@@ -880,8 +1070,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             ),
             recommended_reason=(
                 "Na /ads-doctor sprawdź co zmieniono, na jakim zasobie i które "
-                "pola ruszono. Traktuj payload jako tylko do oceny: bez wdrożenia, "
-                "bez skalowania i bez claimów o poprawie performance."
+                "pola ruszono. Traktuj podgląd jako materiał do sprawdzenia: bez "
+                "zapisu zmian, bez skalowania i bez claimów o poprawie wyniku."
             ),
             payload=change_history_payload,
             validation_status="not_validated",
@@ -921,7 +1111,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "Google Ads ma fakty wyszukiwanych haseł, które tworzą powtarzające się "
                 "tematy n-gram. WILQ może przygotować kolejkę oceny intencji, ale "
                 "nie może traktować n-gramów jako gotowych wykluczeń ani claimować "
-                "zmarnowanego budżetu bez walidacji."
+                "zmarnowanego budżetu bez sprawdzenia."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj n-gramy z kosztem, kliknięciami i "
@@ -944,7 +1134,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=CUSTOM_SEGMENT_ACTION_ID,
-            title="Przygotuj kandydatów segmentów z wyszukiwanych haseł",
+            title="Przygotuj propozycje segmentów z wyszukiwanych haseł",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -954,14 +1144,14 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             metrics=custom_segment_metrics,
             human_diagnosis=(
                 "Google Ads ma realne fakty z wyszukiwanych haseł. WILQ może przygotować "
-                "kandydatów segmentów wyłącznie z tych terminów, ale nie może "
+                "propozycje segmentów wyłącznie z tych terminów, ale nie może "
                 "twierdzić nic o rozmiarze odbiorców, ROAS ani performance bez "
                 "dodatkowych kontraktów."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj hasła źródłowe, odrzuć brandowe i "
-                "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i waliduj "
-                "podgląd zmian przed wdrożeniem."
+                "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i sprawdź w WILQ "
+                "podgląd zmian przed zapisem zmian."
             ),
             payload=custom_segment_payload,
             validation_status="not_validated",
@@ -991,7 +1181,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "Google Ads ma fakty z wyszukiwanych haseł, które mogą zasilić ocenę "
                 "potencjalnych wykluczeń. WILQ nie może jednak twierdzić nic o "
                 "przepalonym budżecie ani wdrażać wykluczających słów bez "
-                "90-dniowej kontroli bezpieczeństwa i ręcznej walidacji."
+                "90-dniowej kontroli bezpieczeństwa i ręcznej sprawdzenia."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj terminy z kosztem/kliknięciami i zerową "
@@ -1020,7 +1210,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )[:10]
         action = ActionObject(
             id=LOCALO_VISIBILITY_REVIEW_ACTION_ID,
-            title="Przygotuj review widoczności lokalnej Localo",
+            title="Przygotuj przegląd widoczności lokalnej Localo",
             domain=OpportunityDomain.localo,
             connector="localo",
             mode=ActionMode.prepare,
@@ -1029,12 +1219,12 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in localo_metrics),
             metrics=localo_metrics,
             human_diagnosis=(
-                "Localo ma read-only agregaty miejsc, fraz, widoczności i recenzji. "
-                f"{_metric_sentence(localo_metrics)}. To wystarcza do review lokalnej "
-                "widoczności, ale nie do claimów o GBP, konkurencji ani poprawie wyniku."
+                "Localo ma agregaty miejsc, fraz, widoczności i recenzji z odczytu danych. "
+                f"{_metric_sentence(localo_metrics)}. To wystarcza do sprawdzenia lokalnej "
+                "widoczności, ale nie do twierdzeń o GBP, konkurencji ani poprawie wyniku."
             ),
             recommended_reason=(
-                "Na /localo przygotuj review agregatów i zostaw GBP/write/uplift "
+                "Na /localo przygotuj przegląd agregatów i zostaw GBP/write/uplift "
                 "zablokowane do czasu osobnych kontraktów Localo."
             ),
             payload=localo_visibility_payload,
@@ -1084,7 +1274,7 @@ def _demand_gen_readiness_review_action(
         DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
         DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
         DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-        DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
+        DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
     ]
     if not campaign_rows:
         missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
@@ -1104,8 +1294,8 @@ def _demand_gen_readiness_review_action(
         ga4_facts,
         demand_gen_rows,
     )
-    demand_gen_migration_constraint_rows = (
-        demand_gen_migration_constraint_rows_from_campaigns(demand_gen_rows)
+    demand_gen_transition_constraint_rows = (
+        demand_gen_transition_constraint_rows_from_campaigns(demand_gen_rows)
     )
     if demand_gen_contract_has_ready_fact(
         google_ads_facts,
@@ -1132,7 +1322,7 @@ def _demand_gen_readiness_review_action(
     available_read_contracts.extend(
         [
             DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-            DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
+            DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
         ]
     )
     payload = demand_gen_readiness_review_payload(
@@ -1148,8 +1338,8 @@ def _demand_gen_readiness_review_action(
         demand_gen_landing_quality_rows=[
             row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
         ],
-        demand_gen_migration_constraint_rows=[
-            row.model_dump(mode="json") for row in demand_gen_migration_constraint_rows
+        demand_gen_transition_constraint_rows=[
+            row.model_dump(mode="json") for row in demand_gen_transition_constraint_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -1164,7 +1354,7 @@ def _demand_gen_readiness_review_action(
     )[:10]
     return ActionObject(
         id=DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-        title="Przygotuj review gotowości Demand Gen",
+        title="Przygotuj przegląd gotowości Demand Gen",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -1173,14 +1363,15 @@ def _demand_gen_readiness_review_action(
         evidence_ids=evidence_ids[:12],
         metrics=action_metrics,
         human_diagnosis=(
-            "WILQ ma kontekst Google Ads i GA4 do wstępnego review Demand Gen, "
-            "ale nadal blokuje launch, migrację, werdykty kreatywne i apply bez "
-            "osobnych kontraktów assetów, kreacji, landing quality i migracji."
+            "WILQ ma kontekst Google Ads i GA4 do wstępnego przeglądu Demand Gen, "
+            "ale nadal blokuje uruchomienie, przejście kampanii, werdykty kreatywne "
+            "i zapis zmian bez osobnych odczytów assetów, kreacji, jakości "
+            "landingów i ograniczeń przejścia."
         ),
         recommended_reason=(
-            "Na /ads-doctor/demand-gen zwaliduj review-only payload, sprawdź "
+            "Na /ads-doctor/demand-gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
             "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
-            "kampanii ani migracji bez kolejnych read contracts."
+            "kampanii ani przejścia kampanii bez kolejnych read contracts."
         ),
         payload=payload,
         validation_status="not_validated",
@@ -1395,9 +1586,9 @@ def _merchant_issue_payload_preview(
                     "wystąpień, ale nie zwraca przykładowych ID produktów ani tytułów."
                 ),
                 "reason": (
-                    "Review-only podgląd klastra problemów feedu. WILQ może "
-                    "przygotować kolejkę review, ale nie może zmienić feedu ani "
-                    "obiecać przywrócenia approval bez osobnego write/audit contract."
+                    "Podgląd klastra problemów feedu do sprawdzenia. WILQ może "
+                    "przygotować kolejkę przeglądu, ale nie może zmienić feedu ani "
+                    "obiecać przywrócenia zatwierdzenia bez osobnego kontraktu zapisu i audytu."
                 ),
                 "required_validation": [
                     "review_issue_type_and_attribute",
@@ -1524,7 +1715,7 @@ def _metric_fact_sort_time(fact: MetricFact) -> str:
     return fact.collected_at.isoformat()
 
 
-def _wordpress_staging_draft_action(
+def _wordpress_draft_handoff_action(
     *,
     content_payload: dict[str, Any] | None,
     content_action_metrics: list[MetricFact],
@@ -1539,12 +1730,12 @@ def _wordpress_staging_draft_action(
     if not brief_previews:
         return None
     preview_items = [
-        _wordpress_staging_draft_preview_item(item)
+        _wordpress_draft_handoff_preview_item(item)
         for item in brief_previews[:4]
     ]
     return ActionObject(
-        id="act_prepare_wordpress_staging_draft",
-        title="Przygotuj zablokowany podgląd draftu na staging WordPress",
+        id="act_prepare_wordpress_draft_handoff",
+        title="Przygotuj zablokowany podgląd szkicu WordPress",
         domain=OpportunityDomain.content,
         connector="wordpress_ekologus",
         mode=ActionMode.prepare,
@@ -1553,20 +1744,20 @@ def _wordpress_staging_draft_action(
         evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
         metrics=content_action_metrics,
         human_diagnosis=(
-            "WILQ ma content queue z GSC/WordPress/Ahrefs i może przygotować "
-            "wyłącznie zablokowany kontrakt staging handoff. To nie jest adapter "
-            "write ani publikacja."
+            "WILQ ma kolejkę treści z GSC/WordPress/Ahrefs i może przygotować "
+            "wyłącznie zablokowany podgląd szkicu WordPress. To nie jest zapis "
+            "ani publikacja."
         ),
         recommended_reason=(
-            "Użyj tego ActionObjecta jako checklisty przed przyszłym staging write: "
-            "najpierw mapping, canonical, duplicate/cannibalization, legal/factual "
-            "i human review. Bez tych bramek staging pozostaje zablokowany."
+            "Użyj tej akcji jako checklisty przed przyszłym szkicem WordPress: "
+            "najpierw finalny URL, canonical, duplicate/cannibalization, legal/factual "
+            "i przegląd człowieka. Bez tych bramek szkic pozostaje zablokowany."
         ),
         payload={
-            "action_type": "wordpress_staging_draft_apply",
+            "action_type": "wordpress_draft_handoff",
             "connector": "wordpress_ekologus",
             "mode": "prepare_only",
-            "preview_contract": "wordpress_staging_draft_apply_preview_v1",
+            "preview_contract": "wordpress_draft_handoff_preview_v1",
             "depends_on_action_id": "act_prepare_content_refresh_queue",
             "source_connectors": content_payload.get("source_connectors", []),
             "source_metric_names": content_payload.get("source_metric_names", []),
@@ -1574,21 +1765,21 @@ def _wordpress_staging_draft_action(
                 "content_brief_preview_v1",
                 "content_draft_generation_v1",
                 "content_draft_readiness_review_v1",
-                "wordpress_staging_handoff_v1",
+                "wordpress_draft_handoff_v1",
                 "post_publication_measurement_plan_v1",
             ],
             "payload_preview": preview_items,
             "required_validation": [
-                "target_site_mapping_review",
-                "target_site_canonical_review",
+                "content_url_preflight_review",
+                "final_canonical_review",
                 "duplicate_or_cannibalization_check",
                 "legal_factual_review",
                 "content_draft_readiness_review",
-                "wordpress_staging_payload_preview",
+                "wordpress_draft_payload_preview",
                 "human_confirm_before_wordpress_write",
             ],
             "blocked_claims": [
-                "wordpress_staging_write",
+                "wordpress_draft_write",
                 "wordpress_publish",
                 "production_wordpress_write",
                 "publish_ready_claim",
@@ -1603,40 +1794,53 @@ def _wordpress_staging_draft_action(
     )
 
 
-def _wordpress_staging_draft_preview_item(item: dict[str, Any]) -> dict[str, Any]:
-    selected_target_candidates = item.get("target_site_mapping_review_candidate_urls")
-    selected_target_url = (
-        selected_target_candidates[0]
-        if isinstance(selected_target_candidates, list) and selected_target_candidates
-        else item.get("target_site_migration_candidate_url")
-        if isinstance(item.get("target_site_migration_candidate_url"), str)
+def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any]:
+    source_public_url = (
+        item.get("source_public_url")
+        if isinstance(item.get("source_public_url"), str)
+        else item.get("source_url")
+        if isinstance(item.get("source_url"), str)
         else item.get("target_url")
     )
+    intended_final_url = (
+        item.get("intended_final_url")
+        if isinstance(item.get("intended_final_url"), str)
+        else source_public_url
+    )
+    final_canonical_url = (
+        item.get("final_canonical_url")
+        if isinstance(item.get("final_canonical_url"), str)
+        else intended_final_url
+    )
     return {
-        "preview_contract": "wordpress_staging_draft_apply_preview_v1",
-        "operation_type": "staging_draft_handoff_review",
+        "preview_contract": "wordpress_draft_handoff_preview_v1",
+        "operation_type": "wordpress_draft_handoff_review",
         "candidate_id": item.get("candidate_id"),
         "topic": item.get("topic"),
         "source_url": item.get("target_url"),
-        "selected_target_url": selected_target_url,
-        "mapping_review_status": item.get("target_site_mapping_review_status"),
+        "source_public_url": source_public_url,
+        "intended_final_url": intended_final_url,
+        "final_canonical_url": final_canonical_url,
+        "preview_url": item.get("preview_url")
+        if isinstance(item.get("preview_url"), str)
+        else None,
         "canonical_gate_status": item.get("canonical_gate_status"),
         "duplicate_gate_status": item.get("duplicate_gate_status"),
-        "staging_handoff_status": "blocked_until_draft_gates_pass",
-        "required_next_action_contract": "wordpress_staging_draft_apply_v1",
+        "wordpress_draft_handoff_status": "blocked_until_draft_gates_pass",
+        "required_next_action_contract": "wordpress_draft_handoff_v1",
         "post_publication_measurement_plan": post_publication_measurement_plan(
-            target_site_url=str(selected_target_url) if selected_target_url else None,
+            final_canonical_url=str(final_canonical_url) if final_canonical_url else None,
         ),
         "required_validation": [
-            "target_site_mapping_review",
-            "target_site_canonical_review",
+            "content_url_preflight_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             "legal_factual_review",
             "content_draft_readiness_review",
             "human_confirm_before_wordpress_write",
         ],
         "blocked_claims": [
-            "wordpress_staging_write",
+            "wordpress_draft_write",
             "wordpress_publish",
             "publish_ready_claim",
             "ranking_or_lead_uplift_claim",
@@ -1688,12 +1892,12 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
         (
             "linkedin",
             "linkedin_post_candidate",
-            "Przygotuj kandydaty postów LinkedIn z dowodów WILQ",
+            "Przygotuj propozycje postów LinkedIn z dowodów WILQ",
         ),
         (
             "facebook",
             "facebook_post_candidate",
-            "Przygotuj kandydaty postów Facebook z dowodów WILQ",
+            "Przygotuj propozycje postów Facebook z dowodów WILQ",
         ),
     ):
         action = ActionObject(
@@ -1708,11 +1912,11 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             metrics=social_metrics,
             human_diagnosis=(
                 "WILQ ma realne dane GSC/GA4/Merchant/WordPress, które można "
-                "przełożyć na review-safe kierunki postów. Brak uprawnień social "
+                "przełożyć na bezpieczne do sprawdzenia kierunki postów. Brak uprawnień social "
                 "blokuje publikację, ale nie blokuje przygotowania briefu do oceny."
             ),
             recommended_reason=(
-                "Na /social-publisher pokaż tylko kandydaty draftów z evidence IDs. "
+                "Na /social-publisher pokaż tylko propozycje szkiców z dowodami. "
                 "Nie publikuj, nie planuj wysyłki i nie dopisuj claimów bez metryk."
             ),
             payload={
@@ -1811,7 +2015,7 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
     warnings: list[str] = []
     connector = get_connector_status(action.connector)
     if not action.evidence_ids:
-        errors.append("ActionObject requires at least one evidence ID.")
+        errors.append("Akcja wymaga co najmniej jednego ID dowodu.")
     if connector is None:
         errors.append(f"Unknown connector: {action.connector}")
     elif action.mode == ActionMode.apply and not connector.configured:
@@ -1876,9 +2080,9 @@ def preview_action(
         event_type="action_preview_generated",
         actor=preview_request.requested_by or "wilq_api",
         summary=(
-            f"Dry-run preview generated: status={status}, "
-            f"items={len(included_items)}/{len(preview_items)}, "
-            f"mutation_allowed=false. This did not execute vendor mutations."
+            f"Podgląd zmian wygenerowany: status={status}, "
+            f"pozycje={len(included_items)}/{len(preview_items)}, "
+            "zapis zmian=zablokowany. Nie zapisano zmian w zewnętrznych systemach."
         ),
         evidence_ids=action.evidence_ids,
     )
@@ -1983,29 +2187,29 @@ def apply_action(
     latest_impact_check = _latest_action_impact_check_event(action.audit_events)
     mutation_adapter = _supported_mutation_adapter(action)
     if request is None or request.confirm is not True:
-        errors.append("Explicit apply confirmation is required.")
+        errors.append("Wymagane jest jawne potwierdzenie zapisu zmian.")
     if request is not None and request.confirm is True and not request.confirmed_by:
-        errors.append("confirmed_by is required for explicit apply confirmation.")
+        errors.append("Brakuje osoby potwierdzającej zapis zmian.")
     if latest_preview is None:
-        errors.append("Dry-run preview is required before apply.")
+        errors.append("Przed zapisem zmian wymagany jest podgląd zmian.")
     if latest_confirmation is None:
-        errors.append("Recorded apply confirmation audit is required before apply.")
+        errors.append("Przed zapisem zmian wymagany jest zapis audytu potwierdzenia.")
     if _impact_status_from_event(latest_impact_check) != "checked":
-        errors.append("Completed impact sanity check is required before apply.")
+        errors.append("Przed zapisem zmian wymagane jest sprawdzenie efektu.")
     if action.validation_status != "valid":
-        errors.append("Action must be validated before apply.")
+        errors.append("Akcja musi być sprawdzona w WILQ przed zapisem zmian.")
     if action.mode != ActionMode.apply:
-        errors.append("Action mode must be apply before external execution.")
+        errors.append("Akcja nie ma trybu zapisu zmian w zewnętrznym systemie.")
     if not action.evidence_ids:
-        errors.append("Action cannot apply without evidence IDs.")
+        errors.append("Akcja nie może zapisać zmian bez ID dowodów.")
     if connector is None or not connector.configured:
-        errors.append("Connector is not configured for apply.")
+        errors.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
-        errors.append("High and critical risk applies are blocked in Goal 001.")
+        errors.append("Zapisy zmian o wysokim i krytycznym ryzyku są zablokowane w Goal 001.")
     if action.payload.get("destructive") is True:
-        errors.append("Destructive write actions are not implemented in Goal 001.")
+        errors.append("Destrukcyjne zmiany nie są zaimplementowane w Goal 001.")
     if mutation_adapter is None:
-        errors.append("Vendor mutation adapter is not implemented for this ActionObject.")
+        errors.append("Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji.")
 
     actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
     audit = AuditEvent(
@@ -2013,7 +2217,7 @@ def apply_action(
         action_id=action.id,
         event_type=_apply_audit_event_type(errors),
         actor=actor,
-        summary="; ".join(errors) if errors else "Action applied through validated API path.",
+        summary="; ".join(errors) if errors else "Zmiany zapisane przez sprawdzoną ścieżkę API.",
         evidence_ids=action.evidence_ids,
     )
     mutation_audit = _action_mutation_audit_record(
@@ -2050,8 +2254,8 @@ def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
     confirmation_errors = {
-        "Explicit apply confirmation is required.",
-        "confirmed_by is required for explicit apply confirmation.",
+        "Wymagane jest jawne potwierdzenie zapisu zmian.",
+        "Brakuje osoby potwierdzającej zapis zmian.",
     }
     if any(error in confirmation_errors for error in errors):
         return "apply_confirmation_missing"
@@ -2166,7 +2370,7 @@ def _action_review_gate(
     )
     if action.validation_status == "invalid":
         status = "blocked_apply"
-        summary = "ActionObject ma błędną walidację; apply pozostaje zablokowany."
+        summary = "Akcja ma błędne sprawdzenie; zapis zmian pozostaje zablokowany."
     elif (
         action.mode == ActionMode.apply
         and action.validation_status == "valid"
@@ -2175,22 +2379,22 @@ def _action_review_gate(
     ):
         status = "blocked_apply"
         summary = (
-            "ActionObject ma payload apply, ale blokery bezpieczeństwa nadal "
-            "zatrzymują wykonanie."
+            "Akcja ma przygotowany zakres zapisu zmian, ale blokery bezpieczeństwa nadal "
+            "zatrzymują zapis."
         )
     elif action.mode == ActionMode.apply and action.validation_status == "valid" and apply_allowed:
         status = "ready_to_apply"
-        summary = "ActionObject jest zwalidowany i wymaga jawnego potwierdzenia apply."
+        summary = "Akcja jest sprawdzona w WILQ i wymaga jawnego potwierdzenia zapisu zmian."
     elif action.validation_status == "valid":
         status = "validated_prepare_only"
         summary = (
-            "ActionObject jest zwalidowany jako review/prepare-only; apply nadal "
+            "Akcja jest sprawdzona w WILQ do przygotowania; zapis zmian nadal "
             "wymaga osobnego kontraktu."
         )
     else:
         status = "pending_validation"
         summary = (
-            "Wymaga walidacji ActionObject; apply pozostaje zablokowany osobnymi "
+            "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany osobnymi "
             "warunkami."
         )
     return ActionReviewGate(
@@ -2294,7 +2498,7 @@ def _persisted_mutation_audits_for_action(
 
 def _action_review_summary(request: ActionReviewRequest) -> str:
     parts = [
-        f"Wynik review: {_review_outcome_label(request.outcome)}.",
+        f"Wynik przeglądu: {_review_outcome_label(request.outcome)}.",
         f"Notatka: {request.notes}",
     ]
     if request.checked_items:
@@ -2303,14 +2507,14 @@ def _action_review_summary(request: ActionReviewRequest) -> str:
             f"{', '.join(_review_summary_item(item) for item in request.checked_items[:8])}."
         )
     if request.blockers:
-        parts.append(f"Blockery: {', '.join(request.blockers[:8])}.")
-    parts.append("Ten zapis nie wykonuje apply ani mutacji vendorów.")
+        parts.append(f"Blokady: {', '.join(request.blockers[:8])}.")
+    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
     return " ".join(parts)
 
 
 def _review_summary_item(item: str) -> str:
-    if item.startswith("selected_target_url:"):
-        return "selected_target_url:[stored in audit details]"
+    if item.startswith("reviewed_url:"):
+        return "reviewed_url:[stored in audit details]"
     return item
 
 
@@ -2321,9 +2525,9 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
         "checked_items": request.checked_items,
         "blockers": request.blockers,
     }
-    mapping_review = _mapping_review_details_from_checked_items(request.checked_items)
-    if mapping_review:
-        details["target_site_mapping_review"] = mapping_review
+    url_review = _content_url_review_details_from_checked_items(request.checked_items)
+    if url_review:
+        details["content_url_review"] = url_review
     draft_readiness_review = _draft_readiness_review_details_from_checked_items(
         request.checked_items
     )
@@ -2332,15 +2536,15 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
     return details
 
 
-def _mapping_review_details_from_checked_items(
+def _content_url_review_details_from_checked_items(
     checked_items: list[str],
 ) -> dict[str, str]:
     tokens: dict[str, str] = {}
     allowed_keys = {
         "candidate",
-        "mapping_outcome",
-        "selected_target_url",
-        "mapping_notes",
+        "url_review_outcome",
+        "reviewed_url",
+        "review_notes",
     }
     for item in checked_items:
         if ":" not in item:
@@ -2455,16 +2659,16 @@ def _action_confirmation_summary(
 
     if blockers:
         return (
-            "Potwierdzenie apply zablokowane: "
+            "Potwierdzenie zapisu zmian zablokowane: "
             f"{', '.join(blockers)}. "
             f"Notatka: {request.notes}. "
-            "Ten zapis nie wykonuje apply ani mutacji vendorów."
+            "Ten krok nie zapisuje zmian w zewnętrznych systemach."
         )
     preview_ref = latest_preview.id if latest_preview is not None else "missing"
     return (
-        f"Potwierdzenie preview zapisane. Preview audit: {preview_ref}. "
+        f"Potwierdzenie podglądu zapisane. Audyt podglądu: {preview_ref}. "
         f"Notatka: {request.notes}. "
-        "Ten zapis nie wykonuje apply ani mutacji vendorów."
+        "Ten krok nie zapisuje zmian w zewnętrznych systemach."
     )
 
 
@@ -2489,7 +2693,7 @@ def _ads_target_confirmation_summary(
             "Potwierdzenie targetu Ads zablokowane: "
             f"{', '.join(blockers)}. "
             f"Notatka: {request.notes}. "
-            "Ten zapis nie wykonuje apply ani mutacji Google Ads."
+            "Ten krok nie zapisuje zmian w Google Ads."
         )
     if request.target_roas is not None:
         target_summary = f"target_roas={request.target_roas}"
@@ -2498,7 +2702,7 @@ def _ads_target_confirmation_summary(
     return (
         f"Potwierdzono roboczy guardrail Ads: {target_summary}. "
         f"Notatka: {request.notes}. "
-        "Ten zapis odblokowuje tylko kontekst review targetu; nie wykonuje apply, "
+        "Ten zapis odblokowuje tylko kontekst przeglądu targetu; nie zapisuje zmian, "
         "nie potwierdza rentowności i nie skaluje budżetu."
     )
 
@@ -2528,16 +2732,16 @@ def _action_impact_check_summary(
     blockers: list[str],
 ) -> str:
     parts = [
-        f"Impact sanity check: status={status}.",
+        f"Sprawdzenie efektu: status={status}.",
         f"Okno przed zmianą: {request.pre_window_days} dni.",
         f"Okno po zmianie: {request.post_window_days} dni.",
-        f"Metric facts: {metric_fact_count}.",
+        f"Metryki z dowodami: {metric_fact_count}.",
         f"Źródła: {', '.join(source_connectors) if source_connectors else 'brak'}.",
     ]
     if blockers:
-        parts.append(f"Blockery: {', '.join(blockers)}.")
+        parts.append(f"Blokady: {', '.join(blockers)}.")
     parts.append(f"Notatka: {request.notes}.")
-    parts.append("Ten zapis nie wykonuje apply ani mutacji vendorów.")
+    parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
     return " ".join(parts)
 
 

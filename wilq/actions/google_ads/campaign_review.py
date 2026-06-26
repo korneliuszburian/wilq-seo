@@ -22,13 +22,13 @@ from wilq.schemas import MetricFact
 CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "budget scaling",
-    "budget apply",
+    "zmiana budżetu",
     "campaign pause",
     "wasted budget",
     "profitability",
     "CPA verdict",
     "ROAS verdict",
-    "recommendation apply",
+    "zapis rekomendacji",
 ]
 CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION = [
     "review_campaign_activity",
@@ -91,7 +91,7 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(f"Campaign review payload requires {required_check}.")
     preview_items = payload.get("budget_payload_preview")
     if not isinstance(preview_items, list):
-        errors.append("Campaign review payload requires budget_payload_preview list.")
+        errors.append("Campaign review payload requires budget operation preview list.")
         return errors
     candidates_with_budget = [
         candidate
@@ -104,41 +104,43 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("Campaign review payload requires budget preview for budget facts.")
     for index, item in enumerate(preview_items):
         if not isinstance(item, dict):
-            errors.append(f"Budget payload preview item {index} must be object.")
+            errors.append(f"Budget operation preview item {index} must be object.")
             continue
         if item.get("operation_type") != "CampaignBudgetOperation":
             errors.append(
-                f"Budget payload preview item {index} must use CampaignBudgetOperation."
+                f"Budget operation preview item {index} must use CampaignBudgetOperation."
             )
         if item.get("apply_allowed") is not False:
-            errors.append(f"Budget payload preview item {index} must keep apply_allowed=false.")
+            errors.append(f"Budget operation preview item {index} must keep apply_allowed=false.")
         if item.get("destructive") is not False:
-            errors.append(f"Budget payload preview item {index} must be non-destructive.")
+            errors.append(f"Budget operation preview item {index} must be non-destructive.")
         if item.get("api_mutation_ready") is not False:
             errors.append(
-                f"Budget payload preview item {index} must not be API-mutation ready."
+                f"Budget operation preview item {index} must not be API-mutation ready."
             )
         if not item.get("evidence_ids"):
-            errors.append(f"Budget payload preview item {index} requires evidence IDs.")
+            errors.append(f"Budget operation preview item {index} requires evidence IDs.")
         safety_review = item.get("safety_review")
         if not isinstance(safety_review, dict):
-            errors.append(f"Budget payload preview item {index} requires safety_review.")
+            errors.append(f"Budget operation preview item {index} requires safety_review.")
             continue
         if safety_review.get("safety_contract") != "campaign_budget_apply_safety_v1":
             errors.append(
-                f"Budget payload preview item {index} requires campaign budget safety contract."
+                f"Budget operation preview item {index} requires campaign budget safety contract."
             )
         if safety_review.get("apply_allowed") is not False:
             errors.append(
-                f"Budget payload preview item {index} safety review must keep apply_allowed=false."
+                f"Budget operation preview item {index} safety review must keep "
+                "apply_allowed=false."
             )
         if safety_review.get("api_mutation_ready") is not False:
             errors.append(
-                f"Budget payload preview item {index} safety review must not be API-mutation ready."
+                f"Budget operation preview item {index} safety review must not "
+                "be API-mutation ready."
             )
         if safety_review.get("destructive") is not False:
             errors.append(
-                f"Budget payload preview item {index} safety review must be non-destructive."
+                f"Budget operation preview item {index} safety review must be non-destructive."
             )
     return errors
 
@@ -375,12 +377,12 @@ def _budget_payload_preview(
         else None
     )
     reason = (
-        "Review-only podgląd CampaignBudgetOperation z Google recommended budget. "
-        "WILQ nie może zmienić budżetu bez celu budżetowego, review strategii, "
+        "Podgląd budżetu z rekomendacji Google do sprawdzenia. "
+        "WILQ nie może zmienić budżetu bez celu budżetowego, przeglądu strategii, "
         "potwierdzenia człowieka i audytu."
         if proposed_budget_amount_micros is not None
         else (
-            "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił "
+            "Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił "
             "recommended budget, więc WILQ pokazuje bieżący budżet i blokuje "
             "propozycję kwoty do czasu human_budget_goal."
         )

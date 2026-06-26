@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable, Mapping
 from typing import Any
 from urllib.parse import urlparse
@@ -9,10 +8,9 @@ from wilq.schemas import MetricFact
 
 CONTENT_REFRESH_ACTION_TYPE = "wordpress_content_refresh"
 CONTENT_BRIEF_PREVIEW_CONTRACT = "content_brief_preview_v1"
+CONTENT_URL_REVIEW_CONTRACT = "content_url_preflight_review_v1"
 WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT = "wordpress_draft_payload_preview_v1"
 POST_PUBLICATION_MEASUREMENT_PLAN_CONTRACT = "post_publication_measurement_plan_v1"
-CONTENT_TARGET_SITE_HOST = "ekologus.dev.proudsite.pl"
-CONTENT_TARGET_SITE_SCHEME = "https"
 CONTENT_SOURCE_SITE_HOSTS = {
     "www.ekologus.pl",
     "ekologus.pl",
@@ -102,47 +100,25 @@ def content_refresh_payload_from_metric_facts(
         "source_connectors": _unique(fact.source_connector for fact in facts),
         "source_metric_names": _unique(fact.name for fact in facts),
         "content_brief_preview": content_brief_preview,
-        "target_site_mapping_review_contract": {
-            "contract": "target_site_mapping_review_v1",
-            "scope": "review_only",
-            "allowed_outcomes": [
-                "confirm_exact_candidate",
-                "confirm_alternative_candidate",
-                "reject_all_candidates",
-                "manual_mapping_required",
-            ],
-            "required_fields": [
-                "source_url",
-                "selected_target_url_or_null",
-                "review_outcome",
-                "reviewed_by",
-                "notes",
-            ],
-            "blocked_outputs": [
-                "wordpress_staging_write",
-                "wordpress_publish",
-                "migration_confirmed_without_human_review",
-                "duplicate_free_claim",
-                "ranking_or_lead_uplift_claim",
-            ],
-        },
+        "content_url_review_contract": content_url_review_contract(),
         "queue_steps": [
             "join_wordpress_inventory_with_gsc",
             "classify_refresh_create_merge_block",
-            "review_target_site_mapping",
+            "review_public_final_url",
             "prepare_brief_preview",
             "require_human_confirm_before_wordpress_write",
         ],
         "required_validation": [
             "gsc_query_page_check",
             "wordpress_inventory_check",
-            "target_site_mapping_review",
+            "content_url_preflight_review",
             "duplicate_or_cannibalization_check",
             "human_confirm_before_wordpress_write",
         ],
         "operator_review_gates": [
             "sprawdź intencję query/topic",
-            "potwierdź dopasowanie WordPress inventory",
+            "potwierdź dopasowanie w spisie treści WordPress",
+            "potwierdź publiczny URL kanoniczny",
             "sprawdź duplikaty i kanibalizację",
             "zatwierdź brief przed jakąkolwiek zmianą WordPress",
         ],
@@ -150,6 +126,38 @@ def content_refresh_payload_from_metric_facts(
         "apply_allowed": False,
         "api_mutation_ready": False,
         "destructive": False,
+    }
+
+
+def content_url_review_contract() -> dict[str, Any]:
+    return {
+        "contract": CONTENT_URL_REVIEW_CONTRACT,
+        "scope": "review_only",
+        "canonical_home": "ekologus.pl",
+        "preview_url_policy": "optional_only_when_explicitly_configured",
+        "allowed_outcomes": [
+            "confirm_existing_public_url",
+            "confirm_final_canonical_url",
+            "request_duplicate_or_canonical_review",
+            "block_until_public_inventory_known",
+            "mark_preview_design_context_not_required",
+        ],
+        "required_fields": [
+            "source_public_url",
+            "final_canonical_url",
+            "intended_final_url",
+            "review_outcome",
+            "reviewed_by",
+            "notes",
+        ],
+        "blocked_outputs": [
+            "wordpress_draft_write",
+            "wordpress_publish",
+            "preview_url_as_final_canonical",
+            "new_content_without_inventory_check",
+            "duplicate_free_claim",
+            "ranking_or_lead_uplift_claim",
+        ],
     }
 
 
@@ -166,9 +174,9 @@ def content_payload_with_reviewed_wordpress_draft_previews(
     summary_list = list(review_event_summaries)
     reviewed_candidate_ids = _reviewed_candidate_ids(summary_list)
     detail_list = list(review_event_details or [])
-    mapping_reviews = {
-        **_reviewed_candidate_mapping_reviews(summary_list),
-        **_reviewed_candidate_mapping_reviews_from_details(detail_list),
+    url_reviews = {
+        **_reviewed_candidate_url_reviews(summary_list),
+        **_reviewed_candidate_url_reviews_from_details(detail_list),
     }
     draft_readiness_reviews = _reviewed_candidate_draft_readiness_from_details(detail_list)
     if not reviewed_candidate_ids:
@@ -181,7 +189,7 @@ def content_payload_with_reviewed_wordpress_draft_previews(
     draft_previews = [
         _wordpress_draft_payload_preview(
             item,
-            mapping_review=mapping_reviews.get(str(item.get("candidate_id") or "")),
+            url_review=url_reviews.get(str(item.get("candidate_id") or "")),
             draft_readiness_review=draft_readiness_reviews.get(
                 str(item.get("candidate_id") or "")
             ),
@@ -197,8 +205,6 @@ def content_payload_with_reviewed_wordpress_draft_previews(
 
 def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:
     wordpress_urls_by_path = _wordpress_inventory_urls_by_path(metric_facts)
-    wordpress_details_by_path = _wordpress_inventory_details_by_path(metric_facts)
-    wordpress_details_by_url = _wordpress_inventory_details_by_url(metric_facts)
     gsc_facts_by_page: dict[str, list[MetricFact]] = {}
     for fact in metric_facts:
         if fact.source_connector != "google_search_console":
@@ -223,7 +229,6 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         primary_query = queries[0] if queries else _short_path(page)
         page_path = _normalized_path(page)
         wordpress_target_url = wordpress_urls_by_path.get(page_path)
-        wordpress_details = wordpress_details_by_path.get(page_path)
         wordpress_match = wordpress_target_url is not None
         mode = "refresh" if wordpress_match else "inventory_check"
         decision_options = ["refresh", "merge", "block"] if wordpress_match else [
@@ -231,55 +236,14 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
             "create",
             "block",
         ]
-        target_site_context = _target_site_context(
-            source_url=page,
-            target_site_url=wordpress_target_url,
-            wordpress_match=wordpress_match,
-        )
-        target_site_inventory_context = _target_site_inventory_context(
-            target_site_url=target_site_context.get("target_site_url"),
-            inventory_details=wordpress_details,
-        )
-        migration_candidate_inventory_context = (
-            _target_site_migration_candidate_inventory_context(
-                migration_candidate_url=target_site_context.get(
-                    "target_site_migration_candidate_url"
-                ),
-                inventory_details=wordpress_details_by_url.get(
-                    _normalized_url(
-                        target_site_context.get("target_site_migration_candidate_url")
-                    )
-                ),
-            )
-        )
-        alternative_candidate_context = _target_site_alternative_candidate_context(
-            topic=primary_query,
-            source_url=page,
-            migration_candidate_url=target_site_context.get(
-                "target_site_migration_candidate_url"
-            ),
-            inventory_details_by_url=wordpress_details_by_url,
-        )
-        mapping_review_context = _target_site_mapping_review_context(
-            migration_candidate_url=target_site_context.get(
-                "target_site_migration_candidate_url"
-            ),
-            migration_candidate_inventory_status=migration_candidate_inventory_context.get(
-                "target_site_migration_candidate_inventory_status"
-            ),
-            alternative_candidate_urls=alternative_candidate_context.get(
-                "target_site_alternative_candidate_urls", []
-            ),
-        )
         content_gate_status = _content_gate_status_for_brief(
             source_type="gsc_query_page",
             mode=mode,
             wordpress_match=wordpress_match,
-            target_site_adaptation_status=target_site_context.get(
-                "target_site_adaptation_status"
-            )
-            if isinstance(target_site_context.get("target_site_adaptation_status"), str)
-            else None,
+        )
+        url_semantics = _content_preview_url_semantics(
+            source_url=page,
+            wordpress_content_url=wordpress_target_url,
         )
         previews.append(
             {
@@ -288,12 +252,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "source_type": "gsc_query_page",
                 "mode": mode,
                 "topic": primary_query,
-                "target_url": page,
-                **target_site_context,
-                **target_site_inventory_context,
-                **migration_candidate_inventory_context,
-                **alternative_candidate_context,
-                **mapping_review_context,
+                **url_semantics,
                 **content_gate_status,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
                 "decision_options": decision_options,
@@ -346,43 +305,43 @@ def _reviewed_candidate_ids(review_event_summaries: Iterable[str]) -> set[str]:
     return candidate_ids
 
 
-def _reviewed_candidate_mapping_reviews(
+def _reviewed_candidate_url_reviews(
     review_event_summaries: Iterable[str],
 ) -> dict[str, dict[str, str]]:
-    mapping_reviews: dict[str, dict[str, str]] = {}
+    url_reviews: dict[str, dict[str, str]] = {}
     for summary in review_event_summaries:
         candidate_id = _review_summary_token(summary, "candidate")
         if not candidate_id:
             continue
-        outcome = _review_summary_token(summary, "mapping_outcome")
-        selected_url = _review_summary_token(summary, "selected_target_url")
-        notes = _review_summary_token(summary, "mapping_notes")
-        if outcome or selected_url or notes:
-            mapping_reviews[candidate_id] = {
-                "mapping_outcome": outcome,
-                "selected_target_url": selected_url,
-                "mapping_notes": notes,
+        outcome = _review_summary_token(summary, "url_review_outcome")
+        reviewed_url = _review_summary_token(summary, "reviewed_url")
+        notes = _review_summary_token(summary, "review_notes")
+        if outcome or reviewed_url or notes:
+            url_reviews[candidate_id] = {
+                "url_review_outcome": outcome,
+                "reviewed_url": reviewed_url,
+                "review_notes": notes,
             }
-    return mapping_reviews
+    return url_reviews
 
 
-def _reviewed_candidate_mapping_reviews_from_details(
+def _reviewed_candidate_url_reviews_from_details(
     review_event_details: Iterable[Mapping[str, Any]],
 ) -> dict[str, dict[str, str]]:
-    mapping_reviews: dict[str, dict[str, str]] = {}
+    url_reviews: dict[str, dict[str, str]] = {}
     for details in review_event_details:
-        mapping_review = details.get("target_site_mapping_review")
-        if not isinstance(mapping_review, Mapping):
+        url_review = details.get("content_url_review")
+        if not isinstance(url_review, Mapping):
             continue
-        candidate_id = mapping_review.get("candidate")
+        candidate_id = url_review.get("candidate")
         if not isinstance(candidate_id, str) or not candidate_id:
             continue
-        mapping_reviews[candidate_id] = {
-            "mapping_outcome": str(mapping_review.get("mapping_outcome") or ""),
-            "selected_target_url": str(mapping_review.get("selected_target_url") or ""),
-            "mapping_notes": str(mapping_review.get("mapping_notes") or ""),
+        url_reviews[candidate_id] = {
+            "url_review_outcome": str(url_review.get("url_review_outcome") or ""),
+            "reviewed_url": str(url_review.get("reviewed_url") or ""),
+            "review_notes": str(url_review.get("review_notes") or ""),
         }
-    return mapping_reviews
+    return url_reviews
 
 
 def _reviewed_candidate_draft_readiness_from_details(
@@ -420,28 +379,26 @@ def _review_summary_token(summary: str, key: str) -> str:
 def _wordpress_draft_payload_preview(
     preview: dict[str, Any],
     *,
-    mapping_review: dict[str, str] | None = None,
+    url_review: dict[str, str] | None = None,
     draft_readiness_review: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     topic = str(preview.get("topic") or "Brief treści")
     mode = str(preview.get("mode") or "review")
     source_type = str(preview.get("source_type") or "unknown")
-    target_url = preview.get("target_url") if isinstance(preview.get("target_url"), str) else None
-    source_url = preview.get("source_url") if isinstance(preview.get("source_url"), str) else None
-    target_site_url = (
-        preview.get("target_site_url")
-        if isinstance(preview.get("target_site_url"), str)
+    source_public_url = (
+        preview.get("source_public_url")
+        if isinstance(preview.get("source_public_url"), str)
         else None
     )
-    migration_candidate_url = (
-        preview.get("target_site_migration_candidate_url")
-        if isinstance(preview.get("target_site_migration_candidate_url"), str)
-        else None
+    intended_final_url = (
+        preview.get("intended_final_url")
+        if isinstance(preview.get("intended_final_url"), str)
+        else source_public_url
     )
-    migration_status = (
-        preview.get("target_site_migration_status")
-        if isinstance(preview.get("target_site_migration_status"), str)
-        else None
+    final_canonical_url = (
+        preview.get("final_canonical_url")
+        if isinstance(preview.get("final_canonical_url"), str)
+        else intended_final_url
     )
     inventory_gate_status = (
         preview.get("inventory_gate_status")
@@ -459,24 +416,21 @@ def _wordpress_draft_payload_preview(
         else None
     )
     draft_generation_status = _draft_generation_status(
-        migration_status,
+        inventory_gate_status=inventory_gate_status,
         canonical_gate_status=canonical_gate_status,
         duplicate_gate_status=duplicate_gate_status,
-        mapping_review_outcome=(mapping_review or {}).get("mapping_outcome"),
     )
     draft_blockers = _draft_blockers(draft_generation_status)
-    staging_target_url = (
-        (mapping_review or {}).get("selected_target_url")
-        or target_site_url
-        or migration_candidate_url
-    )
-    staging_handoff_status = _staging_handoff_status(
+    wordpress_draft_final_url = final_canonical_url or intended_final_url or source_public_url
+    wordpress_draft_handoff_status = _wordpress_draft_handoff_status(
         draft_generation_status=draft_generation_status,
         draft_readiness_outcome=(draft_readiness_review or {}).get(
             "draft_readiness_outcome"
         ),
     )
-    staging_handoff_blockers = _staging_handoff_blockers(staging_handoff_status)
+    wordpress_draft_handoff_blockers = _wordpress_draft_handoff_blockers(
+        wordpress_draft_handoff_status
+    )
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -489,106 +443,21 @@ def _wordpress_draft_payload_preview(
         "post_status": "draft",
         "topic": topic,
         "intent": preview.get("intent") if isinstance(preview.get("intent"), str) else None,
-        "target_url": target_url,
-        "source_url": source_url,
-        "target_site_url": target_site_url,
-        "target_site_host": preview.get("target_site_host")
-        if isinstance(preview.get("target_site_host"), str)
+        "source_public_url": source_public_url,
+        "preview_url": preview.get("preview_url")
+        if isinstance(preview.get("preview_url"), str)
         else None,
-        "source_site_host": preview.get("source_site_host")
-        if isinstance(preview.get("source_site_host"), str)
-        else None,
-        "target_site_adaptation_status": preview.get("target_site_adaptation_status")
-        if isinstance(preview.get("target_site_adaptation_status"), str)
-        else None,
-        "target_site_migration_candidate_url": migration_candidate_url,
-        "target_site_migration_status": migration_status,
-        "target_site_migration_summary": preview.get("target_site_migration_summary")
-        if isinstance(preview.get("target_site_migration_summary"), str)
-        else None,
-        "target_site_migration_candidate_inventory_status": preview.get(
-            "target_site_migration_candidate_inventory_status"
-        )
-        if isinstance(preview.get("target_site_migration_candidate_inventory_status"), str)
-        else None,
-        "target_site_migration_candidate_inventory_summary": preview.get(
-            "target_site_migration_candidate_inventory_summary"
-        )
-        if isinstance(preview.get("target_site_migration_candidate_inventory_summary"), str)
-        else None,
-        "target_site_alternative_candidate_urls": preview.get(
-            "target_site_alternative_candidate_urls"
-        )
-        if isinstance(preview.get("target_site_alternative_candidate_urls"), list)
-        else [],
-        "target_site_alternative_candidate_summary": preview.get(
-            "target_site_alternative_candidate_summary"
-        )
-        if isinstance(preview.get("target_site_alternative_candidate_summary"), str)
-        else None,
-        "target_site_mapping_review_status": preview.get(
-            "target_site_mapping_review_status"
-        )
-        if isinstance(preview.get("target_site_mapping_review_status"), str)
-        else None,
-        "target_site_mapping_review_summary": preview.get(
-            "target_site_mapping_review_summary"
-        )
-        if isinstance(preview.get("target_site_mapping_review_summary"), str)
-        else None,
-        "target_site_mapping_review_candidate_urls": preview.get(
-            "target_site_mapping_review_candidate_urls"
-        )
-        if isinstance(preview.get("target_site_mapping_review_candidate_urls"), list)
-        else [],
-        "target_site_mapping_review_recorded_outcome": (
-            (mapping_review or {}).get("mapping_outcome") or None
+        "intended_final_url": intended_final_url,
+        "final_canonical_url": final_canonical_url,
+        "content_url_review_recorded_outcome": (
+            (url_review or {}).get("url_review_outcome") or None
         ),
-        "target_site_mapping_review_selected_url": (
-            (mapping_review or {}).get("selected_target_url") or None
+        "content_url_review_reviewed_url": (
+            (url_review or {}).get("reviewed_url") or None
         ),
-        "target_site_mapping_review_notes": (
-            (mapping_review or {}).get("mapping_notes") or None
+        "content_url_review_notes": (
+            (url_review or {}).get("review_notes") or None
         ),
-        "target_site_review_requirements": _target_site_review_requirements(
-            preview.get("target_site_migration_status")
-            if isinstance(preview.get("target_site_migration_status"), str)
-            else None,
-        ),
-        "target_site_inventory_content_type": preview.get(
-            "target_site_inventory_content_type"
-        )
-        if isinstance(preview.get("target_site_inventory_content_type"), str)
-        else None,
-        "target_site_inventory_status": preview.get("target_site_inventory_status")
-        if isinstance(preview.get("target_site_inventory_status"), str)
-        else None,
-        "target_site_inventory_source": preview.get("target_site_inventory_source")
-        if isinstance(preview.get("target_site_inventory_source"), str)
-        else None,
-        "target_site_inventory_modified_gmt": preview.get(
-            "target_site_inventory_modified_gmt"
-        )
-        if isinstance(preview.get("target_site_inventory_modified_gmt"), str)
-        else None,
-        "target_site_inventory_title_or_h1": preview.get(
-            "target_site_inventory_title_or_h1"
-        )
-        if isinstance(preview.get("target_site_inventory_title_or_h1"), str)
-        else None,
-        "target_site_inventory_canonical_url": preview.get(
-            "target_site_inventory_canonical_url"
-        )
-        if isinstance(preview.get("target_site_inventory_canonical_url"), str)
-        else None,
-        "target_site_inventory_missing_fields": [
-            item
-            for item in preview.get("target_site_inventory_missing_fields", [])
-            if isinstance(item, str)
-        ],
-        "target_site_inventory_summary": preview.get("target_site_inventory_summary")
-        if isinstance(preview.get("target_site_inventory_summary"), str)
-        else None,
         "inventory_gate_status": inventory_gate_status,
         "canonical_gate_status": canonical_gate_status,
         "duplicate_gate_status": duplicate_gate_status,
@@ -620,15 +489,15 @@ def _wordpress_draft_payload_preview(
         "draft_readiness_review_notes": (
             (draft_readiness_review or {}).get("draft_readiness_notes") or None
         ),
-        "staging_handoff_status": staging_handoff_status,
-        "staging_handoff_blockers": staging_handoff_blockers,
-        "staging_handoff_contract": _staging_handoff_contract(
-            staging_handoff_status=staging_handoff_status,
-            staging_handoff_blockers=staging_handoff_blockers,
-            target_site_url=staging_target_url,
+        "wordpress_draft_handoff_status": wordpress_draft_handoff_status,
+        "wordpress_draft_handoff_blockers": wordpress_draft_handoff_blockers,
+        "wordpress_draft_handoff_contract": _wordpress_draft_handoff_contract(
+            wordpress_draft_handoff_status=wordpress_draft_handoff_status,
+            wordpress_draft_handoff_blockers=wordpress_draft_handoff_blockers,
+            final_canonical_url=wordpress_draft_final_url,
         ),
         "post_publication_measurement_plan": post_publication_measurement_plan(
-            target_site_url=staging_target_url,
+            final_canonical_url=wordpress_draft_final_url,
         ),
         "draft_payload": {
             "post_status": "draft",
@@ -683,34 +552,25 @@ def _wordpress_draft_operation(mode: str) -> str:
 
 
 def _draft_generation_status(
-    migration_status: str | None,
     *,
+    inventory_gate_status: str | None,
     canonical_gate_status: str | None,
     duplicate_gate_status: str | None,
-    mapping_review_outcome: str | None = None,
 ) -> str:
-    mapping_recorded = mapping_review_outcome in {
-        "confirm_exact_candidate",
-        "confirm_alternative_candidate",
-    }
-    if migration_status == "confirmed_target_inventory":
-        if canonical_gate_status in {
-            "needs_target_canonical_review",
-            "blocked_until_mapping_review",
-            "blocked_until_inventory_review",
-        } or duplicate_gate_status in {
-            "refresh_or_merge_required",
-            "manual_merge_or_create_review",
-            "create_blocked_until_duplicate_check",
-        }:
-            return "blocked_pending_canonical_duplicate_review"
+    if inventory_gate_status == "missing_inventory_match":
+        return "blocked_missing_public_inventory"
+    if canonical_gate_status in {
+        "needs_final_canonical_review",
+        "blocked_until_content_url_review",
+        "blocked_until_inventory_review",
+    } or duplicate_gate_status in {
+        "refresh_or_merge_required",
+        "manual_merge_or_create_review",
+        "create_blocked_until_duplicate_check",
+    }:
+        return "blocked_pending_canonical_duplicate_review"
+    if inventory_gate_status == "confirmed_current_inventory":
         return "ready_for_review"
-    if migration_status == "needs_review":
-        if mapping_recorded:
-            return "blocked_pending_canonical_duplicate_review_after_mapping_record"
-        return "blocked_pending_target_mapping"
-    if migration_status == "blocked_missing_inventory":
-        return "blocked_missing_target_inventory"
     return "blocked_until_content_review"
 
 
@@ -722,34 +582,34 @@ def _draft_blockers(draft_generation_status: str) -> list[str]:
     ]
     if draft_generation_status == "ready_for_review":
         return [
-            "target_site_canonical_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
         ]
-    if draft_generation_status == "blocked_pending_target_mapping":
+    if draft_generation_status == "blocked_until_content_review":
         return [
-            "target_site_inventory_mapping_review",
-            "target_site_canonical_review",
+            "content_url_preflight_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
         ]
     if draft_generation_status == "blocked_pending_canonical_duplicate_review":
         return [
-            "target_site_canonical_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
         ]
-    if draft_generation_status == "blocked_pending_canonical_duplicate_review_after_mapping_record":
+    if draft_generation_status == "blocked_pending_canonical_duplicate_review_after_url_review":
         return [
-            "target_site_mapping_recorded_review_only",
-            "target_site_canonical_review",
+            "content_url_review_recorded_review_only",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
         ]
-    if draft_generation_status == "blocked_missing_target_inventory":
+    if draft_generation_status == "blocked_missing_public_inventory":
         return [
-            "target_site_inventory_required",
-            "target_site_canonical_review",
+            "public_content_inventory_required",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
         ]
@@ -780,8 +640,8 @@ def _draft_generation_contract(
         "requires_passed_gates": [
             "evidence_ids_present",
             "source_connectors_present",
-            "target_site_mapping_review",
-            "target_site_canonical_review",
+            "content_url_preflight_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             "legal_factual_review",
             "human_confirm_before_wordpress_write",
@@ -829,7 +689,7 @@ def _draft_readiness_review_contract() -> dict[str, Any]:
             "notes",
         ],
         "blocked_outputs": [
-            "wordpress_staging_write",
+            "wordpress_draft_write",
             "wordpress_publish",
             "publish_ready_claim",
             "duplicate_free_claim_without_review",
@@ -839,7 +699,7 @@ def _draft_readiness_review_contract() -> dict[str, Any]:
     }
 
 
-def _staging_handoff_status(
+def _wordpress_draft_handoff_status(
     *,
     draft_generation_status: str,
     draft_readiness_outcome: str | None,
@@ -848,58 +708,58 @@ def _staging_handoff_status(
         return "blocked_until_draft_gates_pass"
     if draft_readiness_outcome != "approve_outline_for_editorial_review":
         return "blocked_until_draft_readiness_review"
-    return "blocked_until_staging_action_contract"
+    return "blocked_until_wordpress_draft_handoff_action"
 
 
-def _staging_handoff_blockers(staging_handoff_status: str) -> list[str]:
+def _wordpress_draft_handoff_blockers(wordpress_draft_handoff_status: str) -> list[str]:
     blockers = [
-        "wordpress_staging_write_not_requested",
+        "wordpress_draft_write_not_requested",
         "api_mutation_ready_false",
         "human_confirm_before_wordpress_write",
     ]
-    if staging_handoff_status == "blocked_until_draft_gates_pass":
+    if wordpress_draft_handoff_status == "blocked_until_draft_gates_pass":
         return [
-            "target_site_mapping_review",
-            "target_site_canonical_review",
+            "content_url_preflight_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             "legal_factual_review",
             *blockers,
         ]
-    if staging_handoff_status == "blocked_until_draft_readiness_review":
+    if wordpress_draft_handoff_status == "blocked_until_draft_readiness_review":
         return [
             "content_draft_readiness_review",
             *blockers,
         ]
     return [
-        "wordpress_staging_action_object_required",
-        "wordpress_staging_payload_preview_required",
+        "wordpress_draft_handoff_action_required",
+        "wordpress_draft_payload_preview_required",
         *blockers,
     ]
 
 
-def _staging_handoff_contract(
+def _wordpress_draft_handoff_contract(
     *,
-    staging_handoff_status: str,
-    staging_handoff_blockers: list[str],
-    target_site_url: str | None,
+    wordpress_draft_handoff_status: str,
+    wordpress_draft_handoff_blockers: list[str],
+    final_canonical_url: str | None,
 ) -> dict[str, Any]:
     return {
-        "contract_version": "wordpress_staging_handoff_v1",
+        "contract_version": "wordpress_draft_handoff_v1",
         "scope": "blocked_preview_only",
-        "target_site_url": target_site_url,
-        "status": staging_handoff_status,
-        "blocked_until": staging_handoff_blockers,
+        "final_canonical_url": final_canonical_url,
+        "status": wordpress_draft_handoff_status,
+        "blocked_until": wordpress_draft_handoff_blockers,
         "requires_passed_gates": [
-            "target_site_mapping_review",
-            "target_site_canonical_review",
+            "content_url_preflight_review",
+            "final_canonical_review",
             "duplicate_or_cannibalization_check",
             "legal_factual_review",
             "content_draft_readiness_review",
             "human_confirm_before_wordpress_write",
         ],
-        "required_next_action_contract": "wordpress_staging_draft_apply_v1",
+        "required_next_action_contract": "wordpress_draft_handoff_v1",
         "blocked_outputs": [
-            "wordpress_staging_write",
+            "wordpress_draft_write",
             "wordpress_publish",
             "production_wordpress_write",
             "publish_ready_claim",
@@ -910,12 +770,12 @@ def _staging_handoff_contract(
 
 def post_publication_measurement_plan(
     *,
-    target_site_url: str | None,
+    final_canonical_url: str | None,
 ) -> dict[str, Any]:
     return {
         "contract_version": POST_PUBLICATION_MEASUREMENT_PLAN_CONTRACT,
         "scope": "blocked_preview_only",
-        "target_site_url": target_site_url,
+        "final_canonical_url": final_canonical_url,
         "status": "blocked_until_publish_and_followup_data",
         "baseline_window": "28d_before_publish",
         "followup_windows": ["7d_after_publish", "28d_after_publish", "90d_after_publish"],
@@ -955,7 +815,7 @@ def _draft_excerpt_direction(preview: dict[str, Any]) -> str:
     goal = preview.get("brief_goal")
     if isinstance(goal, str) and goal:
         return goal
-    return "Szkic briefu do review. Nie publikować bez walidacji operatora."
+    return "Szkic briefu do sprawdzenia. Nie publikować bez sprawdzenia operatora."
 
 
 def _draft_content_blocks(preview: dict[str, Any]) -> list[dict[str, str]]:
@@ -978,28 +838,16 @@ def _content_gate_status_for_brief(
     source_type: str,
     mode: str,
     wordpress_match: bool,
-    target_site_adaptation_status: str | None,
 ) -> dict[str, str]:
     if source_type == "gsc_query_page" and mode == "refresh" and wordpress_match:
-        if target_site_adaptation_status == "target_site_alias_match":
-            return {
-                "inventory_gate_status": "confirmed_target_inventory",
-                "canonical_gate_status": "needs_target_canonical_review",
-                "duplicate_gate_status": "refresh_or_merge_required",
-                "content_gate_summary": (
-                    "Inventory potwierdza docelową stronę na target site. Brief może "
-                    "iść do refresh/merge review, ale canonical i duplikaty wymagają "
-                    "ręcznego potwierdzenia przed draftem albo stagingiem."
-                ),
-            }
         return {
             "inventory_gate_status": "confirmed_current_inventory",
             "canonical_gate_status": "current_url_confirmed",
             "duplicate_gate_status": "refresh_or_merge_required",
             "content_gate_summary": (
-                "Inventory potwierdza istniejący URL. WILQ traktuje to jako "
-                "refresh/merge, nie nowy artykuł; create pozostaje zablokowane "
-                "przed kontrolą duplikacji."
+                "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
+                "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje "
+                "zablokowana przed kontrolą duplikacji."
             ),
         }
     if source_type == "gsc_query_page":
@@ -1017,7 +865,7 @@ def _content_gate_status_for_brief(
         "canonical_gate_status": "blocked_until_relevance_review",
         "duplicate_gate_status": "manual_merge_or_create_review",
         "content_gate_summary": (
-            "To jest kandydat z Ahrefs do review, nie decyzja create. Najpierw "
+            "To jest propozycja z Ahrefs do sprawdzenia, nie decyzja create. Najpierw "
             "potwierdź popyt GSC, inventory WordPress i duplikaty."
         ),
     }
@@ -1047,13 +895,11 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "topic": topic,
                 "gap_type": fact.dimensions.get("gap_type") or fact.name,
                 "competitor_domain": fact.dimensions.get("competitor_domain") or None,
-                "source_url": fact.dimensions.get("source_url") or None,
-                "target_url": fact.dimensions.get("target_url") or None,
+                "competitor_page": fact.dimensions.get("source_url") or None,
                 **_content_gate_status_for_brief(
                     source_type="ahrefs_gap_review",
                     mode="review",
                     wordpress_match=False,
-                    target_site_adaptation_status=None,
                 ),
                 "wordpress_inventory_match": "unknown",
                 "gsc_demand": "unknown",
@@ -1064,7 +910,8 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 },
                 "brief_goal": (
                     "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim "
-                    "powstanie brief. To jest kandydat do review, nie decyzja create."
+                    "powstanie brief. To jest temat do sprawdzenia, nie decyzja "
+                    "utworzenia nowej treści."
                 ),
                 "intent": _ahrefs_content_intent(topic),
                 "content_angle": _ahrefs_content_angle(topic),
@@ -1085,7 +932,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "source_facts": _ahrefs_source_facts(fact, topic),
                 "missing_evidence": [
                     "brak potwierdzenia popytu GSC dla tematu",
-                    "brak potwierdzenia dopasowania WordPress inventory",
+                    "brak potwierdzenia dopasowania w spisie treści WordPress",
                     "brak dowodu wpływu na ruch, leady albo revenue",
                 ],
                 "forbidden_claims": CONTENT_BLOCKED_CLAIMS,
@@ -1118,6 +965,8 @@ def _wordpress_inventory_urls_by_path(metric_facts: list[MetricFact]) -> dict[st
         url = fact.dimensions.get("content_url")
         if not url:
             continue
+        if _url_host(url) not in CONTENT_SOURCE_SITE_HOSTS:
+            continue
         path = _normalized_path(url)
         if path:
             urls_by_path.setdefault(path, url)
@@ -1135,6 +984,8 @@ def _wordpress_inventory_details_by_path(
             continue
         url = fact.dimensions.get("content_url")
         if not url:
+            continue
+        if _url_host(url) not in CONTENT_SOURCE_SITE_HOSTS:
             continue
         path = _normalized_path(url)
         if not path:
@@ -1194,406 +1045,23 @@ def _normalized_url(value: str | None) -> str:
     return f"{parsed.scheme.lower() or 'https'}://{host}{path}"
 
 
-def _target_site_context(
+def _content_preview_url_semantics(
     *,
     source_url: str,
-    target_site_url: str | None,
-    wordpress_match: bool,
-) -> dict[str, str | None]:
-    source_host = _url_host(source_url)
-    target_host = _url_host(target_site_url) if target_site_url else None
-    if not wordpress_match:
-        status = "needs_inventory_match"
-    elif target_host and source_host and target_host != source_host:
-        status = "target_site_alias_match"
-    else:
-        status = "current_site_match"
-    migration_candidate_url = _target_site_migration_candidate_url(
-        source_url=source_url,
-        target_site_url=target_site_url,
-        target_site_adaptation_status=status,
-    )
-    migration_status = _target_site_migration_status(
-        target_site_adaptation_status=status,
-        migration_candidate_url=migration_candidate_url,
-    )
-    review_requirements = _target_site_review_requirements(migration_status)
-    return {
-        "source_url": source_url,
-        "source_site_host": source_host,
-        "target_site_url": target_site_url,
-        "target_site_host": target_host,
-        "target_site_adaptation_status": status,
-        "target_site_migration_candidate_url": migration_candidate_url,
-        "target_site_migration_status": migration_status,
-        "target_site_migration_summary": _target_site_migration_summary(
-            migration_status,
-            migration_candidate_url,
-        ),
-        "target_site_review_requirements": review_requirements,
-    }
-
-
-def _target_site_inventory_context(
-    *,
-    target_site_url: str | None,
-    inventory_details: dict[str, str] | None,
-) -> dict[str, object]:
-    if not target_site_url:
-        return {
-            "target_site_inventory_missing_fields": [
-                "target_site_url",
-                "title_or_h1",
-                "canonical_url",
-            ],
-            "target_site_inventory_summary": (
-                "Brak target URL w inventory. Nie przygotowuj draftu ani stagingu "
-                "bez ręcznego mapowania."
-            ),
-        }
-
-    if inventory_details is None:
-        return {
-            "target_site_inventory_missing_fields": [
-                "content_type",
-                "status",
-                "inventory_source",
-                "modified_gmt",
-                "title_or_h1",
-                "canonical_url",
-            ],
-            "target_site_inventory_summary": (
-                "Brak szczegółu inventory dla target URL. WILQ może pokazać "
-                "kandydata mapowania, ale draft i staging wymagają potwierdzenia."
-            ),
-        }
-
-    missing = [
-        field
-        for field in ("content_type", "status", "inventory_source", "modified_gmt")
-        if not inventory_details.get(field)
-    ]
-    missing.extend(
-        field
-        for field in ("title_or_h1", "canonical_url")
-        if not inventory_details.get(field)
-    )
-    content_type = inventory_details.get("content_type") or None
-    status = inventory_details.get("status") or None
-    inventory_source = inventory_details.get("inventory_source") or None
-    modified_gmt = inventory_details.get("modified_gmt") or None
-    title_or_h1 = inventory_details.get("title_or_h1") or None
-    canonical_url = inventory_details.get("canonical_url") or None
-    known_parts = _unique(
-        [
-            f"type={content_type}" if content_type else "",
-            f"status={status}" if status else "",
-            f"source={inventory_source}" if inventory_source else "",
-            f"modified_gmt={modified_gmt}" if modified_gmt else "",
-            f"title_or_h1={title_or_h1}" if title_or_h1 else "",
-            f"canonical_url={canonical_url}" if canonical_url else "",
-        ]
-    )
-    summary = "Inventory potwierdza target URL"
-    if known_parts:
-        summary = f"{summary}: {', '.join(known_parts)}"
-    summary = (
-        f"{summary}. Przed draftem/stagingiem nadal sprawdź: "
-        f"{', '.join(missing)}."
+    wordpress_content_url: str | None,
+) -> dict[str, str | bool | None]:
+    source_public_url = source_url
+    intended_final_url = (
+        wordpress_content_url
+        if _url_host(wordpress_content_url) in CONTENT_SOURCE_SITE_HOSTS
+        else source_public_url
     )
     return {
-        "target_site_inventory_content_type": content_type,
-        "target_site_inventory_status": status,
-        "target_site_inventory_source": inventory_source,
-        "target_site_inventory_modified_gmt": modified_gmt,
-        "target_site_inventory_title_or_h1": title_or_h1,
-        "target_site_inventory_canonical_url": canonical_url,
-        "target_site_inventory_missing_fields": missing,
-        "target_site_inventory_summary": summary,
+        "source_public_url": source_public_url,
+        "preview_url": None,
+        "intended_final_url": intended_final_url,
+        "final_canonical_url": intended_final_url,
     }
-
-
-def _target_site_migration_candidate_inventory_context(
-    *,
-    migration_candidate_url: str | None,
-    inventory_details: dict[str, str] | None,
-) -> dict[str, str | None]:
-    if not migration_candidate_url:
-        return {
-            "target_site_migration_candidate_inventory_status": "not_applicable",
-            "target_site_migration_candidate_inventory_summary": (
-                "Brak kandydata URL na target site dla tej decyzji."
-            ),
-        }
-    if inventory_details is None:
-        return {
-            "target_site_migration_candidate_inventory_status": "missing_target_inventory",
-            "target_site_migration_candidate_inventory_summary": (
-                "Kandydat old-to-new nie jest potwierdzony w target-site inventory. "
-                "Wymagane ręczne mapowanie przed draftem albo stagingiem."
-            ),
-        }
-    title = inventory_details.get("title_or_h1")
-    canonical = inventory_details.get("canonical_url")
-    parts = _unique(
-        [
-            f"title_or_h1={title}" if title else "",
-            f"canonical_url={canonical}" if canonical else "",
-            f"source={inventory_details.get('inventory_source')}"
-            if inventory_details.get("inventory_source")
-            else "",
-        ]
-    )
-    suffix = f": {', '.join(parts)}" if parts else "."
-    return {
-        "target_site_migration_candidate_inventory_status": "confirmed_target_inventory",
-        "target_site_migration_candidate_inventory_summary": (
-            f"Kandydat old-to-new jest w target-site inventory{suffix}"
-        ),
-    }
-
-
-def _target_site_alternative_candidate_context(
-    *,
-    topic: str,
-    source_url: str,
-    migration_candidate_url: str | None,
-    inventory_details_by_url: dict[str, dict[str, str]],
-) -> dict[str, object]:
-    if not migration_candidate_url:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": None,
-        }
-    if _normalized_url(migration_candidate_url) in inventory_details_by_url:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": (
-                "Dokładny kandydat old-to-new jest potwierdzony; alternatywne "
-                "kandydaty nie są potrzebne."
-            ),
-        }
-    candidates = _target_site_alternative_candidate_urls(
-        topic=topic,
-        source_url=source_url,
-        migration_candidate_url=migration_candidate_url,
-        inventory_details_by_url=inventory_details_by_url,
-    )
-    if not candidates:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": (
-                "Brak alternatywnego kandydata w target-site inventory. Wymagane "
-                "ręczne mapowanie przed draftem albo stagingiem."
-            ),
-        }
-    return {
-        "target_site_alternative_candidate_urls": candidates,
-        "target_site_alternative_candidate_summary": (
-            "Dokładny kandydat old-to-new nie istnieje w target-site inventory. "
-            "WILQ znalazł alternatywne URL-e do ręcznego mapowania; nie "
-            "potwierdzają one jeszcze migracji ani gotowości draftu."
-        ),
-    }
-
-
-def _target_site_mapping_review_context(
-    *,
-    migration_candidate_url: str | None,
-    migration_candidate_inventory_status: str | None,
-    alternative_candidate_urls: object,
-) -> dict[str, object]:
-    alternatives = (
-        [url for url in alternative_candidate_urls if isinstance(url, str) and url]
-        if isinstance(alternative_candidate_urls, list)
-        else []
-    )
-    if not migration_candidate_url:
-        return {
-            "target_site_mapping_review_status": "not_applicable",
-            "target_site_mapping_review_summary": (
-                "Brak kandydata migracji do review dla tej decyzji."
-            ),
-            "target_site_mapping_review_candidate_urls": [],
-        }
-    if migration_candidate_inventory_status == "confirmed_target_inventory":
-        return {
-            "target_site_mapping_review_status": "confirm_exact_candidate",
-            "target_site_mapping_review_summary": (
-                "Dokładny kandydat old-to-new jest w inventory. Operator musi "
-                "potwierdzić canonical, duplikaty i zgodność intencji przed draftem."
-            ),
-            "target_site_mapping_review_candidate_urls": [migration_candidate_url],
-        }
-    if alternatives:
-        return {
-            "target_site_mapping_review_status": "review_alternative_candidates",
-            "target_site_mapping_review_summary": (
-                "Dokładny kandydat old-to-new nie istnieje w inventory. Przejrzyj "
-                "alternatywne URL-e i wybierz właściwe mapowanie albo oznacz temat "
-                "jako wymagający ręcznego targetu."
-            ),
-            "target_site_mapping_review_candidate_urls": alternatives,
-        }
-    return {
-        "target_site_mapping_review_status": "manual_mapping_required",
-        "target_site_mapping_review_summary": (
-            "Nie znaleziono potwierdzonego ani alternatywnego URL-a targetu. "
-            "Wymagane ręczne wskazanie mapowania przed draftem albo stagingiem."
-        ),
-        "target_site_mapping_review_candidate_urls": [migration_candidate_url],
-    }
-
-
-def _target_site_alternative_candidate_urls(
-    *,
-    topic: str,
-    source_url: str,
-    migration_candidate_url: str,
-    inventory_details_by_url: dict[str, dict[str, str]],
-) -> list[str]:
-    tokens = _mapping_tokens(topic, source_url)
-    if not tokens:
-        return []
-    exact_candidate = _normalized_url(migration_candidate_url)
-    scored: list[tuple[int, str]] = []
-    for normalized_url, details in inventory_details_by_url.items():
-        if normalized_url == exact_candidate:
-            continue
-        if CONTENT_TARGET_SITE_HOST not in normalized_url:
-            continue
-        text = _normalize_text(
-            " ".join(
-                [
-                    normalized_url,
-                    details.get("title_or_h1", ""),
-                    details.get("canonical_url", ""),
-                ]
-            )
-        )
-        score = sum(1 for token in tokens if _mapping_token_matches(token, text))
-        if score > 0:
-            scored.append((score, normalized_url))
-    return [
-        url
-        for _score, url in sorted(scored, key=lambda item: (-item[0], item[1]))[:3]
-    ]
-
-
-def _mapping_tokens(topic: str, source_url: str) -> set[str]:
-    text = _normalize_text(f"{topic} {_normalized_path(source_url)}")
-    tokens = {
-        token
-        for token in re.split(r"[^a-z0-9]+", text)
-        if len(token) >= 4
-    }
-    stopwords = {
-        "https",
-        "www",
-        "ekologus",
-        "musi",
-        "wiedziec",
-        "wszystko",
-        "kiedy",
-        "czym",
-        "jest",
-        "polega",
-        "taki",
-        "takiego",
-    }
-    return tokens - stopwords
-
-
-def _mapping_token_matches(token: str, normalized_text: str) -> bool:
-    if token in normalized_text:
-        return True
-    if len(token) >= 6 and token[:6] in normalized_text:
-        return True
-    return False
-
-
-def _target_site_migration_candidate_url(
-    *,
-    source_url: str,
-    target_site_url: str | None,
-    target_site_adaptation_status: str,
-) -> str | None:
-    if target_site_adaptation_status == "target_site_alias_match":
-        return target_site_url
-    parsed = urlparse(source_url)
-    source_host = parsed.netloc.lower()
-    if source_host not in CONTENT_SOURCE_SITE_HOSTS:
-        return None
-    path = parsed.path or "/"
-    query = f"?{parsed.query}" if parsed.query else ""
-    return f"{CONTENT_TARGET_SITE_SCHEME}://{CONTENT_TARGET_SITE_HOST}{path}{query}"
-
-
-def _target_site_migration_status(
-    *,
-    target_site_adaptation_status: str,
-    migration_candidate_url: str | None,
-) -> str:
-    if target_site_adaptation_status == "target_site_alias_match":
-        return "confirmed_target_inventory"
-    if target_site_adaptation_status == "needs_inventory_match":
-        return "blocked_missing_inventory"
-    if migration_candidate_url:
-        return "needs_review"
-    return "not_applicable"
-
-
-def _target_site_migration_summary(
-    migration_status: str,
-    migration_candidate_url: str | None,
-) -> str:
-    if migration_status == "confirmed_target_inventory":
-        return (
-            "Inventory potwierdza URL na target site; przed draftem nadal sprawdź "
-            "canonical, duplikaty i review."
-        )
-    if migration_status == "needs_review" and migration_candidate_url:
-        return (
-            "WILQ wskazuje kandydata old-to-new na target site, ale inventory go "
-            "nie potwierdza w tym payloadzie. Wymagane ręczne mapowanie przed "
-            "draftem albo stagingiem."
-        )
-    if migration_status == "blocked_missing_inventory":
-        return (
-            "Brak potwierdzenia inventory. Nie twórz draftu ani nowej strony przed "
-            "kontrolą sitemap, canonical i duplikatów."
-        )
-    return "Brak kandydata migracji na target site dla tej pozycji."
-
-
-def _target_site_review_requirements(migration_status: str | None) -> list[str]:
-    if migration_status == "confirmed_target_inventory":
-        return [
-            "target_site_inventory_confirmed",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    if migration_status == "needs_review":
-        return [
-            "target_site_inventory_mapping_review",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    if migration_status == "blocked_missing_inventory":
-        return [
-            "target_site_inventory_required",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    return [
-        "business_relevance_review",
-        "wordpress_inventory_check",
-        "duplicate_or_cannibalization_check",
-        "human_confirm_before_wordpress_write",
-    ]
 
 
 def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float | str]:
@@ -1615,11 +1083,11 @@ def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float 
 def _gsc_brief_goal(wordpress_match: bool, primary_query: str) -> str:
     if wordpress_match:
         return (
-            f"Przygotuj refresh/merge brief dla istniejącej treści pod temat "
+            f"Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat "
             f"`{primary_query}`: title, H1/H2, braki w sekcjach, CTA i ryzyka claimów."
         )
     return (
-        f"Sprawdź inventory i duplikaty przed briefem dla `{primary_query}`. "
+        f"Sprawdź spis treści i duplikaty przed briefem dla `{primary_query}`. "
         "Bez potwierdzenia URL nie twórz nowej strony."
     )
 
@@ -1664,20 +1132,20 @@ def _content_intent(topic: str, wordpress_match: bool) -> str:
             "doprecyzować intencję przed pisaniem"
         )
     if wordpress_match:
-        return f"{base}; tryb refresh/merge istniejącej strony"
-    return f"{base}; tryb create zablokowany do kontroli inventory i duplikatów"
+        return f"{base}; tryb odświeżenia albo scalenia istniejącej strony"
+    return f"{base}; nowa treść zablokowana do kontroli spisu treści i duplikatów"
 
 
 def _ahrefs_content_angle(topic: str) -> str:
     return (
-        f"Potraktuj `{topic}` jako inspirację konkurencyjną do review, nie jako gotowy "
+        f"Potraktuj `{topic}` jako inspirację konkurencyjną do sprawdzenia, nie jako gotowy "
         "temat publikacji, dopóki GSC i WordPress nie potwierdzą sensu biznesowego."
     )
 
 
 def _ahrefs_content_intent(topic: str) -> str:
     return (
-        f"konkurencyjny sygnał do review: `{topic}` wymaga potwierdzenia "
+        f"konkurencyjny sygnał do sprawdzenia: `{topic}` wymaga potwierdzenia "
         "popytu w GSC, dopasowania WordPress i braku duplikacji przed briefem"
     )
 
@@ -1689,7 +1157,10 @@ def _content_audience(topic: str) -> str:
     if "zielony lad" in normalized or "esg" in normalized:
         return "Decydent lub specjalista środowiskowy szukający prostego wyjaśnienia regulacji."
     if "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
-        return "Firma potrzebująca bezpiecznego procesu, produktu albo konsultacji w obszarze odpadów."
+        return (
+            "Firma potrzebująca bezpiecznego procesu, produktu albo konsultacji "
+            "w obszarze odpadów."
+        )
     return "Marketer i ekspert Ekologus powinni doprecyzować odbiorcę przed pisaniem treści."
 
 
@@ -1700,7 +1171,10 @@ def _key_objections(topic: str) -> list[str]:
         "czy nie istnieje już strona, którą trzeba odświeżyć zamiast tworzyć nową",
     ]
     if "bdo" in normalized:
-        objections.append("czy użytkownik potrzebuje definicji, checklisty obowiązków czy konsultacji")
+        objections.append(
+            "czy użytkownik potrzebuje definicji, checklisty obowiązków czy "
+            "konsultacji"
+        )
     elif "zielony lad" in normalized or "esg" in normalized:
         objections.append("czy tekst ma wyjaśniać pojęcie, obowiązki firmy czy wpływ na procesy")
     else:
@@ -1710,12 +1184,18 @@ def _key_objections(topic: str) -> list[str]:
 
 def _h1_direction(topic: str, wordpress_match: bool) -> str:
     if wordpress_match:
-        return f"H1 powinien jasno odpowiadać na intencję `{topic}` i nie sugerować nowej, osobnej strony."
-    return f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL i braku duplikatu."
+        return (
+            f"H1 powinien jasno odpowiadać na intencję `{topic}` i nie sugerować "
+            "nowej, osobnej strony."
+        )
+    return (
+        f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL "
+        "i braku duplikatu."
+    )
 
 
 def _seo_title_direction(topic: str, wordpress_match: bool) -> str:
-    action = "odświeżany URL" if wordpress_match else "kanoniczny URL po review"
+    action = "odświeżany URL" if wordpress_match else "kanoniczny URL po sprawdzeniu"
     return (
         f"Title powinien zawierać intencję `{topic}`, jasno opisywać {action} "
         "i nie obiecywać pozycji, leadów ani kompletnej zgodności prawnej."
@@ -1769,7 +1249,7 @@ def _faq_direction(topic: str) -> list[str]:
         ]
     return [
         f"Co oznacza `{topic}` dla firmy?",
-        "Jakie informacje trzeba potwierdzić przed wdrożeniem?",
+        "Jakie informacje trzeba potwierdzić przed zapisem zmian?",
         "Kiedy warto skontaktować się z Ekologus?",
     ]
 
@@ -1813,7 +1293,7 @@ def _brand_voice_notes(topic: str) -> list[str]:
 
 def _publication_blockers() -> list[str]:
     return [
-        "target_site_mapping_or_inventory_review",
+        "content_url_preflight_review",
         "canonical_review",
         "duplicate_or_cannibalization_check",
         "legal_factual_review",
@@ -1842,17 +1322,21 @@ def _gsc_source_facts(page: str, page_facts: list[MetricFact], wordpress_match: 
         f"impressions={snapshot['impressions']}",
         f"ctr={snapshot['ctr']}",
         f"average_position={snapshot['average_position']}",
-        "wordpress_inventory_match=present" if wordpress_match else "wordpress_inventory_match=missing",
+        (
+            "wordpress_inventory_match=present"
+            if wordpress_match
+            else "wordpress_inventory_match=missing"
+        ),
     ]
 
 
 def _gsc_missing_evidence(wordpress_match: bool) -> list[str]:
     missing = [
         "brak dowodu lead quality, revenue impact i wzrostu pozycji",
-        "brak zatwierdzonego payloadu WordPress write",
+        "brak zatwierdzonego szkicu zmian WordPress",
     ]
     if not wordpress_match:
-        missing.insert(0, "brak potwierdzonego kanonicznego URL w WordPress inventory")
+        missing.insert(0, "brak potwierdzonego kanonicznego URL w spisie treści WordPress")
     return missing
 
 
@@ -1871,7 +1355,7 @@ def _ahrefs_source_facts(fact: MetricFact, topic: str) -> list[str]:
 
 
 def _brief_outline(topic: str, wordpress_match: bool) -> list[dict[str, str]]:
-    action = "odświeżenia istniejącej strony" if wordpress_match else "review tematu"
+    action = "odświeżenia istniejącej strony" if wordpress_match else "sprawdzenia tematu"
     return [
         {
             "section": "intent",

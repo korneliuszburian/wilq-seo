@@ -25,7 +25,7 @@ def build_impression_share_read_contract(
     ]
     blocked_claims = [
         "budget scaling",
-        "budget apply",
+        "zmiana budżetu",
         "wasted budget",
         "performance uplift",
         "campaign mutation",
@@ -48,7 +48,7 @@ def build_impression_share_read_contract(
             )
         else:
             summary = (
-                "WILQ wykonał read-only impression share read; Google Ads nie zwrócił "
+                "WILQ odczytał udział w wyświetleniach; Google Ads nie zwrócił "
                 "kampanii z tymi metrykami w bieżącym oknie."
             )
         return AdsImpressionShareReadContract(
@@ -70,8 +70,9 @@ def build_impression_share_read_contract(
             impression_share_rows=rows,
             next_step=(
                 "Użyj udziału w wyświetleniach jako kontekstu ograniczeń budżetu lub "
-                "rankingu. Nie skaluj budżetu ani nie claimuj wasted budget bez historii "
-                "zmian, celu biznesowego i preview apply."
+                "rankingu. Nie skaluj budżetu ani nie twierdź, że budżet jest "
+                "marnowany bez historii zmian, celu biznesowego i podglądu "
+                "zapisu zmian."
             ),
         )
     return AdsImpressionShareReadContract(
@@ -85,8 +86,8 @@ def build_impression_share_read_contract(
         evidence_ids=fallback_evidence_ids,
         impression_share_rows=[],
         next_step=(
-            "Uruchom Google Ads vendor_read z metrics.search_*_impression_share. "
-            "Nie oceniaj utraconego udziału w wyświetleniach bez tych facts."
+            "Uruchom odczyt danych Google Ads z metrykami udziału w wyświetleniach. "
+            "Nie oceniaj utraconego udziału w wyświetleniach bez tych danych."
         ),
     )
 
@@ -150,7 +151,7 @@ def _impression_share_row(
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
             "budget scaling",
-            "budget apply",
+            "zmiana budżetu",
             "wasted budget",
             "performance uplift",
         ],

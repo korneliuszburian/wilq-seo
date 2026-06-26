@@ -179,7 +179,7 @@ def _binding_from_blueprint(
         skill_id=workflow.skill_id,
         summary=workflow.description,
         next_step=workflow.safe_next_step
-        or "Użyj tej wiedzy tylko z WILQ evidence i ActionObject validation.",
+        or "Użyj tej wiedzy tylko z dowodami WILQ i sprawdzeniem akcji.",
         source_connectors=workflow.source_connectors,
         evidence_ids=workflow.evidence_ids,
         action_ids=workflow.action_ids,

@@ -16,7 +16,7 @@ CAMPAIGN_BUDGET_APPLY_SAFETY_REQUIRED_VALIDATION = [
     "human_confirm_before_apply",
 ]
 CAMPAIGN_BUDGET_APPLY_SAFETY_BLOCKED_CLAIMS = [
-    "budget apply",
+    "zmiana budżetu",
     "budget scaling",
     "campaign pause",
     "profitability",
@@ -104,18 +104,21 @@ def _safety_reason(
 ) -> str:
     if proposed_budget_amount_micros is None:
         return (
-            "Budget apply zablokowany: brak proponowanej kwoty. WILQ może pokazać "
-            "bieżący budżet, ale nie może przygotować mutacji bez celu operatora."
+            "Zapis zmiany budżetu zablokowany: brak proponowanej kwoty. "
+            "WILQ może pokazać bieżący budżet, ale nie może przygotować zmiany "
+            "bez celu operatora."
         )
     if (
         proposed_delta_percent is not None
         and abs(proposed_delta_percent) > MAX_BUDGET_APPLY_DELTA_PERCENT
     ):
         return (
-            "Budget apply zablokowany: proponowana zmiana przekracza limit 30%. "
+            "Zapis zmiany budżetu zablokowany: proponowana zmiana "
+            "przekracza limit 30%. "
             "Wymagane są change history, cel budżetowy, audyt i potwierdzenie człowieka."
         )
     return (
-        "Budget apply zablokowany: preview jest gotowe tylko do review. Apply wymaga "
-        "change history, celu budżetowego, audytu mutacji i potwierdzenia człowieka."
+        "Zapis zmiany budżetu zablokowany: podgląd zmian jest gotowy "
+        "do sprawdzenia. Zapis wymaga change history, celu budżetowego, "
+        "audytu zmiany i potwierdzenia człowieka."
     )

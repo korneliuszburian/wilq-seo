@@ -80,11 +80,11 @@ LOCALO_CONTRACT_ORDER = [
     "local_tasks",
 ]
 LOCALO_BLOCKED_CLAIMS = [
-    "local ranking",
-    "GBP performance",
-    "competitor visibility",
-    "local visibility uplift",
-    "review velocity",
+    "lokalne rankingi",
+    "wyniki profilu firmy w Google",
+    "widoczności konkurencji",
+    "poprawa widoczności lokalnej",
+    "tempo nowych opinii",
 ]
 LOCALO_KNOWLEDGE_CARD_IDS = ["card_localo_local_seo_playbook"]
 LOCALO_EXPERT_RULE_IDS = ["local_visibility_v1", "local_reviews_v1"]
@@ -192,21 +192,22 @@ def _operator_summary_text(visibility_fact_count: int, missing_contracts: list[s
             and "competitor_visibility" not in missing_contracts
         ):
             return (
-                "Localo dostarczył typed agregaty miejsc, fraz, GBP, konkurencji "
-                "i recenzji. WILQ może użyć ich do lokalnego review, ale nadal "
-                "blokuje local tasks, write path i claim o wzroście widoczności "
-                "bez osobnego ActionObject/effect evidence."
+                "Localo dostarczył agregaty miejsc, fraz, profilu firmy w Google, konkurencji "
+                "i recenzji. WILQ może użyć ich do lokalnego sprawdzenia, ale nadal "
+                "blokuje zadania lokalne, zapis zmian i obietnicę wzrostu widoczności "
+                "bez osobnej akcji i dowodu efektu."
             )
         return (
-            "Localo dostarczył typed agregaty widoczności, miejsc, fraz i recenzji. "
-            "WILQ może użyć ich do lokalnego review, ale nadal blokuje GBP, "
-            "konkurencję, write path i claim o wzroście widoczności bez osobnych "
-            "kontraktów."
+            "Localo dostarczył agregaty widoczności, miejsc, fraz i recenzji. "
+            "WILQ może użyć ich do lokalnego sprawdzenia, ale nadal blokuje profil "
+            "firmy w Google, konkurencję, zapis zmian i obietnicę wzrostu "
+            "widoczności bez osobnych danych."
         )
     return (
         "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. "
-        "Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani "
-        "recenzji, więc WILQ blokuje claimy bez typed visibility facts."
+        "Sam dostęp do Localo nie jest jeszcze dowodem rankingów, profilu firmy "
+        "w Google, konkurencji ani recenzji, więc WILQ blokuje obietnice bez "
+        "danych widoczności."
     )
 
 
@@ -220,16 +221,17 @@ def _operator_summary_next_step(
             and "competitor_visibility" not in missing_contracts
         ):
             return (
-                "Przejrzyj agregaty Localo: miejsca, frazy, GBP, konkurencję "
-                "i recenzje. Local tasks i działania write zostaw zablokowane."
+                "Przejrzyj agregaty Localo: miejsca, frazy, profil firmy w Google, konkurencję "
+                "i recenzje. Zadania lokalne i zapis zmian zostaw zablokowane."
             )
         return (
             "Przejrzyj agregaty Localo: miejsca, frazy, średnią widoczność i "
-            "recenzje. Konkurencję, GBP i działania write zostaw zablokowane."
+            "recenzje. Konkurencję, profil firmy w Google i zapis zmian zostaw zablokowane."
         )
     return (
         "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań "
-        "SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts."
+        "SEO ani zmian w profilu firmy w Google, dopóki odczyt danych Localo "
+        "nie dostarczy danych widoczności."
     )
 
 
@@ -294,8 +296,8 @@ def _access_probe(
             access_token_present=access_token_present,
             evidence_ids=evidence_ids,
             summary=(
-                "Localo MCP initialize zwrócił 200. To potwierdza dostęp WILQ do MCP, "
-                "ale nie jest jeszcze dowodem rankingów, GBP ani konkurencji."
+                "Localo potwierdził dostęp do odczytu danych. To nadal nie jest "
+                "dowód rankingów, profilu firmy w Google ani konkurencji."
             ),
         )
 
@@ -304,7 +306,7 @@ def _access_probe(
         ConnectorRefreshStatus.failed,
     }
     if connector_missing or has_blocked_refresh:
-        missing = ", ".join(connector_missing) if connector_missing else "Localo MCP access"
+        missing = ", ".join(connector_missing) if connector_missing else "dostęp Localo"
         return LocaloAccessProbe(
             status="access_blocked",
             source_run_id=run.id if run else None,
@@ -328,8 +330,8 @@ def _access_probe(
         access_token_present=access_token_present,
         evidence_ids=evidence_ids,
         summary=(
-            "WILQ nie ma świeżego Localo MCP initialize proof. To jest stan "
-            "niepewny, więc lokalne rankingi i GBP pozostają zablokowane."
+            "WILQ nie ma świeżego potwierdzenia dostępu Localo. To jest stan "
+            "niepewny, więc lokalne rankingi i profil firmy w Google pozostają zablokowane."
         ),
     )
 
@@ -342,26 +344,26 @@ def _localo_sections(
     access_ready = access_probe.status == "access_ready"
     access_section = LocaloDiagnosticSection(
         id="localo_access_status",
-        title="Localo: status dostępu MCP",
+        title="Localo: status dostępu do danych",
         status="ready" if access_ready else "blocked",
         summary=(
-            "Dostęp MCP jest gotowy; initialize proof i źródłowe evidence IDs "
-            "są dostępne w tym widoku."
+            "Dostęp do danych Localo jest gotowy; techniczne potwierdzenie "
+            "i dowody są dostępne w szczegółach."
             if access_ready
             else access_probe.summary
         ),
         diagnosis=(
-            "Dostęp MCP pozwala WILQ rozmawiać z Localo jako adapterem. Sam "
-            "initialize nie mówi jeszcze nic o pozycjach lokalnych, profilu GBP "
-            "ani konkurencji."
+            "Dostęp do Localo pozwala WILQ pobierać dane ze źródła. Sam dostęp "
+            "nie mówi jeszcze nic o pozycjach lokalnych, profilu firmy w Google ani konkurencji."
             if access_ready
-            else "Bez działającego Localo access WILQ nie może pobierać lokalnego evidence."
+            else "Bez działającego dostępu Localo WILQ nie może pobierać lokalnych dowodów."
         ),
         next_step=(
             "Nie pokazuj Localo jako zadania dziennego. Użyj tego widoku jako "
-            "statusu źródła i dodaj ranking/GBP read contract przed rekomendacjami."
+            "statusu źródła i dodaj dane rankingów oraz profilu firmy w Google "
+            "przed rekomendacjami."
             if access_ready
-            else "Dokończ Localo OAuth authorization_code + PKCE i wykonaj vendor_read."
+            else "Dokończ dostęp Localo i wykonaj odczyt danych."
         ),
         source_connectors=[LOCALO_CONNECTOR_ID],
         evidence_ids=access_probe.evidence_ids,
@@ -376,31 +378,34 @@ def _localo_sections(
     visibility_action_ids = _localo_visibility_action_ids(visibility_facts)
     visibility_section = LocaloDiagnosticSection(
         id="localo_visibility_contract",
-        title="Localo: ranking/GBP evidence",
+        title="Localo: dane rankingów i profilu firmy w Google",
         status="ready" if visibility_facts else "missing",
         summary=(
             (
-                f"WILQ ma {len(visibility_facts)} Localo aggregate facts dla kontraktów: "
-                f"{', '.join(present_contracts)}. Nadal brakuje: "
-                f"{', '.join(missing_contracts) or 'brak'}."
+                f"WILQ ma {len(visibility_facts)} agregatów Localo dla danych: "
+                f"{_localo_contracts_phrase(present_contracts)}. Nadal brakuje: "
+                f"{_localo_contracts_phrase(missing_contracts) if missing_contracts else 'brak'}."
             )
             if visibility_facts
-            else "WILQ nie ma jeszcze rankingów, GBP, competitor visibility ani reviews z Localo."
+            else (
+                "WILQ nie ma jeszcze rankingów, danych profilu firmy w Google, "
+                "widoczności konkurencji ani recenzji z Localo."
+            )
         ),
         diagnosis=(
-            "Localo facts wspierają tylko wskazane kontrakty. WILQ nie rozszerza ich "
-            "na brakujące kontrakty, write path ani poprawę widoczności bez "
-            "osobnego evidence."
+            "Dane Localo wspierają tylko wskazane obszary. WILQ nie rozszerza ich "
+            "na brakujące dane, zapis zmian ani poprawę widoczności bez "
+            "osobnych dowodów."
             if visibility_facts
-            else "Brak tych facts oznacza brak lokalnej diagnozy marketingowej, nie brak problemu."
+            else "Brak tych danych oznacza brak lokalnej diagnozy marketingowej, nie brak problemu."
         ),
         next_step=(
             "Przejrzyj agregaty miejsc, fraz i recenzji. Claimy z brakujących "
-            "kontraktów zostaw zablokowane."
+            "danych zostaw zablokowane."
             if visibility_facts
             else (
-                "Zbuduj Localo read contract dla rankings/GBP/competitors/reviews "
-                "zanim WILQ zaproponuje lokalne działania."
+                "Dodaj odczyt rankingów, profilu firmy w Google, konkurencji "
+                "i recenzji zanim WILQ zaproponuje lokalne działania."
             )
         ),
         source_connectors=[LOCALO_CONNECTOR_ID],
@@ -415,24 +420,24 @@ def _localo_sections(
 
     safety_section = LocaloDiagnosticSection(
         id="localo_action_safety",
-        title="Bezpieczeństwo działań Localo/GBP",
+        title="Bezpieczeństwo działań Localo i profilu firmy w Google",
         status="blocked" if not visibility_facts else "ready",
         summary=(
-            "Publiczne działania GBP, posty i zmiany profilu wymagają osobnych ActionObjectów, "
-            "podglądu akcji, walidacji i audytu."
+            "Publiczne działania w profilu firmy w Google, posty i zmiany profilu "
+            "wymagają osobnych akcji, podglądu zmian, sprawdzenia i audytu."
         ),
         diagnosis=(
-            "WILQ może raportować stan dostępu albo przygotować przyszły review. Nie może "
-            "twierdzić poprawy widoczności lokalnej bez ranking/GBP evidence."
+            "WILQ może raportować stan dostępu albo przygotować przyszłe sprawdzenie. Nie może "
+            "twierdzić poprawy widoczności lokalnej bez danych rankingów i profilu firmy w Google."
         ),
-        next_step="Zostaw ścieżkę zapisu zablokowaną do czasu typed Localo ActionObject.",
+        next_step="Zostaw ścieżkę zapisu zablokowaną do czasu osobnej akcji Localo.",
         source_connectors=[LOCALO_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=[],
         blocked_claims=[
-            "GBP post published",
-            "profile edit applied",
-            "local visibility uplift",
+            "publikacja posta w profilu firmy w Google",
+            "zmiana profilu firmy w Google",
+            "poprawa widoczności lokalnej",
         ],
         risk=ActionRisk.medium,
     )
@@ -456,17 +461,18 @@ def _localo_decision_queue(
                 status="ready",
                 title="Przejrzyj agregaty widoczności lokalnej z Localo",
                 summary=(
-                    f"WILQ ma {len(visibility_facts)} Localo aggregate facts: "
-                    f"{', '.join(present_contracts)}."
+                    f"WILQ ma {len(visibility_facts)} agregatów Localo: "
+                    f"{_localo_contracts_phrase(present_contracts)}."
                 ),
                 rationale=(
-                    "Localo dostarczył read-only agregaty dla miejsc, monitorowanych fraz "
-                    "i obsługiwanych kontraktów widoczności. To pozwala na review, "
-                    "ale nie na claim o poprawie widoczności ani działania write."
+                    "Localo dostarczył agregaty dla miejsc, monitorowanych fraz "
+                    "i obsługiwanych danych widoczności. To pozwala na sprawdzenie, "
+                    "ale nie na obietnicę poprawy widoczności ani zapis zmian."
                 ),
                 next_step=(
-                    "Sprawdź średnią widoczność, pozycje grid, GBP, konkurencję "
-                    "i stan recenzji. Local tasks/write path zostaw zablokowane."
+                    "Sprawdź średnią widoczność, pozycje w siatce lokalnej, profil firmy "
+                    "w Google, konkurencję i stan recenzji. Zadania lokalne i zapis zmian "
+                    "zostaw zablokowane."
                 ),
                 access_status=access_probe.status,
                 priority=20,
@@ -501,25 +507,25 @@ def _localo_decision_queue(
                 id="localo_access_ready_wait_for_visibility_facts",
                 decision_type="access_ready_wait_for_visibility_facts",
                 status="ready",
-                title="Localo access działa; brakuje ranking/GBP facts",
+                title="Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google",
                 summary=(
-                    "MCP initialize=200 potwierdza dostęp. WILQ nie ma jeszcze "
-                    "lokalnych rankingów, GBP, konkurencji ani reviews."
+                    "Localo potwierdził dostęp do odczytu danych. WILQ nie ma jeszcze "
+                    "lokalnych rankingów, danych profilu firmy w Google, konkurencji ani recenzji."
                 ),
                 rationale=(
-                    "To jest gotowość adaptera, nie diagnoza lokalnej widoczności. "
+                    "To jest gotowość dostępu do Localo, nie diagnoza lokalnej widoczności. "
                     "Marketer nie powinien traktować tego jako zadania optymalizacyjnego."
                 ),
                 next_step=(
-                    "Zostaw Localo jako status źródła i dodaj Localo read contract "
-                    "dla rankings/GBP/competitors/reviews."
+                    "Zostaw Localo jako status źródła i dodaj odczyt danych rankingów, "
+                    "profilu firmy w Google, konkurencji i recenzji."
                 ),
                 access_status=access_probe.status,
                 priority=30,
                 metric_tiles={
-                    "dostęp MCP": 1,
-                    "fakty Localo": 0,
-                    "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS),
+                    "dostęp Localo": 1,
+                    "dane Localo": 0,
+                    "brakujące dane": len(LOCALO_VISIBILITY_READ_CONTRACTS),
                 },
                 allowed_evidence=["mcp_initialize", "oauth_metadata", "access_token_presence"],
                 missing_read_contracts=LOCALO_VISIBILITY_READ_CONTRACTS,
@@ -538,18 +544,18 @@ def _localo_decision_queue(
             id="localo_fix_access_before_visibility_review",
             decision_type="fix_access",
             status="blocked",
-            title="Dokończ Localo access przed lokalnymi rekomendacjami",
+            title="Dokończ dostęp Localo przed lokalnymi rekomendacjami",
             summary=access_probe.summary,
             rationale=(
-                "Bez działającego Localo access WILQ nie może pobrać rankingów, "
-                "GBP ani competitor evidence."
+                "Bez działającego dostępu Localo WILQ nie może pobrać rankingów, "
+                "danych profilu firmy w Google ani dowodów o konkurencji."
             ),
-            next_step="Wykonaj Localo OAuth helper i vendor_read, potem wróć do /localo.",
+            next_step="Dokończ dostęp Localo i odczyt danych, potem wróć do widoku Localo.",
             access_status=access_probe.status,
             priority=5,
             metric_tiles={
-                "dostęp MCP": 0,
-                "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS) + 1,
+                "dostęp Localo": 0,
+                "brakujące dane": len(LOCALO_VISIBILITY_READ_CONTRACTS) + 1,
             },
             allowed_evidence=[],
             missing_read_contracts=["mcp_initialize", *LOCALO_VISIBILITY_READ_CONTRACTS],
@@ -597,48 +603,49 @@ def _blocked_visibility_decision(
         decision_type="block_visibility_claims",
         status="blocked",
         title=(
-            f"Blokuj {missing_contracts_phrase} bez pełnych kontraktów Localo"
+            f"Blokuj {missing_contracts_phrase} bez pełnych danych Localo"
             if has_partial_visibility_facts
-            else "Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts"
+            else "Nie wyciągaj wniosków o lokalnej widoczności bez danych Localo"
         ),
         summary=(
             (
-                "WILQ ma częściowe agregaty Localo, ale blokuje claimy zależne od "
-                f"brakujących kontraktów: {missing_contracts_phrase} i write path."
+                "WILQ ma częściowe agregaty Localo, ale blokuje obietnice zależne od "
+                f"brakujących danych: {missing_contracts_phrase} i zapis zmian."
             )
             if has_partial_visibility_facts
             else (
-                "WILQ blokuje claimy o rankingach, GBP, konkurencji, reviews i wzroście "
-                "widoczności, dopóki Localo read contract nie dostarczy tych facts."
+                "WILQ blokuje obietnice o rankingach, profilu firmy w Google, "
+                "konkurencji, recenzjach i wzroście widoczności, dopóki Localo "
+                "nie dostarczy tych danych."
             )
         ),
         rationale=(
             (
-                "Częściowe facts są wystarczające do review agregatów, ale nie do "
+                "Częściowe dane są wystarczające do sprawdzenia agregatów, ale nie do "
                 "rozszerzania ich na nieobsługiwane obszary Localo."
             )
             if has_partial_visibility_facts
             else (
-                "Access/readiness nie jest metryką marketingową. To chroni dashboard i "
+                "Dostęp do źródła nie jest metryką marketingową. To chroni dashboard i "
                 "skille przed udawaniem lokalnego SEO insightu."
             )
         ),
         next_step=(
             (
-                "Przejrzyj dostępne agregaty Localo, a brakujące kontrakty "
-                f"{missing_contracts_phrase} dodaj przed szerszymi claimami lub write path."
+                "Przejrzyj dostępne agregaty Localo, a brakujące dane "
+                f"{missing_contracts_phrase} dodaj przed szerszymi obietnicami lub zapisem zmian."
             )
             if has_partial_visibility_facts
             else (
-                "Najpierw dodaj typed Localo read contract; dopiero potem buduj "
-                "lokalne ActionObjecty."
+                "Najpierw dodaj odczyt danych Localo; dopiero potem buduj "
+                "lokalne akcje do sprawdzenia."
             )
         ),
         access_status=access_probe.status,
         priority=10,
         metric_tiles={
-            "blokady claimów": len(effective_blocked_claims),
-            "braki kontraktu": len(effective_missing_contracts),
+            "blokady obietnic": len(effective_blocked_claims),
+            "brakujące dane": len(effective_missing_contracts),
         },
         allowed_evidence=["mcp_initialize"] if access_probe.status == "access_ready" else [],
         missing_read_contracts=effective_missing_contracts,
@@ -703,7 +710,7 @@ def _localo_contract_evidence_kind(contract: str) -> str:
     labels = {
         "place_inventory": "miejsca i aktywne profile",
         "local_rankings": "agregaty fraz, widoczności i pozycji grid",
-        "gbp_visibility": "widoczność Google Business Profile",
+        "gbp_visibility": "widoczność profilu firmy w Google",
         "competitor_visibility": "porównanie lokalnych konkurentów",
         "reviews": "recenzje i odpowiedzi",
         "local_tasks": "lokalne zadania do wykonania",
@@ -711,14 +718,31 @@ def _localo_contract_evidence_kind(contract: str) -> str:
     return labels.get(contract, contract)
 
 
+def _localo_contracts_phrase(contracts: list[str]) -> str:
+    labels = {
+        "place_inventory": "miejsca i profile",
+        "local_rankings": "lokalne pozycje i frazy",
+        "gbp_visibility": "profil firmy w Google",
+        "competitor_visibility": "lokalni konkurenci",
+        "reviews": "opinie",
+        "local_tasks": "zadania lokalne",
+    }
+    values = [labels.get(contract, contract) for contract in contracts]
+    if not values:
+        return "brak"
+    if len(values) == 1:
+        return values[0]
+    return f"{', '.join(values[:-1])} i {values[-1]}"
+
+
 def _localo_missing_contracts_phrase(contracts: list[str]) -> str:
     labels = {
-        "place_inventory": "place inventory",
+        "place_inventory": "miejsca i profile",
         "local_rankings": "lokalne rankingi",
-        "gbp_visibility": "GBP",
+        "gbp_visibility": "profil firmy w Google",
         "competitor_visibility": "konkurencję",
         "reviews": "recenzje",
-        "local_tasks": "local tasks",
+        "local_tasks": "zadania lokalne",
     }
     values = [labels.get(contract, contract) for contract in contracts]
     if not values:
@@ -730,29 +754,39 @@ def _localo_missing_contracts_phrase(contracts: list[str]) -> str:
 
 def _blocked_claims_for_contract(contract: str) -> list[str]:
     claims_by_contract = {
-        "local_rankings": ["local ranking", "local visibility uplift"],
-        "gbp_visibility": ["GBP performance", "GBP write", "local visibility uplift"],
-        "competitor_visibility": ["competitor visibility", "local visibility uplift"],
-        "reviews": ["review velocity", "local visibility uplift"],
-        "local_tasks": ["local task completed", "GBP write", "local visibility uplift"],
+        "local_rankings": ["lokalne rankingi", "poprawa widoczności lokalnej"],
+        "gbp_visibility": [
+            "wyniki profilu firmy w Google",
+            "zapis zmian w profilu firmy",
+            "poprawa widoczności lokalnej",
+        ],
+        "competitor_visibility": ["widoczności konkurencji", "poprawa widoczności lokalnej"],
+        "reviews": ["tempo nowych opinii", "poprawa widoczności lokalnej"],
+        "local_tasks": [
+            "ukończone zadanie lokalne",
+            "zapis zmian w profilu firmy",
+            "poprawa widoczności lokalnej",
+        ],
     }
     return claims_by_contract.get(contract, [])
 
 
 def _localo_contract_next_step(contract: str, *, ready: bool) -> str:
     if ready:
-        return "Użyj tego kontraktu jako evidence dla Localo review."
+        return "Użyj tych danych jako dowodu dla sprawdzenia Localo."
     next_steps = {
-        "gbp_visibility": "Dodaj read-only Localo/GBP visibility contract przed oceną GBP.",
-        "competitor_visibility": (
-            "Dodaj read-only competitor visibility contract przed porównaniem konkurencji."
+        "gbp_visibility": (
+            "Dodaj odczyt widoczności profilu firmy w Google przed oceną tego profilu."
         ),
-        "local_tasks": "Dodaj read-only local tasks contract przed planem zadań lokalnych.",
-        "local_rankings": "Dodaj read-only local rankings contract przed claimami o pozycjach.",
-        "reviews": "Dodaj read-only reviews contract przed oceną velocity recenzji.",
-        "place_inventory": "Dodaj read-only place inventory contract przed oceną profili.",
+        "competitor_visibility": (
+            "Dodaj odczyt widoczności konkurencji przed porównaniem konkurencji."
+        ),
+        "local_tasks": "Dodaj odczyt zadań lokalnych przed planem zadań lokalnych.",
+        "local_rankings": "Dodaj odczyt lokalnych rankingów przed obietnicami o pozycjach.",
+        "reviews": "Dodaj odczyt recenzji przed oceną tempa recenzji.",
+        "place_inventory": "Dodaj odczyt miejsca i profile przed oceną profili.",
     }
-    return next_steps.get(contract, "Dodaj typed Localo read contract przed claimami.")
+    return next_steps.get(contract, "Dodaj odczyt danych Localo przed obietnicami.")
 
 
 def _missing_visibility_contracts(present_contracts: list[str]) -> list[str]:
@@ -762,18 +796,18 @@ def _missing_visibility_contracts(present_contracts: list[str]) -> list[str]:
 
 def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
     claims_by_contract = {
-        "local_rankings": "local ranking",
-        "gbp_visibility": "GBP performance",
-        "competitor_visibility": "competitor visibility",
-        "reviews": "review velocity",
-        "local_tasks": "local task completed",
+        "local_rankings": "lokalne rankingi",
+        "gbp_visibility": "wyniki profilu firmy w Google",
+        "competitor_visibility": "widoczności konkurencji",
+        "reviews": "tempo nowych opinii",
+        "local_tasks": "ukończone zadanie lokalne",
     }
     claims = [
         claim
         for contract, claim in claims_by_contract.items()
         if contract in missing_contracts
     ]
-    claims.extend(["GBP write", "local visibility uplift"])
+    claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
     return _unique(claims)
 
 
@@ -788,7 +822,7 @@ def _localo_visibility_tiles(
     missing_contracts: list[str],
 ) -> dict[str, int | float | str]:
     return {
-        "fakty Localo": len(visibility_facts),
+        "dane Localo": len(visibility_facts),
         "miejsca": _int_fact_value(visibility_facts, "localo_active_place_count"),
         "frazy": _int_fact_value(visibility_facts, "localo_tracked_keyword_count"),
         "średnia widoczność": _float_fact_value(
@@ -796,7 +830,7 @@ def _localo_visibility_tiles(
             "localo_avg_visibility_current",
         ),
         "recenzje": _int_fact_value(visibility_facts, "localo_reviews_count"),
-        "braki kontraktu": len(missing_contracts),
+        "brakujące dane": len(missing_contracts),
     }
 
 

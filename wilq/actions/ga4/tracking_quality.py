@@ -40,15 +40,15 @@ def validate_ga4_tracking_quality_payload(payload: dict[str, Any]) -> list[str]:
             errors.append("GA4 tracking payload_preview items must be objects.")
             continue
         if item.get("preview_contract") != GA4_TRACKING_QUALITY_PREVIEW_CONTRACT:
-            errors.append("GA4 tracking payload preview_contract is invalid.")
+            errors.append("GA4 tracking podgląd zmian_contract is invalid.")
         if not isinstance(item.get("tracking_dimension_gaps"), list):
             errors.append("GA4 tracking payload requires tracking_dimension_gaps list.")
         if item.get("apply_allowed") is not False:
-            errors.append("GA4 tracking payload preview must keep apply_allowed=false.")
+            errors.append("GA4 tracking podgląd zmian must keep apply_allowed=false.")
         if item.get("api_mutation_ready") is not False:
-            errors.append("GA4 tracking payload preview must keep api_mutation_ready=false.")
+            errors.append("GA4 tracking podgląd zmian must keep api_mutation_ready=false.")
         if item.get("destructive") is not False:
-            errors.append("GA4 tracking payload preview must keep destructive=false.")
+            errors.append("GA4 tracking podgląd zmian must keep destructive=false.")
     return errors
 
 
@@ -131,11 +131,11 @@ def _metric_snapshot(facts: list[MetricFact]) -> dict[str, float | int | str]:
 def _reason(gaps: Sequence[str]) -> str:
     if gaps:
         return (
-            "Review-only checklist dla brakujących wymiarów GA4. To blokuje "
-            "wnioski o konwersjach i jakości kampanii do czasu walidacji pomiaru."
+            "Checklist brakujących wymiarów GA4 do sprawdzenia w WILQ. To blokuje "
+            "wnioski o konwersjach i jakości kampanii do czasu sprawdzenia pomiaru."
         )
     return (
-        "Review-only checklist dla landing/source/campaign quality. To pozwala "
+        "Checklist jakości landing page, źródło i kampania do sprawdzenia w WILQ. To pozwala "
         "sprawdzić message match, ale nie odblokowuje claimów o ROAS ani revenue."
     )
 

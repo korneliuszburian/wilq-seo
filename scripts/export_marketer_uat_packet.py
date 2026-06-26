@@ -7,7 +7,6 @@ from typing import Any
 from urllib.error import URLError
 from urllib.request import urlopen
 
-
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
 
 ENDPOINTS = {
@@ -42,14 +41,14 @@ UAT_ROUTE_ORDER = [
         "key": "content",
         "label": "Content Planner",
         "route": "/content-planner",
-        "operator_task": "Wybierz jeden temat refresh/merge dla nowej strony.",
+        "operator_task": "Wybierz jeden istniejący temat do zachowania, odświeżenia albo scalenia.",
         "pass_condition": (
-            "Marketer widzi source evidence, target context, gates, H1/H2/FAQ/CTA, "
-            "missing evidence i forbidden claims."
+            "Marketer widzi publiczny URL na ekologus.pl, dowody z GSC/WordPress/Ahrefs, "
+            "bramki jakości, H1/H2/FAQ/CTA, brakujące dowody i zakazane obietnice."
         ),
         "fail_condition": (
             "Marketer uważa, że WILQ już wygenerował publish-ready artykuł albo "
-            "że dev site jest źródłem historycznej skuteczności."
+            "że dev preview jest źródłem historycznej skuteczności albo finalnym URL-em SEO."
         ),
     },
     {
@@ -72,7 +71,10 @@ UAT_ROUTE_ORDER = [
             "Marketer rozumie, że `(not set)` to problem tracking/attribution, "
             "nie dowód złej kampanii albo złego landingu."
         ),
-        "fail_condition": "Marketer interpretuje tracking gap jako rekomendację contentową lub Adsową.",
+        "fail_condition": (
+            "Marketer interpretuje tracking gap jako rekomendację contentową "
+            "lub Adsową."
+        ),
     },
 ]
 
@@ -80,7 +82,10 @@ FINAL_QUESTIONS = [
     "Czy wiesz, co zrobić jako następny krok?",
     "Który ekran dał Ci największy realny zysk?",
     "Gdzie musiałeś zgadywać znaczenie statusu albo pola?",
-    "Czy Content Planner oszczędza Ci czas przy planowaniu treści na nową stronę?",
+    (
+        "Czy Content Planner oszczędza Ci czas przy decyzji, co zachować, "
+        "odświeżyć albo scalić na ekologus.pl?"
+    ),
     "Ile czasu realnie oszczędza ta ścieżka: 0, 15, 30, 60+ minut?",
 ]
 
@@ -88,7 +93,7 @@ FINAL_QUESTIONS = [
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Export a live, read-only Ekologus marketer UAT packet from WILQ API. "
+            "Export a live Ekologus marketer UAT packet from WILQ API. "
             "The packet records what to test and what evidence/blockers are visible; "
             "it does not claim that UAT has happened."
         )
@@ -178,8 +183,9 @@ def build_marketer_uat_packet(
         "safety_note": (
             "Ten pakiet nie jest dowodem wykonanego UAT. Służy do zebrania "
             "realnego feedbacku marketera i zamiany niezrozumiałych miejsc na "
-            "zadania. Nie odblokowuje publish/apply, Ads optimizera, feed repair, "
-            "Localo uplift, CPA/ROAS ani revenue claims."
+            "zadania. Nie odblokowuje publikacji ani zapisu zmian, automatycznej "
+            "optymalizacji Ads, naprawy feedu, obietnic wzrostu Localo, CPA/ROAS "
+            "ani twierdzeń o przychodach."
         ),
     }
 
@@ -228,25 +234,25 @@ def live_snapshot_for(key: str, payload: dict[str, Any]) -> dict[str, Any]:
         }
     if key == "content":
         summary = _mapping(payload.get("operator_summary"))
+        decisions = _list(payload.get("decision_queue"))
         return {
-            "target_site_host": summary.get("target_site_host"),
-            "target_site_mapping_status": summary.get("target_site_mapping_status"),
-            "target_site_mapping_review_count": summary.get(
-                "target_site_mapping_review_count"
-            ),
-            "mapping_review_inputs": [
+            "confirmed_wordpress_count": summary.get("confirmed_wordpress_count"),
+            "missing_wordpress_count": summary.get("missing_wordpress_count"),
+            "current_site_match_count": summary.get("current_site_match_count"),
+            "decision_type_labels": summary.get("decision_type_labels"),
+            "top_decisions": [
                 {
-                    "candidate_id": item.get("candidate_id"),
+                    "id": item.get("id"),
                     "title": item.get("title"),
-                    "source_url": item.get("source_url"),
-                    "mapping_review_status": item.get("mapping_review_status"),
-                    "candidate_target_urls": item.get("candidate_target_urls"),
-                    "blocked_outputs": item.get("blocked_outputs"),
+                    "decision_type": item.get("decision_type"),
+                    "source_public_url": item.get("source_public_url"),
+                    "intended_final_url": item.get("intended_final_url"),
+                    "final_canonical_url": item.get("final_canonical_url"),
+                    "preview_url": item.get("preview_url"),
+                    "next_step": item.get("next_step"),
+                    "blocked_claims": item.get("blocked_claims"),
                 }
-                for item in (
-                    _mapping(item)
-                    for item in _list(summary.get("target_site_mapping_review_inputs"))[:5]
-                )
+                for item in (_mapping(item) for item in decisions[:5])
             ],
             "blocked_claims": _list(payload.get("blocked_claims")),
             "action_ids": _list(payload.get("action_ids")),

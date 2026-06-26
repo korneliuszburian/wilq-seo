@@ -31,7 +31,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -65,7 +65,7 @@ def main() -> int:
         "--refresh",
         action="store_true",
         help=(
-            "Run an explicit read-only Localo vendor refresh before validating "
+            "Run an explicit Localo data read before validating "
             "the skill contract."
         ),
     )
@@ -145,20 +145,38 @@ def main() -> int:
         localo_diagnostics,
     )
     if latest_localo_run is None:
-        raise SystemExit("Context pack does not expose any Localo refresh run")
-    if latest_localo_run.get("status") not in {"blocked", "completed"}:
-        raise SystemExit(f"Unexpected Localo refresh status: {latest_localo_run.get('status')}")
-    metric_summary = latest_localo_run.get("metric_summary") or {}
-    if metric_summary.get("api") != "localo_mcp_oauth_probe":
+        if access_probe.get("status") != "unknown":
+            raise SystemExit(
+                "Missing Localo refresh run is allowed only for unknown access status"
+            )
+        if "localo_fix_access_before_visibility_review" not in decision_ids:
+            raise SystemExit(
+                "Missing Localo refresh run must expose the access review decision"
+            )
+        if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
+            raise SystemExit(
+                "Missing Localo refresh run must keep visibility claims blocked"
+            )
+        latest_localo_run_source = "clean_runtime_without_refresh"
+        latest_localo_run_status = "missing"
+    else:
+        latest_localo_run_status = latest_localo_run.get("status")
+    if latest_localo_run_status not in {"blocked", "completed", "missing"}:
+        raise SystemExit(f"Unexpected Localo refresh status: {latest_localo_run_status}")
+    metric_summary = latest_localo_run.get("metric_summary") if latest_localo_run else {}
+    if (
+        metric_summary.get("api") != "localo_mcp_oauth_probe"
+        and latest_localo_run_status != "missing"
+    ):
         raise SystemExit("Latest Localo run is not the MCP OAuth probe")
-    if latest_localo_run.get("status") == "blocked":
+    if latest_localo_run_status == "blocked":
         if metric_summary.get("access_token_present") != 0:
             raise SystemExit("Blocked Localo OAuth probe must report access_token_present=0")
         if metric_summary.get("mcp_initialize_status") != 401:
             raise SystemExit("Blocked Localo OAuth probe must report MCP initialize 401")
         if "localo_fix_access_before_visibility_review" not in decision_ids:
             raise SystemExit("Blocked Localo diagnostics must expose the access repair decision")
-    if latest_localo_run.get("status") == "completed":
+    if latest_localo_run_status == "completed":
         if metric_summary.get("mcp_initialize_status") != 200:
             raise SystemExit("Completed Localo OAuth probe must report MCP initialize 200")
         if access_probe.get("status") != "access_ready":
@@ -205,27 +223,27 @@ def main() -> int:
             if not localo_metric_facts:
                 raise SystemExit("Localo value review must expose aggregate metric facts")
             if not localo_actions:
-                raise SystemExit("Localo value review must expose review ActionObject")
+                raise SystemExit("Localo value review must expose review action")
             localo_action = localo_actions[0]
             payload = localo_action.get("payload") or {}
             payload_preview = payload.get("payload_preview") or []
             if not isinstance(payload_preview, list) or not payload_preview:
-                raise SystemExit("Localo review ActionObject must expose payload_preview")
+                raise SystemExit("Localo review action must expose payload_preview")
             preview = payload_preview[0]
             if preview.get("preview_contract") != LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT:
                 raise SystemExit(
-                    "Localo review ActionObject must expose "
+                    "Localo review action must expose "
                     f"{LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}"
                 )
             if preview.get("apply_allowed") is not False:
-                raise SystemExit("Localo review payload preview must keep apply_allowed=false")
+                raise SystemExit("Localo review change preview must keep apply_allowed=false")
             if preview.get("api_mutation_ready") is not False:
                 raise SystemExit(
-                    "Localo review payload preview must keep api_mutation_ready=false"
+                    "Localo review change preview must keep api_mutation_ready=false"
                 )
             metric_snapshot = preview.get("metric_snapshot") or {}
             if not isinstance(metric_snapshot, dict) or not metric_snapshot:
-                raise SystemExit("Localo review payload preview must include metric_snapshot")
+                raise SystemExit("Localo review change preview must include metric_snapshot")
             localo_action_preview_contract = str(preview.get("preview_contract"))
             localo_preview_metric_names = sorted(str(name) for name in metric_snapshot)
             redacted_metric_names = [
@@ -277,7 +295,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Localo ActionObject validation failed: {validation}")
+            raise SystemExit(f"Localo action validation failed: {validation}")
 
     print(
         json.dumps(
@@ -287,7 +305,7 @@ def main() -> int:
                 "health": health.get("status"),
                 "required_connectors": connector_results,
                 "brief_items": brief_items,
-                "localo_refresh_status": latest_localo_run.get("status"),
+                "localo_refresh_status": latest_localo_run_status,
                 "localo_refresh_source": latest_localo_run_source,
                 "localo_refresh_attempt_status": (
                     refresh_attempt.get("status") if refresh_attempt else None

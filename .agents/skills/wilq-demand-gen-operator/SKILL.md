@@ -1,6 +1,6 @@
 ---
 name: wilq-demand-gen-operator
-description: Obsługuje gotowość Demand Gen, jakość kreacji i workflow Ads-to-GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "czy Demand Gen ma sens?", "przygotuj migrację Discovery/Demand Gen", "sprawdź jakość kreacji i ruchu", "czy kampania dowozi jakościowy ruch?", albo pyta o plan Demand Gen, gotowość creative/asset, jakość ruchu kampanii, GA4 cross-checks lub bezpiecznych kandydatów migracji. Musi zachować evidence i ActionObject validation gates.
+description: Obsługuje gotowość Demand Gen, jakość kreacji i workflow Ads-to-GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "czy Demand Gen ma sens?", "przygotuj przejście Discovery/Demand Gen", "sprawdź jakość kreacji i ruchu", "czy kampania dowozi jakościowy ruch?", albo pyta o plan Demand Gen, gotowość creative/asset, jakość ruchu kampanii, GA4 cross-checks lub bezpiecznych akcji do sprawdzenia przejścia. Musi zachować evidence i bramki sprawdzenia w WILQ.
 ---
 
 # WILQ Demand Gen Operator
@@ -19,7 +19,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Czy Demand Gen ma sens dla Ekologus na podstawie obecnych danych?"
 - "Sprawdź jakość ruchu z kampanii i dopasowanie landingów."
-- "Przygotuj migration/readiness brief bez apply."
+- "Przygotuj brief gotowości przejścia bez zapisu zmian."
 - "Jakie assets/kreacje wymagają poprawy według evidence?"
 
 </triggers>
@@ -29,11 +29,11 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 <workflow>
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
-2. Uruchom `uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
-3. Wywołaj `GET /api/demand-gen/diagnostics` przed podsumowaniem metryk, opportunities lub kandydatów działań.
+2. Uruchom `uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
+3. Wywołaj `GET /api/demand-gen/diagnostics` przed podsumowaniem metryk, opportunities lub akcji do sprawdzenia.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-demand-gen-operator"}` i potwierdź, że osadzony kontrakt Demand Gen zgadza się z endpointem.
-5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
-6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+5. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
+6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
 7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
 </workflow>
@@ -56,7 +56,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego read.
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego odczytu danych.
 
 </allowed_endpoints>
 
@@ -77,9 +77,9 @@ Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ AP
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
 
 </output_contract>
 
@@ -92,6 +92,6 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
-- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
-- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+- Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
+- Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.
 </safety_rules>

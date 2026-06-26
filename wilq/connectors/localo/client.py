@@ -120,7 +120,7 @@ def refresh_localo_visibility_summary(
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
             summary=(
-                "Localo MCP vendor read blocked by missing credential names: "
+                "Odczyt danych Localo zablokowany przez brakujące credential names: "
                 f"{', '.join(missing)}."
             ),
             errors=[f"Localo missing credential names: {', '.join(missing)}."],
@@ -154,7 +154,7 @@ def refresh_localo_visibility_summary(
             except LocaloMcpReadError as exc:
                 return VendorReadResult(
                     status=ConnectorRefreshStatus.failed,
-                    summary="Localo MCP initialize succeeded, but read-only value query failed.",
+                    summary="Dostęp Localo działa, ale odczyt danych widoczności nie przeszedł.",
                     external_call_attempted=True,
                     vendor_data_collected=False,
                     metric_summary=metric_summary,
@@ -164,9 +164,9 @@ def refresh_localo_visibility_summary(
             return VendorReadResult(
                 status=ConnectorRefreshStatus.completed,
                 summary=(
-                    "Localo MCP read completed with aggregate place, keyword visibility "
-                    "and review facts. Active places: "
-                    f"{value_summary['localo_active_place_count']}; tracked keywords: "
+                    "Odczyt danych Localo zebrał agregaty miejsc, widoczności fraz "
+                    "i opinii. Aktywne miejsca: "
+                    f"{value_summary['localo_active_place_count']}; monitorowane frazy: "
                     f"{value_summary['localo_tracked_keyword_count']}."
                 ),
                 external_call_attempted=True,
@@ -179,25 +179,25 @@ def refresh_localo_visibility_summary(
             return VendorReadResult(
                 status=ConnectorRefreshStatus.blocked,
                 summary=(
-                    "Localo MCP endpoint is reachable, but WILQ has no LOCALO_ACCESS_TOKEN. "
-                    "Localo requires OAuth authorization_code with PKCE before local visibility "
-                    "metrics can be collected."
+                    "Endpoint Localo jest osiągalny, ale WILQ nie ma LOCALO_ACCESS_TOKEN. "
+                    "Localo wymaga OAuth authorization_code z PKCE przed odczytem metryk "
+                    "lokalnej widoczności."
                 ),
                 external_call_attempted=True,
                 vendor_data_collected=False,
                 metric_summary=metric_summary,
                 errors=[
-                    "Localo MCP OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."
+                    "Localo OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."
                 ],
             )
 
         return VendorReadResult(
             status=ConnectorRefreshStatus.failed,
-            summary=f"Localo MCP initialize failed with HTTP {initialize_status}.",
+            summary=f"Test dostępu Localo zakończył się HTTP {initialize_status}.",
             external_call_attempted=True,
             vendor_data_collected=False,
             metric_summary=metric_summary,
-            errors=[f"Localo MCP initialize HTTP {initialize_status}."],
+            errors=[f"Localo access test HTTP {initialize_status}."],
         )
     finally:
         if owns_client:
@@ -344,7 +344,7 @@ def _mcp_initialized_notification(client: httpx.Client, access_token: str | None
     )
     if response.status_code not in {200, 202, 204}:
         raise LocaloMcpReadError(
-            f"Localo MCP initialized notification HTTP {response.status_code}."
+            f"Localo initialized notification HTTP {response.status_code}."
         )
 
 
@@ -491,10 +491,10 @@ def _mcp_graphql_query(
         },
     )
     if response.status_code != 200:
-        raise LocaloMcpReadError(f"Localo MCP query HTTP {response.status_code}.")
+        raise LocaloMcpReadError(f"Localo data query HTTP {response.status_code}.")
     payload = response.json()
     if isinstance(payload, dict) and payload.get("error"):
-        raise LocaloMcpReadError("Localo MCP query returned JSON-RPC error.")
+        raise LocaloMcpReadError("Localo data query returned JSON-RPC error.")
     graphql_payload = _graphql_payload_from_mcp_response(payload)
     if graphql_payload.get("errors"):
         raise LocaloMcpReadError("Localo GraphQL query returned errors.")
@@ -613,16 +613,16 @@ def _http_failure_result(exc: httpx.HTTPStatusError) -> VendorReadResult:
     status_code = exc.response.status_code
     return VendorReadResult(
         status=ConnectorRefreshStatus.failed,
-        summary=f"Localo MCP OAuth discovery failed with HTTP {status_code}.",
+        summary=f"Localo OAuth discovery failed with HTTP {status_code}.",
         external_call_attempted=True,
-        errors=[f"Localo MCP OAuth discovery HTTP {status_code}."],
+        errors=[f"Localo OAuth discovery HTTP {status_code}."],
     )
 
 
 def _transport_failure_result(exc: httpx.HTTPError) -> VendorReadResult:
     return VendorReadResult(
         status=ConnectorRefreshStatus.failed,
-        summary=f"Localo MCP OAuth discovery failed: {type(exc).__name__}.",
+        summary=f"Localo OAuth discovery failed: {type(exc).__name__}.",
         external_call_attempted=True,
-        errors=[f"Localo MCP OAuth discovery {type(exc).__name__}."],
+        errors=[f"Localo OAuth discovery {type(exc).__name__}."],
     )

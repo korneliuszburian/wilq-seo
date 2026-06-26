@@ -71,6 +71,28 @@ MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS = [
     "merchant_price_change_event_or_snapshot",
     "google_ads_or_ga4_product_performance_window",
 ]
+MERCHANT_REQUIRED_VALIDATION_LABELS = {
+    "confirm_before_after_performance_window": "potwierdź okno porównania przed/po",
+    "confirm_price_change_date": "potwierdź datę zmiany ceny",
+    "confirm_price_snapshot_history": "potwierdź historię ceny",
+    "confirm_source_of_truth_values": "potwierdź wartości ze źródła prawdy",
+    "exclude_stock_or_approval_confounders": "wyklucz wpływ stanu magazynu lub zatwierdzenia",
+    "human_confirm_before_apply": "człowiek potwierdza przed zapisem",
+    "human_review_before_action": "człowiek sprawdza przed działaniem",
+    "mutation_audit_required": "wymagany audyt zapisu",
+    "prepare_feed_fix_preview": "przygotuj podgląd zmian feedu",
+    "prepare_supplemental_feed_draft_preview": "przygotuj podgląd uzupełnienia feedu",
+    "prepare_supplemental_feed_preview_before_any_mutation": (
+        "przygotuj podgląd uzupełnienia feedu przed zapisem"
+    ),
+    "review_ads_product_status": "sprawdź status produktu z Google Ads",
+    "review_issue_type_and_attribute": "sprawdź typ problemu i atrybut",
+    "review_merchant_issue_context": "sprawdź kontekst problemu Merchant",
+    "review_product_identity_mapping": "sprawdź powiązanie produktu",
+    "review_reporting_context": "sprawdź kontekst raportowania",
+    "require_human_confirm_before_apply": "człowiek potwierdza przed zapisem",
+    "validate_change_values": "sprawdź wartości przed zapisem",
+}
 PRODUCT_JOIN_DIMENSION_KEYS = [
     "product_id",
     "item_id",
@@ -182,6 +204,14 @@ def build_merchant_diagnostics(
     price_impact_readiness = _merchant_price_impact_readiness(
         product_performance_readiness
     )
+    price_impact_readiness = price_impact_readiness.model_copy(
+        update={
+            "payload_preview": [
+                _merchant_payload_preview_with_operator_labels(preview)
+                for preview in price_impact_readiness.payload_preview
+            ]
+        }
+    )
     decision_queue = _merchant_decisions_with_product_state_review(
         decision_queue,
         product_performance_readiness,
@@ -266,8 +296,8 @@ def _merchant_freshness_assessment(
             age_hours=None,
             stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
             requires_refresh=True,
-            summary="Brak zapisanego read-only vendor_read Merchant Center.",
-            next_step="Uruchom Merchant vendor_read przed oceną aktualnego stanu feedu.",
+            summary="Brak zapisanego odczytu danych Merchant Center.",
+            next_step="Uruchom odczyt danych Merchant przed oceną aktualnego stanu feedu.",
         )
 
     completed_at = latest_refresh.completed_at or latest_refresh.started_at
@@ -285,7 +315,7 @@ def _merchant_freshness_assessment(
                 f"tylko {latest_refresh.status.value}."
             ),
             next_step=(
-                "Napraw blocker odczytu i uruchom read-only vendor_read przed "
+                "Napraw blocker odczytu i uruchom ponownie odczyt danych Merchant przed "
                 "budowaniem kolejki feedu."
             ),
         )
@@ -299,11 +329,11 @@ def _merchant_freshness_assessment(
             stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary=(
-                f"Ostatni Merchant vendor_read ma około {age_hours:.1f}h. "
+                f"Ostatni odczyt danych Merchant ma około {age_hours:.1f}h. "
                 "To wystarcza do stale review, ale nie do claimów o bieżącym stanie feedu."
             ),
             next_step=(
-                "Uruchom read-only Merchant vendor_read, jeśli pytanie dotyczy "
+                "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy "
                 "aktualnego stanu produktów."
             ),
         )
@@ -316,10 +346,10 @@ def _merchant_freshness_assessment(
         stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
         requires_refresh=False,
         summary=(
-            f"Ostatni Merchant vendor_read ma około {age_hours:.1f}h i mieści się "
+            f"Ostatni odczyt danych Merchant ma około {age_hours:.1f}h i mieści się "
             f"w progu {MERCHANT_STALE_AFTER_HOURS}h."
         ),
-        next_step="Można użyć danych do kolejki review bez dodatkowego refreshu.",
+        next_step="Można użyć danych do kolejki sprawdzenia bez dodatkowego odświeżenia.",
     )
 
 
@@ -343,12 +373,12 @@ def _merchant_unknowns(
                         "raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów."
                     ),
                     impact=(
-                        "WILQ może przygotować kolejkę review po klastrach, ale nie listę "
+                        "WILQ może przygotować kolejkę sprawdzenia po klastrach, ale nie listę "
                         "konkretnych produktów do edycji."
                     ),
                     next_step=(
                         "Dodać osobny read contract dla bezpiecznych przykładów produktów "
-                        "albo otworzyć Merchant Center podczas review."
+                        "albo otworzyć Merchant Center podczas sprawdzenia."
                     ),
                     blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
                 )
@@ -384,11 +414,11 @@ def _merchant_unknowns(
                     "tych produktów."
                 ),
                 impact=(
-                    "Można prowadzić review problemów feedu, ale nie wolno twierdzić, "
+                    "Można prowadzić przegląd problemów feedu, ale nie wolno twierdzić, "
                     "które produkty mają ROAS, przychód, koszt albo efekt naprawy."
                 ),
                 next_step=(
-                    "Dodać read-only kontrakty product performance dla Google Ads "
+                    "Dodać kontrakty odczytu product performance dla Google Ads "
                     "Shopping/PMax i GA4 item ecommerce, z jawnie wspólnym kluczem produktu."
                 ),
                 blocked_claims=product_performance_readiness.blocked_claims,
@@ -424,7 +454,7 @@ def _merchant_product_sample_readiness(
                 "Tytuły są dostępne tylko wtedy, gdy products.list enrichment je zwróci."
             ),
             next_step=(
-                "Użyj próbek do review. Dla tytułów/SKU/statusów dodaj read-only "
+                "Użyj próbek do sprawdzenia. Dla tytułów/SKU/statusów dodaj odczyt "
                 "products.list/productStatus albo reports.search product_view."
             ),
             blocked_claims=["feed write", "automatic feed edit"],
@@ -445,7 +475,7 @@ def _merchant_product_sample_readiness(
                 "zwraca product IDs, SKU ani tytułów do pracy produkt-po-produkcie."
             ),
             next_step=(
-                "Dodać osobny read-only contract przez products.list/productStatus "
+                "Dodać osobny kontrakt odczytu przez products.list/productStatus "
                 "albo reports.search product_view z filtrem issue, zanim WILQ pokaże "
                 "konkretne produkty do poprawy."
             ),
@@ -462,7 +492,7 @@ def _merchant_product_sample_readiness(
         ],
         source_endpoint="aggregateProductStatuses",
         summary="Brak Merchant issue queue, więc nie ma też próbek produktów.",
-        next_step="Najpierw uruchom read-only Merchant vendor_read.",
+        next_step="Najpierw uruchom odczyt danych Merchant.",
         blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
     )
 
@@ -787,7 +817,7 @@ def _merchant_price_impact_readiness(
     )
     next_step = (
         "Jeżeli produkt ma cenę bieżącą, historię ceny i metryki performance, "
-        "przygotuj review before/after. W przeciwnym razie pokaż brakujące "
+        "przygotuj porównanie przed/po. W przeciwnym razie pokaż brakujące "
         "kontrakty i nie oceniaj wpływu ceny."
     )
     return MerchantPriceImpactReadiness(
@@ -1000,7 +1030,7 @@ def _product_performance_next_step(
 ) -> str:
     if not sample_product_ids:
         return (
-            "Dodać read-only Merchant product samples z product ID/SKU, zanim WILQ "
+            "Dodać próbki produktów Merchant z product ID/SKU, zanim WILQ "
             "spróbuje łączyć feed z performance."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
@@ -1021,7 +1051,7 @@ def _product_performance_next_step(
             "wspólny product_id/item_id jako join key."
         )
     return (
-        "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 "
+        "Dodać product performance dla Google Ads Shopping/PMax i GA4 "
         "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
     )
 
@@ -1327,7 +1357,7 @@ def _feed_health_section(
         diagnosis=(
             "WILQ ma metryki Merchant z odczytu. Można ocenić skalę feedu i liczbę "
             "zgłoszonych problemów, ale nie wolno twierdzić, że produkt został naprawiony bez "
-            "ActionObject, walidacji i audytu."
+            "sprawdzonej akcji i audytu."
         ),
         next_step="Przejdź do kolejki problemów i grupuj je po typie oraz atrybucie.",
         source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -1361,7 +1391,7 @@ def _issue_queue_section(
                 "Nie ma bezpiecznego materiału do kolejki feed triage. WILQ musi "
                 "najpierw zebrać typ problemu, atrybut albo metryki statusu produktu."
             ),
-            next_step="Odśwież Merchant vendor_read i sprawdź aggregateProductStatuses.",
+            next_step="Odśwież dane Merchant i sprawdź aggregateProductStatuses.",
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
@@ -1403,7 +1433,7 @@ def _issue_queue_section(
             "surowych list produktów."
         ),
         next_step=(
-            "Otwórz ActionObject `act_review_merchant_feed_issues` i przygotuj "
+            "Otwórz akcję `act_review_merchant_feed_issues` i przygotuj "
             "kolejkę przeglądu."
         ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -1485,8 +1515,8 @@ def _merchant_issue_clusters(
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
                 next_step=(
-                    "Przejrzyj tę grupę problemu przez ActionObject review; "
-                    "najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
+                    "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; "
+                    "najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."
                 ),
             )
         )
@@ -1591,12 +1621,12 @@ def _operator_summary(
         title="Co marketer ma zrobić teraz z feedem",
         summary=(
             "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka "
-            "przeglądu: można przygotować decyzje i podgląd payloadu, ale nie wolno "
+            "przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno "
             "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu."
         ),
         next_step=(
-            "Przejdź przez top decyzje lub klastry problemów, przygotuj review "
-            "ActionObject i nie wykonuj zmian feedu bez walidacji oraz zgody operatora."
+            "Przejdź przez top decyzje lub klastry problemów, przygotuj przegląd "
+            "akcji i nie zapisuj zmian feedu bez sprawdzenia w WILQ oraz zgody operatora."
         ),
         top_decision_ids=[decision.id for decision in decisions[:4]],
         top_issue_cluster_ids=[cluster.id for cluster in issue_clusters[:4]],
@@ -1663,7 +1693,7 @@ def _merchant_decision_queue(
                     "WILQ nie ma aktualnych Merchant metric facts, więc nie może "
                     "uczciwie zbudować kolejki problemów feedu ani ocenić stanu produktów."
                 ),
-                next_step="Uruchom read-only Merchant vendor_read, potem wróć do /merchant.",
+                next_step="Uruchom odczyt danych Merchant, potem wróć do /merchant.",
                 risk=ActionRisk.medium,
             )
         ]
@@ -1726,6 +1756,10 @@ def _merchant_decisions_with_lineage(
     return [
         decision.model_copy(
             update={
+                "payload_preview": [
+                    _merchant_payload_preview_with_operator_labels(preview)
+                    for preview in decision.payload_preview
+                ],
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
                 ),
@@ -1738,19 +1772,31 @@ def _merchant_decisions_with_lineage(
     ]
 
 
+def _merchant_payload_preview_with_operator_labels(
+    preview: dict[str, object],
+) -> dict[str, object]:
+    checks = preview.get("required_validation")
+    if not isinstance(checks, list):
+        return preview
+    labels = [
+        MERCHANT_REQUIRED_VALIDATION_LABELS.get(check, check)
+        for check in checks
+        if isinstance(check, str)
+    ]
+    return {**preview, "required_validation_labels": labels}
+
+
 def _merchant_price_impact_review_decision(
     price_impact_readiness: MerchantPriceImpactReadiness,
     action_ids: list[str],
 ) -> MerchantDecisionItem | None:
-    if price_impact_readiness.products_with_current_price == 0:
-        return None
     return MerchantDecisionItem(
         id="merchant_decision_review_price_impact_readiness",
         decision_type="review_price_impact_readiness",
         status=price_impact_readiness.status,
         title="Merchant: sprawdź gotowość analizy wpływu ceny",
         summary=price_impact_readiness.summary,
-        priority=22,
+        priority=60,
         metric_tiles=_clean_merchant_metric_tiles(
             {
                 "ceny bieżące": price_impact_readiness.products_with_current_price,
@@ -1835,15 +1881,15 @@ def _merchant_product_state_review_decision(
         action_ids=action_ids,
         blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
         rationale=(
-            "To jest decyzja mapowania i review, nie decyzja performance. "
+            "To jest decyzja mapowania i sprawdzenia, nie decyzja performance. "
             "State-only rows potwierdzają, że Merchant sample ID ma odpowiednik w "
             "Ads shopping_product, ale bez metryk emisji i sprzedaży nie wolno "
             "wyciągać wniosków o ROAS, odzyskanym revenue ani skutku naprawy."
         ),
         next_step=(
-            "Sprawdź zmapowane produkty w review: status Ads, dostępność, cenę, "
+            "Sprawdź zmapowane produkty: status Ads, dostępność, cenę, "
             "powiązany problem Merchant i supplemental-feed candidate preview. "
-            "Primary feed, apply i wpływ na approval pozostają zablokowane."
+            "Główny feed, zapis zmian i wpływ na zatwierdzenie pozostają zablokowane."
         ),
         risk=ActionRisk.medium,
     )
@@ -1871,8 +1917,8 @@ def _merchant_product_state_review_payload_preview(
             for row in rows
         ],
         "reason": (
-            "Review-only podgląd mapowania Merchant sample IDs do Google Ads "
-            "shopping_product state. To nie jest payload zmiany feedu."
+            "Do sprawdzenia: podgląd powiązania Merchant sample IDs z Google Ads "
+            "shopping_product state. To nie jest gotowa zmiana feedu."
         ),
         "required_validation": [
             "review_product_identity_mapping",
@@ -1903,12 +1949,12 @@ def _merchant_supplemental_feed_review_payload_preview(
         "id": "merchant_supplemental_feed_review_preview",
         "preview_contract": MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT,
         "operation_type": "MerchantSupplementalFeedCandidateReview",
-        "feed_target": "supplemental_feed_review_only",
+        "feed_target": "supplemental_feed_check_only",
         "primary_feed_mutation_allowed": False,
         "candidates": candidates,
         "reason": (
-            "Review-only kandydaci do supplemental feed. WILQ pokazuje pola do "
-            "sprawdzenia i źródła walidacji, ale nie wylicza docelowych wartości "
+            "Do sprawdzenia: propozycje do supplemental feed. WILQ pokazuje pola do "
+            "sprawdzenia i źródła sprawdzenia, ale nie wylicza docelowych wartości "
             "feedu i nie wykonuje mutacji."
         ),
         "required_validation": [
@@ -1916,7 +1962,7 @@ def _merchant_supplemental_feed_review_payload_preview(
             "review_merchant_issue_context",
             "confirm_source_of_truth_values",
             "prepare_supplemental_feed_draft_preview",
-            "validate_payload_values",
+            "validate_change_values",
             "human_confirm_before_apply",
             "mutation_audit_required",
         ],
@@ -2101,8 +2147,8 @@ def _merchant_decision_from_cluster_group(
             "zmianą feedu."
         ),
         next_step=(
-            "Przejrzyj problem przez ActionObject review, sprawdź konteksty "
-            "raportowania i przygotuj payload preview bez automatycznej zmiany feedu."
+            "Przejrzyj problem przez akcję do sprawdzenia, sprawdź konteksty "
+            "raportowania i przygotuj podgląd zmian bez automatycznej zmiany feedu."
         ),
         risk=max((cluster.risk for cluster in clusters), key=_action_risk_rank),
     )
@@ -2163,7 +2209,7 @@ def _merchant_decision_from_cluster(
         action_ids=action_ids or ([cluster.action_id] if cluster.action_id else []),
         blocked_claims=cluster.blocked_claims,
         rationale=(
-            "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza "
+            "To jest klaster problemu Merchant do ręcznego sprawdzenia. Liczba oznacza "
             "wystąpienia problemu w raportach, nie gwarantowaną liczbę unikalnych "
             "produktów ani gotową zmianę feedu. Przykładowe produkty służą tylko do "
             "ręcznego sprawdzenia problemu."
@@ -2246,9 +2292,9 @@ def _merchant_decision_payload_preview(
             "ale nie zwraca przykładowych ID produktów ani tytułów."
         ),
         "reason": (
-            "Review-only podgląd konkretnej decyzji Merchant. WILQ może przygotować "
-            "kolejkę review, ale nie może zmienić feedu ani obiecać przywrócenia "
-            "approval bez osobnego write/audit contract."
+            "Do sprawdzenia: podgląd konkretnej decyzji Merchant. WILQ może przygotować "
+            "kolejkę oceny, ale nie może zmienić feedu ani obiecać przywrócenia "
+            "approval bez osobnego kontraktu zapisu i audytu."
         ),
         "required_validation": [
             "review_issue_type_and_attribute",
@@ -2344,12 +2390,12 @@ def _merchant_aggregate_feed_status_decision(
         rationale=(
             "Merchant ma aggregate product/feed facts, ale bieżący odczyt nie "
             "dostarcza wymiarowych issue clusters. Marketer może rozpocząć review "
-            "ActionObject, ale nie wolno twierdzić, który konkretny atrybut lub "
+            "akcji, ale nie wolno twierdzić, który konkretny atrybut lub "
             "produkt został naprawiony."
         ),
         next_step=(
-            "Otwórz `act_review_merchant_feed_issues`, sprawdź payload preview i "
-            "zatrzymaj apply do czasu walidacji."
+            "Otwórz `act_review_merchant_feed_issues`, sprawdź podgląd zmian i "
+            "zatrzymaj zapis zmian do czasu sprawdzenia w WILQ."
         ),
         risk=ActionRisk.medium,
     )
@@ -2460,16 +2506,16 @@ def _product_action_safety_section(
         title="Merchant Center: bezpieczne akcje",
         status="ready" if facts or tactical_items else "blocked",
         summary=(
-            "Akcje Merchant pozostają w trybie przygotowania do czasu walidacji "
-            "payloadu i audytu."
+            "Akcje Merchant pozostają w trybie przygotowania do czasu sprawdzenia w WILQ "
+            "zakresu zmian i audytu."
         ),
         diagnosis=(
             "Zmiany feedu lub produktów mogą wpływać na widoczność i sprzedaż. WILQ "
             "może przygotować kolejkę przeglądu, ale nie może zmieniać głównego feedu ani "
-            "twierdzić, że naprawił produkty bez obsługi apply."
+            "twierdzić, że naprawił produkty bez obsługi zapisu zmian."
         ),
         next_step=(
-            "Waliduj ActionObject, pokaż podgląd payloadu i zatrzymaj apply "
+            "Sprawdź propozycję w WILQ, pokaż podgląd zmian i zatrzymaj zapis zmian "
             "do jawnego potwierdzenia."
         ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -2565,7 +2611,7 @@ def _merchant_blocker_reason(latest_refresh: ConnectorRefreshRun | None) -> str:
         return latest_refresh.errors[0]
     if latest_refresh and latest_refresh.summary:
         return latest_refresh.summary
-    return "Brak wykonanego Merchant vendor_read."
+    return "Brak wykonanego odczytu danych Merchant."
 
 
 def _refresh_or_connector_evidence_ids(latest_refresh: ConnectorRefreshRun | None) -> list[str]:

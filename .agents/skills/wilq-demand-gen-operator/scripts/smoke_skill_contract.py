@@ -31,7 +31,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -116,7 +116,7 @@ def main() -> int:
             raise SystemExit(f"Demand Gen contract {contract} must be either available or missing")
     for contract in (
         "demand_gen_landing_quality_by_campaign",
-        "demand_gen_migration_constraints",
+        "demand_gen_transition_constraints",
     ):
         in_available = contract in available_read_contracts
         in_missing = contract in missing_read_contracts
@@ -155,32 +155,32 @@ def main() -> int:
     demand_gen_landing_quality_rows = readiness.get("demand_gen_landing_quality_rows")
     if not isinstance(demand_gen_landing_quality_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_landing_quality_rows list")
-    demand_gen_migration_constraint_rows = readiness.get(
-        "demand_gen_migration_constraint_rows"
+    demand_gen_transition_constraint_rows = readiness.get(
+        "demand_gen_transition_constraint_rows"
     )
-    if not isinstance(demand_gen_migration_constraint_rows, list):
+    if not isinstance(demand_gen_transition_constraint_rows, list):
         raise SystemExit(
-            "Demand Gen readiness must expose demand_gen_migration_constraint_rows list"
+            "Demand Gen readiness must expose demand_gen_transition_constraint_rows list"
         )
     action_ids = readiness.get("action_ids")
     if action_ids != [EXPECTED_ACTION_ID]:
-        raise SystemExit("Demand Gen readiness must expose the review-only ActionObject")
+        raise SystemExit("Demand Gen readiness must expose the action to validate")
     payload_preview = readiness.get("payload_preview")
     if not isinstance(payload_preview, list) or not payload_preview:
         raise SystemExit("Demand Gen readiness must expose review payload_preview")
     if payload_preview[0].get("preview_contract") != EXPECTED_PREVIEW_CONTRACT:
-        raise SystemExit("Demand Gen readiness payload preview uses wrong contract")
+        raise SystemExit("Demand Gen readiness change preview uses wrong contract")
     if payload_preview[0].get("api_mutation_ready") is not False:
-        raise SystemExit("Demand Gen readiness payload preview must be review-only")
+        raise SystemExit("Demand Gen readiness change preview must be validation-only")
     if "[REDACTED]" in json.dumps(readiness):
         raise SystemExit("Demand Gen readiness contract IDs must not be redacted")
     active_actions = pack.get("active_action_objects") or []
     active_action_ids = [action.get("id") for action in active_actions]
     if active_action_ids != [EXPECTED_ACTION_ID]:
-        raise SystemExit("Demand Gen context must expose only its review ActionObject")
+        raise SystemExit("Demand Gen context must expose only its review action")
     active_payload = active_actions[0].get("payload") or {}
     if active_payload.get("preview_contract") != EXPECTED_PREVIEW_CONTRACT:
-        raise SystemExit("Demand Gen action payload preview contract is wrong")
+        raise SystemExit("Demand Gen action change preview contract is wrong")
     if active_payload.get("apply_allowed") is not False:
         raise SystemExit("Demand Gen action must keep apply_allowed=false")
     ads_diagnostics = pack.get("ads_diagnostics") or {}
@@ -197,7 +197,7 @@ def main() -> int:
         }
     ]
     if validation.get("valid") is not True or validation.get("status") != "valid":
-        raise SystemExit(f"Demand Gen ActionObject validation failed: {validation}")
+        raise SystemExit(f"Demand Gen action validation failed: {validation}")
 
     print(
         json.dumps(
@@ -221,8 +221,8 @@ def main() -> int:
                     "demand_gen_landing_quality_row_count": len(
                         demand_gen_landing_quality_rows
                     ),
-                    "demand_gen_migration_constraint_row_count": len(
-                        demand_gen_migration_constraint_rows
+                    "demand_gen_transition_constraint_row_count": len(
+                        demand_gen_transition_constraint_rows
                     ),
                     "available_read_contracts": available_read_contracts,
                     "missing_read_contracts": missing_read_contracts,

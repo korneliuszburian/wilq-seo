@@ -25,16 +25,16 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
     DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
     DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-    DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
-    demand_gen_migration_constraint_rows_from_campaigns,
     demand_gen_readiness_review_payload,
+    demand_gen_transition_constraint_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
@@ -233,7 +233,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
             "No source connector -> no recommendation.",
-            "No validated payload -> no apply.",
+            "No validated action -> no execution.",
             "No audit event -> no write.",
             "No WILQ API call -> Codex must not invent metrics.",
         ],
@@ -314,13 +314,13 @@ def _daily_command_context_pack(
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
             "No source connector -> no recommendation.",
-            "No validated payload -> no apply.",
+            "No validated action -> no execution.",
             "No audit event -> no write.",
             "No WILQ API call -> Codex must not invent metrics.",
         ],
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
-            connector.model_dump(mode="json")
+            _compact_connector_status_for_operator_context(connector)
             for connector in connectors
             if connector.id in source_connectors
         ],
@@ -341,17 +341,20 @@ def _daily_command_context_pack(
             if run.connector_id in source_connectors
         ][:6],
         "evidence_summaries": [
-            evidence.model_dump(mode="json")
+            _compact_evidence_for_operator_context(evidence)
             for evidence in list_evidence_by_ids(sorted(evidence_ids))
         ][:40],
         "knowledge_card_summaries": [
-            card.model_dump(mode="json") for card in compile_playbook_cards()
+            _compact_knowledge_card_for_operator_context(card)
+            for card in compile_playbook_cards()
         ],
         "expert_rule_summaries": [
-            rule.model_dump(mode="json") for rule in list_expert_rule_summaries(limit=12)
+            _compact_expert_rule_for_operator_context(rule)
+            for rule in list_expert_rule_summaries(limit=12)
         ],
         "expert_capabilities": [
-            capability.model_dump(mode="json") for capability in list_expert_capabilities()
+            _compact_expert_capability_for_operator_context(capability)
+            for capability in list_expert_capabilities()
         ],
         "command_center": _compact_command_center_for_daily_context(command),
         "marketing_brief": _compact_marketing_brief_for_daily_context(brief),
@@ -366,6 +369,12 @@ def _daily_command_context_pack(
             "command_center_connector_health_omitted": True,
             "command_center_daily_decisions_only": True,
             "marketing_brief_metric_facts_compacted": True,
+            "connector_refresh_runs_compacted": True,
+            "evidence_summaries_compacted": True,
+            "knowledge_card_summaries_compacted": True,
+            "expert_capabilities_compacted": True,
+            "action_review_gates_compacted": True,
+            "raw_history_omitted": True,
             "evidence_summaries_limit": 40,
             "full_action_endpoint_template": "/api/actions/{action_id}",
             "full_marketing_brief_endpoint": "/api/marketing/brief",
@@ -373,6 +382,7 @@ def _daily_command_context_pack(
         },
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
+    pack = _strip_raw_operator_context(pack)
     return redact_mapping(pack)
 
 
@@ -444,17 +454,188 @@ def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str
 
 
 def _compact_refresh_run_for_daily_context(run: dict[str, Any]) -> dict[str, Any]:
+    return _compact_refresh_run_for_operator_context(run)
+
+
+def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, Any]:
+    raw_evidence_ids = run.get("evidence_ids")
+    evidence_ids: list[Any] = raw_evidence_ids if isinstance(raw_evidence_ids, list) else []
+    raw_missing_credentials = run.get("missing_credentials")
+    missing_credentials: list[Any] = (
+        raw_missing_credentials if isinstance(raw_missing_credentials, list) else []
+    )
+    checked_credentials = (
+        run.get("checked_credentials")
+        if isinstance(run.get("checked_credentials"), list)
+        else []
+    )
+    metric_summary = run.get("metric_summary")
+    metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
+    source_label = run.get("connector_id") or "źródło danych"
+    summary = (
+        f"Odczyt danych {source_label}: "
+        f"status {run.get('status') or 'unknown'}, dowody {len(evidence_ids)}, "
+        f"braki dostępu {len(missing_credentials)}."
+    )
     return {
         "id": run.get("id"),
         "connector_id": run.get("connector_id"),
-        "mode": run.get("mode"),
         "status": run.get("status"),
         "started_at": run.get("started_at"),
         "completed_at": run.get("completed_at"),
-        "summary": _context_pack_text(run.get("summary"), limit=180),
-        "evidence_ids": run.get("evidence_ids"),
-        "blocked_claims": run.get("blocked_claims"),
-        "missing_credentials": run.get("missing_credentials"),
+        "summary": summary,
+        "evidence_ids": evidence_ids,
+        "missing_credentials": missing_credentials,
+        "checked_credentials": checked_credentials,
+        "external_call_attempted": bool(run.get("external_call_attempted")),
+        "vendor_data_collected": bool(run.get("vendor_data_collected")),
+        "metric_summary": {
+            "metric_key_count": len(metric_keys),
+            "metric_keys": ", ".join(metric_keys[:8]),
+        },
+        "errors": [],
+        "redacted": True,
+    }
+
+
+def _compact_connector_status_for_operator_context(
+    connector: ConnectorStatus | dict[str, Any],
+) -> dict[str, Any]:
+    dumped = (
+        connector.model_dump(mode="json")
+        if isinstance(connector, ConnectorStatus)
+        else dict(connector)
+    )
+    freshness = dumped.get("freshness")
+    compact_freshness: Any
+    if isinstance(freshness, dict):
+        compact_freshness = {
+            "state": freshness.get("state"),
+            "label": freshness.get("label"),
+            "checked_at": freshness.get("checked_at"),
+        }
+    else:
+        compact_freshness = freshness
+    capabilities = dumped.get("capabilities")
+    supported_actions = dumped.get("supported_actions")
+    missing_credentials = dumped.get("missing_credentials")
+    return {
+        "id": dumped.get("id"),
+        "label": dumped.get("label"),
+        "status": dumped.get("status"),
+        "configured": dumped.get("configured"),
+        "freshness": compact_freshness,
+        "last_success_at": dumped.get("last_success_at"),
+        "missing_credentials": (
+            missing_credentials if isinstance(missing_credentials, list) else []
+        ),
+        "capability_count": len(capabilities) if isinstance(capabilities, list) else 0,
+        "supported_action_count": (
+            len(supported_actions) if isinstance(supported_actions, list) else 0
+        ),
+        "summary": (
+            f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
+            f"status {dumped.get('status') or 'unknown'}."
+        ),
+    }
+
+
+def _compact_evidence_for_operator_context(evidence: Evidence) -> dict[str, Any]:
+    dumped = evidence.model_dump(mode="json")
+    freshness = dumped.get("freshness")
+    freshness_state = None
+    if isinstance(freshness, dict):
+        freshness_state = freshness.get("state")
+    compact_freshness = {
+        "state": freshness_state or "unknown",
+        "checked_at": freshness.get("checked_at") if isinstance(freshness, dict) else None,
+        "notes": None,
+    }
+    summary = (
+        f"Dowód {dumped.get('id')}: źródło {dumped.get('source_connector')}, "
+        f"typ {dumped.get('source_type')}, świeżość {freshness_state or 'unknown'}. "
+        "Decyzję bierz z aktualnych diagnostyk WILQ."
+    )
+    return {
+        "id": dumped.get("id"),
+        "source_connector": dumped.get("source_connector"),
+        "source_type": dumped.get("source_type"),
+        "source_id": dumped.get("source_id"),
+        "collected_at": dumped.get("collected_at"),
+        "freshness": compact_freshness,
+        "summary": summary,
+        "raw_ref": None,
+    }
+
+
+def _compact_knowledge_card_for_operator_context(card: KnowledgeCard) -> dict[str, Any]:
+    dumped = card.model_dump(mode="json")
+    card_type = dumped.get("card_type") or "knowledge"
+    return {
+        "id": dumped.get("id"),
+        "card_type": card_type,
+        "title": f"Karta wiedzy: {card_type}",
+        "summary": (
+            "Skondensowana karta wiedzy. Używaj jej jako reguły pomocniczej; "
+            "decyzje muszą wynikać z aktualnych diagnostyk WILQ, dowodów i źródeł danych."
+        ),
+        "source_type": dumped.get("source_type"),
+        "source_id": dumped.get("source_id"),
+        "source_url_or_path": dumped.get("source_url_or_path"),
+        "extracted_at": dumped.get("extracted_at"),
+        "confidence": dumped.get("confidence"),
+        "last_seen_at": dumped.get("last_seen_at"),
+        "source_lineage": [],
+    }
+
+
+def _strip_raw_operator_context(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_strip_raw_operator_context(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    stripped: dict[str, Any] = {}
+    for key, item in value.items():
+        if key.startswith(("target_site_", "mapping_review_")):
+            continue
+        if key in {
+            "target_site_mapping_review",
+            "current_transition_candidate_url",
+            "current_migration_candidate_url",
+        }:
+            continue
+        if key == "mode" and item == "vendor_read":
+            continue
+        stripped[key] = _strip_raw_operator_context(item)
+    return stripped
+
+
+def _compact_expert_rule_for_operator_context(rule: ExpertRuleSummary) -> dict[str, Any]:
+    dumped = rule.model_dump(mode="json")
+    return {
+        "id": dumped.get("id"),
+        "domain": dumped.get("domain"),
+        "version": dumped.get("version"),
+        "summary": (
+            "Skondensowana reguła ekspercka. Używaj jej jako ograniczenia "
+            "decyzji; szczegółowy kontrakt jest dostępny w API WILQ."
+        ),
+        "source_path": dumped.get("source_path"),
+    }
+
+
+def _compact_expert_capability_for_operator_context(capability: ExpertCapability) -> dict[str, Any]:
+    dumped = capability.model_dump(mode="json")
+    required_mapping = dumped.get("required_mapping")
+    required_mapping_total = len(required_mapping) if isinstance(required_mapping, list) else 0
+    return {
+        "id": dumped.get("id"),
+        "domain": dumped.get("domain"),
+        "source_rule_id": dumped.get("source_rule_id"),
+        "required_mapping": [],
+        "required_mapping_total": required_mapping_total,
+        "output_contract": "Pełny kontrakt: /api/expert/capabilities.",
+        "requires_evidence": dumped.get("requires_evidence", True),
     }
 
 
@@ -474,14 +655,66 @@ def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict
     if event is None:
         return None
     details = event.get("details")
+    details_keys = sorted(details) if isinstance(details, dict) else []
+    details_keys = [
+        key
+        for key in details_keys
+        if not key.startswith(("target_site_", "mapping_review_"))
+        and key
+        not in {
+            "target_site_mapping_review",
+            "current_transition_candidate_url",
+            "current_migration_candidate_url",
+        }
+    ]
+    summary = _context_pack_text(event.get("summary"), limit=180)
+    if _contains_raw_history_terms(summary):
+        summary = (
+            f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
+            "szczegóły historyczne są dostępne w szczegółach akcji WILQ."
+        )
     return {
         "id": event.get("id"),
         "action_id": event.get("action_id"),
         "event_type": event.get("event_type"),
         "actor": event.get("actor"),
         "created_at": event.get("created_at"),
-        "summary": _context_pack_text(event.get("summary"), limit=180),
-        "details_keys": sorted(details) if isinstance(details, dict) else [],
+        "summary": summary,
+        "details_keys": details_keys,
+    }
+
+
+def _contains_raw_history_terms(value: str | None) -> bool:
+    if not value:
+        return False
+    lowered = value.lower()
+    return any(
+        term in lowered
+        for term in (
+            "target-site",
+            "target_site",
+            "mapping_review",
+            "review-only",
+            "read-only",
+            "vendor_read",
+            "actionobject",
+        )
+    )
+
+
+def _compact_audit_event_for_skill_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
+    if event is None:
+        return None
+    return {
+        "id": event.get("id"),
+        "action_id": event.get("action_id"),
+        "event_type": event.get("event_type"),
+        "actor": event.get("actor"),
+        "created_at": event.get("created_at"),
+        "summary": (
+            f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
+            "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+        ),
     }
 
 
@@ -536,6 +769,141 @@ def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[st
         "action_ids": dumped["action_ids"],
         "blocker_count": dumped["blocker_count"],
         "recommendation_count": dumped["recommendation_count"],
+    }
+
+
+def _compact_marketing_brief_for_skill_context(brief: MarketingBrief) -> dict[str, Any]:
+    dumped = brief.model_dump(mode="json")
+    compact_sections = []
+    item_total = 0
+    for section in dumped.get("sections", []):
+        items = section.get("items", []) if isinstance(section, dict) else []
+        item_total += len(items)
+        compact_items = []
+        for item in items[:3]:
+            if not isinstance(item, dict):
+                continue
+            metric_facts = item.get("metric_facts")
+            compact_items.append(
+                {
+                    "id": item.get("id"),
+                    "title": item.get("title"),
+                    "kind": item.get("kind"),
+                    "priority": item.get("priority"),
+                    "source_connectors": item.get("source_connectors") or [],
+                    "evidence_ids": (item.get("evidence_ids") or [])[:6],
+                    "action_ids": item.get("action_ids") or [],
+                    "summary": _context_pack_text(item.get("summary"), limit=180),
+                    "next_step": _context_pack_text(item.get("next_step"), limit=180),
+                    "risk": item.get("risk"),
+                    "metric_fact_count": (
+                        len(metric_facts) if isinstance(metric_facts, list) else 0
+                    ),
+                }
+            )
+        compact_sections.append(
+            {
+                "id": section.get("id"),
+                "title": section.get("title"),
+                "description": _context_pack_text(section.get("description"), limit=180),
+                "items": compact_items,
+                "items_total": len(items),
+                "items_included": len(compact_items),
+            }
+        )
+    return {
+        "generated_at": dumped.get("generated_at"),
+        "language": dumped.get("language"),
+        "strict_instruction": dumped.get("strict_instruction"),
+        "connector_summary": dumped.get("connector_summary"),
+        "sections": compact_sections,
+        "top_metric_facts": [
+            _compact_metric_fact_for_context(fact)
+            for fact in dumped.get("top_metric_facts", [])[:5]
+            if isinstance(fact, dict)
+        ],
+        "evidence_ids": (dumped.get("evidence_ids") or [])[:20],
+        "action_ids": dumped.get("action_ids") or [],
+        "blocker_count": dumped.get("blocker_count"),
+        "recommendation_count": dumped.get("recommendation_count"),
+        "context_pack_compaction": {
+            "sections_compacted": True,
+            "items_total": item_total,
+            "items_per_section_limit": 3,
+            "top_metric_facts_limit": 5,
+            "full_endpoint": "/api/marketing/brief",
+        },
+    }
+
+
+def _compact_tactical_queue_for_skill_context(
+    queue: TacticalQueueResponse,
+) -> dict[str, Any]:
+    dumped = queue.model_dump(mode="json")
+    raw_items = dumped.get("items")
+    items: list[Any] = raw_items if isinstance(raw_items, list) else []
+    raw_groups = dumped.get("compact_groups")
+    groups: list[Any] = raw_groups if isinstance(raw_groups, list) else []
+    compact_items = []
+    for item in items[:8]:
+        if not isinstance(item, dict):
+            continue
+        metric_facts = item.get("metric_facts")
+        compact_items.append(
+            {
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "domain": item.get("domain"),
+                "intent": item.get("intent"),
+                "priority": item.get("priority"),
+                "risk": item.get("risk"),
+                "source_connectors": item.get("source_connectors") or [],
+                "evidence_ids": (item.get("evidence_ids") or [])[:6],
+                "action_ids": item.get("action_ids") or [],
+                "diagnosis": _context_pack_text(item.get("diagnosis"), limit=180),
+                "next_step": _context_pack_text(item.get("next_step"), limit=180),
+                "blocked_claims": (item.get("blocked_claims") or [])[:6],
+                "metric_fact_count": (
+                    len(metric_facts) if isinstance(metric_facts, list) else 0
+                ),
+            }
+        )
+    compact_groups = []
+    for group in groups[:8]:
+        if not isinstance(group, dict):
+            continue
+        compact_groups.append(
+            {
+                "id": group.get("id"),
+                "title": group.get("title"),
+                "meta": group.get("meta"),
+                "diagnosis": _context_pack_text(group.get("diagnosis"), limit=180),
+                "next_step": _context_pack_text(group.get("next_step"), limit=180),
+                "priority": group.get("priority"),
+                "risk": group.get("risk"),
+                "source_connectors": group.get("source_connectors") or [],
+                "evidence_ids": (group.get("evidence_ids") or [])[:6],
+                "action_ids": group.get("action_ids") or [],
+                "blocked_claims": (group.get("blocked_claims") or [])[:6],
+            }
+        )
+    return {
+        "generated_at": dumped.get("generated_at"),
+        "language": dumped.get("language"),
+        "strict_instruction": dumped.get("strict_instruction"),
+        "items": compact_items,
+        "compact_groups": compact_groups,
+        "evidence_ids": (dumped.get("evidence_ids") or [])[:20],
+        "action_ids": dumped.get("action_ids") or [],
+        "context_pack_compaction": {
+            "items_compacted": True,
+            "items_total": len(items),
+            "items_included": len(compact_items),
+            "compact_groups_total": len(groups),
+            "compact_groups_included": len(compact_groups),
+            "metric_facts_removed": True,
+            "full_endpoint": "/api/marketing/tactical-queue",
+        },
     }
 
 
@@ -694,6 +1062,10 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
         "act_prepare_custom_segments_from_search_terms",
     },
     "wilq-demand-gen-operator": {DEMAND_GEN_READINESS_REVIEW_ACTION_ID},
+    "wilq-social-publisher": {
+        "act_prepare_facebook_social_drafts",
+        "act_prepare_linkedin_social_drafts",
+    },
 }
 
 SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
@@ -706,6 +1078,14 @@ SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
         "ads_negative_keywords_v1",
         "ads_custom_segments_v1",
         "ads_keyword_planner_v1",
+    ],
+    "wilq-content-strategist": [
+        "seo_gsc_opportunities_v1",
+        "seo_query_page_matrix_v1",
+        "seo_content_decay_v1",
+        "seo_cannibalization_v1",
+        "content_duplication_rules_v1",
+        "content_brief_rules_v1",
     ],
 }
 
@@ -768,13 +1148,13 @@ def _skill_scoped_context_pack(
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
             "No source connector -> no recommendation.",
-            "No validated payload -> no apply.",
+            "No validated action -> no execution.",
             "No audit event -> no write.",
             "No WILQ API call -> Codex must not invent metrics.",
         ],
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
-            connector.model_dump(mode="json")
+            _compact_connector_status_for_operator_context(connector)
             for connector in connectors
             if connector.id in scoped_connectors
         ],
@@ -786,24 +1166,24 @@ def _skill_scoped_context_pack(
             for action in scoped_actions
         ],
         "connector_refresh_runs": [
-            run.model_dump(mode="json")
+            _compact_refresh_run_for_operator_context(run.model_dump(mode="json"))
             for run in list_connector_refresh_runs()[:25]
             if run.connector_id in scoped_connectors
         ][:connector_refresh_run_limit],
         "evidence_summaries": [
-            evidence.model_dump(mode="json")
+            _compact_evidence_for_operator_context(evidence)
             for evidence in scoped_evidence
         ][:evidence_summary_limit],
         "knowledge_card_summaries": [
-            card.model_dump(mode="json")
+            _compact_knowledge_card_for_operator_context(card)
             for card in _knowledge_cards_for_skill(skill)
         ],
         "expert_rule_summaries": [
-            rule.model_dump(mode="json")
+            _compact_expert_rule_for_operator_context(rule)
             for rule in _expert_rules_for_skill(skill)
         ],
         "expert_capabilities": [
-            capability.model_dump(mode="json")
+            _compact_expert_capability_for_operator_context(capability)
             for capability in list_expert_capabilities()
             if _text_matches_scope(
                 [
@@ -815,9 +1195,23 @@ def _skill_scoped_context_pack(
                 SKILL_KEYWORD_SCOPES.get(skill, set()),
             )
         ],
+        "context_pack_compaction": {
+            "mode": "skill_default",
+            "full_context_available": True,
+            "full_context_request": {"skill": skill, "full_context": True},
+            "connector_refresh_runs_compacted": True,
+            "evidence_summaries_compacted": True,
+            "knowledge_card_summaries_compacted": True,
+            "expert_capabilities_compacted": True,
+            "action_review_gates_compacted": True,
+            "raw_history_omitted": True,
+            "connector_refresh_runs_limit": connector_refresh_run_limit,
+            "evidence_summaries_limit": evidence_summary_limit,
+        },
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
         **diagnostics,
     }
+    pack = _strip_raw_operator_context(pack)
     redacted_pack = redact_mapping(pack)
     _write_skill_context_cache(request, redacted_pack)
     return redacted_pack
@@ -912,7 +1306,11 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             )
         }
     if skill == "wilq-ahrefs-gap-finder":
-        return {"ahrefs_diagnostics": build_ahrefs_diagnostics().model_dump(mode="json")}
+        return {
+            "ahrefs_diagnostics": _compact_ahrefs_diagnostics_for_context(
+                build_ahrefs_diagnostics().model_dump(mode="json")
+            )
+        }
     if skill == "wilq-ads-doctor":
         return {
             "ads_diagnostics": _compact_ads_diagnostics_for_context(
@@ -955,9 +1353,14 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             "content_landing_context": _content_landing_context_for_campaign_builder(),
         }
     if skill == "wilq-social-publisher":
+        runtime = build_daily_runtime()
         return {
-            "marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json"),
-            "tactical_queue": build_tactical_queue().model_dump(mode="json"),
+            "marketing_brief": _compact_marketing_brief_for_skill_context(
+                runtime.marketing_brief
+            ),
+            "tactical_queue": _compact_tactical_queue_for_skill_context(
+                build_tactical_queue()
+            ),
         }
     return {"marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json")}
 
@@ -1032,7 +1435,7 @@ def _social_draft_context_for_context(
         "source_connectors": sorted(set(source_connectors)),
         "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
         "operator_next_step": (
-            "Przygotuj szkice do review z evidence; publikacja pozostaje "
+            "Przygotuj szkice do sprawdzenia z dowodami; publikacja pozostaje "
             "zablokowana do czasu konfiguracji LinkedIn/Facebook permissions."
         ),
     }
@@ -1130,8 +1533,8 @@ def _demand_gen_readiness_contract(
         ga4_metric_facts,
         demand_gen_campaign_row_dicts,
     )
-    demand_gen_migration_constraint_rows = (
-        demand_gen_migration_constraint_rows_from_campaigns(
+    demand_gen_transition_constraint_rows = (
+        demand_gen_transition_constraint_rows_from_campaigns(
             demand_gen_campaign_row_dicts,
         )
     )
@@ -1200,12 +1603,12 @@ def _demand_gen_readiness_contract(
     available_read_contracts.extend(
         [
             DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-            DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
+            DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
         ]
     )
     missing_contract_summary = ", ".join(missing_read_contracts) or "brak"
     title = (
-        "Demand Gen: sprawdź istniejące kampanie bez launch/apply"
+        "Demand Gen: sprawdź istniejące kampanie bez uruchamiania zmian"
         if demand_gen_campaign_rows
         else "Demand Gen: brak kampanii do rekomendacji"
     )
@@ -1224,8 +1627,8 @@ def _demand_gen_readiness_contract(
         demand_gen_landing_quality_rows=[
             row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
         ],
-        demand_gen_migration_constraint_rows=[
-            row.model_dump(mode="json") for row in demand_gen_migration_constraint_rows
+        demand_gen_transition_constraint_rows=[
+            row.model_dump(mode="json") for row in demand_gen_transition_constraint_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -1251,7 +1654,7 @@ def _demand_gen_readiness_contract(
             "reklamy DG": len(demand_gen_ad_group_ad_rows),
             "assety DG": len(demand_gen_creative_asset_rows),
             "landingi DG": len(demand_gen_landing_quality_rows),
-            "ograniczenia": len(demand_gen_migration_constraint_rows),
+            "ograniczenia": len(demand_gen_transition_constraint_rows),
             "braki": len(missing_read_contracts),
         },
         available_read_contracts=available_read_contracts,
@@ -1272,11 +1675,11 @@ def _demand_gen_readiness_contract(
         demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
         demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
         demand_gen_landing_quality_rows=demand_gen_landing_quality_rows,
-        demand_gen_migration_constraint_rows=demand_gen_migration_constraint_rows,
+        demand_gen_transition_constraint_rows=demand_gen_transition_constraint_rows,
         next_step=(
-            "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill "
-            "pokaże kandydatów launchu albo migracji, sprawdź puste/niepuste "
-            "read contracts landing quality i migration constraints."
+            "Zwaliduj act_review_demand_gen_readiness jako akcję tylko do przeglądu. "
+            "Zanim skill pokaże kandydatów launchu albo przejścia kampanii, sprawdź "
+            "puste/niepuste read contracts landing quality i transition constraints."
         ),
     )
 
@@ -1337,10 +1740,26 @@ def _compact_content_diagnostics_for_context(
 ) -> dict[str, Any]:
     compact = dict(_without_metric_facts(content_diagnostics))
     sections = compact.pop("sections", [])
+    connectors = compact.get("connectors")
+    if isinstance(connectors, list):
+        compact["connectors"] = [
+            _compact_connector_status_for_operator_context(connector)
+            for connector in connectors
+            if isinstance(connector, dict)
+        ]
+    latest_refreshes = compact.get("latest_refreshes")
+    if isinstance(latest_refreshes, list):
+        compact["latest_refreshes"] = [
+            _compact_refresh_run_for_operator_context(refresh)
+            for refresh in latest_refreshes
+            if isinstance(refresh, dict)
+        ]
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
         "sections_omitted": True,
         "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "connectors_compacted": True,
+        "latest_refreshes_compacted": True,
         "full_endpoint": "/api/content/diagnostics",
     }
     return compact
@@ -1395,6 +1814,47 @@ def _compact_gsc_content_diagnostics_for_context(
 
 def _is_ahrefs_evidence_id(evidence_id: str) -> bool:
     return "_ahrefs" in evidence_id
+
+
+def _compact_ahrefs_diagnostics_for_context(
+    ahrefs_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = dict(_without_metric_facts(ahrefs_diagnostics))
+    sections = compact.pop("sections", [])
+    connector = compact.get("connector")
+    if isinstance(connector, dict):
+        compact["connector"] = _compact_connector_status_for_operator_context(connector)
+    connector_status = compact.get("connector_status")
+    if isinstance(connector_status, dict):
+        compact["connector_status"] = _compact_connector_status_for_operator_context(
+            connector_status
+        )
+    latest_refresh = compact.get("latest_refresh")
+    if isinstance(latest_refresh, dict):
+        compact["latest_refresh"] = _compact_refresh_run_for_operator_context(
+            latest_refresh
+        )
+    gap_contract = compact.get("gap_read_contract")
+    if isinstance(gap_contract, dict):
+        gap_records = gap_contract.pop("gap_records", [])
+        gap_record_count = gap_contract.get("gap_record_count")
+        if gap_record_count is None:
+            gap_contract["gap_record_count"] = (
+                len(gap_records) if isinstance(gap_records, list) else 0
+            )
+        gap_contract["gap_records_omitted"] = True
+        gap_contract["gap_records_total"] = (
+            len(gap_records) if isinstance(gap_records, list) else 0
+        )
+    compact["context_pack_compaction"] = {
+        "metric_facts_removed": True,
+        "sections_omitted": True,
+        "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "latest_refresh_compacted": isinstance(latest_refresh, dict),
+        "gap_records_omitted": isinstance(gap_contract, dict),
+        "full_endpoint": "/api/ahrefs/diagnostics",
+    }
+    return compact
 
 
 def _compact_ga4_diagnostics_for_context(
@@ -1702,6 +2162,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ADS_CONTEXT_ROW_LIMIT,
     )
     _limit_recommendation_rows_for_context(compact)
+    _drop_recommendation_row_nested_payload_preview_for_context(compact)
     _limit_contract_rows(
         compact,
         ("custom_segments_read_contract", "payload_preview"),
@@ -1724,12 +2185,14 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "search_term_rows",
         ADS_CONTEXT_ROW_LIMIT,
     )
+    _compact_custom_segment_candidate_search_term_rows_for_context(compact)
     _limit_candidate_rows(
         compact,
         ("negative_keywords_read_contract", "candidates"),
         "keyword_context_rows",
         ADS_CONTEXT_DECISION_ROW_LIMIT,
     )
+    _compact_negative_keyword_candidate_context_rows_for_context(compact)
     _drop_candidate_nested_payload_preview(
         compact,
         ("custom_segments_read_contract", "candidates"),
@@ -1747,6 +2210,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
     _compact_ads_optimizer_readiness_for_context(compact)
     _limit_decision_rows(compact)
     _omit_decision_row_payloads(compact)
+    _drop_empty_decision_row_lists_for_context(compact)
     _compact_ads_decision_queue_for_context(compact)
     sections = compact.pop("sections", [])
     compact["context_pack_compaction"] = {
@@ -1755,6 +2219,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "full_endpoint": "/api/ads/diagnostics",
         "sections_total": len(sections) if isinstance(sections, list) else 0,
         "decision_row_payloads_omitted": True,
+        "empty_decision_row_lists_omitted": True,
         "campaign_rows_total": len(campaign_rows),
         "campaign_rows_included": len(
             _list_at(compact, "campaign_read_contract", "campaign_rows")
@@ -1792,10 +2257,12 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "recommendation_apply_preview_included": len(
             _list_at(compact, "recommendations_read_contract", "payload_preview")
         ),
+        "recommendation_row_payload_previews_omitted": True,
         "custom_segment_payload_preview_total": len(custom_payload_preview),
         "custom_segment_payload_preview_included": len(
             _list_at(compact, "custom_segments_read_contract", "payload_preview")
         ),
+        "custom_segment_candidate_search_term_rows_compacted": True,
         "negative_keyword_payload_preview_total": len(negative_payload_preview),
         "negative_keyword_payload_preview_included": len(
             _list_at(compact, "negative_keywords_read_contract", "payload_preview")
@@ -1806,6 +2273,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "negative_keyword_candidates_included": len(
             _list_at(compact, "negative_keywords_read_contract", "candidates")
         ),
+        "negative_keyword_candidate_context_rows_compacted": True,
         "optimizer_readiness_compacted": isinstance(
             compact.get("optimizer_readiness_contract"),
             dict,
@@ -1841,8 +2309,8 @@ def _compact_ads_strategy_review_readiness_for_context(data: dict[str, Any]) -> 
         "profitability verdict",
         "target KPI verdict",
         "budget scaling",
-        "budget apply",
-        "recommendation apply",
+        "zmiana budżetu",
+        "zapis rekomendacji",
         "automatic optimization",
     ]
     summary = _context_pack_text(contract.get("summary"), limit=170)
@@ -1908,8 +2376,8 @@ def _compact_ads_optimizer_readiness_for_context(data: dict[str, Any]) -> None:
     required_blocked = [
         "campaign mutation",
         "change impact",
-        "budget apply",
-        "negative keyword apply",
+        "zmiana budżetu",
+        "dodanie wykluczających słów kluczowych",
         "targeting applied",
     ]
     contract["allowed_metrics"] = _priority_limited_strings(
@@ -1991,8 +2459,8 @@ def _compact_ads_decision_queue_for_context(data: dict[str, Any]) -> None:
     required_blocked = [
         "campaign mutation",
         "change impact",
-        "budget apply",
-        "negative keyword apply",
+        "zmiana budżetu",
+        "dodanie wykluczających słów kluczowych",
         "targeting applied",
     ]
     required_missing = [
@@ -2366,12 +2834,17 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             }
     if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
         compact["human_diagnosis"] = (
-            "N-gram review z Google Ads search-term evidence; nie apply."
+            "N-gram review z Google Ads search-term evidence; nie wykonuj zmian."
         )
         compact["recommended_reason"] = (
             "Sprawdź intencję tematów i próbki zapytań przed negative keyword queue."
         )
         compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
+    audit_events = compact.get("audit_events")
+    compact["latest_audit_event"] = _compact_audit_event_for_skill_context(
+        _latest_audit_event_for_context(audit_events)
+    )
+    compact.pop("audit_events", None)
     _compact_action_review_gate_for_context(compact)
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
@@ -2459,7 +2932,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         )
         payload_preview_kept = True
     if (
-        compact_payload.get("preview_contract") == "custom_segment_payload_preview_v1"
+        compact_payload.get("preview_contract") == "custom_segment_change_preview_v1"
         and isinstance(payload_preview, list)
     ):
         compact_payload["payload_preview_total"] = len(payload_preview)
@@ -2474,12 +2947,12 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         payload_preview_kept = True
     if (
         compact_payload.get("preview_contract")
-        == "wordpress_staging_draft_apply_preview_v1"
+        == "wordpress_draft_handoff_preview_v1"
         and isinstance(payload_preview, list)
     ):
         compact_payload["payload_preview_total"] = len(payload_preview)
         compact_payload["payload_preview"] = (
-            _compact_wordpress_staging_payload_preview_for_context(payload_preview)
+            _compact_wordpress_draft_handoff_preview_for_context(payload_preview)
         )
         compact_payload["payload_preview_included"] = len(
             compact_payload["payload_preview"]
@@ -2505,6 +2978,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         "source_search_terms",
         "payload_preview",
         "keyword_match_context",
+        "source_metric_names",
     ):
         if key == "payload_preview" and payload_preview_kept:
             continue
@@ -2568,23 +3042,10 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "risk": review_gate.get("risk"),
         "last_review_outcome": review_gate.get("last_review_outcome"),
         "last_reviewed_by": review_gate.get("last_reviewed_by"),
-        "last_reviewed_at": review_gate.get("last_reviewed_at"),
-        "last_review_summary": review_gate.get("last_review_summary"),
         "last_confirmation_by": review_gate.get("last_confirmation_by"),
-        "last_confirmation_at": review_gate.get("last_confirmation_at"),
-        "last_confirmation_summary": review_gate.get("last_confirmation_summary"),
         "last_impact_check_status": review_gate.get("last_impact_check_status"),
-        "last_impact_checked_by": review_gate.get("last_impact_checked_by"),
-        "last_impact_checked_at": review_gate.get("last_impact_checked_at"),
-        "last_impact_check_summary": review_gate.get("last_impact_check_summary"),
-        "last_mutation_audit_id": review_gate.get("last_mutation_audit_id"),
         "last_mutation_audit_status": review_gate.get("last_mutation_audit_status"),
-        "last_mutation_audit_actor": review_gate.get("last_mutation_audit_actor"),
-        "last_mutation_audit_at": review_gate.get("last_mutation_audit_at"),
-        "last_mutation_audit_summary": review_gate.get("last_mutation_audit_summary"),
         "last_mutation_attempted": review_gate.get("last_mutation_attempted"),
-        "last_mutation_adapter": review_gate.get("last_mutation_adapter"),
-        "last_mutation_audit_event_id": review_gate.get("last_mutation_audit_event_id"),
         "apply_allowed": review_gate.get("apply_allowed"),
         "confirmation_required": review_gate.get("confirmation_required"),
         "apply_blockers_total": len(apply_blockers),
@@ -2666,7 +3127,7 @@ def _compact_ga4_tracking_preview_for_context(preview_items: list[Any]) -> list[
         "apply_allowed",
         "destructive",
     }
-    for item in preview_items[:4]:
+    for item in preview_items[:3]:
         if isinstance(item, dict):
             compact_items.append({key: item[key] for key in keep_keys if key in item})
     return compact_items
@@ -2765,34 +3226,10 @@ def _compact_content_brief_preview_for_context(
         "source_type",
         "mode",
         "topic",
-        "target_url",
-        "source_url",
-        "target_site_url",
-        "target_site_host",
-        "source_site_host",
-        "target_site_adaptation_status",
-        "target_site_migration_candidate_url",
-        "target_site_migration_status",
-        "target_site_migration_summary",
-        "target_site_migration_candidate_inventory_status",
-        "target_site_migration_candidate_inventory_summary",
-        "target_site_alternative_candidate_urls",
-        "target_site_alternative_candidate_summary",
-        "target_site_mapping_review_status",
-        "target_site_mapping_review_summary",
-        "target_site_mapping_review_candidate_urls",
-        "target_site_mapping_review_recorded_outcome",
-        "target_site_mapping_review_selected_url",
-        "target_site_mapping_review_notes",
-        "target_site_review_requirements",
-        "target_site_inventory_content_type",
-        "target_site_inventory_status",
-        "target_site_inventory_source",
-        "target_site_inventory_modified_gmt",
-        "target_site_inventory_title_or_h1",
-        "target_site_inventory_canonical_url",
-        "target_site_inventory_missing_fields",
-        "target_site_inventory_summary",
+        "source_public_url",
+        "preview_url",
+        "intended_final_url",
+        "final_canonical_url",
         "inventory_gate_status",
         "canonical_gate_status",
         "duplicate_gate_status",
@@ -2843,10 +3280,6 @@ def _compact_content_brief_preview_for_context(
                 ("source_facts", 4),
                 ("missing_evidence", 3),
                 ("forbidden_claims", 5),
-                ("target_site_review_requirements", 4),
-                ("target_site_alternative_candidate_urls", 3),
-                ("target_site_mapping_review_candidate_urls", 3),
-                ("target_site_inventory_missing_fields", 6),
                 ("required_validation", 4),
                 ("blocked_claims", 5),
                 ("source_connectors", 4),
@@ -2874,34 +3307,10 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "post_status",
         "topic",
         "intent",
-        "target_url",
-        "source_url",
-        "target_site_url",
-        "target_site_host",
-        "source_site_host",
-        "target_site_adaptation_status",
-        "target_site_migration_candidate_url",
-        "target_site_migration_status",
-        "target_site_migration_summary",
-        "target_site_migration_candidate_inventory_status",
-        "target_site_migration_candidate_inventory_summary",
-        "target_site_alternative_candidate_urls",
-        "target_site_alternative_candidate_summary",
-        "target_site_mapping_review_status",
-        "target_site_mapping_review_summary",
-        "target_site_mapping_review_candidate_urls",
-        "target_site_mapping_review_recorded_outcome",
-        "target_site_mapping_review_selected_url",
-        "target_site_mapping_review_notes",
-        "target_site_review_requirements",
-        "target_site_inventory_content_type",
-        "target_site_inventory_status",
-        "target_site_inventory_source",
-        "target_site_inventory_modified_gmt",
-        "target_site_inventory_title_or_h1",
-        "target_site_inventory_canonical_url",
-        "target_site_inventory_missing_fields",
-        "target_site_inventory_summary",
+        "source_public_url",
+        "preview_url",
+        "intended_final_url",
+        "final_canonical_url",
         "inventory_gate_status",
         "canonical_gate_status",
         "duplicate_gate_status",
@@ -2916,9 +3325,9 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "legal_factual_review_recorded_outcome",
         "human_review_recorded_outcome",
         "draft_readiness_review_notes",
-        "staging_handoff_status",
-        "staging_handoff_blockers",
-        "staging_handoff_contract",
+        "wordpress_draft_handoff_status",
+        "wordpress_draft_handoff_blockers",
+        "wordpress_draft_handoff_contract",
         "post_publication_measurement_plan",
         "required_validation",
         "blocked_claims",
@@ -2933,18 +3342,6 @@ def _compact_wordpress_draft_payload_preview_for_context(
         if not isinstance(item, dict):
             continue
         compact_item = {key: item[key] for key in keep_keys if key in item}
-        alternative_urls = compact_item.get("target_site_alternative_candidate_urls")
-        if isinstance(alternative_urls, list):
-            compact_item["target_site_alternative_candidate_urls"] = alternative_urls[:3]
-            compact_item["target_site_alternative_candidate_urls_total"] = len(
-                alternative_urls
-            )
-        mapping_urls = compact_item.get("target_site_mapping_review_candidate_urls")
-        if isinstance(mapping_urls, list):
-            compact_item["target_site_mapping_review_candidate_urls"] = mapping_urls[:3]
-            compact_item["target_site_mapping_review_candidate_urls_total"] = len(
-                mapping_urls
-            )
         draft_generation_contract = compact_item.get("draft_generation_contract")
         if isinstance(draft_generation_contract, dict):
             for key, limit in (
@@ -2968,17 +3365,17 @@ def _compact_wordpress_draft_payload_preview_for_context(
                 if isinstance(value, list):
                     draft_readiness_contract[key] = value[:limit]
                     draft_readiness_contract[f"{key}_total"] = len(value)
-        staging_handoff_contract = compact_item.get("staging_handoff_contract")
-        if isinstance(staging_handoff_contract, dict):
+        wordpress_draft_handoff_contract = compact_item.get("wordpress_draft_handoff_contract")
+        if isinstance(wordpress_draft_handoff_contract, dict):
             for key, limit in (
                 ("blocked_until", 7),
                 ("requires_passed_gates", 7),
                 ("blocked_outputs", 5),
             ):
-                value = staging_handoff_contract.get(key)
+                value = wordpress_draft_handoff_contract.get(key)
                 if isinstance(value, list):
-                    staging_handoff_contract[key] = value[:limit]
-                    staging_handoff_contract[f"{key}_total"] = len(value)
+                    wordpress_draft_handoff_contract[key] = value[:limit]
+                    wordpress_draft_handoff_contract[f"{key}_total"] = len(value)
         _compact_post_publication_measurement_plan(compact_item)
         draft_payload = item.get("draft_payload")
         if isinstance(draft_payload, dict):
@@ -3008,7 +3405,7 @@ def _compact_wordpress_draft_payload_preview_for_context(
     return compact_items
 
 
-def _compact_wordpress_staging_payload_preview_for_context(
+def _compact_wordpress_draft_handoff_preview_for_context(
     preview_items: list[Any],
 ) -> list[dict[str, Any]]:
     compact_items: list[dict[str, Any]] = []
@@ -3017,12 +3414,13 @@ def _compact_wordpress_staging_payload_preview_for_context(
         "operation_type",
         "candidate_id",
         "topic",
-        "source_url",
-        "selected_target_url",
-        "mapping_review_status",
+        "source_public_url",
+        "preview_url",
+        "intended_final_url",
+        "final_canonical_url",
         "canonical_gate_status",
         "duplicate_gate_status",
-        "staging_handoff_status",
+        "wordpress_draft_handoff_status",
         "required_next_action_contract",
         "post_publication_measurement_plan",
         "required_validation",
@@ -3055,7 +3453,7 @@ def _compact_post_publication_measurement_plan(item: dict[str, Any]) -> None:
     keep_keys = {
         "contract_version",
         "scope",
-        "target_site_url",
+        "final_canonical_url",
         "status",
         "baseline_window",
         "followup_windows",
@@ -3178,6 +3576,26 @@ def _limit_recommendation_rows_for_context(data: dict[str, Any]) -> None:
     ]
 
 
+def _drop_recommendation_row_nested_payload_preview_for_context(data: dict[str, Any]) -> None:
+    contract = data.get("recommendations_read_contract")
+    if not isinstance(contract, dict):
+        return
+    rows = contract.get("recommendation_rows")
+    if not isinstance(rows, list):
+        return
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        payload_preview = row.pop("payload_preview", None)
+        if isinstance(payload_preview, list):
+            row["payload_preview_total"] = len(payload_preview)
+        elif isinstance(payload_preview, dict):
+            row["payload_preview_total"] = 1
+        else:
+            row["payload_preview_total"] = 0
+        row["payload_preview_included"] = 0
+
+
 def _limit_candidate_rows(
     data: dict[str, Any],
     candidates_path: tuple[str, str],
@@ -3197,6 +3615,59 @@ def _drop_candidate_nested_payload_preview(
     for candidate in _list_at(data, *candidates_path):
         if isinstance(candidate, dict):
             candidate.pop("payload_preview", None)
+
+
+def _compact_negative_keyword_candidate_context_rows_for_context(data: dict[str, Any]) -> None:
+    candidates = _list_at(data, "negative_keywords_read_contract", "candidates")
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        rows = candidate.get("keyword_context_rows")
+        if not isinstance(rows, list):
+            continue
+        candidate["keyword_context_rows_total"] = len(rows)
+        compact_rows = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            compact_rows.append(
+                {
+                    "keyword_text": row.get("keyword_text"),
+                    "match_type": row.get("match_type"),
+                    "criterion_status": row.get("criterion_status"),
+                    "negative": row.get("negative"),
+                    "evidence_ids": row.get("evidence_ids") or [],
+                }
+            )
+        candidate["keyword_context_rows"] = compact_rows
+        candidate["keyword_context_rows_included"] = len(compact_rows)
+
+
+def _compact_custom_segment_candidate_search_term_rows_for_context(data: dict[str, Any]) -> None:
+    candidates = _list_at(data, "custom_segments_read_contract", "candidates")
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        rows = candidate.get("search_term_rows")
+        if not isinstance(rows, list):
+            continue
+        candidate["search_term_rows_total"] = len(rows)
+        compact_rows = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            compact_rows.append(
+                {
+                    "search_term": row.get("search_term"),
+                    "clicks": row.get("clicks"),
+                    "cost_micros": row.get("cost_micros"),
+                    "conversions": row.get("conversions"),
+                    "evidence_ids": row.get("evidence_ids") or [],
+                    "missing_metrics": row.get("missing_metrics") or [],
+                }
+            )
+        candidate["search_term_rows"] = compact_rows
+        candidate["search_term_rows_included"] = len(compact_rows)
 
 
 def _compact_custom_segment_payload_preview_for_context(data: dict[str, Any]) -> None:
@@ -3390,6 +3861,41 @@ def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
             if isinstance(rows, list):
                 decision[f"{rows_key}_total"] = len(rows)
                 decision[rows_key] = []
+
+
+def _drop_empty_decision_row_lists_for_context(data: dict[str, Any]) -> None:
+    row_keys = (
+        "campaign_rows",
+        "campaign_triage_rows",
+        "derived_kpi_rows",
+        "budget_rows",
+        "budget_apply_preview",
+        "recommendation_rows",
+        "recommendation_apply_preview",
+        "impression_share_rows",
+        "change_history_rows",
+        "search_term_rows",
+        "search_term_ngram_rows",
+        "search_term_safety_rows",
+        "keyword_match_context_rows",
+        "keyword_planner_idea_rows",
+        "custom_segment_candidates",
+        "custom_segment_audience_forecast_rows",
+        "custom_segment_payload_preview",
+        "negative_keyword_candidates",
+        "negative_keyword_payload_preview",
+    )
+    for decision in _list_at(data, "decision_queue"):
+        if not isinstance(decision, dict):
+            continue
+        omitted_count = 0
+        for rows_key in row_keys:
+            rows = decision.get(rows_key)
+            if rows == []:
+                decision.pop(rows_key, None)
+                omitted_count += 1
+        if omitted_count:
+            decision["omitted_empty_row_lists_count"] = omitted_count
 
 
 def _evidence_ids_from_context(

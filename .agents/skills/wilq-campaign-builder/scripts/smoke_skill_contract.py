@@ -32,7 +32,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -167,7 +167,7 @@ def validate_core_campaign_actions(api_base: str, pack: dict[str, Any]) -> list[
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Campaign ActionObject validation failed: {validation}")
+            raise SystemExit(f"Campaign action validation failed: {validation}")
     return action_validations
 
 

@@ -44,9 +44,9 @@ def build_recommendations_read_contract(
             "recommendation_apply_preview",
         )
     blocked_claims = [
-        "recommendation apply",
+        "zapis rekomendacji",
         "automatic recommendation accept",
-        "budget apply",
+        "zmiana budżetu",
         "campaign mutation",
         "performance uplift",
     ]
@@ -54,19 +54,19 @@ def build_recommendations_read_contract(
         if rows:
             types = _unique(row.recommendation_type for row in rows)
             summary = (
-                f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do review. "
-                f"Typy: {', '.join(types[:5])}. Impact preview dostępny dla "
-                f"{impact_row_count}; apply payload preview dla "
+                f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do sprawdzenia. "
+                f"Typy: {', '.join(types[:5])}. Podgląd wpływu dostępny dla "
+                f"{impact_row_count}; podgląd zmian dla "
                 f"{len(payload_preview)}."
             )
         else:
             summary = (
-                "WILQ wykonał read-only recommendations read; Google Ads zwrócił "
+                "WILQ odczytał rekomendacje Google Ads; Google Ads zwrócił "
                 "0 aktywnych rekomendacji."
             )
         return AdsRecommendationsReadContract(
             status="ready",
-            title="Google Ads: rekomendacje do review",
+            title="Google Ads: rekomendacje do sprawdzenia",
             summary=summary,
             allowed_metrics=[
                 "recommendation_available",
@@ -97,15 +97,15 @@ def build_recommendations_read_contract(
             payload_preview=payload_preview,
             action_ids=action_ids,
             next_step=(
-                "Potraktuj rekomendacje Google jako input do review, nie jako gotową "
-                "strategię. Przed apply wymagaj celu biznesowego, RMF/compliance "
-                "review, potwierdzenia człowieka, audytu i osobnego apply path."
+                "Potraktuj rekomendacje Google jako materiał do sprawdzenia, nie jako gotową "
+                "strategię. Przed zapisem zmian wymagaj celu biznesowego, oceny zgodności, "
+                "potwierdzenia człowieka, audytu i osobnej ścieżki zapisu zmian."
             ),
         )
     return AdsRecommendationsReadContract(
         status="blocked",
         title="Google Ads: brak kontraktu rekomendacji",
-        summary="WILQ nie ma jeszcze read-only facts z zasobu recommendation.",
+        summary="WILQ nie ma jeszcze danych z zasobu recommendation.",
         allowed_metrics=[],
         missing_read_contracts=["recommendations", *missing_read_contracts],
         operator_review_gates=[],
@@ -116,8 +116,8 @@ def build_recommendations_read_contract(
         payload_preview=[],
         action_ids=[],
         next_step=(
-            "Uruchom Google Ads vendor_read z recommendation fields. Nie przyjmuj "
-            "ani nie odrzucaj rekomendacji bez osobnego ActionObject."
+            "Uruchom odczyt danych Google Ads z polami rekomendacji. Nie przyjmuj "
+            "ani nie odrzucaj rekomendacji bez osobnej akcji do sprawdzenia."
         ),
     )
 
@@ -289,7 +289,7 @@ def _recommendation_row(
             "porównaj z historią zmian",
             "porównaj z celem biznesowym",
             "zweryfikuj RMF/compliance",
-            "potwierdź człowiekiem przed apply",
+            "potwierdź człowiekiem przed zapisem",
         ],
         dismissed=first_dimensions.get("dismissed") == "true",
         campaign_id=campaign_id,
@@ -318,9 +318,9 @@ def _recommendation_row(
         payload_preview=payload_preview,
         missing_metrics=missing_metrics,
         blocked_claims=[
-            "recommendation apply",
+            "zapis rekomendacji",
             "automatic recommendation accept",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation",
         ],
     )
@@ -390,13 +390,13 @@ def _recommendation_review_reason(
         )
     else:
         impact_part = (
-            "brak impact metrics; wymagany ręczny review typu rekomendacji "
+            "brak metryk wpływu; wymagane ręczne sprawdzenie typu rekomendacji "
             f"i brakujących metryk: {', '.join(missing_metrics) or 'brak'}"
         )
     return (
         f"Rekomendacja {recommendation_type}: {impact_part}. "
-        "To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica "
-        "performance uplift."
+        "To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica "
+        "poprawy wyniku."
     )
 
 
@@ -420,8 +420,8 @@ def _recommendation_apply_preview(
         campaign_id=campaign_id,
         campaign_budget_id=campaign_budget_id,
         reason=(
-            "Review-only podgląd operacji ApplyRecommendation. WILQ nie może "
-            "wykonać apply bez strategii, RMF/compliance review, potwierdzenia "
+            "Podgląd rekomendacji Google Ads do sprawdzenia w WILQ. WILQ nie może "
+            "zapisać zmian bez strategii, oceny zgodności, potwierdzenia "
             "człowieka i audytu."
         ),
         evidence_ids=evidence_ids,

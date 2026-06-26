@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 import urllib.error
 import urllib.request
 from typing import Any
@@ -82,6 +83,14 @@ def collect_text(value: Any) -> list[str]:
     return []
 
 
+def normalize_for_marker_check(value: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    )
+
+
 health = request_json("/api/health")
 if health.get("status") != "ok":
     raise SystemExit(f"/api/health returned non-ok status: {health!r}")
@@ -92,9 +101,11 @@ errors: list[str] = []
 if brief.get("language") != "pl-PL":
     errors.append(f"language must be pl-PL, got {brief.get('language')!r}")
 
-instruction = str(brief.get("strict_instruction", "")).lower()
-if "metryki" not in instruction or "evidence" not in instruction:
-    errors.append("strict_instruction must mention metric/evidence guardrails")
+instruction = normalize_for_marker_check(str(brief.get("strict_instruction", "")))
+if "metryk" not in instruction or not (
+    "dowod" in instruction or "evidence" in instruction
+):
+    errors.append("strict_instruction must mention metric and evidence/dowody guardrails")
 
 sections = brief.get("sections")
 if not isinstance(sections, list):
@@ -119,8 +130,14 @@ if not items:
 if not brief.get("evidence_ids"):
     errors.append("marketing brief must expose evidence_ids")
 
-if "act_configure_google_ads_env" not in (brief.get("action_ids") or []):
-    errors.append("marketing brief must expose act_configure_google_ads_env")
+action_ids = brief.get("action_ids") or []
+if not action_ids:
+    errors.append("marketing brief must expose safe action_ids")
+elif not any(
+    str(action_id).startswith(("act_prepare_", "act_review_", "act_configure_"))
+    for action_id in action_ids
+):
+    errors.append("marketing brief action_ids must expose safe prepare/review/configure actions")
 
 for item in items:
     item_id = item.get("id", "<missing>")

@@ -35,9 +35,9 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("Custom segment payload requires evidence IDs.")
     preview = payload.get("payload_preview")
     if not isinstance(preview, list) or not preview:
-        errors.append("Custom segment payload requires review-only payload_preview.")
+        errors.append("Custom segment validation requires a non-mutating preview list.")
     elif any(item.get("apply_allowed") is not False for item in preview if isinstance(item, dict)):
-        errors.append("Custom segment payload preview must keep apply_allowed=false.")
+        errors.append("Custom segment podgląd zmian must keep apply_allowed=false.")
     else:
         for item in preview:
             if not isinstance(item, dict):
@@ -45,9 +45,7 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
             targeting_preview = item.get("targeting_preview")
             safety_review = item.get("safety_review")
             if not isinstance(safety_review, dict):
-                errors.append(
-                    "Custom segment payload preview requires apply safety_review."
-                )
+                errors.append("Custom segment preview requires safety_review before zapis zmian.")
             else:
                 if safety_review.get("apply_allowed") is not False:
                     errors.append(
@@ -67,7 +65,7 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
                     )
             if not isinstance(targeting_preview, list) or not targeting_preview:
                 errors.append(
-                    "Custom segment payload preview requires targeting_preview."
+                    "Custom segment podgląd zmian requires targeting_preview."
                 )
                 continue
             if any(
@@ -107,7 +105,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
         "mode": "prepare_only",
         "terms": terms[:20],
         "source_terms": terms[:20],
-        "preview_contract": "custom_segment_payload_preview_v1",
+        "preview_contract": "custom_segment_change_preview_v1",
         "payload_preview": [
             {
                 "id": "custom_segment_preview_google_ads_search_terms",
@@ -115,7 +113,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                 "member_type": "KEYWORD",
                 "source_terms": terms[:20],
                 "reason": (
-                    "Review-only custom audience keyword members from Google Ads "
+                    "Do sprawdzenia: słowa kluczowe segmentu odbiorców z Google Ads "
                     "search-term evidence."
                 ),
                 "evidence_ids": evidence_ids,
@@ -179,9 +177,9 @@ def custom_segment_apply_safety_review(
         "safety_contract": CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT,
         "status": "blocked",
         "reason": (
-            "Custom segment apply zablokowany: preview jest tylko do review. "
-            "WILQ wymaga Keyword Planner/forecast evidence, audytu mutacji "
-            "Google Ads i potwierdzenia człowieka przed apply."
+            "Zapis zmian w custom segment zablokowany: podgląd jest "
+            "do sprawdzenia. WILQ wymaga danych z Keyword Planner albo forecast, "
+            "audytu zmiany Google Ads i potwierdzenia człowieka przed zapisem zmian."
         ),
         "missing_requirements": missing_requirements,
         "required_validation": CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION,
@@ -244,8 +242,8 @@ def _custom_segment_targeting_preview(
         "campaign_name": campaign_name,
         "operation_type": "custom_segment_targeting_review",
         "reason": (
-            "Review-only podgląd, do której kampanii można wrócić po walidacji "
-            "segmentu. To nie jest targetowanie ani Google Ads mutation."
+            "Do sprawdzenia: podgląd kampanii, do której można wrócić po sprawdzeniu "
+            "segmentu. To nie jest targetowanie ani mutacja Google Ads."
         ),
         "required_validation": [
             "keyword_planner_enrichment",

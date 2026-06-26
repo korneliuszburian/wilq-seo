@@ -20,7 +20,14 @@ REQUIRED_CONTEXT_KEYS = {
 }
 
 
-def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
+def request_json(
+    api_base: str,
+    method: str,
+    path: str,
+    body: dict[str, Any] | None = None,
+    *,
+    timeout_seconds: int = 60,
+) -> Any:
     data = None if body is None else json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
         f"{api_base.rstrip('/')}{path}",
@@ -29,7 +36,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -41,13 +48,20 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
+    parser.add_argument("--timeout-seconds", type=int, default=60)
     args = parser.parse_args()
 
-    health = request_json(args.api_base, "GET", "/api/health")
+    health = request_json(args.api_base, "GET", "/api/health", timeout_seconds=args.timeout_seconds)
     if health.get("status") != "ok":
         raise SystemExit(f"WILQ API health is not ok: {health}")
 
-    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    pack = request_json(
+        args.api_base,
+        "POST",
+        "/api/codex/context-pack",
+        {"skill": SKILL_NAME},
+        timeout_seconds=args.timeout_seconds,
+    )
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
@@ -69,7 +83,7 @@ def main() -> int:
     missing_read_contracts = gap_contract.get("missing_read_contracts") or []
     gap_records = gap_contract.get("gap_records") or []
     if gap_records and "ahrefs_review_gap_records" not in decision_ids:
-        raise SystemExit("Ahrefs diagnostics must expose gap records review decision")
+        raise SystemExit("Ahrefs diagnostics must expose gap review decision")
     if missing_read_contracts and "ahrefs_block_gap_claims_without_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must block gap claims when contracts are missing")
     if not missing_read_contracts and gap_contract.get("status") != "ready":
@@ -97,7 +111,7 @@ def main() -> int:
         }
     )
     if gap_records and not freshness_states:
-        raise SystemExit("Ahrefs gap records must expose freshness_state")
+        raise SystemExit("Ahrefs gap data must expose freshness_state")
     serialized_ahrefs = json.dumps(ahrefs_diagnostics, ensure_ascii=False)
     for required_term in ("evidence_ids", "missing_read_contracts", "blocked_claims"):
         if required_term not in serialized_ahrefs:
@@ -110,7 +124,7 @@ def main() -> int:
     ]
     if not diagnostics_action_ids and context_action_ids:
         raise SystemExit(
-            "Ahrefs context pack must not expose adjacent ActionObjects when "
+            "Ahrefs context pack must not expose adjacent actions when "
             f"diagnostics action_ids is empty: {context_action_ids}"
         )
 
@@ -174,7 +188,7 @@ def main() -> int:
                     "blocked_claims": gap_contract.get("blocked_claims", []),
                     "freshness_states": freshness_states,
                     "freshness_labels": freshness_labels[:5],
-                    "review_mode": "review-only",
+                    "review_mode": "validation-only",
                 },
                 "ahrefs_decision_ids": sorted(decision_ids),
                 "evidence_ids": [

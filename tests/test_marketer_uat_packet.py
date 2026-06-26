@@ -44,25 +44,24 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
         },
         "content": {
             "operator_summary": {
-                "target_site_host": "ekologus.dev.proudsite.pl",
-                "target_site_mapping_status": "target_site_mapping_review_needed",
-                "target_site_mapping_review_count": 1,
-                "target_site_mapping_review_inputs": [
-                    {
-                        "candidate_id": "content_brief_gsc_bdo",
-                        "title": "SEO: odśwież BDO",
-                        "source_url": "https://www.ekologus.pl/bdo/",
-                        "mapping_review_status": "review_alternative_candidates",
-                        "candidate_target_urls": [
-                            "https://ekologus.dev.proudsite.pl/uslugi/bdo/"
-                        ],
-                        "blocked_outputs": [
-                            "wordpress_publish",
-                            "ranking_or_lead_uplift_claim",
-                        ],
-                    }
-                ],
+                "confirmed_wordpress_count": 1,
+                "missing_wordpress_count": 0,
+                "current_site_match_count": 1,
+                "decision_type_labels": ["odświeżenie albo scalenie"],
             },
+            "decision_queue": [
+                {
+                    "id": "content_decision_bdo",
+                    "title": "SEO: odśwież BDO",
+                    "decision_type": "refresh_or_merge",
+                    "source_public_url": "https://www.ekologus.pl/bdo/",
+                    "intended_final_url": "https://www.ekologus.pl/bdo/",
+                    "final_canonical_url": "https://www.ekologus.pl/bdo/",
+                    "preview_url": None,
+                    "next_step": "Przygotuj brief odświeżenia na istniejący URL.",
+                    "blocked_claims": ["wordpress_publish", "ranking gain"],
+                }
+            ],
             "blocked_claims": ["wordpress_publish", "ranking gain"],
             "action_ids": ["act_prepare_content_refresh_queue"],
         },
@@ -110,13 +109,16 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
         "ga4",
     ]
     assert "nie jest dowodem wykonanego UAT" in packet["safety_note"]
-    assert "Nie odblokowuje publish/apply" in packet["safety_note"]
+    assert "Nie odblokowuje publikacji ani zapisu zmian" in packet["safety_note"]
     assert packet["result_template"]["ready_without_developer"] == "<yes|no>"
 
     content_snapshot = packet["route_checks"][2]["live_snapshot"]
-    assert content_snapshot["target_site_host"] == "ekologus.dev.proudsite.pl"
-    assert content_snapshot["mapping_review_inputs"][0]["candidate_id"] == (
-        "content_brief_gsc_bdo"
+    assert content_snapshot["current_site_match_count"] == 1
+    assert content_snapshot["top_decisions"][0]["source_public_url"] == (
+        "https://www.ekologus.pl/bdo/"
+    )
+    assert content_snapshot["top_decisions"][0]["final_canonical_url"] == (
+        "https://www.ekologus.pl/bdo/"
     )
 
 

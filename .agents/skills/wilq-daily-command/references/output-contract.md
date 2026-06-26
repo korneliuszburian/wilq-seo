@@ -12,7 +12,7 @@ Daily Command pokazuje core daily loop: Merchant, Content/GSC/WordPress, GA4 i
 Ads. Nie jest pełnym registry connectorów, Localo dashboardem ani social
 planning surface. Localo może pojawić się w daily briefie tylko wtedy, gdy
 `command_center.daily_decisions` je zwraca albo użytkownik jawnie pyta o
-lokalną widoczność. Social draft ActionObjects należą do
+lokalną widoczność. Akcje do sprawdzenia social należą do
 `wilq-social-publisher`, nie do daily briefu.
 
 ## Wymagany kontekst API
@@ -26,7 +26,7 @@ metric summaries.
 
 Następnie pobierz `POST /api/codex/context-pack` z
 `{"skill":"wilq-daily-command"}` dla szerszego kontekstu: connector status,
-refresh runs, evidence summaries, opportunities, ActionObjects, expert rules
+refresh runs, evidence summaries, opportunities, actions, expert rules
 and knowledge cards. Osadzony `command_center` jest celowo kompaktowy: użyj
 `daily_decisions` jako kanonicznej daily decision list i potwierdź, że zgadza się z
 `GET /api/dashboard/command-center` dla `primary_next_step`, blocker count,
@@ -52,17 +52,17 @@ Wymagane connectory:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i action IDs zostaw bez zmian.
 
 
 1. `Status`: zasięg API, gotowość connectorów, status `CommandCenter.daily_decisions` oraz znane blockery.
 2. `Dowody`: evidence IDs, connector IDs, freshness notes i metric summaries wyłącznie z `CommandCenter`/`MarketingBrief`/WILQ API.
 3. `Diagnoza`: co wspierają daily decisions, z niepewnością, jeśli evidence jest zagregowane, stare albo niepełne.
-4. `Kandydaci działań`: `daily_decisions.action_ids`, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
-5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
+4. `Akcje do sprawdzenia`: `daily_decisions.action_ids`, opportunity IDs i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
-Core ActionObject IDs oczekiwane w daily loop, jeśli WILQ API je zwraca:
+Core action IDs oczekiwane w daily loop, jeśli WILQ API je zwraca:
 
 - `act_review_merchant_feed_issues`
 - `act_review_ga4_tracking_quality`
@@ -79,9 +79,9 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
-- Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
+- Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
+- Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
 
 ## Reguły evidence
 
-Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.
+Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak akcji sprawdzonej w WILQ oznacza brak zapisu zmian. Brak audit event oznacza brak zapisu.

@@ -21,7 +21,7 @@ CHANGE_HISTORY_IMPACT_BLOCKED_CLAIMS = [
     "change impact",
     "performance uplift",
     "budget scaling",
-    "budget apply",
+    "zmiana budżetu",
     "campaign mutation",
 ]
 
@@ -163,8 +163,8 @@ def _change_history_impact_preview(
         "changed_fields": changed_fields,
         "operation_type": CHANGE_HISTORY_IMPACT_OPERATION_TYPE,
         "reason": (
-            "Review-only podgląd impact review historii zmian. WILQ nie może "
-            "claimować wpływu zmiany bez okna wyników przed/po i ręcznego review."
+            "Do sprawdzenia: podgląd wpływu historii zmian. WILQ nie może "
+            "twierdzić wpływu zmiany bez okna wyników przed/po i ręcznej oceny."
         ),
         "missing_read_contracts": [
             "pre_change_performance_window",

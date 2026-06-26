@@ -2,13 +2,12 @@ id: ads_demand_gen_v1
 name: Demand Gen readiness
 version: 1
 source_anchor: Google Ads Demand Gen
-when_to_use: Assess Display to Demand Gen migration and campaign readiness.
+when_to_use: Assess Display to Demand Gen transition and campaign readiness.
 required_inputs: [display_campaigns, assets, audiences, goals, evidence_ids]
-diagnostic_logic: [score_asset_readiness, detect_migration_candidates, expose_ai_enhancement_state]
+diagnostic_logic: [score_asset_readiness, detect_transition_candidates, expose_ai_enhancement_state]
 recommended_actions:
-  - prepare_demand_gen_migration_plan
+  - prepare_demand_gen_transition_plan
   - prepare_demand_gen_campaign
   - prepare_demand_gen_creative_requirements
 risk_notes: Do not silently enable Google AI enhancements.
 output_contract: Demand Gen readiness opportunity and action candidates.
-

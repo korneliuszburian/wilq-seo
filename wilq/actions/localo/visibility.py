@@ -73,7 +73,7 @@ def localo_visibility_review_payload_from_metric_facts(
                 "allowed_contracts": present_contracts,
                 "missing_read_contracts": missing_contracts,
                 "reason": (
-                    "Review-only podgląd Localo aggregate facts. WILQ może "
+                    "Podgląd agregatów Localo do sprawdzenia. WILQ może "
                     f"sprawdzić wskazane kontrakty, ale blokuje {blocked_scope} "
                     "bez osobnych read contracts albo effect evidence."
                 ),

@@ -1,0 +1,80 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+
+BLOCKED_CLAIM_LABELS: dict[str, str] = {
+    "approval restored": "ponowne zatwierdzenie produktu",
+    "automatic approval fix": "automatyczna naprawa zatwierdzenia",
+    "automatic feed edit": "automatyczna zmiana feedu",
+    "audience size": "wielkość grupy odbiorców",
+    "budget change": "zmiana budżetu",
+    "budget optimization": "optymalizacja budżetu",
+    "budget scaling": "skalowanie budżetu",
+    "campaign creation": "utworzenie kampanii",
+    "campaign mutation": "zmiana kampanii",
+    "campaign performance": "werdykt skuteczności kampanii",
+    "causal impact": "przyczynowy wpływ zmian",
+    "client-ready report": "raport gotowy dla klienta",
+    "competitor gap priority": "priorytet luk względem konkurencji",
+    "CPA": "koszt pozyskania celu",
+    "CPA verdict": "werdykt kosztu pozyskania celu",
+    "CPC": "koszt kliknięcia",
+    "CTR": "współczynnik kliknięć",
+    "conversion drop": "spadek konwersji",
+    "conversion rate": "współczynnik konwersji",
+    "conversion setup applied": "wdrożona konfiguracja konwersji",
+    "conversion uplift": "wzrost konwersji",
+    "creative quality verdict": "werdykt jakości kreacji",
+    "Demand Gen launch ready": "gotowość uruchomienia Demand Gen",
+    "duplicate-free guarantee": "gwarancja braku duplikatów",
+    "feed issue resolved": "rozwiązany problem feedu",
+    "feed write": "zapis feedu",
+    "GBP performance verdict": "werdykt skuteczności profilu firmy",
+    "GBP write": "zapis zmian w profilu firmy",
+    "zapis zmian GBP": "zapis zmian w profilu firmy",
+    "lead quality": "jakość leadów",
+    "lead uplift": "wzrost liczby leadów",
+    "link acquisition impact": "wpływ pozyskanych linków",
+    "local task completed": "ukończone zadanie lokalne",
+    "local ranking uplift": "wzrost lokalnych pozycji",
+    "local visibility uplift": "poprawa widoczności lokalnej",
+    "monthly performance verdict": "miesięczny werdykt skuteczności",
+    "negative keyword addition": "dodanie wykluczających słów kluczowych",
+    "new article without inventory check": "nowy artykuł bez kontroli spisu treści",
+    "post published": "opublikowany post",
+    "primary feed overwrite": "nadpisanie głównego feedu",
+    "product fix applied": "wdrożona poprawka produktu",
+    "product-level fix": "poprawka na poziomie produktu",
+    "profitability": "opłacalność",
+    "profitability verdict": "werdykt opłacalności",
+    "profit uplift": "wzrost zysku",
+    "ranking guarantee": "gwarancja wzrostu pozycji",
+    "recommendation applied": "wdrożona rekomendacja",
+    "recommendation write": "zapis rekomendacji",
+    "revenue": "przychód",
+    "revenue impact": "wpływ na przychód",
+    "revenue recovered": "odzyskany przychód",
+    "ROAS": "zwrot z wydatków reklamowych",
+    "ROAS verdict": "werdykt zwrotu z wydatków reklamowych",
+    "search-term waste": "marnowanie budżetu na zapytaniach",
+    "search terms": "zapytania z reklam",
+    "social performance uplift": "wzrost skuteczności social",
+    "spend": "wydatki reklamowe",
+    "targeting applied": "wdrożone targetowanie",
+    "target CPA verdict": "werdykt docelowego kosztu pozyskania",
+    "target ROAS verdict": "werdykt docelowego zwrotu z wydatków reklamowych",
+    "werdykt target CPA": "werdykt docelowego kosztu pozyskania",
+    "werdykt target ROAS": "werdykt docelowego zwrotu z wydatków reklamowych",
+    "tracking fixed": "naprawiony pomiar",
+    "wasted budget": "zmarnowany budżet",
+    "wasted budget verdict": "werdykt przepalonego budżetu",
+}
+
+
+def operator_blocked_claims(claims: Iterable[str]) -> list[str]:
+    values: list[str] = []
+    for claim in claims:
+        label = BLOCKED_CLAIM_LABELS.get(claim, claim.replace("_", " "))
+        if label and label not in values:
+            values.append(label)
+    return values

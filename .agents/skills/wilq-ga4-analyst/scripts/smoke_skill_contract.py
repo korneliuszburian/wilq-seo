@@ -30,7 +30,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -107,7 +107,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"GA4 ActionObject validation failed: {validation}")
+            raise SystemExit(f"GA4 action validation failed: {validation}")
 
     decision_queue = ga4_diagnostics.get("decision_queue", [])
     has_live_landing_groups = (

@@ -11,7 +11,7 @@ capabilities:
   - ads_keyword_research
   - ads_custom_segments
   - ads_create_custom_segments_from_search_terms
-  - ads_demand_gen_migration_readiness
+  - ads_demand_gen_transition_readiness
   - ads_demand_gen_campaign_builder
   - ads_audience_targeting
   - ads_scaling_candidates
@@ -40,4 +40,3 @@ required_mapping:
   - api_limitations
   - validation_checks
 output_contract: Capability definitions consumed by API, dashboard and future skills.
-

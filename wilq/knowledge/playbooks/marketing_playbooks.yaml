@@ -1,7 +1,7 @@
 playbooks:
   - id: google_ads_search_playbook
     family: google_ads_search_playbook
-    title: Google Ads search diagnostics
+    title: Diagnostyka wyszukiwanych haseł Google Ads
     card_type: ads_pattern_card
     source_anchors:
       - Google Ads search terms
@@ -26,11 +26,11 @@ playbooks:
     refusal_rules:
       - Refuse to classify search intent without search-term evidence.
       - Refuse to recommend spend changes from connector status alone.
-    output_contract: Evidence-backed search-term opportunity and optional ActionObject IDs.
+    output_contract: Evidence-backed search-term opportunity and optional validated action IDs.
 
   - id: google_ads_budget_review_playbook
     family: google_ads_budget_review_playbook
-    title: Google Ads budget review
+    title: Przegląd budżetów Google Ads
     card_type: campaign_card
     source_anchors:
       - Google Ads campaign budgets
@@ -49,7 +49,7 @@ playbooks:
       - ads_scaling_candidates_v1
       - ads_recommendations_v1
       - ads_principles_v1
-    compact_playbook: Use campaign budget fields and recent cost only as review context. Do not scale, cut or apply budgets without impression share, change history, business budget goal, payload preview and ActionObject validation.
+    compact_playbook: Use campaign budget fields and recent cost only as validation context. Do not scale, cut or write budgets without impression share, change history, business budget goal, change preview and action validation.
     refusal_rules:
       - Refuse budget changes without campaign_budget evidence IDs.
       - Refuse profitability or wasted-budget claims without margin, conversion quality and review contracts.
@@ -58,11 +58,11 @@ playbooks:
 
   - id: google_ads_demand_gen_playbook
     family: google_ads_demand_gen_playbook
-    title: Demand Gen readiness
+    title: Gotowość Demand Gen
     card_type: ads_pattern_card
     source_anchors:
       - Google Ads Demand Gen
-      - Display to Demand Gen migration
+      - Display to Demand Gen transition
     required_evidence:
       - display_campaigns
       - assets
@@ -70,22 +70,22 @@ playbooks:
       - goals
       - evidence_ids
     maps_to_opportunity_types:
-      - display_to_demand_gen_migration_candidates
+      - display_to_demand_gen_transition_candidates
       - demand_gen_asset_readiness
     maps_to_action_types:
-      - prepare_demand_gen_migration_plan
+      - prepare_demand_gen_transition_plan
       - prepare_demand_gen_campaign
     expert_rule_ids:
       - ads_demand_gen_v1
-    compact_playbook: Check migration candidates, asset readiness, goals and audience state before preparing Demand Gen actions. AI enhancement changes must stay explicit.
+    compact_playbook: Check transition candidates, asset readiness, goals and audience state before preparing Demand Gen actions. AI enhancement changes must stay explicit.
     refusal_rules:
-      - Refuse to infer migration readiness without campaign and asset evidence.
+      - Refuse to infer transition readiness without campaign and asset evidence.
       - Refuse to silently enable AI enhancements.
-    output_contract: Demand Gen readiness opportunity with evidence and action payload preview.
+    output_contract: Demand Gen readiness opportunity with evidence and change preview.
 
   - id: google_ads_pmax_playbook
     family: google_ads_pmax_playbook
-    title: PMax and retail readiness
+    title: Gotowość PMax i sprzedaży produktowej
     card_type: campaign_card
     source_anchors:
       - Google Ads PMax channels
@@ -112,7 +112,7 @@ playbooks:
 
   - id: google_ads_negative_keywords_playbook
     family: google_ads_negative_keywords_playbook
-    title: Negative keyword review
+    title: Przegląd wykluczeń Google Ads
     card_type: negative_keyword_pattern_card
     source_anchors:
       - Google Ads negative keywords
@@ -131,15 +131,15 @@ playbooks:
     expert_rule_ids:
       - ads_negative_keywords_v1
       - ads_search_terms_v1
-    compact_playbook: Prepare negatives only when real search terms show waste, conversion absence and safe campaign scope. Preserve brand and high-intent terms for human review.
+    compact_playbook: Prepare negatives only when real search terms show waste, conversion absence and safe campaign scope. Preserve brand and high-intent terms for sprawdzenie przez człowieka.
     refusal_rules:
       - Refuse negative keyword actions without evidence IDs.
       - Refuse broad negatives that can block valuable intent without review.
-    output_contract: Validated negative keyword ActionObjects with search-term evidence.
+    output_contract: Validated negative keyword actions with search-term evidence.
 
   - id: google_ads_custom_segments_playbook
     family: google_ads_custom_segments_playbook
-    title: Custom segments from search evidence
+    title: Segmenty niestandardowe z wyszukiwanych haseł
     card_type: keyword_cluster_card
     source_anchors:
       - Google Ads custom segments
@@ -148,7 +148,7 @@ playbooks:
       - search_terms
       - campaign_context
       - evidence_ids
-      - custom_segment_payload_preview
+      - custom_segment_change_preview
     maps_to_opportunity_types:
       - custom_segment_candidate
     maps_to_action_types:
@@ -157,15 +157,15 @@ playbooks:
     expert_rule_ids:
       - ads_custom_segments_v1
       - ads_keyword_planner_v1
-    compact_playbook: Build review-only segment candidates from real search terms. Keep rejected low-intent or invented terms visible. Require Keyword Planner enrichment, forecast/audience-size and human approval before any apply path.
+    compact_playbook: Build validation-ready segment proposals from real search terms. Keep rejected low-intent or invented terms visible. Require Keyword Planner enrichment, forecast/audience-size and human approval before any write path.
     refusal_rules:
       - Refuse invented audience terms.
       - Refuse segment payloads without source search terms.
-    output_contract: Custom segment candidate with evidence, rejected terms, review-only payload preview and blocked apply claims.
+    output_contract: Custom segment proposal with evidence, rejected terms, change preview and blocked write claims.
 
   - id: gsc_seo_content_playbook
     family: gsc_seo_content_playbook
-    title: GSC SEO and content opportunities
+    title: Okazje SEO i content z GSC
     card_type: content_card
     source_anchors:
       - Google Search Console Search Analytics
@@ -196,7 +196,7 @@ playbooks:
 
   - id: ahrefs_content_gap_playbook
     family: ahrefs_content_gap_playbook
-    title: Ahrefs competitor and content gaps
+    title: Luki contentowe i konkurencja z Ahrefs
     card_type: competitor_card
     source_anchors:
       - Ahrefs API v3
@@ -223,7 +223,7 @@ playbooks:
 
   - id: localo_local_seo_playbook
     family: localo_local_seo_playbook
-    title: Localo local visibility
+    title: Widoczność lokalna Localo
     card_type: local_visibility_card
     source_anchors:
       - Localo API/MCP
@@ -249,7 +249,7 @@ playbooks:
 
   - id: ga4_behavior_diagnostics_playbook
     family: ga4_behavior_diagnostics_playbook
-    title: GA4 behavior diagnostics
+    title: Diagnostyka zachowania GA4
     card_type: campaign_card
     source_anchors:
       - GA4 Data API
@@ -277,7 +277,7 @@ playbooks:
 
   - id: merchant_feed_optimization_playbook
     family: merchant_feed_optimization_playbook
-    title: Merchant feed optimization
+    title: Diagnostyka feedu Merchant
     card_type: service_card
     source_anchors:
       - Merchant API
@@ -299,15 +299,15 @@ playbooks:
     expert_rule_ids:
       - merchant_feed_rules_v1
       - merchant_product_diagnostics_v1
-    compact_playbook: Prepare feed and product copy actions only from product data and diagnostics. Preserve factual attributes and validate before apply.
+    compact_playbook: Prepare feed and product copy actions only from product data and diagnostics. Preserve factual attributes and validate before any write.
     refusal_rules:
       - Refuse product claims not present in product data.
       - Refuse feed writes without validation and audit.
-    output_contract: Merchant feed or product optimization ActionObject with product evidence.
+    output_contract: Merchant feed or product optimization action with product evidence.
 
   - id: linkedin_content_playbook
     family: linkedin_content_playbook
-    title: LinkedIn content publishing
+    title: Publikacje LinkedIn
     card_type: social_pattern_card
     source_anchors:
       - LinkedIn Posts API
@@ -324,15 +324,15 @@ playbooks:
     expert_rule_ids:
       - linkedin_rules_v1
       - content_social_limits_v1
-    compact_playbook: Prepare organization post candidates from source content and permission state. Publishing requires connector permission and human review.
+    compact_playbook: Prepare organization post candidates from source content and permission state. Publishing requires connector permission and sprawdzenie przez człowieka.
     refusal_rules:
       - Refuse public post claims without source content.
       - Refuse publishing without organization permissions.
-    output_contract: LinkedIn post ActionObject with evidence and payload preview.
+    output_contract: LinkedIn post action with evidence and change preview.
 
   - id: facebook_content_playbook
     family: facebook_content_playbook
-    title: Facebook Page publishing
+    title: Publikacje Facebook
     card_type: social_pattern_card
     source_anchors:
       - Facebook Pages API
@@ -353,11 +353,11 @@ playbooks:
     refusal_rules:
       - Refuse Page posts without source content and Page ID.
       - Refuse unsupported promotional claims.
-    output_contract: Facebook post ActionObject with evidence and payload preview.
+    output_contract: Facebook post action with evidence and change preview.
 
   - id: wordpress_content_refresh_playbook
     family: wordpress_content_refresh_playbook
-    title: WordPress content refresh
+    title: Odświeżanie treści WordPress
     card_type: content_card
     source_anchors:
       - WordPress REST API

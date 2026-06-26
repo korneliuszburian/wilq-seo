@@ -28,7 +28,7 @@ def build_change_history_read_contract(
         "change impact",
         "performance uplift",
         "budget scaling",
-        "budget apply",
+        "zmiana budżetu",
         "campaign mutation",
     ]
     if rows:
@@ -66,7 +66,7 @@ def build_change_history_read_contract(
             next_step=(
                 "Użyj historii zmian jako kontekstu audytu: co zmieniono, kiedy i na "
                 "jakim typie zasobu. Nie claimuj wpływu zmiany bez okna przed/po, "
-                "celu biznesowego i ręcznego review."
+                "celu biznesowego i sprawdzenia przez człowieka."
             ),
         )
     if read_attempted:
@@ -74,7 +74,7 @@ def build_change_history_read_contract(
             status="ready",
             title="Google Ads: brak zmian w historii zmian",
             summary=(
-                "WILQ wykonał read-only change history read; Google Ads nie zwrócił "
+                "WILQ odczytał historię zmian; Google Ads nie zwrócił "
                 "zdarzeń zmian w ostatnich 14 dniach. Nie ma czego wiązać z "
                 "wynikami kampanii."
             ),
@@ -97,7 +97,7 @@ def build_change_history_read_contract(
     return AdsChangeHistoryReadContract(
         status="blocked",
         title="Google Ads: brak historii zmian",
-        summary="WILQ nie ma jeszcze read-only metric facts z zasobu change_event.",
+        summary="WILQ nie ma jeszcze metryk historii zmian z Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["change_history", *missing_read_contracts],
         blocked_claims=["change history", *blocked_claims],
@@ -105,8 +105,8 @@ def build_change_history_read_contract(
         evidence_ids=fallback_evidence_ids,
         change_history_rows=[],
         next_step=(
-            "Uruchom Google Ads vendor_read z change_event read. Nie interpretuj "
-            "wpływu zmian kampanii bez tych facts."
+            "Uruchom odczyt danych Google Ads z historią zmian. Nie interpretuj "
+            "wpływu zmian kampanii bez tych danych."
         ),
     )
 
@@ -163,7 +163,7 @@ def _change_history_row(
         blocked_claims=[
             "change impact",
             "performance uplift",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation",
         ],
     )

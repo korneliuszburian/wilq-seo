@@ -38,7 +38,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -191,7 +191,7 @@ def main() -> int:
         and "act_prepare_ads_campaign_review_queue"
         not in (ads_diagnostics.get("action_ids") or [])
     ):
-        raise SystemExit("Ready campaign diagnostics must expose campaign review ActionObject")
+        raise SystemExit("Ready campaign diagnostics must expose campaign review action")
     if campaign_read_contract.get("status") == "ready" and campaign_read_contract.get(
         "campaign_rows"
     ):
@@ -217,7 +217,7 @@ def main() -> int:
         if "act_prepare_ads_campaign_review_queue" not in (
             campaign_triage_read_contract.get("action_ids") or []
         ):
-            raise SystemExit("Campaign triage contract must expose campaign review ActionObject")
+            raise SystemExit("Campaign triage contract must expose campaign review action")
     if account_currency_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose account_currency_read_contract")
     pack_currency_contract = (
@@ -308,8 +308,8 @@ def main() -> int:
             )
         if pack_budget_contract.get("shared_budget_distribution_rows") is None:
             raise SystemExit("Context pack must include shared budget distribution rows")
-        if "budget apply" not in budget_pacing_read_contract.get("blocked_claims", []):
-            raise SystemExit("Budget pacing contract must keep budget apply blocked")
+        if "zmiana budżetu" not in budget_pacing_read_contract.get("blocked_claims", []):
+            raise SystemExit("Budget pacing contract must keep zmiana budżetu blocked")
         expected_budget_card = "card_google_ads_budget_review_playbook"
         expected_budget_rules = {
             "ads_scaling_candidates_v1",
@@ -340,7 +340,7 @@ def main() -> int:
             "summary"
         ):
             raise SystemExit("Context pack recommendations contract differs")
-        if "recommendation apply" not in recommendations_read_contract.get(
+        if "zapis rekomendacji" not in recommendations_read_contract.get(
             "blocked_claims",
             [],
         ):
@@ -355,11 +355,11 @@ def main() -> int:
         if payload_preview and "recommendation_apply_preview" in (
             recommendations_read_contract.get("missing_read_contracts") or []
         ):
-            raise SystemExit("Ready recommendation payload preview must not remain missing")
+            raise SystemExit("Ready recommendation change preview must not remain missing")
         if payload_preview and "act_prepare_google_ads_recommendation_review_queue" not in (
             recommendations_read_contract.get("action_ids") or []
         ):
-            raise SystemExit("Ready recommendation payload preview must expose ActionObject")
+            raise SystemExit("Ready recommendation change preview must expose action")
         if recommendation_rows:
             missing_triage = [
                 row.get("recommendation_id")
@@ -374,7 +374,9 @@ def main() -> int:
                 }
                 or not isinstance(row.get("review_score"), int)
                 or not (0 <= row.get("review_score", -1) <= 100)
-                or "kolejność review rekomendacji" not in row.get("review_reason", "")
+                or "kolejność przeglądu rekomendacji" not in row.get(
+                    "review_reason", ""
+                )
                 or not row.get("human_review_gates")
             ]
             if missing_triage:
@@ -413,11 +415,11 @@ def main() -> int:
         ):
             raise SystemExit("Context pack recommendation rows must preserve review triage")
         if pack_payload_preview_total != len(payload_preview):
-            raise SystemExit("Context pack recommendation payload preview total differs")
+            raise SystemExit("Context pack recommendation change preview total differs")
         if pack_payload_preview_included != len(pack_payload_preview):
-            raise SystemExit("Context pack recommendation payload preview included differs")
+            raise SystemExit("Context pack recommendation change preview included differs")
         if len(pack_payload_preview) > len(payload_preview):
-            raise SystemExit("Context pack recommendation payload preview over-includes")
+            raise SystemExit("Context pack recommendation change preview over-includes")
     elif "recommendations" not in recommendations_read_contract.get(
         "missing_read_contracts",
         [],
@@ -435,8 +437,8 @@ def main() -> int:
             "summary"
         ):
             raise SystemExit("Context pack impression share contract differs")
-        if "budget apply" not in impression_share_read_contract.get("blocked_claims", []):
-            raise SystemExit("Impression share contract must keep budget apply blocked")
+        if "zmiana budżetu" not in impression_share_read_contract.get("blocked_claims", []):
+            raise SystemExit("Impression share contract must keep zmiana budżetu blocked")
     elif "impression_share" not in impression_share_read_contract.get(
         "missing_read_contracts",
         [],
@@ -526,7 +528,7 @@ def main() -> int:
             "summary"
         ):
             raise SystemExit("Context pack search-term safety contract differs")
-        if "negative keyword apply" not in search_term_safety_read_contract.get(
+        if "dodanie wykluczających słów kluczowych" not in search_term_safety_read_contract.get(
             "blocked_claims",
             [],
         ):
@@ -630,15 +632,15 @@ def main() -> int:
         ngram_missing = set(
             search_term_ngram_read_contract.get("missing_read_contracts") or []
         )
-        if "negative_keyword_payload_preview" in ngram_missing:
+        if "negative_keyword_change_preview" in ngram_missing:
             raise SystemExit(
                 "Search-term n-gram contract must not use the generic negative "
-                "keyword payload preview blocker"
+                "keyword change preview blocker"
             )
-        if "ngram_to_negative_keyword_payload_preview" not in ngram_missing:
+        if "ngram_to_negative_keyword_change_preview" not in ngram_missing:
             raise SystemExit(
                 "Search-term n-gram contract must list the n-gram-specific "
-                "payload preview blocker"
+                "change preview blocker"
             )
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
@@ -651,16 +653,16 @@ def main() -> int:
             raise SystemExit(
                 "Ready negative keyword contract must expose payload_preview"
             )
-        if "negative_keyword_payload_preview" in (
+        if "negative_keyword_change_preview" in (
             negative_keywords_read_contract.get("missing_read_contracts") or []
         ):
             raise SystemExit(
-                "Ready negative keyword contract must not list payload preview as missing"
+                "Ready negative keyword contract must not list change preview as missing"
             )
         if "act_prepare_negative_keyword_review_queue" not in (
             negative_keywords_read_contract.get("action_ids") or []
         ):
-            raise SystemExit("Ready negative keyword contract must expose ActionObject")
+            raise SystemExit("Ready negative keyword contract must expose action")
     elif not negative_keywords_read_contract.get("missing_read_contracts"):
         raise SystemExit("Blocked negative keyword contract must list missing read contracts")
 
@@ -669,7 +671,7 @@ def main() -> int:
         missing_validated_actions = sorted(set(VALIDATED_ACTION_IDS) - set(action_ids))
         if missing_validated_actions:
             raise SystemExit(
-                "Live Ads diagnostics must expose review ActionObjects for validation: "
+                "Live Ads diagnostics must expose review actions for validation: "
                 + ", ".join(missing_validated_actions)
             )
     action_validations = []
@@ -687,7 +689,7 @@ def main() -> int:
             }
         )
         if validation.get("valid") is not True or validation.get("status") != "valid":
-            raise SystemExit(f"Ads ActionObject validation failed: {validation}")
+            raise SystemExit(f"Ads action validation failed: {validation}")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [

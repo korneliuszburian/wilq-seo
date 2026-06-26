@@ -7,5 +7,4 @@ required_inputs: [search_terms, spend, conversions, match_type, evidence_ids]
 diagnostic_logic: [reject_brand_risk_terms, require_intent_review, require_campaign_scope]
 recommended_actions: [prepare_negative_keywords]
 risk_notes: Incorrect negatives can block valuable traffic.
-output_contract: Validated negative keyword ActionObjects.
-
+output_contract: Validated negative keyword actions.

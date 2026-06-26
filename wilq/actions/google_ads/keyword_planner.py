@@ -32,13 +32,13 @@ def keyword_planner_access_payload(blocker: str) -> dict[str, Any]:
                 "akceptacji Google przed forecast/enrichment workflow."
             ),
             (
-                "Po zmianie statusu wykonaj read-only `uv run wilq connectors refresh "
-                'google_ads --mode vendor_read --reason "Keyword Planner access proof"`.'
+                "Po zmianie statusu wykonaj ponowny odczyt danych Google Ads przez WILQ CLI "
+                "i potwierdź, że Keyword Planner zwraca wiersze pomysłów."
             ),
         ],
         "required_validation": [
             "confirm_developer_token_approval",
-            "rerun_google_ads_vendor_read",
+            "rerun_google_ads_data_read",
             "verify_keyword_planner_idea_rows",
             "human_confirm_before_apply",
         ],

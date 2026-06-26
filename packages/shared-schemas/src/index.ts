@@ -129,7 +129,7 @@ export const ActionReviewGateSchema = z.object({
   status: z
     .enum(["pending_validation", "validated_prepare_only", "ready_to_apply", "blocked_apply"])
     .default("pending_validation"),
-  summary: z.string().default("Wymaga walidacji ActionObject przed kolejnym krokiem."),
+  summary: z.string().default("Wymaga sprawdzenia w WILQ przed kolejnym krokiem."),
   required_checks: z.array(z.string()).default([]),
   operator_checklist: z.array(z.string()).default([]),
   apply_blockers: z.array(z.string()).default([]),
@@ -429,7 +429,8 @@ export const AdsCampaignMetricRowSchema = z.object({
     .default("niski sygnał"),
   review_score: z.number().min(0).max(100).default(0),
   review_reason: z.string().default(""),
-  human_review_gates: z.array(z.string()).default([])
+  human_review_gates: z.array(z.string()).default([]),
+  human_review_gate_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsCampaignReadContractSchema = z.object({
@@ -525,6 +526,7 @@ export const AdsBusinessContextReadContractSchema = z.object({
   configured_sources: z.array(z.string()),
   business_policy_ids: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   target_interpretation: AdsBusinessTargetInterpretationSchema,
   strategy_review_readiness_contract: AdsStrategyReviewReadinessContractSchema,
   allowed_metrics: z.array(z.string()),
@@ -713,6 +715,7 @@ export const AdsRecommendationRowSchema = z.object({
   review_score: z.number().min(0).max(100).default(0),
   review_reason: z.string(),
   human_review_gates: z.array(z.string()).default([]),
+  human_review_gate_labels: z.array(z.string()).optional().default([]),
   dismissed: z.boolean(),
   campaign_id: z.string().nullable().optional(),
   campaign_budget_id: z.string().nullable().optional(),
@@ -748,6 +751,7 @@ export const AdsRecommendationsReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -827,7 +831,8 @@ export const AdsCampaignTriageRowSchema = z.object({
   source_metric_names: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  human_review_gates: z.array(z.string()).default([])
+  human_review_gates: z.array(z.string()).default([]),
+  human_review_gate_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsCampaignTriageReadContractSchema = z.object({
@@ -855,6 +860,7 @@ export const AdsOptimizerReadinessItemSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -874,6 +880,7 @@ export const AdsOptimizerReadinessContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -976,6 +983,7 @@ export const AdsSearchTermsReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1019,6 +1027,7 @@ export const AdsSearchTermReviewSummaryContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1057,6 +1066,7 @@ export const AdsSearchTermNgramReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1091,6 +1101,7 @@ export const AdsSearchTermSafetyReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1121,6 +1132,7 @@ export const AdsKeywordMatchContextReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1201,6 +1213,7 @@ export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
   forecast_rows: z.array(AdsCustomSegmentAudienceForecastRowSchema),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1229,6 +1242,7 @@ export const AdsKeywordPlannerReadContractSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -1246,6 +1260,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   review_score: z.number().min(0).max(100).default(0),
   review_reason: z.string(),
   human_review_gates: z.array(z.string()).default([]),
+  human_review_gate_labels: z.array(z.string()).optional().default([]),
   source_terms: z.array(z.string()),
   rejected_terms: z.array(z.string()),
   rejection_reasons: z.array(z.string()),
@@ -1289,6 +1304,7 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   action_ids: z.array(z.string()),
   next_step: z.string()
@@ -1323,6 +1339,7 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   review_score: z.number().min(0).max(100).default(0),
   review_reason: z.string(),
   human_review_gates: z.array(z.string()).default([]),
+  human_review_gate_labels: z.array(z.string()).optional().default([]),
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),
   ad_group_id: z.string().nullable().optional(),
@@ -1395,6 +1412,7 @@ export const AdsDecisionItemSchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
@@ -1458,6 +1476,7 @@ export const AdsOperatorSummarySchema = z.object({
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   operator_review_gates: z.array(z.string()),
+  operator_review_gate_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
@@ -1761,31 +1780,10 @@ export const ContentDecisionItemSchema = z.object({
   best_average_position: z.number().nullable().optional(),
   wordpress_match: z.string().nullable().optional(),
   wordpress_match_confidence: z.string().nullable().optional(),
-  wordpress_content_url: z.string().nullable().optional(),
-  source_url: z.string().nullable().optional(),
-  source_site_host: z.string().nullable().optional(),
-  target_site_url: z.string().nullable().optional(),
-  target_site_host: z.string().nullable().optional(),
-  target_site_adaptation_status: z.string().nullable().optional(),
-  target_site_migration_candidate_url: z.string().nullable().optional(),
-  target_site_migration_status: z.string().nullable().optional(),
-  target_site_migration_summary: z.string().nullable().optional(),
-  target_site_migration_candidate_inventory_status: z.string().nullable().optional(),
-  target_site_migration_candidate_inventory_summary: z.string().nullable().optional(),
-  target_site_alternative_candidate_urls: z.array(z.string()).default([]),
-  target_site_alternative_candidate_summary: z.string().nullable().optional(),
-  target_site_mapping_review_status: z.string().nullable().optional(),
-  target_site_mapping_review_summary: z.string().nullable().optional(),
-  target_site_mapping_review_candidate_urls: z.array(z.string()).default([]),
-  target_site_review_requirements: z.array(z.string()).default([]),
-  target_site_inventory_content_type: z.string().nullable().optional(),
-  target_site_inventory_status: z.string().nullable().optional(),
-  target_site_inventory_source: z.string().nullable().optional(),
-  target_site_inventory_modified_gmt: z.string().nullable().optional(),
-  target_site_inventory_title_or_h1: z.string().nullable().optional(),
-  target_site_inventory_canonical_url: z.string().nullable().optional(),
-  target_site_inventory_missing_fields: z.array(z.string()).default([]),
-  target_site_inventory_summary: z.string().nullable().optional(),
+  source_public_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  intended_final_url: z.string().nullable().optional(),
+  final_canonical_url: z.string().nullable().optional(),
   inventory_gate_status: z.string().nullable().optional(),
   canonical_gate_status: z.string().nullable().optional(),
   duplicate_gate_status: z.string().nullable().optional(),
@@ -1832,55 +1830,7 @@ export const ContentOperatorSummarySchema = z.object({
   top_decision_ids: z.array(z.string()),
   confirmed_wordpress_count: z.number(),
   missing_wordpress_count: z.number(),
-  target_site_host: z.string().nullable().optional(),
-  target_site_alias_match_count: z.number(),
   current_site_match_count: z.number(),
-  target_site_mapping_review_count: z.number(),
-  target_site_mapping_status: z.string().nullable().optional(),
-  target_site_confirmed_candidate_inventory_count: z.number().default(0),
-  target_site_missing_candidate_inventory_count: z.number().default(0),
-  target_site_migration_map: z
-    .array(
-      z.object({
-        decision_id: z.string(),
-        candidate_id: z.string().nullable().optional(),
-        title: z.string(),
-        source_url: z.string().nullable().optional(),
-        target_site_host: z.string().nullable().optional(),
-        migration_candidate_url: z.string().nullable().optional(),
-        candidate_inventory_status: z.string().nullable().optional(),
-        mapping_review_status: z.string().nullable().optional(),
-        mapping_review_candidate_urls: z.array(z.string()).default([]),
-        canonical_gate_status: z.string().nullable().optional(),
-        duplicate_gate_status: z.string().nullable().optional(),
-        next_required_gate: z.string(),
-        status_summary: z.string(),
-        source_connectors: z.array(z.string()).default([]),
-        evidence_ids: z.array(z.string()).default([]),
-        blocked_outputs: z.array(z.string()).default([])
-      })
-    )
-    .default([]),
-  target_site_mapping_review_inputs: z
-    .array(
-      z.object({
-        decision_id: z.string(),
-        candidate_id: z.string(),
-        title: z.string(),
-        source_url: z.string().nullable().optional(),
-        current_migration_candidate_url: z.string().nullable().optional(),
-        candidate_target_urls: z.array(z.string()).default([]),
-        mapping_review_status: z.string().nullable().optional(),
-        review_action_id: z.string(),
-        review_endpoint: z.string(),
-        allowed_outcomes: z.array(z.string()).default([]),
-        required_checked_items: z.array(z.string()).default([]),
-        review_payload_template: z.record(z.string(), z.unknown()).default({}),
-        review_notes_prompt: z.string(),
-        blocked_outputs: z.array(z.string()).default([])
-      })
-    )
-    .default([]),
   decision_type_labels: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
@@ -2195,6 +2145,7 @@ export const AhrefsGapReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   gap_records: z.array(AhrefsGapRecordSchema),
+  gap_record_count: z.number(),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
@@ -2447,7 +2398,9 @@ export const WorkflowSchema = z.object({
     )
     .default([]),
   status: z.enum(["ready", "blocked", "planned"]).default("planned"),
+  status_label: z.string().nullable().optional(),
   route: z.string().nullable().optional(),
+  route_label: z.string().nullable().optional(),
   skill_id: z.string().nullable().optional(),
   safe_next_step: z.string().nullable().optional(),
   source_connectors: z.array(z.string()).default([]),
@@ -2456,7 +2409,8 @@ export const WorkflowSchema = z.object({
   blocked_claims: z.array(z.string()).default([]),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   missing_contracts: z.array(z.string()).default([]),
-  risk: z.enum(["low", "medium", "high"]).default("low")
+  risk: z.enum(["low", "medium", "high"]).default("low"),
+  risk_label: z.string().nullable().optional()
 });
 
 export const DemandGenReadinessContractSchema = z.object({
@@ -2506,12 +2460,12 @@ export const DemandGenReadinessContractSchema = z.object({
     engagement_rate: z.number().nullable().optional(),
     evidence_ids: z.array(z.string()).default([])
   })).default([]),
-  demand_gen_migration_constraint_rows: z.array(z.object({
+  demand_gen_transition_constraint_rows: z.array(z.object({
     campaign_id: z.string().nullable().optional(),
     campaign_name: z.string(),
     campaign_status: z.string().nullable().optional(),
     advertising_channel_type: z.string().nullable().optional(),
-    migration_candidate: z.boolean().default(false),
+    transition_candidate: z.boolean().default(false),
     reason: z.string(),
     evidence_ids: z.array(z.string()).default([])
   })).default([]),

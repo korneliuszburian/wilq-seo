@@ -6,6 +6,5 @@ when_to_use: Identify review response or reputation tasks.
 required_inputs: [reviews, sentiment, evidence_ids]
 diagnostic_logic: [classify_response_need, avoid_claim_invention]
 recommended_actions: [review_response_candidate]
-risk_notes: Public responses require human review.
+risk_notes: Public responses require sprawdzenie przez człowieka.
 output_contract: Review action candidates.
-

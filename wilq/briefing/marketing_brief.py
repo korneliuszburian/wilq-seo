@@ -26,8 +26,8 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 STRICT_BRIEF_INSTRUCTION = (
-    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
-    "nie domysł marketingowy."
+    "WILQ pokazuje tylko metryki i dowody z danych źródłowych. Brak danych "
+    "oznacza blocker, nie domysł marketingowy."
 )
 
 CONNECTOR_LABELS = {
@@ -141,19 +141,19 @@ def build_marketing_brief(
         MarketingBriefSection(
             id="what_we_know",
             title="Co wiemy z realnych danych",
-            description="Najświeższe metryki zapisane przez read-only connector refresh.",
+            description="Najświeższe metryki zapisane przez odczyt źródeł danych.",
             items=metric_items,
         ),
         MarketingBriefSection(
             id="what_blocks_us",
             title="Co blokuje decyzje",
-            description="Braki danych, OAuth, uprawnienia lub niedokończone adaptery.",
+            description="Braki danych, OAuth, uprawnień albo bezpiecznej ścieżki zapisu.",
             items=blocker_items,
         ),
         MarketingBriefSection(
             id="safe_next_actions",
             title="Bezpieczne następne kroki",
-            description="ActionObjecty i działania przygotowawcze bez wykonywania zmian.",
+            description="Akcje i działania przygotowawcze bez zapisu zmian.",
             items=action_items,
         ),
         MarketingBriefSection(
@@ -683,10 +683,10 @@ def _recommendation_items(
                 metric_facts=merchant_facts[:6],
                 summary=(
                     "Merchant ma realne metryki produktów i liczby problemów feedu. "
-                    "To jest najbardziej operacyjny obszar do kolejki review bez "
+                    "To jest najbardziej operacyjny obszar do kolejki sprawdzenia bez "
                     "automatycznej zmiany danych produktu."
                 ),
-                next_step="Otwórz /merchant i przygotuj kolejkę problemów feedu z payload preview.",
+                next_step="Otwórz /merchant i przygotuj kolejkę problemów feedu z podglądem zmian.",
                 risk=ActionRisk.medium,
             )
         )
@@ -727,7 +727,7 @@ def _recommendation_items(
                     "WILQ nie może uczciwie diagnozować wasted spend bez live Ads evidence. "
                     "Obecny stan musi być pokazany jako blocker, nie rekomendacja."
                 ),
-                next_step="Użyj ActionObject `act_configure_google_ads_env` i helperów OAuth.",
+                next_step="Użyj akcji `act_configure_google_ads_env` i helperów OAuth.",
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,
             )
@@ -737,7 +737,7 @@ def _recommendation_items(
 
 def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
     if connector_id == "localo":
-        return "Localo: widoczność lokalna i opinie do review"
+        return "Localo: widoczność lokalna i opinie do sprawdzenia"
     interesting = [fact for fact in facts if fact.name not in {"api", "connector_id"}]
     if not interesting:
         return f"{_connector_label(connector_id)}: zapisano metric facts"
@@ -773,9 +773,9 @@ def _localo_metric_summary(facts: list[MetricFact]) -> str:
     if not parts:
         parts = _metric_summary_parts(facts[:4])
     return (
-        "WILQ ma realne Localo facts do review lokalnej widoczności: "
-        f"{', '.join(parts)}. To nie jest claim o wzroście pozycji, GBP performance "
-        "ani przewadze nad konkurencją bez osobnych kontraktów."
+        "WILQ ma realne dane Localo do sprawdzenia lokalnej widoczności: "
+        f"{', '.join(parts)}. To nie jest obietnica wzrostu pozycji, wyników GBP "
+        "ani przewagi nad konkurencją bez osobnych danych."
     )
 
 
@@ -798,19 +798,22 @@ def _metric_summary_parts(facts: list[MetricFact]) -> list[str]:
 
 def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_merchant_center":
-        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę feed review."
+        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę sprawdzenia feedu."
     if connector_id == "google_search_console":
-        return "Pobierz query/page breakdown i zbuduj kolejkę content refresh/create."
+        return "Pobierz rozbicie query/page i zbuduj kolejkę odświeżenia albo nowej treści."
     if connector_id == "google_analytics_4":
         return "Rozbij GA4 po landing page i źródle ruchu, zanim ocenimy jakość kampanii."
     if connector_id.startswith("wordpress"):
-        return "Połącz inventory z GSC/GA4 i oznacz strony stale/refresh/merge/block."
+        return (
+            "Połącz spis treści z GSC/GA4 i oznacz strony do zachowania, "
+            "odświeżenia, scalenia albo blokady."
+        )
     if connector_id == "ahrefs":
         return "Użyj Ahrefs jako kontekstu authority/gap, nie jako samodzielnej rekomendacji."
     if connector_id == "localo":
         return (
-            "Otwórz /localo i potraktuj fakty Localo jako review lokalnej "
-            "widoczności, nie apply."
+            "Otwórz /localo i potraktuj fakty Localo jako ocenę lokalnej "
+            "widoczności, nie ścieżkę zapisu zmian."
         )
     return "Użyj tych faktów w odpowiednim workflow i nie rozszerzaj ich poza evidence."
 
@@ -823,9 +826,9 @@ def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None)
     if run and run.summary:
         return run.summary
     if connector.missing_credentials:
-        return f"brakuje: {', '.join(connector.missing_credentials)}"
+        return f"brakuje dostępu: {len(connector.missing_credentials)}"
     if not connector.configured:
-        return "connector nie jest skonfigurowany"
+        return "źródło danych nie jest skonfigurowane"
     return "ostatni refresh nie zebrał danych vendor"
 
 
@@ -836,8 +839,8 @@ def _blocker_summary(
 ) -> str:
     if connector.id == "localo" and run and _localo_access_token_blocked(run):
         return (
-            f"Ostatni refresh {run.id} potwierdza, że Localo MCP endpoint działa, "
-            "Organization ID i MCP secret są skonfigurowane, ale initialize zwraca 401 "
+            f"Ostatni odczyt {run.id} potwierdza, że endpoint Localo odpowiada, "
+            "Organization ID i secret są skonfigurowane, ale dostęp zwraca 401 "
             "bez wynikowego OAuth access tokenu."
         )
     if run:
@@ -850,7 +853,10 @@ def _blocker_summary(
 
 def _blocker_next_step(connector_id: str, reason: str) -> str:
     if connector_id == "google_ads":
-        return "Odśwież Google Ads OAuth przez ActionObject i nie pokazuj Ads rekomendacji."
+        return (
+            "Odśwież Google Ads OAuth przez akcję walidowaną w WILQ i nie "
+            "pokazuj rekomendacji Ads."
+        )
     if connector_id == "localo" and (
         "LOCALO_ACCESS_TOKEN" in reason or "OAuth MCP" in reason
     ):
@@ -859,7 +865,7 @@ def _blocker_next_step(connector_id: str, reason: str) -> str:
             "access token lokalnie jako LOCALO_ACCESS_TOKEN."
         )
     if connector_id == "localo":
-        return "Dokończ Localo MCP OAuth i dopiero potem pokazuj local visibility facts."
+        return "Dokończ OAuth Localo i dopiero potem pokazuj dane lokalnej widoczności."
     return "Uzupełnij wskazany blocker albo zostaw tę rekomendację zablokowaną."
 
 

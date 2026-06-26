@@ -17,7 +17,7 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
             "result": "fail",
             "note": "Nie było jasne, że zgłoszenia nie są unikalnymi SKU.",
         },
-        "content": "pass widzę BDO jako refresh/merge",
+        "content": "pass widzę BDO jako odświeżenie albo scalenie",
         "ads": "pass rozumiem, że CPA/ROAS są zablokowane",
         "ga4": "fail (not set) wyglądało jak zła kampania",
         "biggest_real_boost": "Content Planner daje gotowy brief do review.",
@@ -43,7 +43,7 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
     assert any(task["source"] == "ga4" for task in tasks)
     assert any(task["source"] == "biggest_confusion" for task in tasks)
     assert any(task["category"] == "marketer_feedback" for task in tasks)
-    assert "Nie odblokowuje publish/apply" in report["safety_note"]
+    assert "Nie odblokowuje publikacji ani zapisu zmian" in report["safety_note"]
 
 
 def test_uat_result_report_rejects_placeholders() -> None:

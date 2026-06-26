@@ -41,8 +41,6 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
-CONTENT_TARGET_SITE_HOST = "ekologus.dev.proudsite.pl"
-CONTENT_TARGET_SITE_SCHEME = "https"
 CONTENT_SOURCE_SITE_HOSTS = {
     "www.ekologus.pl",
     "ekologus.pl",
@@ -287,49 +285,22 @@ def _operator_summary(
     action_ids: list[str],
 ) -> ContentOperatorSummary:
     top_decisions = decisions[:4]
-    target_site_host = _content_operator_target_site_host(decisions)
-    target_site_alias_match_count = sum(
-        1
-        for decision in decisions
-        if decision.target_site_adaptation_status == "target_site_alias_match"
-    )
     current_site_match_count = sum(
         1
         for decision in decisions
-        if decision.target_site_adaptation_status == "current_site_match"
-    )
-    target_site_mapping_review_count = sum(
-        1
-        for decision in decisions
-        if decision.target_site_adaptation_status
-        in {"target_site_alias_match", "needs_inventory_match"}
-        or decision.inventory_gate_status == "blocked_missing_inventory"
-        or decision.canonical_gate_status == "needs_target_canonical_review"
-        or decision.target_site_migration_status in {"needs_review", "blocked_missing_inventory"}
-    )
-    confirmed_candidate_inventory_count = sum(
-        1
-        for decision in decisions
-        if decision.target_site_migration_candidate_inventory_status
-        == "confirmed_target_inventory"
-    )
-    missing_candidate_inventory_count = sum(
-        1
-        for decision in decisions
-        if decision.target_site_migration_candidate_inventory_status
-        == "missing_target_inventory"
+        if _content_decision_has_public_final_canonical(decision)
     )
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
         summary=(
-            "WILQ łączy zapytania i URL-e z GSC z inventory WordPress. "
+            "WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress. "
             "Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero "
             "twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną "
             "leady, pozycje albo konwersje."
         ),
         next_step=(
-            "Przejdź przez top decyzje contentowe, wybierz refresh, merge, create "
-            "albo block i waliduj ActionObject tylko jako review-only."
+            "Przejdź przez top decyzje contentowe: odśwież, scal, utwórz albo "
+            "zablokuj. Potem sprawdź w WILQ tylko właściwą akcję."
         ),
         top_decision_ids=[decision.id for decision in top_decisions],
         confirmed_wordpress_count=sum(
@@ -338,23 +309,7 @@ def _operator_summary(
         missing_wordpress_count=sum(
             1 for decision in decisions if decision.wordpress_match == "missing"
         ),
-        target_site_host=target_site_host,
-        target_site_alias_match_count=target_site_alias_match_count,
         current_site_match_count=current_site_match_count,
-        target_site_mapping_review_count=target_site_mapping_review_count,
-        target_site_mapping_status=_content_operator_target_site_mapping_status(
-            target_site_alias_match_count=target_site_alias_match_count,
-            current_site_match_count=current_site_match_count,
-            mapping_review_count=target_site_mapping_review_count,
-        ),
-        target_site_confirmed_candidate_inventory_count=confirmed_candidate_inventory_count,
-        target_site_missing_candidate_inventory_count=missing_candidate_inventory_count,
-        target_site_migration_map=_content_operator_target_site_migration_map(
-            decisions
-        ),
-        target_site_mapping_review_inputs=(
-            _content_operator_target_site_mapping_review_inputs(decisions)
-        ),
         decision_type_labels=_unique(
             _content_decision_type_summary_label(decision.decision_type)
             for decision in decisions
@@ -383,29 +338,19 @@ def _content_marketer_decision(
     if not decisions:
         return None
     decision = decisions[0]
-    missing_inputs = _content_marketer_missing_inputs(decision)
     blocked_claims = _content_marketer_blocked_claims(
         [
             *decision.blocked_claims,
             *(claim for section in sections for claim in section.blocked_claims),
         ]
     )
-    source_public_url = decision.source_url or decision.page
-    preview_url = decision.target_site_migration_candidate_url or (
-        decision.target_site_url
-        if _content_url_host(decision.target_site_url) == CONTENT_TARGET_SITE_HOST
-        else None
-    )
-    intended_final_url = (
-        decision.wordpress_content_url
-        if _content_url_host(decision.wordpress_content_url) in CONTENT_SOURCE_SITE_HOSTS
-        else source_public_url
-    )
-    final_canonical_url = (
-        decision.target_site_inventory_canonical_url
-        if _content_url_host(decision.target_site_inventory_canonical_url)
-        in CONTENT_SOURCE_SITE_HOSTS
-        else intended_final_url
+    source_public_url = decision.source_public_url or decision.page
+    preview_url = decision.preview_url
+    intended_final_url = decision.intended_final_url or source_public_url
+    final_canonical_url = _content_decision_final_canonical_url(decision)
+    missing_inputs = _content_marketer_missing_inputs(
+        decision,
+        final_canonical_url=final_canonical_url,
     )
     return ContentMarketerDecision(
         id=f"marketer_{decision.id}",
@@ -428,6 +373,31 @@ def _content_marketer_decision(
     )
 
 
+def _content_decision_final_canonical_url(decision: ContentDecisionItem) -> str | None:
+    if decision.final_canonical_url:
+        return decision.final_canonical_url
+    return decision.intended_final_url or decision.source_public_url or decision.page
+
+
+def _content_decision_url_semantics(
+    *,
+    source_url: str,
+    wordpress_content_url: str | None,
+) -> dict[str, str | None]:
+    source_public_url = source_url
+    intended_final_url = (
+        wordpress_content_url
+        if _content_url_host(wordpress_content_url) in CONTENT_SOURCE_SITE_HOSTS
+        else source_public_url
+    )
+    return {
+        "source_public_url": source_public_url,
+        "preview_url": None,
+        "intended_final_url": intended_final_url,
+        "final_canonical_url": intended_final_url,
+    }
+
+
 def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "block_until_vendor_read":
         return (
@@ -442,7 +412,7 @@ def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "merge_create_after_inventory_check":
         return (
             "Najpierw sprawdź, czy temat nie dubluje istniejącej treści; "
-            "dopiero potem wybierz scalenie albo nową stronę."
+            "dopiero potem wybierz scalenie albo utworzenie nowej treści."
         )
     if decision.decision_type == "inventory_check_before_create":
         return (
@@ -452,7 +422,7 @@ def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "block_as_tracking_not_content":
         return "To wygląda jak problem pomiaru GA4, nie zadanie do pisania treści."
     return (
-        "Sprawdź lukę contentową z Ahrefs tylko jako input do review, "
+        "Sprawdź lukę contentową z Ahrefs tylko jako materiał do oceny, "
         "nie jako samodzielny powód do publikacji."
     )
 
@@ -519,18 +489,21 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "review_ahrefs_gap_records":
         return (
             "Porównaj gap z GSC i WordPress; traktuj go jako inspirację "
-            "do review, nie gotową decyzję."
+            "do sprawdzenia, nie gotową decyzję."
         )
-    return "Uruchom read-only odczyt GSC i WordPress, potem odśwież Content Planner."
+    return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież Content Planner."
 
 
-def _content_marketer_missing_inputs(decision: ContentDecisionItem) -> list[str]:
+def _content_marketer_missing_inputs(
+    decision: ContentDecisionItem,
+    *,
+    final_canonical_url: str | None,
+) -> list[str]:
     values: list[str] = []
     if decision.wordpress_match == "missing":
         values.append("potwierdzenie, czy temat istnieje już w WordPress")
     if decision.inventory_gate_status and decision.inventory_gate_status not in {
         "confirmed_current_inventory",
-        "confirmed_target_inventory",
         "not_applicable",
     }:
         values.append("kontrola spisu treści i istniejącego URL")
@@ -544,27 +517,25 @@ def _content_marketer_missing_inputs(decision: ContentDecisionItem) -> list[str]
         "not_applicable",
     }:
         values.append("kontrola duplikacji i kanibalizacji")
-    if decision.target_site_mapping_review_status in {
-        "manual_mapping_required",
-        "review_alternative_candidates",
-        "confirm_exact_candidate",
-    }:
-        values.append("potwierdzenie miejsca w podglądzie projektu")
     if not decision.evidence_ids:
-        values.append("dowód źródłowy z WILQ API")
-    return _unique(values) or ["brak dodatkowych danych przed review"]
+        values.append("dowód źródłowy w WILQ")
+    return _unique(values) or ["brak dodatkowych danych przed sprawdzeniem"]
 
 
 def _content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
     labels = {
         "auto publish": "automatyczna publikacja",
         "content recommendation": "rekomendacja bez danych źródłowych",
+        "duplicate-free guarantee": "gwarancja braku duplikatów",
+        "lead quality": "jakość leadów",
         "lead uplift": "obietnica wzrostu leadów",
+        "new article without inventory check": "nowy artykuł bez kontroli spisu treści",
         "ranking uplift": "obietnica wzrostu pozycji",
+        "revenue impact": "wpływ na przychód",
         "conversion uplift": "obietnica wzrostu konwersji",
-        "wordpress_publish": "publikacja w WordPress bez review",
+        "wordpress_publish": "publikacja w WordPress bez sprawdzenia",
         "wordpress_write": "zapis do WordPress bez potwierdzenia",
-        "staging_ready_claim": "twierdzenie, że szkic jest gotowy do wdrożenia",
+        "wordpress_draft_ready_claim": "twierdzenie, że szkic jest gotowy do sprawdzenia",
     }
     return _unique(labels.get(claim, claim.replace("_", " ")) for claim in claims)
 
@@ -581,7 +552,7 @@ def _content_marketer_evidence_summary(decision: ContentDecisionItem) -> str:
 
 
 def _content_marketer_measurement_plan(decision: ContentDecisionItem) -> str:
-    url = decision.wordpress_content_url or decision.source_url or decision.page
+    url = decision.final_canonical_url or decision.source_public_url or decision.page
     url_part = f" dla {url}" if url else ""
     return (
         f"Po publikacji lub odświeżeniu porównaj GSC i GA4 przed/po{url_part}. "
@@ -590,242 +561,24 @@ def _content_marketer_measurement_plan(decision: ContentDecisionItem) -> str:
     )
 
 
-def _content_operator_target_site_migration_map(
-    decisions: list[ContentDecisionItem],
-) -> list[dict[str, object]]:
-    migration_decisions = [
-        decision
-        for decision in decisions
-        if decision.target_site_migration_candidate_url
-        or decision.target_site_mapping_review_status
-        or decision.target_site_mapping_review_candidate_urls
-    ]
-    return [
-        {
-            "decision_id": decision.id,
-            "candidate_id": _content_operator_candidate_id(decision),
-            "title": decision.title,
-            "source_url": decision.source_url or decision.page,
-            "target_site_host": CONTENT_TARGET_SITE_HOST,
-            "migration_candidate_url": decision.target_site_migration_candidate_url,
-            "candidate_inventory_status": (
-                decision.target_site_migration_candidate_inventory_status
-            ),
-            "mapping_review_status": decision.target_site_mapping_review_status,
-            "mapping_review_candidate_urls": decision.target_site_mapping_review_candidate_urls,
-            "canonical_gate_status": decision.canonical_gate_status,
-            "duplicate_gate_status": decision.duplicate_gate_status,
-            "next_required_gate": _content_operator_target_site_next_gate(decision),
-            "status_summary": _content_operator_target_site_map_summary(decision),
-            "source_connectors": decision.source_connectors,
-            "evidence_ids": decision.evidence_ids,
-            "blocked_outputs": [
-                "wordpress_staging_write",
-                "wordpress_publish",
-                "ranking_or_lead_uplift_claim",
-            ],
-        }
-        for decision in migration_decisions[:8]
-    ]
-
-
-def _content_operator_target_site_mapping_review_inputs(
-    decisions: list[ContentDecisionItem],
-) -> list[dict[str, object]]:
-    return [
-        {
-            "decision_id": decision.id,
-            "candidate_id": _content_operator_candidate_id(decision),
-            "title": decision.title,
-            "source_url": decision.source_url or decision.page,
-            "current_migration_candidate_url": (
-                decision.target_site_migration_candidate_url
-            ),
-            "candidate_target_urls": (
-                decision.target_site_mapping_review_candidate_urls
-                or [
-                    url
-                    for url in [decision.target_site_migration_candidate_url]
-                    if url
-                ]
-            ),
-            "mapping_review_status": decision.target_site_mapping_review_status,
-            "review_action_id": "act_prepare_content_refresh_queue",
-            "review_endpoint": (
-                "/api/actions/act_prepare_content_refresh_queue/review"
-            ),
-            "allowed_outcomes": _content_operator_mapping_allowed_outcomes(decision),
-            "required_checked_items": _content_operator_mapping_checked_items(
-                decision
-            ),
-            "review_payload_template": _content_operator_mapping_review_payload_template(
-                decision
-            ),
-            "review_notes_prompt": _content_operator_mapping_notes_prompt(decision),
-            "blocked_outputs": [
-                "wordpress_staging_write",
-                "wordpress_publish",
-                "migration_confirmed_without_human_review",
-                "ranking_or_lead_uplift_claim",
-            ],
-        }
-        for decision in _content_operator_mapping_review_decisions(decisions)[:8]
-    ]
-
-
-def _content_operator_mapping_review_payload_template(
-    decision: ContentDecisionItem,
-) -> dict[str, object]:
-    return {
-        "outcome": "approved_for_prepare",
-        "reviewed_by": "<operator>",
-        "notes": _content_operator_mapping_notes_prompt(decision),
-        "checked_items": _content_operator_mapping_checked_items(decision),
-        "blockers": [
-            "payload_apply_allowed_false",
-            "wordpress_write_not_requested",
-            "blocked_claim:ranking guarantee",
-            "blocked_claim:lead uplift",
-        ],
-    }
-
-
-def _content_operator_mapping_review_decisions(
-    decisions: list[ContentDecisionItem],
-) -> list[ContentDecisionItem]:
-    return [
-        decision
-        for decision in decisions
-        if (
-            decision.target_site_migration_candidate_url
-            or decision.target_site_mapping_review_status
-            or decision.target_site_mapping_review_candidate_urls
-        )
-        and _content_operator_target_site_next_gate(decision)
-        == "target_site_mapping_review"
-    ]
-
-
-def _content_operator_candidate_id(decision: ContentDecisionItem) -> str:
-    source_url = decision.source_url or decision.page or decision.id
-    return f"content_brief_gsc_{_candidate_slug_for_page(source_url)}"
-
-
-def _candidate_slug_for_page(value: str) -> str:
-    path = _content_normalized_path(value)
-    if path and path != "/":
-        return _slug(path) or "homepage"
-    host = _content_url_host(value)
-    if host:
-        return _slug(host) or "homepage"
-    return _slug(value) or "homepage"
-
-
-def _content_operator_mapping_allowed_outcomes(
-    decision: ContentDecisionItem,
-) -> list[str]:
-    status = decision.target_site_mapping_review_status
-    if status == "confirm_exact_candidate":
-        return ["confirm_exact_candidate", "manual_mapping_required"]
-    if status == "review_alternative_candidates":
-        return [
-            "confirm_alternative_candidate",
-            "manual_mapping_required",
-            "reject_all_candidates",
-        ]
-    return ["manual_mapping_required", "reject_all_candidates"]
-
-
-def _content_operator_mapping_checked_items(
-    decision: ContentDecisionItem,
-) -> list[str]:
-    candidate_id = _content_operator_candidate_id(decision)
-    candidate_urls = decision.target_site_mapping_review_candidate_urls or []
-    selected_url = candidate_urls[0] if candidate_urls else ""
-    return [
-        f"candidate:{candidate_id}",
-        "mapping_outcome:<wybierz allowed_outcome>",
-        f"selected_target_url:{selected_url or '<wpisz target URL albo zostaw puste>'}",
-        "mapping_notes:<krótka decyzja marketera>",
-    ]
-
-
-def _content_operator_mapping_notes_prompt(decision: ContentDecisionItem) -> str:
-    status = decision.target_site_mapping_review_status
-    if status == "review_alternative_candidates":
-        return (
-            "Review mapowania: wybierz alternatywny URL nowej strony albo oznacz, "
-            "że potrzebne jest ręczne mapowanie. Bez tej decyzji draft i staging "
-            "zostają zablokowane."
-        )
-    return (
-        "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć "
-        "kandydatów. Bez tej decyzji draft i staging zostają zablokowane."
+def _content_decision_has_public_final_canonical(decision: ContentDecisionItem) -> bool:
+    return _content_url_host(_content_decision_final_canonical_url(decision)) in (
+        CONTENT_SOURCE_SITE_HOSTS
     )
-
-
-def _content_operator_target_site_next_gate(decision: ContentDecisionItem) -> str:
-    review_status = decision.target_site_mapping_review_status or ""
-    if review_status in {"manual_mapping_required", "review_alternative_candidates"}:
-        return "target_site_mapping_review"
-    if decision.canonical_gate_status not in {None, "current_url_confirmed"}:
-        return "target_site_canonical_review"
-    if decision.duplicate_gate_status not in {None, "refresh_or_merge_required"}:
-        return "duplicate_or_cannibalization_check"
-    if review_status == "confirm_exact_candidate":
-        return "target_site_canonical_review"
-    return "target_site_mapping_review"
-
-
-def _content_operator_target_site_map_summary(decision: ContentDecisionItem) -> str:
-    if decision.target_site_mapping_review_summary:
-        return decision.target_site_mapping_review_summary
-    if decision.target_site_migration_candidate_inventory_summary:
-        return decision.target_site_migration_candidate_inventory_summary
-    if decision.target_site_migration_summary:
-        return decision.target_site_migration_summary
-    return "Wymagane review mapowania target-site przed draftem albo stagingiem."
-
-
-def _content_operator_target_site_host(
-    decisions: list[ContentDecisionItem],
-) -> str | None:
-    for decision in decisions:
-        if decision.target_site_adaptation_status == "target_site_alias_match":
-            return decision.target_site_host
-    for decision in decisions:
-        if decision.target_site_host and decision.target_site_host != decision.source_site_host:
-            return decision.target_site_host
-    return CONTENT_TARGET_SITE_HOST if decisions else None
-
-
-def _content_operator_target_site_mapping_status(
-    *,
-    target_site_alias_match_count: int,
-    current_site_match_count: int,
-    mapping_review_count: int,
-) -> str:
-    if target_site_alias_match_count > 0:
-        return "target_site_inventory_confirmed"
-    if mapping_review_count > 0:
-        return "target_site_mapping_review_needed"
-    if current_site_match_count > 0:
-        return "current_site_inventory_confirmed"
-    return "target_site_mapping_not_available"
 
 
 def _content_decision_type_summary_label(decision_type: ContentDecisionType) -> str:
     if decision_type == "block_until_vendor_read":
-        return "blokada do czasu odczytu vendor_read"
+        return "blokada do czasu odczytu danych"
     if decision_type == "refresh_or_merge":
-        return "refresh/merge"
+        return "odświeżenie albo scalenie"
     if decision_type == "merge_create_after_inventory_check":
-        return "merge/create po kontroli inventory"
+        return "scalenie albo nowa treść po kontroli spisu"
     if decision_type == "inventory_check_before_create":
-        return "kontrola inventory przed create"
+        return "kontrola spisu przed nową treścią"
     if decision_type == "review_ahrefs_gap_records":
-        return "review luk Ahrefs"
-    return "block jako tracking, nie content"
+        return "sprawdzenie luk Ahrefs"
+    return "blokada pomiaru, nie zadanie contentowe"
 
 
 def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:
@@ -904,10 +657,10 @@ def _query_page_section(
             summary=_content_blocker_reason(latest_refreshes, "google_search_console"),
             diagnosis=(
                 "WILQ nie ma metryk zapytań i URL-i z Google Search Console, więc nie może "
-                "wskazać refresh/create/merge bez zmyślania intencji."
+                "wskazać odświeżenia, nowej treści ani scalenia bez zmyślania intencji."
             ),
             next_step=(
-                "Uruchom odczyt GSC w trybie vendor_read i dopiero potem buduj "
+                "Uruchom odczyt danych z GSC i dopiero potem buduj "
                 "kolejkę treści."
             ),
             source_connectors=["google_search_console"],
@@ -983,14 +736,14 @@ def _inventory_match_section(
     if not inventory_facts:
         return ContentDiagnosticSection(
             id="content_inventory_match",
-            title="WordPress: brak metryk inventory",
+            title="WordPress: brak spisu treści",
             status="blocked",
             summary=_content_blocker_reason(latest_refreshes, "wordpress_ekologus"),
             diagnosis=(
-                "WILQ nie ma WordPress inventory, więc nie może odróżnić refresh/merge "
-                "od nowej treści bez ryzyka duplikacji."
+                "WILQ nie ma spisu treści WordPress, więc nie może odróżnić "
+                "odświeżenia albo scalenia od nowej treści bez ryzyka duplikacji."
             ),
-            next_step="Odśwież WordPress inventory i dopiero potem generuj briefy treści.",
+            next_step="Odśwież spis treści WordPress i dopiero potem generuj briefy treści.",
             source_connectors=["wordpress_ekologus", "wordpress_sklep"],
             evidence_ids=_refresh_or_connector_evidence_ids(
                 latest_refreshes,
@@ -1007,12 +760,12 @@ def _inventory_match_section(
         title="WordPress: ochrona przed duplikacją",
         status="ready",
         summary=(
-            f"WILQ ma {len(inventory_facts)} metryk inventory, "
+            f"WILQ ma {len(inventory_facts)} metryk spisu treści, "
             f"{len(matched_items)} potwierdzonych dopasowań i "
             f"{len(missing_items)} braków dopasowania."
         ),
         diagnosis=(
-            "WordPress inventory chroni marketera przed pisaniem drugi raz tego samego. "
+            "Spis treści WordPress chroni marketera przed pisaniem drugi raz tego samego. "
             "Potwierdzone dopasowania idą w odświeżenie lub scalenie, a brak "
             "dopasowania wymaga ręcznej kontroli przed nowym briefem."
         ),
@@ -1051,15 +804,15 @@ def _content_action_safety_section(
         title="Bezpieczeństwo akcji contentowych",
         status="ready" if facts or tactical_items else "blocked",
         summary=(
-            "Akcje contentowe pozostają w trybie przygotowania do czasu walidacji "
-            "payloadu i audytu."
+            "Akcje contentowe pozostają w trybie przygotowania do czasu sprawdzenia "
+            "podglądu zmian i audytu."
         ),
         diagnosis=(
             "WILQ może przygotować kolejkę odświeżenia, tworzenia, scalania albo "
-            "blokowania oraz podgląd payloadu, ale nie może publikować ani zmieniać "
-            "WordPress bez walidacji i zgody operatora."
+            "blokowania oraz podgląd zmian, ale nie może publikować ani zmieniać "
+            "WordPress bez sprawdzenia i zgody operatora."
         ),
-        next_step="Waliduj `act_prepare_content_refresh_queue` i pokaż podgląd payloadu.",
+        next_step="Sprawdź `act_prepare_content_refresh_queue` w WILQ i pokaż podgląd zmian.",
         source_connectors=list(CONTENT_CONNECTOR_IDS),
         evidence_ids=_unique(
             [
@@ -1098,7 +851,7 @@ def _content_blocker_reason(
         return latest.errors[0]
     if latest and latest.summary:
         return latest.summary
-    return f"Brak wykonanego {connector_id} vendor_read."
+    return f"Brak wykonanego odczytu danych dla {connector_id}."
 
 
 def _refresh_or_connector_evidence_ids(
@@ -1148,8 +901,8 @@ def _content_vendor_read_blocker_decision(
         status="blocked",
         title="Content: odczyt GSC i WordPress wymagany przed decyzją",
         summary=(
-            "WILQ nie ma query/page facts z Google Search Console ani inventory "
-            "WordPress wystarczających do decyzji refresh, merge lub create."
+            "WILQ nie ma faktów query/page z Google Search Console ani spisu "
+            "treści WordPress wystarczających do decyzji: odświeżyć, scalić albo utworzyć."
         ),
         priority=5,
         metric_tiles={"blockery": 2},
@@ -1180,8 +933,8 @@ def _content_vendor_read_blocker_decision(
             "Bez tych odczytów WILQ może tylko wskazać brak danych, nie decyzję SEO."
         ),
         next_step=(
-            "Uruchom read-only vendor_read dla Google Search Console i WordPress, "
-            "potem wróć do content diagnostics."
+            "Uruchom odczyt danych z Google Search Console i WordPress, "
+            "potem wróć do diagnozy treści."
         ),
         risk=ActionRisk.medium,
     )
@@ -1213,67 +966,19 @@ def _gsc_content_decisions(
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
-        inventory_facts = [*metric_facts, *inventory_metric_facts]
-        inventory_details_by_path = _wordpress_inventory_details_by_path(
-            inventory_facts
-        )
-        inventory_details_by_url = _wordpress_inventory_details_by_url(inventory_facts)
         wordpress_content_url = first.dimensions.get("wordpress_content_url")
-        inventory_details = inventory_details_by_path.get(
-            _content_normalized_path(wordpress_content_url)
-        )
-        target_site_context = _content_target_site_context(
-            source_url=page,
-            target_site_url=wordpress_content_url,
-            wordpress_match=wordpress_match == "found",
-        )
-        target_site_inventory_context = _content_target_site_inventory_context(
-            target_site_url=target_site_context.get("target_site_url"),
-            inventory_details=inventory_details,
-        )
-        migration_candidate_inventory_context = (
-            _content_target_site_migration_candidate_inventory_context(
-                migration_candidate_url=target_site_context.get(
-                    "target_site_migration_candidate_url"
-                ),
-                inventory_details=inventory_details_by_url.get(
-                    _content_normalized_url(
-                        target_site_context.get("target_site_migration_candidate_url")
-                    )
-                ),
-            )
-        )
         metrics = _content_decision_metrics(metric_facts, queries)
-        alternative_candidate_context = _content_target_site_alternative_candidate_context(
-            topic=metrics.primary_query or (queries[0] if queries else page),
-            source_url=page,
-            migration_candidate_url=target_site_context.get(
-                "target_site_migration_candidate_url"
-            ),
-            inventory_details_by_url=inventory_details_by_url,
-        )
-        mapping_review_context = _content_target_site_mapping_review_context(
-            migration_candidate_url=target_site_context.get(
-                "target_site_migration_candidate_url"
-            ),
-            migration_candidate_inventory_status=migration_candidate_inventory_context.get(
-                "target_site_migration_candidate_inventory_status"
-            ),
-            alternative_candidate_urls=alternative_candidate_context.get(
-                "target_site_alternative_candidate_urls", []
-            ),
-        )
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
             title = _content_decision_title(decision_type, page, query_count, metrics)
             summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
-                "Przygotuj brief refresh/merge: title, H1/H2, sekcje brakujące wobec "
-                "zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
+                "Przygotuj brief odświeżenia albo scalenia: title, H1/H2, sekcje "
+                "brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
             )
             rationale = (
-                "WordPress inventory potwierdza istniejący URL, więc WILQ kieruje "
+                "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
                 "to do odświeżenia albo scalenia zamiast tworzenia nowej treści."
             )
         elif query_count > 1:
@@ -1282,10 +987,10 @@ def _gsc_content_decisions(
             summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
                 "Sprawdź mapowanie URL, sitemap i duplikaty w WordPress. Dopiero potem "
-                "wybierz merge, create albo restore."
+                "wybierz scalenie, nową treść albo przywrócenie."
             )
             rationale = (
-                "Wiele zapytań prowadzi do jednego URL, ale inventory nie potwierdza "
+                "Wiele zapytań prowadzi do jednego URL, ale spis treści nie potwierdza "
                 "strony, więc nowy brief bez kontroli grozi duplikacją."
             )
         else:
@@ -1297,9 +1002,17 @@ def _gsc_content_decisions(
                 "Jeśli nie istnieje, przygotuj brief dopiero po kontroli duplikatów."
             )
             rationale = (
-                "GSC pokazuje popyt, ale WordPress inventory nie potwierdza URL, "
-                "więc WILQ blokuje automatyczne create."
+                "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
+                "więc WILQ blokuje automatyczne tworzenie nowej treści."
             )
+        url_semantics = _content_decision_url_semantics(
+            source_url=page,
+            wordpress_content_url=wordpress_content_url,
+        )
+        gate_status = _content_gate_status(
+            decision_type=decision_type,
+            wordpress_match=wordpress_match,
+        )
         decisions.append(
             ContentDecisionItem(
                 id=f"content_decision_{_slug(page)}",
@@ -1329,19 +1042,14 @@ def _gsc_content_decisions(
                 best_average_position=metrics.best_average_position,
                 wordpress_match=wordpress_match,
                 wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
-                wordpress_content_url=wordpress_content_url,
-                **target_site_context,
-                **target_site_inventory_context,
-                **migration_candidate_inventory_context,
-                **alternative_candidate_context,
-                **mapping_review_context,
-                **_content_gate_status(
-                    decision_type=decision_type,
-                    wordpress_match=wordpress_match,
-                    target_site_adaptation_status=target_site_context.get(
-                        "target_site_adaptation_status"
-                    ),
-                ),
+                source_public_url=url_semantics["source_public_url"],
+                preview_url=url_semantics["preview_url"],
+                intended_final_url=url_semantics["intended_final_url"],
+                final_canonical_url=url_semantics["final_canonical_url"],
+                inventory_gate_status=gate_status["inventory_gate_status"],
+                canonical_gate_status=gate_status["canonical_gate_status"],
+                duplicate_gate_status=gate_status["duplicate_gate_status"],
+                content_gate_summary=gate_status["content_gate_summary"],
                 source_connectors=_unique(
                     connector for item in page_items for connector in item.source_connectors
                 ),
@@ -1363,46 +1071,6 @@ def _gsc_content_decisions(
             )
         )
     return decisions
-
-
-def _content_target_site_context(
-    *,
-    source_url: str,
-    target_site_url: str | None,
-    wordpress_match: bool,
-) -> dict[str, str | None]:
-    source_host = _content_url_host(source_url)
-    target_host = _content_url_host(target_site_url) if target_site_url else None
-    if not wordpress_match:
-        status = "needs_inventory_match"
-    elif target_host and source_host and target_host != source_host:
-        status = "target_site_alias_match"
-    else:
-        status = "current_site_match"
-    migration_candidate_url = _content_target_site_migration_candidate_url(
-        source_url=source_url,
-        target_site_url=target_site_url,
-        target_site_adaptation_status=status,
-    )
-    migration_status = _content_target_site_migration_status(
-        target_site_adaptation_status=status,
-        migration_candidate_url=migration_candidate_url,
-    )
-    review_requirements = _content_target_site_review_requirements(migration_status)
-    return {
-        "source_url": source_url,
-        "source_site_host": source_host,
-        "target_site_url": target_site_url,
-        "target_site_host": target_host,
-        "target_site_adaptation_status": status,
-        "target_site_migration_candidate_url": migration_candidate_url,
-        "target_site_migration_status": migration_status,
-        "target_site_migration_summary": _content_target_site_migration_summary(
-            migration_status,
-            migration_candidate_url,
-        ),
-        "target_site_review_requirements": review_requirements,
-    }
 
 
 def _wordpress_inventory_details_by_path(
@@ -1476,405 +1144,31 @@ def _content_normalized_url(value: str | None) -> str:
     return f"{parsed.scheme.lower() or 'https'}://{host}{path}"
 
 
-def _content_target_site_inventory_context(
-    *,
-    target_site_url: str | None,
-    inventory_details: dict[str, str] | None,
-) -> dict[str, object]:
-    if not target_site_url:
-        return {
-            "target_site_inventory_missing_fields": [
-                "target_site_url",
-                "title_or_h1",
-                "canonical_url",
-            ],
-            "target_site_inventory_summary": (
-                "Brak target URL w inventory. Nie przygotowuj draftu ani stagingu "
-                "bez ręcznego mapowania."
-            ),
-        }
-
-    if inventory_details is None:
-        return {
-            "target_site_inventory_missing_fields": [
-                "content_type",
-                "status",
-                "inventory_source",
-                "modified_gmt",
-                "title_or_h1",
-                "canonical_url",
-            ],
-            "target_site_inventory_summary": (
-                "Brak szczegółu inventory dla target URL. WILQ może pokazać "
-                "kandydata mapowania, ale draft i staging wymagają potwierdzenia."
-            ),
-        }
-
-    missing = [
-        field
-        for field in ("content_type", "status", "inventory_source", "modified_gmt")
-        if not inventory_details.get(field)
-    ]
-    missing.extend(
-        field
-        for field in ("title_or_h1", "canonical_url")
-        if not inventory_details.get(field)
-    )
-    content_type = inventory_details.get("content_type") or None
-    status = inventory_details.get("status") or None
-    inventory_source = inventory_details.get("inventory_source") or None
-    modified_gmt = inventory_details.get("modified_gmt") or None
-    title_or_h1 = inventory_details.get("title_or_h1") or None
-    canonical_url = inventory_details.get("canonical_url") or None
-    known_parts = _unique(
-        [
-            f"type={content_type}" if content_type else "",
-            f"status={status}" if status else "",
-            f"source={inventory_source}" if inventory_source else "",
-            f"modified_gmt={modified_gmt}" if modified_gmt else "",
-            f"title_or_h1={title_or_h1}" if title_or_h1 else "",
-            f"canonical_url={canonical_url}" if canonical_url else "",
-        ]
-    )
-    summary = "Inventory potwierdza target URL"
-    if known_parts:
-        summary = f"{summary}: {', '.join(known_parts)}"
-    summary = (
-        f"{summary}. Przed draftem/stagingiem nadal sprawdź: "
-        f"{', '.join(missing)}."
-    )
-    return {
-        "target_site_inventory_content_type": content_type,
-        "target_site_inventory_status": status,
-        "target_site_inventory_source": inventory_source,
-        "target_site_inventory_modified_gmt": modified_gmt,
-        "target_site_inventory_title_or_h1": title_or_h1,
-        "target_site_inventory_canonical_url": canonical_url,
-        "target_site_inventory_missing_fields": missing,
-        "target_site_inventory_summary": summary,
-    }
-
-
-def _content_target_site_migration_candidate_inventory_context(
-    *,
-    migration_candidate_url: str | None,
-    inventory_details: dict[str, str] | None,
-) -> dict[str, str | None]:
-    if not migration_candidate_url:
-        return {
-            "target_site_migration_candidate_inventory_status": "not_applicable",
-            "target_site_migration_candidate_inventory_summary": (
-                "Brak kandydata URL na target site dla tej decyzji."
-            ),
-        }
-    if inventory_details is None:
-        return {
-            "target_site_migration_candidate_inventory_status": "missing_target_inventory",
-            "target_site_migration_candidate_inventory_summary": (
-                "Kandydat old-to-new nie jest potwierdzony w target-site inventory. "
-                "Wymagane ręczne mapowanie przed draftem albo stagingiem."
-            ),
-        }
-    title = inventory_details.get("title_or_h1")
-    canonical = inventory_details.get("canonical_url")
-    parts = _unique(
-        [
-            f"title_or_h1={title}" if title else "",
-            f"canonical_url={canonical}" if canonical else "",
-            f"source={inventory_details.get('inventory_source')}"
-            if inventory_details.get("inventory_source")
-            else "",
-        ]
-    )
-    suffix = f": {', '.join(parts)}" if parts else "."
-    return {
-        "target_site_migration_candidate_inventory_status": "confirmed_target_inventory",
-        "target_site_migration_candidate_inventory_summary": (
-            f"Kandydat old-to-new jest w target-site inventory{suffix}"
-        ),
-    }
-
-
-def _content_target_site_alternative_candidate_context(
-    *,
-    topic: str,
-    source_url: str,
-    migration_candidate_url: str | None,
-    inventory_details_by_url: dict[str, dict[str, str]],
-) -> dict[str, object]:
-    if not migration_candidate_url:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": None,
-        }
-    if _content_normalized_url(migration_candidate_url) in inventory_details_by_url:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": (
-                "Dokładny kandydat old-to-new jest potwierdzony; alternatywne "
-                "kandydaty nie są potrzebne."
-            ),
-        }
-    candidates = _content_target_site_alternative_candidate_urls(
-        topic=topic,
-        source_url=source_url,
-        migration_candidate_url=migration_candidate_url,
-        inventory_details_by_url=inventory_details_by_url,
-    )
-    if not candidates:
-        return {
-            "target_site_alternative_candidate_urls": [],
-            "target_site_alternative_candidate_summary": (
-                "Brak alternatywnego kandydata w target-site inventory. Wymagane "
-                "ręczne mapowanie przed draftem albo stagingiem."
-            ),
-        }
-    return {
-        "target_site_alternative_candidate_urls": candidates,
-        "target_site_alternative_candidate_summary": (
-            "Dokładny kandydat old-to-new nie istnieje w target-site inventory. "
-            "WILQ znalazł alternatywne URL-e do ręcznego mapowania; nie "
-            "potwierdzają one jeszcze migracji ani gotowości draftu."
-        ),
-    }
-
-
-def _content_target_site_mapping_review_context(
-    *,
-    migration_candidate_url: str | None,
-    migration_candidate_inventory_status: str | None,
-    alternative_candidate_urls: object,
-) -> dict[str, object]:
-    alternatives = (
-        [url for url in alternative_candidate_urls if isinstance(url, str) and url]
-        if isinstance(alternative_candidate_urls, list)
-        else []
-    )
-    if not migration_candidate_url:
-        return {
-            "target_site_mapping_review_status": "not_applicable",
-            "target_site_mapping_review_summary": (
-                "Brak kandydata migracji do review dla tej decyzji."
-            ),
-            "target_site_mapping_review_candidate_urls": [],
-        }
-    if migration_candidate_inventory_status == "confirmed_target_inventory":
-        return {
-            "target_site_mapping_review_status": "confirm_exact_candidate",
-            "target_site_mapping_review_summary": (
-                "Dokładny kandydat old-to-new jest w inventory. Operator musi "
-                "potwierdzić canonical, duplikaty i zgodność intencji przed draftem."
-            ),
-            "target_site_mapping_review_candidate_urls": [migration_candidate_url],
-        }
-    if alternatives:
-        return {
-            "target_site_mapping_review_status": "review_alternative_candidates",
-            "target_site_mapping_review_summary": (
-                "Dokładny kandydat old-to-new nie istnieje w inventory. Przejrzyj "
-                "alternatywne URL-e i wybierz właściwe mapowanie albo oznacz temat "
-                "jako wymagający ręcznego targetu."
-            ),
-            "target_site_mapping_review_candidate_urls": alternatives,
-        }
-    return {
-        "target_site_mapping_review_status": "manual_mapping_required",
-        "target_site_mapping_review_summary": (
-            "Nie znaleziono potwierdzonego ani alternatywnego URL-a targetu. "
-            "Wymagane ręczne wskazanie mapowania przed draftem albo stagingiem."
-        ),
-        "target_site_mapping_review_candidate_urls": [migration_candidate_url],
-    }
-
-
-def _content_target_site_alternative_candidate_urls(
-    *,
-    topic: str,
-    source_url: str,
-    migration_candidate_url: str,
-    inventory_details_by_url: dict[str, dict[str, str]],
-) -> list[str]:
-    tokens = _content_mapping_tokens(topic, source_url)
-    if not tokens:
-        return []
-    exact_candidate = _content_normalized_url(migration_candidate_url)
-    scored: list[tuple[int, str]] = []
-    for normalized_url, details in inventory_details_by_url.items():
-        if normalized_url == exact_candidate:
-            continue
-        if CONTENT_TARGET_SITE_HOST not in normalized_url:
-            continue
-        text = _normalize_text(
-            " ".join(
-                [
-                    normalized_url,
-                    details.get("title_or_h1", ""),
-                    details.get("canonical_url", ""),
-                ]
-            )
-        )
-        score = sum(1 for token in tokens if _content_mapping_token_matches(token, text))
-        if score > 0:
-            scored.append((score, normalized_url))
-    return [
-        url
-        for _score, url in sorted(scored, key=lambda item: (-item[0], item[1]))[:3]
-    ]
-
-
-def _content_mapping_tokens(topic: str, source_url: str) -> set[str]:
-    text = _normalize_text(f"{topic} {_content_normalized_path(source_url)}")
-    tokens = {
-        token
-        for token in re.split(r"[^a-z0-9]+", text)
-        if len(token) >= 4
-    }
-    stopwords = {
-        "https",
-        "www",
-        "ekologus",
-        "musi",
-        "wiedziec",
-        "wszystko",
-        "kiedy",
-        "czym",
-        "jest",
-        "polega",
-        "taki",
-        "takiego",
-    }
-    return tokens - stopwords
-
-
-def _content_mapping_token_matches(token: str, normalized_text: str) -> bool:
-    if token in normalized_text:
-        return True
-    if len(token) >= 6 and token[:6] in normalized_text:
-        return True
-    return False
-
-
-def _content_target_site_migration_candidate_url(
-    *,
-    source_url: str,
-    target_site_url: str | None,
-    target_site_adaptation_status: str,
-) -> str | None:
-    if target_site_adaptation_status == "target_site_alias_match":
-        return target_site_url
-    parsed = urlparse(source_url)
-    source_host = parsed.netloc.lower()
-    if source_host not in CONTENT_SOURCE_SITE_HOSTS:
-        return None
-    path = parsed.path or "/"
-    query = f"?{parsed.query}" if parsed.query else ""
-    return f"{CONTENT_TARGET_SITE_SCHEME}://{CONTENT_TARGET_SITE_HOST}{path}{query}"
-
-
-def _content_target_site_migration_status(
-    *,
-    target_site_adaptation_status: str,
-    migration_candidate_url: str | None,
-) -> str:
-    if target_site_adaptation_status == "target_site_alias_match":
-        return "confirmed_target_inventory"
-    if target_site_adaptation_status == "needs_inventory_match":
-        return "blocked_missing_inventory"
-    if migration_candidate_url:
-        return "needs_review"
-    return "not_applicable"
-
-
-def _content_target_site_migration_summary(
-    migration_status: str,
-    migration_candidate_url: str | None,
-) -> str:
-    if migration_status == "confirmed_target_inventory":
-        return (
-            "Inventory potwierdza URL na target site; przed draftem nadal sprawdź "
-            "canonical, duplikaty i review."
-        )
-    if migration_status == "needs_review" and migration_candidate_url:
-        return (
-            "WILQ wskazuje kandydata old-to-new na target site, ale inventory go "
-            "nie potwierdza w tej decyzji. Wymagane ręczne mapowanie przed draftem "
-            "albo stagingiem."
-        )
-    if migration_status == "blocked_missing_inventory":
-        return (
-            "Brak potwierdzenia inventory. Nie twórz draftu ani nowej strony przed "
-            "kontrolą sitemap, canonical i duplikatów."
-        )
-    return "Brak kandydata migracji na target site dla tej decyzji."
-
-
-def _content_target_site_review_requirements(migration_status: str | None) -> list[str]:
-    if migration_status == "confirmed_target_inventory":
-        return [
-            "target_site_inventory_confirmed",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    if migration_status == "needs_review":
-        return [
-            "target_site_inventory_mapping_review",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    if migration_status == "blocked_missing_inventory":
-        return [
-            "target_site_inventory_required",
-            "target_site_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "human_confirm_before_wordpress_write",
-        ]
-    return [
-        "business_relevance_review",
-        "wordpress_inventory_check",
-        "duplicate_or_cannibalization_check",
-        "human_confirm_before_wordpress_write",
-    ]
-
-
 def _content_gate_status(
     *,
     decision_type: ContentDecisionType,
     wordpress_match: str,
-    target_site_adaptation_status: str | None,
 ) -> dict[str, str]:
     if decision_type == "refresh_or_merge" and wordpress_match == "found":
-        if target_site_adaptation_status == "target_site_alias_match":
-            return {
-                "inventory_gate_status": "confirmed_target_inventory",
-                "canonical_gate_status": "needs_target_canonical_review",
-                "duplicate_gate_status": "refresh_or_merge_required",
-                "content_gate_summary": (
-                    "Inventory potwierdza docelową stronę na target site. "
-                    "Brief może iść do refresh/merge review, ale canonical i duplikaty "
-                    "wymagają ręcznego potwierdzenia przed draftem albo stagingiem."
-                ),
-            }
         return {
             "inventory_gate_status": "confirmed_current_inventory",
             "canonical_gate_status": "current_url_confirmed",
             "duplicate_gate_status": "refresh_or_merge_required",
             "content_gate_summary": (
-                "Inventory potwierdza istniejący URL. WILQ traktuje to jako "
-                "refresh/merge, nie nowy artykuł; create pozostaje zablokowane "
+                "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
+                "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje zablokowana "
                 "przed kontrolą duplikacji."
             ),
         }
     if decision_type == "merge_create_after_inventory_check":
         return {
             "inventory_gate_status": "missing_inventory_match",
-            "canonical_gate_status": "blocked_until_mapping_review",
+            "canonical_gate_status": "blocked_until_content_url_review",
             "duplicate_gate_status": "manual_merge_or_create_review",
             "content_gate_summary": (
                 "GSC pokazuje klaster zapytań bez potwierdzonego inventory. "
-                "Najpierw potrzebne mapowanie URL i kontrola duplikatów; dopiero potem "
-                "merge albo create."
+                "Najpierw potrzebna kontrola URL i duplikatów; dopiero potem "
+                "scalenie albo nowa treść."
             ),
         }
     if decision_type == "inventory_check_before_create":
@@ -1884,7 +1178,7 @@ def _content_gate_status(
             "duplicate_gate_status": "create_blocked_until_duplicate_check",
             "content_gate_summary": (
                 "GSC pokazuje popyt, ale WordPress nie potwierdza URL. "
-                "Brief create jest zablokowany do czasu kontroli inventory, canonical "
+                "Brief nowej treści jest zablokowany do czasu kontroli inventory, canonical "
                 "i duplikatów."
             ),
         }
@@ -1894,7 +1188,7 @@ def _content_gate_status(
         "duplicate_gate_status": "not_applicable",
         "content_gate_summary": (
             "Ta decyzja nie jest bezpośrednim briefem contentowym; wymaga osobnego "
-            "review przed użyciem w planie treści."
+            "sprawdzenia przed użyciem w planie treści."
         ),
     }
 
@@ -1959,7 +1253,7 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
                 "GA4 `(not set)` i tracking_gap wskazują problem pomiaru, "
                 "nie gotową rekomendację treści."
             ),
-            next_step="Przekaż do GA4 tracking review zamiast tworzyć content rewrite.",
+            next_step="Przekaż do sprawdzenia trackingu GA4 zamiast tworzyć rewrite treści.",
             risk=ActionRisk.medium,
         )
     ]
@@ -2021,26 +1315,26 @@ def _ahrefs_gap_record_decisions(
             status=decision_status,
             title="Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
             summary=(
-                f"WILQ ma {len(gap_facts)} Ahrefs gap facts: "
-                f"content gaps={gap_counts['content_gap']}, "
-                f"organic keywords={gap_counts['organic_keyword_gap']}, "
-                f"top pages={gap_counts['top_page_gap']}, "
-                f"backlink gaps={gap_counts['backlink_gap']}. Scoring jakości wskazuje "
+                f"WILQ ma {len(gap_facts)} rekordów luk Ahrefs: "
+                f"luki treści={gap_counts['content_gap']}, "
+                f"słowa organiczne={gap_counts['organic_keyword_gap']}, "
+                f"najlepsze strony konkurencji={gap_counts['top_page_gap']}, "
+                f"luki backlinków={gap_counts['backlink_gap']}. Ocena jakości wskazuje "
                 f"{len(relevant_scores)} {relevant_label}, "
                 f"{len(review_scores)} {review_label} do ręcznej oceny i "
-                f"{len(off_topic_scores)} {off_topic_label} off-topic/broad. "
-                "To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu."
+                f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "
+                "To jest materiał do sprawdzenia z GSC/WordPress, nie obietnica wzrostu ruchu."
             ),
             priority=18 if relevant_scores else 32 if review_scores else 45,
             metric_tiles={
                 "rekordy Ahrefs": len(gap_facts),
                 "pasujące": len(relevant_scores),
-                "do review": len(review_scores),
-                "off-topic": len(off_topic_scores),
+                "do sprawdzenia": len(review_scores),
+                "poza zakresem": len(off_topic_scores),
                 "GSC overlap": gsc_overlap_count,
                 "WP overlap": wordpress_overlap_count,
-                "content gaps": gap_counts["content_gap"],
-                "backlink gaps": gap_counts["backlink_gap"],
+                "luki treści": gap_counts["content_gap"],
+                "luki backlinków": gap_counts["backlink_gap"],
             },
             queries=sample_keywords,
             query_count=len(sample_keywords),
@@ -2054,23 +1348,23 @@ def _ahrefs_gap_record_decisions(
             expert_rule_ids=list(AHREFS_CONTENT_EXPERT_RULE_IDS),
             blocked_claims=[
                 "off-topic content recommendation",
-                "content brief without relevance review",
+                "content brief without relevance check",
                 "traffic uplift",
                 "authority improvement",
                 "ranking guarantee",
                 "lead uplift",
             ],
             rationale=(
-                "Ahrefs wskazuje luki względem konkurencji, ale scoring rozdziela "
-                "rekordy pasujące do zakresu Ekologus od tematów szerokich i off-topic. "
+                "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela "
+                "rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem. "
                 "WILQ nie może zrobić briefu z rekordu bez filtrowania, GSC demand "
-                "i WordPress inventory match."
+                "i dopasowania w spisie treści WordPress."
             ),
             next_step=(
                 f"Najpierw przejrzyj pasujące rekordy: {topic_hint}. Odrzuć "
-                f"{len(off_topic_scores)} off-topic/broad rekordów i dopiero potem "
-                "połącz sensowne tematy z GSC/WordPress jako refresh, merge, create "
-                "albo block."
+                f"{len(off_topic_scores)} rekordów poza zakresem i dopiero potem "
+                "połącz sensowne tematy z GSC/WordPress jako odświeżenie, scalenie, "
+                "zachowanie, utworzenie albo blokadę."
             ),
             risk=ActionRisk.medium if candidate_scores else ActionRisk.high,
         )
@@ -2129,15 +1423,15 @@ def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
     overlap_context = f" Overlap: {'; '.join(overlap_labels)}." if overlap_labels else ""
     if score.status == "relevant":
         return (
-            f"Zweryfikuj `{topic}` z GSC i WordPress inventory, potem zdecyduj: "
-            f"refresh, merge, create albo block.{overlap_context}"
+            f"Zweryfikuj `{topic}` z GSC i spisem treści WordPress, potem zdecyduj: "
+            f"odświeżenie, scalenie, utworzenie albo blokada.{overlap_context}"
         )
     if score.status == "review":
         return (
-            f"Sprawdź ręcznie, czy `{topic}` pasuje do Ekologus; bez GSC/WP overlap "
+            f"Sprawdź ręcznie, czy `{topic}` pasuje do Ekologus; bez pokrycia w GSC/WP "
             "nie twórz briefu."
         )
-    return f"Odrzuć `{topic}` jako off-topic/broad, chyba że operator poda biznesowy wyjątek."
+    return f"Odrzuć `{topic}` jako poza zakresem, chyba że operator poda biznesowy wyjątek."
 
 
 def _ahrefs_gap_fact_counts(metric_facts: list[MetricFact]) -> dict[str, int]:
@@ -2538,12 +1832,12 @@ def _wordpress_match_tile(wordpress_match: str) -> str:
 
 def _content_decision_mode_tile(decision_type: ContentDecisionType) -> str:
     if decision_type == "merge_create_after_inventory_check":
-        return "sprawdź merge/create"
+        return "sprawdź scalenie albo nową treść"
     if decision_type == "inventory_check_before_create":
-        return "blokada create"
+        return "blokada nowej treści"
     if decision_type == "block_as_tracking_not_content":
         return "GA4 tracking"
-    return "refresh/merge"
+    return "odświeżenie albo scalenie"
 
 
 def _numeric_metric_value(fact: MetricFact) -> float | None:
@@ -2564,7 +1858,7 @@ def _content_decision_title(
         return f"SEO: odśwież lub scal {topic} ({query_label})"
     if decision_type == "merge_create_after_inventory_check":
         return f"SEO: sprawdź klaster {topic} przed tworzeniem ({query_label})"
-    return f"SEO: sprawdź inventory dla {topic} ({query_label})"
+    return f"SEO: sprawdź spis treści dla {topic} ({query_label})"
 
 
 def _content_topic_label(page: str, primary_query: str | None) -> str:
@@ -2584,7 +1878,7 @@ def _content_decision_summary(
     if decision_type == "refresh_or_merge":
         return (
             f"{metric_sentence} WordPress potwierdza istniejącą stronę, więc "
-            "to jest decyzja refresh/merge, nie nowy artykuł."
+            "to jest decyzja odświeżenia albo scalenia, nie nowy artykuł."
         )
     if decision_type == "merge_create_after_inventory_check":
         return (
@@ -2594,7 +1888,7 @@ def _content_decision_summary(
     match_label = "nie potwierdza" if wordpress_match == "missing" else "nie daje pewności"
     return (
         f"{metric_sentence} WordPress {match_label} URL, więc WILQ blokuje "
-        "brief create do czasu kontroli inventory."
+        "brief nowej treści do czasu kontroli inventory."
     )
 
 

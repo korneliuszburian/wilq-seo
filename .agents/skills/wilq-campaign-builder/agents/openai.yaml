@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Campaign Builder"
-  short_description: "Buduje bezpieczne drafty kampanii i payload preview"
-  default_prompt: "Użyj $wilq-campaign-builder: przygotuj strukturę kampanii dla Ekologus z evidence i pokaż payload preview bez apply."
+  short_description: "Buduje bezpieczne szkice kampanii i podgląd zmian"
+  default_prompt: "Użyj $wilq-campaign-builder: przygotuj strukturę kampanii dla Ekologus z evidence i pokaż podgląd zmian bez zapisu zmian."

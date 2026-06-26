@@ -2,10 +2,10 @@ id: ads_custom_segments_v1
 name: Custom segments from search terms
 version: 1
 source_anchor: Google Ads custom segments and search terms
-when_to_use: Build review-only audience candidates from real search-term evidence.
+when_to_use: Build validation-ready audience proposals from real search-term evidence.
 required_inputs: [search_terms, campaign_context, evidence_ids]
 diagnostic_logic:
-  [cluster_terms, reject_low_intent_terms, build_review_only_payload_preview, validate_segment_payload]
+  [cluster_terms, reject_low_intent_terms, build_validation_change_preview, validate_segment_payload]
 recommended_actions: [prepare_custom_segment_review]
 risk_notes: Never invent audience terms.
-output_contract: Review-only custom segment ActionObjects with evidence, rejected terms, payload preview and blocked apply claims.
+output_contract: Custom segment proposals with evidence, rejected terms, change preview and blocked write claims.
