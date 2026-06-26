@@ -26,7 +26,7 @@ function customSegmentSafetyReview(previewId: string) {
     safety_contract: "custom_segment_apply_safety_v1",
     status: "blocked",
     reason:
-      "Custom segment apply zablokowany: preview jest tylko do review.",
+      "Zapis segmentu niestandardowego zablokowany: podgląd jest do sprawdzenia.",
     missing_requirements: [
       "forecast_or_audience_size",
       "google_ads_mutation_audit",
@@ -60,7 +60,7 @@ const opportunities = [
   {
     id: "opp_decision_review_ads_campaign_metrics",
     type: "google_ads_review_queue",
-    title: "Przejrzyj kolejki Ads do oceny bez apply",
+    title: "Przejrzyj kolejki Ads do sprawdzenia bez zapisu zmian",
     domain: "google_ads",
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -72,7 +72,7 @@ const opportunities = [
     },
     metrics: [],
     human_diagnosis:
-      "Google Ads ma liczniki do oceny i ActionObjecty review-only. Apply pozostaje zablokowany.",
+      "Google Ads ma liczniki do oceny i akcje do sprawdzenia. Zapis pozostaje zablokowany.",
     recommended_action:
       "Otwórz /ads-doctor i przejrzyj kolejno: podgląd budżetów, podgląd rekomendacji, przegląd wykluczeń i podgląd segmentów.",
     risk: "medium",
@@ -129,7 +129,7 @@ const actions = [
     validation_status: "not_validated",
     review_gate: {
       status: "pending_validation",
-      summary: "Wymaga walidacji ActionObject; apply pozostaje zablokowany osobnymi warunkami.",
+      summary: "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany osobnymi warunkami.",
       required_checks: [
         "identify_disapproved_products",
         "group_issue_reasons",
@@ -153,14 +153,14 @@ const actions = [
       last_mutation_audit_actor: "operator_local_dashboard",
       last_mutation_audit_at: "2026-06-17T10:03:00Z",
       last_mutation_audit_summary:
-        "Zmiana zablokowana przed wywołaniem zewnętrznego systemu. Blockers: Vendor mutation adapter is not implemented for this ActionObject.",
+        "Zmiana zablokowana przed wywołaniem zewnętrznego systemu. Blockers: Vendor mutation adapter is not implemented for this action.",
       last_mutation_attempted: false,
       last_mutation_adapter: null,
       last_mutation_audit_event_id: "audit_act_review_merchant_feed_issues_apply_test",
       last_mutation_blockers: ["vendor_mutation_adapter_required"]
     },
-    human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ API.",
-    recommended_reason: "Przygotuj kolejkę problemów feedu z payload preview.",
+    human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ.",
+    recommended_reason: "Przygotuj kolejkę problemów feedu z podglądem zmian.",
     payload: {
       action_type: "merchant_feed_issue",
       connector: "google_merchant_center",
@@ -210,7 +210,7 @@ const actions = [
             sessions: 30
           },
           reason:
-            "Review-only checklist dla landing/source/campaign quality. To nie odblokowuje ROAS ani revenue.",
+            "Lista sprawdzenia landing page, źródło i kampania do oceny jakości ruchu. To nie odblokowuje ROAS ani revenue.",
           required_validation: [
             "review_landing_page_dimension",
             "review_source_medium_dimension",
@@ -257,8 +257,8 @@ const actions = [
       }
     ],
     validation_status: "not_validated",
-    human_diagnosis: "WordPress inventory można zestawić z GSC przed tworzeniem nowych tematów.",
-    recommended_reason: "Przygotuj queue refresh/create/merge/block.",
+    human_diagnosis: "Spis treści WordPress można zestawić z GSC przed tworzeniem nowych tematów.",
+    recommended_reason: "Przygotuj kolejkę: zachować, odświeżyć, scalić, utworzyć albo zablokować.",
     payload: {
       action_type: "wordpress_content_refresh",
       connector: "wordpress_ekologus",
@@ -280,7 +280,7 @@ const actions = [
             ctr: 0.1
           },
           brief_goal:
-            "Przygotuj refresh/merge brief dla istniejącej treści pod temat `zielony ład`.",
+            "Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
           content_angle:
             "Odśwież istniejącą treść wokół intencji zielony ład bez obietnic pozycji.",
           audience: "Decydent środowiskowy szukający prostego wyjaśnienia regulacji.",
@@ -350,9 +350,9 @@ const actions = [
           target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           draft_payload: {
             post_status: "draft",
-            post_title: "Refresh: zielony ład",
+            post_title: "Odświeżenie: zielony ład",
             post_excerpt_direction:
-              "Przygotuj refresh/merge brief dla istniejącej treści pod temat `zielony ład`.",
+              "Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
             content_blocks: [
               {
                 section: "intent",
@@ -384,7 +384,7 @@ const actions = [
   },
   {
     id: "act_prepare_negative_keyword_review_queue",
-    title: "Przygotuj kolejkę review wykluczeń z search terms",
+    title: "Przygotuj kolejkę review wykluczeń z listy wyszukiwanych haseł",
     domain: "google_ads",
     connector: "google_ads",
     mode: "prepare",
@@ -394,15 +394,15 @@ const actions = [
     metrics: [],
     validation_status: "not_validated",
     human_diagnosis:
-      "Google Ads ma search-term metric facts do review, ale apply wymaga 90-day safety check.",
-    recommended_reason: "Przygotuj review-only queue bez claimów o waste.",
+      "Google Ads ma search-term metryki do review, ale apply wymaga 90-day safety check.",
+    recommended_reason: "Przygotuj kolejkę do sprawdzenia bez claimów o waste.",
     payload: {
       action_type: "negative_keyword_candidate",
       connector: "google_ads",
       mode: "prepare_only",
       terms: ["odpady cena"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-      preview_contract: "negative_keyword_payload_preview_v1",
+      preview_contract: "negative_keyword_change_preview_v1",
       api_mutation_ready: false,
       payload_preview: [
         {
@@ -424,7 +424,7 @@ const actions = [
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["negative keyword apply", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -432,7 +432,7 @@ const actions = [
       ],
       required_validation: [
         "90_day_safety_check",
-        "negative_keyword_payload_preview"
+        "negative_keyword_change_preview"
       ],
       apply_allowed: false,
       destructive: false
@@ -441,7 +441,7 @@ const actions = [
   },
   {
     id: "act_prepare_google_ads_recommendation_review_queue",
-    title: "Przygotuj review rekomendacji Google Ads",
+    title: "Przygotuj ocenę rekomendacji Google Ads",
     domain: "google_ads",
     connector: "google_ads",
     mode: "prepare",
@@ -452,7 +452,7 @@ const actions = [
     validation_status: "not_validated",
     human_diagnosis:
       "Google Ads ma aktywne recommendation facts, ale apply wymaga review strategii.",
-    recommended_reason: "Przejrzyj typ rekomendacji i impact preview bez apply.",
+    recommended_reason: "Sprawdź typ rekomendacji i podgląd wpływu bez zapisu zmian.",
     payload: {
       action_type: "google_ads_recommendation_review",
       connector: "google_ads",
@@ -467,7 +467,7 @@ const actions = [
           campaign_budget_id: "777",
           source_metric_names: ["recommendation_available"],
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-          blocked_claims: ["recommendation apply"],
+          blocked_claims: ["zapis rekomendacji"],
           required_validation: [
             "review_recommendation_type",
             "review_impact_metrics",
@@ -489,7 +489,7 @@ const actions = [
           campaign_id: "123",
           campaign_budget_id: "777",
           operation_type: "ApplyRecommendationOperation",
-          reason: "Review-only recommendation apply operation preview.",
+          reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["recommendation_available"],
           required_validation: [
@@ -502,9 +502,9 @@ const actions = [
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "recommendation apply",
+            "zapis rekomendacji",
             "automatic recommendation accept",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation",
             "performance uplift"
           ],
@@ -525,9 +525,9 @@ const actions = [
         "human_confirm_before_apply"
       ],
       blocked_claims: [
-        "recommendation apply",
+        "zapis rekomendacji",
         "automatic recommendation accept",
-        "budget apply",
+        "zmiana budżetu",
         "campaign mutation",
         "performance uplift"
       ],
@@ -547,7 +547,7 @@ const evidence = [
     source_id: "google_ads",
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "missing" },
-    summary: "Connector google_ads is missing credential names.",
+    summary: "Google Ads ma braki dostępu.",
     raw_ref: null
   },
   {
@@ -585,7 +585,7 @@ const connectorRefreshRuns = [
 const adsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector: {
     ...connectors[0],
     status: "configured",
@@ -657,7 +657,7 @@ const adsDiagnostics = {
         blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
       }
     ],
-    next_step: "Użyj wierszy kampanii do przeglądu aktywności."
+    next_step: "Użyj wierszy kampanii do sprawdzenia aktywności."
   },
   account_currency_read_contract: {
     id: "ads_account_currency_read_contract",
@@ -667,11 +667,11 @@ const adsDiagnostics = {
     currency_code: "PLN",
     allowed_metrics: ["account_currency_code"],
     missing_read_contracts: [],
-    blocked_claims: ["profitability", "margin verdict", "budget apply"],
+    blocked_claims: ["profitability", "margin verdict", "zmiana budżetu"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     next_step:
-      "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i walidowanego preview."
+      "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i sprawdzonego podglądu."
   },
   business_context_read_contract: {
     id: "ads_business_context_read_contract",
@@ -766,8 +766,8 @@ const adsDiagnostics = {
         "profitability verdict",
         "target KPI verdict",
         "budget scaling",
-        "budget apply",
-        "recommendation apply",
+        "zmiana budżetu",
+        "zapis rekomendacji",
         "automatic optimization"
       ],
       source_connectors: ["google_ads"],
@@ -776,7 +776,7 @@ const adsDiagnostics = {
       apply_allowed: false,
       destructive: false,
       next_step:
-        "Otwórz ActionObject strategii, sprawdź marżę, cel biznesowy, cel budżetu i target ROAS/CPA, a potem zapisz outcome review."
+        "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel budżetu i target ROAS/CPA, a potem zapisz outcome review."
     },
     allowed_metrics: [],
     missing_read_contracts: [
@@ -790,8 +790,8 @@ const adsDiagnostics = {
       "profitability",
       "margin verdict",
       "budget scaling",
-      "budget apply",
-      "recommendation apply",
+      "zmiana budżetu",
+      "zapis rekomendacji",
       "wasted budget"
     ],
     source_connectors: ["google_ads"],
@@ -809,7 +809,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: wyliczone KPI kampanii",
     summary:
-      "WILQ może policzyć KPI dla 1 kampanii: CPA dostępne dla 1, ROAS dostępny dla 1. To są obliczenia z bieżących metric facts, nie werdykt opłacalności.",
+      "WILQ może policzyć KPI dla 1 kampanii: CPA dostępne dla 1, ROAS dostępny dla 1. To są obliczenia z bieżących metryki, nie werdykt opłacalności.",
     allowed_metrics: [
       "ctr",
       "average_cpc_micros",
@@ -823,7 +823,7 @@ const adsDiagnostics = {
       "profitability",
       "budget scaling",
       "wasted budget",
-      "recommendation apply",
+      "zapis rekomendacji",
       "incrementality"
     ],
     source_connectors: ["google_ads"],
@@ -851,7 +851,7 @@ const adsDiagnostics = {
           "profitability",
           "budget scaling",
           "wasted budget",
-          "recommendation apply"
+          "zapis rekomendacji"
         ]
       }
     ],
@@ -880,10 +880,10 @@ const adsDiagnostics = {
     ],
     blocked_claims: [
       "budget scaling",
-      "budget apply",
+      "zmiana budżetu",
       "profitability",
       "wasted budget",
-      "recommendation apply"
+      "zapis rekomendacji"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -917,7 +917,7 @@ const adsDiagnostics = {
           proposed_budget_amount_micros: 42000000,
           proposed_budget_delta_micros: 12000000,
           reason:
-            "Podgląd do przeglądu CampaignBudgetOperation z Google recommended budget.",
+            "Podgląd budżetu z rekomendacji Google do sprawdzenia.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: [
             "budget_amount_micros",
@@ -935,13 +935,13 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "budget scaling",
-            "budget apply",
+            "zmiana budżetu",
             "campaign pause",
             "wasted budget",
             "profitability",
             "CPA verdict",
             "ROAS verdict",
-            "recommendation apply"
+            "zapis rekomendacji"
           ],
           safety_review: {
             id: "budget_apply_preview_123_777_safety",
@@ -949,7 +949,7 @@ const adsDiagnostics = {
             safety_contract: "campaign_budget_apply_safety_v1",
             status: "blocked",
             reason:
-              "Budget apply zablokowany: proponowana zmiana przekracza limit 30%.",
+              "Zapis zmiany budżetu zablokowany: proponowana zmiana przekracza limit 30%.",
             max_allowed_delta_percent: 0.3,
             current_budget_amount_micros: 30000000,
             proposed_budget_amount_micros: 42000000,
@@ -973,7 +973,7 @@ const adsDiagnostics = {
               "human_confirm_before_apply"
             ],
             blocked_claims: [
-              "budget apply",
+              "zmiana budżetu",
               "budget scaling",
               "campaign pause",
               "profitability",
@@ -992,10 +992,10 @@ const adsDiagnostics = {
         missing_metrics: [],
         blocked_claims: [
           "budget scaling",
-          "budget apply",
+          "zmiana budżetu",
           "profitability",
           "wasted budget",
-          "recommendation apply"
+          "zapis rekomendacji"
         ]
       }
     ],
@@ -1031,13 +1031,13 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         blocked_claims: [
           "budget scaling",
-          "budget apply",
+          "zmiana budżetu",
           "campaign pause",
           "wasted budget",
           "profitability",
           "CPA verdict",
           "ROAS verdict",
-          "recommendation apply"
+          "zapis rekomendacji"
         ]
       }
     ],
@@ -1052,7 +1052,7 @@ const adsDiagnostics = {
         current_budget_amount_micros: 30000000,
         proposed_budget_amount_micros: 42000000,
         proposed_budget_delta_micros: 12000000,
-        reason: "Podgląd do przeglądu CampaignBudgetOperation z Google recommended budget.",
+        reason: "Podgląd budżetu z rekomendacji Google do sprawdzenia.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: [
           "budget_amount_micros",
@@ -1070,20 +1070,20 @@ const adsDiagnostics = {
         ],
         blocked_claims: [
           "budget scaling",
-          "budget apply",
+          "zmiana budżetu",
           "campaign pause",
           "wasted budget",
           "profitability",
           "CPA verdict",
           "ROAS verdict",
-          "recommendation apply"
+          "zapis rekomendacji"
         ],
         safety_review: {
           id: "budget_apply_preview_123_777_safety",
           budget_preview_id: "budget_apply_preview_123_777",
           safety_contract: "campaign_budget_apply_safety_v1",
           status: "blocked",
-          reason: "Budget apply zablokowany: proponowana zmiana przekracza limit 30%.",
+          reason: "Zapis zmiany budżetu zablokowany: proponowana zmiana przekracza limit 30%.",
           max_allowed_delta_percent: 0.3,
           current_budget_amount_micros: 30000000,
           proposed_budget_amount_micros: 42000000,
@@ -1107,7 +1107,7 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "budget apply",
+            "zmiana budżetu",
             "budget scaling",
             "campaign pause",
             "profitability",
@@ -1126,14 +1126,14 @@ const adsDiagnostics = {
     ],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
     next_step:
-      "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i walidowanego ActionObject."
+      "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i sprawdzonej akcji."
   },
   recommendations_read_contract: {
     id: "ads_recommendations_read_contract",
     status: "ready",
     title: "Google Ads: rekomendacje do review",
     summary:
-      "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1; apply payload preview dla 1.",
+      "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: CAMPAIGN_BUDGET. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
     allowed_metrics: [
       "recommendation_available",
       "recommendation_campaign_count",
@@ -1154,9 +1154,9 @@ const adsDiagnostics = {
       "human_confirm_before_apply"
     ],
     blocked_claims: [
-      "recommendation apply",
+      "zapis rekomendacji",
       "automatic recommendation accept",
-      "budget apply",
+      "zmiana budżetu",
       "campaign mutation",
       "performance uplift"
     ],
@@ -1170,14 +1170,14 @@ const adsDiagnostics = {
         review_priority: "pilne",
         review_score: 70,
         review_reason:
-          "Rekomendacja CAMPAIGN_BUDGET: impact preview: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica performance uplift.",
+          "Rekomendacja CAMPAIGN_BUDGET: podgląd wpływu: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica poprawy wyniku.",
         human_review_gates: [
           "sprawdź typ rekomendacji",
           "sprawdź metryki wpływu",
           "porównaj z historią zmian",
           "porównaj z celem biznesowym",
           "zweryfikuj RMF/compliance",
-          "potwierdź człowiekiem przed apply"
+          "potwierdź człowiekiem przed zapisem"
         ],
         dismissed: false,
         campaign_id: "123",
@@ -1209,7 +1209,7 @@ const adsDiagnostics = {
           campaign_id: "123",
           campaign_budget_id: "777",
           operation_type: "ApplyRecommendationOperation",
-          reason: "Review-only recommendation apply operation preview.",
+          reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: [
             "recommendation_available",
@@ -1225,9 +1225,9 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "recommendation apply",
+            "zapis rekomendacji",
             "automatic recommendation accept",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation",
             "performance uplift"
           ],
@@ -1237,9 +1237,9 @@ const adsDiagnostics = {
         },
         missing_metrics: [],
         blocked_claims: [
-          "recommendation apply",
+          "zapis rekomendacji",
           "automatic recommendation accept",
-          "budget apply",
+          "zmiana budżetu",
           "campaign mutation"
         ]
       }
@@ -1253,7 +1253,7 @@ const adsDiagnostics = {
         campaign_id: "123",
         campaign_budget_id: "777",
         operation_type: "ApplyRecommendationOperation",
-        reason: "Review-only recommendation apply operation preview.",
+        reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: [
           "recommendation_available",
@@ -1269,9 +1269,9 @@ const adsDiagnostics = {
           "human_confirm_before_apply"
         ],
         blocked_claims: [
-          "recommendation apply",
+          "zapis rekomendacji",
           "automatic recommendation accept",
-          "budget apply",
+          "zmiana budżetu",
           "campaign mutation",
           "performance uplift"
         ],
@@ -1297,7 +1297,7 @@ const adsDiagnostics = {
     missing_read_contracts: ["change_history", "human_budget_goal", "budget_apply_preview"],
     blocked_claims: [
       "budget scaling",
-      "budget apply",
+      "zmiana budżetu",
       "wasted budget",
       "performance uplift",
       "campaign mutation"
@@ -1318,7 +1318,7 @@ const adsDiagnostics = {
         missing_metrics: [],
         blocked_claims: [
           "budget scaling",
-          "budget apply",
+          "zmiana budżetu",
           "wasted budget",
           "performance uplift"
         ]
@@ -1330,7 +1330,7 @@ const adsDiagnostics = {
   campaign_triage_read_contract: {
     id: "ads_campaign_triage_read_contract",
     status: "ready",
-    title: "Kolejność review kampanii Ads",
+    title: "Kolejność oceny kampanii Ads",
     summary:
       "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt wasted budget, profitability, CPA ani ROAS.",
     allowed_metrics: [
@@ -1353,8 +1353,8 @@ const adsDiagnostics = {
       "wasted budget",
       "profitability",
       "budget scaling",
-      "budget apply",
-      "recommendation apply",
+      "zmiana budżetu",
+      "zapis rekomendacji",
       "campaign mutation"
     ],
     source_connectors: ["google_ads"],
@@ -1368,9 +1368,9 @@ const adsDiagnostics = {
         review_priority: "pilne",
         review_score: 90,
         review_reason:
-          "Kolejność review kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
+          "Kolejność oceny kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
         next_step:
-          "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+          "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
         target_status: "no_target",
         target_status_label: "brak targetu",
         clicks: 107,
@@ -1406,8 +1406,8 @@ const adsDiagnostics = {
           "wasted budget",
           "profitability",
           "budget scaling",
-          "budget apply",
-          "recommendation apply",
+          "zmiana budżetu",
+          "zapis rekomendacji",
           "campaign mutation"
         ],
         human_review_gates: [
@@ -1429,18 +1429,18 @@ const adsDiagnostics = {
     mode: "review_only",
     title: "Ads Optimizer readiness",
     summary:
-      "WILQ może przygotować read-only review kampanii i search terms, ale apply oraz ocena wpływu zmian są zablokowane do czasu pełnych kontraktów audytu.",
+      "WILQ może przygotować sprawdzenie kampanii i listy wyszukiwanych haseł, ale zapis zmian oraz ocena wpływu zmian są zablokowane do czasu pełnych kontraktów audytu.",
     ready_area_count: 3,
     blocked_area_count: 2,
     readiness_items: [
       {
         id: "campaign_review_queue",
-        title: "Kolejność review kampanii",
+        title: "Kolejność oceny kampanii",
         status: "ready",
         summary:
-          "Campaign activity, KPI, budżet, rekomendacje i impression share są dostępne jako kolejka review.",
+          "Campaign activity, KPI, budżet, rekomendacje i impression share są dostępne jako kolejka oceny.",
         next_step:
-          "Przejrzyj kampanie od góry kolejki bez apply i bez werdyktu wasted budget.",
+          "Przejrzyj kampanie od góry kolejki bez zapisu zmian i bez werdyktu wasted budget.",
         source_contract_ids: ["ads_campaign_triage_read_contract"],
         allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
         missing_read_contracts: [],
@@ -1458,12 +1458,12 @@ const adsDiagnostics = {
         summary:
           "Search-term evidence jest gotowe do ręcznego review, bez automatycznych wykluczeń.",
         next_step:
-          "Użyj search terms jako listy review, nie jako gotowego payloadu negative keywords.",
+          "Użyj listy wyszukiwanych haseł jako listy review, nie jako gotowej listy wykluczeń.",
         source_contract_ids: ["ads_search_term_review_summary_contract"],
         allowed_metrics: ["search_term", "clicks", "impressions", "cost_micros"],
         missing_read_contracts: ["human_confirm_before_apply"],
         operator_review_gates: ["review_search_term_context"],
-        blocked_claims: ["negative keyword apply", "search-term waste"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_negative_keyword_review_queue"],
@@ -1517,14 +1517,14 @@ const adsDiagnostics = {
         title: "Apply i mutacje Ads",
         status: "blocked",
         summary:
-          "Każda mutacja Ads wymaga osobnego ActionObject, preview, confirm i audytu.",
+          "Każda mutacja Ads wymaga osobnej akcji, preview, confirm i audytu.",
         next_step:
-          "Nie wykonuj apply z poziomu diagnostyki. Najpierw waliduj osobny ActionObject.",
+          "Nie wykonuj apply z poziomu diagnostyki. Najpierw sprawdź w WILQ osobną akcję.",
         source_contract_ids: ["ads_action_safety_contract"],
         allowed_metrics: [],
         missing_read_contracts: ["google_ads_mutation_audit", "human_confirm_before_apply"],
         operator_review_gates: ["human_confirm_before_apply"],
-        blocked_claims: ["budget apply", "recommendation apply", "campaign mutation"],
+        blocked_claims: ["zmiana budżetu", "zapis rekomendacji", "campaign mutation"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: [],
@@ -1584,7 +1584,7 @@ const adsDiagnostics = {
       "change impact",
       "performance uplift",
       "budget scaling",
-      "budget apply",
+      "zmiana budżetu",
       "campaign mutation"
     ],
     source_connectors: ["google_ads"],
@@ -1606,7 +1606,7 @@ const adsDiagnostics = {
         blocked_claims: [
           "change impact",
           "performance uplift",
-          "budget apply",
+          "zmiana budżetu",
           "campaign mutation"
         ]
       }
@@ -1639,7 +1639,7 @@ const adsDiagnostics = {
       "change impact",
       "performance uplift",
       "budget scaling",
-      "budget apply",
+      "zmiana budżetu",
       "campaign mutation"
     ],
     source_connectors: ["google_ads"],
@@ -1670,7 +1670,7 @@ const adsDiagnostics = {
           "change impact",
           "performance uplift",
           "budget scaling",
-          "budget apply",
+          "zmiana budżetu",
           "campaign mutation"
         ]
       }
@@ -1679,7 +1679,7 @@ const adsDiagnostics = {
     api_mutation_ready: false,
     apply_allowed: false,
     next_step:
-      "Użyj tego jako checklisty readiness: najpierw dołóż pre/post performance windows i ręczny review wpływu zmian, potem dopiero rozważ ActionObject apply."
+      "Użyj tego jako checklisty gotowości: najpierw dołóż okna pomiaru przed/po i ręczne sprawdzenie wpływu zmian, potem dopiero rozważ zapis zmian."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -1703,7 +1703,7 @@ const adsDiagnostics = {
     blocked_claims: [
       "search-term waste",
       "negative keyword candidates",
-      "negative keyword apply",
+      "dodanie wykluczających słów kluczowych",
       "CPA",
       "ROAS"
     ],
@@ -1758,7 +1758,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
       }
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
@@ -1785,7 +1785,7 @@ const adsDiagnostics = {
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
-    blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"],
+    blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -1807,7 +1807,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"]
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"]
       }
     ],
     campaign_review_rows: [
@@ -1821,7 +1821,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"]
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"]
       }
     ],
     next_step:
@@ -1832,7 +1832,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: n-gramy zapytań",
     summary:
-      "WILQ zgrupował 1 n-gramów z 1 wystąpień search terms: kliknięcia=12, koszt_micros=9000000.",
+      "WILQ zgrupował 1 n-gramów z 1 wystąpień listy wyszukiwanych haseł: kliknięcia=12, koszt_micros=9000000.",
     allowed_metrics: [
       "ngram",
       "ngram_size",
@@ -1846,7 +1846,7 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: [
       "human_intent_review",
-      "negative_keyword_payload_preview"
+      "negative_keyword_change_preview"
     ],
     operator_review_gates: [
       "human_intent_review",
@@ -1855,7 +1855,7 @@ const adsDiagnostics = {
     blocked_claims: [
       "search-term waste",
       "negative keyword candidates",
-      "negative keyword apply",
+      "dodanie wykluczających słów kluczowych",
       "CPA",
       "ROAS",
       "conversion loss"
@@ -1876,7 +1876,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "search-term waste"]
+        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "search-term waste"]
       }
     ],
     next_step:
@@ -1904,7 +1904,7 @@ const adsDiagnostics = {
     ],
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
-      "negative keyword apply",
+      "dodanie wykluczających słów kluczowych",
       "search-term waste",
       "conversion loss",
       "CPA",
@@ -1928,7 +1928,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
       }
     ],
     next_step:
@@ -1939,7 +1939,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: kontekst dopasowań keywords",
     summary:
-      "WILQ ma read-only kontekst 1 istniejących keywordów z match types: BROAD.",
+      "WILQ ma kontekst 1 istniejących keywordów z match types: BROAD.",
     allowed_metrics: [
       "keyword_text",
       "keyword_match_type",
@@ -1951,7 +1951,7 @@ const adsDiagnostics = {
     missing_read_contracts: [],
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
-      "negative keyword apply",
+      "dodanie wykluczających słów kluczowych",
       "search-term waste",
       "conversion loss",
       "CPA",
@@ -1972,7 +1972,7 @@ const adsDiagnostics = {
         ad_group_name: "Odpady",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
-        blocked_claims: ["negative keyword apply", "search-term waste", "wasted budget"]
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "wasted budget"]
       }
     ],
     next_step: "Użyj tego jako kontekstu review, nie jako zgody na apply."
@@ -2033,8 +2033,8 @@ const adsDiagnostics = {
   custom_segments_read_contract: {
     id: "ads_custom_segments_read_contract",
     status: "ready",
-    title: "Custom segments z realnych search terms",
-    summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
+    title: "Custom segments z realnych listy wyszukiwanych haseł",
+    summary: "WILQ ma 1 propozycję custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
     candidates: [
       {
         id: "ads_custom_segment_123",
@@ -2049,7 +2049,7 @@ const adsDiagnostics = {
           "odrzuć brand, konkurencję i low-intent frazy",
           "sprawdź Keyword Planner enrichment",
           "sprawdź forecast albo audience size",
-          "zatwierdź segment przed apply"
+          "zatwierdź segment przed zapisem"
         ],
         source_terms: ["bdo rejestracja"],
         rejected_terms: [],
@@ -2070,7 +2070,7 @@ const adsDiagnostics = {
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
             missing_metrics: [],
-            blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+            blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
           }
         ],
         keyword_planner_ideas: [
@@ -2106,7 +2106,7 @@ const adsDiagnostics = {
           source_terms: ["bdo rejestracja"],
           campaign_id: "123",
           campaign_name: "Ekologus Search",
-          reason: "Review-only custom audience keyword members from search-term evidence.",
+          reason: "Podgląd segmentu odbiorców oparty na wyszukiwanych hasłach do sprawdzenia.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["search_term_clicks", "search_term_impressions"],
           required_validation: [
@@ -2131,7 +2131,7 @@ const adsDiagnostics = {
               campaign_id: "123",
               campaign_name: "Ekologus Search",
               operation_type: "custom_segment_targeting_review",
-              reason: "Review-only targeting context; apply stays blocked.",
+              reason: "Podgląd kontekstu targetowania; zapis zmian pozostaje zablokowany.",
               required_validation: [
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
@@ -2162,7 +2162,7 @@ const adsDiagnostics = {
           "targeting applied",
           "campaign performance"
         ],
-        next_step: "Użyj tych terminów jako prepare-only candidate."
+        next_step: "Użyj tych terminów jako propozycji bez zapisu zmian."
       }
     ],
     payload_preview: [
@@ -2173,7 +2173,7 @@ const adsDiagnostics = {
         source_terms: ["bdo rejestracja"],
         campaign_id: "123",
         campaign_name: "Ekologus Search",
-        reason: "Review-only custom audience keyword members from search-term evidence.",
+        reason: "Podgląd segmentu odbiorców oparty na wyszukiwanych hasłach do sprawdzenia.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: ["search_term_clicks", "search_term_impressions"],
         required_validation: [
@@ -2201,7 +2201,7 @@ const adsDiagnostics = {
       status: "blocked",
       title: "Forecast i audience size custom segments",
       summary:
-        "WILQ sprawdził 1 kandydatów custom segments, ale nie ma evidence forecastu ani audience size.",
+        "WILQ sprawdził 1 propozycję custom segments, ale nie ma evidence forecastu ani audience size.",
       checked_candidate_count: 1,
       forecast_row_count: 1,
       forecast_rows: [
@@ -2256,12 +2256,12 @@ const adsDiagnostics = {
       "campaign performance"
     ],
     action_ids: ["act_prepare_custom_segments_from_search_terms"],
-    next_step: "Przejrzyj source terms i waliduj ActionObject przed apply."
+    next_step: "Przejrzyj source terms i sprawdź propozycję w WILQ przed zapisem zmian."
   },
   negative_keywords_read_contract: {
     id: "ads_negative_keywords_read_contract",
     status: "ready",
-    title: "Review wykluczeń z search terms",
+    title: "Review wykluczeń z listy wyszukiwanych haseł",
     summary:
       "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
     candidates: [
@@ -2276,7 +2276,7 @@ const adsDiagnostics = {
           "sprawdź intencję zapytania",
           "porównaj z istniejącymi keywords i match types",
           "sprawdź 90-dniowy safety read",
-          "zatwierdź poziom wykluczenia przed apply"
+          "zatwierdź poziom wykluczenia przed zapisem"
         ],
         campaign_id: "123",
         campaign_name: "Ekologus Search",
@@ -2310,7 +2310,7 @@ const adsDiagnostics = {
             ad_group_name: "Odpady",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
-            blocked_claims: ["negative keyword apply", "search-term waste", "wasted budget"]
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "wasted budget"]
           }
         ],
         payload_preview: {
@@ -2332,7 +2332,7 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["negative keyword apply", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -2341,12 +2341,12 @@ const adsDiagnostics = {
           "review_search_term_context",
           "check_existing_keywords_and_match_types",
           "90_day_safety_check",
-          "negative_keyword_payload_preview",
+          "negative_keyword_change_preview",
           "human_confirm_before_apply"
         ],
         safety_status: "read_ready_needs_human_review",
         validation_status: "pending_validation",
-        blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2370,7 +2370,7 @@ const adsDiagnostics = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        blocked_claims: ["negative keyword apply", "search-term waste"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -2380,22 +2380,22 @@ const adsDiagnostics = {
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     missing_read_contracts: [],
     blocked_claims: [
-      "negative keyword apply",
+      "dodanie wykluczających słów kluczowych",
       "search-term waste",
       "conversion loss",
       "CPA",
       "ROAS"
     ],
     action_ids: ["act_prepare_negative_keyword_review_queue"],
-    next_step: "Przejrzyj kandydatów jako review-only i sprawdź payload preview."
+    next_step: "Przejrzyj propozycje jako akcje do sprawdzenia i sprawdź podgląd zmian."
   },
   operator_summary: {
     id: "ads_operator_summary",
     title: "Co marketer ma sprawdzić teraz w Google Ads",
     summary:
-      "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, zapytania, KPI i rekomendacje można przeglądać jako evidence-backed review.",
+      "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, zapytania, KPI i rekomendacje można przeglądać jako ocenę opartą na dowodach.",
     next_step:
-      "Przejrzyj top decyzje w tej kolejności. Nie wdrażaj wykluczeń, budżetów ani rekomendacji bez payload preview i walidacji ActionObject.",
+      "Przejrzyj top decyzje w tej kolejności. Nie zapisuj wykluczeń, budżetów ani rekomendacji bez podglądu zmian i sprawdzenia w WILQ.",
     top_decision_ids: [
       "ads_review_campaign_activity",
       "ads_review_campaign_triage",
@@ -2418,7 +2418,7 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
-    blocked_claims: ["ROAS", "budget apply", "negative keyword apply"]
+    blocked_claims: ["ROAS", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
   decision_queue: [
     {
@@ -2492,7 +2492,7 @@ const adsDiagnostics = {
       rationale:
         "Triage pokazuje, którą kampanię sprawdzić najpierw, bez claimów o waste albo opłacalności.",
       next_step:
-        "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+        "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
       priority: 18,
       metric_tiles: {
         kampanie: 1,
@@ -2537,9 +2537,9 @@ const adsDiagnostics = {
           review_priority: "pilne",
           review_score: 90,
           review_reason:
-            "Kolejność review kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
+            "Kolejność oceny kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
           next_step:
-            "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+            "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
           target_status: "no_target",
           target_status_label: "brak targetu",
           clicks: 107,
@@ -2575,8 +2575,8 @@ const adsDiagnostics = {
             "wasted budget",
             "profitability",
             "budget scaling",
-            "budget apply",
-            "recommendation apply",
+            "zmiana budżetu",
+            "zapis rekomendacji",
             "campaign mutation"
           ],
           human_review_gates: [
@@ -2610,8 +2610,8 @@ const adsDiagnostics = {
         "wasted budget",
         "profitability",
         "budget scaling",
-        "budget apply",
-        "recommendation apply",
+        "zmiana budżetu",
+        "zapis rekomendacji",
         "campaign mutation"
       ],
       risk: "medium"
@@ -2669,8 +2669,8 @@ const adsDiagnostics = {
         "profitability",
         "margin verdict",
         "budget scaling",
-        "budget apply",
-        "recommendation apply",
+        "zmiana budżetu",
+        "zapis rekomendacji",
         "wasted budget"
       ],
       risk: "medium"
@@ -2679,9 +2679,9 @@ const adsDiagnostics = {
       id: "ads_review_recommendations",
       decision_type: "review_recommendations",
       status: "ready",
-      title: "Przejrzyj rekomendacje Google Ads bez apply",
+      title: "Przejrzyj rekomendacje Google Ads bez zapisu zmian",
       summary:
-        "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1; apply payload preview dla 1.",
+        "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: CAMPAIGN_BUDGET. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
       rationale:
         "Google Ads recommendations są sygnałem do kontroli, nie automatyczną strategią.",
       next_step:
@@ -2727,14 +2727,14 @@ const adsDiagnostics = {
           review_priority: "pilne",
           review_score: 70,
           review_reason:
-            "Rekomendacja CAMPAIGN_BUDGET: impact preview: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica performance uplift.",
+            "Rekomendacja CAMPAIGN_BUDGET: podgląd wpływu: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica poprawy wyniku.",
           human_review_gates: [
             "sprawdź typ rekomendacji",
             "sprawdź metryki wpływu",
             "porównaj z historią zmian",
             "porównaj z celem biznesowym",
             "zweryfikuj RMF/compliance",
-            "potwierdź człowiekiem przed apply"
+            "potwierdź człowiekiem przed zapisem"
           ],
           dismissed: false,
           campaign_id: "123",
@@ -2766,7 +2766,7 @@ const adsDiagnostics = {
             campaign_id: "123",
             campaign_budget_id: "777",
             operation_type: "ApplyRecommendationOperation",
-            reason: "Review-only recommendation apply operation preview.",
+            reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             source_metric_names: [
               "recommendation_available",
@@ -2782,9 +2782,9 @@ const adsDiagnostics = {
               "human_confirm_before_apply"
             ],
             blocked_claims: [
-              "recommendation apply",
+              "zapis rekomendacji",
               "automatic recommendation accept",
-              "budget apply",
+              "zmiana budżetu",
               "campaign mutation",
               "performance uplift"
             ],
@@ -2794,9 +2794,9 @@ const adsDiagnostics = {
           },
           missing_metrics: [],
           blocked_claims: [
-            "recommendation apply",
+            "zapis rekomendacji",
             "automatic recommendation accept",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation"
           ]
         }
@@ -2810,7 +2810,7 @@ const adsDiagnostics = {
           campaign_id: "123",
           campaign_budget_id: "777",
           operation_type: "ApplyRecommendationOperation",
-          reason: "Review-only recommendation apply operation preview.",
+          reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: [
             "recommendation_available",
@@ -2826,9 +2826,9 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "recommendation apply",
+            "zapis rekomendacji",
             "automatic recommendation accept",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation",
             "performance uplift"
           ],
@@ -2848,9 +2848,9 @@ const adsDiagnostics = {
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_recommendations_v1", "ads_principles_v1"],
       blocked_claims: [
-        "recommendation apply",
+        "zapis rekomendacji",
         "automatic recommendation accept",
-        "budget apply",
+        "zmiana budżetu",
         "campaign mutation",
         "performance uplift"
       ],
@@ -2893,7 +2893,7 @@ const adsDiagnostics = {
           missing_metrics: [],
           blocked_claims: [
             "budget scaling",
-            "budget apply",
+            "zmiana budżetu",
             "wasted budget",
             "performance uplift"
           ]
@@ -2910,7 +2910,7 @@ const adsDiagnostics = {
       expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
       blocked_claims: [
         "budget scaling",
-        "budget apply",
+        "zmiana budżetu",
         "wasted budget",
         "performance uplift",
         "campaign mutation"
@@ -2960,7 +2960,7 @@ const adsDiagnostics = {
           blocked_claims: [
             "change impact",
             "performance uplift",
-            "budget apply",
+            "zmiana budżetu",
             "campaign mutation"
           ]
         }
@@ -2976,7 +2976,7 @@ const adsDiagnostics = {
       blocked_claims: [
         "change impact",
         "performance uplift",
-        "budget apply",
+        "zmiana budżetu",
         "campaign mutation"
       ],
       risk: "medium"
@@ -3021,7 +3021,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3029,7 +3029,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+      blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"],
       risk: "medium"
     },
     {
@@ -3040,7 +3040,7 @@ const adsDiagnostics = {
       summary:
         "WILQ ma 90-dniowy read safety dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt_micros=8000000, konwersje=0, wartość_konwersji=0.",
       rationale:
-        "WILQ ma oddzielny 90-dniowy odczyt search terms jako hamulec bezpieczeństwa.",
+        "WILQ ma oddzielny 90-dniowy odczyt listy wyszukiwanych haseł jako hamulec bezpieczeństwa.",
       next_step:
         "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa przed wykluczeniem.",
       allowed_metrics: [
@@ -3080,7 +3080,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3096,7 +3096,7 @@ const adsDiagnostics = {
         "ads_search_terms_v1",
         "ads_principles_v1"
       ],
-      blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
       risk: "medium"
     },
     {
@@ -3108,7 +3108,7 @@ const adsDiagnostics = {
         "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
       rationale:
         "To jest sygnał do review, nie dowód waste ani zgoda na automatyczne wykluczenie.",
-      next_step: "Przejrzyj kandydatów jako review-only przed payload preview.",
+      next_step: "Przejrzyj propozycje do sprawdzenia przed podglądem zmian.",
       allowed_metrics: [
         "search_term",
         "search_term_clicks",
@@ -3143,7 +3143,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3159,7 +3159,7 @@ const adsDiagnostics = {
             "sprawdź intencję zapytania",
             "porównaj z istniejącymi keywords i match types",
             "sprawdź 90-dniowy safety read",
-            "zatwierdź poziom wykluczenia przed apply"
+            "zatwierdź poziom wykluczenia przed zapisem"
           ],
           campaign_id: "123",
           campaign_name: "Ekologus Search",
@@ -3198,7 +3198,7 @@ const adsDiagnostics = {
               "90_day_safety_check",
               "human_confirm_before_apply"
             ],
-            blocked_claims: ["negative keyword apply", "search-term waste"],
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
@@ -3207,12 +3207,12 @@ const adsDiagnostics = {
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
             "90_day_safety_check",
-            "negative_keyword_payload_preview",
+            "negative_keyword_change_preview",
             "human_confirm_before_apply"
           ],
           safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
-          blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3236,24 +3236,24 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["negative keyword apply", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
-      blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
       risk: "medium"
     },
     {
       id: "ads_prepare_custom_segments_from_search_terms",
       decision_type: "prepare_custom_segments",
       status: "ready",
-      title: "Przygotuj custom segments z realnych search terms",
-      summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
-      rationale: "WILQ ma source terms z Google Ads evidence, więc może przygotować kandydatów segmentów.",
-      next_step: "Przejrzyj source terms i waliduj ActionObject przed apply.",
+      title: "Przygotuj custom segments z realnych listy wyszukiwanych haseł",
+      summary: "WILQ ma 1 propozycję custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
+      rationale: "WILQ ma source terms z Google Ads evidence, więc może przygotować propozycje segmentów.",
+      next_step: "Przejrzyj source terms i sprawdź propozycję w WILQ przed zapisem zmian.",
       allowed_metrics: [
         "search_term",
         "search_term_clicks",
@@ -3294,7 +3294,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       search_term_safety_rows: [],
@@ -3333,7 +3333,7 @@ const adsDiagnostics = {
             "odrzuć brand, konkurencję i low-intent frazy",
             "sprawdź Keyword Planner enrichment",
             "sprawdź forecast albo audience size",
-            "zatwierdź segment przed apply"
+            "zatwierdź segment przed zapisem"
           ],
           source_terms: ["bdo rejestracja"],
           rejected_terms: [],
@@ -3372,7 +3372,7 @@ const adsDiagnostics = {
             source_terms: ["bdo rejestracja"],
             campaign_id: "123",
             campaign_name: "Ekologus Search",
-            reason: "Review-only custom audience keyword members from search-term evidence.",
+            reason: "Podgląd segmentu odbiorców oparty na wyszukiwanych hasłach do sprawdzenia.",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             source_metric_names: ["search_term_clicks", "search_term_impressions"],
             required_validation: [
@@ -3401,7 +3401,7 @@ const adsDiagnostics = {
             "targeting applied",
             "campaign performance"
           ],
-          next_step: "Użyj tych terminów jako prepare-only candidate."
+          next_step: "Użyj tych terminów jako propozycji bez zapisu zmian."
         }
       ],
       custom_segment_payload_preview: [
@@ -3412,7 +3412,7 @@ const adsDiagnostics = {
           source_terms: ["bdo rejestracja"],
           campaign_id: "123",
           campaign_name: "Ekologus Search",
-          reason: "Review-only custom audience keyword members from search-term evidence.",
+          reason: "Podgląd segmentu odbiorców oparty na wyszukiwanych hasłach do sprawdzenia.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["search_term_clicks", "search_term_impressions"],
           required_validation: [
@@ -3436,7 +3436,7 @@ const adsDiagnostics = {
               campaign_id: "123",
               campaign_name: "Ekologus Search",
               operation_type: "custom_segment_targeting_review",
-              reason: "Review-only targeting context; apply stays blocked.",
+              reason: "Podgląd kontekstu targetowania; zapis zmian pozostaje zablokowany.",
               required_validation: [
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
@@ -3492,10 +3492,10 @@ const adsDiagnostics = {
       id: "ads_block_write_actions_without_actionobject",
       decision_type: "block_write_actions",
       status: "blocked",
-      title: "Nie wdrażaj zmian Ads bez osobnego ActionObject",
-      summary: "WILQ ma dowody z odczytu Google Ads; ścieżka zapisu nadal nie ma gotowego ActionObject.",
-      rationale: "Zmiany budżetów, kampanii, wykluczeń i segmentów wymagają walidacji.",
-      next_step: "Rozszerz Ads workflow o prepare-only ActionObject.",
+      title: "Zapis zmian Ads wymaga osobnego sprawdzenia akcji",
+      summary: "WILQ ma dowody z odczytu Google Ads; ścieżka zapisu nadal nie ma gotowej akcji do sprawdzenia.",
+      rationale: "Zmiany budżetów, kampanii, wykluczeń i segmentów wymagają sprawdzenia.",
+      next_step: "Rozszerz Ads workflow o akcję przygotowawczą.",
       allowed_metrics: [],
       missing_read_contracts: [],
       source_connectors: ["google_ads"],
@@ -3513,7 +3513,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["budget apply", "campaign creation", "negative keyword apply"],
+      blocked_claims: ["zmiana budżetu", "campaign creation", "dodanie wykluczających słów kluczowych"],
       risk: "medium"
     }
   ],
@@ -3522,9 +3522,9 @@ const adsDiagnostics = {
       id: "ads_live_data_status",
       title: "Google Ads: live data dostępne",
       status: "ready",
-      summary: "WILQ ma zapisane metric facts z odczytu Google Ads vendor_read.",
+      summary: "WILQ ma zapisane metryki z odczytu odczytu danych Google Ads.",
       diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/ROAS.",
-      next_step: "Analizuj tylko widoczne metric facts i evidence IDs.",
+      next_step: "Analizuj tylko widoczne metryki i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
       metric_facts: [
@@ -3711,24 +3711,24 @@ const metricStoreStatus = {
 const marketingBrief = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
   sections: [
     {
       id: "what_we_know",
       title: "Co wiemy z realnych danych",
-      description: "Metric facts.",
+      description: "Najważniejsze fakty z danych.",
       items: [
         {
           id: "brief_metric_wordpress",
-          title: "WordPress: content_object_count = 16",
+          title: "WordPress: 16 treści w spisie",
           kind: "metric",
           priority: 21,
           source_connectors: ["wordpress_ekologus"],
           evidence_ids: ["ev_refresh_wordpress_inventory"],
           metric_facts: metricFacts,
           action_ids: [],
-          summary: "WILQ ma realne metric facts z connectora WordPress.",
+          summary: "WILQ widzi spis treści z WordPress.",
           next_step: "Połącz inventory z GSC/GA4.",
           risk: "low",
           blocker_reason: null
@@ -3738,11 +3738,11 @@ const marketingBrief = {
     {
       id: "what_blocks_us",
       title: "Co blokuje decyzje",
-      description: "Blockery.",
+      description: "Blokady bezpiecznych decyzji.",
       items: [
         {
           id: "brief_status_localo_access_ready",
-          title: "Localo: MCP access działa, brak jeszcze ranking/GBP facts",
+          title: "Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google",
           kind: "metric",
           priority: 90,
           source_connectors: ["localo"],
@@ -3750,8 +3750,8 @@ const marketingBrief = {
           metric_facts: [],
           action_ids: [],
           summary:
-            "Localo MCP initialize=200 potwierdza access. Brakuje jeszcze ranking/GBP facts.",
-          next_step: "Nie pokazuj lokalnych rekomendacji bez konkretnych ranking/GBP facts.",
+            "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji.",
+          next_step: "Nie pokazuj lokalnych rekomendacji bez konkretnych danych rankingów i profilu firmy w Google.",
           risk: "low",
           blocker_reason: null
         },
@@ -3764,17 +3764,17 @@ const marketingBrief = {
           evidence_ids: ["ev_connector_linkedin_status"],
           metric_facts: [],
           action_ids: [],
-          summary: "LinkedIn publishing evidence is blocked by missing organization access.",
-          next_step: "Skonfiguruj LinkedIn credentials przed post candidates.",
+          summary: "Publikacje LinkedIn są zablokowane przez brak dostępu do organizacji.",
+          next_step: "Uzupełnij dostęp LinkedIn przed przygotowaniem propozycji postów.",
           risk: "medium",
-          blocker_reason: "missing LinkedIn credentials"
+          blocker_reason: "brakuje dostępu LinkedIn"
         }
       ]
     },
     {
       id: "safe_next_actions",
       title: "Bezpieczne następne kroki",
-      description: "ActionObjects.",
+      description: "Akcje do sprawdzenia.",
       items: [
         {
           id: "brief_action_act_1",
@@ -3786,7 +3786,7 @@ const marketingBrief = {
           metric_facts: [],
           action_ids: ["act_1"],
           summary: "Google Ads jest zablokowany przez OAuth, zanim WILQ oceni spend.",
-          next_step: "Zweryfikuj ActionObject i odśwież OAuth.",
+          next_step: "Zweryfikuj akcję i odśwież OAuth.",
           risk: "low",
           blocker_reason: null
         }
@@ -3807,9 +3807,9 @@ const marketingBrief = {
           metric_facts: [metricFacts[1]],
           action_ids: ["act_review_merchant_feed_issues"],
           summary:
-            "WILQ widzi Merchant metric facts i kieruje operatora do walidacji kolejki problemów feedu.",
+            "WILQ widzi Merchant metryki i kieruje operatora do sprawdzenia kolejki problemów feedu.",
           next_step:
-            "Otwórz payload preview dla ActionObject przed zmianą danych produktu.",
+            "Otwórz podgląd zmian dla akcji przed zmianą danych produktu.",
           risk: "medium",
           blocker_reason: null
         },
@@ -3822,7 +3822,7 @@ const marketingBrief = {
           evidence_ids: ["ev_refresh_ga4"],
           metric_facts: [metricFacts[4]],
           action_ids: ["act_review_ga4_tracking_quality"],
-          summary: "WILQ ma GA4 metric facts i może ocenić jakość ruchu po odświeżeniu.",
+          summary: "WILQ ma GA4 metryki i może ocenić jakość ruchu po odświeżeniu.",
           next_step: "Porównaj engagement i konwersje z kampaniami.",
           risk: "low",
           blocker_reason: null
@@ -3836,8 +3836,8 @@ const marketingBrief = {
           evidence_ids: ["ev_refresh_gsc"],
           metric_facts: [metricFacts[5]],
           action_ids: ["act_prepare_content_refresh_queue"],
-          summary: "WILQ ma GSC clicks i może zbudować kolejkę content opportunities.",
-          next_step: "Połącz query/page evidence z WordPress inventory.",
+          summary: "WILQ widzi kliknięcia z GSC i może zbudować kolejkę okazji contentowych.",
+          next_step: "Połącz dowody zapytanie/strona ze spisem treści WordPress.",
           risk: "low",
           blocker_reason: null
         }
@@ -3859,7 +3859,7 @@ const marketingBrief = {
 const tacticalQueue = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   items: [
     {
       id: "tq_ga4_landing",
@@ -3902,7 +3902,7 @@ const tacticalQueue = {
         wordpress_content_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
       diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
-      next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
+      next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
       blocked_claims: ["conversion uplift", "revenue impact"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
@@ -3933,7 +3933,7 @@ const tacticalQueue = {
       meta: "SEO / odświeżenie treści / najpierw",
       diagnosis:
         "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: clicks=12, impressions=120.",
-      next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
+      next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
       priority: 26,
       risk: "low",
       source_connectors: ["google_search_console"],
@@ -3979,7 +3979,7 @@ const tacticalQueue = {
 const merchantDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector: {
     id: "google_merchant_center",
     label: "Merchant Center",
@@ -4018,7 +4018,7 @@ const merchantDiagnostics = {
     age_hours: 0,
     stale_after_hours: 48,
     requires_refresh: false,
-    summary: "Ostatni Merchant vendor_read mieści się w progu świeżości.",
+    summary: "Ostatni odczyt danych Merchant mieści się w progu świeżości.",
     next_step: "Można użyć danych do kolejki review bez dodatkowego refreshu."
   },
   unknowns: [
@@ -4041,7 +4041,7 @@ const merchantDiagnostics = {
       impact:
         "WILQ może prowadzić review feedu, ale nie może wskazać ROAS produktu ani wpływu naprawy na przychód.",
       next_step:
-        "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 item ecommerce.",
+        "Dodać product performance dla Google Ads Shopping/PMax i GA4 item ecommerce.",
       blocked_claims: ["product ROAS", "product revenue recovery", "product fix impact"]
     }
   ],
@@ -4060,7 +4060,7 @@ const merchantDiagnostics = {
     summary:
       "Merchant diagnostics ma przykładowe produkty do review, ale nie jest pełną listą SKU do edycji.",
     next_step:
-      "Użyj próbek jako punktu startu review i nie wykonuj zmian feedu bez payload preview.",
+      "Użyj próbek jako punktu startu przeglądu i nie zapisuj zmian feedu bez podglądu zmian.",
     blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
   },
   product_performance_readiness: {
@@ -4089,7 +4089,7 @@ const merchantDiagnostics = {
     summary:
       "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych product-level faktów Ads/GA4.",
     next_step:
-      "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
+      "Dodać product performance dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
     blocked_claims: [
       "product ROAS",
       "product revenue recovery",
@@ -4126,16 +4126,16 @@ const merchantDiagnostics = {
     summary:
       "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
     next_step:
-      "Dodać read-only historię ceny i product performance window przed oceną price impact.",
+      "Dodać historię ceny i product performance window przed oceną price impact.",
     blocked_claims: ["price impact", "product ROAS", "product revenue recovery"]
   },
   operator_summary: {
     id: "merchant_operator_summary",
     title: "Co marketer ma zrobić teraz z feedem",
     summary:
-      "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka przeglądu: można przygotować decyzje i podgląd payloadu, ale nie wolno obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu.",
+      "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu.",
     next_step:
-      "Przejdź przez top decyzje lub klastry problemów, przygotuj review ActionObject i nie wykonuj zmian feedu bez walidacji oraz zgody operatora.",
+      "Przejdź przez top decyzje lub klastry problemów, przygotuj akcję do sprawdzenia i nie zapisuj zmian feedu bez sprawdzenia w WILQ oraz zgody operatora.",
     top_decision_ids: [
       "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability"
     ],
@@ -4176,7 +4176,7 @@ const merchantDiagnostics = {
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
-        "Przejrzyj tę grupę problemu przez ActionObject review; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
+        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."
     }
   ],
   decision_queue: [
@@ -4211,7 +4211,7 @@ const merchantDiagnostics = {
       rationale:
         "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
-        "Przejrzyj tę grupę problemu przez ActionObject review; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu.",
+        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu.",
       risk: "medium"
     }
   ],
@@ -4238,7 +4238,7 @@ const merchantDiagnostics = {
       summary:
         "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
       diagnosis: "Najbezpieczniejsza praca to przegląd problemów po typie.",
-      next_step: "Otwórz ActionObject `act_review_merchant_feed_issues`.",
+      next_step: "Otwórz akcję `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       metric_facts: [metricFacts[3]],
@@ -4260,7 +4260,7 @@ const merchantDiagnostics = {
 const contentDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connectors: [
     {
       id: "google_search_console",
@@ -4324,7 +4324,7 @@ const contentDiagnostics = {
       external_call_attempted: true,
       vendor_data_collected: true,
       metric_summary: { content_object_count: 16 },
-      summary: "WordPress inventory completed.",
+      summary: "Spis treści WordPress odczytany.",
       errors: [],
       redacted: true
     },
@@ -4341,7 +4341,7 @@ const contentDiagnostics = {
       external_call_attempted: true,
       vendor_data_collected: true,
       metric_summary: { ahrefs_content_gap_count: 1 },
-      summary: "Ahrefs gap records completed.",
+      summary: "Dane luk Ahrefs odczytane.",
       errors: [],
       redacted: true
     }
@@ -4352,88 +4352,18 @@ const contentDiagnostics = {
   operator_summary: {
     id: "content_operator_summary",
     title: "Co marketer ma zrobić teraz z treściami",
-    summary:
-      "WILQ łączy zapytania i URL-e z GSC z inventory WordPress. Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną leady, pozycje albo konwersje.",
+      summary:
+      "WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress. Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną leady, pozycje albo konwersje.",
     next_step:
-      "Przejdź przez top decyzje contentowe, wybierz refresh, merge, create albo block i waliduj ActionObject tylko jako review-only.",
+      "Przejdź przez top decyzje contentowe, wybierz odświeżenie, scalenie, utworzenie albo blokadę i sprawdź w WILQ tylko akcje do sprawdzenia.",
     top_decision_ids: [
       "content_decision_ahrefs_gap_records_review",
       "content_decision_https_www_ekologus_pl_bdo"
     ],
     confirmed_wordpress_count: 1,
     missing_wordpress_count: 0,
-    target_site_host: "ekologus.dev.proudsite.pl",
-    target_site_alias_match_count: 0,
     current_site_match_count: 1,
-    target_site_mapping_review_count: 1,
-    target_site_mapping_status: "target_site_mapping_review_needed",
-    target_site_confirmed_candidate_inventory_count: 0,
-    target_site_missing_candidate_inventory_count: 1,
-    target_site_migration_map: [
-      {
-        decision_id: "content_decision_https_www_ekologus_pl_bdo",
-        candidate_id: "content_brief_gsc_bdo",
-        title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
-        source_url: "https://www.ekologus.pl/bdo/",
-        target_site_host: "ekologus.dev.proudsite.pl",
-        migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
-        candidate_inventory_status: "missing_target_inventory",
-        candidate_inventory_summary:
-          "Kandydat migracji nie występuje w aktualnym inventory nowej strony.",
-        status_summary:
-          "Kandydat migracji nie występuje w aktualnym inventory nowej strony.",
-        mapping_review_status: "manual_mapping_required",
-        mapping_review_candidate_urls: ["https://ekologus.dev.proudsite.pl/bdo/"],
-        next_required_gate: "target_site_mapping_review"
-      }
-    ],
-    target_site_mapping_review_inputs: [
-      {
-        decision_id: "content_decision_https_www_ekologus_pl_bdo",
-        candidate_id: "content_brief_gsc_bdo",
-        title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
-        source_url: "https://www.ekologus.pl/bdo/",
-        current_migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
-        candidate_target_urls: ["https://ekologus.dev.proudsite.pl/bdo/"],
-        mapping_review_status: "manual_mapping_required",
-        review_action_id: "act_prepare_content_refresh_queue",
-        review_endpoint: "/api/actions/act_prepare_content_refresh_queue/review",
-        allowed_outcomes: ["manual_mapping_required", "reject_all_candidates"],
-        required_checked_items: [
-          "candidate:content_brief_gsc_bdo",
-          "mapping_outcome:<wybierz allowed_outcome>",
-          "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
-          "mapping_notes:<krótka decyzja marketera>"
-        ],
-        review_payload_template: {
-          outcome: "approved_for_prepare",
-          reviewed_by: "<operator>",
-          notes:
-            "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć kandydatów. Bez tej decyzji draft i staging zostają zablokowane.",
-          checked_items: [
-            "candidate:content_brief_gsc_bdo",
-            "mapping_outcome:<wybierz allowed_outcome>",
-            "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
-            "mapping_notes:<krótka decyzja marketera>"
-          ],
-          blockers: [
-            "payload_apply_allowed_false",
-            "wordpress_write_not_requested",
-            "blocked_claim:ranking guarantee",
-            "blocked_claim:lead uplift"
-          ]
-        },
-        review_notes_prompt:
-          "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć kandydatów. Bez tej decyzji draft i staging zostają zablokowane.",
-        blocked_outputs: [
-          "wordpress_staging_write",
-          "wordpress_publish",
-          "migration_confirmed_without_human_review",
-          "ranking_or_lead_uplift_claim"
-        ]
-      }
-    ],
-    decision_type_labels: ["review luk Ahrefs", "refresh/merge"],
+    decision_type_labels: ["sprawdzenie luk Ahrefs", "odświeżenie albo scalenie"],
     source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
     evidence_ids: [
       "ev_refresh_ahrefs_gap_records",
@@ -4455,7 +4385,7 @@ const contentDiagnostics = {
       status: "ready",
       title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
       summary:
-        'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł.',
+        'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł.',
       priority: 23,
       metric_tiles: {
         zapytania: 1,
@@ -4479,27 +4409,23 @@ const contentDiagnostics = {
       wordpress_content_url: "https://www.ekologus.pl/bdo/",
       source_url: "https://www.ekologus.pl/bdo/",
       source_site_host: "www.ekologus.pl",
-      target_site_url: "https://www.ekologus.pl/bdo/",
-      target_site_host: "www.ekologus.pl",
-      target_site_adaptation_status: "current_site_match",
-      target_site_migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
-      target_site_migration_status: "needs_review",
-      target_site_migration_summary:
-        "WILQ wskazuje kandydata old-to-new na target site, ale inventory go nie potwierdza w tej decyzji. Wymagane ręczne mapowanie przed draftem albo stagingiem.",
+      source_public_url: "https://www.ekologus.pl/bdo/",
+      intended_final_url: "https://www.ekologus.pl/bdo/",
+      final_canonical_url: "https://www.ekologus.pl/bdo/",
       inventory_gate_status: "confirmed_current_inventory",
       canonical_gate_status: "current_url_confirmed",
       duplicate_gate_status: "refresh_or_merge_required",
       content_gate_summary:
-        "Inventory potwierdza istniejący URL. WILQ traktuje to jako refresh/merge, nie nowy artykuł; create pozostaje zablokowane przed kontrolą duplikacji.",
+        "Spis treści potwierdza istniejący URL. WILQ traktuje to jako odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje zablokowana przed kontrolą duplikacji.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
       blocked_claims: ["lead uplift", "conversion uplift"],
       rationale:
-        "WordPress inventory potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
+        "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
       next_step:
-        "Przygotuj brief refresh/merge: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
+        "Przygotuj brief odświeżenia albo scalenia: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
       risk: "low"
     },
     {
@@ -4508,17 +4434,17 @@ const contentDiagnostics = {
       status: "ready",
       title: "Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
       summary:
-        "WILQ ma 1 Ahrefs gap facts: content gaps=1, organic keywords=0, top pages=0, backlink gaps=0. Scoring jakości wskazuje 1 pasujący, 0 rekordów do ręcznej oceny i 0 rekordów off-topic/broad. To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu.",
+        "WILQ ma 1 rekord luk Ahrefs: luki treści=1, słowa organiczne=0, najlepsze strony=0, luki backlinków=0. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC/WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
       metric_tiles: {
         "rekordy Ahrefs": 1,
         pasujące: 1,
-        "do review": 0,
-        "off-topic": 0,
+        "do sprawdzenia": 0,
+        "poza zakresem": 0,
         "GSC overlap": 1,
         "WP overlap": 1,
-        "content gaps": 1,
-        "backlink gaps": 0
+        "luki treści": 1,
+        "luki backlinków": 0
       },
       page: null,
       normalized_page_path: null,
@@ -4560,7 +4486,7 @@ const contentDiagnostics = {
           metric_value: 1,
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
           next_step:
-            "Zweryfikuj `audyt środowiskowy` z GSC i WordPress inventory, potem zdecyduj: refresh, merge, create albo block. Overlap: GSC: audyt środowiskowy; WP: 1 URL."
+            "Zweryfikuj `audyt środowiskowy` z GSC i spisem treści WordPress, potem zdecyduj: odświeżenie, scalenie, utworzenie albo blokada. Overlap: GSC: audyt środowiskowy; WP: 1 URL."
         }
       ],
       action_ids: ["act_prepare_content_refresh_queue"],
@@ -4572,9 +4498,9 @@ const contentDiagnostics = {
         "ranking guarantee"
       ],
       rationale:
-        "Ahrefs wskazuje luki względem konkurencji, ale scoring rozdziela rekordy pasujące do zakresu Ekologus od tematów szerokich i off-topic.",
+        "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem.",
       next_step:
-        "Najpierw przejrzyj pasujące rekordy: audyt środowiskowy. Odrzuć 0 off-topic/broad rekordów i dopiero potem połącz sensowne tematy z GSC/WordPress.",
+        "Najpierw przejrzyj pasujące rekordy: audyt środowiskowy. Odrzuć 0 rekordów poza zakresem i dopiero potem połącz sensowne tematy z GSC/WordPress.",
       risk: "medium"
     }
   ],
@@ -4583,7 +4509,7 @@ const contentDiagnostics = {
       id: "content_query_page_matrix",
       title: "GSC: query/page matrix",
       status: "ready",
-      summary: "WILQ ma 1 GSC tactical items i 1 query/page metric facts.",
+      summary: "WILQ ma 1 GSC tactical items i 1 query/page metryki.",
       diagnosis: "Query/page matrix pozwala wskazać konkretne strony i zapytania.",
       next_step: "Otwórz najwyższe priorytety i sprawdź intent oraz WordPress match.",
       source_connectors: ["google_search_console"],
@@ -4599,8 +4525,8 @@ const contentDiagnostics = {
       title: "WordPress: inventory protection",
       status: "ready",
       summary: "WILQ ma 1 inventory facts, 1 matched queue items i 0 missing matches.",
-      diagnosis: "WordPress inventory chroni marketera przed pisaniem drugi raz tego samego.",
-      next_step: "Najpierw obsłuż matched refresh/merge; nowe treści twórz po duplicate check.",
+      diagnosis: "Spis treści WordPress chroni marketera przed pisaniem drugi raz tego samego.",
+      next_step: "Najpierw obsłuż potwierdzone odświeżenia i scalenia; nowe treści twórz po kontroli duplikacji.",
       source_connectors: ["wordpress_ekologus"],
       evidence_ids: ["ev_refresh_wordpress_inventory", "ev_refresh_gsc"],
       metric_facts: [metricFacts[0]],
@@ -4623,7 +4549,7 @@ const contentDiagnostics = {
 const ga4Diagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector: {
     id: "google_analytics_4",
     label: "Google Analytics 4",
@@ -4663,7 +4589,7 @@ const ga4Diagnostics = {
     age_hours: 0,
     stale_after_hours: 48,
     requires_refresh: false,
-    summary: "Ostatni GA4 vendor_read mieści się w progu świeżości.",
+    summary: "Ostatni odczyt danych GA4 mieści się w progu świeżości.",
     next_step: "Można użyć danych GA4 do review bez dodatkowego refreshu."
   },
   conversion_readiness_contract: {
@@ -4683,7 +4609,7 @@ const ga4Diagnostics = {
     action_ids: ["act_review_ga4_tracking_quality"],
     blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
     next_step:
-      "Waliduj `act_review_ga4_tracking_quality` i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
+      "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
     risk: "medium"
   },
   operator_summary: {
@@ -4692,7 +4618,7 @@ const ga4Diagnostics = {
     summary:
       "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, revenue, spadku konwersji ani winie kampanii.",
     next_step:
-      "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i waliduj ActionObject tylko jako review-only.",
+      "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i sprawdź propozycję w WILQ tylko jako sprawdzenie bez zapisu.",
     top_decision_ids: ["ga4_decision_tq_ga4_landing"],
     measurement_issue_count: 0,
     wordpress_missing_count: 1,
@@ -4722,7 +4648,7 @@ const ga4Diagnostics = {
       action_ids: ["act_review_ga4_tracking_quality"],
       blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
       rationale:
-        "GA4 widzi ruch na landingu /oferta/, ale WordPress inventory nie potwierdza dopasowania URL.",
+        "GA4 widzi ruch na landingu /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
         "Sprawdź mapowanie landing page i dopiero potem oceniaj message match albo jakość ruchu.",
       risk: "medium"
@@ -4733,7 +4659,7 @@ const ga4Diagnostics = {
       id: "ga4_landing_behavior",
       title: "GA4: jakość ruchu z landingów",
       status: "ready",
-      summary: "WILQ ma 1 landing/source/campaign groups i 1 GA4 metric facts.",
+      summary: "WILQ ma 1 landing page, źródło i kampania groups i 1 GA4 metryki.",
       diagnosis: "GA4 behavior facts pozwalają wskazać landing pages do kontroli jakości ruchu.",
       next_step: "Najpierw sprawdź grupy z niskim engagement.",
       source_connectors: ["google_analytics_4"],
@@ -4750,7 +4676,7 @@ const ga4Diagnostics = {
       status: "missing",
       summary: "WILQ ma 1 metrykę zachowania i 0 metryk konwersji albo kluczowych zdarzeń.",
       diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
-      next_step: "Waliduj ActionObject i zatrzymaj wnioski o konwersjach bez metryk.",
+      next_step: "Sprawdź propozycję w WILQ i zatrzymaj wnioski o konwersjach bez metryk.",
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       metric_facts: [metricFacts[4]],
@@ -4769,7 +4695,7 @@ const ga4Diagnostics = {
 const localoDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector: {
     id: "localo",
     label: "Localo",
@@ -4799,7 +4725,7 @@ const localoDiagnostics = {
       pkce_s256_supported: 1,
       access_token_present: 1
     },
-    summary: "Localo MCP initialize completed with local OAuth access token.",
+    summary: "Localo Test dostępu completed with local OAuth access token.",
     errors: [],
     redacted: true
   },
@@ -4812,7 +4738,7 @@ const localoDiagnostics = {
     access_token_present: true,
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
     summary:
-      "Localo MCP initialize zwrócił 200. To potwierdza dostęp WILQ do MCP, ale nie jest jeszcze dowodem rankingów, GBP ani konkurencji."
+      "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji."
   },
   live_data_available: false,
   visibility_fact_count: 0,
@@ -4820,9 +4746,9 @@ const localoDiagnostics = {
     id: "localo_operator_summary",
     title: "Co marketer ma wiedzieć o Localo",
     summary:
-      "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani recenzji, więc WILQ blokuje claimy bez typed visibility facts.",
+      "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. Dostęp Localo nie jest jeszcze dowodem rankingów, profilu firmy w Google, konkurencji ani recenzji, więc WILQ blokuje obietnice bez danych widoczności.",
     next_step:
-      "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts.",
+      "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań SEO ani zmian w profilu firmy w Google, dopóki odczyt danych Localo nie dostarczy danych widoczności.",
     top_decision_ids: [
       "localo_access_ready_wait_for_visibility_facts",
       "localo_block_visibility_claims_without_read_contract"
@@ -4840,10 +4766,10 @@ const localoDiagnostics = {
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
     action_ids: [],
     blocked_claims: [
-      "local ranking",
-      "GBP performance",
-      "competitor visibility",
-      "local visibility uplift"
+      "lokalne rankingi",
+      "wyniki profilu firmy w Google",
+      "widoczności konkurencji",
+      "poprawa widoczności lokalnej"
     ]
   },
   decision_queue: [
@@ -4851,19 +4777,19 @@ const localoDiagnostics = {
       id: "localo_access_ready_wait_for_visibility_facts",
       decision_type: "access_ready_wait_for_visibility_facts",
       status: "ready",
-      title: "Localo access działa; brakuje ranking/GBP facts",
+      title: "Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google",
       summary:
-        "MCP initialize=200 potwierdza dostęp. WILQ nie ma jeszcze lokalnych rankingów, GBP, konkurencji ani reviews.",
+        "Localo potwierdził dostęp do odczytu danych. WILQ nie ma jeszcze lokalnych rankingów, profilu firmy w Google, konkurencji ani recenzji.",
       rationale:
-        "To jest gotowość adaptera, nie diagnoza lokalnej widoczności. Marketer nie powinien traktować tego jako zadania optymalizacyjnego.",
+        "To jest gotowość dostępu do Localo, nie diagnoza lokalnej widoczności. Marketer nie powinien traktować tego jako zadania optymalizacyjnego.",
       next_step:
-        "Zostaw Localo jako status źródła i dodaj Localo read contract dla rankings/GBP/competitors/reviews.",
+        "Zostaw Localo jako status źródła i dodaj odczyt danych rankingów, profilu firmy w Google, konkurencji i recenzji.",
       access_status: "access_ready",
       priority: 30,
       metric_tiles: {
-        "dostęp MCP": 1,
-        "fakty Localo": 0,
-        "braki kontraktu": 5
+        "dostęp Localo": 1,
+        "dane Localo": 0,
+        "brakujące dane": 5
       },
       allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
       missing_read_contracts: [
@@ -4878,10 +4804,10 @@ const localoDiagnostics = {
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
-        "local ranking",
-        "GBP performance",
-        "competitor visibility",
-        "local visibility uplift"
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
       ],
       risk: "low"
     },
@@ -4889,18 +4815,18 @@ const localoDiagnostics = {
       id: "localo_block_visibility_claims_without_read_contract",
       decision_type: "block_visibility_claims",
       status: "blocked",
-      title: "Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts",
+      title: "Nie wyciągaj wniosków o lokalnej widoczności bez danych Localo",
       summary:
-        "WILQ blokuje claimy o rankingach, GBP, konkurencji, reviews i wzroście widoczności, dopóki Localo read contract nie dostarczy tych facts.",
+        "WILQ blokuje obietnice o rankingach, profilu firmy w Google, konkurencji, recenzjach i wzroście widoczności, dopóki Localo nie dostarczy tych danych.",
       rationale:
-        "Access/readiness nie jest metryką marketingową. To chroni dashboard i skille przed udawaniem lokalnego SEO insightu.",
+        "Dostęp do źródła nie jest metryką marketingową. To chroni dashboard i skille przed udawaniem lokalnej diagnozy SEO.",
       next_step:
-        "Najpierw dodaj typed Localo read contract; dopiero potem buduj lokalne ActionObjecty.",
+        "Najpierw dodaj odczyt danych Localo; dopiero potem buduj lokalne akcje do sprawdzenia.",
       access_status: "access_ready",
       priority: 10,
       metric_tiles: {
-        "blokady claimów": 5,
-        "braki kontraktu": 5
+        "blokady obietnic": 5,
+        "brakujące dane": 5
       },
       allowed_evidence: ["mcp_initialize"],
       missing_read_contracts: [
@@ -4915,10 +4841,10 @@ const localoDiagnostics = {
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
-        "local ranking",
-        "GBP performance",
-        "competitor visibility",
-        "local visibility uplift"
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
       ],
       risk: "medium"
     }
@@ -4926,11 +4852,11 @@ const localoDiagnostics = {
   sections: [
     {
       id: "localo_access_status",
-      title: "Localo: status dostępu MCP",
+      title: "Localo: status dostępu do danych",
       status: "ready",
       summary:
-        "Localo MCP initialize zwrócił 200. To potwierdza dostęp WILQ do MCP, ale nie jest jeszcze dowodem rankingów, GBP ani konkurencji.",
-      diagnosis: "Dostęp MCP pozwala WILQ rozmawiać z Localo jako adapterem.",
+        "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji.",
+      diagnosis: "Dostęp Localo pozwala WILQ odczytywać dane Localo.",
       next_step:
         "Nie pokazuj Localo jako zadania dziennego. Użyj tego widoku jako statusu źródła.",
       source_connectors: ["localo"],
@@ -4942,23 +4868,23 @@ const localoDiagnostics = {
     },
     {
       id: "localo_visibility_contract",
-      title: "Localo: ranking/GBP evidence",
+      title: "Localo: dane rankingów i profilu firmy w Google",
       status: "missing",
       summary:
-        "WILQ nie ma jeszcze rankingów, GBP, competitor visibility ani reviews z Localo.",
+        "WILQ nie ma jeszcze rankingów, danych profilu firmy w Google, widoczności konkurencji ani recenzji z Localo.",
       diagnosis:
-        "Brak tych facts oznacza brak lokalnej diagnozy marketingowej, nie brak problemu.",
+        "Brak tych danych oznacza brak lokalnej diagnozy marketingowej, nie brak problemu.",
       next_step:
-        "Zbuduj Localo read contract dla rankings/GBP/competitors/reviews zanim WILQ zaproponuje lokalne działania.",
+        "Dodaj odczyt rankingów, profilu firmy w Google, konkurencji i recenzji zanim WILQ zaproponuje lokalne działania.",
       source_connectors: ["localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
-        "local ranking",
-        "GBP performance",
-        "competitor visibility",
-        "local visibility uplift"
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
       ],
       risk: "medium"
     }
@@ -4971,7 +4897,7 @@ const localoDiagnostics = {
 const ahrefsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector: {
     id: "ahrefs",
     label: "Ahrefs",
@@ -5009,8 +4935,8 @@ const ahrefsDiagnostics = {
   gap_read_contract: {
     id: "ahrefs_gap_read_contract",
     status: "ready",
-    title: "Ahrefs gap records",
-    summary: "WILQ ma 2 typed Ahrefs gap records. Brakujące kontrakty: brak.",
+    title: "Luki SEO z Ahrefs",
+    summary: "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
     available_read_contracts: [
       "ahrefs_authority_summary",
       "ahrefs_competitor_pages",
@@ -5040,7 +4966,7 @@ const ahrefsDiagnostics = {
         gap_type: "content_gap",
         title: "Luka treści: audyt środowiskowy",
         summary:
-          "Luka treści: audyt środowiskowy. Fakty Ahrefs: content_gaps=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Luka treści: audyt środowiskowy. Dane Ahrefs: content_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: "https://competitor.example/audyt-srodowiskowy",
         target_url: null,
         competitor_domain: "competitor.example",
@@ -5065,7 +4991,7 @@ const ahrefsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["traffic uplift", "authority improvement"],
         next_step:
-          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+          "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
       },
       {
@@ -5073,7 +4999,7 @@ const ahrefsDiagnostics = {
         gap_type: "backlink_gap",
         title: "Luka backlinków: example.org",
         summary:
-          "Luka backlinków: example.org. Fakty Ahrefs: referring_domain_gaps=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Luka backlinków: example.org. Dane Ahrefs: referring_domain_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: "example.org",
         target_url: null,
         competitor_domain: "competitor.example",
@@ -5105,7 +5031,7 @@ const ahrefsDiagnostics = {
         gap_type: "competitor_page",
         title: "Strona konkurencji: denios.pl",
         summary:
-          "Strona konkurencji: denios.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Strona konkurencji: denios.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
         target_url: null,
         competitor_domain: "denios.pl",
@@ -5114,7 +5040,7 @@ const ahrefsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["traffic uplift", "authority improvement"],
         next_step:
-          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+          "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
       },
       {
@@ -5122,7 +5048,7 @@ const ahrefsDiagnostics = {
         gap_type: "competitor_page",
         title: "Strona konkurencji: manutan.pl",
         summary:
-          "Strona konkurencji: manutan.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Strona konkurencji: manutan.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
         target_url: null,
         competitor_domain: "manutan.pl",
@@ -5131,7 +5057,7 @@ const ahrefsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["traffic uplift", "authority improvement"],
         next_step:
-          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+          "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
       },
       {
@@ -5139,7 +5065,7 @@ const ahrefsDiagnostics = {
         gap_type: "competitor_page",
         title: "Strona konkurencji: e-promag.pl",
         summary:
-          "Strona konkurencji: e-promag.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Strona konkurencji: e-promag.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
         target_url: null,
         competitor_domain: "e-promag.pl",
@@ -5148,7 +5074,7 @@ const ahrefsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["traffic uplift", "authority improvement"],
         next_step:
-          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+          "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
       },
       {
@@ -5156,7 +5082,7 @@ const ahrefsDiagnostics = {
         gap_type: "competitor_page",
         title: "Strona konkurencji: hidden-noise.example",
         summary:
-          "Strona konkurencji: hidden-noise.example. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+          "Strona konkurencji: hidden-noise.example. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
         target_url: null,
         competitor_domain: "hidden-noise.example",
@@ -5165,20 +5091,21 @@ const ahrefsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["traffic uplift", "authority improvement"],
         next_step:
-          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+          "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
       }
     ],
-    next_step: "Połącz gap records z GSC/WordPress i przygotuj kolejkę review.",
+    gap_record_count: 6,
+    next_step: "Połącz luki Ahrefs z GSC/WordPress i przygotuj kolejkę sprawdzenia.",
     risk: "medium"
   },
   operator_summary: {
     id: "ahrefs_operator_summary",
     title: "Co marketer ma wiedzieć o Ahrefs",
     summary:
-      "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. Autorytet domeny może być kontekstem, ale claimy o lukach contentowych lub backlinkowych wymagają typed gap records.",
+      "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. Autorytet domeny może być kontekstem, ale wnioski o lukach treści lub backlinków wymagają konkretnych danych Ahrefs.",
     next_step:
-      "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. Nie twierdź o content gap, backlink gap ani wzroście widoczności bez rekordów z gap read contract.",
+      "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. Nie twierdź o lukach treści, lukach backlinków ani wzroście widoczności bez konkretnych danych Ahrefs.",
     top_decision_ids: [
       "ahrefs_review_authority_context",
       "ahrefs_review_gap_records"
@@ -5208,15 +5135,15 @@ const ahrefsDiagnostics = {
       title: "Użyj Ahrefs tylko jako kontekstu autorytetu",
       summary: "domain_rating=90, ahrefs_rank=1450",
       rationale:
-        "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst autorytetu do SEO/content review. To nadal nie jest gap analysis.",
+        "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk.",
       next_step:
         "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/backlinków.",
       priority: 25,
       metric_tiles: {
         DR: 90,
         "Ahrefs Rank": 1450,
-        "fakty luk": 2,
-        "braki kontraktu": 0
+        "luki Ahrefs": 2,
+        "brakujące dane": 0
       },
       allowed_evidence: ["domain_rating", "ahrefs_rank", "authority_summary"],
       missing_read_contracts: [],
@@ -5255,15 +5182,15 @@ const ahrefsDiagnostics = {
       status: "ready",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
-        "WILQ ma 2 typed Ahrefs gap records. Braki kontraktu: brak.",
+        "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
       rationale:
-        "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do review SEO/content.",
+        "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do sprawdzenia SEO/content.",
       next_step:
-        "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress i przygotuj refresh/create/merge/block zamiast obiecywać uplift.",
+        "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress i przygotuj zachowanie, odświeżenie, scalenie, utworzenie albo blokadę zamiast obiecywać wzrost.",
       priority: 18,
       metric_tiles: {
         "rekordy luk": 2,
-        "braki kontraktu": 0
+        "brakujące dane": 0
       },
       allowed_evidence: [
         "domain_rating",
@@ -5300,11 +5227,11 @@ const ahrefsDiagnostics = {
       title: "Ahrefs: kontekst autorytetu",
       status: "ready",
       summary:
-        "WILQ ma 2 świeże fakty autorytetu z Ahrefs: domain_rating=90, ahrefs_rank=1450.",
+        "WILQ ma 2 świeże dane autorytetu z Ahrefs: domain_rating=90, ahrefs_rank=1450.",
       diagnosis:
         "DR i Ahrefs Rank mogą wspierać priorytety SEO jako kontekst autorytetu.",
       next_step:
-        "Użyj tych facts jako pomocniczego kontekstu przy content/GSC review.",
+        "Użyj tych danych jako pomocniczego kontekstu przy sprawdzeniu treści i GSC.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
@@ -5316,9 +5243,9 @@ const ahrefsDiagnostics = {
       id: "ahrefs_gap_contract",
       title: "Ahrefs: rekordy luk SEO",
       status: "ready",
-      summary: "WILQ ma typed content/backlink gap records z Ahrefs.",
-      diagnosis: "To jest read-only materiał do review, nie automatyczna obietnica wzrostu.",
-      next_step: "Połącz rekordy z GSC i WordPress inventory przed decyzją contentową.",
+      summary: "WILQ ma konkretne luki treści i backlinków z Ahrefs.",
+      diagnosis: "To jest materiał do sprawdzenia, nie automatyczna obietnica wzrostu.",
+      next_step: "Połącz rekordy z GSC i Spis treści WordPress przed decyzją contentową.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
@@ -5340,7 +5267,7 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu oraz Demand Gen ad/asset empty-read proof, ale nadal nie ma landing quality per campaign i migration constraints.",
+    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu oraz Demand Gen ad/asset empty-read proof, ale nadal nie ma landing quality per campaign i transition constraints.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
@@ -5361,14 +5288,14 @@ const demandGenDiagnostics = {
   ],
   missing_read_contracts: [
     "demand_gen_landing_quality_by_campaign",
-    "demand_gen_migration_constraints"
+    "demand_gen_transition_constraints"
   ],
   blocked_claims: [
     "Demand Gen launch recommendation",
-    "Demand Gen migration ready",
+    "Demand Gen transition ready",
     "creative quality verdict",
     "asset performance verdict",
-    "campaign apply",
+    "zmiana kampanii",
     "performance uplift"
   ],
   source_connectors: ["google_ads", "google_analytics_4"],
@@ -5430,7 +5357,7 @@ const demandGenDiagnostics = {
       ],
       missing_read_contracts: [
         "demand_gen_landing_quality_by_campaign",
-        "demand_gen_migration_constraints"
+        "demand_gen_transition_constraints"
       ],
       required_validation: [
         "review_ads_campaign_channel_context",
@@ -5441,10 +5368,10 @@ const demandGenDiagnostics = {
       ],
       blocked_claims: [
         "Demand Gen launch recommendation",
-        "Demand Gen migration ready",
+        "Demand Gen transition ready",
         "creative quality verdict",
         "asset performance verdict",
-        "campaign apply",
+        "zmiana kampanii",
         "performance uplift"
       ],
       evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
@@ -5485,7 +5412,7 @@ const demandGenDiagnostics = {
     }
   ],
   next_step:
-    "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read contracts, landing quality by campaign i migration constraints.",
+    "Sprawdź w WILQ act_review_demand_gen_readiness jako akcję do sprawdzenia. Zanim skill pokaże propozycje Demand Gen lub przejścia kampanii, dodaj odczyt kreacji, jakość landingów według kampanii i ograniczenia przejścia.",
   risk: "medium"
 };
 
@@ -5495,9 +5422,9 @@ const expertRules = [
     name: "Search term analysis",
     domain: "ads",
     version: 1,
-    source_anchor: "Google Ads search terms",
+    source_anchor: "Google Ads listy wyszukiwanych haseł",
     source_path: "wilq/expert/ads/search_terms.yaml",
-    when_to_use: "Detect waste and content opportunities from search terms.",
+    when_to_use: "Wykrywaj przepalanie budżetu i pomysły na treści z listy wyszukiwanych haseł.",
     required_inputs: ["search_terms", "evidence_ids"],
     diagnostic_logic: ["segment_by_intent"],
     recommended_actions: ["negative_keyword_candidate", "content_brief_candidate"],
@@ -5525,7 +5452,7 @@ const knowledgeCards = [
   {
     id: "card_google_ads_search_playbook",
     card_type: "ads_pattern_card",
-    title: "Google Ads search diagnostics",
+    title: "Diagnostyka wyszukiwanych haseł Google Ads",
     summary: "Use real search-term metrics before recommendations.",
     source_type: "marketing_playbook",
     source_id: "google_ads_search_playbook",
@@ -5541,9 +5468,9 @@ const playbooks = [
   {
     id: "google_ads_search_playbook",
     family: "google_ads_search_playbook",
-    title: "Google Ads search diagnostics",
+    title: "Diagnostyka wyszukiwanych haseł Google Ads",
     card_type: "ads_pattern_card",
-    source_anchors: ["Google Ads search terms"],
+    source_anchors: ["Google Ads listy wyszukiwanych haseł"],
     required_evidence: ["search_terms", "evidence_ids"],
     maps_to_opportunity_types: ["google_ads_waste"],
     maps_to_action_types: ["prepare_negative_keywords"],
@@ -5564,11 +5491,11 @@ const knowledgeOperatingMap = {
   bindings: [
     {
       id: "knowledge_ads_daily_check",
-      title: "Ads daily check",
+      title: "Ocena Ads",
       status: "ready",
       route: "/ads-doctor",
       skill_id: "wilq-ads-doctor",
-      summary: "Google Ads search diagnostics steruje review kampanii i search terms.",
+      summary: "Google Ads search diagnostics steruje review kampanii i listy wyszukiwanych haseł.",
       next_step: "Otwórz /ads-doctor i użyj wiedzy tylko z evidence.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -5594,7 +5521,7 @@ function mockFetch() {
         return Promise.resolve(
           Response.json({
             generated_at: "2026-06-17T10:00:00Z",
-            strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+            strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
             primary_next_step:
               "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.",
             blocker_count: 0,
@@ -5618,11 +5545,11 @@ function mockFetch() {
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
-                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
+                  "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 why_it_matters:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 operator_action:
-                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
+                  "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
@@ -5645,13 +5572,13 @@ function mockFetch() {
                 priority: 12,
                 metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
-                  "GSC i WordPress tworzą kolejkę SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja refresh/merge/create/block oparta o query/page i inventory, nie obietnica leadów ani wzrostów pozycji.",
+                  "GSC i WordPress tworzą kolejkę SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o query/page i spisie treści, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
                 bezpieczny_next_step:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
                 operator_action:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
@@ -5671,9 +5598,9 @@ function mockFetch() {
                 route: "/ads-doctor",
                 status: "ready",
                 priority: 16,
-                metric_tiles: { kampanie: 18, "search terms": 50 },
+                metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50 },
                 co_widzimy:
-                  "Google Ads ma kolejki do oceny: kampanie=18, search terms=50. To są read-only kolejki budżetu, rekomendacji, wykluczeń i segmentów. Wdrożenie zmian, ocena rentowności i werdykty o przepalonym budżecie pozostają zablokowane.",
+                  "Google Ads ma kolejki do oceny: kampanie=18, listy wyszukiwanych haseł=50. To są kolejki budżetu, rekomendacji, wykluczeń i segmentów. Zapis zmian, ocena rentowności i werdykty o przepalonym budżecie pozostają zablokowane.",
                 dlaczego_to_ma_znaczenie:
                   "Google Ads OAuth, MCC login i child customer działają.",
                 bezpieczny_next_step:
@@ -5696,12 +5623,12 @@ function mockFetch() {
                 route: "/ads-doctor",
                 status: "ready",
                 priority: 30,
-                summary: "Google Ads ma live metric facts.",
-                next_step: "Otwórz /ads-doctor i przejdź do read-only performance review.",
+                summary: "Google Ads ma live metryki.",
+                next_step: "Otwórz /ads-doctor i przejdź do przeglądu wyników.",
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                metric_tiles: { kampanie: 18, "search terms": 50, blockery: 1 },
+                metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blockery: 1 },
                 blocked_claims: ["CPA", "ROAS", "search-term waste"],
                 risk: "medium"
               },
@@ -5712,9 +5639,9 @@ function mockFetch() {
                 status: "ready",
                 priority: 10,
                 summary:
-                  "Produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8. To jest read-only queue.",
+                  "Produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8. To jest kolejka do sprawdzenia.",
                 next_step:
-                  "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject.",
+                  "Otwórz /merchant i przejrzyj decyzje feedu przed sprawdzeniem propozycji w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
@@ -5738,7 +5665,7 @@ function mockFetch() {
                 status: "ready",
                 priority: 12,
                 summary:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł.',
                 next_step:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -5755,9 +5682,9 @@ function mockFetch() {
                 status: "blocked",
                 priority: 14,
                 summary:
-                  "GA4 ma 1 grupę landing/source/campaign i 1 decyzję review: pomiar=1, jakość ruchu=0. Status blocked oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora.",
+                  "GA4 ma 1 grupę landing page, źródło i kampania i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Status zablokowane oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię źródła danych.",
                 next_step:
-                  "Otwórz /ga4 i przejdź przez kolejkę decyzji. Waliduj `act_review_ga4_tracking_quality`.",
+                  "Otwórz /ga4 i przejdź przez kolejkę decyzji. Sprawdź `act_review_ga4_tracking_quality` w WILQ.",
                 source_connectors: ["google_analytics_4"],
                 evidence_ids: ["ev_refresh_ga4"],
                 action_ids: ["act_review_ga4_tracking_quality"],
@@ -5766,7 +5693,7 @@ function mockFetch() {
                   decyzje: 1,
                   pomiar: 1,
                   "jakość ruchu": 0,
-                  "braki kontraktu": 1
+                  "brakujące dane": 1
                 },
                 blocked_claims: ["ROAS", "revenue", "conversion drop", "tracking fixed"],
                 risk: "medium"
@@ -5779,8 +5706,8 @@ function mockFetch() {
                 route: "/command-center",
                 status: "ready",
                 what_it_proves:
-                  "WILQ zbiera gotowe źródła, blockery, evidence IDs i ActionObjecty.",
-                operator_prompt: "Pokaż dzisiejszy priorytet i akcje do walidacji.",
+                  "WILQ zbiera gotowe źródła, blockery, evidence IDs i akcje do sprawdzenia.",
+                operator_prompt: "Pokaż dzisiejszy priorytet i akcje do sprawdzenia.",
                 source_item_ids: ["daily_ads_status", "daily_merchant_feed"],
                 evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_merchant_feed"],
                 action_ids: ["act_review_merchant_feed_issues"]
@@ -5791,7 +5718,7 @@ function mockFetch() {
                 route: "/merchant",
                 status: "ready",
                 what_it_proves:
-                  "Merchant Center daje realne product/feed metryki i ActionObject review.",
+                  "Merchant Center daje realne metryki product/feed i przegląd akcji.",
                 operator_prompt: "Otwórz /merchant i przejrzyj kolejkę problemów feedu.",
                 source_item_ids: ["daily_merchant_feed"],
                 evidence_ids: ["ev_refresh_merchant_feed"],
@@ -5809,7 +5736,7 @@ function mockFetch() {
                 why_it_matters:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 operator_action:
-                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
+                  "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
@@ -5832,7 +5759,7 @@ function mockFetch() {
                 priority: 12,
                 category: "Content + SEO",
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
                 operator_action:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
@@ -5950,7 +5877,7 @@ function mockFetch() {
             },
             review_gate: {
               status: "pending_validation",
-              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              summary: "Wymaga sprawdzenia w WILQ przed kolejnym krokiem.",
               required_checks: [],
               operator_checklist: [],
               apply_blockers: ["action_validation_required"],
@@ -5983,13 +5910,13 @@ function mockFetch() {
               event_type: "action_preview_generated",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:00:00Z",
-              summary: "Dry-run preview generated without vendor mutations.",
+              summary: "Podgląd zmian wygenerowany bez zmian w zewnętrznych systemach.",
               evidence_ids: ["ev_refresh_merchant_feed"],
               redacted: true
             },
             review_gate: {
               status: "pending_validation",
-              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              summary: "Wymaga sprawdzenia w WILQ przed kolejnym krokiem.",
               required_checks: [],
               operator_checklist: [],
               apply_blockers: ["action_validation_required"],
@@ -6019,7 +5946,7 @@ function mockFetch() {
             },
             review_gate: {
               status: "pending_validation",
-              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              summary: "Wymaga sprawdzenia w WILQ przed kolejnym krokiem.",
               required_checks: [],
               operator_checklist: [],
               apply_blockers: ["action_validation_required"],
@@ -6056,7 +5983,7 @@ function mockFetch() {
             },
             review_gate: {
               status: "pending_validation",
-              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              summary: "Wymaga sprawdzenia w WILQ przed kolejnym krokiem.",
               required_checks: [],
               operator_checklist: [],
               apply_blockers: ["action_validation_required"],
@@ -6087,43 +6014,49 @@ function mockFetch() {
             {
               id: "daily_command",
               label: "Plan dnia WILQ",
-              description: "Główny workflow operatora oparty o WILQ API.",
+              description: "Główny proces pracy oparty o WILQ.",
               steps: [
                 {
                   id: "daily_command_context",
-                  label: "Pobierz kontekst z WILQ API",
+                  label: "Pobierz kontekst z WILQ",
                   required_connectors: ["google_ads"],
-                  output_contract: "Daily decisions and ActionObject IDs."
+                  output_contract: "Daily decisions and action IDs."
                 }
               ],
               status: "ready",
+              status_label: "gotowe",
               route: "/command-center",
+              route_label: "Plan dnia",
               skill_id: "wilq-daily-command",
               safe_next_step: "Otwórz Command Center i przejdź decyzje według priorytetu.",
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
-              blocked_claims: ["ROAS verdict"],
+              blocked_claims: ["werdykt ROAS"],
               metric_tiles: { decyzje: 4, blockery: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
-              risk: "low"
+              risk: "low",
+              risk_label: "niskie ryzyko"
             },
             {
               id: "localo_visibility_review",
-              label: "Localo visibility review",
-              description: "Planowany workflow lokalnej widoczności.",
+              label: "Widoczność lokalna Localo",
+              description: "Planowany proces lokalnej widoczności.",
               steps: [],
               status: "blocked",
+              status_label: "zablokowane",
               route: "/localo",
+              route_label: "Localo",
               skill_id: "wilq-localo-operator",
-              safe_next_step: "Otwórz /localo i potraktuj workflow jako blocker.",
+              safe_next_step: "Otwórz widok Localo i potraktuj proces jako zablokowany.",
               source_connectors: ["localo"],
               evidence_ids: [],
               action_ids: [],
-              blocked_claims: ["local ranking uplift"],
+              blocked_claims: ["lokalne rankingi uplift"],
               metric_tiles: {},
               missing_contracts: ["local_ranking_rows"],
-              risk: "medium"
+              risk: "medium",
+              risk_label: "średnie ryzyko"
             }
           ])
         );
@@ -6190,38 +6123,82 @@ describe("WILQ dashboard", () => {
     renderApp("/settings");
     await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
     expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument();
-    expect(screen.getByText("Brakujące credentiale")).toBeInTheDocument();
-    expect(screen.getByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).toBeInTheDocument();
+    expect(screen.getByText("Braki dostępu")).toBeInTheDocument();
+    expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż stan dostępu" })).toBeInTheDocument();
     expect(screen.queryByText("Missing credentials")).not.toBeInTheDocument();
     expect(screen.queryByText("Configured")).not.toBeInTheDocument();
     expect(screen.queryByText(/Source:/)).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż stan dostępu" }));
+    expect(screen.getAllByText("Google Ads").length).toBeGreaterThan(0);
+    expect(screen.getByText("Źródło danych sprawdzane przez WILQ.")).toBeInTheDocument();
+    expect(screen.getByText("Brakujące ustawienia dostępu")).toBeInTheDocument();
+    expect(screen.getByText("1 pole")).toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+  });
+
+  it("secondary utility routes render compact blockers instead of generic registries", async () => {
+    renderApp("/google-sheets");
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Google Sheets" })).toBeInTheDocument());
+    expect(screen.getByText("Status widoku")).toBeInTheDocument();
+    expect(screen.getByText(/brak zatwierdzonego zakresu eksportu/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vendor_read/)).not.toBeInTheDocument();
+
+    cleanup();
+
+    renderApp("/security");
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Bezpieczeństwo" })).toBeInTheDocument());
+    expect(screen.getByText("Status widoku")).toBeInTheDocument();
+    expect(screen.getByText(/brak pełnego dashboardu bezpieczeństwa/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText(/CONNECTOR_REFRESH_RUN/)).not.toBeInTheDocument();
   });
 
   it("actions route starts from marketer-facing actions instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Akcje do walidacji" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Najważniejsze akcje demo")).toBeInTheDocument();
-    expect(screen.getByText("Pełna lista akcji - szczegóły")).toBeInTheDocument();
-    expect(screen.getByText(/pierwsze akcje do pokazania marketerowi/i)).toBeInTheDocument();
+    expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
+    expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
+    expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają core path/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
     expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
-    expect(screen.getByText("Do walidacji")).toBeInTheDocument();
-    expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.getByText("Do sprawdzenia")).toBeInTheDocument();
+    expect(screen.queryByText("Najważniejsze akcje demo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pełna lista akcji - szczegóły")).not.toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pokaż pozostałe akcje/ })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: "Pokaż dane techniczne akcji" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Pokaż pozostałe akcje/ }));
+    expect(
+      screen.getAllByText("Otwórz akcję, żeby sprawdzić warunki i bezpieczny zapis zmian.").length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
   });
 
   it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
@@ -6241,9 +6218,10 @@ describe("WILQ dashboard", () => {
     );
 
     expect(screen.getByText("Dowody: 2 ID")).toBeInTheDocument();
-    expect(screen.getByText("Metryki: clicks=12, impressions=120, api=google_ads_probe")).toBeInTheDocument();
+    expect(screen.getByText("Metryki: 3 wartości")).toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_refresh_google_ads_test")).not.toBeInTheDocument();
+    expect(screen.queryByText("vendor_read")).not.toBeInTheDocument();
     expect(screen.queryByText(/"clicks"/)).not.toBeInTheDocument();
   });
 
@@ -6252,6 +6230,20 @@ describe("WILQ dashboard", () => {
     expect(
       await screen.findByRole("heading", { name: "Ads Doctor" }, { timeout: 5000 })
     ).toBeInTheDocument();
+    expect(screen.getByText("Decyzja skondensowana")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
+    expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Co można zrobić teraz w Ads" })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Ads" }));
     expect(
       await screen.findByRole(
         "heading",
@@ -6259,11 +6251,12 @@ describe("WILQ dashboard", () => {
         { timeout: 5000 }
       )
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
-    expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
     const optimizerPanel = screen
       .getByRole("heading", { name: "Co można zrobić teraz w Ads" })
       .closest(".mb-4");
@@ -6306,10 +6299,10 @@ describe("WILQ dashboard", () => {
       screen.getByText("Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń")
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Przejrzyj rekomendacje Google Ads bez wdrażania")
+      screen.getByText("Przejrzyj rekomendacje Google Ads bez zapisu zmian")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Nie wdrażaj wykluczeń, budżetów ani rekomendacji/)
+      screen.getByText(/Nie zapisuj wykluczeń, budżetów ani rekomendacji/)
     ).toBeInTheDocument();
     expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
     expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
@@ -6361,11 +6354,11 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
   });
 
-  it("custom segments route renders dedicated review-only contract", async () => {
+  it("custom segments route renders dedicated validation contract", async () => {
     renderApp("/ads-doctor/custom-segments");
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Custom Segments" })
+        screen.getByRole("heading", { name: "Segmenty z haseł" })
       ).toBeInTheDocument()
     );
 
@@ -6387,7 +6380,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
     expect(screen.getByText(/Wymaga oceny/)).toBeInTheDocument();
     expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
-    expect(screen.getByText(/Tryb Codexa: Custom Segments/)).toBeInTheDocument();
+    expect(screen.getByText(/Tryb Codexa: Segmenty z haseł/)).toBeInTheDocument();
     expect(screen.queryByText(/skill=wilq-custom-segments/)).not.toBeInTheDocument();
     expect(screen.queryByText("/api/codex/context-pack")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
@@ -6395,49 +6388,88 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
   });
 
-  it("expert rules render on operating routes", async () => {
+  it("legacy operating routes do not fall back to registry dumps", async () => {
     renderApp("/ads-doctor/search-terms");
-    await waitFor(() => expect(screen.getByText("Expert Rules")).toBeInTheDocument());
-    expect(screen.getByText("Search term analysis")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Widok WILQ" })).toBeInTheDocument());
+    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
   it("workflow route renders persisted workflow runs", async () => {
     renderApp("/workflows");
     await waitFor(() => expect(screen.getByText("Ostatnie uruchomienia")).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Workflowy WILQ" })).toBeInTheDocument();
-    expect(screen.getByText("Workflowy decyzyjne")).toBeInTheDocument();
-    expect(screen.getByText("Plan dnia WILQ")).toBeInTheDocument();
-    expect(screen.getByText("Localo visibility review")).toBeInTheDocument();
-    expect(screen.getByText("Gotowe workflowy")).toBeInTheDocument();
-    expect(screen.getAllByText(/Skill: dostępny/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Brakujące kontrakty: 1/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Procesy WILQ" })).toBeInTheDocument();
+    expect(screen.getByText("Procesy decyzyjne")).toBeInTheDocument();
+    expect(screen.getAllByText("Plan dnia WILQ").length).toBeGreaterThan(0);
+    expect(screen.getByText("gotowe")).toBeInTheDocument();
+    expect(screen.queryByText("status wymaga opisu")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Pokaż opis procesu" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/ROAS verdict/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Braki:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zakazane obietnice:/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/approval restored/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/revenue recovered/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/conversion uplift/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż powiązane akcje (1)" })).toBeInTheDocument();
+    expect(screen.queryByText("queued")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody z procesów")).not.toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS \/ PREPARE/)).not.toBeInTheDocument();
+    expect(screen.queryByText("daily_command")).not.toBeInTheDocument();
+    expect(screen.queryByText("run_daily_command_test")).not.toBeInTheDocument();
+    expect(screen.queryByText("localo_visibility_review")).not.toBeInTheDocument();
+    expect(screen.queryByText("localo")).not.toBeInTheDocument();
     expect(screen.queryByText(/wilq-daily-command/)).not.toBeInTheDocument();
     expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
-    expect(screen.getByText("Wyniki workflowów")).toBeInTheDocument();
-    expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
+    expect(screen.getByText("Wyniki procesów")).toBeInTheDocument();
     expect(screen.queryByText("Rejestr workflowów")).not.toBeInTheDocument();
+    expect(screen.queryByText("Workflowy WILQ")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" }));
+    expect(await screen.findByText("queued")).toBeInTheDocument();
+    expect(screen.queryByText("run_daily_command_test")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż wyniki procesów" }));
+    expect(screen.getByText("Dowody z procesów")).toBeInTheDocument();
+    expect(screen.getByText("Akcje z procesów")).toBeInTheDocument();
   });
 
   it("knowledge route renders compiled cards and playbooks", async () => {
     renderApp("/knowledge");
-    await waitFor(() => expect(screen.getByText("Ads daily check")).toBeInTheDocument());
-    expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument();
-    expect(screen.getByText("Ads daily check")).toBeInTheDocument();
-    expect(screen.getByText("Skill: dostępny")).toBeInTheDocument();
-    expect(screen.getByText("Karty wiedzy: 1")).toBeInTheDocument();
-    expect(screen.getByText("Playbooki: 1")).toBeInTheDocument();
-    expect(screen.getByText("Reguły eksperckie: 1")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Ocena Ads")).toBeInTheDocument());
+    expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
+    expect(screen.getByText("Ocena Ads")).toBeInTheDocument();
+    expect(screen.getByText("Co zrobić dalej")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 1")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: 1 źródło")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
+    expect(screen.queryByText("Skill: dostępny")).not.toBeInTheDocument();
+    expect(screen.queryByText("Karty wiedzy: 1")).not.toBeInTheDocument();
+    expect(screen.queryByText("Playbooki: 1")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reguły eksperckie: 1")).not.toBeInTheDocument();
     expect(screen.queryByText(/card_google_ads_search_playbook/)).not.toBeInTheDocument();
     expect(screen.queryByText(/google_ads_search_playbook/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ads_search_terms_v1/)).not.toBeInTheDocument();
     expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
-    expect(screen.getByText("Powiązania")).toBeInTheDocument();
-    expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
+    expect(screen.queryByText("Powiązania")).not.toBeInTheDocument();
+    expect(screen.queryByText("wzorzec Ads / playbook marketingowy")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż źródła wiedzy" }));
     expect(
       screen.getAllByText("Diagnostyka wyszukiwanych haseł Google Ads").length
     ).toBeGreaterThan(0);
     expect(screen.queryByText("Google Ads search diagnostics")).not.toBeInTheDocument();
-    expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
+    const playbooksToggle = screen.getByRole("button", { name: "Pokaż zasady pracy" });
+    fireEvent.click(playbooksToggle);
+    expect(playbooksToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByText("Wymagane dowody: search_terms, evidence_ids")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence-backed search-term opportunity.")).not.toBeInTheDocument();
     expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
     expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
@@ -6469,10 +6501,11 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument();
-    expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
-    expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
-    expect(screen.getAllByText("Ładowanie stanu WILQ API").length).toBeGreaterThan(0);
+    expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
+    expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBe(1);
   });
 
   it("merchant route renders dedicated feed diagnostics", async () => {
@@ -6482,7 +6515,13 @@ describe("WILQ dashboard", () => {
         screen.getByRole("heading", { name: "Merchant Center" })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Dowody i ograniczenia Merchant")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
+    expect(screen.queryByText("Dowody i ograniczenia Merchant")).not.toBeInTheDocument();
+    expect(screen.queryByText("Czego nie wiemy z Merchant API")).not.toBeInTheDocument();
+    expect(screen.queryByText("Gotowość próbek produktów")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }));
+    expect(await screen.findByText("Dowody i ograniczenia Merchant")).toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: feed/product health")).not.toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: kolejka feed/product issues")).not.toBeInTheDocument();
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
@@ -6501,7 +6540,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/23 zgłoszeń problemu NOT_IMPACTED\/MERCHANT_ACTION dla PL \/ SHOPPING_ADS/)
     ).toBeInTheDocument();
-    expect(screen.getByText("Zgłoszenia")).toBeInTheDocument();
+    expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("zgłoszenia: 23")).not.toBeInTheDocument();
     expect(screen.getByText("problem: availability_updated")).toBeInTheDocument();
     expect(screen.getByText("atrybut: n:availability")).toBeInTheDocument();
@@ -6535,13 +6574,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/ROAS produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak joinu produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
-    expect(screen.getByText("Dowody")).toBeInTheDocument();
+    expect(screen.getAllByText("Dowody").length).toBeGreaterThan(0);
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
     expect(screen.getByText("Przykładowe produkty do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/najpierw przygotuj podgląd zmian/)).toBeInTheDocument();
+    expect(screen.queryByText(/surowy opis techniczny|techniczny model akcji/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Waliduj akcję" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Sprawdź w WILQ" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
@@ -6557,60 +6596,82 @@ describe("WILQ dashboard", () => {
     expect(merchantProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
     expect(screen.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(merchantProof.queryByText(/ev_refresh_merchant_safety/)).not.toBeInTheDocument();
-    expect(screen.getByText("Akcje do walidacji")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();
-    expect(screen.getByText(/Wykonanie:/)).toBeInTheDocument();
+    expect(screen.getByText(/Zapis zmian:/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
-    expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
-    expect(screen.getByText(/wymagana walidacja akcji/)).toBeInTheDocument();
-    expect(screen.getByText(/podgląd zmian nie pozwala na wykonanie/)).toBeInTheDocument();
-    expect(screen.getByText("Ostatni audyt zmiany")).toBeInTheDocument();
-    expect(screen.getByText(/Zmiana zablokowana przed wywołaniem zewnętrznego systemu/)).toBeInTheDocument();
-    expect(screen.getByText(/brak adaptera zmian w zewnętrznym systemie/)).toBeInTheDocument();
+    expect(screen.getByText("czeka na sprawdzenie")).toBeInTheDocument();
+    expect(screen.getByText(/podgląd zmian nie pozwala na zapis/)).toBeInTheDocument();
+    expect(screen.getByText("Ostatni zapis bezpieczeństwa")).toBeInTheDocument();
+    expect(screen.getByText("Zapisano kontrolę bezpieczeństwa bez zmian w zewnętrznych systemach.")).toBeInTheDocument();
+    expect(screen.getByText(/brak bezpiecznej ścieżki zapisu w zewnętrznym systemie/)).toBeInTheDocument();
+    expect(screen.queryByText("Ostatni audyt zmiany")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Adapter:/)).not.toBeInTheDocument();
     expect(screen.getByText("Wynik przeglądu człowieka")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Zapisz przegląd" }));
     await waitFor(() =>
-      expect(screen.getByText("Zapisano zdarzenie audytu: human_review_approved_for_prepare")).toBeInTheDocument()
+      expect(screen.getByText("Zapisano sprawdzenie: Przegląd operatora zapisany")).toBeInTheDocument()
     );
     expect(screen.getByText("Podgląd zmian")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generuj podgląd" }));
-    await waitFor(() => expect(screen.getByText("Zdarzenie audytu: action_preview_generated")).toBeInTheDocument());
-    expect(screen.getByText(/Tryb bez zmian: tak; zmiany:\s*zablokowane/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Ślad bezpieczeństwa: Podgląd zmian wygenerowany")).toBeInTheDocument());
+    expect(screen.getByText(/Bez zapisu zmian: tak; zapis zmian:\s*zablokowane/)).toBeInTheDocument();
     expect(screen.getByText("Jawne potwierdzenie podglądu")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));
-    await waitFor(() => expect(screen.getByText("Zdarzenie audytu: action_apply_confirmed")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Ślad bezpieczeństwa: Podgląd potwierdzony")).toBeInTheDocument());
     expect(screen.getByText("Potwierdzenie:")).toBeInTheDocument();
-    expect(screen.getByText("confirmed")).toBeInTheDocument();
-    expect(screen.getByText(/Wykonanie nadal: zablokowane/)).toBeInTheDocument();
+    expect(screen.getByText("potwierdzony")).toBeInTheDocument();
+    expect(screen.getByText(/Zapis zmian nadal: zablokowany/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdzenie efektu")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź efekt" }));
     await waitFor(() =>
-      expect(screen.getByText("Zdarzenie audytu: action_impact_check_completed")).toBeInTheDocument()
+      expect(screen.getByText("Ślad bezpieczeństwa: Sprawdzenie efektu zapisane")).toBeInTheDocument()
     );
     expect(screen.getByText("Sprawdzenie efektu:")).toBeInTheDocument();
-    expect(screen.getByText("checked")).toBeInTheDocument();
+    expect(screen.getByText("zapisane")).toBeInTheDocument();
     expect(screen.getByText("Metryki z dowodami: 2")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
-    expect(screen.getByText("valid")).toBeInTheDocument();
+    expect(screen.getByText("poprawna")).toBeInTheDocument();
     expect(screen.getByText("Błędy: brak")).toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" })[0]
+      screen.getAllByRole("link", { name: "Sprawdź w WILQ" })[0]
     ).toHaveAttribute("href", "/actions/act_review_merchant_feed_issues");
     expect(
       screen.getAllByRole("link", { name: "ev_refresh_merchant_feed" })[0]
     ).toHaveAttribute("href", "/evidence/ev_refresh_merchant_feed");
   });
 
-  it("ga4 and gsc routes render workflow-specific brief focus", async () => {
+  it("ga4 route renders workflow-specific brief focus", async () => {
     renderApp("/ga4");
-    await waitFor(() => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument());
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument(),
+      { timeout: 5_000 }
+    );
     expect(screen.getByText("Status GA4 / pomiar i jakość ruchu")).toBeInTheDocument();
     expect(screen.getByText("dane świeże")).toBeInTheDocument();
-    expect(screen.getAllByText(/Ostatni GA4 vendor_read mieści się/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
+    expect(screen.queryByText("status wymaga opisu")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Ostatni odczyt danych GA4 mieści się/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Pełny przegląd GA4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd GA4" })).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
+    expect(screen.queryByText("Problemy pomiaru GA4")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody i ograniczenia GA4")).not.toBeInTheDocument();
+    expect(screen.queryByText("Podgląd przeglądu GA4")).not.toBeInTheDocument();
+    expect(screen.queryByText("Brama bezpieczeństwa GA4")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
@@ -6625,16 +6686,17 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/Źródło: google \/ cpc/).length).toBeGreaterThan(0);
     expect(screen.getByText(/WordPress: brak potwierdzenia/)).toBeInTheDocument();
     expect(screen.getAllByText(/Gotowość pomiaru/).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd GA4" }));
+    expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia GA4")).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
     expect(screen.queryByText(/Tracking readiness/)).not.toBeInTheDocument();
-    expect(screen.queryByText("GA4: landing/source/campaign behavior")).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: landing page, źródło i kampania behavior")).not.toBeInTheDocument();
     expect(screen.queryByText("GA4: tracking/conversion readiness")).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Podgląd review GA4")).toBeInTheDocument();
-    expect(screen.getByText(/Review-only kolejka akcji/)).toBeInTheDocument();
-    expect(screen.getByText(/apply zablokowany/)).toBeInTheDocument();
+    expect(screen.getByText("Podgląd przeglądu GA4")).toBeInTheDocument();
+    expect(screen.queryByText(/Surowa kolejka akcji/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
     expect(screen.getAllByText("Aktywni użytkownicy").length).toBeGreaterThan(0);
@@ -6654,7 +6716,7 @@ describe("WILQ dashboard", () => {
     expect(ga4OperatorCopy).not.toMatch(/ev_/);
     expect(ga4OperatorCopy).not.toMatch(/act_/);
     expect(
-      within(ga4OperatorSection as HTMLElement).getByRole("link", { name: "Waliduj review GA4" })
+      within(ga4OperatorSection as HTMLElement).getByRole("link", { name: "Sprawdź GA4 w WILQ" })
     ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
     const ga4ProofSection = screen
       .getByText("Dowody i ograniczenia GA4")
@@ -6666,32 +6728,56 @@ describe("WILQ dashboard", () => {
     expect(ga4Proof.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(ga4Proof.queryByText(/ev_refresh_ga4_safety/)).not.toBeInTheDocument();
     expect(
-      ga4Proof.getByRole("link", { name: "act_review_ga4_tracking_quality" })
-    ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
-
-    cleanup();
-    testQueryClient.clear();
-    mockFetch();
-
-    renderApp("/seo-gsc");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "SEO / GSC" })).toBeInTheDocument()
-    );
-    expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
-    expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
-    expect(screen.getByText("Bezpieczny tryb treści")).toBeInTheDocument();
+      ga4Proof.queryByRole("link", { name: "act_review_ga4_tracking_quality" })
+    ).not.toBeInTheDocument();
+    expect(ga4Proof.getByText(/1 akcja/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
-      screen.getByText(/WILQ łączy zapytania i URL-e z GSC z inventory WordPress/)
+      screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/SEO: odśwież lub scal "bdo"/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Zapis zmian zablokowany/i)).toBeInTheDocument();
+  });
+
+  it("content route renders condensed selected decision with expandable detail", async () => {
+    renderApp("/content-planner");
+    await waitFor(
+      () => expect(screen.getByText("Status SEO / Content")).toBeInTheDocument(),
+      { timeout: 5_000 }
+    );
+    expect(screen.getByText("Briefy do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż briefy Content" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(screen.queryByText("Co marketer ma zrobić teraz z treściami")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bezpieczny tryb treści")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody i ograniczenia Content")).not.toBeInTheDocument();
+    expect(screen.queryByText("Brama bezpieczeństwa treści")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getAllByText(/Ahrefs: zweryfikuj luki SEO/).length).toBeGreaterThan(0)
+    );
     const contentDecisionCard = screen
-      .getAllByText(/SEO: odśwież lub scal "bdo"/)[0]
-      .closest("article");
+      .getAllByText(/Ahrefs: zweryfikuj luki SEO/)[0]
+      .closest("section");
     expect(contentDecisionCard).not.toBeNull();
     expect(within(contentDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(
       within(contentDecisionCard as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
+    expect(within(contentDecisionCard as HTMLElement).getByText("rekordy Ahrefs")).toBeInTheDocument();
+    expect(within(contentDecisionCard as HTMLElement).getByText("pasujące")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sprawdź w WILQ" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" }));
+    expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczny tryb treści")).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
+    expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress/)
+    ).toBeInTheDocument();
     const contentSafeMode = screen
       .getByText("Bezpieczny tryb treści")
       .closest(".rounded-md");
@@ -6700,22 +6786,12 @@ describe("WILQ dashboard", () => {
     expect(
       within(contentSafeMode as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/120 wyświetleń/)).toBeInTheDocument();
-    expect(screen.getByText(/12 kliknięć/)).toBeInTheDocument();
-    expect(screen.getByText(/WordPress: potwierdzony/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Waliduj akcję" })).toHaveAttribute(
-      "href",
-      "/actions/act_prepare_content_refresh_queue"
-    );
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("GSC: query/page matrix")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress match: found")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa treści")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "act_prepare_content_refresh_queue" })[0]).toHaveAttribute(
-      "href",
-      "/actions/act_prepare_content_refresh_queue"
-    );
+    expect(screen.queryByRole("link", { name: "act_prepare_content_refresh_queue" })).not.toBeInTheDocument();
     expect(screen.queryByText(/clicks: 12/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Kliknięcia").length).toBeGreaterThan(0);
     const contentProofSection = screen
@@ -6726,44 +6802,65 @@ describe("WILQ dashboard", () => {
     expect(contentProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
     expect(contentProof.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż briefy Content" }));
+    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
+    expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
+    expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie briefu" })[0]);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
+      ).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
+    expect(
+      screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
+    await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
+    expect(screen.getByText("poprawna")).toBeInTheDocument();
   });
 
-  it("localo social and content routes render workflow-specific blockers or focus", async () => {
+  it("localo route renders workflow-specific blockers and clean metric labels", async () => {
     renderApp("/localo");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument(),
+      { timeout: 10_000 }
     );
     expect(screen.getByText("Status Localo / widoczność lokalna")).toBeInTheDocument();
     expect(screen.getByText("Aktualny odczyt lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
     expect(
-      screen.getByText("Localo access działa; brakuje ranking/GBP facts")
+      screen.getByText("Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google")
     ).toBeInTheDocument();
     expect(screen.queryByText("dostęp MCP")).not.toBeInTheDocument();
-    expect(screen.getAllByText("fakty Localo").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
-    expect(screen.getByText("blokady claimów")).toBeInTheDocument();
+    expect(screen.getAllByText("dane Localo").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("brakujące dane").length).toBeGreaterThan(0);
+    expect(screen.getByText("blokady obietnic")).toBeInTheDocument();
+    expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/local_rankings/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/active_places/)).not.toBeInTheDocument();
     expect(
-      screen.getByText("Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts")
+      screen.getByText("Nie wyciągaj wniosków o lokalnej widoczności bez danych Localo")
     ).toBeInTheDocument();
-    expect(screen.getAllByText("access działa").length).toBeGreaterThan(0);
-    expect(screen.getByText("Brama bezpieczeństwa Localo/GBP")).toBeInTheDocument();
+    expect(screen.getAllByText("dostęp działa").length).toBeGreaterThan(0);
+    expect(screen.getByText("Brama bezpieczeństwa Localo i profilu firmy w Google")).toBeInTheDocument();
     const localoDecisionCard = screen
-      .getByText("Localo access działa; brakuje ranking/GBP facts")
+      .getByText("Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google")
       .closest("article");
     expect(localoDecisionCard).not.toBeNull();
     expect(within(localoDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     const localoSafetyGate = screen
-      .getByText("Brama bezpieczeństwa Localo/GBP")
+      .getByText("Brama bezpieczeństwa Localo i profilu firmy w Google")
       .closest("section");
     expect(localoSafetyGate).not.toBeNull();
     expect(within(localoSafetyGate as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(screen.queryByText("MCP initialize")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż techniczny proof Localo" }));
-    expect(screen.getByText("MCP initialize")).toBeInTheDocument();
+    expect(screen.queryByText("Test dostępu")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne Localo" }));
+    expect(screen.getByText("Test dostępu")).toBeInTheDocument();
     expect(screen.queryByText("Local Visibility Focus")).not.toBeInTheDocument();
-    expect(screen.queryByText("Taktyki z WILQ API")).not.toBeInTheDocument();
+    expect(screen.queryByText("Taktyki z WILQ")).not.toBeInTheDocument();
     expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();
     expect(screen.queryByText("24 Taktyki")).not.toBeInTheDocument();
     expect(screen.queryByText("Dokończ Localo access")).not.toBeInTheDocument();
@@ -6772,51 +6869,48 @@ describe("WILQ dashboard", () => {
         String(url).endsWith("/api/marketing/tactical-queue")
       )
     ).toBe(false);
+  });
 
-    cleanup();
-    testQueryClient.clear();
-    mockFetch();
-
+  it("social route renders workflow-specific blockers", async () => {
     renderApp("/social-publisher");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Social Publisher" })).toBeInTheDocument()
+    await waitFor(
+      () =>
+        expect(screen.getByRole("heading", { name: "Publikacje social" })).toBeInTheDocument(),
+      { timeout: 10_000 }
     );
-    expect(screen.getByText("Social Publishing Focus")).toBeInTheDocument();
+    expect(screen.getByText("Publikacje social do sprawdzenia")).toBeInTheDocument();
+    expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
     expect(screen.getByText("LinkedIn: brakuje organizacji i access tokena")).toBeInTheDocument();
+  });
 
-    cleanup();
-    testQueryClient.clear();
-    mockFetch();
-
+  it("content route keeps review language clean in expanded workflows", async () => {
     renderApp("/content-planner");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Content Planner" })).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByText("Status SEO / Content")).toBeInTheDocument(),
+      { timeout: 10_000 }
     );
-    expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
     expect(screen.getAllByText("GSC↔WP").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Ahrefs↔WP").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Adresy i podgląd")).toBeInTheDocument();
+    expect(screen.queryByText(/URL do sprawdzenia:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Review URL-i:/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Input do kontroli URL-i")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kandydat: content_brief_gsc_/)).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Nowa strona: target: ekologus\.dev\.proudsite\.pl/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/status: wymaga mapowania/)).toBeInTheDocument();
-    expect(screen.getByText("Migracja: /bdo/")).toBeInTheDocument();
-    expect(screen.getByText("Mapowanie: wymaga mapowania")).toBeInTheDocument();
-    expect(screen.getByText("Input do review mapowania")).toBeInTheDocument();
-    expect(screen.getByText(/Kandydat: content_brief_gsc_/)).toBeInTheDocument();
-    expect(
-      screen.getByText("Review: zapisz review mapowania przez ActionObject")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Payload: 4 checked items")).toBeInTheDocument();
+      screen.queryByText("Review: zapisz kontrolę URL-i przez akcję do sprawdzenia")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Payload: 4 checked items")).not.toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" }));
+    expect(screen.getAllByText("Dowody i ograniczenia Content").length).toBeGreaterThan(0);
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym")
-    ).toBeInTheDocument();
+      screen.getAllByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym").length
+    ).toBeGreaterThan(0);
     expect(screen.getByText("sprawdzenie luk Ahrefs")).toBeInTheDocument();
-    expect(screen.getByText("Kandydaci Ahrefs do review")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż briefy Content" }));
     await waitFor(() =>
-      expect(screen.getByText("Podgląd briefów do review")).toBeInTheDocument()
+      expect(screen.getByText("Podgląd briefów do sprawdzenia")).toBeInTheDocument()
     );
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
     expect(screen.getByText("Google Search Console / odświeżenie")).toBeInTheDocument();
@@ -6831,33 +6925,35 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("WP: jest")).toBeInTheDocument();
     expect(screen.getByText("Overlap GSC: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Overlap WP: /audyt-srodowiskowy/")).toBeInTheDocument();
-    expect(screen.getByText("Payload draftu po review")).toBeInTheDocument();
+    expect(screen.getByText("Szkic WordPress po sprawdzeniu")).toBeInTheDocument();
     expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
-    expect(screen.getByText("Refresh: zielony ład")).toBeInTheDocument();
-    expect(screen.getByText("wersja robocza istniejącej treści / draft")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz review briefu" })[0]);
+    expect(screen.getByText("Odświeżenie: zielony ład")).toBeInTheDocument();
+    expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
+    expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie briefu" })[0]);
     await waitFor(() =>
       expect(
-        screen.getByText(/Zapisano review: human_review_approved_for_prepare/)
+        screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
       ).toBeInTheDocument()
     );
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
-    expect(screen.getByText("valid")).toBeInTheDocument();
+    expect(screen.getByText("poprawna")).toBeInTheDocument();
   });
 
-  it("ahrefs route renders authority context and typed gap records", async () => {
+  it("ahrefs route renders authority context and clean gap review language", async () => {
     renderApp("/ahrefs");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Ahrefs" })).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByRole("heading", { name: "Ahrefs" }, { timeout: 5000 })
+    ).toBeInTheDocument();
 
     expect(screen.getByText("Status Ahrefs / dowody SEO")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Ahrefs")).toBeInTheDocument();
-    expect(screen.getByText("Kontrakt luk Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Ahrefs")).toBeInTheDocument();
     expect(
       screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
@@ -6871,12 +6967,15 @@ describe("WILQ dashboard", () => {
     const ahrefsGapCard = screen.getByText("Przejrzyj rekordy luk Ahrefs").closest("article");
     expect(ahrefsGapCard).not.toBeNull();
     expect(within(ahrefsGapCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    const ahrefsGapContract = screen.getByText("Kontrakt luk Ahrefs").closest("section");
+    const ahrefsGapContract = screen.getByText("Luki SEO z Ahrefs").closest("section");
     expect(ahrefsGapContract).not.toBeNull();
     expect(within(ahrefsGapContract as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.getByText("DR")).toBeInTheDocument();
     expect(screen.getAllByText("Ahrefs Rank").length).toBeGreaterThan(0);
-    expect(screen.getByText("Gap records")).toBeInTheDocument();
+    expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
+    expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/gap read contract/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Gap records")).not.toBeInTheDocument();
     expect(screen.queryByText(/domain_rating: 90/)).not.toBeInTheDocument();
     const ahrefsProofSection = screen
       .getByText("Dowody i ograniczenia Ahrefs")
@@ -6888,7 +6987,7 @@ describe("WILQ dashboard", () => {
     expect(ahrefsProof.queryByText(/ev_refresh_ahrefs_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
-    expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
+    expect(screen.getByText(/wymagane konkretne luki Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText(/poprawa autorytetu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Pokazuję top 6 z 6 rekordów.")).toBeInTheDocument();
     expect(screen.getByText("Strona konkurencji: hidden-noise.example")).toBeInTheDocument();
@@ -6916,8 +7015,8 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/wiersze reklam Demand Gen/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/wiersze assetów kreacji/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/review-only ActionObject/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Podgląd walidacji gotowości Demand Gen")).toBeInTheDocument();
+    expect(screen.getAllByText(/akcja do sprawdzenia/i).length).toBeGreaterThan(0);
+    expect(screen.getByText("Podgląd sprawdzenia gotowości Demand Gen")).toBeInTheDocument();
     const demandGenOperatorSection = screen
       .getByText("Co marketer ma wiedzieć przed planem Demand Gen")
       .closest("section");
@@ -6926,7 +7025,7 @@ describe("WILQ dashboard", () => {
     expect(
       within(demandGenOperatorSection as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/review kanałów kampanii Ads/)).toBeInTheDocument();
+    expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getByText(/rekomendacja launchu Demand Gen/)).toBeInTheDocument();
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();

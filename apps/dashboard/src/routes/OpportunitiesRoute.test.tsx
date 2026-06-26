@@ -8,7 +8,7 @@ const opportunities = [
   {
     id: "opp_decision_review_ads_campaign_metrics",
     type: "google_ads_review_queue",
-    title: "Przejrzyj kolejki Ads do oceny bez wykonania",
+    title: "Przejrzyj kolejki Ads do oceny bez zapisu zmian",
     domain: "google_ads",
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -20,7 +20,7 @@ const opportunities = [
     },
     metrics: [],
     human_diagnosis:
-      "Google Ads ma liczniki do oceny i akcje tylko do przeglądu. Wykonanie pozostaje zablokowane.",
+      "Google Ads ma liczniki do oceny i akcje do sprawdzenia. Zapis zmian pozostaje zablokowany.",
     recommended_action:
       "Otwórz /ads-doctor i przejrzyj kolejno: podgląd budżetów, podgląd rekomendacji, przegląd wykluczeń i podgląd segmentów.",
     risk: "medium",
@@ -46,8 +46,8 @@ const actions = [
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     metrics: [],
     validation_status: "not_validated",
-    human_diagnosis: "Google Ads ma kampanie do przeglądu.",
-    recommended_reason: "Przygotuj kolejkę tylko do przeglądu bez wykonania.",
+    human_diagnosis: "Google Ads ma kampanie do sprawdzenia.",
+    recommended_reason: "Przygotuj kolejkę do sprawdzenia bez zapisu zmian.",
     payload: {
       action_type: "google_ads_campaign_review",
       connector: "google_ads",
@@ -116,11 +116,20 @@ describe("Opportunities route", () => {
 
   it("opportunities route renders", async () => {
     renderOpportunities();
-    await waitFor(() => expect(screen.queryByText("Ładowanie stanu WILQ API")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("Ładowanie stanu WILQ")).not.toBeInTheDocument());
     expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka decyzji z WILQ")).toBeInTheDocument();
     expect(screen.getByText("Aktywne")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
+    );
+    expect(screen.getByText("Decyzja z dowodami i bezpiecznym następnym krokiem.")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: 1 źródło")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 2")).toBeInTheDocument();
     expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
+    expect(screen.queryByText(/google_ads \/ google_ads_review_queue/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Brak opportunities/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kontrakty wiedzy/)).not.toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
   });
@@ -143,12 +152,12 @@ describe("Opportunities route", () => {
     renderOpportunities();
 
     await waitFor(() =>
-      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez wykonania")).toBeInTheDocument()
+      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
     );
     expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka decyzji z WILQ")).toBeInTheDocument();
     expect(screen.getByText("Powiązane akcje")).toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
-    expect(screen.getAllByText("Ładowanie stanu WILQ API").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBeGreaterThan(0);
   });
 });

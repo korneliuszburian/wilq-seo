@@ -31,13 +31,13 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ads-doctor": {
     title: "Ads Doctor",
     description:
-      "Widok Google Ads oparty o WILQ API. Pokazuje dowody, decyzje i blokady claimów; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
+      "Widok Google Ads oparty o WILQ. Pokazuje dowody, decyzje i blokady claimów; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
     focusTitle: "Decyzje Ads",
     emptyMessage:
       "Brak dowodów Google Ads w /api/marketing/brief. WILQ nie pokaże rekomendacji o spendzie ani kampaniach bez odczytu Ads API.",
     safetyTitle: "Brama bezpieczeństwa Ads",
     safetyText:
-      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, walidacji ActionObject i audytu. Brak dowodów na zapytania, CPA albo ROAS oznacza zakres blokad, nie powód do zgadywania.",
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, sprawdzenia w WILQ i audytu. Brak dowodów na zapytania, CPA albo ROAS oznacza zakres blokad, nie powód do zgadywania.",
     connectorIds: ["google_ads"],
     textNeedles: []
   },
@@ -54,41 +54,28 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
     connectorIds: ["google_analytics_4"],
     textNeedles: []
   },
-  "/seo-gsc": {
-    title: "SEO / GSC",
-    description:
-      "Widok SEO oparty o dowody GSC z WILQ MarketingBrief. Ma prowadzić do kolejki treści, nie do zgadywania tematów.",
-    focusTitle: "Search Console Content Focus",
-    emptyMessage:
-      "Brak dowodów GSC w /api/marketing/brief. Uruchom odczyt Search Console przed rekomendacją treści.",
-    safetyTitle: "Brama dowodów SEO",
-    safetyText:
-      "Rekomendacje contentowe wymagają metryk zapytań i URL-i, źródła i jasnego następnego kroku. Bez CTR/impressions/clicks WILQ pokazuje blocker.",
-    connectorIds: ["google_search_console"],
-    textNeedles: []
-  },
   "/localo": {
     title: "Localo",
     description:
-      "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo MCP. Dostęp OAuth może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych faktów o rankingach i GBP.",
-    focusTitle: "Local Visibility Focus",
+      "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo. Dostęp OAuth może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych danych o rankingach i GBP.",
+    focusTitle: "Lokalna widoczność do sprawdzenia",
     emptyMessage:
       "Brak konkretnych faktów Localo o rankingach i GBP w /api/marketing/brief. WILQ może pokazać status dostępu, ale nie dopowiada lokalnych wyników bez dowodów.",
-    safetyTitle: "Local Visibility Safety Gate",
+    safetyTitle: "Brama bezpieczeństwa lokalnej widoczności",
     safetyText:
-      "Posty GBP i lokalne działania wymagają dowodów, podglądu akcji, walidacji ActionObject i audytu. MCP initialize=200 potwierdza dostęp, ale nie zastępuje rankingów, wyniku GBP ani danych konkurencji.",
+      "Posty GBP i lokalne działania wymagają dowodów, podglądu akcji, sprawdzenia w WILQ i audytu. Sam dostęp do Localo nie zastępuje rankingów, wyniku GBP ani danych konkurencji.",
     connectorIds: ["localo"],
     textNeedles: [],
     showTacticalQueue: false
   },
   "/social-publisher": {
-    title: "Social Publisher",
+    title: "Publikacje social",
     description:
       "Widok publikacji social oparty o dowody WILQ i stan uprawnień. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
-    focusTitle: "Social Publishing Focus",
+    focusTitle: "Publikacje social do sprawdzenia",
     emptyMessage:
-      "Brak dowodów social w /api/marketing/brief. Skonfiguruj credentials LinkedIn/Facebook przed przygotowaniem kandydatów postów.",
-    safetyTitle: "Publishing Safety Gate",
+      "Brak dowodów social w /api/marketing/brief. Uzupełnij dostęp LinkedIn/Facebook przed przygotowaniem propozycji postów.",
+    safetyTitle: "Brama bezpieczeństwa publikacji",
     safetyText:
       "Posty LinkedIn/Facebook muszą bazować na claimach z dowodami i pozostać tylko do przygotowania, dopóki stan uprawnień, podgląd akcji i audyt nie są gotowe.",
     connectorIds: ["linkedin", "facebook"],
@@ -98,10 +85,10 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
     title: "Content Planner",
     description:
       "Widok planowania treści łączy dowody GSC, GA4, Ahrefs, WordPress i Merchant w jedną kolejkę działań dla polskiego marketera.",
-    focusTitle: "Content Growth Focus",
+    focusTitle: "Priorytety treści do sprawdzenia",
     emptyMessage:
       "Brak dowodów contentowych w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
-    safetyTitle: "Content Safety Gate",
+    safetyTitle: "Brama bezpieczeństwa treści",
     safetyText:
       "Briefy, rewrites i drafty wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje claimów bez pokrycia w danych.",
     connectorIds: [
@@ -117,13 +104,13 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/merchant": {
     title: "Merchant Center",
     description:
-      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo zweryfikowanego ActionObject.",
-    focusTitle: "Feed/Product Focus",
+      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo zweryfikowanej akcji.",
+    focusTitle: "Feed i produkty do sprawdzenia",
     emptyMessage:
       "Brak dowodów Merchant w /api/marketing/brief. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
-    safetyTitle: "Feed Safety Gate",
+    safetyTitle: "Brama bezpieczeństwa feedu",
     safetyText:
-      "Zmiana feedu wymaga podglądu akcji, walidacji ActionObject i audit eventu. Ten ekran jest tylko do odczytu, dopóki WILQ API nie wystawi poprawnego kandydata akcji.",
+      "Zmiana feedu wymaga podglądu akcji, sprawdzenia w WILQ i audytu. Ten ekran działa bez zapisu zmian, dopóki WILQ nie przygotuje poprawnej akcji do sprawdzenia.",
     connectorIds: ["google_merchant_center", "merchant_center"],
     textNeedles: []
   }
@@ -176,14 +163,14 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
   if (marketingBrief.error || !marketingBrief.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message={`Nie udało się odczytać /api/marketing/brief. ${config.title} nie może pokazać rekomendacji bez WILQ API.`} />
+        <BlockerNotice message={`Nie udało się odczytać briefu. ${config.title} nie może pokazać rekomendacji bez WILQ.`} />
       </main>
     );
   }
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message={`Nie udało się odczytać /api/actions. ${config.title} nie może pokazać payload preview ani walidacji ActionObject.`} />
+        <BlockerNotice message={`Nie udało się odczytać /api/actions. ${config.title} nie może pokazać podglądu zmian ani sprawdzenia w WILQ.`} />
       </main>
     );
   }
@@ -210,7 +197,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Rekomendacje" value={recommendations.length} />
-          <MetricTile label="Blockery" value={blockers.length} />
+          <MetricTile label="Blokady" value={blockers.length} />
           <MetricTile label="Fakty" value={metricFacts.length} />
         </div>
       </div>
@@ -237,7 +224,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
             connectorIds={config.connectorIds}
             limit={6}
             compact
-            title="Taktyki z WILQ API"
+            title="Taktyki z WILQ"
             isLoading={tacticalQueue.isLoading}
             isError={Boolean(tacticalQueue.error)}
           />

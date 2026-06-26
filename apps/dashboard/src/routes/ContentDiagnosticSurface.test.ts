@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   contentBriefModeLabel,
+  contentContractValueLabel,
   contentDraftGenerationStatusLabel,
-  contentTargetSiteMappingStatusLabel,
-  contentTargetSiteStatusLabel,
+  contentGateStatusLabel,
+  contentWordPressPostStatusLabel,
   formatContentMetricValue
 } from "../lib/contentLabels";
 
@@ -19,12 +20,30 @@ describe("formatContentMetricValue", () => {
 
   it("keeps content domain labels in the shared registry instead of route-local copy", () => {
     expect(contentBriefModeLabel("refresh")).toBe("odświeżenie");
-    expect(contentTargetSiteStatusLabel("current_site_match")).toBe("bieżąca strona");
-    expect(contentTargetSiteMappingStatusLabel("current_site_inventory_confirmed")).toBe(
-      "potwierdzono obecną stronę"
+    expect(contentGateStatusLabel("confirmed_current_inventory")).toBe(
+      "potwierdzone na obecnej stronie"
     );
     expect(contentDraftGenerationStatusLabel("blocked_until_content_review")).toBe(
-      "zablokowany do sprawdzenia treści"
+      "zablokowany do kontroli treści i URL-a"
     );
+  });
+
+  it("hides internal contract version suffixes from content labels", () => {
+    expect(contentContractValueLabel("content_draft_generation_v1")).toBe("generowanie szkicu");
+    expect(contentContractValueLabel("content_url_preflight_review_v1")).toBe(
+      "potwierdzenie publicznego URL-a"
+    );
+    expect(contentContractValueLabel("wordpress_draft_handoff_v1")).toBe(
+      "zapis szkicu WordPress"
+    );
+    expect(contentContractValueLabel("wordpress_draft_handoff_preview_v1")).toBe(
+      "podgląd szkicu WordPress"
+    );
+  });
+
+  it("translates WordPress post status before it reaches marketer-facing cards", () => {
+    expect(contentWordPressPostStatusLabel("draft")).toBe("szkic");
+    expect(contentWordPressPostStatusLabel("publish")).toBe("opublikowany");
+    expect(contentWordPressPostStatusLabel(null)).toBe("brak");
   });
 });

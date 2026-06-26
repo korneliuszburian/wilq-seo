@@ -36,16 +36,16 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Command Center" })).toBeVisible();
     await expect(
-      page.getByText("WILQ pokazuje tylko metryki z API/evidence.").first()
+      page.getByText("WILQ pokazuje tylko metryki i dowody z danych źródłowych.").first()
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(page.getByText("Decyzje").first()).toBeVisible();
     await expect(page.getByText("Blockery").first()).toBeVisible();
-    await expect(page.getByText("Świeżość źródeł").first()).toBeVisible();
-    await expect(page.getByText("Dowody w API").first()).toBeVisible();
-    await expect(page.getByText(/potwierdzonych śladów w WILQ API/).first()).toBeVisible();
-    await expect(page.getByText("Akcje do walidacji").first()).toBeVisible();
-    await expect(page.getByText(/bezpieczna akcja do walidacji/).first()).toBeVisible();
+    await expect(page.getByText("Źródła danych:").first()).toBeVisible();
+    await expect(page.getByText("Dowody w WILQ:").first()).toBeVisible();
+    await expect(page.getByText(/potwierdzonych śladów w WILQ/).first()).toBeVisible();
+    await expect(page.getByText("Akcje do sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText(/bezpieczna akcja do sprawdzenia/).first()).toBeVisible();
     await expect(page.getByText("Przykładowe dowody")).toHaveCount(0);
     await expect(page.getByText(/ev_refresh_/)).toHaveCount(0);
     await expect(page.getByText(/act_review_merchant_feed_issues/)).toHaveCount(0);
@@ -76,13 +76,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
-    await expect(page.getByText(/Codex:/).first()).toBeVisible();
+    await expect(page.getByText("Kopiuj polecenie").first()).toBeVisible();
     await expect(page.getByText("Context-pack: /api/codex/context-pack")).toHaveCount(0);
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Ułóż kolejkę odświeżenia i scalania treści SEO" })
     ).toBeVisible();
-    await expect(page.getByText("Codex: strategia treści")).toBeVisible();
+    await expect(page.getByText("Polecenie: strategia treści")).toBeVisible();
     await expect(page.getByText("Skill: wilq-content-strategist")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toHaveCount(0);
@@ -105,16 +105,25 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "Ads Doctor");
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
+    await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+    ).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Pokaż pełny przegląd Ads" }).click();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Najpierw sprawdź w Ads" })).toBeVisible();
-    await expect(page.getByText("tryb: review-only")).toBeVisible();
+    await expect(page.getByText("tryb: sprawdzenie przed zapisem zmian")).toBeVisible();
     await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
     await expect(page.getByText("Operator Ads")).toBeVisible();
     await expect(page.getByText("Budżety").first()).toBeVisible();
     await expect(page.getByText("Rekom.").first()).toBeVisible();
-    await expect(page.getByText("Zablokowane wnioski i wdrożenia")).toBeVisible();
+    await expect(page.getByText("Zablokowane wnioski i zapis zmian")).toBeVisible();
     await expect(page.getByText(/akcj/i).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty:").first()).toBeVisible();
@@ -130,10 +139,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
   });
 
-  test("custom segments route exposes review-only segment candidates", async ({ page }) => {
+  test("custom segments route exposes segment candidates for review", async ({ page }) => {
     await page.goto("/ads-doctor/custom-segments");
 
-    await expectApiBackedRouteHeading(page, "Custom Segments", { exact: true });
+    await expectApiBackedRouteHeading(page, "Segmenty z haseł", { exact: true });
+    await expect(
+      page.getByRole("heading", { name: "Status segmentów i dowodów z wyszukiwanych haseł" })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer może przygotować teraz" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia segmentów" })).toBeVisible();
     await expect(page.getByText(/Search terms:|Brak search-term rows/).first()).toBeVisible();
@@ -153,8 +165,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Demand Gen" })).toBeVisible();
     await expect(page.getByText("kampanie Ads")).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty").first()).toBeVisible();
-    await expect(page.getByText(/review-only akcj|akcj/i).first()).toBeVisible();
-    await expect(page.getByText("Podgląd walidacji gotowości Demand Gen")).toBeVisible();
+    await expect(page.getByText(/akcj/i).first()).toBeVisible();
+    await expect(page.getByText("Podgląd sprawdzenia gotowości Demand Gen")).toBeVisible();
     await expect(page.getByText("rekomendacja launchu Demand Gen").first()).toBeVisible();
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
@@ -166,8 +178,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "GA4", { exact: true });
     await expect(page.getByRole("heading", { name: "Status GA4 / pomiar i jakość ruchu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczny tryb analityki" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sprawdź GA4 w WILQ" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pełny przegląd GA4" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd GA4" }).click();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa GA4" })).toBeVisible();
     await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
     await expect(page.getByText("GA4: tracking/conversion readiness")).toHaveCount(0);
@@ -175,25 +190,24 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
-    await page.goto("/seo-gsc");
-
-    await expectApiBackedRouteHeading(page, "SEO / GSC");
-    await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Co marketer ma zrobić teraz z treściami" })
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Bezpieczny tryb treści" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Content" })).toBeVisible();
-    await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
-    await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "act_prepare_content_refresh_queue" }).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa treści" })).toBeVisible();
-
     await page.goto("/content-planner");
 
     await expectApiBackedRouteHeading(page, "Content Planner", { exact: true });
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Akcje do walidacji" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Zachowaj istniejącą treść i przygotuj odświeżenie albo scalenie, zamiast pisać nowy tekst od zera."
+      })
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd Content" }).click();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Content" })).toBeVisible();
+    await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
+    await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa treści" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Akcje do sprawdzenia", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
+    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
@@ -201,31 +215,27 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu feedu Merchant Center");
     await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Podgląd payloadu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Podgląd zmian" })).toBeVisible();
     await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
-    await expect(page.getByText("Podgląd zmian", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Generuj podgląd" }).click();
-    await expect(page.getByText("Audit event: action_preview_generated")).toBeVisible();
+    await expect(page.getByText("Podgląd zmian wygenerowany").first()).toBeVisible();
     await expect(page.getByText("Jawne potwierdzenie podglądu")).toBeVisible();
     await page.getByRole("button", { name: "Potwierdź podgląd" }).click();
-    await expect(page.getByText("Potwierdzenie: confirmed")).toBeVisible();
-    await expect(page.getByText("Audit event: action_apply_confirmed")).toBeVisible();
-    await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(1);
-    await expect(page.getByText("Impact sanity check", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Sprawdź impact" }).click();
-    await expect(page.getByText("Impact check: checked")).toBeVisible();
-    await expect(page.getByText("Audit event: action_impact_check_completed")).toBeVisible();
-    await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(2);
+    await expect(page.getByText("Podgląd potwierdzony").first()).toBeVisible();
+    await expect(page.getByText(/Nie zapisano zmian w zewnętrznych systemach/).first()).toBeVisible();
+    await expect(page.getByText("Sprawdź efekt", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Sprawdź efekt" }).click();
+    await expect(page.getByText("Sprawdzenie efektu zapisane").first()).toBeVisible();
   });
 
   test("actions route starts with actions instead of registry dumps", async ({ page }) => {
     await page.goto("/actions");
 
-    await expectApiBackedRouteHeading(page, "Akcje do walidacji", { exact: true });
-    await expect(page.getByRole("heading", { name: "Najważniejsze akcje demo" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pełna lista akcji - szczegóły" })).toBeVisible();
-    await expect(page.getByText("Do walidacji", { exact: true }).first()).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Akcje do sprawdzenia", { exact: true });
+    await expect(page.getByRole("heading", { name: "Najważniejsze na start" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pozostałe akcje" })).toBeVisible();
+    await expect(page.getByText("Do sprawdzenia", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toHaveCount(0);
@@ -234,35 +244,41 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("workflows route exposes decision-backed operator workflows", async ({ page }) => {
     await page.goto("/workflows");
 
-    await expectApiBackedRouteHeading(page, "Workflowy WILQ");
-    await expect(page.getByRole("heading", { name: "Workflowy decyzyjne" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Procesy WILQ");
+    await expect(page.getByRole("heading", { name: "Procesy decyzyjne" })).toBeVisible();
     await expect(page.getByText("Plan dnia WILQ")).toBeVisible();
-    await expect(page.getByText("Merchant feed review")).toBeVisible();
-    await expect(page.getByText("GSC content doctor")).toBeVisible();
-    await expect(page.getByText("Ads daily check")).toBeVisible();
-    await expect(page.getByText("Localo visibility review")).toBeVisible();
+    await expect(page.getByText("Feed Merchant")).toBeVisible();
+    await expect(page.getByText("Treści z GSC")).toBeVisible();
+    await expect(page.getByText("Ocena Ads")).toBeVisible();
+    await page.getByRole("button", { name: /Pokaż wszystkie procesy/ }).click();
+    await expect(page.getByText("Widoczność lokalna Localo")).toBeVisible();
     await expect(page.getByText("decyzje").first()).toBeVisible();
-    await expect(page.getByText("blockery").first()).toBeVisible();
-    await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
+    await expect(page.getByText("akcje").first()).toBeVisible();
+    await expect(page.getByText("średnie ryzyko").first()).toBeVisible();
     await expect(page.getByText("wilq-daily-command")).toHaveCount(0);
+    await expect(page.getByText("daily_command")).toHaveCount(0);
+    await expect(page.getByText("local_ranking_rows")).toHaveCount(0);
     await expect(page.getByText("Workflow definition runs against WILQ API")).toHaveCount(0);
     await expect(page.getByText("Fetch WILQ API context")).toHaveCount(0);
     await expect(page.getByText("Rejestr workflowów")).toHaveCount(0);
+    await expect(page.getByText("Workflowy WILQ")).toHaveCount(0);
   });
 
   test("knowledge route maps source knowledge to decisions", async ({ page }) => {
     await page.goto("/knowledge");
 
     await expectApiBackedRouteHeading(page, "Baza wiedzy WILQ");
-    await expect(page.getByRole("heading", { name: "Mapa wiedzy do decyzji" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co ta wiedza zmienia w decyzjach" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełną mapę wiedzy" }).click();
     await expect(page.getByText("Powiązania")).toBeVisible();
-    await expect(page.getByText("Karty wiedzy").first()).toBeVisible();
-    await expect(page.getByText("Playbooki").first()).toBeVisible();
-    await expect(page.getByText("Reguły").first()).toBeVisible();
-    await expect(page.getByText("Ads daily check")).toBeVisible();
-    await expect(page.getByText("Merchant feed review")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Karty źródłowe" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Playbooki maszynowe" })).toBeVisible();
+    await expect(page.getByText("Wiedza użyta w decyzji").first()).toBeVisible();
+    await expect(page.getByText("Zablokowane obietnice").first()).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż źródła wiedzy" }).click();
+    await expect(page.getByText("Ślady źródłowe").first()).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż zasady pracy" }).click();
+    await expect(page.getByText("Wymagane dowody").first()).toBeVisible();
+    await expect(page.getByText("Ocena Ads").first()).toBeVisible();
+    await expect(page.getByText("Feed Merchant").first()).toBeVisible();
     await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
   });
@@ -272,10 +288,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "Merchant Center", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pierwszy problem Merchant do sprawdzenia" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
     await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
     await expect(page.getByText("Merchant Center: feed/product health")).toHaveCount(0);
     await expect(page.getByText("Merchant Center: kolejka feed/product issues")).toHaveCount(0);
-    await expect(page.getByText("Zgłoszenia", { exact: true })).toBeVisible();
+    await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Affected", { exact: true })).toHaveCount(0);
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
@@ -283,14 +301,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Wpływ ceny produktu" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Akcje do walidacji" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(
       page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()
     ).toBeVisible();
-    await expect(page.getByText(/Apply zablokowany/)).toBeVisible();
-    await page.getByRole("button", { name: "Waliduj" }).first().click();
-    await expect(page.getByText("Wynik:")).toBeVisible();
-    await expect(page.getByText("valid").first()).toBeVisible();
+    await expect(page.getByText(/Zapis zmian:.*zablokowany/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa feedu" })).toBeVisible();
 
     const evidenceLink = page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first();
@@ -309,15 +325,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Status Localo / widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo/GBP" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
     await expect(
       page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
     ).toBeVisible();
     await expect(page.getByText(/lista lokalizacji/)).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
-    await expect(page.getByText(/opinie/)).toBeVisible();
+    await expect(page.getByText(/opinie/).first()).toBeVisible();
     await expect(page.getByText(/widoczność konkurencji/).first()).toBeVisible();
-    await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();
     await expect(page.getByText(/LOCALO_ACCESS_TOKEN/)).toHaveCount(0);
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
     await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);
@@ -338,7 +354,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/odczyt autorytetu Ahrefs|metryki Ahrefs dostępne/).first()).toBeVisible();
     await expect(page.getByText(/Przejrzyj rekordy luk Ahrefs|Brak typed gap records/).first()).toBeVisible();
     await expect(page.getByText(/DR|brak facts/).first()).toBeVisible();
-    await expect(page.getByText("Gap records").first()).toBeVisible();
+    await expect(page.getByText("Rekordy luk").first()).toBeVisible();
     await expect(page.getByText(/gotowe|zablokowane/).first()).toBeVisible();
     await expect(page.getByText(/competitor_page|strony konkurencji/).first()).toBeVisible();
     await expect(page.getByText(/Strona konkurencji:|rekordy luk treści/).first()).toBeVisible();

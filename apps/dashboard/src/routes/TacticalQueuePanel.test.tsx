@@ -8,7 +8,7 @@ const queue: TacticalQueueResponse = {
   generated_at: "2026-06-23T10:00:00Z",
   language: "pl-PL",
   strict_instruction:
-    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, nie domysł marketingowy.",
+    "WILQ pokazuje tylko metryki z danych źródłowych. Brak danych oznacza blocker, nie domysł marketingowy.",
   items: [
     {
       id: "tq_gsc_zielony_lad_a",
@@ -75,13 +75,13 @@ describe("TacticalQueuePanel", () => {
       <TacticalQueuePanel
         queue={queue}
         compact
-        title="Taktyki z WILQ API"
+        title="Taktyki z WILQ"
         isLoading={false}
         isError={false}
       />
     );
 
-    const section = screen.getByText("Taktyki z WILQ API").closest("section");
+    const section = screen.getByText("Taktyki z WILQ").closest("section");
     expect(section).not.toBeNull();
     const scope = within(section as HTMLElement);
 

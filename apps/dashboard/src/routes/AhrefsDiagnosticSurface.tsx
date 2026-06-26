@@ -21,7 +21,7 @@ export function AhrefsDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/ahrefs/diagnostics. Ahrefs route nie może udawać luki treści, luki backlinków ani przewagi konkurencji bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych Ahrefs. Ten widok nie może udawać luk treści, backlinków ani przewagi konkurencji bez WILQ." />
       </main>
     );
   }
@@ -35,15 +35,15 @@ export function AhrefsDiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Ahrefs</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Ahrefs z WILQ API. Oddziela kontekst autorytetu od
-            prawdziwych rekordów luk treści, backlinków i konkurencji, żeby marketer nie
+            Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od
+            konkretnych luk treści, backlinków i konkurencji, żeby marketer nie
             dostał generycznej rekomendacji SEO z samego DR.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Autorytet" value={data.authority_fact_count} />
           <MetricTile label="Luki SEO" value={data.gap_fact_count} />
-          <MetricTile label="Blockery" value={data.blocker_count} />
+          <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
       </div>
 
@@ -57,14 +57,14 @@ export function AhrefsDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.id}: {ahrefsConnectorStatusLabel(data.connector.status)}
+              {data.connector.label || "Ahrefs"}: {ahrefsConnectorStatusLabel(data.connector.status)}
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki Ahrefs dostępne" : "brak metryk Ahrefs"}
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {ahrefsRefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt danych: {ahrefsRefreshStatusLabel(latestRefresh.status)}
               </span>
             ) : null}
           </div>
@@ -105,7 +105,7 @@ function AhrefsOperatorSummary({ data }: { data: AhrefsDiagnosticsResponse }) {
         </div>
       </div>
       {decisions.length === 0 ? (
-        <BlockerNotice message="Brak decyzji Ahrefs z WILQ API. Widok nie wygeneruje analizy luk z pustego stanu." />
+        <BlockerNotice message="Brak decyzji Ahrefs w WILQ. Widok nie wygeneruje analizy luk z pustego stanu." />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
           {decisions.map((decision) => (
@@ -148,11 +148,11 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
           values={decision.allowed_evidence.map(ahrefsAllowedEvidenceLabel)}
         />
         <TraceLine
-          label="Brakujące kontrakty"
+          label="Brakujące dane"
           values={decision.missing_read_contracts.map(ahrefsMissingContractLabel)}
         />
         <TraceLine
-          label="Blokady claimów"
+          label="Czego nie wolno obiecać"
           values={decision.blocked_claims.map(ahrefsBlockedClaimLabel)}
         />
         <TraceLine
@@ -176,7 +176,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Kontrakt luk Ahrefs
+            Luki SEO z Ahrefs
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">{contract.summary}</p>
         </div>
@@ -185,22 +185,22 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
-        <MetricTile label="Gap records" value={contract.gap_records.length} />
-        <MetricTile label="Braki kontraktu" value={contract.missing_read_contracts.length} />
-        <MetricTile label="Blokady claimów" value={contract.blocked_claims.length} />
+        <MetricTile label="Luki do sprawdzenia" value={contract.gap_records.length} />
+        <MetricTile label="Brakujące dane" value={contract.missing_read_contracts.length} />
+        <MetricTile label="Zablokowane obietnice" value={contract.blocked_claims.length} />
       </div>
       <p className="mt-3 text-sm font-semibold leading-6 text-ink">{contract.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
-          label="Brakujące kontrakty"
+          label="Brakujące dane"
           values={contract.missing_read_contracts.map(ahrefsMissingContractLabel)}
         />
         <TraceLine
-          label="Review gates"
+          label="Co trzeba sprawdzić"
           values={contract.operator_review_gates.map(ahrefsReviewGateLabel)}
         />
         <TraceLine
-          label="Blokady claimów"
+          label="Czego nie wolno obiecać"
           values={contract.blocked_claims.map(ahrefsBlockedClaimLabel)}
         />
         <TraceLine
@@ -210,7 +210,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         />
       </div>
       {contract.gap_records.length === 0 ? (
-        <BlockerNotice message="Brak typed gap records. Ahrefs może wspierać content review tylko jako kontekst autorytetu, nie jako lista luk konkurencji." />
+        <BlockerNotice message="Brak konkretnych luk z Ahrefs. Ahrefs może wspierać ocenę treści tylko jako kontekst autorytetu, nie jako lista przewag konkurencji." />
       ) : (
         <>
           <p className="mt-3 text-xs font-medium text-slate-600">
@@ -247,7 +247,7 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
           Dowody i ograniczenia Ahrefs
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          WILQ pokazuje fakty autorytetu osobno od rekordów luk SEO. Brak rekordów luk
+          WILQ pokazuje dane autorytetu osobno od konkretnych luk SEO. Brak luk
           oznacza brak diagnozy luk konkurencji, nie zaproszenie do zgadywania.
         </p>
       </div>
@@ -271,7 +271,7 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={["ahrefs"]} />
         <TraceLine
-          label="Zablokowane claimy"
+          label="Czego nie wolno obiecać"
           values={uniqueValues(
             data.decision_queue.flatMap((decision) =>
               decision.blocked_claims.map(ahrefsBlockedClaimLabel)
@@ -327,7 +327,7 @@ function ahrefsDecisionStatusLabel(status: string) {
 function ahrefsSectionStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "zablokowane";
-  if (status === "missing") return "brak facts";
+  if (status === "missing") return "brak danych";
   return status;
 }
 
@@ -335,7 +335,7 @@ function ahrefsDecisionTypeLabel(value: string) {
   const labels: Record<string, string> = {
     block_gap_claims: "blokada luk",
     review_authority_context: "kontekst autorytetu",
-    review_gap_records: "review rekordów luk",
+    review_gap_records: "sprawdzenie luk",
     run_authority_read: "odczyt autorytetu"
   };
   return labels[value] ?? value;
@@ -343,16 +343,16 @@ function ahrefsDecisionTypeLabel(value: string) {
 
 function ahrefsReviewGateLabel(value: string) {
   const labels: Record<string, string> = {
-    ahrefs_gap_records_required: "wymagane rekordy luk Ahrefs",
-    content_planner_review_required: "review w Content Planner",
-    human_strategy_review: "review strategii przez człowieka"
+    ahrefs_gap_records_required: "wymagane konkretne luki Ahrefs",
+    content_planner_review_required: "sprawdzenie w Content Planner",
+    human_strategy_review: "sprawdzenie strategii przez człowieka"
   };
   return labels[value] ?? value;
 }
 
 function ahrefsConnectorStatusLabel(status: string) {
   if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "missing_credentials") return "brakuje dostępu";
   if (status === "disabled") return "źródło wyłączone";
   return `status: ${status}`;
 }
@@ -375,11 +375,11 @@ function ahrefsAllowedEvidenceLabel(value: string) {
 
 function ahrefsMissingContractLabel(value: string) {
   const labels: Record<string, string> = {
-    ahrefs_backlink_gap_records: "rekordy luk backlinków",
+    ahrefs_backlink_gap_records: "luki backlinków",
     ahrefs_competitor_pages: "strony konkurencji",
-    ahrefs_content_gap_records: "rekordy luk treści",
+    ahrefs_content_gap_records: "luki treści",
     ahrefs_organic_keywords_by_url: "organiczne słowa per URL",
-    ahrefs_top_pages_by_competitor: "top pages konkurencji",
+    ahrefs_top_pages_by_competitor: "najlepsze strony konkurencji",
     domain_rating: "Domain Rating"
   };
   return labels[value] ?? value;

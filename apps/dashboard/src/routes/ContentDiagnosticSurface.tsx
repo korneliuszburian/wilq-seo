@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardCheck, RefreshCw, ShieldAlert } from "lucide-react";
 
@@ -5,12 +6,13 @@ import {
   ActionObject,
   ActionReviewRequest,
   ContentDiagnosticsResponse,
+  ConnectorStatus,
   getActions,
   getContentDiagnostics,
   reviewAction
 } from "../lib/api";
+import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import {
-  candidateInventoryStatusLabel,
   contentAhrefsGapTypeLabel,
   contentAhrefsReasonLabel,
   contentAhrefsRelevanceLabel,
@@ -22,19 +24,16 @@ import {
   contentDraftGenerationStatusLabel,
   contentDraftOperationLabel,
   contentDraftOutputKindLabel,
+  contentContractValueLabel,
   contentGateStatusLabel,
   contentMetricFactLabel,
-  contentNextGateLabel,
   contentPostPublicationMeasurementStatusLabel,
   contentPublicationReadinessLabel,
   contentRefreshStatusLabel,
   contentSectionLabel,
-  contentStagingHandoffStatusLabel,
-  contentTargetSiteMappingStatusLabel,
-  contentTargetSiteMigrationStatusLabel,
-  contentTargetSiteStatusLabel,
+  contentWordPressDraftHandoffStatusLabel,
+  contentWordPressPostStatusLabel,
   formatContentMetricValue,
-  mappingReviewStatusLabel,
   wordpressMatchConfidenceLabel,
   wordpressMatchLabel
 } from "../lib/contentLabels";
@@ -43,7 +42,8 @@ import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import {
   ActionObjectFocus,
-  ActionObjectIdFocus
+  ActionObjectIdFocus,
+  actionAuditEventLabel
 } from "./ActionObjectPanels";
 import { shortPath } from "./TacticalQueuePanel";
 
@@ -65,7 +65,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/content/diagnostics. Content route nie może udawać SEO ani content insightów bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych treści. Widok Content nie może udawać wniosków SEO bez danych źródłowych." />
       </main>
     );
   }
@@ -73,9 +73,10 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
   const data = diagnostics.data;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
   const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
-  const latestStatuses = data.latest_refreshes.map(
-    (refresh) => `${refresh.connector_id}: ${contentRefreshStatusLabel(refresh.status)}`
-  );
+  const latestStatuses = data.latest_refreshes.map((refresh) => {
+    const [label] = connectorLabelsFromStatuses([refresh.connector_id], data.connectors);
+    return `${label}: ${contentRefreshStatusLabel(refresh.status)}`;
+  });
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -83,9 +84,9 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok SEO i treści z WILQ API. Łączy zapytania i URL-e z GSC,
-            inventory WordPress i akcje do walidacji, żeby marketer wiedział co odświeżyć,
-            połączyć, utworzyć albo zablokować bez duplikowania treści.
+            Dedykowany widok SEO i treści z danych WILQ. Łączy zapytania i URL-e z GSC,
+            spis treści WordPress i akcje do sprawdzenia, żeby marketer wiedział co odświeżyć,
+            scalić, utworzyć albo zablokować bez duplikowania treści.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -112,7 +113,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
                 key={connector.id}
                 className="rounded-md border border-line px-2 py-1 text-slate-600"
               >
-                {connector.id}: {contentConnectorStatusLabel(connector.status)}
+                {connector.label}: {contentConnectorStatusLabel(connector.status)}
               </span>
             ))}
           </div>
@@ -122,29 +123,160 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
       <ContentSelectedDecisionPanel data={data} actions={routeActions} />
 
-      <ContentOperatorSummary data={data} />
+      <ContentExpandableBriefPanel actions={routeActions} />
 
-      <ContentBriefPreviewPanel actions={routeActions} />
+      <ContentExpandableReviewPanel data={data} />
 
-      <ContentDiagnosticProof data={data} />
+      <ContentExpandableActionsPanel
+        actions={routeActions}
+        actionIds={data.action_ids}
+        isLoading={actions.isLoading}
+        isError={Boolean(actions.error)}
+      />
+    </main>
+  );
+}
 
-      <div className="mt-6">
-        {actions.isLoading ? (
-          <ActionObjectIdFocus
-            actionIds={data.action_ids}
-            note="Ładuję szczegóły akcji; decyzje contentowe powyżej są już oparte o WILQ API."
-          />
-        ) : actions.error ? (
-          <ActionObjectIdFocus
-            actionIds={data.action_ids}
-            note="Nie udało się odczytać pełnych akcji. Linki do walidacji zostają widoczne, ale podgląd payloadu wymaga /api/actions."
-          />
-        ) : (
-          <ActionObjectFocus actions={routeActions} />
-        )}
+function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
+  const [showBriefs, setShowBriefs] = useState(false);
+  const briefCount = contentBriefPreviewItemsFromActions(actions).length;
+  const draftCount = wordpressDraftPayloadPreviewItemsFromActions(actions).length;
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Briefy do sprawdzenia
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Pierwszy ekran pokazuje jeden wybrany kierunek treści. Rozwiń briefy,
+            gdy chcesz zobaczyć H1, H2, FAQ, CTA, blokady publikacji i szkice
+            WordPress do sprawdzenia.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+          <MetricTile label="Briefy" value={briefCount} />
+          <MetricTile label="Szkice" value={draftCount} />
+        </div>
       </div>
 
-      <section className="mt-6 rounded-md border border-line bg-white p-4">
+      <button
+        type="button"
+        onClick={() => setShowBriefs((current) => !current)}
+        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+      >
+        {showBriefs ? "Ukryj briefy Content" : "Pokaż briefy Content"}
+      </button>
+
+      {showBriefs ? <div className="mt-4"><ContentBriefPreviewPanel actions={actions} /></div> : null}
+    </section>
+  );
+}
+
+function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsResponse }) {
+  const [showReview, setShowReview] = useState(false);
+  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Pełny przegląd Content
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Rozwiń pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, status
+            WordPress/GSC/Ahrefs, dowody techniczne i bramę bezpieczeństwa treści.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
+          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowReview((current) => !current)}
+        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+      >
+        {showReview ? "Ukryj pełny przegląd Content" : "Pokaż pełny przegląd Content"}
+      </button>
+
+      {showReview ? (
+        <div className="mt-4 grid gap-6">
+          <ContentOperatorSummary data={data} />
+          <ContentDiagnosticProof data={data} />
+          <ContentSafetyGatePanel data={data} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ContentExpandableActionsPanel({
+  actions,
+  actionIds,
+  isLoading,
+  isError
+}: {
+  actions: ActionObject[];
+  actionIds: string[];
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  const [showActions, setShowActions] = useState(false);
+
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Akcje do sprawdzenia
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ ma {formatContentActionCount(actionIds.length)} dla Content.
+            Otwórz je dopiero wtedy, gdy chcesz zapisać decyzję człowieka,
+            wygenerować podgląd zmian albo sprawdzić warunki bezpiecznego zapisu.
+          </p>
+        </div>
+        <MetricTile label="Akcje" value={formatContentActionCount(actionIds.length)} />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowActions((current) => !current)}
+        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+      >
+        {showActions ? "Ukryj akcje do sprawdzenia" : "Pokaż akcje do sprawdzenia"}
+      </button>
+
+      {showActions ? (
+        <div className="mt-4">
+          {isLoading ? (
+            <ActionObjectIdFocus
+              actionIds={actionIds}
+              note="Ładuję szczegóły akcji; decyzje contentowe powyżej są już oparte o dane WILQ."
+            />
+          ) : isError ? (
+            <ActionObjectIdFocus
+              actionIds={actionIds}
+              note="Nie udało się odczytać pełnych akcji. Linki do sprawdzenia zostają widoczne, ale podgląd zmian wymaga danych akcji."
+            />
+          ) : (
+            <ActionObjectFocus actions={actions} />
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ContentSafetyGatePanel({ data }: { data: ContentDiagnosticsResponse }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
         <div className="mb-3 flex items-start gap-3">
           <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
             <ShieldAlert aria-hidden="true" size={18} />
@@ -154,8 +286,8 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
               Brama bezpieczeństwa treści
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              WILQ może przygotować brief, kolejkę odświeżenia i podgląd payloadu,
-              ale nie publikuje ani nie zmienia WordPress bez walidacji akcji,
+              WILQ może przygotować brief, kolejkę odświeżenia i podgląd zmian,
+              ale nie publikuje ani nie zmienia WordPress bez sprawdzenia w WILQ,
               jawnej zgody operatora i audytu.
             </p>
           </div>
@@ -165,7 +297,6 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
           values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </section>
-    </main>
   );
 }
 
@@ -175,30 +306,10 @@ type ContentBriefPreviewItem = {
   source_type: string;
   mode: string;
   topic: string;
-  target_url?: string | null;
-  source_url?: string | null;
-  target_site_url?: string | null;
-  target_site_host?: string | null;
-  source_site_host?: string | null;
-  target_site_adaptation_status?: string | null;
-  target_site_migration_candidate_url?: string | null;
-  target_site_migration_status?: string | null;
-  target_site_migration_candidate_inventory_status?: string | null;
-  target_site_migration_candidate_inventory_summary?: string | null;
-  target_site_alternative_candidate_urls?: string[];
-  target_site_alternative_candidate_summary?: string | null;
-  target_site_mapping_review_status?: string | null;
-  target_site_mapping_review_summary?: string | null;
-  target_site_mapping_review_candidate_urls?: string[];
-  target_site_review_requirements?: string[];
-  target_site_inventory_content_type?: string | null;
-  target_site_inventory_status?: string | null;
-  target_site_inventory_source?: string | null;
-  target_site_inventory_modified_gmt?: string | null;
-  target_site_inventory_title_or_h1?: string | null;
-  target_site_inventory_canonical_url?: string | null;
-  target_site_inventory_missing_fields?: string[];
-  target_site_inventory_summary?: string | null;
+  source_public_url?: string | null;
+  preview_url?: string | null;
+  intended_final_url?: string | null;
+  final_canonical_url?: string | null;
   inventory_gate_status?: string | null;
   canonical_gate_status?: string | null;
   duplicate_gate_status?: string | null;
@@ -245,20 +356,21 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Podgląd briefów do review
+            Podgląd briefów do sprawdzenia
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
             Co WILQ może przygotować bez publikacji
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            To są kandydaci z akcji WILQ. Każdy wymaga walidacji GSC/WordPress,
-            sprawdzenia duplikatów i decyzji operatora przed jakąkolwiek zmianą treści.
+            To są propozycje do sprawdzenia w WILQ. Każda wymaga kontroli
+            GSC/WordPress, duplikatów i decyzji operatora przed jakąkolwiek
+            zmianą treści.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
-          <MetricTile label="Preview" value={previews.length} />
+          <MetricTile label="Podglądy" value={previews.length} />
           <MetricTile
-            label="Apply"
+            label="Zapis zmian"
             value={previews.some((preview) => preview.apply_allowed) ? "otwarte" : "zablokowane"}
           />
         </div>
@@ -275,14 +387,14 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
         <div className="mt-5 rounded-md border border-line bg-white p-3">
           <div className="mb-3">
             <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-              Payload draftu po review
+              Szkic WordPress po sprawdzeniu
             </div>
             <h3 className="mt-1 text-sm font-semibold text-ink">
               Co WILQ może przygotować jako szkic WordPress
             </h3>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Te payloady pojawiają się dopiero po zapisanym review kandydata.
-              Status pozostaje `draft`, a mutacje i publikacja są zablokowane.
+              Te szkice pojawiają się dopiero po zapisanym sprawdzeniu propozycji.
+              Status pozostaje jako szkic, a zmiany i publikacja są zablokowane.
             </p>
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
@@ -348,22 +460,8 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <TraceLine label="FAQ" values={(preview.faq_direction ?? []).slice(0, 4)} />
         <TraceLine label="Schema" values={preview.schema_direction ? [preview.schema_direction] : []} />
         <TraceLine
-          label="Strona docelowa"
-          values={contentTargetSiteValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Review targetu"
-          values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Inventory targetu"
-          values={contentTargetInventoryValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Braki targetu"
-          values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
+          label="Adresy"
+          values={contentAddressValues(preview)}
           empty="brak"
         />
         <TraceLine
@@ -376,12 +474,14 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           empty="brak"
         />
         <TraceLine
-          label="Blockery publikacji"
-          values={(preview.publication_blockers ?? []).slice(0, 6)}
+          label="Blokady publikacji"
+          values={(preview.publication_blockers ?? [])
+            .slice(0, 6)
+            .map(contentContractValueLabel)}
           empty="brak"
         />
         <TraceLine
-          label="Review prawny"
+          label="Kontrola prawna"
           values={(preview.legal_review_notes ?? []).slice(0, 4)}
           empty="brak"
         />
@@ -393,7 +493,10 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
         <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
         <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
-        <TraceLine label="Walidacje" values={preview.required_validation.slice(0, 4)} />
+        <TraceLine
+          label="Warunki sprawdzenia"
+          values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
+        />
         <TraceLine
           label="Zakazane claimy"
           values={contentBlockedClaimLabels(
@@ -419,21 +522,21 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           ) : (
             <ClipboardCheck aria-hidden="true" size={15} />
           )}
-          {reviewMutation.isPending ? "Zapisuję review" : "Zapisz review briefu"}
+          {reviewMutation.isPending ? "Zapisuję sprawdzenie" : "Zapisz sprawdzenie briefu"}
         </button>
         <span className="text-xs text-slate-600">
-          Zapisuje wybór kandydata. Nie publikuje i nie wykonuje apply.
+          Zapisuje wybór briefu do sprawdzenia. Nie publikuje i nie zapisuje zmian.
         </span>
       </div>
       {reviewMutation.data ? (
         <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
-          Zapisano review: {reviewMutation.data.audit_event.event_type}. Apply nadal:{" "}
+          Zapisano sprawdzenie: {actionAuditEventLabel(reviewMutation.data.audit_event.event_type)}. Zapis zmian nadal:{" "}
           {reviewMutation.data.review_gate.apply_allowed ? "otwarte" : "zablokowane"}.
         </p>
       ) : null}
       {reviewMutation.error instanceof Error ? (
         <p className="mt-2 text-xs leading-5 text-risk">
-          Nie udało się zapisać review: {reviewMutation.error.message}
+          Nie udało się zapisać sprawdzenia: {reviewMutation.error.message}
         </p>
       ) : null}
     </article>
@@ -448,31 +551,10 @@ type WordPressDraftPayloadPreviewItem = {
   post_status: string;
   topic: string;
   intent?: string | null;
-  target_url?: string | null;
-  source_url?: string | null;
-  target_site_url?: string | null;
-  target_site_host?: string | null;
-  source_site_host?: string | null;
-  target_site_adaptation_status?: string | null;
-  target_site_migration_candidate_url?: string | null;
-  target_site_migration_status?: string | null;
-  target_site_migration_summary?: string | null;
-  target_site_migration_candidate_inventory_status?: string | null;
-  target_site_migration_candidate_inventory_summary?: string | null;
-  target_site_alternative_candidate_urls?: string[];
-  target_site_alternative_candidate_summary?: string | null;
-  target_site_mapping_review_status?: string | null;
-  target_site_mapping_review_summary?: string | null;
-  target_site_mapping_review_candidate_urls?: string[];
-  target_site_review_requirements?: string[];
-  target_site_inventory_content_type?: string | null;
-  target_site_inventory_status?: string | null;
-  target_site_inventory_source?: string | null;
-  target_site_inventory_modified_gmt?: string | null;
-  target_site_inventory_title_or_h1?: string | null;
-  target_site_inventory_canonical_url?: string | null;
-  target_site_inventory_missing_fields?: string[];
-  target_site_inventory_summary?: string | null;
+  source_public_url?: string | null;
+  preview_url?: string | null;
+  intended_final_url?: string | null;
+  final_canonical_url?: string | null;
   inventory_gate_status?: string | null;
   canonical_gate_status?: string | null;
   duplicate_gate_status?: string | null;
@@ -502,12 +584,12 @@ type WordPressDraftPayloadPreviewItem = {
   legal_factual_review_recorded_outcome?: string | null;
   human_review_recorded_outcome?: string | null;
   draft_readiness_review_notes?: string | null;
-  staging_handoff_status?: string | null;
-  staging_handoff_blockers?: string[];
-  staging_handoff_contract?: {
+  wordpress_draft_handoff_status?: string | null;
+  wordpress_draft_handoff_blockers?: string[];
+  wordpress_draft_handoff_contract?: {
     contract_version?: string;
     scope?: string;
-    target_site_url?: string | null;
+    final_canonical_url?: string | null;
     status?: string;
     blocked_until?: string[];
     requires_passed_gates?: string[];
@@ -517,7 +599,7 @@ type WordPressDraftPayloadPreviewItem = {
   post_publication_measurement_plan?: {
     contract_version?: string;
     scope?: string;
-    target_site_url?: string | null;
+    final_canonical_url?: string | null;
     status?: string;
     baseline_window?: string;
     followup_windows?: string[];
@@ -550,78 +632,68 @@ function WordPressDraftPayloadPreviewCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h4 className="text-sm font-semibold text-ink">
-            {preview.draft_payload.post_title ?? `Draft: ${preview.topic}`}
+            {preview.draft_payload.post_title ?? `Szkic: ${preview.topic}`}
           </h4>
           <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-            {contentDraftOperationLabel(preview.operation_type)} / {preview.post_status}
+            {contentDraftOperationLabel(preview.operation_type)} /{" "}
+            {contentWordPressPostStatusLabel(preview.post_status)}
           </p>
         </div>
         <StatusBadge value={preview.mutation_allowed ? "ready" : "blocked"} />
       </div>
       {preview.draft_generation_status ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs font-medium text-ink">
-          Status draftu: {contentDraftGenerationStatusLabel(preview.draft_generation_status)}
+          Status szkicu: {contentDraftGenerationStatusLabel(preview.draft_generation_status)}
         </p>
       ) : null}
       <p className="mt-2 text-xs leading-5 text-slate-600">
         {preview.draft_payload.post_excerpt_direction ??
-          "Szkic payloadu do review. Nie publikuje i nie wykonuje apply."}
+          "Szkic zmian do sprawdzenia. Nie publikuje i nie zapisuje zmian."}
       </p>
       {preview.intent ? (
-        <p className="mt-2 text-xs text-slate-600">Intencja draftu: {preview.intent}</p>
+        <p className="mt-2 text-xs text-slate-600">Intencja szkicu: {preview.intent}</p>
       ) : null}
-      {preview.target_url ? (
-        <p className="mt-2 text-xs text-slate-600">URL: {shortPath(preview.target_url)}</p>
+      {preview.final_canonical_url ?? preview.intended_final_url ?? preview.source_public_url ? (
+        <p className="mt-2 text-xs text-slate-600">
+          URL:{" "}
+          {shortPath(preview.final_canonical_url ?? preview.intended_final_url ?? preview.source_public_url ?? "")}
+        </p>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine
-          label="Strona docelowa"
-          values={contentTargetSiteValues(preview)}
+          label="Adresy"
+          values={contentAddressValues(preview)}
+          empty="brak"
+        />
+        <TraceLine label="Kontrole treści" values={contentDraftGateValues(preview)} empty="brak" />
+        <TraceLine
+          label="Co blokuje szkic"
+          values={(preview.draft_blockers ?? []).slice(0, 6).map(contentContractValueLabel)}
           empty="brak"
         />
         <TraceLine
-          label="Review targetu"
-          values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Inventory targetu"
-          values={contentTargetInventoryValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Braki targetu"
-          values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
-          empty="brak"
-        />
-        <TraceLine label="Gate treści" values={contentDraftGateValues(preview)} empty="brak" />
-        <TraceLine
-          label="Blockery draftu"
-          values={(preview.draft_blockers ?? []).slice(0, 6)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Kontrakt draftu"
+          label="Warunki szkicu"
           values={contentDraftContractValues(preview.draft_generation_contract)}
           empty="brak"
         />
         <TraceLine
-          label="Review readiness"
+          label="Gotowość do sprawdzenia"
           values={contentDraftReadinessReviewValues(preview)}
           empty="brak zapisu"
         />
         <TraceLine
-          label="Kontrakt review"
+          label="Kontrola szkicu"
           values={contentDraftReadinessContractValues(preview.draft_readiness_review_contract)}
           empty="brak"
         />
         <TraceLine
-          label="Staging handoff"
-          values={contentStagingHandoffValues(preview)}
+          label="Szkic WordPress"
+          values={contentWordPressDraftHandoffValues(preview)}
           empty="brak"
         />
         <TraceLine
-          label="Kontrakt stagingu"
-          values={contentStagingHandoffContractValues(preview.staging_handoff_contract)}
+          label="Warunki szkicu WordPress"
+          values={contentWordPressDraftHandoffContractValues(preview.wordpress_draft_handoff_contract)}
           empty="brak"
         />
         <TraceLine
@@ -637,7 +709,10 @@ function WordPressDraftPayloadPreviewCard({
             .slice(0, 4)
             .map((block) => block.section)}
         />
-        <TraceLine label="Walidacje" values={preview.required_validation.slice(0, 4)} />
+        <TraceLine
+          label="Warunki sprawdzenia"
+          values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
+        />
         <TraceLine
           label="Blokady claimów"
           values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
@@ -657,7 +732,7 @@ function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionRevi
   return {
     outcome: "approved_for_prepare",
     reviewed_by: "operator_local_dashboard",
-    notes: `Wybrano kandydata briefu ${preview.candidate_id} (${preview.topic}) do dalszego review. Ten zapis nie publikuje treści i nie wykonuje apply.`,
+    notes: `Wybrano propozycję briefu ${preview.candidate_id} (${preview.topic}) do dalszego przeglądu. Ten zapis nie publikuje treści i nie zapisuje zmian.`,
     checked_items: uniqueValues([
       `candidate:${preview.candidate_id}`,
       `source_type:${preview.source_type}`,
@@ -681,46 +756,42 @@ function ContentSelectedDecisionPanel({
 }) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
-  const primaryDecision =
-    summary.top_decision_ids
-      .map((decisionId) => decisionsById.get(decisionId))
-      .find((decision): decision is ContentDecisionItem => Boolean(decision)) ??
-    data.decision_queue[0];
-  const migrationItem = primaryDecision
-    ? summary.target_site_migration_map.find((item) => item.decision_id === primaryDecision.id)
-    : undefined;
-  const mappingReviewInput = primaryDecision
-    ? summary.target_site_mapping_review_inputs.find((item) => item.decision_id === primaryDecision.id)
-    : undefined;
   const previews = contentBriefPreviewItemsFromActions(actions);
-  const primaryPreview = contentPrimaryBriefPreview(primaryDecision, migrationItem, previews);
+  const topDecisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is ContentDecisionItem => Boolean(decision));
+  const primaryDecision =
+    topDecisions.find((decision) =>
+      previews.some((preview) => contentBriefPreviewMatchesDecision(preview, decision))
+    ) ??
+    topDecisions[0] ??
+    data.decision_queue[0];
+  const primaryPreview = contentPrimaryBriefPreview(primaryDecision, previews);
   const blockedClaims = uniqueValues([
     ...(primaryPreview?.blocked_claims ?? []),
-    ...(primaryDecision?.blocked_claims ?? []),
-    ...(migrationItem?.blocked_outputs ?? []),
-    ...(mappingReviewInput?.blocked_outputs ?? [])
+    ...(primaryDecision?.blocked_claims ?? [])
   ]);
   const missingInputs = uniqueValues([
-    ...(primaryPreview?.publication_blockers ?? []),
-    ...(primaryPreview?.required_validation ?? []),
-    ...(mappingReviewInput?.required_checked_items ?? [])
+    ...(primaryPreview?.publication_blockers ?? []).map(contentContractValueLabel),
+    ...(primaryPreview?.required_validation ?? []).map(contentContractValueLabel)
   ]);
   const evidenceIds = uniqueValues([
     ...(primaryPreview?.evidence_ids ?? []),
-    ...(primaryDecision?.evidence_ids ?? []),
-    ...(migrationItem?.evidence_ids ?? [])
+    ...(primaryDecision?.evidence_ids ?? [])
   ]);
   const sourceConnectors = uniqueValues([
     ...(primaryPreview?.source_connectors ?? []),
-    ...(primaryDecision?.source_connectors ?? []),
-    ...(migrationItem?.source_connectors ?? [])
+    ...(primaryDecision?.source_connectors ?? [])
   ]);
   const marketerDecision = data.marketer_decision;
   const panelBlockedClaims = marketerDecision?.blocked_claims ?? contentBlockedClaimLabels(blockedClaims);
   const panelMissingInputs = marketerDecision?.missing_inputs ?? missingInputs;
   const panelEvidenceSummary =
     marketerDecision?.evidence_summary ?? formatContentEvidenceCount(evidenceIds.length);
-  const panelSourceConnectors = marketerDecision?.source_connectors ?? sourceConnectors;
+  const panelSourceConnectors = connectorLabelsFromStatuses(
+    marketerDecision?.source_connectors ?? sourceConnectors,
+    data.connectors
+  );
   const panelMeasurementPlan =
     marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan(primaryPreview);
 
@@ -728,9 +799,9 @@ function ContentSelectedDecisionPanel({
     return (
       <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
         <h2 className="text-base font-semibold tracking-normal text-ink">
-          Dzisiejszy brief do review
+          Dzisiejszy brief do sprawdzenia
         </h2>
-        <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież GSC, WordPress i Ahrefs przez WILQ API." />
+        <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież dane GSC, WordPress i Ahrefs w WILQ." />
       </section>
     );
   }
@@ -740,10 +811,12 @@ function ContentSelectedDecisionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            {marketerDecision?.mode_label ?? "Dzisiejszy brief do review"}
+            {marketerDecision?.mode_label ?? "Dzisiejszy brief do sprawdzenia"}
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-            {marketerDecision?.decision ?? "Wybrany temat do przeniesienia lub odświeżenia"}
+            {marketerDecision?.decision ??
+              primaryDecision.title ??
+              "Wybrany temat do zachowania albo odświeżenia"}
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
             {primaryPreview?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
@@ -766,9 +839,7 @@ function ContentSelectedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
           <p className="mt-2 text-sm font-medium leading-6 text-ink">
-            {marketerDecision?.safe_next_action ??
-              mappingReviewInput?.review_notes_prompt ??
-              primaryDecision.next_step}
+            {marketerDecision?.safe_next_action ?? primaryDecision.next_step}
           </p>
         </div>
         <div className="rounded-md border border-line bg-white p-3">
@@ -799,15 +870,14 @@ function ContentSelectedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy. Dev host jest
-            tylko podglądem projektu, nie docelowym adresem SEO.
+            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy. Adres podglądu
+            jest opcjonalny i nie jest docelowym adresem SEO.
           </p>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine
               label="Źródło"
               values={[
                 marketerDecision?.source_public_url ??
-                  primaryDecision.source_url ??
                   primaryDecision.page ??
                   ""
               ]
@@ -818,12 +888,10 @@ function ContentSelectedDecisionPanel({
               label="Podgląd"
               values={[
                 marketerDecision?.preview_url ??
-                  migrationItem?.migration_candidate_url ??
-                  primaryPreview?.target_site_migration_candidate_url ??
-                  primaryPreview?.target_site_url ??
+                  primaryPreview?.preview_url ??
                   ""
               ].filter(Boolean).map(shortPath)}
-              empty="brak targetu"
+              empty="brak podglądu"
             />
             <TraceLine
               label="Docelowo"
@@ -907,7 +975,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="grid gap-3">
           {topDecisions.length > 0 ? (
             topDecisions.map((decision) => (
-              <ContentDecisionCard key={decision.id} decision={decision} />
+              <ContentDecisionCard key={decision.id} decision={decision} connectors={data.connectors} />
             ))
           ) : (
             <BlockerNotice message="Brak decyzji contentowych. Najpierw uruchom odczyt GSC i WordPress." />
@@ -926,80 +994,11 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               ]}
             />
             <TraceLine
-              label="Nowa strona"
+              label="Publiczne URL-e"
               values={[
-                summary.target_site_host
-                  ? `target: ${summary.target_site_host}`
-                  : "target: brak",
-                `alias targetu: ${summary.target_site_alias_match_count}`,
-                `obecny URL: ${summary.current_site_match_count}`,
-                `do mapowania: ${summary.target_site_mapping_review_count}`,
-                `kandydat potwierdzony: ${summary.target_site_confirmed_candidate_inventory_count}`,
-                `kandydat niepotwierdzony: ${summary.target_site_missing_candidate_inventory_count}`,
-                `status: ${contentTargetSiteMappingStatusLabel(
-                  summary.target_site_mapping_status
-                )}`
+                `potwierdzone URL-e: ${summary.current_site_match_count}`
               ]}
             />
-            {summary.target_site_migration_map.length > 0 ? (
-              <div className="rounded border border-line bg-white px-3 py-2">
-                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Mapa migracji do review
-                </div>
-                <div className="mt-2 grid gap-2">
-                  {summary.target_site_migration_map.slice(0, 4).map((item) => (
-                    <div key={item.decision_id} className="grid gap-1 text-xs text-slate-700">
-                      <div className="font-medium text-ink">{item.title}</div>
-                      <div>
-                        {item.source_url ? shortPath(item.source_url) : "brak source URL"} {"->"}{" "}
-                        {item.migration_candidate_url
-                          ? shortPath(item.migration_candidate_url)
-                          : "brak target URL"}
-                      </div>
-                      <div className="text-slate-500">
-                        {item.mapping_review_status
-                          ? mappingReviewStatusLabel(item.mapping_review_status)
-                          : "review mapowania"}{" "}
-                        · {contentNextGateLabel(item.next_required_gate)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {summary.target_site_mapping_review_inputs.length > 0 ? (
-              <div className="rounded border border-line bg-white px-3 py-2">
-                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Input do review mapowania
-                </div>
-                <div className="mt-2 grid gap-2">
-                  {summary.target_site_mapping_review_inputs.slice(0, 4).map((item) => (
-                    <div key={item.decision_id} className="grid gap-1 text-xs text-slate-700">
-                      <div className="font-medium text-ink">{item.title}</div>
-                      <div>
-                        Kandydat: {item.candidate_id}; outcome:{" "}
-                        {item.allowed_outcomes.slice(0, 3).join(", ") || "brak"}
-                      </div>
-                      <div>
-                        Target:{" "}
-                        {item.candidate_target_urls.slice(0, 2).map(shortPath).join(", ") ||
-                          "wymaga ręcznego URL"}
-                      </div>
-                      <div>
-                        Review: zapisz review mapowania przez ActionObject
-                      </div>
-                      <div>
-                        Payload:{" "}
-                        {Array.isArray(item.review_payload_template.checked_items)
-                          ? `${item.review_payload_template.checked_items.length} checked items`
-                          : "template review-only"}
-                      </div>
-                      <div className="text-slate-500">{item.review_notes_prompt}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
             <TraceLine
               label="Dowody"
               values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
@@ -1016,7 +1015,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               href={`/actions/${actionIds[0]}`}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
             >
-              Waliduj akcję
+              Sprawdź w WILQ
             </a>
           ) : null}
         </div>
@@ -1033,7 +1032,14 @@ function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
   return typeof value === "number" ? value : 0;
 }
 
-function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
+function ContentDecisionCard({
+  decision,
+  connectors
+}: {
+  decision: ContentDecisionItem;
+  connectors: ConnectorStatus[];
+}) {
+  const canonicalUrl = decision.final_canonical_url ?? decision.intended_final_url;
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1080,48 +1086,24 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             Dopasowanie: {wordpressMatchConfidenceLabel(decision.wordpress_match_confidence)}
           </span>
         ) : null}
-        {decision.target_site_adaptation_status ? (
+        {canonicalUrl ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Target: {contentTargetSiteStatusLabel(decision.target_site_adaptation_status)}
+            Kanoniczny: {shortPath(canonicalUrl)}
           </span>
         ) : null}
-        {decision.target_site_url ? (
+        {decision.preview_url ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Docelowo: {shortPath(decision.target_site_url)}
-          </span>
-        ) : null}
-        {decision.target_site_migration_candidate_url ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Migracja: {shortPath(decision.target_site_migration_candidate_url)}
-          </span>
-        ) : null}
-        {decision.target_site_migration_status ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Mapowanie: {contentTargetSiteMigrationStatusLabel(
-              decision.target_site_migration_status
-            )}
-          </span>
-        ) : null}
-        {decision.target_site_migration_candidate_inventory_status ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Kandydat: {candidateInventoryStatusLabel(
-              decision.target_site_migration_candidate_inventory_status
-            )}
-          </span>
-        ) : null}
-        {decision.target_site_inventory_source ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Inventory: {decision.target_site_inventory_source}
+            Podgląd: {shortPath(decision.preview_url)}
           </span>
         ) : null}
         {decision.inventory_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Inventory gate: {contentGateStatusLabel(decision.inventory_gate_status)}
+            Spis: {contentGateStatusLabel(decision.inventory_gate_status)}
           </span>
         ) : null}
         {decision.canonical_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Canonical: {contentGateStatusLabel(decision.canonical_gate_status)}
+            Kanoniczny: {contentGateStatusLabel(decision.canonical_gate_status)}
           </span>
         ) : null}
         {decision.duplicate_gate_status ? (
@@ -1135,69 +1117,9 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           {decision.content_gate_summary}
         </p>
       ) : null}
-      {decision.target_site_migration_summary ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
-          {decision.target_site_migration_summary}
-        </p>
-      ) : null}
-      {decision.target_site_migration_candidate_inventory_summary ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
-          {decision.target_site_migration_candidate_inventory_summary}
-        </p>
-      ) : null}
-      {decision.target_site_alternative_candidate_summary ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
-          {decision.target_site_alternative_candidate_summary}
-        </p>
-      ) : null}
-      {decision.target_site_alternative_candidate_urls?.length ? (
-        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
-          {decision.target_site_alternative_candidate_urls.slice(0, 3).map((url) => (
-            <span key={url} className="rounded border border-line bg-white px-2 py-1">
-              Alternatywa: {shortPath(url)}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      {decision.target_site_mapping_review_status ? (
-        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Review mapowania: {mappingReviewStatusLabel(decision.target_site_mapping_review_status)}
-          </span>
-          {decision.target_site_mapping_review_candidate_urls?.slice(0, 3).map((url) => (
-            <span key={url} className="rounded border border-line bg-white px-2 py-1">
-              Do review: {shortPath(url)}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      {decision.target_site_mapping_review_summary ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
-          {decision.target_site_mapping_review_summary}
-        </p>
-      ) : null}
-      {decision.target_site_inventory_summary ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
-          {decision.target_site_inventory_summary}
-        </p>
-      ) : null}
-      {decision.target_site_inventory_title_or_h1 || decision.target_site_inventory_canonical_url ? (
-        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
-          {decision.target_site_inventory_title_or_h1 ? (
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Tytuł/H1: {decision.target_site_inventory_title_or_h1}
-            </span>
-          ) : null}
-          {decision.target_site_inventory_canonical_url ? (
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Canonical: {shortPath(decision.target_site_inventory_canonical_url)}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
       {decision.ahrefs_candidate_rows.length > 0 ? (
         <div className="mt-3 rounded-md border border-line bg-white p-3">
-          <h4 className="text-sm font-semibold text-ink">Kandydaci Ahrefs do review</h4>
+          <h4 className="text-sm font-semibold text-ink">Ahrefs: akcje do sprawdzenia</h4>
           <div className="mt-2 grid gap-2">
             {decision.ahrefs_candidate_rows.slice(0, 3).map((candidate) => (
               <div key={candidate.id} className="rounded border border-line bg-slate-50 p-2">
@@ -1243,7 +1165,7 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           values={[formatContentEvidenceCount(decision.evidence_ids.length)]}
           empty="brak"
         />
-        <TraceLine label="Źródła" values={decision.source_connectors} />
+        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectors)} />
         <TraceLine label="Akcje" values={[formatContentActionCount(decision.action_ids.length)]} />
         <TraceLine label="Nie wolno twierdzić" values={contentBlockedClaimLabels(decision.blocked_claims)} />
       </div>
@@ -1270,12 +1192,12 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
             Dowody i ograniczenia Content
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            To jest skrót kontraktu WILQ API. Decyzje dla marketera są powyżej;
+            To jest skrót danych i ograniczeń WILQ. Decyzje dla marketera są powyżej;
             tutaj widać, z jakich źródeł i blokad wynikają.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Sekcje API" value={data.sections.length} />
+          <MetricTile label="Sekcje danych" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
           <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         </div>
@@ -1284,8 +1206,8 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => contentSectionLabel(section.id))} />
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={sourceConnectors} />
-        <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
+        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, data.connectors)} />
+        <TraceLine label="Akcje" values={[formatContentActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Zablokowane claimy"
           values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
@@ -1318,6 +1240,11 @@ function formatContentEvidenceCount(count: number) {
 function formatContentActionCount(count: number) {
   if (count === 0) return "brak";
   if (count === 1) return "1 akcja";
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
+    return `${count} akcje`;
+  }
   return `${count} akcji`;
 }
 
@@ -1339,28 +1266,22 @@ function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBr
 
 function contentPrimaryBriefPreview(
   decision: ContentDecisionItem | undefined,
-  migrationItem:
-    | ContentDiagnosticsResponse["operator_summary"]["target_site_migration_map"][number]
-    | undefined,
   previews: ContentBriefPreviewItem[]
 ) {
   if (!decision) return previews[0];
+  return previews.find((preview) => contentBriefPreviewMatchesDecision(preview, decision));
+}
+
+function contentBriefPreviewMatchesDecision(
+  preview: ContentBriefPreviewItem,
+  decision: ContentDecisionItem
+) {
   return (
-    previews.find((preview) => preview.candidate_id === migrationItem?.candidate_id) ??
-    previews.find(
-      (preview) =>
-        Boolean(preview.source_url) &&
-        (preview.source_url === decision.source_url ||
-          preview.source_url === decision.page ||
-          preview.source_url === decision.wordpress_content_url)
-    ) ??
-    previews.find(
-      (preview) =>
-        Boolean(preview.target_site_migration_candidate_url) &&
-        preview.target_site_migration_candidate_url ===
-          decision.target_site_migration_candidate_url
-    ) ??
-    previews[0]
+    Boolean(preview.source_public_url) &&
+    (preview.source_public_url === decision.source_public_url ||
+      preview.source_public_url === decision.final_canonical_url ||
+      preview.source_public_url === decision.intended_final_url ||
+      preview.source_public_url === decision.page)
   );
 }
 
@@ -1394,12 +1315,12 @@ function contentMetricSnapshotValue(
 
 function contentSelectedMeasurementPlan(preview: ContentBriefPreviewItem | undefined) {
   if (!preview) {
-    return "Najpierw zapisz review mapowania i briefu. Bez zatwierdzonego mapowania, publikacji oraz danych follow-up WILQ nie ocenia sukcesu ani porażki.";
+    return "Najpierw zapisz sprawdzenie briefu. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
   }
   return [
-    "Po review zapisz decyzję mapowania i baseline z GSC/WordPress.",
-    "Po ewentualnym draft/staging/publish potrzebne są follow-up windows w GSC/GA4.",
-    "Do tego czasu WILQ blokuje claimy o pozycjach, ruchu, leadach i revenue."
+    "Po sprawdzeniu zapisz decyzję contentową i punkt odniesienia z GSC/WordPress.",
+    "Po ewentualnym szkicu i publikacji potrzebne są okna sprawdzenia w GSC/GA4.",
+    "Do tego czasu WILQ blokuje obietnice pozycji, ruchu, leadów i przychodu."
   ].join(" ");
 }
 
@@ -1453,105 +1374,25 @@ function isWordPressDraftPayloadPreviewItem(
 }
 
 
-function contentTargetSiteValues(
+function contentAddressValues(
   preview: Pick<
     ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
-    | "source_site_host"
-    | "target_site_host"
-    | "target_site_url"
-    | "target_site_adaptation_status"
-    | "target_site_migration_candidate_url"
-    | "target_site_migration_status"
-    | "target_site_migration_candidate_inventory_status"
-    | "target_site_alternative_candidate_urls"
-    | "target_site_alternative_candidate_summary"
-    | "target_site_mapping_review_status"
-    | "target_site_mapping_review_summary"
-    | "target_site_mapping_review_candidate_urls"
+    | "source_public_url"
+    | "preview_url"
+    | "intended_final_url"
+    | "final_canonical_url"
   >
 ) {
   const values: string[] = [];
-  if (preview.source_site_host && preview.target_site_host) {
-    values.push(`${preview.source_site_host} -> ${preview.target_site_host}`);
-  } else if (preview.target_site_host) {
-    values.push(preview.target_site_host);
+  const canonicalUrl = preview.final_canonical_url ?? preview.intended_final_url;
+  if (preview.source_public_url) {
+    values.push(`źródło: ${shortPath(preview.source_public_url)}`);
   }
-  if (preview.target_site_adaptation_status) {
-    values.push(contentTargetSiteStatusLabel(preview.target_site_adaptation_status));
+  if (canonicalUrl) {
+    values.push(`kanoniczny: ${shortPath(canonicalUrl)}`);
   }
-  if (preview.target_site_url) {
-    values.push(shortPath(preview.target_site_url));
-  }
-  if (preview.target_site_migration_candidate_url) {
-    values.push(`migracja: ${shortPath(preview.target_site_migration_candidate_url)}`);
-  }
-  if (preview.target_site_migration_status) {
-    values.push(contentTargetSiteMigrationStatusLabel(preview.target_site_migration_status));
-  }
-  if (preview.target_site_migration_candidate_inventory_status) {
-    values.push(
-      candidateInventoryStatusLabel(preview.target_site_migration_candidate_inventory_status)
-    );
-  }
-  if (preview.target_site_alternative_candidate_urls?.length) {
-    values.push(
-      `alternatywy: ${preview.target_site_alternative_candidate_urls
-        .slice(0, 3)
-        .map(shortPath)
-        .join(", ")}`
-    );
-  } else if (preview.target_site_alternative_candidate_summary) {
-    values.push(preview.target_site_alternative_candidate_summary);
-  }
-  if (preview.target_site_mapping_review_status) {
-    values.push(`review: ${mappingReviewStatusLabel(preview.target_site_mapping_review_status)}`);
-  }
-  if (preview.target_site_mapping_review_candidate_urls?.length) {
-    values.push(
-      `do review: ${preview.target_site_mapping_review_candidate_urls
-        .slice(0, 3)
-        .map(shortPath)
-        .join(", ")}`
-    );
-  } else if (preview.target_site_mapping_review_summary) {
-    values.push(preview.target_site_mapping_review_summary);
-  }
-  return values;
-}
-
-function contentTargetInventoryValues(
-  preview: Pick<
-    ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
-    | "target_site_inventory_content_type"
-    | "target_site_inventory_status"
-    | "target_site_inventory_source"
-    | "target_site_inventory_modified_gmt"
-    | "target_site_inventory_title_or_h1"
-    | "target_site_inventory_canonical_url"
-    | "target_site_inventory_summary"
-  >
-) {
-  const values: string[] = [];
-  if (preview.target_site_inventory_content_type) {
-    values.push(`typ: ${preview.target_site_inventory_content_type}`);
-  }
-  if (preview.target_site_inventory_status) {
-    values.push(`status: ${preview.target_site_inventory_status}`);
-  }
-  if (preview.target_site_inventory_source) {
-    values.push(`źródło: ${preview.target_site_inventory_source}`);
-  }
-  if (preview.target_site_inventory_modified_gmt) {
-    values.push(`modified: ${preview.target_site_inventory_modified_gmt}`);
-  }
-  if (preview.target_site_inventory_title_or_h1) {
-    values.push(`tytuł/H1: ${preview.target_site_inventory_title_or_h1}`);
-  }
-  if (preview.target_site_inventory_canonical_url) {
-    values.push(`canonical: ${shortPath(preview.target_site_inventory_canonical_url)}`);
-  }
-  if (!values.length && preview.target_site_inventory_summary) {
-    values.push(preview.target_site_inventory_summary);
+  if (preview.preview_url) {
+    values.push(`podgląd opcjonalny: ${shortPath(preview.preview_url)}`);
   }
   return values;
 }
@@ -1578,10 +1419,9 @@ function contentDraftContractValues(
 ): string[] {
   if (!contract) return [];
   return [
-    contract.contract_version ? `contract: ${contract.contract_version}` : "",
     contract.allowed_output_kind ? `output: ${contentDraftOutputKindLabel(contract.allowed_output_kind)}` : "",
-    ...(contract.requires_passed_gates ?? []).slice(0, 3).map((value) => `gate: ${value}`),
-    ...(contract.forbidden_outputs ?? []).slice(0, 3).map((value) => `zakaz: ${value}`)
+    ...(contract.requires_passed_gates ?? []).slice(0, 3).map((value) => `warunek: ${contentContractValueLabel(value)}`),
+    ...(contract.forbidden_outputs ?? []).slice(0, 3).map((value) => `zakaz: ${contentContractValueLabel(value)}`)
   ].filter((value) => value.trim().length > 0);
 }
 
@@ -1590,19 +1430,19 @@ function contentDraftReadinessReviewValues(
 ): string[] {
   return [
     item.draft_readiness_review_recorded_outcome
-      ? `draft: ${item.draft_readiness_review_recorded_outcome}`
+      ? `szkic: ${contentContractValueLabel(item.draft_readiness_review_recorded_outcome)}`
       : "",
     item.canonical_review_recorded_outcome
-      ? `canonical: ${item.canonical_review_recorded_outcome}`
+      ? `kanoniczny URL: ${contentContractValueLabel(item.canonical_review_recorded_outcome)}`
       : "",
     item.duplicate_review_recorded_outcome
-      ? `duplikaty: ${item.duplicate_review_recorded_outcome}`
+      ? `duplikaty: ${contentContractValueLabel(item.duplicate_review_recorded_outcome)}`
       : "",
     item.legal_factual_review_recorded_outcome
-      ? `legal/fakty: ${item.legal_factual_review_recorded_outcome}`
+      ? `legal/fakty: ${contentContractValueLabel(item.legal_factual_review_recorded_outcome)}`
       : "",
-    item.human_review_recorded_outcome ? `człowiek: ${item.human_review_recorded_outcome}` : "",
-    item.draft_readiness_review_notes ? `notatka: ${item.draft_readiness_review_notes}` : ""
+    item.human_review_recorded_outcome ? `człowiek: ${contentContractValueLabel(item.human_review_recorded_outcome)}` : "",
+    item.draft_readiness_review_notes ? `notatka: ${contentContractValueLabel(item.draft_readiness_review_notes)}` : ""
   ].filter((value) => value.trim().length > 0);
 }
 
@@ -1611,33 +1451,31 @@ function contentDraftReadinessContractValues(
 ): string[] {
   if (!contract) return [];
   return [
-    contract.contract_version ? `contract: ${contract.contract_version}` : "",
-    contract.scope ? `zakres: ${contract.scope}` : "",
-    ...(contract.allowed_outcomes ?? []).slice(0, 3).map((value) => `outcome: ${value}`),
-    ...(contract.required_fields ?? []).slice(0, 4).map((value) => `wymaga: ${value}`),
-    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
+    contract.scope ? `zakres: ${contentContractValueLabel(contract.scope)}` : "",
+    ...(contract.allowed_outcomes ?? []).slice(0, 3).map((value) => `wynik: ${contentContractValueLabel(value)}`),
+    ...(contract.required_fields ?? []).slice(0, 4).map((value) => `wymaga: ${contentContractValueLabel(value)}`),
+    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
   ].filter((value) => value.trim().length > 0);
 }
 
-function contentStagingHandoffValues(item: WordPressDraftPayloadPreviewItem): string[] {
+function contentWordPressDraftHandoffValues(item: WordPressDraftPayloadPreviewItem): string[] {
   return [
-    item.staging_handoff_status
-      ? `status: ${contentStagingHandoffStatusLabel(item.staging_handoff_status)}`
+    item.wordpress_draft_handoff_status
+      ? `status: ${contentWordPressDraftHandoffStatusLabel(item.wordpress_draft_handoff_status)}`
       : "",
-    ...(item.staging_handoff_blockers ?? []).slice(0, 5).map((value) => `blokada: ${value}`)
+    ...(item.wordpress_draft_handoff_blockers ?? []).slice(0, 5).map((value) => `blokada: ${contentContractValueLabel(value)}`)
   ].filter((value) => value.trim().length > 0);
 }
 
-function contentStagingHandoffContractValues(
-  contract: WordPressDraftPayloadPreviewItem["staging_handoff_contract"]
+function contentWordPressDraftHandoffContractValues(
+  contract: WordPressDraftPayloadPreviewItem["wordpress_draft_handoff_contract"]
 ): string[] {
   if (!contract) return [];
   return [
-    contract.contract_version ? `contract: ${contract.contract_version}` : "",
-    contract.scope ? `zakres: ${contract.scope}` : "",
-    contract.required_next_action_contract ? `następny kontrakt: ${contract.required_next_action_contract}` : "",
-    ...(contract.requires_passed_gates ?? []).slice(0, 4).map((value) => `gate: ${value}`),
-    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
+    contract.scope ? `zakres: ${contentContractValueLabel(contract.scope)}` : "",
+    contract.required_next_action_contract ? `następny krok: ${contentContractValueLabel(contract.required_next_action_contract)}` : "",
+    ...(contract.requires_passed_gates ?? []).slice(0, 4).map((value) => `warunek: ${contentContractValueLabel(value)}`),
+    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
   ].filter((value) => value.trim().length > 0);
 }
 
@@ -1646,14 +1484,13 @@ function contentPostPublicationMeasurementValues(
 ): string[] {
   if (!plan) return [];
   return [
-    plan.contract_version ? `contract: ${plan.contract_version}` : "",
     plan.status ? `status: ${contentPostPublicationMeasurementStatusLabel(plan.status)}` : "",
-    plan.baseline_window ? `baseline: ${plan.baseline_window}` : "",
-    ...(plan.followup_windows ?? []).slice(0, 3).map((value) => `follow-up: ${value}`),
+    plan.baseline_window ? `punkt odniesienia: ${contentContractValueLabel(plan.baseline_window)}` : "",
+    ...(plan.followup_windows ?? []).slice(0, 3).map((value) => `sprawdzenie: ${contentContractValueLabel(value)}`),
     ...(plan.required_source_connectors ?? [])
       .slice(0, 3)
-      .map((value) => `źródło: ${value}`),
-    ...(plan.blocked_outputs ?? []).slice(0, 3).map((value) => `blokuje: ${value}`)
+      .map((value) => `źródło: ${contentContractValueLabel(value)}`),
+    ...(plan.blocked_outputs ?? []).slice(0, 3).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
   ].filter((value) => value.trim().length > 0);
 }
 

@@ -20,7 +20,7 @@ export function LocaloDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/localo/diagnostics. Localo route nie może udawać rankingów, GBP ani lokalnej widoczności bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych Localo. Ten widok nie może udawać rankingów, danych profilu firmy w Google ani lokalnej widoczności bez WILQ." />
       </main>
     );
   }
@@ -34,13 +34,13 @@ export function LocaloDiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Localo</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Localo z WILQ API. Oddziela dostęp MCP od lokalnych
-            rankingów, GBP, konkurencji i reviews, żeby marketer nie dostał
-            fałszywej rekomendacji lokalnego SEO.
+            Dedykowany widok Localo z WILQ. Oddziela sam dostęp do danych od
+            lokalnych rankingów, profilu firmy w Google, konkurencji i opinii,
+            żeby marketer nie dostał fałszywej rekomendacji lokalnego SEO.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Fakty lokalne" value={data.visibility_fact_count} />
+          <MetricTile label="Dane lokalne" value={data.visibility_fact_count} />
           <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contracts.length} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
@@ -56,7 +56,7 @@ export function LocaloDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.id}: {localoConnectorStatusLabel(data.connector.status)}
+              Źródło Localo: {localoConnectorStatusLabel(data.connector.status)}
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {localoAccessStatusLabel(data.access_probe.status)}
@@ -87,12 +87,13 @@ export function LocaloDiagnosticSurface() {
           </div>
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Brama bezpieczeństwa Localo/GBP
+              Brama bezpieczeństwa Localo i profilu firmy w Google
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              MCP initialize potwierdza tylko dostęp adaptera. WILQ nie publikuje
-              postów GBP, nie zmienia profilu i nie obiecuje poprawy widoczności
-              bez ranking/GBP evidence, ActionObject, walidacji i audytu.
+              Sam dostęp do Localo potwierdza tylko możliwość odczytu danych. WILQ nie publikuje
+              postów w profilu firmy w Google, nie zmienia profilu i nie obiecuje poprawy
+              widoczności bez danych rankingów i profilu firmy w Google, sprawdzonej akcji
+              oraz audytu.
             </p>
           </div>
         </div>
@@ -104,7 +105,7 @@ export function LocaloDiagnosticSurface() {
           />
           <TraceLine label="Źródła" values={["localo"]} />
           <TraceLine
-            label="Zablokowane claimy"
+            label="Czego nie wolno obiecać"
             values={uniqueValues(
               data.decision_queue.flatMap((decision) =>
                 decision.blocked_claims.map(localoBlockedClaimLabel)
@@ -112,7 +113,7 @@ export function LocaloDiagnosticSurface() {
             )}
           />
           <TraceLine
-            label="Brakujące kontrakty"
+            label="Brakujące dane"
             values={uniqueValues(
               data.decision_queue.flatMap((decision) =>
                 decision.missing_read_contracts.map(localoMissingContractLabel)
@@ -131,7 +132,7 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
     data.decision_queue.find((decision) => decision.status === "ready") ??
     data.decision_queue[0];
   const metricEntries = Object.entries(visibilityDecision?.metric_tiles ?? {}).filter(
-    ([label]) => label !== "dostęp MCP"
+    ([label]) => label !== "dostęp Localo"
   );
 
   return (
@@ -141,16 +142,16 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
           Aktualny odczyt lokalnej widoczności
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          To jest marketerowy skrót z Localo facts dostępnych w WILQ API. MCP/OAuth
-          zostają jako techniczny proof niżej, a lokalne claimy pozostają
-          zablokowane, jeśli brakuje ranking/GBP/review evidence.
+          To jest marketerowy skrót z danych Localo dostępnych w WILQ. Szczegóły
+          techniczne są niżej, a lokalne obietnice pozostają
+          zablokowane, jeśli brakuje danych o rankingach, profilu firmy w Google albo opiniach.
         </p>
       </div>
       {visibilityDecision ? (
         <div className="rounded-md border border-line p-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold">Localo facts w WILQ API</h3>
+              <h3 className="text-base font-semibold">Dane Localo w WILQ</h3>
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {visibilityDecision.summary}
               </p>
@@ -170,14 +171,14 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
               ))}
             </div>
           ) : (
-            <BlockerNotice message="Brak Localo facts do odczytu. WILQ pokazuje tylko stan dostępu i blokuje lokalne rekomendacje." />
+            <BlockerNotice message="Brak danych Localo do odczytu. WILQ pokazuje tylko stan dostępu i blokuje lokalne rekomendacje." />
           )}
           <p className="mt-3 text-sm font-semibold leading-6 text-ink">
             {visibilityDecision.next_step}
           </p>
         </div>
       ) : (
-        <BlockerNotice message="Brak decyzji Localo z WILQ API. Odczyt lokalny nie może zostać zbudowany." />
+        <BlockerNotice message="Brak decyzji Localo w WILQ. Odczyt lokalny nie może zostać zbudowany." />
       )}
     </section>
   );
@@ -205,7 +206,7 @@ function LocaloOperatorSummary({ data }: { data: LocaloDiagnosticsResponse }) {
         </div>
       </div>
       {decisions.length === 0 ? (
-        <BlockerNotice message="Brak decyzji Localo z WILQ API. Widok nie wygeneruje lokalnej rekomendacji z pustego stanu." />
+        <BlockerNotice message="Brak decyzji Localo w WILQ. Widok nie wygeneruje lokalnej rekomendacji z pustego stanu." />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
           {decisions.map((decision) => (
@@ -219,7 +220,7 @@ function LocaloOperatorSummary({ data }: { data: LocaloDiagnosticsResponse }) {
 
 function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
   const marketerMetricTiles = Object.entries(decision.metric_tiles ?? {}).filter(
-    ([label]) => label !== "dostęp MCP"
+    ([label]) => label !== "dostęp Localo"
   );
 
   return (
@@ -247,17 +248,17 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <TraceLine label="Access" values={[localoAccessStatusLabel(decision.access_status)]} />
+        <TraceLine label="Dostęp" values={[localoAccessStatusLabel(decision.access_status)]} />
         <TraceLine
-          label="Dozwolone evidence"
+          label="Dozwolone dowody"
           values={decision.allowed_evidence.map(localoAllowedEvidenceLabel)}
         />
         <TraceLine
-          label="Brakujące kontrakty"
+          label="Brakujące dane"
           values={decision.missing_read_contracts.map(localoMissingContractLabel)}
         />
         <TraceLine
-          label="Blokady claimów"
+          label="Czego nie wolno obiecać"
           values={decision.blocked_claims.map(localoBlockedClaimLabel)}
         />
         <TraceLine
@@ -284,8 +285,8 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
             Dowody i ograniczenia Localo
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            WILQ pokazuje access proof osobno od lokalnych facts. Brak facts oznacza
-            brak diagnozy rankingów, nie zaproszenie do zgadywania.
+            WILQ pokazuje techniczne potwierdzenie dostępu osobno od danych lokalnych.
+            Brak danych oznacza brak diagnozy rankingów, nie zaproszenie do zgadywania.
           </p>
         </div>
         <button
@@ -293,13 +294,13 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
           onClick={() => setShowTechnicalProof((current) => !current)}
           className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100"
         >
-          {showTechnicalProof ? "Ukryj techniczny proof Localo" : "Pokaż techniczny proof Localo"}
+          {showTechnicalProof ? "Ukryj szczegóły techniczne Localo" : "Pokaż szczegóły techniczne Localo"}
         </button>
       </div>
       {showTechnicalProof ? (
         <>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <MetricTile label="MCP initialize" value={probe.mcp_initialize_status ?? "brak"} />
+            <MetricTile label="Test dostępu" value={probe.mcp_initialize_status ?? "brak"} />
             <MetricTile
               label="OAuth code"
               value={localoBooleanLabel(probe.authorization_code_supported)}
@@ -324,7 +325,7 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
         </>
       ) : null}
       {data.visibility_fact_count === 0 ? (
-        <BlockerNotice message="Brak Localo ranking/GBP/competitor facts. Ten ekran celowo blokuje lokalne rekomendacje marketingowe." />
+        <BlockerNotice message="Brak danych Localo o rankingach, profilu firmy w Google i konkurencji. Ten ekran celowo blokuje lokalne rekomendacje marketingowe." />
       ) : null}
     </section>
   );
@@ -345,7 +346,7 @@ function localoDecisionStatusLabel(status: string) {
 function localoSectionStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "zablokowane";
-  if (status === "missing") return "brak facts";
+  if (status === "missing") return "brak danych";
   return status;
 }
 
@@ -354,14 +355,14 @@ function localoDecisionTypeLabel(value: string) {
     access_ready_wait_for_visibility_facts: "status źródła",
     fix_access: "napraw dostęp",
     review_local_visibility: "przejrzyj widoczność",
-    block_visibility_claims: "blokada claimów"
+    block_visibility_claims: "blokada obietnic"
   };
   return labels[value] ?? value;
 }
 
 function localoConnectorStatusLabel(status: string) {
   if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "missing_credentials") return "brakuje dostępu";
   if (status === "disabled") return "źródło wyłączone";
   return `status: ${status}`;
 }
@@ -374,9 +375,9 @@ function localoRefreshStatusLabel(status: string) {
 }
 
 function localoAccessStatusLabel(status: string) {
-  if (status === "access_ready") return "access działa";
-  if (status === "access_blocked") return "access zablokowany";
-  return "access niepewny";
+  if (status === "access_ready") return "dostęp działa";
+  if (status === "access_blocked") return "dostęp zablokowany";
+  return "dostęp niepewny";
 }
 
 function localoBooleanLabel(value: boolean | null | undefined) {
@@ -395,9 +396,9 @@ function localoAllowedEvidenceLabel(value: string) {
   const labels: Record<string, string> = {
     access_token_presence: "obecność tokenu",
     competitor_visibility: "widoczność konkurencji",
-    gbp_visibility: "widoczność GBP",
+    gbp_visibility: "widoczność profilu firmy w Google",
     local_rankings: "rankingi lokalne",
-    mcp_initialize: "potwierdzenie dostępu adaptera",
+    mcp_initialize: "potwierdzenie dostępu Localo",
     oauth_metadata: "metadane autoryzacji",
     place_inventory: "lista lokalizacji",
     reviews: "opinie"
@@ -408,10 +409,10 @@ function localoAllowedEvidenceLabel(value: string) {
 function localoMissingContractLabel(value: string) {
   const labels: Record<string, string> = {
     competitor_visibility: "widoczność konkurencji",
-    gbp_visibility: "widoczność GBP",
+    gbp_visibility: "widoczność profilu firmy w Google",
     local_rankings: "rankingi lokalne",
     local_tasks: "zadania lokalne",
-    mcp_initialize: "MCP initialize",
+    mcp_initialize: "test dostępu",
     place_inventory: "lista lokalizacji",
     reviews: "opinie"
   };
@@ -419,19 +420,7 @@ function localoMissingContractLabel(value: string) {
 }
 
 function localoBlockedClaimLabel(value: string) {
-  const labels: Record<string, string> = {
-    "competitor visibility": "widoczność konkurencji",
-    "GBP performance": "wyniki GBP",
-    "GBP post published": "publikacja posta GBP",
-    "GBP write": "zmiana GBP",
-    "local ranking": "pozycje lokalne",
-    "local task completed": "wykonanie zadania lokalnego",
-    "local visibility uplift": "wzrost widoczności lokalnej",
-    "profile edit applied": "zmiana profilu",
-    "review velocity": "tempo opinii",
-    "visibility uplift guaranteed": "gwarancja wzrostu widoczności"
-  };
-  return labels[value] ?? value;
+  return value;
 }
 
 function uniqueValues(values: string[]) {

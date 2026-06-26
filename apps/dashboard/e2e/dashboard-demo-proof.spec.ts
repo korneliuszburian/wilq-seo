@@ -41,8 +41,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
-    await expect(page.getByText("Akcje do walidacji").first()).toBeVisible();
-    await expect(page.getByText("1 bezpieczna akcja do walidacji").first()).toBeVisible();
+    await expect(page.getByText("Akcje do sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText("1 bezpieczna akcja do sprawdzenia").first()).toBeVisible();
     await expect(page.getByText("act_review_merchant_feed_issues")).toHaveCount(0);
     await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
     await page.screenshot({
@@ -52,14 +52,17 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/merchant", "/api/merchant/diagnostics");
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pierwszy problem Merchant do sprawdzenia" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
     await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
     await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
-    await expect(page.getByText("Zgłoszenia", { exact: true })).toBeVisible();
+    await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(
       page.getByText(/missing_potentially_required_attribute|availability_updated/).first()
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "act_review_merchant_feed_issues" }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
+    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "02-merchant-feed-issues.png"),
@@ -69,7 +72,9 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await gotoAndWaitForApi(page, "/content-planner", "/api/content/diagnostics");
     await expect(page.getByRole("heading", { name: "Content Planner", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "act_prepare_content_refresh_queue" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
+    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "03-content-planner-queue.png"),
       fullPage: true,
@@ -78,11 +83,12 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await gotoAndWaitForApi(page, "/ga4", "/api/ga4/diagnostics");
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w jakości ruchu" })).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd GA4" }).click();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa GA4" })).toBeVisible();
     await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
     await expect(page.getByText("Analytics Safety Gate")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sprawdź GA4 w WILQ" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "04-ga4-landing-quality.png"),
       fullPage: true,
@@ -90,10 +96,15 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/ads-doctor", "/api/ads/diagnostics");
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
+    await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Pokaż pełny przegląd Ads" }).click();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
-    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
+    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "05-ads-live-campaign-metrics.png"),
@@ -108,8 +119,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(
       page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
     ).toBeVisible();
-    await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
-    await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
+    await expect(page.getByText(/rankingi lokalne/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dane Localo w WILQ" })).toBeVisible();
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
     await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);
     await page.screenshot({

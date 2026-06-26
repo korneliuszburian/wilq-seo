@@ -1,6 +1,8 @@
 export function contentMetricFactLabel(metricName: string) {
   const labels: Record<string, string> = {
     ahrefs_content_gap_count: "Luki Ahrefs",
+    ahrefs_organic_keyword_gap_count: "Luki fraz z Ahrefs",
+    ahrefs_top_page_gap_count: "Mocne strony konkurencji",
     average_position: "Pozycja",
     clicks: "Kliknięcia",
     content_object_count: "Obiekty WP",
@@ -58,13 +60,25 @@ export function contentDraftOperationLabel(value: string) {
   return labels[value] ?? value;
 }
 
+export function contentWordPressPostStatusLabel(value?: string | null): string {
+  const labels: Record<string, string> = {
+    draft: "szkic",
+    pending: "czeka na sprawdzenie",
+    future: "zaplanowany",
+    private: "prywatny",
+    publish: "opublikowany"
+  };
+  return value ? labels[value] ?? value : "brak";
+}
+
 export function contentDraftGenerationStatusLabel(value: string) {
   const labels: Record<string, string> = {
-    ready_for_review: "gotowy tylko do sprawdzenia",
-    blocked_pending_target_mapping: "zablokowany do potwierdzenia miejsca w projekcie",
+    ready_for_review: "gotowy do kontroli",
+    blocked_until_content_review: "zablokowany do kontroli treści i URL-a",
     blocked_pending_canonical_duplicate_review: "zablokowany do kontroli URL-i i duplikatów",
-    blocked_missing_target_inventory: "zablokowany bez spisu treści z podglądu projektu",
-    blocked_until_content_review: "zablokowany do sprawdzenia treści"
+    blocked_pending_canonical_duplicate_review_after_url_review:
+      "zablokowany do kontroli URL-i i duplikatów",
+    blocked_missing_public_inventory: "zablokowany bez spisu publicznych treści"
   };
   return labels[value] ?? value;
 }
@@ -76,64 +90,13 @@ export function contentPublicationReadinessLabel(value: string) {
   return labels[value] ?? value;
 }
 
-export function contentTargetSiteStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    current_site_match: "bieżąca strona",
-    target_site_alias_match: "dopasowanie w podglądzie projektu",
-    needs_inventory_match: "wymaga sprawdzenia spisu treści"
-  };
-  return labels[value] ?? value;
-}
-
-export function contentTargetSiteMigrationStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirmed_target_inventory: "miejsce w projekcie potwierdzone",
-    needs_review: "wymaga mapowania",
-    blocked_missing_inventory: "brak potwierdzenia w spisie treści",
-    not_applicable: "nie dotyczy"
-  };
-  return labels[value] ?? value;
-}
-
-export function candidateInventoryStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirmed_target_inventory: "kandydat potwierdzony w spisie",
-    missing_target_inventory: "kandydat niepotwierdzony",
-    not_applicable: "brak kandydata"
-  };
-  return labels[value] ?? value;
-}
-
-export function mappingReviewStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirm_exact_candidate: "potwierdź wskazany adres",
-    review_alternative_candidates: "przejrzyj alternatywy",
-    manual_mapping_required: "wymagane ręczne mapowanie",
-    not_applicable: "nie dotyczy"
-  };
-  return labels[value] ?? value;
-}
-
 export function contentNextGateLabel(value: string) {
   const labels: Record<string, string> = {
-    target_site_mapping_review: "następnie: potwierdź miejsce w projekcie",
-    target_site_canonical_review: "następnie: sprawdź URL kanoniczny",
+    content_url_preflight_review: "następnie: potwierdź publiczny URL",
+    final_canonical_review: "następnie: sprawdź URL kanoniczny",
     duplicate_or_cannibalization_check: "następnie: sprawdź duplikaty"
   };
   return labels[value] ?? `następnie: ${value}`;
-}
-
-export function contentTargetSiteMappingStatusLabel(status?: string | null) {
-  if (status === "target_site_inventory_confirmed") {
-    return "spis treści w podglądzie potwierdzony";
-  }
-  if (status === "target_site_mapping_review_needed") {
-    return "wymaga mapowania";
-  }
-  if (status === "current_site_inventory_confirmed") {
-    return "potwierdzono obecną stronę";
-  }
-  return "brak mapowania miejsca w projekcie";
 }
 
 export function contentPostPublicationMeasurementStatusLabel(value: string): string {
@@ -144,19 +107,79 @@ export function contentPostPublicationMeasurementStatusLabel(value: string): str
   return labels[value] ?? value;
 }
 
-export function contentStagingHandoffStatusLabel(value: string): string {
+export function contentWordPressDraftHandoffStatusLabel(value: string): string {
   const labels: Record<string, string> = {
     blocked_until_draft_gates_pass: "zablokowany do przejścia kontroli szkicu",
     blocked_until_draft_readiness_review: "zablokowany do sprawdzenia gotowości szkicu",
-    blocked_until_staging_action_contract: "zablokowany do osobnego kroku WordPress"
+    blocked_until_wordpress_draft_handoff_action: "zablokowany do osobnego kroku WordPress"
   };
   return labels[value] ?? value;
 }
 
 export function contentDraftOutputKindLabel(value: string): string {
   const labels: Record<string, string> = {
-    outline_only_until_gates_pass: "tylko plan treści do czasu kontroli",
-    reviewable_polish_draft_preview: "polska wersja robocza tylko do sprawdzenia"
+    outline_only_until_gates_pass: "plan treści do czasu kontroli",
+    reviewable_polish_draft_preview: "polska wersja robocza do kontroli"
+  };
+  return labels[value] ?? value;
+}
+
+export function contentContractValueLabel(value: string): string {
+  const labels: Record<string, string> = {
+    api_mutation_ready_false: "zapis zmian nie jest gotowy",
+    approve_outline_for_editorial_review: "zatwierdź plan do redakcji",
+    automatic_wordpress_write: "automatyczny zapis WordPress",
+    blocked_preview_only: "zablokowane do czasu kontroli",
+    canonical_review: "kontrola URL-a kanonicznego",
+    canonical_needs_target_confirmation: "trzeba potwierdzić URL kanoniczny",
+    canonical_review_outcome: "wynik kontroli URL-a kanonicznego",
+    candidate_id: "ID wybranej propozycji",
+    content_draft_readiness_review: "kontrola gotowości szkicu",
+    content_draft_readiness_review_v1: "kontrola gotowości szkicu",
+    content_draft_generation_v1: "generowanie szkicu",
+    content_url_preflight_review: "potwierdzenie publicznego URL-a",
+    content_url_preflight_review_v1: "potwierdzenie publicznego URL-a",
+    duplicate_free_claim_without_review: "obietnica braku duplikacji bez kontroli",
+    duplicate_or_cannibalization_check: "kontrola duplikacji i kanibalizacji",
+    duplicate_review_outcome: "wynik kontroli duplikacji",
+    evidence_ids_present: "dowody są podpięte",
+    final_canonical_review: "kontrola URL-a kanonicznego",
+    legal_factual_review: "kontrola prawna i faktograficzna",
+    legal_factual_review_outcome: "wynik kontroli prawnej i faktograficznej",
+    human_confirm_before_wordpress_write: "potwierdzenie człowieka przed zapisem WordPress",
+    operator_review_approved_for_prepare: "operator zatwierdził przygotowanie",
+    merge_required_before_draft: "najpierw trzeba rozstrzygnąć scalenie",
+    needs_canonical_fix: "trzeba poprawić kanoniczny URL",
+    needs_duplicate_resolution: "trzeba rozstrzygnąć duplikację",
+    needs_expert_review: "wymaga kontroli eksperta",
+    outline_only_until_gates_pass: "plan treści do czasu kontroli",
+    prepare_only_review_recorded: "zapisano ocenę przygotowania",
+    publish_ready_claim: "obietnica gotowości do publikacji",
+    production_wordpress_write: "zapis na produkcyjnym WordPressie",
+    ready_for_review: "gotowe do sprawdzenia",
+    ranking_guarantee: "gwarancja pozycji",
+    review_only: "do kontroli",
+    wordpress_publish: "publikacja WordPress",
+    wordpress_draft_handoff_v1: "zapis szkicu WordPress",
+    wordpress_draft_handoff_preview_v1: "podgląd szkicu WordPress",
+    wordpress_draft_payload_preview: "podgląd wpisu WordPress",
+    wordpress_draft_payload_preview_required: "wymagany podgląd wpisu WordPress",
+    wordpress_draft_write: "zapis szkicu WordPress",
+    wordpress_draft_write_not_requested: "zapis WordPress nie został zlecony",
+    wordpress_write_not_requested: "zapis WordPress nie został zlecony",
+    gsc_query_page_check: "sprawdzenie zapytań i URL-i z GSC",
+    wordpress_existing_url_confirmed: "istniejący URL potwierdzony w WordPress",
+    source_connectors_present: "źródła danych są podpięte",
+    "28d_before_publish": "28 dni przed publikacją",
+    "7d_after_publish": "7 dni po publikacji",
+    "28d_after_publish": "28 dni po publikacji",
+    "90d_after_publish": "90 dni po publikacji",
+    google_search_console: "Google Search Console",
+    google_analytics_4: "GA4",
+    wordpress_ekologus: "WordPress Ekologus",
+    ranking_gain_claim: "obietnica wzrostu pozycji",
+    lead_uplift_claim: "obietnica wzrostu leadów",
+    revenue_impact_claim: "obietnica wpływu na przychód"
   };
   return labels[value] ?? value;
 }
@@ -164,11 +187,10 @@ export function contentDraftOutputKindLabel(value: string): string {
 export function contentGateStatusLabel(value: string) {
   const labels: Record<string, string> = {
     confirmed_current_inventory: "potwierdzone na obecnej stronie",
-    confirmed_target_inventory: "potwierdzone w podglądzie projektu",
     missing_inventory_match: "brak potwierdzenia w spisie treści",
     current_url_confirmed: "obecny URL potwierdzony",
-    needs_target_canonical_review: "sprawdź URL kanoniczny",
-    blocked_until_mapping_review: "blokada do mapowania URL",
+    needs_final_canonical_review: "sprawdź URL kanoniczny",
+    blocked_until_content_url_review: "blokada do kontroli URL",
     blocked_until_inventory_review: "blokada do kontroli spisu treści",
     refresh_or_merge_required: "odśwież albo scal zamiast pisać od nowa",
     manual_merge_or_create_review: "ręcznie wybierz scalenie albo nową treść",
@@ -215,8 +237,8 @@ export function contentAhrefsReasonLabel(value: string) {
     relevant_competitor_domain: "istotny konkurent",
     gsc_overlap: "pokrywa się z GSC",
     wordpress_inventory_overlap: "pokrywa się z WordPress",
-    content_candidate: "kandydat contentowy",
-    backlink_review_only: "tylko sprawdzenie linków",
+    content_candidate: "propozycja treści",
+    backlink_review_only: "sprawdzenie linków",
     off_topic_phrase: "fraza poza tematem",
     off_topic_competitor_domain: "konkurent poza tematem",
     broad_backlink_domain: "szeroki backlink"
@@ -233,7 +255,7 @@ export function contentSectionLabel(sectionId: string) {
 
 export function contentConnectorStatusLabel(status: string) {
   if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "missing_credentials") return "brakuje dostępu";
   if (status === "disabled") return "źródło wyłączone";
   return `status: ${status}`;
 }
@@ -263,10 +285,11 @@ export function wordpressMatchConfidenceLabel(value: string) {
 export function contentBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
     "auto publish": "automatyczna publikacja",
-    "content rewrite": "rewrite treści bez dowodu",
+    "content rewrite": "przepisanie treści bez dowodu",
     "conversion uplift": "wzrost konwersji",
     "duplicate avoidance": "uniknięcie duplikacji",
     "duplicate-free guarantee": "gwarancja braku duplikatów",
+    "lead quality": "jakość leadów",
     "lead uplift": "wzrost leadów",
     "merge plan": "plan scalenia",
     "new article without inventory check": "nowy artykuł bez kontroli spisu treści",

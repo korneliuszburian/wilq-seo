@@ -17,7 +17,7 @@ const actionFixture: ActionObject = {
   metrics: [],
   validation_status: "not_validated",
   human_diagnosis: "Merchant Center ma issue facts i próbki produktów do review.",
-  recommended_reason: "Przejrzyj preview bez mutacji feedu.",
+  recommended_reason: "Przejrzyj podgląd bez mutacji feedu.",
   payload: {
     action_type: "merchant_feed_issue",
     preview_contract: "merchant_feed_issue_review_preview_v1",
@@ -54,7 +54,7 @@ const actionFixture: ActionObject = {
   },
   review_gate: {
     status: "pending_validation",
-    summary: "Wymaga walidacji ActionObject; apply pozostaje zablokowany.",
+    summary: "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany.",
     required_checks: ["validate_action_object", "human_confirm_before_apply"],
     operator_checklist: ["validate_action_object", "human_confirm_before_apply"],
     apply_blockers: [
@@ -97,7 +97,7 @@ const adsActionFixture: ActionObject = {
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
-  human_diagnosis: "Google Ads ma kampanie i budżety do review.",
+  human_diagnosis: "Google Ads ma kampanie i budżety do sprawdzenia.",
   recommended_reason: "Przejrzyj budżet bez mutacji kampanii.",
   payload: {
     action_type: "campaign_change_review",
@@ -114,18 +114,18 @@ const adsActionFixture: ActionObject = {
         proposed_budget_amount_micros: null,
         proposed_budget_delta_micros: null,
         reason:
-          "Podgląd do przeglądu CampaignBudgetOperation. Google Ads nie zwrócił recommended budget.",
+          "Podgląd do sprawdzenia CampaignBudgetOperation. Google Ads nie zwrócił recommended budget.",
         evidence_ids: ["ev_refresh_google_ads"],
         required_validation: [
           "review_campaign_activity",
           "human_budget_goal",
           "campaign_budget_apply_safety"
         ],
-        blocked_claims: ["budget scaling", "budget apply", "wasted budget"],
+        blocked_claims: ["budget scaling", "zmiana budżetu", "wasted budget"],
         safety_review: {
           safety_contract: "campaign_budget_apply_safety_v1",
           status: "blocked",
-          reason: "Budget apply zablokowany: brak proponowanej kwoty.",
+          reason: "Zapis zmiany budżetu zablokowany: brak proponowanej kwoty.",
           missing_requirements: ["human_budget_goal", "recommended_budget_missing"],
           apply_allowed: false,
           api_mutation_ready: false,
@@ -147,7 +147,7 @@ const adsRecommendationActionFixture: ActionObject = {
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
-  human_diagnosis: "Google Ads ma rekomendacje do review, ale apply jest zablokowany.",
+  human_diagnosis: "Google Ads ma rekomendacje do sprawdzenia, ale zapis zmian jest zablokowany.",
   recommended_reason: "Przejrzyj typ rekomendacji bez akceptowania jej w Google Ads.",
   payload: {
     action_type: "google_ads_recommendation_review",
@@ -166,7 +166,7 @@ const adsRecommendationActionFixture: ActionObject = {
           "review_business_goal"
         ],
         blocked_claims: [
-          "recommendation apply",
+          "zapis rekomendacji",
           "automatic recommendation accept",
           "performance uplift"
         ],
@@ -181,12 +181,12 @@ const adsRecommendationActionFixture: ActionObject = {
 const customSegmentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_custom_segments",
-  title: "Przygotuj kandydatów segmentów z wyszukiwanych haseł",
+  title: "Przygotuj propozycje segmentów z wyszukiwanych haseł",
   domain: "google_ads",
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
-  human_diagnosis: "Search terms mogą zasilić review-only custom segment.",
+  human_diagnosis: "Search terms mogą zasilić segment odbiorców do sprawdzenia.",
   recommended_reason: "Przejrzyj źródłowe hasła i safety przed targetowaniem.",
   payload: {
     action_type: "custom_segment_review",
@@ -219,7 +219,7 @@ const customSegmentActionFixture: ActionObject = {
         ],
         safety_review: {
           status: "blocked",
-          reason: "Custom segment apply zablokowany.",
+          reason: "Zapis segmentu niestandardowego zablokowany.",
           missing_requirements: ["forecast_or_audience_size", "keyword_planner_enrichment"]
         },
         api_mutation_ready: false,
@@ -238,7 +238,7 @@ const negativeKeywordActionFixture: ActionObject = {
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
-  human_diagnosis: "Search terms mogą wymagać review wykluczeń, ale apply jest zablokowany.",
+  human_diagnosis: "Search terms mogą wymagać sprawdzenia wykluczeń, ale zapis zmian jest zablokowany.",
   recommended_reason: "Przejrzyj kontekst wyszukiwanego hasła i safety przed wykluczeniem.",
   payload: {
     action_type: "negative_keyword_review",
@@ -260,7 +260,7 @@ const negativeKeywordActionFixture: ActionObject = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -277,8 +277,8 @@ const ngramActionFixture: ActionObject = {
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
-  human_diagnosis: "Search terms mają n-gramy do review intencji.",
-  recommended_reason: "Przejrzyj tematy zanim powstanie negative keyword payload.",
+  human_diagnosis: "Search terms mają n-gramy do sprawdzenia intencji.",
+  recommended_reason: "Przejrzyj tematy zanim powstanie podgląd dodania wykluczających słów kluczowych.",
   payload: {
     action_type: "google_ads_search_term_ngram_review",
     preview_contract: "search_term_ngram_review_v1",
@@ -299,14 +299,14 @@ const ngramActionFixture: ActionObject = {
         operation_type: "SearchTermNgramReview",
         missing_read_contracts: [
           "human_intent_review",
-          "ngram_to_negative_keyword_payload_preview"
+          "ngram_to_negative_keyword_change_preview"
         ],
         required_validation: [
           "review_ngram_intent",
           "review_source_search_terms",
           "compare_90_day_safety_read"
         ],
-        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"],
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -318,12 +318,12 @@ const ngramActionFixture: ActionObject = {
 const demandGenActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_demand_gen",
-  title: "Przygotuj review gotowości Demand Gen",
+  title: "Przygotuj sprawdzenie gotowości Demand Gen",
   domain: "google_ads",
   connector: "google_ads",
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads", "ev_refresh_ga4"],
-  human_diagnosis: "Demand Gen wymaga review gotowości przed launch/migracją.",
+  human_diagnosis: "Demand Gen wymaga przeglądu gotowości przed launchem albo przejściem kampanii.",
   recommended_reason: "Sprawdź kanały Ads, brakujące kontrakty i blokady apply.",
   payload: {
     action_type: "demand_gen_readiness_review",
@@ -345,7 +345,7 @@ const demandGenActionFixture: ActionObject = {
         demand_gen_landing_quality_row_count: 0,
         missing_read_contracts: [
           "demand_gen_landing_quality_by_campaign",
-          "demand_gen_migration_constraints"
+          "demand_gen_transition_constraints"
         ],
         required_validation: [
           "review_ads_campaign_channel_context",
@@ -354,7 +354,7 @@ const demandGenActionFixture: ActionObject = {
         ],
         blocked_claims: [
           "Demand Gen launch recommendation",
-          "Demand Gen migration ready",
+          "Demand Gen transition ready",
           "creative quality verdict",
           "performance uplift"
         ],
@@ -374,7 +374,7 @@ const ga4TrackingActionFixture: ActionObject = {
   connector: "google_analytics_4",
   risk: "low",
   evidence_ids: ["ev_refresh_ga4"],
-  human_diagnosis: "GA4 ma landing/source/campaign rows do review jakości pomiaru.",
+  human_diagnosis: "GA4 ma landing page, źródło i kampania wiersze do sprawdzenia jakości pomiaru.",
   recommended_reason: "Sprawdź message match i mapowanie konwersji bez claimów ROAS.",
   payload: {
     action_type: "ga4_tracking_gap",
@@ -396,7 +396,7 @@ const ga4TrackingActionFixture: ActionObject = {
           sessions: 77
         },
         reason:
-          "Review-only checklist dla landing/source/campaign quality. To pozwala sprawdzić message match, ale nie odblokowuje claimów o ROAS ani revenue.",
+          "Lista sprawdzenia landing page, źródło i kampania do oceny jakości ruchu. To pozwala sprawdzić message match, ale nie odblokowuje claimów o ROAS ani revenue.",
         required_validation: [
           "review_landing_page_dimension",
           "review_source_medium_dimension",
@@ -415,12 +415,12 @@ const ga4TrackingActionFixture: ActionObject = {
 const localoActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_localo",
-  title: "Przygotuj review widoczności lokalnej Localo",
+  title: "Przygotuj sprawdzenie widoczności lokalnej Localo",
   domain: "localo",
   connector: "localo",
   risk: "medium",
   evidence_ids: ["ev_refresh_localo"],
-  human_diagnosis: "Localo ma aggregate facts do review lokalnej widoczności.",
+  human_diagnosis: "Localo ma fakty zbiorcze do sprawdzenia lokalnej widoczności.",
   recommended_reason: "Przejrzyj metryki Localo bez claimów GBP i konkurencji.",
   payload: {
     action_type: "local_visibility_task",
@@ -460,7 +460,7 @@ const localoActionFixture: ActionObject = {
 const socialDraftActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_social_draft",
-  title: "Przygotuj kandydaty postów LinkedIn z dowodów WILQ",
+  title: "Przygotuj propozycje postów LinkedIn z dowodów WILQ",
   domain: "social",
   connector: "linkedin",
   risk: "medium",
@@ -526,11 +526,11 @@ const keywordPlannerAccessActionFixture: ActionObject = {
     ],
     helper_steps: [
       "Sprawdź status Google Ads API developer token w Google Ads API Center.",
-      "Po zmianie statusu wykonaj read-only refresh Google Ads."
+      "Po zmianie statusu wykonaj odczyt danych Google Ads."
     ],
     required_validation: [
       "confirm_developer_token_approval",
-      "rerun_google_ads_vendor_read",
+      "rerun_google_ads_data_read",
       "verify_keyword_planner_idea_rows",
       "human_confirm_before_apply"
     ],
@@ -588,8 +588,8 @@ const adsTargetGuardrailActionFixture: ActionObject = {
       "target KPI verdict before confirmation",
       "profitability verdict",
       "budget scaling",
-      "budget apply",
-      "recommendation apply"
+      "zmiana budżetu",
+      "zapis rekomendacji"
     ],
     apply_allowed: false,
     destructive: false
@@ -640,8 +640,8 @@ const adsStrategyReviewActionFixture: ActionObject = {
     blocked_claims: [
       "profitability verdict",
       "budget scaling",
-      "budget apply",
-      "recommendation apply",
+      "zmiana budżetu",
+      "zapis rekomendacji",
       "automatic optimization"
     ],
     apply_allowed: false,
@@ -657,8 +657,8 @@ const contentActionFixture: ActionObject = {
   connector: "wordpress_ekologus",
   risk: "medium",
   evidence_ids: ["ev_refresh_gsc"],
-  human_diagnosis: "GSC i WordPress wskazują kandydatów content review.",
-  recommended_reason: "Przejrzyj brief i draft preview bez publikacji.",
+  human_diagnosis: "GSC i WordPress wskazują treści do sprawdzenia.",
+  recommended_reason: "Przejrzyj brief i podgląd szkicu bez publikacji.",
   payload: {
     action_type: "content_refresh_queue",
     preview_contract: "content_brief_preview_v1",
@@ -843,19 +843,19 @@ describe("Action detail route", () => {
     );
   }
 
-  it("renders the selected ActionObject detail", async () => {
+  it("renders the selected action detail", async () => {
     renderActionDetail();
     await waitFor(() =>
-      expect(screen.getAllByText("Podgląd do przeglądu").length).toBeGreaterThan(0)
+      expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0)
     );
-    expect(screen.getAllByText("Podgląd do przeglądu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders Google Ads budget payload preview without requiring raw JSON", async () => {
+  it("renders Google Ads budget change preview without requiring raw JSON", async () => {
     renderActionDetail("act_ads");
     await waitFor(() =>
       expect(
@@ -864,16 +864,17 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Budżet kampanii do przeglądu")).toBeInTheDocument();
-    expect(screen.getByText("CampaignBudgetOperation")).toBeInTheDocument();
+    expect(screen.getByText("Budżet kampanii do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Ocena budżetu bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.queryByText("CampaignBudgetOperation")).not.toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
     expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Bezpieczeństwo: blocked/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders Google Ads recommendation payload preview without requiring raw JSON", async () => {
+  it("renders Google Ads recommendation change preview without requiring raw JSON", async () => {
     renderActionDetail("act_ads_recommendation");
     await waitFor(() =>
       expect(
@@ -882,37 +883,38 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Rekomendacja Google Ads do przeglądu")).toBeInTheDocument();
-    expect(screen.getByText("ApplyRecommendationOperation")).toBeInTheDocument();
+    expect(screen.getByText("Rekomendacja Google Ads do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Ocena rekomendacji bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.queryByText("ApplyRecommendationOperation")).not.toBeInTheDocument();
     expect(screen.getByText(/Typ: DISPLAY_EXPANSION_OPT_IN/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: 23848569273/)).toBeInTheDocument();
     expect(screen.getByText(/Budżet kampanii: 15587163334/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_recommendation_type/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: wdrożenie rekomendacji/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź typ rekomendacji/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: zapis rekomendacji/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders custom segment payload preview without requiring raw JSON", async () => {
+  it("renders custom segment change preview without requiring raw JSON", async () => {
     renderActionDetail("act_custom_segments");
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Przygotuj kandydatów segmentów z wyszukiwanych haseł"
+          name: "Przygotuj propozycje segmentów z wyszukiwanych haseł"
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Segment odbiorców do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Segment odbiorców do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Nazwa: WILQ search-term intent review/)).toBeInTheDocument();
     expect(screen.getByText(/Typ członków: KEYWORD/)).toBeInTheDocument();
     expect(screen.getByText(/Hasła źródłowe: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania do sprawdzenia: Kompendium PPWR/)).toBeInTheDocument();
-    expect(screen.getByText(/Bezpieczeństwo: blocked/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: forecast_or_audience_size/)).toBeInTheDocument();
+    expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: prognoza albo rozmiar odbiorców/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders negative keyword payload preview without requiring raw JSON", async () => {
+  it("renders negative keyword change preview without requiring raw JSON", async () => {
     renderActionDetail("act_negative_keywords");
     await waitFor(() =>
       expect(
@@ -921,16 +923,16 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Wykluczenie słowa do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Wykluczenie słowa do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Hasło: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Wykluczenie: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Dopasowanie: EXACT/)).toBeInTheDocument();
     expect(screen.getByText(/Poziom: ad_group/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: Kompendium PPWR/)).toBeInTheDocument();
     expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_search_term_context/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: wdrożenie wykluczeń/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdzenie intencji zapytania/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: dodanie wykluczających słów kluczowych/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders search-term n-gram preview without requiring raw JSON", async () => {
@@ -942,7 +944,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Temat zapytań do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Temat zapytań do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/N-gram: asekol/)).toBeInTheDocument();
     expect(screen.getByText(/Rozmiar: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Zapytania użytkowników: 1/)).toBeInTheDocument();
@@ -951,9 +953,9 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Wyświetlenia: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Koszt: 24,17 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: human_intent_review/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: ręczna ocena intencji/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: marnowanie budżetu na zapytaniach/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders Demand Gen readiness preview without requiring raw JSON", async () => {
@@ -961,19 +963,19 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Przygotuj review gotowości Demand Gen"
+          name: "Przygotuj sprawdzenie gotowości Demand Gen"
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Gotowość Demand Gen do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Gotowość Demand Gen do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Kampanie ocenione: 20/)).toBeInTheDocument();
     expect(screen.getByText(/Kanały: PERFORMANCE_MAX=8, SEARCH=10, UNKNOWN=2/)).toBeInTheDocument();
     expect(screen.getByText(/Kampanie Demand Gen: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: demand_gen_landing_quality_by_campaign/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_ads_campaign_channel_context/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: brakujący odczyt techniczny/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: Demand Gen launch recommendation/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders GA4 tracking-quality preview without requiring raw JSON", async () => {
@@ -985,7 +987,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Jakość pomiaru GA4 do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Jakość pomiaru GA4 do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Landing: \//)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
@@ -993,9 +995,9 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Sesje: 77/)).toBeInTheDocument();
     expect(screen.getByText(/Engagement rate: 76,62%/)).toBeInTheDocument();
     expect(screen.getByText(/Eventy: 1190/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_landing_page_dimension/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź landing page/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: współczynnik konwersji/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders Localo visibility preview without requiring raw JSON", async () => {
@@ -1003,11 +1005,11 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Przygotuj review widoczności lokalnej Localo"
+          name: "Przygotuj sprawdzenie widoczności lokalnej Localo"
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Widoczność lokalna do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Widoczność lokalna do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Widoczność: 53,174/)).toBeInTheDocument();
     expect(screen.getByText(/Zmiana widoczności: 69,57%/)).toBeInTheDocument();
     expect(screen.getByText(/Średnia pozycja grid: 3,263/)).toBeInTheDocument();
@@ -1016,10 +1018,10 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Ocena: 4,75/)).toBeInTheDocument();
     expect(screen.getByText(/Opinie: 798/)).toBeInTheDocument();
     expect(screen.getByText(/Odsetek odpowiedzi na opinie: 81,33%/)).toBeInTheDocument();
-    expect(screen.getByText(/Dozwolone kontrakty: local_rankings/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: gbp_visibility/)).toBeInTheDocument();
+    expect(screen.getByText(/Dozwolone odczyty: lokalne pozycje/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: widoczność Google Business Profile/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: wynik Google Business Profile/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders social draft evidence inputs without requiring raw JSON", async () => {
@@ -1027,19 +1029,19 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Przygotuj kandydaty postów LinkedIn z dowodów WILQ"
+          name: "Przygotuj propozycje postów LinkedIn z dowodów WILQ"
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Wejście do social draftu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Materiały do posta social").length).toBeGreaterThan(0);
     expect(screen.getByText(/Źródło: google_search_console/)).toBeInTheDocument();
     expect(screen.getByText(/Metryka: clicks/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 12/)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google_merchant_center/)).toBeInTheDocument();
     expect(screen.getByText(/Metryka: issue_product_count/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
-    expect(screen.getByText(/Wymiary: affected_attribute=n:availability/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Ograniczenia: use_only_wilq_evidence/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Szczegóły źródłowe: 4 pola techniczne/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ograniczenia: warunek techniczny do sprawdzenia/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Czego nie wolno twierdzić: ROAS/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);
   });
@@ -1054,15 +1056,15 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Dostęp do Keyword Plannera do odblokowania")).toBeInTheDocument();
-    expect(screen.getByText(/Blokowane API: Keyword Planner/)).toBeInTheDocument();
+    expect(screen.getByText(/Zablokowany dostęp: Keyword Planner/)).toBeInTheDocument();
     expect(screen.getByText(/Powód: api_code=403/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Wymagany stan: developer_token_approved_for_keyword_planner/)
+      screen.getByText(/Wymagany stan: brakujący odczyt techniczny/)
     ).toBeInTheDocument();
     expect(screen.getByText(/Kroki: Sprawdź status Google Ads API developer token/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: confirm_developer_token_approval/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: potwierdź akceptację developer token/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders Ads target guardrail preview without requiring raw JSON", async () => {
@@ -1074,18 +1076,18 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Zasady bezpieczeństwa Ads do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Zasady bezpieczeństwa Ads do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
     expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
     expect(screen.getByText(/Target ROAS: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Target CPA: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: target_roas_or_cpa/)).toBeInTheDocument();
-    expect(screen.getByText(/Opcje targetu: WILQ_ADS_TARGET_ROAS/)).toBeInTheDocument();
-    expect(screen.getByText(/Po potwierdzeniu: target_kpi_review/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: target KPI verdict before confirmation/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Braki: target ROAS albo CPA/)).toBeInTheDocument();
+    expect(screen.getByText(/Opcje targetu: target ROAS, target CPA/)).toBeInTheDocument();
+    expect(screen.getByText(/Po potwierdzeniu: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: ocena KPI targetu przed potwierdzeniem/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
   it("renders Ads strategy review guardrail preview without requiring raw JSON", async () => {
@@ -1097,16 +1099,16 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Zasady bezpieczeństwa Ads do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Zasady bezpieczeństwa Ads do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Ostatni przegląd strategii: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki przeglądu: human_strategy_review/)).toBeInTheDocument();
-    expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: profitability verdict/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Warunki przeglądu: ocena strategii przez człowieka/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: ocena opłacalności/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders content brief and WordPress draft preview without requiring raw JSON", async () => {
+  it("renders content brief and WordPress podgląd szkicu without requiring raw JSON", async () => {
     renderActionDetail("act_content");
     await waitFor(() =>
       expect(
@@ -1115,9 +1117,9 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Brief treści do przeglądu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Brief treści do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Tryb: inventory_check/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tryb: sprawdzić istniejącą treść/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
     expect(screen.getAllByText(/Opcje: merge, create, block/).length).toBeGreaterThan(0);
@@ -1127,9 +1129,10 @@ describe("Action detail route", () => {
     expect(screen.getByText(/H2: czym jest BDO, obowiązki przedsiębiorcy/)).toBeInTheDocument();
     expect(screen.getByText(/FAQ: Co to jest BDO\?, Kto musi mieć BDO\?/)).toBeInTheDocument();
     expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Walidacje: wordpress_inventory_check/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Szkic WordPress do przeglądu")).toBeInTheDocument();
-    expect(screen.getByText(/Tytuł draftu: Brief: bdo co to/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Warunki sprawdzenia: warunek techniczny do sprawdzenia/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
+    expect(screen.queryByText(/Kandydat: content_brief_gsc_bdo/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Tytuł szkicu: Brief: bdo co to/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 });

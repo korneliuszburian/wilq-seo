@@ -4,7 +4,7 @@ export function LoadingBand() {
   return (
     <div className="flex h-32 items-center gap-3 px-6 text-sm text-slate-600">
       <RefreshCw aria-hidden="true" className="animate-spin" size={18} />
-      Ładowanie stanu WILQ API
+      Ładowanie stanu WILQ
     </div>
   );
 }

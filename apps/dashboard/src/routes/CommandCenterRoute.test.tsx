@@ -17,8 +17,8 @@ vi.mock("../lib/api", async (importOriginal) => {
 const commandCenterFixture: CommandCenterResponse = {
   generated_at: "2026-06-22T18:56:00Z",
   strict_instruction:
-    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, nie domysł marketingowy.",
-  primary_next_step: "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.",
+    "WILQ pokazuje tylko metryki z danych źródłowych. Brak danych oznacza blocker, nie domysł marketingowy.",
+  primary_next_step: "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu.",
   blocker_count: 0,
   tactical_item_count: 4,
   daily_decisions: [
@@ -46,19 +46,19 @@ const commandCenterFixture: CommandCenterResponse = {
         }
       ],
       co_widzimy:
-        "Merchant Center ma evidence `ev_refresh_merchant_feed` i ActionObject `act_review_merchant_feed_issues`.",
+        "Merchant Center ma potwierdzone dane problemów feedu.",
       dlaczego_to_ma_znaczenie:
         "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
       bezpieczny_next_step:
-        "Otwórz /merchant, sprawdź issue queue i waliduj `act_review_merchant_feed_issues`.",
+        "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
       why_it_matters:
         "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
       operator_action:
-        "Otwórz /merchant, sprawdź issue queue i waliduj `act_review_merchant_feed_issues`.",
+        "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["approval restored", "automatic feed edit"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
       skill_id: "wilq-merchant-feed-operator",
       codex_prompt:
         "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
@@ -96,13 +96,15 @@ const commandCenterFixture: CommandCenterResponse = {
       co_widzimy:
         "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
-      bezpieczny_next_step: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+      bezpieczny_next_step:
+        "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
       why_it_matters: "120 wyświetleń może uzasadniać review treści.",
-      operator_action: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+      operator_action:
+        "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       evidence_ids: ["ev_refresh_gsc"],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["lead uplift", "ranking guarantee"],
+      blocked_claims: ["wzrost liczby leadów", "gwarancja wzrostu pozycji"],
       skill_id: "wilq-content-strategist",
       codex_prompt:
         "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -160,7 +162,7 @@ describe("CommandCenter route", () => {
 
     expect(screen.getByText("Dzisiejsze decyzje marketera")).toBeInTheDocument();
     expect(
-      screen.getByText("Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.")
+      screen.getByText("Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu.")
     ).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj problemy produktów w Merchant Center")).toBeInTheDocument();
     expect(
@@ -172,17 +174,17 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText(/WILQ ma 10 par zapytanie-URL z GSC, 138 kliknięć i 7852 wyświetleń/)
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Najpierw sprawdź mapowanie WordPress/)).not.toBeInTheDocument();
-    expect(screen.getByText(/To jest materiał do decyzji refresh, merge, create albo block/))
+    expect(screen.queryByText(/Najpierw sprawdź dopasowania WordPress/)).not.toBeInTheDocument();
+    expect(screen.getByText(/To jest materiał do decyzji: odświeżyć, scalić, utworzyć albo zablokować/))
       .toBeInTheDocument();
     expect(screen.getByText("10900")).toBeInTheDocument();
     expect(screen.getByText("zapytania/URL")).toBeInTheDocument();
     expect(screen.getByText("dopasowania WordPress")).toBeInTheDocument();
     expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("luki linków")).toBeInTheDocument();
-    expect(screen.getByText("Codex: feed Merchant")).toBeInTheDocument();
-    expect(screen.getByText("Codex: strategia treści")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Kopiuj prompt" })).toHaveLength(2);
+    expect(screen.getByText("Polecenie: feed Merchant")).toBeInTheDocument();
+    expect(screen.getByText("Polecenie: strategia treści")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Kopiuj polecenie" })).toHaveLength(2);
     expect(screen.getByRole("link", { name: "Otwórz Merchant" })).toHaveAttribute(
       "href",
       "/merchant"
@@ -197,15 +199,17 @@ describe("CommandCenter route", () => {
     expect(screen.getByText(/Świeżość źródeł: świeże/)).toBeInTheDocument();
     expect(screen.getByText(/Świeżość źródeł: do odświeżenia/)).toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kopiuj prompt")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Codex:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Użyj skilla wilq-merchant-feed-operator/)).not.toBeInTheDocument();
     expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Otwórz ustawienia" })).toBeInTheDocument();
     expect(screen.getAllByText(/potwierdzony ślad|potwierdzonych śladów/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/bezpieczna akcja do walidacji/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/bezpieczna akcja do sprawdzenia/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/automatyczna zmiana feedu/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/wzrost leadów/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/gwarancja pozycji/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wzrost liczby leadów/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/gwarancja wzrostu pozycji/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/ev_refresh_/)).not.toBeInTheDocument();
     expect(screen.queryByText(/act_review_merchant_feed_issues/)).not.toBeInTheDocument();
     expect(screen.queryByText("Skill: wilq-merchant-feed-operator")).not.toBeInTheDocument();

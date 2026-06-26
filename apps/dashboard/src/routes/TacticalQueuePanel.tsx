@@ -22,7 +22,7 @@ export const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> =
 };
 
 const tacticalDomainLabels: Record<string, string> = {
-  gsc_seo: "SEO / GSC",
+  gsc_seo: "Content / GSC",
   ga4: "GA4",
   merchant: "Merchant",
   content: "Content"
@@ -103,8 +103,8 @@ export function TacticalQueuePanel({
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
-              ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
-              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródła, dowody, akcje i claimy, których WILQ nie wolno dopowiadać."}
+              ? "Skondensowana kolejka decyzji z WILQ. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
+              : "Gotowe taktyki z danych WILQ. Każda karta pokazuje źródła, dowody, akcje i claimy, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
@@ -124,7 +124,7 @@ export function TacticalQueuePanel({
           ))}
         </div>
       ) : items.length === 0 ? (
-        <BlockerNotice message="Brak taktyk dla tej trasy. Potrzebne są wymiarowe metric facts z WILQ API." />
+        <BlockerNotice message="Brak taktyk dla tej trasy. Potrzebne są metryki w WILQ." />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
           {items.map((item) => (

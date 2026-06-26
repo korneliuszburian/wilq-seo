@@ -79,7 +79,6 @@ const operatingRoutes = [
   "/ads-doctor/seasonality",
   "/ads-doctor/recommendations",
   "/ga4",
-  "/seo-gsc",
   "/ahrefs",
   "/localo",
   "/merchant",
@@ -207,7 +206,7 @@ const generatedRoutes = operatingRoutes.map((path) =>
           </LazyRoute>
         );
       }
-      if (path === "/seo-gsc" || path === "/content-planner") {
+      if (path === "/content-planner") {
         return (
           <LazyRoute>
             <ContentDiagnosticSurface title={briefSurfaceConfigs[path].title} />

@@ -24,7 +24,7 @@ export function AdsCustomSegmentCandidatesPanel({
 }) {
   if (candidates.length === 0) {
     return compact ? null : (
-      <BlockerNotice message="Brak kandydatów segmentów. WILQ potrzebuje realnych wyszukiwanych haseł i walidacji Keyword Planner, zanim przygotuje podgląd zmian." />
+      <BlockerNotice message="Brak segmentów do sprawdzenia. WILQ potrzebuje realnych wyszukiwanych haseł i sprawdzenia Keyword Planner, zanim przygotuje podgląd zmian." />
     );
   }
   return (
@@ -32,11 +32,11 @@ export function AdsCustomSegmentCandidatesPanel({
       {!compact ? (
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-ink">
-            Kandydaci segmentów z wyszukiwanych haseł
+            Segmenty do sprawdzenia z wyszukiwanych haseł
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             To jest kolejka tylko do przygotowania. WILQ nie twierdzi, że segment
-            ma zasięg, ROAS albo wpływ na kampanię bez osobnej prognozy i walidacji.
+            ma zasięg, ROAS albo wpływ na kampanię bez osobnej prognozy i sprawdzenia.
           </p>
         </div>
       ) : null}
@@ -79,9 +79,9 @@ export function AdsCustomSegmentCandidatesPanel({
               ) : null}
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Walidacja:{" "}
+              Sprawdzenie w WILQ:{" "}
               {candidate.validation_status === "pending_validation"
-                ? "do walidacji"
+                ? "do sprawdzenia"
                 : "zablokowane"}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
@@ -92,14 +92,14 @@ export function AdsCustomSegmentCandidatesPanel({
                 </div>
                 <div>{candidate.payload_preview.custom_segment_name}</div>
                 <div className="text-slate-600">
-                  Typ wejścia: {candidate.payload_preview.member_type}. Wdrożenie:{" "}
+                  Typ wejścia: {candidate.payload_preview.member_type}. Zapis zmian:{" "}
                   {candidate.payload_preview.apply_allowed
-                    ? "wymaga walidacji"
+                    ? "wymaga sprawdzenia"
                     : "zablokowane"}
                   .
                 </div>
                 <div className="mt-1 text-slate-600">
-                  Bezpieczeństwo: {candidate.payload_preview.safety_review.safety_contract} /{" "}
+                  Bezpieczeństwo:{" "}
                   {candidate.payload_preview.safety_review.audit_required
                     ? "audyt wymagany"
                     : "audyt niewymagany"}
@@ -117,7 +117,7 @@ export function AdsCustomSegmentCandidatesPanel({
                       .map((target) =>
                         [
                           target.campaign_name || target.campaign_id || "kampania do oceny",
-                          target.apply_allowed ? "wymaga walidacji" : "wdrożenie zablokowane"
+                          target.apply_allowed ? "wymaga sprawdzenia" : "zapis zmian zablokowany"
                         ].join(" / ")
                       )
                       .join(", ")}
@@ -189,7 +189,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
             Prognoza i rozmiar odbiorców segmentów
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            To jest kontrakt bezpieczeństwa. Wiersz oznacza, że kandydat został
+            To jest kontrakt bezpieczeństwa. Wiersz oznacza, że propozycja została
             sprawdzony, ale WILQ nadal nie ma dowodu zasięgu ani prognozy.
           </p>
         </div>
@@ -240,7 +240,7 @@ export function CustomSegmentsDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/ads/diagnostics. Segmenty nie mogą być oceniane bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych Ads. Segmenty nie mogą być oceniane bez WILQ." />
       </main>
     );
   }
@@ -262,11 +262,11 @@ export function CustomSegmentsDiagnosticSurface() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Custom Segments</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Segmenty z haseł</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok kandydatów segmentów z wyszukiwanych haseł Google Ads.
+            Dedykowany widok propozycji segmentów z wyszukiwanych haseł Google Ads.
             WILQ pokazuje tylko hasła źródłowe z dowodami i podgląd zmian do
-            oceny; zasięg, uplift, ROAS i wdrożenie kierowania pozostają zablokowane.
+            oceny; zasięg, uplift, ROAS i zapis kierowania pozostają zablokowane.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
@@ -316,8 +316,8 @@ export function CustomSegmentsDiagnosticSurface() {
               Co marketer może przygotować teraz
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Użyj kandydatów tylko jako listy do oceny. Odrzuć frazy brandowe,
-              niskointencyjne lub zbyt szerokie, a przed wdrożeniem wymagaj
+              Użyj propozycji tylko jako listy do oceny. Odrzuć frazy brandowe,
+              niskointencyjne lub zbyt szerokie, a przed zapisem zmian wymagaj
               wzbogacenia Keyword Planner, prognozy i potwierdzenia człowieka.
             </p>
           </div>
@@ -351,8 +351,8 @@ export function CustomSegmentsDiagnosticSurface() {
               Dowody i ograniczenia segmentów
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-              Ten ekran nie służy do tworzenia odbiorców bez walidacji. Pokazuje
-              tylko kontrakt WILQ API do ręcznej oceny.
+              Ten ekran nie służy do tworzenia odbiorców bez sprawdzenia. Pokazuje
+              tylko kontrakt WILQ do ręcznej oceny.
             </p>
           </div>
         </div>
@@ -381,7 +381,7 @@ export function CustomSegmentsDiagnosticSurface() {
           <TraceLine label="Źródła" values={contract.source_connectors} />
           <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
           <LinkedTraceLine label="Akcje" values={contract.action_ids} kind="actions" />
-          <TraceLine label="Tryb Codexa" values={["Custom Segments"]} />
+          <TraceLine label="Tryb Codexa" values={["Segmenty z haseł"]} />
         </div>
       </section>
     </main>
@@ -390,7 +390,7 @@ export function CustomSegmentsDiagnosticSurface() {
 
 function adsOperatorReviewGateLabel(value: string) {
   const labels: Record<string, string> = {
-    human_strategy_review: "review strategii przez człowieka",
+    human_strategy_review: "sprawdzenie strategii przez człowieka",
     review_recommendation_type: "sprawdzenie typu rekomendacji",
     review_impact_metrics: "sprawdzenie impact metrics",
     review_change_history: "sprawdzenie historii zmian",
@@ -409,10 +409,10 @@ function adsOperatorReviewGateLabel(value: string) {
     review_conversion_tracking: "sprawdzenie trackingu konwersji",
     review_pmax_asset_feed_context: "sprawdzenie PMax/feed/assets",
     review_draft_campaign_status: "sprawdzenie statusu draftu",
-    recommendation_apply_preview: "podgląd wdrożenia rekomendacji",
+    recommendation_apply_preview: "podgląd zapisu rekomendacji",
     google_ads_rmf_compliance_review: "ocena Google Ads RMF/compliance",
-    human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
-    negative_keyword_action_validation: "walidacja akcji WILQ dla wykluczeń",
+    human_confirm_before_apply: "potwierdzenie człowieka przed zapisem",
+    negative_keyword_action_validation: "sprawdzenie w WILQ dla wykluczeń",
     human_intent_review: "ręczna ocena intencji",
     review_source_terms: "sprawdzenie haseł źródłowych",
     reject_brand_or_low_intent_terms: "odrzucenie fraz brandowych albo niskointencyjnych",

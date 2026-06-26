@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import {
   ActionObject,
@@ -8,10 +9,8 @@ import {
   ExpertRule,
   Opportunity
 } from "../lib/api";
-import { ActionPayloadPreviewToggle } from "../components/ActionPayloadPreviewToggle";
 import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { marketerOperatorCopy } from "./marketingLabels";
 
 export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
   return (
@@ -21,15 +20,17 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold">{connector.label}</h3>
-              <p className="mt-1 text-xs text-slate-500">{connector.id}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Źródło danych sprawdzane przez WILQ.
+              </p>
             </div>
             <StatusBadge value={connector.status} />
           </div>
           <div className="mt-4 text-xs text-slate-600">
             {connector.missing_credentials.length > 0 ? (
               <div>
-                <div className="mb-1 font-medium text-wait">Brakujące credentiale</div>
-                <div className="break-words">{connector.missing_credentials.join(", ")}</div>
+                <div className="mb-1 font-medium text-wait">Brakujące ustawienia dostępu</div>
+                <div>{formatPolishCount(connector.missing_credentials.length, "pole", "pola", "pól")}</div>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-signal">
@@ -38,8 +39,14 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
               </div>
             )}
             {connector.available_credential_sources.length > 0 ? (
-              <div className="mt-2 break-words text-slate-500">
-                Źródło dostępu: {connector.available_credential_sources.join(", ")}
+              <div className="mt-2 text-slate-500">
+                Źródła konfiguracji:{" "}
+                {formatPolishCount(
+                  connector.available_credential_sources.length,
+                  "źródło",
+                  "źródła",
+                  "źródeł"
+                )}
               </div>
             ) : null}
           </div>
@@ -52,7 +59,7 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
 export function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
   if (opportunities.length === 0) {
     return (
-      <BlockerNotice message="Brak opportunities z WILQ API. Dashboard nie generuje rekomendacji bez evidence IDs." />
+      <BlockerNotice message="Brak decyzji w WILQ. Dashboard nie generuje rekomendacji bez dowodów." />
     );
   }
 
@@ -63,8 +70,8 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold">{opportunity.title}</h3>
-              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                {opportunity.domain} / {opportunity.type}
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Decyzja z dowodami i bezpiecznym następnym krokiem.
               </p>
             </div>
             <StatusBadge value={opportunity.risk} />
@@ -80,16 +87,19 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {opportunity.evidence_ids.length} ID</div>
-            <div>Źródła: {opportunity.source_connectors.map(opportunityConnectorLabel).join(", ")}</div>
-            <div>Akcje: {opportunity.action_ids.length}</div>
             <div>
-              Kontrakty wiedzy: {opportunity.expert_rule_ids.length + opportunity.playbook_ids.length}
+              Źródła danych:{" "}
+              {formatPolishCount(opportunity.source_connectors.length, "źródło", "źródła", "źródeł")}
+            </div>
+            <div>Akcje do sprawdzenia: {opportunity.action_ids.length}</div>
+            <div>
+              Użyta wiedza: {opportunity.expert_rule_ids.length + opportunity.playbook_ids.length}
             </div>
           </div>
           {opportunity.is_fixture ? (
             <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
               <AlertCircle aria-hidden="true" size={15} />
-              Dane seed, nie realny performance Ekologus
+              Dane testowe, nie realne wyniki Ekologus
             </div>
           ) : null}
         </article>
@@ -98,25 +108,9 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
   );
 }
 
-function opportunityConnectorLabel(connectorId: string) {
-  const labels: Record<string, string> = {
-    ahrefs: "Ahrefs",
-    facebook: "Facebook",
-    google_ads: "Google Ads",
-    google_analytics_4: "GA4",
-    google_merchant_center: "Merchant Center",
-    google_search_console: "GSC",
-    linkedin: "LinkedIn",
-    localo: "Localo",
-    wordpress_ekologus: "WordPress ekologus.pl",
-    wordpress_sklep: "WordPress sklep"
-  };
-  return labels[connectorId] ?? connectorId;
-}
-
 export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
   if (evidenceItems.length === 0) {
-    return <p className="text-sm text-slate-600">Brak zapisanych dowodów w WILQ API.</p>;
+    return <p className="text-sm text-slate-600">Brak zapisanych dowodów w WILQ.</p>;
   }
 
   return (
@@ -125,9 +119,9 @@ export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
         <article key={evidence.id} className="rounded-md border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{evidence.id}</h3>
-              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                {evidence.source_connector} / {evidence.source_type}
+              <h3 className="text-sm font-semibold">Dowód z WILQ</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Zebrany fakt użyty do decyzji. Pełne identyfikatory zostają w śladzie audytu.
               </p>
             </div>
             <StatusBadge value={evidence.freshness.state} />
@@ -141,7 +135,7 @@ export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
 
 export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
   if (runs.length === 0) {
-    return <p className="text-sm text-slate-600">Brak zapisanych odczytów connectorów.</p>;
+    return <p className="text-sm text-slate-600">Brak zapisanych odczytów źródeł danych.</p>;
   }
 
   return (
@@ -150,21 +144,22 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
         <article key={run.id} className="rounded-md border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{run.connector_id}</h3>
-              <p className="mt-1 break-words text-xs text-slate-500">{run.id}</p>
+              <h3 className="text-sm font-semibold">Odczyt źródła danych</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Skrót ostatniego pobrania danych. Pełny ślad techniczny zostaje w audycie.
+              </p>
             </div>
             <StatusBadge value={run.status} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{run.summary}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Mode: {run.mode}</div>
-            <div>Dane vendora: {run.vendor_data_collected ? "tak" : "nie"}</div>
+            <div>Dane z zewnętrznego systemu: {run.vendor_data_collected ? "tak" : "nie"}</div>
             <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
             <div>Dowody: {formatEvidenceCount(run.evidence_ids.length)}</div>
           </div>
-          {formatMetricSummary(run.metric_summary) ? (
+          {formatMetricCount(run.metric_summary) ? (
             <p className="mt-3 text-xs leading-5 text-slate-600">
-              Metryki: {formatMetricSummary(run.metric_summary)}
+              Metryki: {formatMetricCount(run.metric_summary)}
             </p>
           ) : null}
         </article>
@@ -184,15 +179,15 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
         <article key={action.id} className="rounded-md border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{marketerOperatorCopy(action.title)}</h3>
-              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                {action.connector} / {action.mode}
+              <h3 className="text-sm font-semibold">{action.title}</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Otwórz akcję, żeby sprawdzić warunki i bezpieczny zapis zmian.
               </p>
             </div>
             <StatusBadge value={action.status} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">
-            {marketerOperatorCopy(action.human_diagnosis)}
+            {action.human_diagnosis}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <StatusBadge value={action.validation_status} />
@@ -202,11 +197,13 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
             <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
             <div>Zdarzenia audytu: {action.audit_events.length}</div>
           </div>
-          <ActionPayloadPreviewToggle
-            payload={action.payload}
-            intro="Schowany na wejściu."
-            maxHeightClass="max-h-40"
-          />
+          <Link
+            to="/actions/$actionId"
+            params={{ actionId: action.id }}
+            className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
+          >
+            Otwórz akcję
+          </Link>
         </article>
       ))}
     </div>
@@ -217,14 +214,20 @@ function formatEvidenceCount(count: number) {
   return count > 0 ? `${count} ID` : "brak";
 }
 
-function formatMetricSummary(metricSummary: Record<string, unknown>) {
-  const entries = Object.entries(metricSummary);
-  if (entries.length === 0) return "";
-  const visibleEntries = entries
-    .slice(0, 4)
-    .map(([key, value]) => `${key}=${String(value)}`)
-    .join(", ");
-  return entries.length > 4 ? `${visibleEntries}, +${entries.length - 4}` : visibleEntries;
+function formatPolishCount(count: number, singular: string, few: string, many: string) {
+  const absolute = Math.abs(count);
+  const lastTwo = absolute % 100;
+  const last = absolute % 10;
+  if (absolute === 1) return `${count} ${singular}`;
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) {
+    return `${count} ${few}`;
+  }
+  return `${count} ${many}`;
+}
+
+function formatMetricCount(metricSummary: Record<string, unknown>) {
+  const count = Object.keys(metricSummary).length;
+  return count > 0 ? formatPolishCount(count, "wartość", "wartości", "wartości") : "";
 }
 
 export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {

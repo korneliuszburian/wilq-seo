@@ -18,7 +18,7 @@ export const primaryRoutes = [
   { to: "/content-planner", label: "Content", icon: FileText },
   { to: "/ads-doctor", label: "Ads Doctor", icon: Megaphone },
   { to: "/ga4", label: "GA4", icon: BarChart3 },
-  { to: "/workflows", label: "Workflowy", icon: Boxes },
+  { to: "/workflows", label: "Procesy", icon: Boxes },
   { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
   { to: "/actions", label: "Akcje", icon: ClipboardList },
   { to: "/knowledge", label: "Baza wiedzy", icon: Database },

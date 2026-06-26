@@ -26,7 +26,7 @@ function marketerConnectorLabel(value: string) {
     wordpress_ekologus: "WordPress ekologus.pl",
     wordpress_sklep: "WordPress sklep.ekologus.pl"
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  return labels[value] ?? "inne źródło danych";
 }
 
 function codexSkillLabel(value: string) {
@@ -44,19 +44,19 @@ function codexSkillLabel(value: string) {
     "wilq-merchant-feed-operator": "feed Merchant",
     "wilq-social-publisher": "treści social"
   };
-  return labels[value] ?? value.replace(/^wilq-/, "").replaceAll("-", " ");
+  return labels[value] ?? "workflow WILQ";
 }
 
 function evidenceCountSummary(count: number) {
-  if (count === 0) return "brak potwierdzonych śladów w WILQ API";
-  if (count === 1) return "1 potwierdzony ślad w WILQ API";
-  return `${count} potwierdzonych śladów w WILQ API`;
+  if (count === 0) return "brak potwierdzonych śladów w WILQ";
+  if (count === 1) return "1 potwierdzony ślad w WILQ";
+  return `${count} potwierdzonych śladów w WILQ`;
 }
 
 function actionValidationSummary(count: number) {
   if (count === 0) return "brak bezpiecznej akcji na pierwszym ekranie";
-  if (count === 1) return "1 bezpieczna akcja do walidacji";
-  return `${count} bezpiecznych akcji do walidacji`;
+  if (count === 1) return "1 bezpieczna akcja do sprawdzenia";
+  return `${count} bezpiecznych akcji do sprawdzenia`;
 }
 
 function marketerMetricLabel(label: string) {
@@ -164,7 +164,7 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
       why:
         "To może ograniczać widoczność produktów w Shopping i PMax, ale nie oznacza automatycznej naprawy ani odzyskanego przychodu.",
       nextStep:
-        "Otwórz widok Merchant, sprawdź kolejkę problemów i waliduj akcję WILQ przed jakąkolwiek zmianą feedu."
+        "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ przed jakąkolwiek zmianą feedu."
     };
   }
 
@@ -177,13 +177,13 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
     const linkGaps = metricDisplay(item, "luki linków", "link gaps");
     const matchWarning =
       metricNumber(item, "dopasowania WordPress", "WP match") === 0
-        ? " Najpierw sprawdź mapowanie WordPress, bo API nie potwierdza dopasowania części adresów."
+        ? " Najpierw sprawdź dopasowania WordPress, bo dane nie potwierdzają dopasowania części adresów."
         : "";
     return {
       title: "Ułóż kolejkę odświeżenia i scalania treści SEO",
       what: `WILQ ma ${queryPages} par zapytanie-URL z GSC, ${clicks} kliknięć i ${impressions} wyświetleń. WordPress potwierdza ${wpMatches} dopasowań, a Ahrefs wskazuje ${ahrefsGaps} luki treści i ${linkGaps} luk linków.${matchWarning}`,
       why:
-        "To jest materiał do decyzji refresh, merge, create albo block. Nie jest to obietnica wzrostu pozycji, leadów ani przychodu.",
+        "To jest materiał do decyzji: odświeżyć, scalić, utworzyć albo zablokować. Nie jest to obietnica wzrostu pozycji, leadów ani przychodu.",
       nextStep:
         "Otwórz Content Planner, zacznij od stron z największym ruchem z GSC i wybierz jedną decyzję dla każdego klastra."
     };
@@ -216,11 +216,11 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
     const segments = metricDisplay(item, "segmenty");
     return {
       title: "Przejrzyj kampanie i wyszukiwane hasła w Google Ads",
-      what: `Google Ads ma świeży odczyt: ${campaigns} kampanii, ${searchTerms} wyszukiwanych haseł, ${clicks} kliknięć, ${impressions} wyświetleń, koszt ${cost}, ${conversions} konwersje i wartość konwersji ${conversionValue}. WILQ przygotowuje też ${negativeTerms} terminów do oceny oraz ${segments} kandydatów segmentów.`,
+      what: `Google Ads ma świeży odczyt: ${campaigns} kampanii, ${searchTerms} wyszukiwanych haseł, ${clicks} kliknięć, ${impressions} wyświetleń, koszt ${cost}, ${conversions} konwersje i wartość konwersji ${conversionValue}. WILQ przygotowuje też ${negativeTerms} terminów do oceny oraz ${segments} propozycji segmentów.`,
       why:
-        "To wystarcza do przeglądu kampanii i wyszukiwanych haseł, ale nie wystarcza jeszcze do automatycznego wykluczania fraz, zmiany budżetów ani werdyktu o opłacalności.",
+        "To wystarcza do sprawdzenia kampanii i wyszukiwanych haseł, ale nie wystarcza jeszcze do automatycznego wykluczania fraz, zmiany budżetów ani werdyktu o opłacalności.",
       nextStep:
-        "Otwórz Ads Doctor i przejrzyj metryki kampanii oraz wyszukiwane hasła. Każde wykluczenie, budżet i rekomendacja musi przejść przez akcję WILQ."
+        "Otwórz Ads Doctor i przejrzyj metryki kampanii oraz wyszukiwane hasła. Każde wykluczenie, budżet i rekomendacja wymaga sprawdzenia i zatwierdzenia w WILQ."
     };
   }
 
@@ -229,7 +229,7 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
     what: `WILQ ma decyzję z obszaru: ${sourceList(item)}.`,
     why:
       "Ten element wymaga dedykowanego widoku szczegółowego, żeby nie zgadywać wniosków na pierwszym ekranie.",
-    nextStep: "Otwórz wskazany widok i sprawdź szczegóły wraz z dowodami w WILQ API."
+    nextStep: "Otwórz wskazany widok i sprawdź szczegóły wraz z dowodami w WILQ."
   };
 }
 
@@ -285,22 +285,22 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
                   <Copy aria-hidden="true" size={15} />
-                  Codex: {codexSkillLabel(item.skill_id)}
+                  Polecenie: {codexSkillLabel(item.skill_id)}
                 </div>
                 <button
                   type="button"
                   onClick={() => copyPromptToClipboard(item.codex_prompt ?? "")}
                   className="inline-flex h-8 items-center rounded-md border border-action/30 px-3 text-xs font-semibold uppercase tracking-normal text-action hover:bg-action/10"
                 >
-                  Kopiuj prompt
+                  Kopiuj polecenie
                 </button>
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Źródła danych" values={marketerConnectorLabels(item.source_connectors)} />
               <TraceLine label="Świeżość źródeł" values={[decisionFreshnessLabel(item)]} />
-              <TraceLine label="Dowody w API" values={[evidenceCountSummary(item.evidence_ids.length)]} />
-              <TraceLine label="Akcje do walidacji" values={[actionValidationSummary(item.action_ids.length)]} />
+              <TraceLine label="Dowody w WILQ" values={[evidenceCountSummary(item.evidence_ids.length)]} />
+              <TraceLine label="Akcje do sprawdzenia" values={[actionValidationSummary(item.action_ids.length)]} />
               <TraceLine label="Czego nie twierdzimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />
             </div>
             <a
@@ -326,7 +326,7 @@ function SourceHealthSummary({ data }: { data: CommandCenterResponse }) {
             Źródła i ograniczenia
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            To jest tylko skrót zdrowia źródeł. Pełne statusy connectorów, braki
+            To jest tylko skrót zdrowia źródeł. Pełne statusy źródeł danych, braki
             uprawnień i etykiety źródeł dostępu są w ustawieniach, nie w planie dnia.
           </p>
         </div>
@@ -349,7 +349,7 @@ function SourceHealthSummary({ data }: { data: CommandCenterResponse }) {
 function ErrorState() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <BlockerNotice message="WILQ API is not reachable." />
+      <BlockerNotice message="Nie udało się połączyć z WILQ." />
     </main>
   );
 }
@@ -375,7 +375,7 @@ export function CommandCenter() {
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.daily_decisions.length} />
-          <MetricTile label="Blockery" value={data.blocker_count} />
+          <MetricTile label="Blokady" value={data.blocker_count} />
           <MetricTile label="Źródła" value={sourceCount} />
         </div>
       </div>

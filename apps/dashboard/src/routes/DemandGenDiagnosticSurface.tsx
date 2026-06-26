@@ -16,7 +16,7 @@ export function DemandGenDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/demand-gen/diagnostics. Demand Gen route nie może udawać gotowości migracji ani jakości kreacji bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości przejścia kampanii ani jakości kreacji bez WILQ." />
       </main>
     );
   }
@@ -25,7 +25,7 @@ export function DemandGenDiagnosticSurface() {
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
   const landingQualityRows = data.demand_gen_landing_quality_rows;
-  const migrationConstraintRows = data.demand_gen_migration_constraint_rows;
+  const transitionConstraintRows = data.demand_gen_transition_constraint_rows;
   const metricTileEntries = Object.entries(data.metric_tiles);
   const demandGenPreview = data.payload_preview[0] as Record<string, unknown> | undefined;
   const previewMissingContracts = Array.isArray(demandGenPreview?.missing_read_contracts)
@@ -45,9 +45,9 @@ export function DemandGenDiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Demand Gen</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Demand Gen z WILQ API. Oddziela kontekst kampanii
+            Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii
             Ads i GA4 od prawdziwych kontraktów Demand Gen: assetów, kreacji,
-            jakości landingów per kampania, ograniczeń migracji i ActionObject.
+            jakości landingów per kampania, ograniczeń przejścia i akcji do sprawdzenia.
           </p>
         </div>
         {metricTileEntries.length > 0 ? (
@@ -86,8 +86,8 @@ export function DemandGenDiagnosticSurface() {
               Co marketer ma wiedzieć przed planem Demand Gen
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              WILQ może zwalidować review-only ActionObject i użyć Ads/GA4
-              jako kontekstu, ale nie może polecić launchu, migracji ani
+              WILQ może sprawdzić akcję do sprawdzenia i użyć Ads/GA4
+              jako kontekstu, ale nie może polecić uruchomienia, przejścia kampanii ani
               jakości kreacji bez osobnych rekordów Demand Gen.
             </p>
           </div>
@@ -109,7 +109,7 @@ export function DemandGenDiagnosticSurface() {
                       {row.advertising_channel_type} / {row.campaign_status}
                     </p>
                   </div>
-                  <StatusBadge value="do review" />
+                  <StatusBadge value="do sprawdzenia" />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <MetricTile label="Kliknięcia" value={row.clicks ?? "brak"} />
@@ -133,14 +133,14 @@ export function DemandGenDiagnosticSurface() {
         {demandGenPreview ? (
           <article className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
             <div className="text-xs font-semibold uppercase tracking-normal text-blue-700">
-              Review-only ActionObject
+              Akcja do sprawdzenia
             </div>
             <h3 className="mt-1 text-sm font-semibold text-ink">
-              Podgląd walidacji gotowości Demand Gen
+              Podgląd sprawdzenia gotowości Demand Gen
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              Ten payload sprawdza kanały i braki kontraktów. Nie tworzy kampanii,
-              nie migruje budżetu i nie odblokowuje apply.
+              Ten podgląd sprawdza kanały i braki kontraktów. Nie tworzy kampanii,
+              nie migruje budżetu i nie odblokowuje zapisu zmian.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <MetricTile
@@ -164,14 +164,14 @@ export function DemandGenDiagnosticSurface() {
                 value={String(demandGenPreview.demand_gen_landing_quality_row_count ?? "0")}
               />
               <MetricTile
-                label="Migracje"
+                label="Przejścia"
                 value={String(
-                  demandGenPreview.demand_gen_migration_constraint_row_count ?? "0"
+                  demandGenPreview.demand_gen_transition_constraint_row_count ?? "0"
                 )}
               />
               <MetricTile label="Braki" value={previewMissingContracts.length} />
               <MetricTile
-                label="Apply"
+                label="Zapis zmian"
                 value={demandGenPreview.apply_allowed === true ? "możliwy" : "zablokowany"}
               />
             </div>
@@ -181,7 +181,7 @@ export function DemandGenDiagnosticSurface() {
                 values={previewMissingContracts.map(demandGenContractLabel)}
               />
               <TraceLine
-                label="Walidacja"
+                label="Sprawdzenie w WILQ"
                 values={previewValidation.map(demandGenContractLabel)}
               />
               <TraceLine
@@ -228,15 +228,15 @@ export function DemandGenDiagnosticSurface() {
           </div>
         ) : null}
 
-        {migrationConstraintRows.length > 0 ? (
+        {transitionConstraintRows.length > 0 ? (
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {migrationConstraintRows.slice(0, 4).map((row) => (
+            {transitionConstraintRows.slice(0, 4).map((row) => (
               <article
                 key={`${row.campaign_id ?? row.campaign_name}-${row.reason}`}
                 className="rounded-md border border-line bg-white p-3"
               >
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Odczyt ograniczeń migracji
+                  Odczyt ograniczeń przejścia
                 </div>
                 <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -245,8 +245,8 @@ export function DemandGenDiagnosticSurface() {
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <MetricTile
-                    label="Migracja"
-                    value={row.migration_candidate ? "kandydat" : "nie dotyczy"}
+                    label="Przejście"
+                    value={row.transition_candidate ? "do sprawdzenia" : "nie dotyczy"}
                   />
                   <MetricTile label="Powód" value={demandGenContractLabel(row.reason)} />
                 </div>
@@ -317,25 +317,25 @@ function demandGenChannelLabel(channel: string) {
 
 function demandGenContractLabel(contract: string) {
   const labels: Record<string, string> = {
-    demand_gen_action_object: "Demand Gen ActionObject",
+    demand_gen_action_object: "akcja Demand Gen",
     demand_gen_ad_group_ad_rows: "wiersze reklam Demand Gen",
     demand_gen_campaign_rows: "wiersze kampanii Demand Gen/Discovery",
     demand_gen_creative_asset_rows: "wiersze assetów kreacji",
     demand_gen_landing_quality_by_campaign: "jakość landingów per kampania",
-    demand_gen_migration_constraints: "ograniczenia migracji",
-    demand_gen_readiness_review_action_object: "review-only ActionObject",
+    demand_gen_transition_constraints: "ograniczenia przejścia",
+    demand_gen_readiness_review_action_object: "akcja do sprawdzenia",
     demand_gen_specific_evidence_required: "wymagane konkretne evidence Demand Gen",
-    already_demand_gen_review_only: "już Demand Gen, tylko review",
-    discovery_to_demand_gen_requires_human_review: "Discovery wymaga ręcznego review",
-    ga4_landing_source_campaign_quality: "GA4 landing/source/campaign quality",
+    already_demand_gen_review_only: "już Demand Gen, bez zapisu zmian",
+    discovery_to_demand_gen_requires_human_review: "Discovery wymaga ręcznego sprawdzenia",
+    ga4_landing_source_campaign_quality: "GA4 landing page, źródło i kampania quality",
     google_ads_budget_context: "kontekst budżetowy Google Ads",
     google_ads_campaign_activity: "aktywność kampanii Google Ads",
     google_ads_impression_share_context: "udział w wyświetleniach Google Ads",
-    human_confirm_before_apply: "potwierdzenie człowieka przed apply",
-    human_strategy_review: "review strategii przez człowieka",
-    review_ads_campaign_channel_context: "review kanałów kampanii Ads",
-    review_demand_gen_missing_contracts: "review brakujących kontraktów Demand Gen",
-    review_ga4_landing_source_campaign_context: "review GA4 landing/source/campaign"
+    human_confirm_before_apply: "potwierdzenie człowieka przed zapisem",
+    human_strategy_review: "sprawdzenie strategii przez człowieka",
+    review_ads_campaign_channel_context: "sprawdzenie kanałów kampanii Ads",
+    review_demand_gen_missing_contracts: "sprawdzenie brakujących kontraktów Demand Gen",
+    review_ga4_landing_source_campaign_context: "sprawdzenie GA4 landing page, źródło i kampania"
   };
   return labels[contract] ?? contract;
 }
@@ -343,10 +343,10 @@ function demandGenContractLabel(contract: string) {
 function demandGenBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
     "asset performance verdict": "werdykt performance assetów",
-    "campaign apply": "wdrożenie kampanii",
+    "zapis kampanii": "zapis kampanii",
     "creative quality verdict": "werdykt jakości kreacji",
     "Demand Gen launch recommendation": "rekomendacja launchu Demand Gen",
-    "Demand Gen migration ready": "gotowość migracji Demand Gen",
+    "Demand Gen transition ready": "gotowość przejścia Demand Gen",
     "performance uplift": "wzrost performance"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));

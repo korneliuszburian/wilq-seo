@@ -16,10 +16,16 @@ import {
   ActionPreviewControls,
   ActionReviewGatePanel,
   ActionValidationControls,
+  actionGateLabel,
   actionAuditEventLabel,
   actionAuditSummaryLabel
 } from "./ActionObjectPanels";
-import { marketerBlockedClaimLabels } from "./marketingLabels";
+import {
+  contentContractValueLabel,
+  contentWordPressDraftHandoffStatusLabel,
+  contentWordPressPostStatusLabel
+} from "../lib/contentLabels";
+import { adsMissingReadContractLabel, marketerBlockedClaimLabels } from "./marketingLabels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
   const action = useQuery({
@@ -137,7 +143,7 @@ type PayloadPreviewItem = {
     | "adsBusinessGuardrail"
     | "contentBrief"
     | "wordpressDraft"
-    | "wordpressStagingDraft";
+    | "wordpressDraftHandoff";
   item: Record<string, unknown>;
 };
 
@@ -242,8 +248,8 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   if (previewItem.kind === "wordpressDraft") {
     return <WordPressDraftPreviewCard item={previewItem.item} />;
   }
-  if (previewItem.kind === "wordpressStagingDraft") {
-    return <WordPressStagingDraftPreviewCard item={previewItem.item} />;
+  if (previewItem.kind === "wordpressDraftHandoff") {
+    return <WordPressDraftHandoffPreviewCard item={previewItem.item} />;
   }
   return <GenericPayloadPreviewCard item={previewItem.item} />;
 }
@@ -253,7 +259,7 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Podgląd do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Podgląd do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {previewIssueLabel(item)}
           </p>
@@ -269,34 +275,37 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
   );
 }
 
-function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unknown> }) {
+function WordPressDraftHandoffPreviewCard({ item }: { item: Record<string, unknown> }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Szkic stagingowy do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Szkic WordPress do sprawdzenia</h3>
           <p className="mt-1 break-words text-xs text-slate-500">
-            {stringValue(item.selected_target_url, stringValue(item.source_url, "brak URL"))}
+            {stringValue(item.final_canonical_url, stringValue(item.source_public_url, "brak URL"))}
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Kandydat: {stringValue(item.candidate_id, "brak")}</div>
+        <div>Wpis do sprawdzenia: {stringValue(item.candidate_id, "brak")}</div>
         <div>Temat: {stringValue(item.topic, "brak")}</div>
-        <div>Źródło: {stringValue(item.source_url, "brak")}</div>
-        <div>Adres podglądu: {stringValue(item.selected_target_url, "brak")}</div>
-        <div>Mapowanie: {stringValue(item.mapping_review_status, "brak")}</div>
+        <div>Źródło: {stringValue(item.source_public_url, "brak")}</div>
+        <div>Kanoniczny: {stringValue(item.final_canonical_url, "brak")}</div>
+        <div>Podgląd: {stringValue(item.preview_url, "brak")}</div>
         <div>Canonical: {stringValue(item.canonical_gate_status, "brak")}</div>
         <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
-        <div>Staging: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
+        <div>
+          Przekazanie:{" "}
+          {contentWordPressDraftHandoffStatusLabel(stringValue(item.wordpress_draft_handoff_status, "zablokowany"))}
+        </div>
         <div>
           Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
         </div>
         <div>
-          Następny kontrakt: {stringValue(item.required_next_action_contract, "brak")}
+          Następny krok: {contentContractValueLabel(stringValue(item.required_next_action_contract, "brak"))}
         </div>
-        <PreviewValues label="Walidacje" values={asStringArray(item.required_validation)} />
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <PreviewValues label="Czego nie wolno twierdzić" values={blockedClaimValues(item.blocked_claims)} />
         <ExecutionStateLine item={item} />
       </div>
@@ -309,7 +318,7 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Wykluczenie słowa do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Wykluczenie słowa do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.match_type, "match type")}
           </p>
@@ -325,7 +334,7 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
         <div>
           Grupa reklam: {stringValue(item.ad_group_name, stringValue(item.ad_group_id, "brak"))}
         </div>
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -338,9 +347,9 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Temat zapytań do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Temat zapytań do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "SearchTermNgramReview")}
+            Ocena intencji zapytań bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -354,8 +363,8 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Wyświetlenia: {formatNumber(item.impressions)}</div>
         <div>Koszt: {formatMicrosAsPln(item.cost_micros)}</div>
         <div>Konwersje: {formatNumber(item.conversions)}</div>
-        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -372,7 +381,7 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Segment odbiorców do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Segment odbiorców do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.member_type, "KEYWORD")}
           </p>
@@ -389,9 +398,9 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
             ? stringValue(targetingPreview.campaign_name, stringValue(targetingPreview.campaign_id, "brak"))
             : "brak"}
         </div>
-        <div>Bezpieczeństwo: {stringValue(safetyReview.status, "brak")}</div>
-        <PreviewValues label="Braki" values={asStringArray(safetyReview.missing_requirements)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Bezpieczeństwo: {actionStateLabel(stringValue(safetyReview.status, "brak"))}</div>
+        <PreviewValues label="Braki" values={missingContractValues(safetyReview.missing_requirements)} />
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -404,9 +413,9 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Rekomendacja Google Ads do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Rekomendacja Google Ads do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "ApplyRecommendationOperation")}
+            Ocena rekomendacji bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -415,7 +424,7 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
         <div>Typ: {stringValue(item.recommendation_type, "brak")}</div>
         <div>Kampania: {stringValue(item.campaign_id, "brak")}</div>
         <div>Budżet kampanii: {stringValue(item.campaign_budget_id, "brak")}</div>
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -428,9 +437,9 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Budżet kampanii do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Budżet kampanii do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "CampaignBudgetOperation")}
+            Ocena budżetu bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -439,7 +448,7 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Kampania: {stringValue(item.campaign_name, stringValue(item.campaign_id, "brak"))}</div>
         <div>Obecny budżet: {formatMicrosAsPln(item.current_budget_amount_micros)}</div>
         <div>Propozycja: {formatMicrosAsPln(item.proposed_budget_amount_micros)}</div>
-        <div>Bezpieczeństwo: {budgetSafetyStatus(item)}</div>
+        <div>Bezpieczeństwo: {actionStateLabel(budgetSafetyStatus(item))}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -452,9 +461,9 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Gotowość Demand Gen do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Gotowość Demand Gen do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "DemandGenReadinessReview")}
+            Ocena gotowości bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -466,8 +475,8 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
         <div>Grupy reklam Demand Gen: {formatNumber(item.demand_gen_ad_group_ad_row_count)}</div>
         <div>Kreacje/assets: {formatNumber(item.demand_gen_creative_asset_row_count)}</div>
         <div>Wiersze jakości landingów: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
-        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -481,9 +490,9 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Jakość pomiaru GA4 do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Jakość pomiaru GA4 do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "tracking_quality_review")}
+            Ocena pomiaru bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -498,7 +507,7 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
         <div>Eventy: {formatNumber(metricSnapshot.event_count)}</div>
         <div>Wyświetlenia stron: {formatNumber(metricSnapshot.screen_page_views)}</div>
         <PreviewValues label="Braki wymiarów" values={asStringArray(item.tracking_dimension_gaps)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -512,9 +521,9 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Widoczność lokalna do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Widoczność lokalna do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "local_visibility_review")}
+            Ocena lokalna bez zapisu zmian
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -528,9 +537,9 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Ocena: {formatNumber(metricSnapshot.localo_avg_rating)}</div>
         <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
         <div>Odsetek odpowiedzi na opinie: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
-        <PreviewValues label="Dozwolone kontrakty" values={asStringArray(item.allowed_contracts)} />
-        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Dozwolone odczyty" values={readContractValues(item.allowed_contracts)} />
+        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -544,7 +553,7 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Wejście do social draftu</h3>
+          <h3 className="text-sm font-semibold text-ink">Materiały do posta social</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.connector, "social")}
           </p>
@@ -555,8 +564,8 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
         <div>Źródło: {stringValue(item.source_connector, "brak")}</div>
         <div>Metryka: {stringValue(item.metric_name, "brak")}</div>
         <div>Wartość: {formatMetricValue(item.value)}</div>
-        <div>Wymiary: {formatDimensions(dimensions)}</div>
-        <PreviewValues label="Ograniczenia" values={asStringArray(item.draft_constraints)} />
+        <div>Szczegóły źródłowe: {technicalDetailCount(dimensions)}</div>
+        <PreviewValues label="Ograniczenia" values={operatorRequirementValues(item.draft_constraints)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <PublicationStateLine item={item} />
       </div>
@@ -573,20 +582,20 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
             Dostęp do Keyword Plannera do odblokowania
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.mode, "prepare_only")}
+            Blokada dostępu do odblokowania
           </p>
         </div>
         <StatusBadge value="blocked" />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Blokowane API: {stringValue(item.blocked_api, "brak")}</div>
+        <div>Zablokowany dostęp: {stringValue(item.blocked_api, "brak")}</div>
         <div>Powód: {stringValue(item.blocked_reason, "brak")}</div>
         <PreviewValues
           label="Wymagany stan"
-          values={asStringArray(item.required_google_ads_state)}
+          values={missingContractValues(item.required_google_ads_state)}
         />
         <PreviewValues label="Kroki" values={asStringArray(item.helper_steps)} />
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -601,9 +610,9 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Zasady bezpieczeństwa Ads do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Zasady bezpieczeństwa Ads do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.action_type, "ads_business_guardrail")}
+            Ocena celu biznesowego bez zapisu zmian
           </p>
         </div>
         <StatusBadge value="blocked" />
@@ -615,18 +624,18 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
         <div>Target ROAS: {formatMetricValue(context.target_roas)}</div>
         <div>Target CPA: {formatMicrosAsPln(context.target_cpa_micros)}</div>
         <PreviewValues label="Źródła konfiguracji" values={asStringArray(context.configured_sources)} />
-        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
+        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
         <PreviewValues
           label="Opcje targetu"
-          values={asStringArray(targetEnvOptions.target_roas_or_cpa)}
+          values={targetOptionValues(targetEnvOptions.target_roas_or_cpa)}
         />
         <PreviewValues
           label="Po potwierdzeniu"
-          values={asStringArray(item.allowed_uses_after_confirmation)}
+          values={operatorRequirementValues(item.allowed_uses_after_confirmation)}
         />
-        <PreviewValues label="Warunki przeglądu" values={asStringArray(item.operator_review_gates)} />
+        <PreviewValues label="Warunki przeglądu" values={operatorRequirementValues(item.operator_review_gates)} />
         <div>Ostatni przegląd strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -640,16 +649,16 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Brief treści do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Brief treści do sprawdzenia</h3>
           <p className="mt-1 break-words text-xs text-slate-500">
-            {stringValue(item.target_url, stringValue(item.source_url, "brak URL"))}
+            {contentPrimaryUrlValue(item)}
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Temat: {stringValue(item.topic, "brak")}</div>
-        <div>Tryb: {stringValue(item.mode, "brak")}</div>
+        <div>Tryb: {contentModeLabel(stringValue(item.mode, "brak"))}</div>
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
         <div>Opcje: {asStringArray(item.decision_options).join(", ") || "brak"}</div>
         <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
@@ -660,18 +669,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>H2: {asStringArray(item.h2_direction).slice(0, 4).join(", ") || "brak"}</div>
         <div>FAQ: {asStringArray(item.faq_direction).slice(0, 4).join(", ") || "brak"}</div>
         <div>CTA: {stringValue(item.cta_direction, "brak")}</div>
-        <div>Strona docelowa: {contentTargetSiteValue(item)}</div>
-        <div>
-          Alternatywy targetu:{" "}
-          {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
-            stringValue(item.target_site_alternative_candidate_summary, "brak")}
-        </div>
-        <div>Przegląd mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
-        <div>
-          URL-e do sprawdzenia:{" "}
-          {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
-            stringValue(item.target_site_mapping_review_summary, "brak")}
-        </div>
+        <div>Adresy: {contentUrlSemanticsValue(item)}</div>
         <div>Obiekcje: {asStringArray(item.key_objections).slice(0, 3).join(", ") || "brak"}</div>
         <div>Źródła faktów: {asStringArray(item.source_facts).slice(0, 3).join(", ") || "brak"}</div>
         <div>Brakujące dowody: {asStringArray(item.missing_evidence).slice(0, 3).join(", ") || "brak"}</div>
@@ -683,13 +681,23 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
           CTR: {formatPercent(metricSnapshot.ctr)}; Pozycja:{" "}
           {formatNumber(metricSnapshot.average_position)}
         </div>
-        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 3).join(", ")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
         <div>
-          Publikacja: {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}; wykonanie:{" "}
-          {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}
+          Publikacja: {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}; zapis zmian:{" "}
+          {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}
         </div>
       </div>
     </article>
+  );
+}
+
+function contentPrimaryUrlValue(item: Record<string, unknown>) {
+  return stringValue(
+    item.final_canonical_url,
+    stringValue(
+      item.intended_final_url,
+      stringValue(item.source_public_url, stringValue(item.preview_url, "brak URL"))
+    )
   );
 }
 
@@ -699,9 +707,9 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Szkic WordPress do przeglądu</h3>
+          <h3 className="text-sm font-semibold text-ink">Szkic WordPress do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.operation_type, "wordpress_draft_review")}
+            Szkic bez publikacji
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
@@ -709,25 +717,21 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Temat: {stringValue(item.topic, "brak")}</div>
         <div>Intencja: {stringValue(item.intent, "brak")}</div>
-        <div>Status wpisu: {stringValue(item.post_status, stringValue(draftPayload.post_status, "brak"))}</div>
-        <div>Tytuł draftu: {stringValue(draftPayload.post_title, "brak")}</div>
-        <div>Strona docelowa: {contentTargetSiteValue(item)}</div>
         <div>
-          Alternatywy targetu:{" "}
-          {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
-            stringValue(item.target_site_alternative_candidate_summary, "brak")}
+          Status wpisu:{" "}
+          {contentWordPressPostStatusLabel(
+            stringValue(item.post_status, stringValue(draftPayload.post_status, ""))
+          )}
         </div>
-        <div>Przegląd mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
+        <div>Tytuł szkicu: {stringValue(draftPayload.post_title, "brak")}</div>
+        <div>Adresy: {contentUrlSemanticsValue(item)}</div>
         <div>
-          URL-e do sprawdzenia:{" "}
-          {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
-            stringValue(item.target_site_mapping_review_summary, "brak")}
-        </div>
-        <div>
-          Zapis przeglądu mapowania:{" "}
-          {stringValue(item.target_site_mapping_review_recorded_outcome, "brak")}
-          {item.target_site_mapping_review_selected_url
-            ? ` -> ${stringValue(item.target_site_mapping_review_selected_url, "")}`
+          Zapis przeglądu URL:{" "}
+          {contentUrlReviewOutcomeLabel(
+            stringValue(item.content_url_review_recorded_outcome, "brak")
+          )}
+          {item.content_url_review_reviewed_url
+            ? ` -> ${stringValue(item.content_url_review_reviewed_url, "")}`
             : ""}
         </div>
         <div>
@@ -743,15 +747,22 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
             .join(", ") || "brak zapisu"}
         </div>
         <div>Notatka gotowości: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
-        <div>Staging handoff: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
         <div>
-          Blokady stagingu: {asStringArray(item.staging_handoff_blockers).slice(0, 5).join(", ") || "brak"}
+          Przekazanie do WordPress:{" "}
+          {contentWordPressDraftHandoffStatusLabel(stringValue(item.wordpress_draft_handoff_status, "zablokowany"))}
+        </div>
+        <div>
+          Blokady przekazania:{" "}
+          {asStringArray(item.wordpress_draft_handoff_blockers)
+            .slice(0, 5)
+            .map(contentContractValueLabel)
+            .join(", ") || "brak"}
         </div>
         <div>
           Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
         </div>
         <div>
-          Wykonanie: {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}; zapis do API:{" "}
+          Zapis zmian: {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}; gotowość systemu:{" "}
           {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
         </div>
       </div>
@@ -795,7 +806,7 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "adsBusinessGuardrail") return 10;
   if (kind === "contentBrief") return 11;
   if (kind === "wordpressDraft") return 12;
-  if (kind === "wordpressStagingDraft") return 13;
+  if (kind === "wordpressDraftHandoff") return 13;
   return 13;
 }
 
@@ -837,10 +848,10 @@ function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewIt
     return "localVisibility";
   }
   if (
-    stringValue(item.operation_type, "") === "staging_draft_handoff_review" ||
-    stringValue(item.preview_contract, "") === "wordpress_staging_draft_apply_preview_v1"
+    stringValue(item.operation_type, "") === "wordpress_draft_handoff_review" ||
+    stringValue(item.preview_contract, "") === "wordpress_draft_handoff_preview_v1"
   ) {
-    return "wordpressStagingDraft";
+    return "wordpressDraftHandoff";
   }
   return "generic";
 }
@@ -861,10 +872,90 @@ function PreviewValues({ label, values }: { label: string; values: string[] }) {
   );
 }
 
+function operatorRequirementValues(value: unknown) {
+  return asStringArray(value)
+    .map((item) => {
+      const gateLabel = actionGateLabel(item);
+      if (gateLabel !== item) return gateLabel;
+      const missingLabel = adsMissingReadContractLabel(item);
+      if (missingLabel !== item) return missingLabel;
+      return "warunek techniczny do sprawdzenia";
+    })
+    .filter((item, index, values) => values.indexOf(item) === index);
+}
+
+function missingContractValues(value: unknown) {
+  return asStringArray(value)
+    .map((item) => {
+      const label = adsMissingReadContractLabel(item);
+      return label !== item ? label : "brakujący odczyt techniczny";
+    })
+    .filter((item, index, values) => values.indexOf(item) === index);
+}
+
+function readContractValues(value: unknown) {
+  const labels: Record<string, string> = {
+    local_rankings: "lokalne pozycje",
+    reviews: "opinie",
+    gbp_visibility: "widoczność Google Business Profile",
+    competitor_visibility: "widoczność konkurencji"
+  };
+  return asStringArray(value)
+    .map((item) => {
+      const label = labels[item] ?? adsMissingReadContractLabel(item);
+      return label !== item ? label : "odczyt techniczny";
+    })
+    .filter((item, index, values) => values.indexOf(item) === index);
+}
+
+function targetOptionValues(value: unknown) {
+  const labels: Record<string, string> = {
+    WILQ_ADS_TARGET_ROAS: "target ROAS",
+    WILQ_ADS_TARGET_CPA_MICROS: "target CPA"
+  };
+  return asStringArray(value).map((item) => labels[item] ?? "opcja targetu do ustawienia");
+}
+
+function actionStateLabel(value: string) {
+  const labels: Record<string, string> = {
+    blocked: "zablokowane",
+    ready: "gotowe",
+    allowed: "dopuszczone",
+    missing: "brak",
+    brak: "brak"
+  };
+  return labels[value] ?? "do sprawdzenia";
+}
+
+function technicalDetailCount(value: Record<string, unknown>) {
+  const count = Object.values(value).filter(
+    (dimensionValue) =>
+      typeof dimensionValue === "string" ||
+      typeof dimensionValue === "number" ||
+      typeof dimensionValue === "boolean"
+  ).length;
+  if (count === 0) return "brak";
+  if (count === 1) return "1 pole techniczne";
+  return `${count} pola techniczne`;
+}
+
+function contentModeLabel(value: string) {
+  const labels: Record<string, string> = {
+    preserve: "zachować",
+    refresh: "odświeżyć",
+    merge: "scalić",
+    create: "utworzyć",
+    block: "zablokować",
+    inventory_check: "sprawdzić istniejącą treść",
+    rewrite: "przepisać po sprawdzeniu"
+  };
+  return labels[value] ?? "do sprawdzenia";
+}
+
 function ExecutionStateLine({ item }: { item: Record<string, unknown> }) {
   return (
     <div>
-      Wykonanie: {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}; zapis do API:{" "}
+      Zapis zmian: {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}; gotowość systemu:{" "}
       {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
     </div>
   );
@@ -873,7 +964,7 @@ function ExecutionStateLine({ item }: { item: Record<string, unknown> }) {
 function PublicationStateLine({ item }: { item: Record<string, unknown> }) {
   return (
     <div>
-      Publikacja: {item.apply_allowed === true ? "dopuszczona" : "zablokowana"}; zapis do API:{" "}
+      Publikacja: {item.apply_allowed === true ? "dopuszczona" : "zablokowana"}; gotowość systemu:{" "}
       {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
     </div>
   );
@@ -953,21 +1044,6 @@ function formatMetricValue(value: unknown) {
     return value;
   }
   return "brak";
-}
-
-function formatDimensions(value: Record<string, unknown>) {
-  const entries = Object.entries(value)
-    .filter(
-      ([, dimensionValue]) =>
-        typeof dimensionValue === "string" ||
-        typeof dimensionValue === "number" ||
-        typeof dimensionValue === "boolean"
-    )
-    .map(([key, dimensionValue]) => `${key}=${formatMetricValue(dimensionValue)}`);
-  if (entries.length === 0) {
-    return "brak";
-  }
-  return entries.slice(0, 4).join(", ");
 }
 
 function stringValue(value: unknown, fallback: string) {
@@ -1065,26 +1141,28 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
   );
 }
 
-function contentTargetSiteValue(item: Record<string, unknown>) {
-  const sourceHost = stringValue(item.source_site_host, "");
-  const targetHost = stringValue(item.target_site_host, "");
-  const targetUrl = stringValue(item.target_site_url, "");
-  const status = contentTargetSiteStatusLabel(
-    stringValue(item.target_site_adaptation_status, "")
+function contentUrlSemanticsValue(item: Record<string, unknown>) {
+  const sourceUrl = stringValue(item.source_public_url, "");
+  const finalUrl = stringValue(
+    item.final_canonical_url,
+    stringValue(item.intended_final_url, "")
   );
+  const previewUrl = stringValue(item.preview_url, "");
   const parts = [
-    sourceHost && targetHost ? `${sourceHost} -> ${targetHost}` : targetHost,
-    status,
-    targetUrl
+    sourceUrl ? `publiczny: ${sourceUrl}` : "",
+    finalUrl ? `kanoniczny: ${finalUrl}` : "",
+    previewUrl ? `podgląd: ${previewUrl}` : "",
   ].filter(Boolean);
   return parts.join("; ") || "brak";
 }
 
-function contentTargetSiteStatusLabel(value: string) {
+function contentUrlReviewOutcomeLabel(value: string) {
   const labels: Record<string, string> = {
-    current_site_match: "bieżąca strona",
-    target_site_alias_match: "dopasowanie do nowej strony",
-    needs_inventory_match: "wymaga dopasowania inventory"
+    confirm_exact_candidate: "potwierdzono wskazany adres",
+    confirm_alternative_candidate: "wybrano alternatywny adres do dalszego przeglądu",
+    manual_mapping_required: "wymaga ręcznego wskazania adresu",
+    reject_all_candidates: "odrzucono propozycje adresu",
+    brak: "brak"
   };
   return labels[value] ?? value;
 }
@@ -1097,7 +1175,7 @@ function ErrorState() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="rounded-md border border-risk/30 bg-risk/10 p-4 text-sm text-risk">
-        WILQ API is not reachable.
+        Nie udało się połączyć z WILQ.
       </div>
     </main>
   );

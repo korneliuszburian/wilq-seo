@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ShieldAlert } from "lucide-react";
 
 import {
   ActionObject,
+  ConnectorStatus,
   Ga4DiagnosticsResponse,
   getActions,
+  getConnectors,
   getGa4Diagnostics
 } from "../lib/api";
+import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
@@ -45,24 +49,36 @@ export function Ga4DiagnosticSurface() {
     queryKey: ["actions"],
     queryFn: getActions
   });
+  const connectors = useQuery({
+    queryKey: ["connectors"],
+    queryFn: getConnectors
+  });
 
-  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.isLoading || actions.isLoading || connectors.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/ga4/diagnostics. GA4 route nie może udawać behavior ani conversion insightów bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać danych GA4. Ten widok nie może udawać jakości ruchu ani konwersji bez WILQ." />
       </main>
     );
   }
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. GA4 route nie może pokazać walidacji ani podglądu payloadu." />
+        <BlockerNotice message="Nie udało się odczytać /api/actions. GA4 route nie może pokazać sprawdzenia ani podglądu zmian." />
+      </main>
+    );
+  }
+  if (connectors.error || !connectors.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/connectors. GA4 nie może pokazać źródeł danych językiem marketera." />
       </main>
     );
   }
 
   const data = diagnostics.data;
+  const connectorStatuses = connectors.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const trackingPreviewItems = ga4TrackingQualityPreviewItemsFromActions(routeActions);
   const latestRefresh = data.latest_refresh;
@@ -73,7 +89,7 @@ export function Ga4DiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">GA4</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok GA4 z WILQ API. Pokazuje jakość ruchu z landingów,
+            Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu z landingów,
             dopasowanie WordPress i problemy pomiaru bez udawania konwersji, ROAS
             albo revenue.
           </p>
@@ -102,7 +118,7 @@ export function Ga4DiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.id}: {ga4ConnectorStatusLabel(data.connector.status)}
+              {data.connector.label}: {ga4ConnectorStatusLabel(data.connector.status)}
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {ga4FreshnessLabel(data.freshness_assessment.state)}
@@ -124,27 +140,76 @@ export function Ga4DiagnosticSurface() {
         ) : null}
       </section>
 
-      <Ga4MeasurementIssues data={data} />
-      <Ga4OperatorSummary data={data} />
+      <Ga4OperatorSummary data={data} connectorStatuses={connectorStatuses} />
 
-      <Ga4DiagnosticProof data={data} />
+      <Ga4ExpandableReviewPanel
+        data={data}
+        trackingPreviewItems={trackingPreviewItems}
+        connectorStatuses={connectorStatuses}
+      />
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
-          <ActionObjectFocus actions={routeActions} />
+          <Ga4ExpandableActionsPanel actions={routeActions} />
         </div>
       ) : null}
+    </main>
+  );
+}
 
-      {trackingPreviewItems.length > 0 ? (
-        <section className="mt-6 rounded-md border border-line bg-white p-4">
+function Ga4ExpandableReviewPanel({
+  data,
+  trackingPreviewItems,
+  connectorStatuses
+}: {
+  data: Ga4DiagnosticsResponse;
+  trackingPreviewItems: Ga4TrackingQualityPreviewItem[];
+  connectorStatuses: ConnectorStatus[];
+}) {
+  const [showReview, setShowReview] = useState(false);
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Pełny przegląd GA4
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Pierwszy ekran pokazuje status pomiaru i najważniejszą decyzję. Rozwiń
+            pełny przegląd, gdy chcesz zobaczyć `(not set)`, dowody, podgląd
+            przeglądu i bramę bezpieczeństwa GA4.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Pomiar" value={data.operator_summary.measurement_issue_count} />
+          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Podglądy" value={trackingPreviewItems.length} />
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowReview((current) => !current)}
+        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+      >
+        {showReview ? "Ukryj pełny przegląd GA4" : "Pokaż pełny przegląd GA4"}
+      </button>
+
+      {showReview ? (
+        <div className="mt-4 grid gap-6">
+          <Ga4MeasurementIssues data={data} connectorStatuses={connectorStatuses} />
+          <Ga4DiagnosticProof data={data} connectorStatuses={connectorStatuses} />
+          {trackingPreviewItems.length > 0 ? (
+            <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-                Podgląd review GA4
+                Podgląd przeglądu GA4
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                Review-only kolejka akcji. Pokazuje co sprawdzić w
-                landing/source/campaign i nie wykonuje zmian w GA4.
+                Kolejka akcji do sprawdzenia. Pokazuje co sprawdzić w
+                landing page, źródło i kampania i nie zapisuje zmian w GA4.
               </p>
             </div>
             <MetricTile label="Pozycje" value={trackingPreviewItems.length} />
@@ -154,10 +219,10 @@ export function Ga4DiagnosticSurface() {
               <Ga4TrackingQualityPreviewCard key={preview.id} preview={preview} />
             ))}
           </div>
-        </section>
-      ) : null}
+            </section>
+          ) : null}
 
-      <section className="mt-6 rounded-md border border-line bg-white p-4">
+          <section className="rounded-md border border-line bg-white p-4">
         <div className="mb-3 flex items-start gap-3">
           <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
             <ShieldAlert aria-hidden="true" size={18} />
@@ -167,9 +232,9 @@ export function Ga4DiagnosticSurface() {
               Brama bezpieczeństwa GA4
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              WILQ może przygotować review jakości ruchu i checklistę pomiaru, ale
+              WILQ może przygotować ocenę jakości ruchu i checklistę pomiaru, ale
               nie może uznać wyniku za problem kampanii bez konwersji, kosztów i
-              walidacji akcji.
+              sprawdzenia w WILQ.
             </p>
           </div>
         </div>
@@ -177,12 +242,57 @@ export function Ga4DiagnosticSurface() {
           label="Zablokowane claimy"
           values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
-      </section>
-    </main>
+          </section>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
-function Ga4MeasurementIssues({ data }: { data: Ga4DiagnosticsResponse }) {
+function Ga4ExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
+  const [showActions, setShowActions] = useState(false);
+  const actionCountLabel = formatGa4ActionCount(actions.length);
+
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Akcje do sprawdzenia
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ ma {actionCountLabel} dla GA4. Otwórz ją dopiero wtedy, gdy
+            chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
+            sprawdzić warunki bezpiecznego zapisu.
+          </p>
+        </div>
+        <MetricTile label="Akcje" value={actionCountLabel} />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowActions((current) => !current)}
+        className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+      >
+        {showActions ? "Ukryj akcje do sprawdzenia" : "Pokaż akcje do sprawdzenia"}
+      </button>
+
+      {showActions ? (
+        <div className="mt-4">
+          <ActionObjectFocus actions={actions} />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function Ga4MeasurementIssues({
+  data,
+  connectorStatuses
+}: {
+  data: Ga4DiagnosticsResponse;
+  connectorStatuses: ConnectorStatus[];
+}) {
   const measurementDecisions = data.decision_queue.filter(
     (decision) => decision.decision_type === "fix_measurement"
   );
@@ -205,7 +315,11 @@ function Ga4MeasurementIssues({ data }: { data: Ga4DiagnosticsResponse }) {
       {measurementDecisions.length > 0 ? (
         <div className="grid gap-3 xl:grid-cols-2">
           {measurementDecisions.slice(0, 4).map((decision) => (
-            <Ga4DecisionCard key={`measurement-${decision.id}`} decision={decision} />
+            <Ga4DecisionCard
+              key={`measurement-${decision.id}`}
+              decision={decision}
+              connectorStatuses={connectorStatuses}
+            />
           ))}
         </div>
       ) : (
@@ -215,7 +329,13 @@ function Ga4MeasurementIssues({ data }: { data: Ga4DiagnosticsResponse }) {
   );
 }
 
-function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
+function Ga4OperatorSummary({
+  data,
+  connectorStatuses
+}: {
+  data: Ga4DiagnosticsResponse;
+  connectorStatuses: ConnectorStatus[];
+}) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const topDecisions = summary.top_decision_ids
@@ -253,7 +373,11 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
         <div className="grid gap-3">
           {topDecisions.length > 0 ? (
             topDecisions.map((decision) => (
-              <Ga4DecisionCard key={decision.id} decision={decision} />
+              <Ga4DecisionCard
+                key={decision.id}
+                decision={decision}
+                connectorStatuses={connectorStatuses}
+              />
             ))
           ) : (
             <BlockerNotice message="Problemy pomiaru są w sekcji powyżej. Brak osobnych decyzji jakości ruchu do pokazania w operatorze GA4." />
@@ -292,7 +416,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               empty="brak"
             />
             <TraceLine
-              label="Dowody w API"
+              label="Dowody w WILQ"
               values={[formatGa4EvidenceCount(data.evidence_ids.length)]}
             />
             <TraceLine
@@ -309,7 +433,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               href={`/actions/${actionIds[0]}`}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
             >
-              Waliduj review GA4
+              Sprawdź GA4 w WILQ
             </a>
           ) : null}
         </div>
@@ -318,7 +442,13 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
   );
 }
 
-function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
+function Ga4DecisionCard({
+  decision,
+  connectorStatuses
+}: {
+  decision: Ga4DecisionItem;
+  connectorStatuses: ConnectorStatus[];
+}) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -371,12 +501,12 @@ function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine
-          label="Dowody w API"
+          label="Dowody w WILQ"
           values={[formatGa4EvidenceCount(decision.evidence_ids.length)]}
         />
-        <TraceLine label="Źródła" values={decision.source_connectors} />
+        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectorStatuses)} />
         <TraceLine
-          label="Akcje do walidacji"
+          label="Akcje do sprawdzenia"
           values={[formatGa4ActionCount(decision.action_ids.length)]}
         />
         <TraceLine label="Nie wolno twierdzić" values={ga4BlockedClaimLabels(decision.blocked_claims)} />
@@ -401,10 +531,11 @@ function Ga4TrackingQualityPreviewCard({
             {preview.landing_page ? `Landing ${preview.landing_page}` : "Brak landing page"}
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {preview.operation_type} / {preview.apply_allowed ? "apply możliwy" : "apply zablokowany"}
+            {ga4OperationLabel(preview.operation_type)} /{" "}
+            {preview.apply_allowed ? "zapis możliwy" : "zapis zablokowany"}
           </p>
         </div>
-        <StatusBadge value={preview.tracking_dimension_gaps.length ? "blocked" : "review"} />
+        <StatusBadge value={preview.tracking_dimension_gaps.length ? "blocked" : "ready"} />
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{preview.reason}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
@@ -416,7 +547,7 @@ function Ga4TrackingQualityPreviewCard({
           empty="brak"
         />
         <TraceLine
-          label="Walidacje"
+          label="Warunki sprawdzenia"
           values={preview.required_validation.map(ga4ValidationLabel).slice(0, 4)}
         />
         <TraceLine
@@ -424,7 +555,7 @@ function Ga4TrackingQualityPreviewCard({
           values={ga4BlockedClaimLabels(preview.blocked_claims).slice(0, 5)}
         />
         <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
-        <LinkedTraceLine label="Akcja" values={[preview.action_id]} kind="actions" />
+        <TraceLine label="Akcja" values={["1 akcja do sprawdzenia"]} />
       </div>
       {Object.keys(preview.metric_snapshot).length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -497,7 +628,13 @@ function wordpressMatchConfidenceLabel(value: string) {
   return value;
 }
 
-function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
+function Ga4DiagnosticProof({
+  data,
+  connectorStatuses
+}: {
+  data: Ga4DiagnosticsResponse;
+  connectorStatuses: ConnectorStatus[];
+}) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
   const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
@@ -513,7 +650,7 @@ function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
             Dowody i ograniczenia GA4
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            To jest skrót kontraktu WILQ API. Decyzje dla marketera są powyżej;
+            To jest skrót źródeł i blokad w WILQ. Decyzje dla marketera są powyżej;
             tutaj widać, z jakich źródeł i blokad wynikają.
           </p>
         </div>
@@ -527,8 +664,8 @@ function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => ga4SectionLabel(section.id))} />
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={sourceConnectors} />
-        <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
+        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, connectorStatuses)} />
+        <TraceLine label="Akcje" values={[formatGa4ActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Zablokowane claimy"
           values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
@@ -628,20 +765,27 @@ function ga4TrackingDimensionLabel(value: string) {
   return labels[value] ?? value;
 }
 
+function ga4OperationLabel(value: string) {
+  const labels: Record<string, string> = {
+    tracking_quality_review: "ocena jakości pomiaru"
+  };
+  return labels[value] ?? value;
+}
+
 function ga4ValidationLabel(value: string) {
   const labels: Record<string, string> = {
     review_landing_page_dimension: "sprawdź landing page",
     review_source_medium_dimension: "sprawdź source / medium",
     review_campaign_name_dimension: "sprawdź kampanię",
     review_conversion_or_key_event_mapping: "sprawdź konwersje / key events",
-    human_confirm_before_tracking_change: "potwierdź review człowieka"
+    human_confirm_before_tracking_change: "potwierdź sprawdzenie przez człowieka"
   };
   return labels[value] ?? value;
 }
 
 function ga4ConnectorStatusLabel(status: string) {
   if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "missing_credentials") return "brakuje dostępu";
   if (status === "disabled") return "źródło wyłączone";
   return `status: ${status}`;
 }
@@ -667,7 +811,7 @@ function ga4BlockedClaimLabels(claims: string[]) {
     "campaign quality": "jakość kampanii",
     "conversion drop": "spadek konwersji",
     "conversion rate": "conversion rate",
-    "conversion setup applied": "konfiguracja konwersji wdrożona",
+    "conversion setup applied": "konfiguracja konwersji zapisana",
     "funnel diagnosis": "diagnoza lejka",
     "funnel dropoff": "spadek w lejku",
     "GA4 write": "zapis do GA4",

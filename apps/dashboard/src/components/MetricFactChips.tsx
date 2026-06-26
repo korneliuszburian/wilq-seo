@@ -54,13 +54,35 @@ function metricFactLabel(metricName: string) {
     event_count: "Zdarzenia",
     impressions: "Wyświetlenia",
     issue_product_count: "Zgłoszenia problemów",
+    localo_active_place_count: "Miejsca aktywne",
+    localo_avg_latest_grid_position: "Średnia pozycja lokalna",
+    localo_avg_rating: "Średnia ocena",
+    localo_avg_visibility_change: "Zmiana widoczności lokalnej",
+    localo_avg_visibility_current: "Widoczność lokalna",
+    localo_competitor_change_count: "Zmiany konkurencji",
+    localo_competitor_count: "Konkurenci lokalni",
+    localo_favorite_competitor_count: "Wyróżnieni konkurenci",
+    localo_gbp_actions_total: "Akcje w profilu firmy",
+    localo_gbp_impressions_total: "Wyświetlenia profilu firmy",
+    localo_gbp_metric_point_count: "Punkty danych profilu firmy",
+    localo_keyword_volume_count: "Frazy z wolumenem",
+    localo_latest_grid_position_count: "Pomiary pozycji lokalnej",
+    localo_place_detail_count: "Miejsca ze szczegółami",
+    localo_review_reply_rate: "Odpowiedzi na opinie",
+    localo_reviews_count: "Opinie",
+    localo_reviews_removed_count: "Usunięte opinie",
+    localo_reviews_replied_count: "Opinie z odpowiedzią",
+    localo_snapshot_reviews_count: "Opinie w odczycie",
+    localo_total_keyword_volume: "Łączny wolumen fraz",
+    localo_tracked_keyword_count: "Monitorowane frazy",
+    localo_visibility_score_count: "Pomiary widoczności",
     pages_total: "Strony",
     posts_total: "Wpisy",
     screen_page_views: "Wyświetlenia stron",
     sessions: "Sesje",
     total_products: "Produkty w feedzie"
   };
-  return labels[metricName] ?? metricName.replaceAll("_", " ");
+  return labels[metricName] ?? "metryka WILQ";
 }
 
 function formatMetricFactValue(fact: MetricFact) {
@@ -82,7 +104,7 @@ function formatMetricDelta(fact: MetricFact) {
 
 function formatMetricDimensions(fact: MetricFact) {
   return Object.entries(fact.dimensions ?? {})
-    .map(([key, value]) => `${metricDimensionLabel(key)}=${value}`)
+    .map(([key, value]) => `${metricDimensionLabel(key)}=${metricDimensionValueLabel(value)}`)
     .join(", ");
 }
 
@@ -91,17 +113,31 @@ function metricDimensionLabel(dimensionName: string) {
     affected_attribute: "atrybut",
     campaign_name: "kampania",
     competitor_domain: "konkurent",
-    contract: "kontrakt",
+    contract: "obszar",
     country: "kraj",
     gap_type: "typ luki",
     issue_type: "problem",
     keyword: "fraza",
     landing_page: "landing",
+    metric_bucket: "zakres",
     page: "strona",
     query: "zapytanie",
+    scope: "zakres",
     source_medium: "źródło",
     source_url: "URL źródłowy",
     target_domain: "domena docelowa"
   };
-  return labels[dimensionName] ?? dimensionName.replaceAll("_", " ");
+  return labels[dimensionName] ?? "wymiar";
+}
+
+function metricDimensionValueLabel(value: string) {
+  const labels: Record<string, string> = {
+    active_places: "aktywne miejsca",
+    competitor_visibility: "widoczność konkurencji",
+    gbp_visibility: "profil firmy w Google",
+    local_rankings: "lokalne pozycje",
+    place_inventory: "spis miejsc",
+    reviews: "opinie"
+  };
+  return labels[value] ?? value;
 }

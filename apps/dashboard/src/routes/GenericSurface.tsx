@@ -1,81 +1,51 @@
 import { useQuery } from "@tanstack/react-query";
-import { FileJson } from "lucide-react";
+import { ChevronDown, ChevronRight, FileJson, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 
 import {
-  ExpertRule,
-  getActions,
-  getConnectorRefreshRuns,
   getConnectors,
-  getEvidence,
-  getExpertRules,
   getKnowledgeCards,
   getKnowledgeOperatingMap,
   getKnowledgePlaybooks,
-  getOpportunities,
   getWorkflowRuns,
-  getWorkflows
+  getWorkflows,
+  type ConnectorStatus
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { StatusBadge } from "../components/StatusBadge";
 import {
   KnowledgeCardList,
+  KnowledgeDecisionImpactPanel,
   KnowledgeOperatingMapPanel,
   PlaybookList
 } from "./KnowledgePanels";
-import {
-  ActionList,
-  ConnectorGrid,
-  ConnectorRefreshRunList,
-  EvidenceList,
-  ExpertRuleList,
-  OpportunityList
-} from "./RegistryPanels";
+import { ConnectorGrid } from "./RegistryPanels";
 import { WorkflowRunList } from "./WorkflowPanels";
 
 export function GenericSurface({ routeName }: { routeName: string }) {
   const isKnowledgeRoute = routeName.startsWith("/knowledge");
+  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
+  const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
+  const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
+  const [showConnectorDetails, setShowConnectorDetails] = useState(false);
   const isWorkflowRoute = routeName.startsWith("/workflows");
   const isSettingsRoute = routeName.startsWith("/settings");
-  const shouldLoadGenericRegistries = !isKnowledgeRoute && !isSettingsRoute;
-  const shouldLoadConnectorStatus = shouldLoadGenericRegistries || isSettingsRoute;
+  const compactRoute = compactRouteConfig(routeName);
+  const shouldLoadConnectorStatus = isSettingsRoute;
   const connectors = useQuery({
     queryKey: ["connectors"],
     queryFn: getConnectors,
     enabled: shouldLoadConnectorStatus
   });
-  const connectorRefreshRuns = useQuery({
-    queryKey: ["connector-refresh-runs"],
-    queryFn: getConnectorRefreshRuns,
-    enabled: shouldLoadGenericRegistries
-  });
-  const opportunities = useQuery({
-    queryKey: ["opportunities"],
-    queryFn: getOpportunities,
-    enabled: shouldLoadGenericRegistries
-  });
-  const actions = useQuery({
-    queryKey: ["actions"],
-    queryFn: getActions,
-    enabled: shouldLoadGenericRegistries
-  });
-  const evidence = useQuery({
-    queryKey: ["evidence"],
-    queryFn: getEvidence,
-    enabled: shouldLoadGenericRegistries
-  });
   const workflows = useQuery({
     queryKey: ["workflows"],
     queryFn: getWorkflows,
-    enabled: shouldLoadGenericRegistries || isWorkflowRoute
+    enabled: isWorkflowRoute
   });
   const workflowRuns = useQuery({
     queryKey: ["workflow-runs"],
     queryFn: getWorkflowRuns,
-    enabled: shouldLoadGenericRegistries || isWorkflowRoute
-  });
-  const expertRules = useQuery({
-    queryKey: ["expert-rules"],
-    queryFn: getExpertRules,
-    enabled: shouldLoadGenericRegistries
+    enabled: isWorkflowRoute
   });
   const knowledgeMap = useQuery({
     queryKey: ["knowledge-operating-map"],
@@ -96,22 +66,12 @@ export function GenericSurface({ routeName }: { routeName: string }) {
   const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
   if (
     connectors.isLoading ||
-    connectorRefreshRuns.isLoading ||
-    opportunities.isLoading ||
-    actions.isLoading ||
-    evidence.isLoading ||
-    expertRules.isLoading ||
     isWorkflowLoading
   ) {
     return <LoadingBand />;
   }
   if (
     connectors.error ||
-    connectorRefreshRuns.error ||
-    opportunities.error ||
-    actions.error ||
-    evidence.error ||
-    expertRules.error ||
     hasWorkflowError
   ) {
     return <ErrorState />;
@@ -121,13 +81,9 @@ export function GenericSurface({ routeName }: { routeName: string }) {
     ? "Baza wiedzy WILQ"
     : isSettingsRoute
       ? "Ustawienia"
-    : routeName
-        .replace(/^\//, "")
-        .replaceAll("/", " / ")
-        .replaceAll("-", " ")
-        .replace(/\b\w/g, (match) => match.toUpperCase());
-  const mappedRules = expertRulesForRoute(routeName, expertRules.data ?? []).slice(0, 6);
-
+      : compactRoute
+        ? compactRoute.title
+        : "Widok WILQ";
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -135,10 +91,10 @@ export function GenericSurface({ routeName }: { routeName: string }) {
           <h1 className="text-2xl font-semibold tracking-normal">{title || "Command Center"}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {isKnowledgeRoute
-              ? "Źródła, playbooki i expert rules powiązane z decyzjami, workflowami i dowodami WILQ API."
+              ? "Wiedza używana tylko wtedy, gdy wpływa na decyzję, blokadę albo następny bezpieczny krok."
               : isSettingsRoute
-                ? "Status dostępu do źródeł WILQ. Braki credentiali pokazujemy nazwami pól, bez wartości sekretów."
-              : "API-backed operating surface with evidence, connector and action state."}
+                ? "Status dostępu do źródeł WILQ. Braki dostępu pokazujemy bez wartości sekretów."
+              : "Powierzchnia WILQ z dowodami, źródłami danych i stanem akcji."}
           </p>
         </div>
         <FileJson aria-hidden="true" className="text-action" size={28} />
@@ -147,7 +103,7 @@ export function GenericSurface({ routeName }: { routeName: string }) {
         {isWorkflowRoute ? (
           <>
             <section>
-              <SectionHeading title="Workflow Registry" />
+              <SectionHeading title="Procesy decyzyjne" />
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {(workflows.data ?? []).map((workflow) => (
                   <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
@@ -158,7 +114,7 @@ export function GenericSurface({ routeName }: { routeName: string }) {
               </div>
             </section>
             <section>
-              <SectionHeading title="Workflow Runs" />
+              <SectionHeading title="Ostatnie uruchomienia" />
               <WorkflowRunList runs={workflowRuns.data ?? []} />
             </section>
           </>
@@ -166,19 +122,13 @@ export function GenericSurface({ routeName }: { routeName: string }) {
         {isKnowledgeRoute ? (
           <>
             <section>
-              <div className="mb-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-                <MetricTile label="Powiązania" value={knowledgeMap.data?.binding_count ?? 0} />
-                <MetricTile label="Karty wiedzy" value={knowledgeMap.data?.source_card_count ?? 0} />
-                <MetricTile label="Playbooki" value={knowledgeMap.data?.playbook_count ?? 0} />
-                <MetricTile label="Reguły" value={knowledgeMap.data?.expert_rule_count ?? 0} />
-              </div>
-              <SectionHeading title="Mapa wiedzy do decyzji" />
+              <SectionHeading title="Co ta wiedza zmienia w decyzjach" />
               {knowledgeMap.isLoading ? (
                 <LoadingBand />
               ) : knowledgeMap.error ? (
                 <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />
               ) : (
-                <KnowledgeOperatingMapPanel
+                <KnowledgeDecisionImpactPanel
                   map={
                     knowledgeMap.data ?? {
                       generated_at: "",
@@ -193,93 +143,303 @@ export function GenericSurface({ routeName }: { routeName: string }) {
               )}
             </section>
             <section>
-              <SectionHeading title="Karty źródłowe" />
-              {knowledgeCards.isLoading ? (
-                <LoadingBand />
-              ) : knowledgeCards.error ? (
-                <InlineErrorState message="Nie udało się pobrać kart wiedzy." />
-              ) : (
-                <KnowledgeCardList cards={knowledgeCards.data ?? []} />
-              )}
+              <DetailToggle
+                expanded={showKnowledgeMap}
+                label="Pokaż pełną mapę wiedzy"
+                onClick={() => setShowKnowledgeMap((value) => !value)}
+              />
+              {showKnowledgeMap ? (
+                knowledgeMap.isLoading ? (
+                  <LoadingBand />
+                ) : knowledgeMap.error ? (
+                  <InlineErrorState message="Nie udało się pobrać pełnej mapy wiedzy." />
+                ) : (
+                  <KnowledgeOperatingMapPanel
+                    map={
+                      knowledgeMap.data ?? {
+                        generated_at: "",
+                        source_card_count: 0,
+                        playbook_count: 0,
+                        expert_rule_count: 0,
+                        binding_count: 0,
+                        bindings: []
+                      }
+                    }
+                  />
+                )
+              ) : null}
             </section>
             <section>
-              <SectionHeading title="Playbooki maszynowe" />
-              {playbooks.isLoading ? (
-                <LoadingBand />
-              ) : playbooks.error ? (
-                <InlineErrorState message="Nie udało się pobrać playbooków wiedzy." />
-              ) : (
-                <PlaybookList playbooks={playbooks.data ?? []} />
-              )}
+              <DetailToggle
+                expanded={showKnowledgeCards}
+                label="Pokaż źródła wiedzy"
+                onClick={() => setShowKnowledgeCards((value) => !value)}
+              />
+              {showKnowledgeCards ? (
+                knowledgeCards.isLoading ? (
+                  <LoadingBand />
+                ) : knowledgeCards.error ? (
+                  <InlineErrorState message="Nie udało się pobrać kart wiedzy." />
+                ) : (
+                  <KnowledgeCardList cards={knowledgeCards.data ?? []} />
+                )
+              ) : null}
+            </section>
+            <section>
+              <DetailToggle
+                expanded={showKnowledgePlaybooks}
+                label="Pokaż zasady pracy"
+                onClick={() => setShowKnowledgePlaybooks((value) => !value)}
+              />
+              {showKnowledgePlaybooks ? (
+                playbooks.isLoading ? (
+                  <LoadingBand />
+                ) : playbooks.error ? (
+                  <InlineErrorState message="Nie udało się pobrać playbooków wiedzy." />
+                ) : (
+                  <PlaybookList playbooks={playbooks.data ?? []} />
+                )
+              ) : null}
             </section>
           </>
         ) : null}
         {isSettingsRoute ? (
           <section>
-            <SectionHeading title="Status connectorów" />
-            <ConnectorGrid connectors={connectors.data ?? []} />
+            <SectionHeading title="Dostęp do źródeł danych" />
+            <ConnectorAccessSummary connectors={connectors.data ?? []} />
+            <div className="mt-4">
+              <DetailToggle
+                expanded={showConnectorDetails}
+                label="Pokaż stan dostępu"
+                onClick={() => setShowConnectorDetails((value) => !value)}
+              />
+              {showConnectorDetails ? (
+                <div className="mt-3">
+                  <ConnectorGrid connectors={connectors.data ?? []} />
+                </div>
+              ) : null}
+            </div>
           </section>
         ) : null}
-        {shouldLoadGenericRegistries ? (
-          <>
-            <section>
-              <SectionHeading title="Opportunities" />
-              <OpportunityList opportunities={opportunities.data ?? []} />
-            </section>
-            <section>
-              <SectionHeading title="Evidence Registry" />
-              <EvidenceList evidenceItems={(evidence.data ?? []).slice(0, 8)} />
-            </section>
-            <section>
-              <SectionHeading title="Connector Refresh Runs" />
-              <ConnectorRefreshRunList runs={(connectorRefreshRuns.data ?? []).slice(0, 8)} />
-            </section>
-            <section>
-              <SectionHeading title="Actions" />
-              <ActionList actions={actions.data ?? []} />
-            </section>
-            <section>
-              <SectionHeading title="Expert Rules" />
-              <ExpertRuleList rules={mappedRules} />
-            </section>
-            <section>
-              <SectionHeading title="Connector Status" />
-              <ConnectorGrid connectors={connectors.data ?? []} />
-            </section>
-          </>
-        ) : null}
+        {compactRoute ? <CompactRoutePanel config={compactRoute} /> : null}
       </div>
     </main>
   );
 }
 
-function expertRulesForRoute(routeName: string, rules: ExpertRule[]): ExpertRule[] {
-  const domains = routeExpertDomains(routeName);
-  if (domains.length === 0) return rules;
-  return rules.filter((rule) => domains.includes(rule.domain));
+type CompactRouteConfig = {
+  title: string;
+  description: string;
+  status: string;
+  nextStep: string;
+  blockers: string[];
+  safeRoute?: string;
+};
+
+const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
+  "/content-inventory": {
+    title: "Spis treści",
+    description:
+      "Skrót obszaru, który docelowo ma pokazywać realne treści z ekologus.pl i sklepu. Dziś decyzje contentowe są prowadzone w Content Plannerze.",
+    status: "w trakcie porządkowania",
+    nextStep: "Przejdź do Content Plannera i sprawdź kolejkę zachowania, odświeżenia, scalenia albo blokady.",
+    blockers: [
+      "pełny Content Inventory v2 nie jest jeszcze gotowy",
+      "brak finalnego preflightu duplikacji i kanonicznych URL-i"
+    ],
+    safeRoute: "/content-planner"
+  },
+  "/google-sheets": {
+    title: "Google Sheets",
+    description:
+      "Miejsce na eksporty i pakiety do pracy operacyjnej. Ten widok nie powinien udawać raportu ani pokazywać pełnego rejestru WILQ.",
+    status: "zablokowane do czasu kontraktu eksportu",
+    nextStep:
+      "Najpierw wybierz konkretny zakres eksportu: pakiet UAT, lista decyzji, kolejka treści albo dowody do sprawdzenia.",
+    blockers: [
+      "brak zatwierdzonego zakresu eksportu",
+      "brak reguł, które pola mogą trafić do arkusza bez sekretów i technicznych śladów"
+    ],
+    safeRoute: "/command-center"
+  },
+  "/codex-runs": {
+    title: "Uruchomienia Codex",
+    description:
+      "Miejsce na historię pracy operatora i skill evale. Domyślny widok nie pokazuje surowych promptów ani pełnych danych technicznych.",
+    status: "częściowo dostępne przez proofy i eval ledger",
+    nextStep:
+      "Sprawdź `docs/PROGRESS.md` i `docs/evals/skill-eval-ledger.md`, jeśli potrzebujesz dowodu ostatniego przebiegu.",
+    blockers: [
+      "brak osobnego widoku historii uruchomień z redakcją surowych promptów",
+      "brak finalnego podziału na proof użytkowy i widok techniczny operatora"
+    ]
+  },
+  "/security": {
+    title: "Bezpieczeństwo",
+    description:
+      "Kontrola zasad bezpieczeństwa WILQ: brak sekretów w UI, brak zapisu zmian bez audytu i brak rekomendacji bez dowodów.",
+    status: "zasady aktywne, widok produktowy do dopracowania",
+    nextStep:
+      "Do weryfikacji użyj aktualnych testów redakcji, action gates i proofów w `docs/PROGRESS.md`.",
+    blockers: [
+      "brak pełnego dashboardu bezpieczeństwa",
+      "brak produkcyjnych ról i uprawnień"
+    ]
+  }
+};
+
+function compactRouteConfig(routeName: string) {
+  return COMPACT_ROUTE_CONFIGS[routeName];
 }
 
-function routeExpertDomains(routeName: string): string[] {
-  if (routeName.includes("ads-doctor")) return ["ads", "analytics", "merchant"];
-  if (routeName.includes("seo-gsc")) return ["seo", "analytics", "content"];
-  if (routeName.includes("ahrefs")) return ["seo", "content"];
-  if (routeName.includes("localo")) return ["local"];
-  if (routeName.includes("merchant")) return ["merchant", "ads"];
-  if (routeName.includes("content")) return ["content", "seo"];
-  if (routeName.includes("social")) return ["social", "content"];
-  if (routeName.includes("ga4")) return ["analytics"];
-  return [];
+function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] }) {
+  const configured = connectors.filter((connector) => connector.configured);
+  const missing = connectors.filter((connector) => connector.missing_credentials.length > 0);
+  const disabled = connectors.filter((connector) => connector.status === "disabled");
+
+  if (connectors.length === 0) {
+    return <BlockerNotice message="Brak statusu źródeł danych w WILQ." />;
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
+        <MetricTile label="Źródła" value={connectors.length} />
+        <MetricTile label="Dostęp działa" value={configured.length} />
+        <MetricTile label="Braki dostępu" value={missing.length} />
+        <MetricTile label="Wyłączone" value={disabled.length} />
+      </div>
+      {missing.length > 0 ? (
+        <article className="rounded-md border border-wait/30 bg-wait/10 p-4">
+          <h3 className="text-sm font-semibold text-ink">Co blokuje pracę</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Brakuje dostępu do {formatConnectorList(missing)}. WILQ może dalej używać
+            skonfigurowanych źródeł, ale nie powinien obiecywać wyników z brakujących kanałów.
+          </p>
+        </article>
+      ) : (
+        <article className="rounded-md border border-signal/30 bg-signal/10 p-4">
+          <h3 className="text-sm font-semibold text-ink">Dostęp wygląda kompletnie</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Wszystkie znane źródła danych mają skonfigurowany dostęp. Nadal obowiązuje
+            zasada: brak świeżych dowodów oznacza blokadę, nie domysł marketingowy.
+          </p>
+        </article>
+      )}
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {connectors.map((connector) => (
+          <article key={connector.id} className="rounded-md border border-line bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-sm font-semibold">{connector.label}</h3>
+              <StatusBadge value={connector.status} />
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {connector.missing_credentials.length > 0
+                ? `Wymaga uzupełnienia dostępu: ${connector.missing_credentials.length} ${pluralize(connector.missing_credentials.length, "pole", "pola", "pól")}.`
+                : connector.configured
+                  ? "Dostęp skonfigurowany. Szczegóły techniczne są dostępne po rozwinięciu."
+                  : "Brak aktywnego dostępu. Szczegóły techniczne są dostępne po rozwinięciu."}
+            </p>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function formatConnectorList(connectors: ConnectorStatus[]) {
+  if (connectors.length === 1) return connectors[0].label;
+  if (connectors.length === 2) return `${connectors[0].label} i ${connectors[1].label}`;
+  return `${connectors.slice(0, -1).map((connector) => connector.label).join(", ")} i ${
+    connectors[connectors.length - 1].label
+  }`;
+}
+
+function pluralize(count: number, one: string, few: string, many: string) {
+  if (count === 1) return one;
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return few;
+  return many;
+}
+
+function CompactRoutePanel({ config }: { config: CompactRouteConfig }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ShieldCheck aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Status widoku
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{config.description}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <MetricTile label="Status" value={config.status} />
+        <MetricTile label="Blokady" value={config.blockers.length} />
+        <MetricTile label="Rejestry techniczne" value="schowane" />
+      </div>
+      <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-wait">
+        <div className="font-semibold">Co zrobić dalej</div>
+        <p>{config.nextStep}</p>
+      </div>
+      {config.blockers.length > 0 ? (
+        <div className="mt-4 text-sm leading-6 text-slate-700">
+          <div className="font-semibold text-ink">Co jeszcze blokuje gotowość</div>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {config.blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {config.safeRoute ? (
+        <a
+          href={config.safeRoute}
+          className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
+        >
+          Otwórz bezpieczny widok
+        </a>
+      ) : null}
+    </section>
+  );
 }
 
 function SectionHeading({ title }: { title: string }) {
   return <h2 className="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-600">{title}</h2>;
 }
 
+function DetailToggle({
+  expanded,
+  label,
+  onClick
+}: {
+  expanded: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const Icon = expanded ? ChevronDown : ChevronRight;
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      onClick={onClick}
+      className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+    >
+      <Icon aria-hidden="true" size={16} />
+      {label}
+    </button>
+  );
+}
+
 function ErrorState() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="rounded-md border border-risk/30 bg-risk/10 p-4 text-sm text-risk">
-        WILQ API is not reachable.
+        Nie udało się połączyć z WILQ.
       </div>
     </main>
   );
