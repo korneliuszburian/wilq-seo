@@ -622,6 +622,18 @@ Date: 2026-06-26
     `duplicate-free guarantee`, `lead quality`, `2 akcji`, `Draft:`,
     `follow-up`, `baseline`, `credentiali`, `WILQ API`, `target_site`,
     `migration-map` or `mapping-review`.
+- Content preflight dashboard gate:
+  - Content Planner now reads `/api/content/preflight` and shows a primary
+    `Czy można pisać?` panel before the detailed content decision.
+  - The panel answers the marketer-facing first question: zachować,
+    odświeżyć, scalić, utworzyć or block, plus what remains blocked before a
+    draft or WordPress handoff.
+  - The dashboard imports `ContentPreflightResponse` from the shared API
+    boundary instead of duplicating a local route type.
+  - Focused `App.test.tsx -t "content route"` passed: 2 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk git diff --check` passed.
 - Ledger condensation:
   - `docs/PROGRESS.md` was reduced back to a short recovery ledger.
   - `rtk git diff --check` passed after the latest cleanup slices.

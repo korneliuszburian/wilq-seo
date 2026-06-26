@@ -4546,6 +4546,69 @@ const contentDiagnostics = {
   blocker_count: 0
 };
 
+const contentPreflight = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "Bramka pisania przed briefem i szkicem.",
+  primary_item: {
+    id: "preflight_content_decision_https_www_ekologus_pl_bdo",
+    technical_decision_id: "content_decision_https_www_ekologus_pl_bdo",
+    recommended_mode: "refresh",
+    status: "review_required",
+    create_allowed: false,
+    draft_allowed: false,
+    wordpress_draft_allowed: false,
+    sales_brief_allowed: true,
+    source_public_url: "https://www.ekologus.pl/bdo/",
+    preview_url: null,
+    intended_final_url: "https://www.ekologus.pl/bdo/",
+    final_canonical_url: "https://www.ekologus.pl/bdo/",
+    inventory_gate_status: "confirmed_current_inventory",
+    canonical_gate_status: "current_url_confirmed",
+    duplicate_gate_status: "refresh_or_merge_required",
+    claim_gate_status: "needs_claim_review",
+    service_mapping_status: "ready_for_service_review",
+    similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
+    query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
+    blocked_claims: ["lead uplift", "conversion uplift"],
+    missing_inputs: [],
+    evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+    source_connectors: ["google_search_console", "wordpress_ekologus"],
+    next_step: "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+  },
+  items: [
+    {
+      id: "preflight_content_decision_https_www_ekologus_pl_bdo",
+      technical_decision_id: "content_decision_https_www_ekologus_pl_bdo",
+      recommended_mode: "refresh",
+      status: "review_required",
+      create_allowed: false,
+      draft_allowed: false,
+      wordpress_draft_allowed: false,
+      sales_brief_allowed: true,
+      source_public_url: "https://www.ekologus.pl/bdo/",
+      preview_url: null,
+      intended_final_url: "https://www.ekologus.pl/bdo/",
+      final_canonical_url: "https://www.ekologus.pl/bdo/",
+      inventory_gate_status: "confirmed_current_inventory",
+      canonical_gate_status: "current_url_confirmed",
+      duplicate_gate_status: "refresh_or_merge_required",
+      claim_gate_status: "needs_claim_review",
+      service_mapping_status: "ready_for_service_review",
+      similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
+      query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
+      blocked_claims: ["lead uplift", "conversion uplift"],
+      missing_inputs: [],
+      evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      next_step: "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+    }
+  ],
+  evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+  source_connectors: ["google_search_console", "wordpress_ekologus"],
+  blocker_count: 0
+};
+
 const ga4Diagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
@@ -5820,6 +5883,9 @@ function mockFetch() {
       if (url.endsWith("/api/content/diagnostics")) {
         return Promise.resolve(Response.json(contentDiagnostics));
       }
+      if (url.endsWith("/api/content/preflight")) {
+        return Promise.resolve(Response.json(contentPreflight));
+      }
       if (url.endsWith("/api/ga4/diagnostics")) {
         return Promise.resolve(Response.json(ga4Diagnostics));
       }
@@ -6744,6 +6810,11 @@ describe("WILQ dashboard", () => {
       () => expect(screen.getByText("Status SEO / Content")).toBeInTheDocument(),
       { timeout: 5_000 }
     );
+    expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
+    expect(screen.getByText("Rekomendowany kierunek")).toBeInTheDocument();
+    expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Szkic i WordPress pozostają zablokowane/)).toBeInTheDocument();
     expect(screen.getByText("Briefy do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż briefy Content" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" })).toBeInTheDocument();

@@ -6,9 +6,11 @@ import {
   ActionObject,
   ActionReviewRequest,
   ContentDiagnosticsResponse,
+  ContentPreflightResponse,
   ConnectorStatus,
   getActions,
   getContentDiagnostics,
+  getContentPreflight,
   reviewAction
 } from "../lib/api";
 import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
@@ -49,11 +51,16 @@ import { shortPath } from "./TacticalQueuePanel";
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
 type ContentMetricFact = ContentDiagnosticsResponse["sections"][number]["metric_facts"][number];
+type ContentPreflightItem = ContentPreflightResponse["items"][number];
 
 export function ContentDiagnosticSurface({ title }: { title: string }) {
   const diagnostics = useQuery({
     queryKey: ["content-diagnostics"],
     queryFn: getContentDiagnostics
+  });
+  const preflight = useQuery({
+    queryKey: ["content-preflight"],
+    queryFn: getContentPreflight
   });
   const actions = useQuery({
     queryKey: ["actions"],
@@ -120,6 +127,8 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         </div>
         <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>
+
+      <ContentPreflightPanel data={preflight.data} isLoading={preflight.isLoading} isError={Boolean(preflight.error)} />
 
       <ContentSelectedDecisionPanel data={data} actions={routeActions} />
 
@@ -270,6 +279,93 @@ function ContentExpandableActionsPanel({
           )}
         </div>
       ) : null}
+    </section>
+  );
+}
+
+function ContentPreflightPanel({
+  data,
+  isLoading,
+  isError
+}: {
+  data: ContentPreflightResponse | undefined;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  const item = data?.primary_item;
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Czy można pisać?
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ najpierw sprawdza, czy bezpieczny kierunek to zachowanie,
+            odświeżenie, scalenie, utworzenie czy blokada. Szkic i WordPress
+            pozostają zablokowane, dopóki nie przejdą brief, claimy i decyzja człowieka.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          <MetricTile label="Tryb" value={item ? contentPreflightModeLabel(item.recommended_mode) : "brak"} />
+          <MetricTile label="Status" value={item ? contentPreflightStatusLabel(item.status) : "brak"} />
+          <MetricTile label="Blokady" value={data?.blocker_count ?? 0} />
+          <MetricTile label="Brief" value={item?.sales_brief_allowed ? "możliwy" : "zablokowany"} />
+        </div>
+      </div>
+
+      {isLoading ? (
+        <p className="mt-3 text-sm text-slate-600">WILQ sprawdza bramkę pisania.</p>
+      ) : isError || !data || !item ? (
+        <BlockerNotice message="Nie udało się odczytać bramki pisania. Nie zaczynaj szkicu bez wyniku sprawdzenia." />
+      ) : (
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-md border border-line bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-ink">Rekomendowany kierunek</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {contentPreflightModeSentence(item)}
+            </p>
+            <TraceLine
+              label="Adres"
+              values={[
+                item.final_canonical_url ?? item.intended_final_url ?? item.source_public_url ?? ""
+              ].filter(Boolean).map(shortPath)}
+              empty="do potwierdzenia"
+            />
+          </div>
+          <div className="rounded-md border border-line bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-ink">Następny bezpieczny krok</h3>
+            <p className="mt-2 text-sm font-medium leading-6 text-ink">{item.next_step}</p>
+            <TraceLine label="Wspólne zapytania" values={[item.query_overlap_summary]} />
+          </div>
+          <div className="rounded-md border border-line bg-white p-3">
+            <h3 className="text-sm font-semibold text-ink">Co blokuje szkic</h3>
+            <TraceLine
+              label="Brakuje"
+              values={item.missing_inputs.slice(0, 5)}
+              empty="brak dodatkowych braków w tej bramce"
+            />
+            <TraceLine
+              label="Zakazy"
+              values={item.blocked_claims.slice(0, 5)}
+              empty="brak dodatkowych zakazów w tej bramce"
+            />
+          </div>
+          <div className="rounded-md border border-line bg-white p-3">
+            <h3 className="text-sm font-semibold text-ink">Dowody i istniejące treści</h3>
+            <TraceLine
+              label="Podobne URL-e"
+              values={item.similar_existing_urls.slice(0, 4).map(shortPath)}
+              empty="brak potwierdzonych podobnych URL-i"
+            />
+            <TraceLine
+              label="Dowody"
+              values={[formatContentEvidenceCount(item.evidence_ids.length)]}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1246,6 +1342,36 @@ function formatContentActionCount(count: number) {
     return `${count} akcje`;
   }
   return `${count} akcji`;
+}
+
+function contentPreflightModeLabel(mode: ContentPreflightItem["recommended_mode"]) {
+  if (mode === "preserve") return "zachować";
+  if (mode === "refresh") return "odświeżyć";
+  if (mode === "merge") return "scalić";
+  if (mode === "create") return "utworzyć";
+  return "blokada";
+}
+
+function contentPreflightStatusLabel(status: ContentPreflightItem["status"]) {
+  if (status === "allowed") return "można iść dalej";
+  if (status === "review_required") return "wymaga sprawdzenia";
+  return "zablokowane";
+}
+
+function contentPreflightModeSentence(item: ContentPreflightItem) {
+  if (item.recommended_mode === "preserve") {
+    return "Najbezpieczniej zachować istniejącą treść. Nie ma jeszcze powodu, żeby ją przepisywać.";
+  }
+  if (item.recommended_mode === "refresh") {
+    return "WILQ wskazuje odświeżenie istniejącej treści. Nowy artykuł pozostaje zablokowany.";
+  }
+  if (item.recommended_mode === "merge") {
+    return "WILQ wskazuje scalenie albo decyzję o połączeniu tematów przed pisaniem.";
+  }
+  if (item.recommended_mode === "create") {
+    return "WILQ dopuszcza nową treść, ale szkic nadal wymaga briefu, claimów i decyzji człowieka.";
+  }
+  return "WILQ blokuje pisanie. Najpierw trzeba uzupełnić brakujące dane albo rozwiązać ryzyko.";
 }
 
 function contentDecisionTitle(decision: ContentDecisionItem) {

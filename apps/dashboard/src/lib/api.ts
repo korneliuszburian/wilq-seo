@@ -272,6 +272,7 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentPreflightResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,
