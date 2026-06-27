@@ -89,7 +89,6 @@ export function adsBlockedClaimLabel(value: string) {
     opłacalność: "opłacalność",
     "spadek konwersji": "spadek konwersji",
     "utrata konwersji": "utrata konwersji",
-    "search terms": "zapytania użytkowników",
     "campaign scaling": "skalowanie kampanii"
   };
   return labels[value] ?? value;

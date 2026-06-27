@@ -29,7 +29,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "recommendation write": "zapis rekomendacji",
     "przychód": "przychód",
     "marnowanie budżetu na zapytaniach": "marnowanie budżetu na zapytaniach",
-    "search terms": "zapytania z reklam",
     "spend": "wydatki reklamowe",
     "naprawiony pomiar": "naprawiony pomiar",
     "zmarnowany budżet": "zmarnowany budżet",

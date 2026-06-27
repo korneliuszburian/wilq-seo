@@ -99,6 +99,41 @@ Result:
   `wymiar=`, `Metryki techniczne` or debug wording; it shows `Metryki z
   dowodów` from API metric tiles first.
 
+## 2026-06-27 - Ads negative keyword language cleanup
+
+Purpose:
+
+- Prove that Ads diagnostics no longer expose mixed-language
+  `negative keywords` wording in the marketer API/browser surface.
+- Remove old `search terms` compatibility labels instead of preserving stale
+  English blocked-claim aliases.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "ads doctor"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk scripts/local_stack.sh restart
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser/API proof:
+
+```txt
+.local-lab/proof/20260627-ads-negative-keyword-language/ads-diagnostics.json
+.local-lab/proof/20260627-ads-negative-keyword-language/ads-doctor.txt
+```
+
+Result:
+
+- Live Ads diagnostics proof has no `Akcje do sprawdzenia negative keywords`,
+  `negative keywords` or `search terms` hits and does include `Akcje do
+  sprawdzenia wykluczeń`.
+- Browser proof for `/ads-doctor` has no visible `negative keywords`,
+  `search terms`, `payload` or `ActionObject` hits.
+
 ## 2026-06-27 - GA4 expanded preview metric labels
 
 Purpose:

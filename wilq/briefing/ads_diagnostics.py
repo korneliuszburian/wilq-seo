@@ -2660,7 +2660,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="negative_keyword_review_queue",
-            title="Akcje do sprawdzenia negative keywords",
+            title="Akcje do sprawdzenia wykluczeń",
             status=(
                 "ready"
                 if negative_keywords_read_contract.candidates

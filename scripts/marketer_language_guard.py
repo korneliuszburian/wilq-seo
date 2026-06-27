@@ -170,6 +170,10 @@ FORBIDDEN_PHRASES = (
         "Use plain audit/sprawdzenie language instead of debug wording in marketer-facing UI.",
     ),
     ForbiddenPhrase(
+        "Akcje do sprawdzenia negative keywords",
+        "Use Polish Ads wording for exclusion review queues.",
+    ),
+    ForbiddenPhrase(
         "ActionObjecty",
         "Use akcje do sprawdzenia in marketer-facing copy.",
     ),

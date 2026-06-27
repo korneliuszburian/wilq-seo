@@ -198,6 +198,12 @@ Latest slice:
   references are no longer rendered up front. Focused tests cover opportunity
   detail metric summaries and action detail raw-JSON avoidance; browser proof:
   `.local-lab/proof/20260627-technical-details-hidden/`.
+- Ads diagnostics source wording now uses Polish exclusion-review language for
+  the negative keyword queue. The old `Akcje do sprawdzenia negative keywords`
+  title and `search terms` compatibility labels are removed from active
+  source; live API proof confirms no old English terms in the Ads diagnostics
+  payload:
+  `.local-lab/proof/20260627-ads-negative-keyword-language/`.
 
 ### C. Dashboard Condensation
 

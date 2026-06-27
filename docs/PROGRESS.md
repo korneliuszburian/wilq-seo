@@ -172,6 +172,11 @@ Date: 2026-06-27
   detail uses API `metric_tiles` for the visible metric summary. The language
   guard now blocks visible `debugowaniu` wording. Browser proof:
   `.local-lab/proof/20260627-technical-details-hidden/`.
+- Ads diagnostics no longer expose the mixed-language title `Akcje do
+  sprawdzenia negative keywords`; the API source now says `Akcje do
+  sprawdzenia wykluczeń`. Obsolete `search terms` blocked-claim aliases were
+  removed instead of kept as compatibility labels. Live API and browser proof:
+  `.local-lab/proof/20260627-ads-negative-keyword-language/`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for
