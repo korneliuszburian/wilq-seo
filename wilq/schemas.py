@@ -1050,14 +1050,18 @@ class AdsRecommendationApplyPreview(BaseModel):
     recommendation_id: str | None = None
     recommendation_resource_name: str | None = None
     recommendation_type: str
+    recommendation_type_label: str = ""
     campaign_id: str | None = None
     campaign_budget_id: str | None = None
     operation_type: Literal["ApplyRecommendationOperation"] = "ApplyRecommendationOperation"
+    operation_type_label: str = ""
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
@@ -1067,6 +1071,7 @@ class AdsRecommendationRow(BaseModel):
     recommendation_id: str | None = None
     recommendation_resource_name: str | None = None
     recommendation_type: str
+    recommendation_type_label: str = ""
     review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
         "normalne"
     )
@@ -1099,6 +1104,7 @@ class AdsRecommendationRow(BaseModel):
     payload_preview: AdsRecommendationApplyPreview | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsRecommendationsReadContract(BaseModel):
@@ -1123,7 +1129,9 @@ class AdsImpressionShareRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str = ""
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str = ""
     search_impression_share: float | None = None
     search_budget_lost_impression_share: float | None = None
     search_rank_lost_impression_share: float | None = None
@@ -1131,6 +1139,7 @@ class AdsImpressionShareRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsImpressionShareReadContract(BaseModel):

@@ -384,17 +384,17 @@ def _recommendation_review_reason(
 ) -> str:
     if impact_available:
         impact_part = (
-            f"impact preview: kliknięcia delta={_format_signed_number(delta_clicks)}, "
-            f"koszt delta={_format_micros(delta_cost_micros) or '0'}, "
-            f"konwersje delta={_format_signed_number(delta_conversions)}"
+            f"podgląd wpływu: zmiana kliknięć {_format_signed_number(delta_clicks)}, "
+            f"zmiana kosztu {_format_micros(delta_cost_micros) or '0'}, "
+            f"zmiana konwersji {_format_signed_number(delta_conversions)}"
         )
     else:
         impact_part = (
             "brak metryk wpływu; wymagane ręczne sprawdzenie typu rekomendacji "
-            f"i brakujących metryk: {', '.join(missing_metrics) or 'brak'}"
+            f"i brakujących metryk: {_missing_metric_labels(missing_metrics) or 'brak'}"
         )
     return (
-        f"Rekomendacja {recommendation_type}: {impact_part}. "
+        f"Rekomendacja: {_recommendation_type_label(recommendation_type)}. {impact_part}. "
         "To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica "
         "poprawy wyniku."
     )
@@ -436,6 +436,32 @@ def _recommendation_apply_preview(
 
 def _recommendation_row_sort_key(row: AdsRecommendationRow) -> tuple[str, str]:
     return (row.recommendation_type, row.recommendation_id or "")
+
+
+def _recommendation_type_label(recommendation_type: object) -> str:
+    labels = {
+        "CAMPAIGN_BUDGET": "budżet kampanii",
+        "KEYWORD": "słowa kluczowe",
+        "RESPONSIVE_SEARCH_AD": "elastyczna reklama w wyszukiwarce",
+        "TARGET_CPA_OPT_IN": "strategia kosztu pozyskania celu",
+        "TARGET_ROAS_OPT_IN": "strategia zwrotu z reklam",
+        "MAXIMIZE_CONVERSIONS_OPT_IN": "maksymalizacja konwersji",
+        "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
+        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
+        "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
+        "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
+        "UNKNOWN": "typ rekomendacji nieznany",
+        "UNSPECIFIED": "typ rekomendacji nieokreślony",
+    }
+    value = str(recommendation_type)
+    return labels.get(value, value.replace("_", " ").lower())
+
+
+def _missing_metric_labels(missing_metrics: list[str]) -> str:
+    labels = {
+        "recommendation_impact": "podgląd wpływu rekomendacji",
+    }
+    return ", ".join(labels.get(metric, metric.replace("_", " ")) for metric in missing_metrics)
 
 
 def _remove_missing_contract_names(

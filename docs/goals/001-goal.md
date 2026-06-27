@@ -264,6 +264,14 @@ Latest slice:
   `ENABLED`, `DAILY`, `typ=`, `wskaźniki=` or `udział_w_wyświetleniach` for
   that slice:
   `.local-lab/proof/20260627-ads-kpi-budget-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor recommendation and impression-share rows now consume API-owned
+  labels for recommendation type, operation type, missing impact metrics,
+  campaign status, channel and blocked promises. Live Ads proof after managed
+  stack restart confirms real Google Ads values such as
+  `DISPLAY_EXPANSION_OPT_IN` and `recommendation_impact` are condensed before
+  they reach marketer copy; expanded browser proof has no raw recommendation or
+  impression-share terms from this slice:
+  `.local-lab/proof/20260627-ads-recommendations-api-labels/browser/ads-doctor-expanded.txt`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

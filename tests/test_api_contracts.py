@@ -9789,6 +9789,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "recommendation_id": "rec-1",
             "recommendation_resource_name": "customers/test/recommendations/rec-1",
             "recommendation_type": "CAMPAIGN_BUDGET",
+            "recommendation_type_label": "budżet kampanii",
             "review_priority": "pilne",
             "review_score": 70,
             "review_reason": recommendations_contract["recommendation_rows"][0][
@@ -9842,7 +9843,25 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmiana budżetu",
                 "zapis zmian kampanii",
             ],
+            "blocked_claim_labels": [
+                "zapis rekomendacji",
+                "automatyczne przyjęcie rekomendacji",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+            ],
         }
+    ]
+    assert "budżet kampanii" in recommendations_contract["recommendation_rows"][0][
+        "review_reason"
+    ]
+    assert "podgląd wpływu" in recommendations_contract["recommendation_rows"][0][
+        "review_reason"
+    ]
+    assert "CAMPAIGN_BUDGET" not in recommendations_contract["recommendation_rows"][0][
+        "review_reason"
+    ]
+    assert "impact preview" not in recommendations_contract["recommendation_rows"][0][
+        "review_reason"
     ]
     assert "kolejność przeglądu rekomendacji" in recommendations_contract[
         "recommendation_rows"
@@ -9856,9 +9875,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "recommendation_id": "rec-1",
             "recommendation_resource_name": "customers/test/recommendations/rec-1",
             "recommendation_type": "CAMPAIGN_BUDGET",
+            "recommendation_type_label": "budżet kampanii",
             "campaign_id": "101",
             "campaign_budget_id": "701",
             "operation_type": "ApplyRecommendationOperation",
+            "operation_type_label": "zastosowanie rekomendacji Google Ads",
             "reason": recommendations_contract["payload_preview"][0]["reason"],
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "source_metric_names": recommendations_contract["payload_preview"][0][
@@ -9873,7 +9894,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "google_ads_rmf_compliance_review",
                 "human_confirm_before_apply",
             ],
+            "required_validation_labels": [
+                "sprawdzenie typu rekomendacji",
+                "sprawdzenie wpływu rekomendacji",
+                "sprawdzenie historii zmian",
+                "sprawdzenie celu biznesowego",
+                "podgląd zapisu rekomendacji",
+                "ocena zgodności Google Ads RMF",
+                "potwierdzenie człowieka przed zapisem",
+            ],
             "blocked_claims": [
+                "zapis rekomendacji",
+                "automatyczne przyjęcie rekomendacji",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+                "obietnica poprawy wyniku",
+            ],
+            "blocked_claim_labels": [
                 "zapis rekomendacji",
                 "automatyczne przyjęcie rekomendacji",
                 "zmiana budżetu",
@@ -9911,7 +9948,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_id": "101",
             "campaign_name": "Brand Search",
             "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
             "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
             "search_impression_share": 0.73,
             "search_budget_lost_impression_share": 0.18,
             "search_rank_lost_impression_share": 0.09,
@@ -9921,6 +9960,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zmarnowany budżet",
+                "obietnica poprawy wyniku",
+            ],
+            "blocked_claim_labels": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "zmarnowany budżet",

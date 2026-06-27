@@ -89,6 +89,14 @@ Date: 2026-06-27
   `wskaźniki=` or `udział_w_wyświetleniach` in the expanded Ads proof.
   Browser proof:
   `.local-lab/proof/20260627-ads-kpi-budget-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor recommendation and impression-share rows now use API-owned labels
+  for recommendation type, operation type, missing impact metrics, campaign
+  status, channel and blocked promises. Live Ads proof after managed stack
+  restart confirmed real `DISPLAY_EXPANSION_OPT_IN` and
+  `recommendation_impact` values are not exposed in recommendation copy; the
+  expanded browser proof has no raw recommendation/impression-share terms from
+  this slice. Browser proof:
+  `.local-lab/proof/20260627-ads-recommendations-api-labels/browser/ads-doctor-expanded.txt`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

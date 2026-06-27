@@ -747,14 +747,18 @@ export const AdsRecommendationApplyPreviewSchema = z.object({
   recommendation_id: z.string().nullable().optional(),
   recommendation_resource_name: z.string().nullable().optional(),
   recommendation_type: z.string(),
+  recommendation_type_label: z.string().optional().default(""),
   campaign_id: z.string().nullable().optional(),
   campaign_budget_id: z.string().nullable().optional(),
   operation_type: z.literal("ApplyRecommendationOperation"),
+  operation_type_label: z.string().optional().default(""),
   reason: z.string(),
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()
@@ -764,6 +768,7 @@ export const AdsRecommendationRowSchema = z.object({
   recommendation_id: z.string().nullable().optional(),
   recommendation_resource_name: z.string().nullable().optional(),
   recommendation_type: z.string(),
+  recommendation_type_label: z.string().optional().default(""),
   review_priority: z
     .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
     .default("normalne"),
@@ -795,7 +800,8 @@ export const AdsRecommendationRowSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   payload_preview: AdsRecommendationApplyPreviewSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsRecommendationsReadContractSchema = z.object({
@@ -820,14 +826,17 @@ export const AdsImpressionShareRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
   campaign_status: z.string().nullable().optional(),
+  campaign_status_label: z.string().optional().default(""),
   advertising_channel_type: z.string().nullable().optional(),
+  advertising_channel_type_label: z.string().optional().default(""),
   search_impression_share: z.number().nullable().optional(),
   search_budget_lost_impression_share: z.number().nullable().optional(),
   search_rank_lost_impression_share: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsImpressionShareReadContractSchema = z.object({

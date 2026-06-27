@@ -94,6 +94,7 @@ from wilq.schemas import (
     AdsOperatorSummary,
     AdsOptimizerReadinessContract,
     AdsOptimizerReadinessItem,
+    AdsRecommendationApplyPreview,
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
     AdsSearchTermCampaignReviewRow,
@@ -6429,6 +6430,8 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     for row in response.derived_kpi_read_contract.kpi_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
     _hydrate_budget_pacing_marketer_labels(response.budget_pacing_read_contract)
+    _hydrate_recommendations_marketer_labels(response.recommendations_read_contract)
+    _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
 
 
 def _hydrate_campaign_triage_marketer_labels(
@@ -6486,6 +6489,44 @@ def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> No
         safety_review.required_validation
     )
     safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
+
+
+def _hydrate_recommendations_marketer_labels(
+    contract: AdsRecommendationsReadContract,
+) -> None:
+    for row in contract.recommendation_rows:
+        row.recommendation_type_label = _ads_recommendation_type_label(
+            row.recommendation_type
+        )
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+        if row.payload_preview is not None:
+            _hydrate_recommendation_payload_preview_labels(row.payload_preview)
+    for preview in contract.payload_preview:
+        _hydrate_recommendation_payload_preview_labels(preview)
+
+
+def _hydrate_recommendation_payload_preview_labels(
+    preview: AdsRecommendationApplyPreview,
+) -> None:
+    preview.recommendation_type_label = _ads_recommendation_type_label(
+        preview.recommendation_type
+    )
+    preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
+    preview.required_validation_labels = _ads_review_gate_labels(
+        preview.required_validation
+    )
+    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+
+
+def _hydrate_impression_share_marketer_labels(
+    contract: AdsImpressionShareReadContract,
+) -> None:
+    for row in contract.impression_share_rows:
+        row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
+        row.advertising_channel_type_label = _ads_channel_type_label(
+            row.advertising_channel_type
+        )
+        row.blocked_claim_labels = _unique(row.blocked_claims)
 
 
 def _hydrate_business_context_marketer_labels(
@@ -6687,6 +6728,25 @@ def _ads_google_operation_label(operation_type: object) -> str:
     }
     value = str(operation_type)
     return labels.get(value, value)
+
+
+def _ads_recommendation_type_label(recommendation_type: object) -> str:
+    labels = {
+        "CAMPAIGN_BUDGET": "budżet kampanii",
+        "KEYWORD": "słowa kluczowe",
+        "RESPONSIVE_SEARCH_AD": "elastyczna reklama w wyszukiwarce",
+        "TARGET_CPA_OPT_IN": "strategia kosztu pozyskania celu",
+        "TARGET_ROAS_OPT_IN": "strategia zwrotu z reklam",
+        "MAXIMIZE_CONVERSIONS_OPT_IN": "maksymalizacja konwersji",
+        "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
+        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
+        "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
+        "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
+        "UNKNOWN": "typ rekomendacji nieznany",
+        "UNSPECIFIED": "typ rekomendacji nieokreślony",
+    }
+    value = str(recommendation_type)
+    return labels.get(value, value.replace("_", " ").lower())
 
 
 def _ads_confidence_label(confidence: object) -> str:

@@ -1556,7 +1556,7 @@ function AdsRecommendationRowsPanel({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold text-ink">
-                  {row.recommendation_type}
+                  {row.recommendation_type_label}
                 </div>
                 <div className="mt-1 text-xs leading-5 text-slate-600">
                   Kampania: {row.campaign_id ?? "brak"} / budżet:{" "}
@@ -1569,7 +1569,7 @@ function AdsRecommendationRowsPanel({
               </span>
             </div>
             <div className="mt-1 text-xs leading-5 text-slate-600">
-              {adsRecommendationReviewReason(row, currencyCode)}
+              {row.review_reason}
             </div>
             {row.impact_available ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
@@ -1607,7 +1607,7 @@ function AdsRecommendationRowsPanel({
             />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={row.blocked_claims.map(adsBlockedClaimLabel)}
+              values={row.blocked_claim_labels}
             />
             <LinkedTraceLine
               label="Dowody"
@@ -1618,7 +1618,7 @@ function AdsRecommendationRowsPanel({
               <div className="mt-3 rounded-md border border-line bg-slate-50 px-2 py-2 text-xs text-slate-700">
                 <div className="font-semibold text-ink">Podgląd zmian: zablokowany</div>
                 <div className="mt-1">
-                  Operacja: {adsGoogleOperationLabel(row.payload_preview.operation_type)}.
+                  Operacja: {row.payload_preview.operation_type_label}.
                   Zapis zmian:{" "}
                   {row.payload_preview.apply_allowed
                     ? "dozwolone"
@@ -1648,9 +1648,9 @@ function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
             <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
-            <th className="py-2 pr-4 font-semibold">Search IS</th>
-            <th className="py-2 pr-4 font-semibold">Lost IS budget</th>
-            <th className="py-2 pr-4 font-semibold">Lost IS rank</th>
+            <th className="py-2 pr-4 font-semibold">Udział w wyświetleniach</th>
+            <th className="py-2 pr-4 font-semibold">Utrata przez budżet</th>
+            <th className="py-2 pr-4 font-semibold">Utrata przez ranking</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -1668,7 +1668,7 @@ function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }
                 {adsPercent(row.search_rank_lost_impression_share)}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+                {row.blocked_claim_labels.slice(0, 2).join(", ")}
               </td>
             </tr>
           ))}
@@ -2527,21 +2527,6 @@ function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {
   ) || "cel kampanii, konwersje, budżet i wyszukiwane hasła"}. Zapis zmian wymaga sprawdzenia w WILQ i potwierdzenia człowieka.`;
 }
 
-function adsRecommendationReviewReason(row: AdsRecommendationRow, currencyCode?: string) {
-  if (!row.impact_available) {
-    return "Google Ads zwrócił rekomendację bez metryk wpływu. WILQ może ją pokazać tylko do ręcznej oceny, bez obietnicy poprawy wyniku.";
-  }
-  const facts = [
-    `zmiana kliknięć ${adsSignedNumber(row.delta_clicks)}`,
-    `zmiana wyświetleń ${adsSignedNumber(row.delta_impressions)}`,
-    `zmiana kosztu ${adsSignedCost(row.delta_cost_micros, currencyCode)}`,
-    `zmiana konwersji ${adsSignedNumber(row.delta_conversions)}`
-  ];
-  return `Rekomendacja do ręcznej oceny: ${facts.join(
-    ", "
-  )}. WILQ nie przyjmuje jej automatycznie i nie twierdzi, że poprawi wynik kampanii.`;
-}
-
 function adsNegativeKeywordReason(
   candidate: AdsNegativeKeywordCandidate,
   currencyCode?: string
@@ -2571,16 +2556,6 @@ function adsNegativeKeywordPayloadReason(reason: string) {
   if (reason.includes("human")) return "wymagana ręczna ocena";
   if (reason.includes("validation")) return "wymagane sprawdzenie w WILQ";
   return reason;
-}
-
-function adsGoogleOperationLabel(value: string) {
-  const labels: Record<string, string> = {
-    apply_recommendation: "zapis rekomendacji",
-    campaign_budget_update: "zmiana budżetu kampanii",
-    create_negative_keyword: "dodanie wykluczenia",
-    create_custom_segment: "utworzenie segmentu"
-  };
-  return labels[value] ?? value;
 }
 
 function adsNumber(value: number | null | undefined) {

@@ -1341,10 +1341,11 @@ const adsDiagnostics = {
         recommendation_id: "rec-1",
         recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
         recommendation_type: "CAMPAIGN_BUDGET",
+        recommendation_type_label: "budżet kampanii",
         review_priority: "pilne",
         review_score: 70,
         review_reason:
-          "Rekomendacja CAMPAIGN_BUDGET: podgląd wpływu: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica poprawy wyniku.",
+          "Rekomendacja: budżet kampanii. podgląd wpływu: zmiana kliknięć +5, zmiana kosztu 2, zmiana konwersji brak. To jest kolejność przeglądu rekomendacji, nie zgoda na zapis zmian ani obietnica poprawy wyniku.",
         human_review_gates: [
           "sprawdź typ rekomendacji",
           "sprawdź metryki wpływu",
@@ -1380,9 +1381,11 @@ const adsDiagnostics = {
           recommendation_id: "rec-1",
           recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
           recommendation_type: "CAMPAIGN_BUDGET",
+          recommendation_type_label: "budżet kampanii",
           campaign_id: "123",
           campaign_budget_id: "777",
           operation_type: "ApplyRecommendationOperation",
+          operation_type_label: "zastosowanie rekomendacji Google Ads",
           reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: [
@@ -1398,7 +1401,23 @@ const adsDiagnostics = {
             "google_ads_rmf_compliance_review",
             "human_confirm_before_apply"
           ],
+          required_validation_labels: [
+            "sprawdzenie typu rekomendacji",
+            "sprawdzenie wpływu rekomendacji",
+            "sprawdzenie historii zmian",
+            "sprawdzenie celu biznesowego",
+            "podgląd zapisu rekomendacji",
+            "ocena zgodności Google Ads RMF",
+            "potwierdzenie człowieka przed zapisem"
+          ],
           blocked_claims: [
+            "zapis rekomendacji",
+            "automatyczne przyjęcie rekomendacji",
+            "zmiana budżetu",
+            "zapis zmian kampanii",
+            "obietnica poprawy wyniku"
+          ],
+          blocked_claim_labels: [
             "zapis rekomendacji",
             "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
@@ -1415,6 +1434,12 @@ const adsDiagnostics = {
           "automatyczne przyjęcie rekomendacji",
           "zmiana budżetu",
           "zapis zmian kampanii"
+        ],
+        blocked_claim_labels: [
+          "zapis rekomendacji",
+          "automatyczne przyjęcie rekomendacji",
+          "zmiana budżetu",
+          "zapis zmian kampanii"
         ]
       }
     ],
@@ -1424,9 +1449,11 @@ const adsDiagnostics = {
         recommendation_id: "rec-1",
         recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
         recommendation_type: "CAMPAIGN_BUDGET",
+        recommendation_type_label: "budżet kampanii",
         campaign_id: "123",
         campaign_budget_id: "777",
         operation_type: "ApplyRecommendationOperation",
+        operation_type_label: "zastosowanie rekomendacji Google Ads",
         reason: "Podgląd zmian dla rekomendacji Google Ads jest do sprawdzenia w WILQ.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: [
@@ -1442,7 +1469,23 @@ const adsDiagnostics = {
           "google_ads_rmf_compliance_review",
           "human_confirm_before_apply"
         ],
+        required_validation_labels: [
+          "sprawdzenie typu rekomendacji",
+          "sprawdzenie wpływu rekomendacji",
+          "sprawdzenie historii zmian",
+          "sprawdzenie celu biznesowego",
+          "podgląd zapisu rekomendacji",
+          "ocena zgodności Google Ads RMF",
+          "potwierdzenie człowieka przed zapisem"
+        ],
         blocked_claims: [
+          "zapis rekomendacji",
+          "automatyczne przyjęcie rekomendacji",
+          "zmiana budżetu",
+          "zapis zmian kampanii",
+          "obietnica poprawy wyniku"
+        ],
+        blocked_claim_labels: [
           "zapis rekomendacji",
           "automatyczne przyjęcie rekomendacji",
           "zmiana budżetu",
@@ -1493,6 +1536,12 @@ const adsDiagnostics = {
         metric_facts: [],
         missing_metrics: [],
         blocked_claims: [
+          "skalowanie budżetu",
+          "zmiana budżetu",
+          "zmarnowany budżet",
+          "obietnica poprawy wyniku"
+        ],
+        blocked_claim_labels: [
           "skalowanie budżetu",
           "zmiana budżetu",
           "zmarnowany budżet",
@@ -7014,6 +7063,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.budget_period_label");
     expect(routeSource).toContain("row.blocked_claim_labels");
     expect(routeSource).toContain("row.payload_preview.operation_type_label");
+    expect(routeSource).toContain("row.recommendation_type_label");
+    expect(routeSource).toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
@@ -7024,6 +7075,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("adsStrategyReviewStatusLabel");
     expect(routeSource).not.toContain("adsCampaignReviewReason");
     expect(routeSource).not.toContain("adsCampaignTriageReason");
+    expect(routeSource).not.toContain("adsRecommendationReviewReason");
     expect(routeSource).not.toContain("interpretation.interpretation_contract");
     expect(routeSource).not.toContain("interpretation.status}");
     expect(routeSource).not.toContain(
