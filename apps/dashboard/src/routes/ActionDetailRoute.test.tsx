@@ -424,7 +424,7 @@ const ga4TrackingActionFixture: ActionObject = {
   risk: "low",
   evidence_ids: ["ev_refresh_ga4"],
   human_diagnosis: "GA4 ma wiersze strony wejścia, źródła ruchu i kampanii do sprawdzenia jakości pomiaru.",
-  recommended_reason: "Sprawdź dopasowanie komunikatu i mapowanie konwersji bez obietnic zwrotu z reklam.",
+  recommended_reason: "Sprawdź dopasowanie komunikatu i powiązanie konwersji bez obietnic zwrotu z reklam.",
   payload: {
     action_type: "ga4_tracking_gap",
     preview_contract: "ga4_tracking_quality_review_v1",
@@ -463,7 +463,7 @@ const ga4TrackingActionFixture: ActionObject = {
           "sprawdź stronę wejścia",
           "sprawdź źródło i medium ruchu",
           "sprawdź nazwę kampanii",
-          "sprawdź mapowanie konwersji albo zdarzenia kluczowego"
+          "sprawdź powiązanie konwersji albo zdarzenia kluczowego"
         ],
         blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "naprawiony pomiar"],
         api_mutation_ready: false,

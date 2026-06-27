@@ -431,7 +431,7 @@ export function actionGateLabel(value: string) {
     reject_brand_or_low_intent_terms: "odrzuć brandowe lub niskointencyjne frazy",
     rerun_google_ads_data_read: "uruchom ponowny odczyt Google Ads",
     review_campaign_name_dimension: "sprawdź nazwę kampanii",
-    review_conversion_or_key_event_mapping: "sprawdź mapowanie konwersji lub zdarzenia kluczowego",
+    review_conversion_or_key_event_mapping: "sprawdź powiązanie konwersji lub zdarzenia kluczowego",
     review_human_budget_goal: "sprawdź cel budżetu od człowieka",
     review_landing_page_dimension: "sprawdź stronę wejścia",
     review_ngram_intent: "sprawdź intencję tematu zapytań",

@@ -160,6 +160,12 @@ Date: 2026-06-27
   `spis treści` language, while endpoint/type names remain internal code only.
   Browser proof for `/social-publisher`:
   `.local-lab/proof/20260627-brief-workflow-copy/social-publisher.txt`.
+- GA4 and Merchant active copy no longer expose `mapowanie` as marketer-facing
+  wording for conversion, landing-page or product-state checks. Source labels
+  now use `powiązanie konwersji`, `sprawdź stronę wejścia` and `powiązane
+  produkty`; `scripts/marketer_language_guard.py` blocks the old phrases.
+  Live API and browser proof:
+  `.local-lab/proof/20260627-mapping-language-cleanup/`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for

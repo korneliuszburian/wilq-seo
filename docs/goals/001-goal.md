@@ -186,6 +186,12 @@ Latest slice:
   tests cover the config, and browser proof for `/social-publisher` confirms
   no hits for those terms:
   `.local-lab/proof/20260627-brief-workflow-copy/social-publisher.txt`.
+- GA4 and Merchant copy now avoids `mapowanie` as a visible operator label for
+  conversion, landing-page and product-state checks. The API/domain source uses
+  `powiązanie konwersji`, `sprawdź stronę wejścia` and `powiązane produkty`;
+  focused tests and `scripts/marketer_language_guard.py` prevent regression.
+  Live API and browser proof:
+  `.local-lab/proof/20260627-mapping-language-cleanup/`.
 
 ### C. Dashboard Condensation
 

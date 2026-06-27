@@ -4760,7 +4760,7 @@ const ga4Diagnostics = {
     available_read_contracts: [],
     available_read_contract_labels: [],
     missing_read_contracts: ["conversion_or_key_event_mapping"],
-    missing_read_contract_labels: ["mapowanie konwersji i zdarzeń kluczowych"],
+    missing_read_contract_labels: ["powiązanie konwersji i zdarzeń kluczowych"],
     conversion_like_metric_count: 0,
     dimensioned_behavior_metric_count: 1,
     landing_group_count: 1,
@@ -4769,7 +4769,7 @@ const ga4Diagnostics = {
     action_ids: ["act_review_ga4_tracking_quality"],
     blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
     next_step:
-      "Sprawdź jakość pomiaru w WILQ i potwierdź mapowanie konwersji i zdarzeń kluczowych przed wnioskami o opłacalności.",
+      "Sprawdź jakość pomiaru w WILQ i potwierdź powiązanie konwersji i zdarzeń kluczowych przed wnioskami o opłacalności.",
     risk: "medium"
   },
   operator_summary: {
@@ -4792,7 +4792,7 @@ const ga4Diagnostics = {
     {
       id: "ga4_decision_tq_ga4_landing",
       decision_type: "review_landing_mapping",
-      title: "Sprawdź mapowanie strony wejścia: /oferta/",
+      title: "Sprawdź stronę wejścia: /oferta/",
       status: "blocked",
       priority: 31,
       metric_tiles: { aktywni: 20, sesje: 30, zaangażowanie: "12.5%" },
@@ -4810,7 +4810,7 @@ const ga4Diagnostics = {
       rationale:
         "GA4 widzi ruch na stronie wejścia /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
-        "Sprawdź mapowanie strony wejścia i dopiero potem oceniaj dopasowanie komunikatu albo jakość ruchu.",
+        "Sprawdź stronę wejścia i dopiero potem oceniaj dopasowanie komunikatu albo jakość ruchu.",
       risk: "medium"
     }
   ],
@@ -6964,8 +6964,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje i zdarzenia kluczowe/)).toBeInTheDocument();
     expect(screen.getByText(/blokuje wnioski o konwersjach/)).toBeInTheDocument();
-    expect(screen.getByText(/mapowanie konwersji i zdarzeń kluczowych/)).toBeInTheDocument();
-    expect(screen.getByText("Sprawdź mapowanie strony wejścia: /oferta/")).toBeInTheDocument();
+    expect(screen.getByText(/powiązanie konwersji i zdarzeń kluczowych/)).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź stronę wejścia: /oferta/")).toBeInTheDocument();
+    expect(screen.queryByText(/mapowanie konwersji/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sprawdź mapowanie strony wejścia/)).not.toBeInTheDocument();
     expect(screen.getByText("aktywni")).toBeInTheDocument();
     expect(screen.getByText("sesje")).toBeInTheDocument();
     expect(screen.getByText("zaangażowanie")).toBeInTheDocument();

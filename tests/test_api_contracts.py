@@ -3921,8 +3921,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         "conversion_or_key_event_mapping"
     ]
     assert readiness_contract["missing_read_contract_labels"] == [
-        "mapowanie konwersji i zdarzeń kluczowych"
+        "powiązanie konwersji i zdarzeń kluczowych"
     ]
+    assert "powiązanie konwersji" in readiness_contract["next_step"]
+    assert "mapowanie konwersji" not in json.dumps(payload, ensure_ascii=False)
     assert {
         "conversions",
         "key_events",
@@ -11979,7 +11981,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert decision["decision_type"] == "review_product_state_mapping"
     assert decision["status"] == "ready"
     assert decision["metric_tiles"] == {
-        "zmapowane produkty": 1,
+        "powiązane produkty": 1,
         "NOT_ELIGIBLE": 1,
         "OUT_OF_STOCK": 1,
     }

@@ -2959,7 +2959,7 @@ def _action_gate_label(value: str) -> str | None:
         "review_campaign_goal": "sprawdź cel kampanii",
         "review_campaign_name_dimension": "sprawdź nazwę kampanii",
         "review_conversion_quality": "sprawdź jakość konwersji",
-        "review_conversion_or_key_event_mapping": "sprawdź mapowanie konwersji lub zdarzenia kluczowego",
+        "review_conversion_or_key_event_mapping": "sprawdź powiązanie konwersji lub zdarzenia kluczowego",
         "review_budget_context": "sprawdź kontekst budżetu",
         "review_demand_gen_missing_contracts": "sprawdź braki danych Demand Gen",
         "review_ga4_landing_source_campaign_context": "sprawdź stronę wejścia, źródło i kampanię w GA4",

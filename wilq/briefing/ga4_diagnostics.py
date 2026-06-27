@@ -48,7 +48,7 @@ GA4_CONVERSION_BLOCKED_CLAIMS = [
     "ocena atrybucji",
 ]
 GA4_READ_CONTRACT_LABELS = {
-    "conversion_or_key_event_mapping": "mapowanie konwersji i zdarzeń kluczowych",
+    "conversion_or_key_event_mapping": "powiązanie konwersji i zdarzeń kluczowych",
     "conversion_or_key_event_metric_facts": "metryki konwersji i zdarzeń kluczowych",
 }
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
@@ -535,7 +535,7 @@ def _conversion_readiness_contract(
         action_ids=action_ids,
         blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
         next_step=(
-            "Sprawdź jakość pomiaru w WILQ i potwierdź mapowanie "
+            "Sprawdź jakość pomiaru w WILQ i potwierdź powiązanie "
             "konwersji i zdarzeń kluczowych przed wnioskami o opłacalności."
         ),
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
@@ -599,10 +599,11 @@ def _ga4_decision_queue(
             risk = ActionRisk.medium
         elif wordpress_match == "missing":
             decision_type = "review_landing_mapping"
-            title = f"Sprawdź mapowanie strony wejścia: {landing_page or 'brak strony wejścia'}"
+            title = f"Sprawdź stronę wejścia: {landing_page or 'brak strony wejścia'}"
             rationale = (
                 "GA4 widzi ruch, ale spis treści WordPress nie potwierdza tej strony. "
-                "Najpierw trzeba sprawdzić mapowanie URL, zanim powstanie wniosek o treści."
+                "Najpierw trzeba sprawdzić, czy URL istnieje i jest poprawnym adresem, "
+                "zanim powstanie wniosek o treści."
             )
             next_step = (
                 "Zweryfikuj, czy strona wejścia istnieje w WordPress lub mapie strony, a potem sprawdź "

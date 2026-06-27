@@ -1007,7 +1007,7 @@ function MerchantDecisionPreview({
 function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_type"]) {
   if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
   if (decisionType === "review_feed_status") return "przegląd statusu feedu";
-  if (decisionType === "review_product_state_mapping") return "mapowanie produktu Ads";
+  if (decisionType === "review_product_state_mapping") return "powiązanie produktu z Ads";
   return "blocker odczytu Merchant";
 }
 

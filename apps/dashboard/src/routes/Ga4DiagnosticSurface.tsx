@@ -731,7 +731,7 @@ function formatGa4ActionCount(count: number) {
 
 function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
   if (decisionType === "fix_measurement") return "problem pomiaru";
-  if (decisionType === "review_landing_mapping") return "sprawdzenie mapowania strony wejścia";
+  if (decisionType === "review_landing_mapping") return "sprawdzenie strony wejścia";
   return "kontrola jakości ruchu";
 }
 
@@ -781,7 +781,7 @@ function ga4ValidationLabel(value: string) {
     review_landing_page_dimension: "sprawdź stronę wejścia",
     review_source_medium_dimension: "sprawdź źródło i medium ruchu",
     review_campaign_name_dimension: "sprawdź kampanię",
-    review_conversion_or_key_event_mapping: "sprawdź konwersje i zdarzenia kluczowe",
+    review_conversion_or_key_event_mapping: "sprawdź powiązanie konwersji i zdarzeń kluczowych",
     human_confirm_before_tracking_change: "potwierdź sprawdzenie przez człowieka"
   };
   return labels[value] ?? value;

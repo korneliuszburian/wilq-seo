@@ -6135,3 +6135,42 @@ Result:
   `brief treści bez oceny trafności` hits.
 - `scripts/marketer_language_guard.py` now blocks `Brief treści do
   sprawdzenia` and `Cel briefu` in active source.
+
+## 2026-06-27 - GA4 and Merchant mapping-language cleanup
+
+Purpose:
+
+- Remove visible `mapowanie` wording from GA4/Merchant operator copy where it
+  reads like implementation jargon.
+- Keep technical enum names internal while API/domain labels use plain Polish.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'ga4_diagnostics or merchant_product_state or product_state_mapping or content_diagnostics_exposes_query_page_inventory_queue' --maxfail=1
+pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'ga4 route renders'
+pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'merchant route'
+pnpm --dir apps/dashboard typecheck
+uv run python scripts/marketer_language_guard.py
+scripts/local_stack.sh restart
+uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Proof artifacts:
+
+```txt
+.local-lab/proof/20260627-mapping-language-cleanup/ga4-api.json
+.local-lab/proof/20260627-mapping-language-cleanup/merchant-api.json
+.local-lab/proof/20260627-mapping-language-cleanup/ga4-final.txt
+.local-lab/proof/20260627-mapping-language-cleanup/merchant-final.txt
+```
+
+Result:
+
+- GA4 API exposes `powiązanie konwersji` and `Sprawdź stronę wejścia`.
+- Merchant API exposes `powiązane produkty` and `powiązanie produktów`.
+- Live API and browser scans found no `mapowanie konwersji`,
+  `mapowanie strony wejścia`, `Sprawdź mapowanie`, `mapowanie produktu Ads`,
+  `zmapowane produkty`, `shopping_product state` or `Ads product state`.
+- `scripts/marketer_language_guard.py` now blocks the old visible phrases in
+  active source.

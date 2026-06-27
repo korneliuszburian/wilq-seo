@@ -230,6 +230,22 @@ FORBIDDEN_PHRASES = (
         "Use Cel planu treści in marketer-facing content action detail.",
     ),
     ForbiddenPhrase(
+        "mapowanie konwersji",
+        "Use powiązanie konwersji in marketer-facing GA4 copy.",
+    ),
+    ForbiddenPhrase(
+        "mapowanie strony wejścia",
+        "Use sprawdzenie strony wejścia in marketer-facing GA4 copy.",
+    ),
+    ForbiddenPhrase(
+        "mapowanie produktu Ads",
+        "Use powiązanie produktu z Ads in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "zmapowane produkty",
+        "Use powiązane produkty in marketer-facing Merchant copy.",
+    ),
+    ForbiddenPhrase(
         "target_site",
         "Use source_public_url, final_canonical_url, intended_final_url or preview_url.",
     ),

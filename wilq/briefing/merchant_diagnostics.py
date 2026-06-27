@@ -1920,17 +1920,17 @@ def _merchant_product_state_review_decision(
         id="merchant_decision_review_ads_product_state_mapping",
         decision_type="review_product_state_mapping",
         status="ready",
-        title="Merchant: zweryfikuj zmapowane produkty z Ads product state",
+        title="Merchant: sprawdź powiązanie produktów ze statusem w Google Ads",
         summary=(
-            f"WILQ połączył {len(state_rows)} próbek Merchant z Google Ads "
-            "shopping_product state. To pokazuje status, dostępność i cenę z Ads, "
+            f"WILQ połączył {len(state_rows)} próbek Merchant ze statusem produktów "
+            "w Google Ads. To pokazuje status, dostępność i cenę z Ads, "
             "ale nie zawiera kliknięć, kosztu, przychodu ani efektu naprawy."
         ),
         issue_cluster_ids=[],
         priority=20,
         metric_tiles=_clean_merchant_metric_tiles(
             {
-                "zmapowane produkty": len(state_rows),
+                "powiązane produkty": len(state_rows),
                 "NOT_ELIGIBLE": not_eligible_count,
                 "OUT_OF_STOCK": out_of_stock_count,
             }
@@ -1957,14 +1957,14 @@ def _merchant_product_state_review_decision(
         action_ids=action_ids,
         blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
         rationale=(
-            "To jest decyzja mapowania i sprawdzenia, nie decyzja performance. "
-            "State-only rows potwierdzają, że Merchant sample ID ma odpowiednik w "
-            "Ads shopping_product, ale bez metryk emisji i sprzedaży nie wolno "
+            "To jest decyzja powiązania i sprawdzenia, nie decyzja o wynikach produktu. "
+            "Wiersze samego statusu potwierdzają, że próbka Merchant ma odpowiednik w "
+            "produktach Google Ads, ale bez metryk emisji i sprzedaży nie wolno "
             "wyciągać wniosków o zwrot z reklam, odzyskanym przychód ani skutku naprawy."
         ),
         next_step=(
-            "Sprawdź zmapowane produkty: status Ads, dostępność, cenę, "
-            "powiązany problem Merchant i supplemental-feed candidate preview. "
+            "Sprawdź powiązane produkty: status Ads, dostępność, cenę, "
+            "powiązany problem Merchant i podgląd uzupełnienia feedu. "
             "Główny feed, zapis zmian i wpływ na zatwierdzenie pozostają zablokowane."
         ),
         risk=ActionRisk.medium,
@@ -1993,8 +1993,8 @@ def _merchant_product_state_review_payload_preview(
             for row in rows
         ],
         "reason": (
-            "Do sprawdzenia: podgląd powiązania Merchant sample IDs z Google Ads "
-            "shopping_product state. To nie jest gotowa zmiana feedu."
+            "Do sprawdzenia: podgląd powiązania próbek Merchant ze statusem "
+            "produktów w Google Ads. To nie jest gotowa zmiana feedu."
         ),
         "required_validation": [
             "review_product_identity_mapping",
@@ -2064,7 +2064,7 @@ def _merchant_supplemental_feed_candidate(
     review_fields = _merchant_supplemental_feed_review_fields(row)
     value_sources = [
         "Merchant Center issue context",
-        "Google Ads shopping_product state",
+        "Google Ads product status",
         "operator-confirmed product source of truth",
     ]
     return {

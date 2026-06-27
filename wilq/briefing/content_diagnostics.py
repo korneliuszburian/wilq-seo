@@ -1105,7 +1105,7 @@ def _gsc_content_decisions(
             title = _content_decision_title(decision_type, page, query_count, metrics)
             summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
-                "Sprawdź mapowanie URL, sitemap i duplikaty w WordPress. Dopiero potem "
+                "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
                 "wybierz scalenie, nową treść albo przywrócenie."
             )
             rationale = (
