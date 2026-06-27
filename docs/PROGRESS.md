@@ -71,6 +71,12 @@ Date: 2026-06-27
   promises. The route-local optimizer readiness dictionaries were removed, and
   expanded browser proof shows Polish labels such as `kampanie do oceny`,
   `historia zmian` and `ocena bez zapisu` without raw optimizer contract keys.
+- Ads Doctor business-target interpretation and strategy-readiness labels now
+  also come from WILQ API/shared schema. The dashboard no longer renders raw
+  `ads_business_target_interpretation_v1`, `preliminary`,
+  `target_roas_or_cpa`, `human_strategy_review` or business-use enum values in
+  the expanded Ads review panel. Browser proof:
+  `.local-lab/proof/20260627-ads-business-context-api-labels/browser/ads-doctor-expanded.txt`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

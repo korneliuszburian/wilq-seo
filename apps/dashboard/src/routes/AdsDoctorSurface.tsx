@@ -1003,23 +1003,23 @@ function AdsBusinessTargetInterpretationPanel({
           <p className="mt-1 text-slate-700">{interpretation.summary}</p>
         </div>
         <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
-          {interpretation.interpretation_contract} / {interpretation.status}
+          {interpretation.status_label}
         </span>
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Wolno użyć jako"
-          values={interpretation.allowed_uses.map(adsBusinessUseLabel)}
+          values={interpretation.allowed_use_labels}
           empty="brak"
         />
         <TraceLine
           label="Zablokowane użycia"
-          values={interpretation.blocked_uses.map(adsBusinessUseLabel)}
+          values={interpretation.blocked_use_labels}
           empty="brak"
         />
         <TraceLine
           label="Braki"
-          values={interpretation.missing_requirements.map(adsMissingReadContractLabel)}
+          values={interpretation.missing_requirement_labels}
           empty="brak"
         />
         <TraceLine
@@ -1044,8 +1044,7 @@ function AdsBusinessTargetInterpretationPanel({
             </p>
           </div>
           <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-            {adsDecisionStatusLabel(strategyReadiness.status)} /{" "}
-            {adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)}
+            {strategyReadiness.status_label} / {strategyReadiness.latest_review_status_label}
           </span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
@@ -1062,7 +1061,7 @@ function AdsBusinessTargetInterpretationPanel({
             value={adsStrategyContextValue(strategyReadiness.current_context.target_cpa_micros)}
           />
           <MetricTile label="Braki" value={strategyReadiness.missing_read_contracts.length} />
-          <MetricTile label="Ocena" value={adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)} />
+          <MetricTile label="Ocena" value={strategyReadiness.latest_review_status_label} />
         </div>
         <p className="mt-3 text-xs font-medium text-ink">{strategyReadiness.next_step}</p>
         <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
@@ -1073,12 +1072,12 @@ function AdsBusinessTargetInterpretationPanel({
           />
           <TraceLine
             label="Braki"
-            values={strategyReadiness.missing_read_contracts.map(adsMissingReadContractLabel)}
+            values={strategyReadiness.missing_read_contract_labels}
             empty="brak"
           />
           <TraceLine
             label="Nie wolno twierdzić"
-            values={strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)}
+            values={strategyReadiness.blocked_claim_labels}
             empty="brak"
           />
           <TraceLine
@@ -2451,29 +2450,6 @@ function adsBusinessContextStatusValue(
   return "gotowe";
 }
 
-function adsBusinessUseLabel(value: string) {
-  const labels: Record<string, string> = {
-    campaign_review_context: "kontekst oceny kampanii",
-    budget_review_context: "kontekst oceny budżetu",
-    human_strategy_review_context: "kontekst strategii człowieka",
-    margin_context: "kontekst marży",
-    business_goal_alignment: "dopasowanie do celu biznesowego",
-    budget_goal_guardrail: "zasada bezpieczeństwa celu budżetu",
-    target_roas_review: "ocena docelowego zwrotu z reklam",
-    target_cpa_review: "ocena docelowego kosztu pozyskania celu",
-    profitability_verdict: "ocena rentowności",
-    target_kpi_verdict: "ocena wskaźników względem celu",
-    budget_scaling: "skalowanie budżetu",
-    budget_apply: "zmiana budżetu",
-    recommendation_apply: "zapis rekomendacji",
-    wasted_budget_claim: "wniosek o zmarnowanym budżecie",
-    automatic_scaling: "automatyczne skalowanie",
-    profitability_verdict_without_value_model_review:
-      "ocena rentowności bez przeglądu modelu wartości"
-  };
-  return labels[value] ?? value;
-}
-
 function adsAllowedMetricLabel(value: string) {
   const labels: Record<string, string> = {
     clicks: "kliknięcia",
@@ -2536,17 +2512,6 @@ function adsAllowedMetricLabel(value: string) {
     campaign: "kampania",
     ad_group: "grupa reklam",
     status: "status zapytania"
-  };
-  return labels[value] ?? value;
-}
-
-function adsStrategyReviewStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    missing: "brak oceny",
-    approved_for_prepare: "zatwierdzone do przygotowania",
-    needs_changes: "wymaga zmian",
-    rejected: "odrzucone",
-    deferred: "odroczone"
   };
   return labels[value] ?? value;
 }

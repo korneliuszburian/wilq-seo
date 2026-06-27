@@ -796,11 +796,16 @@ class AdsBusinessTargetInterpretation(BaseModel):
         "ads_business_target_interpretation_v1"
     )
     status: Literal["ready", "preliminary", "blocked"]
+    status_label: str = ""
     summary: str
     allowed_uses: list[str] = Field(default_factory=list)
+    allowed_use_labels: list[str] = Field(default_factory=list)
     blocked_uses: list[str] = Field(default_factory=list)
+    blocked_use_labels: list[str] = Field(default_factory=list)
     missing_requirements: list[str] = Field(default_factory=list)
+    missing_requirement_labels: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     policy_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -811,6 +816,7 @@ class AdsBusinessTargetInterpretation(BaseModel):
 class AdsStrategyReviewReadinessContract(BaseModel):
     id: str = "ads_strategy_review_readiness_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     latest_review_status: Literal[
@@ -820,13 +826,17 @@ class AdsStrategyReviewReadinessContract(BaseModel):
         "rejected",
         "deferred",
     ] = "missing"
+    latest_review_status_label: str = ""
     latest_review_outcome: ActionReviewOutcome | None = None
     reviewed_by: str | None = None
     reviewed_at: datetime | None = None
     current_context: dict[str, Any] = Field(default_factory=dict)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

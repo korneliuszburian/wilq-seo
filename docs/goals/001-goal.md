@@ -244,6 +244,13 @@ Latest slice:
   of mapping raw summary contract keys in React. Focused route test and browser
   proof confirm `/ads-doctor` shows Polish missing-input and blocked-promise
   labels without raw Ads contract keys.
+- Ads Doctor business-target interpretation and strategy-readiness panels now
+  consume API-owned status, use-case, missing-data, validation and blocked-
+  promise labels from WILQ API/shared schema. The expanded Ads browser proof
+  shows `wstępne`, `brak oceny` and Polish business-context labels without raw
+  `ads_business_target_interpretation_v1`, `preliminary`,
+  `target_roas_or_cpa`, `human_strategy_review` or business-use enum values:
+  `.local-lab/proof/20260627-ads-business-context-api-labels/browser/ads-doctor-expanded.txt`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

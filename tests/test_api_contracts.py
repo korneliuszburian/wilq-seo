@@ -2786,16 +2786,32 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "interpretation_contract"
     ] == "ads_business_target_interpretation_v1"
     assert business_context_contract["target_interpretation"]["status"] == "preliminary"
+    assert business_context_contract["target_interpretation"]["status_label"] == "wstępne"
     assert "campaign_review_context" in business_context_contract[
         "target_interpretation"
     ]["allowed_uses"]
+    assert "kontekst oceny kampanii" in business_context_contract[
+        "target_interpretation"
+    ]["allowed_use_labels"]
     assert "target_kpi_verdict" in business_context_contract["target_interpretation"][
         "blocked_uses"
     ]
+    assert "ocena wskaźników względem celu" in business_context_contract[
+        "target_interpretation"
+    ]["blocked_use_labels"]
     assert business_context_contract["target_interpretation"]["missing_requirements"] == [
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
+    assert business_context_contract["target_interpretation"][
+        "missing_requirement_labels"
+    ] == [
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka",
+    ]
+    assert "ocena strategii przez człowieka" in business_context_contract[
+        "target_interpretation"
+    ]["required_validation_labels"]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -2805,7 +2821,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     strategy_readiness = business_context_contract["strategy_review_readiness_contract"]
     assert strategy_readiness["id"] == "ads_strategy_review_readiness_contract"
     assert strategy_readiness["status"] == "blocked"
+    assert strategy_readiness["status_label"] == "zablokowane"
     assert strategy_readiness["latest_review_status"] == "missing"
+    assert strategy_readiness["latest_review_status_label"] == "brak oceny"
     assert strategy_readiness["latest_review_outcome"] is None
     assert strategy_readiness["apply_allowed"] is False
     assert strategy_readiness["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
@@ -2820,8 +2838,16 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
+    assert strategy_readiness["missing_read_contract_labels"] == [
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka",
+    ]
     assert "human_strategy_review" in strategy_readiness["required_validation"]
+    assert "ocena strategii przez człowieka" in strategy_readiness[
+        "required_validation_labels"
+    ]
     assert "ocena opłacalności" in strategy_readiness["blocked_claims"]
+    assert "ocena opłacalności" in strategy_readiness["blocked_claim_labels"]
     assert business_context_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",

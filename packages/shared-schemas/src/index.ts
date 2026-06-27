@@ -494,11 +494,16 @@ export const AdsBusinessTargetInterpretationSchema = z.object({
   id: z.string(),
   interpretation_contract: z.literal("ads_business_target_interpretation_v1"),
   status: z.enum(["ready", "preliminary", "blocked"]),
+  status_label: z.string().optional().default(""),
   summary: z.string(),
   allowed_uses: z.array(z.string()),
+  allowed_use_labels: z.array(z.string()).optional().default([]),
   blocked_uses: z.array(z.string()),
+  blocked_use_labels: z.array(z.string()).optional().default([]),
   missing_requirements: z.array(z.string()),
+  missing_requirement_labels: z.array(z.string()).optional().default([]),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   policy_ids: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()).optional().default([]),
@@ -509,12 +514,14 @@ export const AdsBusinessTargetInterpretationSchema = z.object({
 export const AdsStrategyReviewReadinessContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().optional().default(""),
   title: z.string(),
   summary: z.string(),
   latest_review_status: z
     .enum(["missing", "approved_for_prepare", "needs_changes", "rejected", "deferred"])
     .optional()
     .default("missing"),
+  latest_review_status_label: z.string().optional().default(""),
   latest_review_outcome: z
     .enum(["approved_for_prepare", "needs_changes", "rejected", "deferred"])
     .nullable()
@@ -525,8 +532,11 @@ export const AdsStrategyReviewReadinessContractSchema = z.object({
     z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])
   ),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),

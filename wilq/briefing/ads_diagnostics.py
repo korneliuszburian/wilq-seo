@@ -6414,6 +6414,39 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     ]
     _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
+    _hydrate_business_context_marketer_labels(response.business_context_read_contract)
+
+
+def _hydrate_business_context_marketer_labels(
+    contract: AdsBusinessContextReadContract,
+) -> None:
+    interpretation = contract.target_interpretation
+    interpretation.status_label = _ads_status_label(interpretation.status)
+    interpretation.allowed_use_labels = _ads_business_use_labels(
+        interpretation.allowed_uses
+    )
+    interpretation.blocked_use_labels = _ads_business_use_labels(
+        interpretation.blocked_uses
+    )
+    interpretation.missing_requirement_labels = _ads_missing_read_contract_labels(
+        interpretation.missing_requirements
+    )
+    interpretation.required_validation_labels = _ads_review_gate_labels(
+        interpretation.required_validation
+    )
+
+    readiness = contract.strategy_review_readiness_contract
+    readiness.status_label = _ads_status_label(readiness.status)
+    readiness.latest_review_status_label = _ads_strategy_review_status_label(
+        readiness.latest_review_status
+    )
+    readiness.required_validation_labels = _ads_review_gate_labels(
+        readiness.required_validation
+    )
+    readiness.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        readiness.missing_read_contracts
+    )
+    readiness.blocked_claim_labels = _unique(readiness.blocked_claims)
 
 
 def _hydrate_optimizer_readiness_marketer_labels(
@@ -6489,6 +6522,44 @@ def _hydrate_custom_segment_payload_preview_labels(
 
 def _ads_review_gate_labels(gates: Iterable[object]) -> list[str]:
     return [ADS_REVIEW_GATE_LABELS.get(str(gate), str(gate)) for gate in gates if str(gate)]
+
+
+def _ads_business_use_labels(values: Iterable[object]) -> list[str]:
+    labels = {
+        "campaign_review_context": "kontekst oceny kampanii",
+        "budget_review_context": "kontekst oceny budżetu",
+        "human_strategy_review_context": "kontekst strategii człowieka",
+        "margin_context": "kontekst marży",
+        "business_goal_alignment": "dopasowanie do celu biznesowego",
+        "budget_goal_guardrail": "zasada bezpieczeństwa celu budżetu",
+        "target_roas_review_context": "kontekst docelowego zwrotu z reklam",
+        "target_cpa_review_context": "kontekst docelowego kosztu pozyskania celu",
+        "target_roas_review": "ocena docelowego zwrotu z reklam",
+        "target_cpa_review": "ocena docelowego kosztu pozyskania celu",
+        "profitability_verdict": "ocena opłacalności",
+        "target_kpi_verdict": "ocena wskaźników względem celu",
+        "budget_scaling": "skalowanie budżetu",
+        "budget_apply": "zmiana budżetu",
+        "recommendation_apply": "zapis rekomendacji",
+        "wasted_budget_claim": "wniosek o zmarnowanym budżecie",
+        "automatic_scaling": "automatyczne skalowanie",
+        "profitability_verdict_without_value_model_review": (
+            "ocena opłacalności bez sprawdzenia modelu wartości"
+        ),
+    }
+    return [labels.get(str(value), str(value)) for value in values if str(value)]
+
+
+def _ads_strategy_review_status_label(status: object) -> str:
+    labels = {
+        "missing": "brak oceny",
+        "approved_for_prepare": "zatwierdzone do przygotowania",
+        "needs_changes": "wymaga zmian",
+        "rejected": "odrzucone",
+        "deferred": "odroczone",
+    }
+    value = str(status)
+    return labels.get(value, value)
 
 
 def _ads_confidence_label(confidence: object) -> str:
@@ -6594,6 +6665,7 @@ def _ads_status_label(status: object) -> str:
     value = str(status)
     labels = {
         "ready": "gotowe",
+        "preliminary": "wstępne",
         "blocked": "zablokowane",
         "missing": "brak danych",
     }

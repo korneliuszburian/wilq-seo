@@ -787,15 +787,24 @@ const adsDiagnostics = {
       id: "ads_business_target_interpretation",
       interpretation_contract: "ads_business_target_interpretation_v1",
       status: "blocked",
+      status_label: "zablokowane",
       summary:
         "WILQ nie interpretuje KPI biznesowo, dopóki brakuje marży, celu biznesowego albo celu budżetu.",
       allowed_uses: [],
+      allowed_use_labels: [],
       blocked_uses: [
         "profitability_verdict",
         "target_kpi_verdict",
         "budget_scaling",
         "budget_apply",
         "wasted_budget_claim"
+      ],
+      blocked_use_labels: [
+        "ocena opłacalności",
+        "ocena wskaźników względem celu",
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "wniosek o zmarnowanym budżecie"
       ],
       missing_requirements: [
         "profit_margin",
@@ -804,12 +813,26 @@ const adsDiagnostics = {
         "target_roas_or_cpa",
         "human_strategy_review"
       ],
+      missing_requirement_labels: [
+        "marża albo model rentowności",
+        "cel biznesowy",
+        "cel budżetu od człowieka",
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka"
+      ],
       required_validation: [
         "review_profit_margin_model",
         "review_business_goal",
         "review_human_budget_goal",
         "confirm_target_roas_or_cpa",
         "human_strategy_review"
+      ],
+      required_validation_labels: [
+        "sprawdzenie modelu marży",
+        "sprawdzenie celu biznesowego",
+        "sprawdzenie celu budżetu",
+        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
+        "ocena strategii przez człowieka"
       ],
       policy_ids: ["complete_business_context_before_ads_verdicts"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -820,10 +843,12 @@ const adsDiagnostics = {
     strategy_review_readiness_contract: {
       id: "ads_strategy_review_readiness_contract",
       status: "blocked",
+      status_label: "zablokowane",
       title: "Google Ads: gotowość oceny strategii przez człowieka",
       summary:
         "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może tylko przygotować kolejki oceny.",
       latest_review_status: "missing",
+      latest_review_status_label: "brak oceny",
       latest_review_outcome: null,
       reviewed_by: null,
       reviewed_at: null,
@@ -841,6 +866,13 @@ const adsDiagnostics = {
         "confirm_target_roas_or_cpa",
         "human_strategy_review"
       ],
+      required_validation_labels: [
+        "sprawdzenie modelu marży",
+        "sprawdzenie celu biznesowego",
+        "sprawdzenie celu budżetu",
+        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
+        "ocena strategii przez człowieka"
+      ],
       missing_read_contracts: [
         "profit_margin",
         "business_goal",
@@ -848,7 +880,22 @@ const adsDiagnostics = {
         "target_roas_or_cpa",
         "human_strategy_review"
       ],
+      missing_read_contract_labels: [
+        "marża albo model rentowności",
+        "cel biznesowy",
+        "cel budżetu od człowieka",
+        "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "ocena strategii przez człowieka"
+      ],
       blocked_claims: [
+        "ocena opłacalności",
+        "ocena wskaźników względem celu",
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "zapis rekomendacji",
+        "automatyczna optymalizacja"
+      ],
+      blocked_claim_labels: [
         "ocena opłacalności",
         "ocena wskaźników względem celu",
         "skalowanie budżetu",
@@ -6898,13 +6945,34 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("optimizer_readiness_contract");
     expect(routeSource).toContain("contract.mode_label");
     expect(routeSource).toContain("item.missing_read_contract_labels");
+    expect(routeSource).toContain("interpretation.allowed_use_labels");
+    expect(routeSource).toContain("interpretation.blocked_use_labels");
+    expect(routeSource).toContain("interpretation.missing_requirement_labels");
+    expect(routeSource).toContain("interpretation.status_label");
+    expect(routeSource).toContain("strategyReadiness.status_label");
+    expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
+    expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
+    expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
     expect(routeSource).not.toContain("adsOptimizerReadinessNextStep");
     expect(routeSource).not.toContain("adsOptimizerReadinessItemLabel");
     expect(routeSource).not.toContain("adsOptimizerModeLabel");
+    expect(routeSource).not.toContain("adsBusinessUseLabel");
+    expect(routeSource).not.toContain("adsStrategyReviewStatusLabel");
+    expect(routeSource).not.toContain("interpretation.interpretation_contract");
+    expect(routeSource).not.toContain("interpretation.status}");
     expect(routeSource).not.toContain(
       "summary.missing_read_contracts.map(adsMissingReadContractLabel)"
+    );
+    expect(routeSource).not.toContain(
+      "interpretation.missing_requirements.map(adsMissingReadContractLabel)"
+    );
+    expect(routeSource).not.toContain(
+      "strategyReadiness.missing_read_contracts.map(adsMissingReadContractLabel)"
+    );
+    expect(routeSource).not.toContain(
+      "strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)"
     );
     expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
   });
