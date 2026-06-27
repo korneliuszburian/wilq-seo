@@ -185,6 +185,13 @@ Latest slice:
   `content_gap`, `organic_keyword_gap`, `top_page_gap`, `backlink_gap`,
   `competitor_page`, `Ahrefs Rank` or `DR` hits:
   `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
+- Ahrefs status and priority wording is also API-owned now. The API/shared
+  schema exposes connector status, latest-refresh status, live-data status,
+  decision status, priority, gap-contract status, section status and blocked
+  promise labels. `/ahrefs` no longer renders raw metric-fact values on the
+  marketer surface, so browser proof has no `subdomains`, `completed`,
+  `domain_rating=`, `ahrefs_rank=` or `content_gap` hits:
+  `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
 - Localo decision labels now come from the WILQ API/shared schema: connector
   status, refresh status, access proof labels, decision type, priority,
   allowed evidence, missing contracts, read-contract status and blocked claims.

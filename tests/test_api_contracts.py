@@ -5352,7 +5352,7 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert block_decision["status"] == "blocked"
     assert block_decision["status_label"] == "zablokowane"
     assert block_decision["decision_type_label"] == "blokada obietnic"
-    assert block_decision["priority_label"] == "pilne"
+    assert block_decision["priority_label"] == "wysoki priorytet"
     assert block_decision["priority"] == 10
     assert block_decision["metric_tiles"] == {
         "blokady obietnic": 5,
@@ -5891,15 +5891,20 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     payload = response.json()
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
+    assert payload["connector_status_label"] == "dostęp skonfigurowany"
+    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["live_data_status_label"] == "metryki Ahrefs dostępne"
     assert payload["authority_fact_count"] == 2
     assert payload["gap_fact_count"] == 0
     assert payload["blocker_count"] == 1
     gap_contract = payload["gap_read_contract"]
     assert gap_contract["status"] == "blocked"
+    assert gap_contract["status_label"] == "zablokowane"
     assert gap_contract["gap_records"] == []
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
     assert "luka treści" in gap_contract["blocked_claims"]
+    assert "luka treści" in gap_contract["blocked_claim_labels"]
     assert gap_contract["operator_review_gates"] == [
         "ahrefs_gap_records_required",
         "content_planner_review_required",
@@ -5908,6 +5913,8 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     authority_decision = decision_by_id["ahrefs_review_authority_context"]
     assert authority_decision["status"] == "ready"
+    assert authority_decision["status_label"] == "gotowe"
+    assert authority_decision["priority_label"] == "wysoki priorytet"
     assert authority_decision["decision_type_label"] == "kontekst autorytetu"
     assert authority_decision["metric_tiles"]["ocena domeny Ahrefs"] == 90
     assert authority_decision["metric_tiles"]["pozycja w rankingu Ahrefs"] == 1450
@@ -5928,12 +5935,15 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs_rank=" not in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "luka treści" in authority_decision["blocked_claims"]
+    assert "luka treści" in authority_decision["blocked_claim_labels"]
     assert authority_decision["knowledge_card_ids"] == [
         "card_ahrefs_content_gap_playbook"
     ]
     assert authority_decision["expert_rule_ids"] == ["content_brief_rules_v1"]
     block_decision = decision_by_id["ahrefs_block_gap_claims_without_records"]
     assert block_decision["status"] == "blocked"
+    assert block_decision["status_label"] == "zablokowane"
+    assert block_decision["priority_label"] == "wysoki priorytet"
     assert block_decision["metric_tiles"]["brakujące dane"] == 5
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
     operator_summary = payload["operator_summary"]
@@ -5943,6 +5953,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
         decision["id"] for decision in payload["decision_queue"][:4]
     ]
     assert operator_summary["gap_read_status"] == "blocked"
+    assert operator_summary["gap_read_status_label"] == "zablokowane"
     assert operator_summary["authority_fact_count"] == 2
     assert operator_summary["gap_fact_count"] == 0
     assert "ahrefs_authority_summary" in operator_summary["available_read_contracts"]
@@ -5952,9 +5963,12 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
     assert "luka treści" in operator_summary["blocked_claims"]
+    assert "luka treści" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
+    assert payload["sections"][0]["status_label"]
+    assert isinstance(payload["sections"][0]["blocked_claim_labels"], list)
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "ahrefs-token-test" not in serialized
 
@@ -6183,10 +6197,14 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert response.status_code == 200
     payload = response.json()
     assert payload["live_data_available"] is True
+    assert payload["connector_status_label"] == "dostęp skonfigurowany"
+    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["live_data_status_label"] == "metryki Ahrefs dostępne"
     assert payload["gap_fact_count"] == 9
     assert payload["blocker_count"] == 0
     gap_contract = payload["gap_read_contract"]
     assert gap_contract["status"] == "ready"
+    assert gap_contract["status_label"] == "gotowe"
     assert gap_contract["missing_read_contracts"] == []
     assert gap_contract["available_read_contracts"] == [
         "ahrefs_authority_summary",
@@ -6243,6 +6261,8 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     gap_decision = decision_by_id["ahrefs_review_gap_records"]
     assert gap_decision["status"] == "ready"
+    assert gap_decision["status_label"] == "gotowe"
+    assert gap_decision["priority_label"] == "wysoki priorytet"
     assert gap_decision["decision_type_label"] == "sprawdzenie luk"
     assert gap_decision["metric_tiles"] == {
         "rekordy luk": 5,
@@ -6258,9 +6278,11 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert "ocena domeny Ahrefs" in gap_decision["allowed_evidence_labels"]
     assert "luki treści" in gap_decision["allowed_evidence_labels"]
     assert "wzrost ruchu" in gap_decision["blocked_claims"]
+    assert "wzrost ruchu" in gap_decision["blocked_claim_labels"]
     assert "ahrefs_block_gap_claims_without_records" not in decision_by_id
     operator_summary = payload["operator_summary"]
     assert operator_summary["gap_read_status"] == "ready"
+    assert operator_summary["gap_read_status_label"] == "gotowe"
     assert "rekordami luk Ahrefs" in operator_summary["next_step"]
     assert "bez rekordów" not in operator_summary["next_step"]
 

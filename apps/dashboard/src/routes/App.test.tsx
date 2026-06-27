@@ -5178,6 +5178,7 @@ const ahrefsDiagnostics = {
     freshness: { state: "fresh" },
     supported_actions: ["content_gap", "backlink_gap", "competitor_gap"]
   },
+  connector_status_label: "dostęp skonfigurowany",
   latest_refresh: {
     id: "refresh_ahrefs_test",
     connector_id: "ahrefs",
@@ -5199,12 +5200,15 @@ const ahrefsDiagnostics = {
     errors: [],
     redacted: true
   },
+  latest_refresh_status_label: "zakończony",
+  live_data_status_label: "metryki Ahrefs dostępne",
   live_data_available: true,
   authority_fact_count: 2,
   gap_fact_count: 0,
   gap_read_contract: {
     id: "ahrefs_gap_read_contract",
     status: "ready",
+    status_label: "gotowe",
     title: "Luki SEO z Ahrefs",
     summary: "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
     available_read_contracts: [
@@ -5240,6 +5244,7 @@ const ahrefsDiagnostics = {
       "luki domen linkujących"
     ],
     blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
+    blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
     operator_review_gates: [
       "ahrefs_gap_records_required",
       "content_planner_review_required",
@@ -5419,6 +5424,7 @@ const ahrefsDiagnostics = {
       "ahrefs_review_gap_records"
     ],
     gap_read_status: "ready",
+    gap_read_status_label: "gotowe",
     authority_fact_count: 2,
     gap_fact_count: 0,
     available_read_contracts: [
@@ -5444,13 +5450,15 @@ const ahrefsDiagnostics = {
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     action_ids: [],
-    blocked_claims: ["wzrost ruchu", "wzrost autorytetu"]
+    blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
+    blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"]
   },
   decision_queue: [
     {
       id: "ahrefs_review_authority_context",
       decision_type: "review_authority_context",
       status: "ready",
+      status_label: "gotowe",
       decision_type_label: "kontekst autorytetu",
       title: "Użyj Ahrefs tylko jako kontekstu autorytetu",
       summary: "ocena domeny Ahrefs: 90, pozycja w rankingu Ahrefs: 1450",
@@ -5459,6 +5467,7 @@ const ahrefsDiagnostics = {
       next_step:
         "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/backlinków.",
       priority: 25,
+      priority_label: "wysoki priorytet",
       metric_tiles: {
         "ocena domeny Ahrefs": 90,
         "pozycja w rankingu Ahrefs": 1450,
@@ -5504,12 +5513,17 @@ const ahrefsDiagnostics = {
         "wzrost ruchu",
         "wzrost autorytetu"
       ],
+      blocked_claim_labels: [
+        "wzrost ruchu",
+        "wzrost autorytetu"
+      ],
       risk: "low"
     },
     {
       id: "ahrefs_review_gap_records",
       decision_type: "review_gap_records",
       status: "ready",
+      status_label: "gotowe",
       decision_type_label: "sprawdzenie luk",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
@@ -5519,6 +5533,7 @@ const ahrefsDiagnostics = {
       next_step:
         "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress i przygotuj zachowanie, odświeżenie, scalenie, utworzenie albo blokadę zamiast obiecywać wzrost.",
       priority: 18,
+      priority_label: "wysoki priorytet",
       metric_tiles: {
         "rekordy luk": 2,
         "brakujące dane": 0
@@ -5559,6 +5574,7 @@ const ahrefsDiagnostics = {
       },
       action_ids: [],
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
+      blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
     }
   ],
@@ -5567,6 +5583,7 @@ const ahrefsDiagnostics = {
       id: "ahrefs_authority_context",
       title: "Ahrefs: kontekst autorytetu",
       status: "ready",
+      status_label: "gotowe",
       summary:
         "WILQ ma 2 świeże dane autorytetu z Ahrefs: ocena domeny Ahrefs: 90, pozycja w rankingu Ahrefs: 1450.",
       diagnosis:
@@ -5579,12 +5596,14 @@ const ahrefsDiagnostics = {
       metric_fact_labels: {},
       action_ids: [],
       blocked_claims: [],
+      blocked_claim_labels: [],
       risk: "low"
     },
     {
       id: "ahrefs_gap_contract",
       title: "Ahrefs: rekordy luk SEO",
       status: "ready",
+      status_label: "gotowe",
       summary: "WILQ ma konkretne luki treści i backlinków z Ahrefs.",
       diagnosis: "To jest materiał do sprawdzenia, nie automatyczna obietnica wzrostu.",
       next_step: "Połącz rekordy z GSC i Spis treści WordPress przed decyzją contentową.",
@@ -5594,6 +5613,7 @@ const ahrefsDiagnostics = {
       metric_fact_labels: {},
       action_ids: [],
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
+      blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
     }
   ],
@@ -7386,6 +7406,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/domain_rating=/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ahrefs_rank=/)).not.toBeInTheDocument();
     expect(screen.queryByText("content_gap")).not.toBeInTheDocument();
+    expect(screen.queryByText("subdomains")).not.toBeInTheDocument();
+    expect(screen.queryByText("completed")).not.toBeInTheDocument();
     const ahrefsProofSection = screen
       .getByText("Dowody i ograniczenia Ahrefs")
       .closest("section");

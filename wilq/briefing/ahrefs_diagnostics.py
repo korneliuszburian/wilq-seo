@@ -253,23 +253,29 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         authority_facts=authority_facts,
         gap_facts=gap_facts,
     )
+    labeled_gap_read_contract = _label_ahrefs_gap_read_contract(gap_read_contract)
 
     return AhrefsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
+        connector_status_label=_ahrefs_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
+        latest_refresh_status_label=_ahrefs_refresh_status_label(latest_refresh.status)
+        if latest_refresh
+        else None,
+        live_data_status_label=_ahrefs_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
         authority_fact_count=len(authority_facts),
         gap_fact_count=len(gap_facts),
-        gap_read_contract=gap_read_contract,
+        gap_read_contract=labeled_gap_read_contract,
         operator_summary=_operator_summary(
             decision_queue,
-            gap_read_contract,
+            labeled_gap_read_contract,
             len(authority_facts),
             len(gap_facts),
         ),
         decision_queue=decision_queue,
-        sections=sections,
+        sections=[_label_ahrefs_section(section) for section in sections],
         evidence_ids=_unique(
             [
                 *(evidence_id for section in sections for evidence_id in section.evidence_ids),
@@ -294,7 +300,7 @@ def _operator_summary(
     top_decisions = decisions[:4]
     available_contracts = gap_read_contract.available_read_contracts
     missing_contracts = gap_read_contract.missing_read_contracts
-    return AhrefsOperatorSummary(
+    return _label_ahrefs_operator_summary(AhrefsOperatorSummary(
         title="Co marketer ma wiedzieć o Ahrefs",
         summary=(
             "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. "
@@ -345,7 +351,7 @@ def _operator_summary(
                 *gap_read_contract.blocked_claims,
             ]
         ),
-    )
+    ))
 
 
 def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str:
@@ -681,6 +687,90 @@ def _missing_gap_contract_label(contract: str) -> str:
 
 def _gap_type_label(gap_type: AhrefsGapType) -> str:
     return AHREFS_GAP_TYPE_LABELS[gap_type]
+
+
+def _label_ahrefs_section(section: AhrefsDiagnosticSection) -> AhrefsDiagnosticSection:
+    return section.model_copy(
+        update={
+            "status_label": _ahrefs_status_label(section.status),
+            "blocked_claim_labels": section.blocked_claims,
+        }
+    )
+
+
+def _label_ahrefs_decision(decision: AhrefsDecisionItem) -> AhrefsDecisionItem:
+    return decision.model_copy(
+        update={
+            "status_label": _ahrefs_status_label(decision.status),
+            "priority_label": _ahrefs_priority_label(decision.priority),
+            "blocked_claim_labels": decision.blocked_claims,
+        }
+    )
+
+
+def _label_ahrefs_gap_read_contract(
+    contract: AhrefsGapReadContract,
+) -> AhrefsGapReadContract:
+    return contract.model_copy(
+        update={
+            "status_label": _ahrefs_status_label(contract.status),
+            "blocked_claim_labels": contract.blocked_claims,
+        }
+    )
+
+
+def _label_ahrefs_operator_summary(
+    summary: AhrefsOperatorSummary,
+) -> AhrefsOperatorSummary:
+    return summary.model_copy(
+        update={
+            "gap_read_status_label": _ahrefs_status_label(summary.gap_read_status),
+            "blocked_claim_labels": summary.blocked_claims,
+        }
+    )
+
+
+def _ahrefs_status_label(status: str) -> str:
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+        "missing": "brak danych",
+    }
+    return labels.get(status, status)
+
+
+def _ahrefs_connector_status_label(status: str) -> str:
+    labels = {
+        "configured": "dostęp skonfigurowany",
+        "missing_credentials": "brakuje dostępu",
+        "disabled": "źródło wyłączone",
+    }
+    return labels.get(status, f"status: {status}")
+
+
+def _ahrefs_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
+    value = status.value if isinstance(status, ConnectorRefreshStatus) else status
+    labels = {
+        "completed": "zakończony",
+        "blocked": "zablokowany",
+        "failed": "błąd",
+        "running": "w toku",
+    }
+    return labels.get(value, value)
+
+
+def _ahrefs_live_data_status_label(live_data_available: bool) -> str:
+    return "metryki Ahrefs dostępne" if live_data_available else "brak metryk Ahrefs"
+
+
+def _ahrefs_priority_label(priority: int) -> str:
+    if priority <= 10:
+        return "pilne"
+    if priority <= 30:
+        return "wysoki priorytet"
+    if priority <= 60:
+        return "średni priorytet"
+    return "niski priorytet"
 
 
 def _ahrefs_decision_type_label(value: str) -> str:
@@ -1186,7 +1276,7 @@ def _ahrefs_decisions_with_lineage(
     decisions: list[AhrefsDecisionItem],
 ) -> list[AhrefsDecisionItem]:
     return [
-        decision.model_copy(
+        _label_ahrefs_decision(decision).model_copy(
             update={
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *AHREFS_KNOWLEDGE_CARD_IDS]

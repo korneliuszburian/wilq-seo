@@ -4,10 +4,8 @@ import { ClipboardCheck } from "lucide-react";
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import { priorityLabel } from "./marketingLabels";
 
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
-type AhrefsMetricFact = AhrefsDiagnosticsResponse["sections"][number]["metric_facts"][number];
 
 const AHREFS_VISIBLE_GAP_RECORD_LIMIT = 8;
 
@@ -57,16 +55,16 @@ export function AhrefsDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.label || "Ahrefs"}: {ahrefsConnectorStatusLabel(data.connector.status)}
+              {data.connector.label || "Ahrefs"}: {data.connector_status_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_available ? "metryki Ahrefs dostępne" : "brak metryk Ahrefs"}
+              {data.live_data_status_label}
               <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt danych: {ahrefsRefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt danych: {data.latest_refresh_status_label}
                 <span className="sr-only">; </span>
               </span>
             ) : null}
@@ -126,13 +124,12 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Ahrefs / {decision.decision_type_label || "decyzja"} /{" "}
-            {priorityLabel(decision.priority)}
+            Ahrefs / {decision.decision_type_label || "decyzja"} / {decision.priority_label}
           </p>
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-          {ahrefsDecisionStatusLabel(decision.status)}
+          {decision.status_label}
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{decision.summary}</p>
@@ -156,7 +153,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         />
         <TraceLine
           label="Czego nie wolno obiecać"
-          values={decision.blocked_claims.map(ahrefsBlockedClaimLabel)}
+          values={decision.blocked_claim_labels}
         />
         <TraceLine
           label="Dowody"
@@ -164,12 +161,6 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
           empty="brak"
         />
       </div>
-      {decision.metric_facts.length > 0 ? (
-        <AhrefsMetricTiles
-          facts={decision.metric_facts.slice(0, 6)}
-          labels={decision.metric_fact_labels}
-        />
-      ) : null}
     </article>
   );
 }
@@ -187,7 +178,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
           <p className="mt-1 text-sm leading-6 text-slate-600">{contract.summary}</p>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-          {ahrefsDecisionStatusLabel(contract.status)}
+          {contract.status_label}
         </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
@@ -207,7 +198,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         />
         <TraceLine
           label="Czego nie wolno obiecać"
-          values={contract.blocked_claims.map(ahrefsBlockedClaimLabel)}
+          values={contract.blocked_claim_labels}
         />
         <TraceLine
           label="Dowody"
@@ -243,8 +234,6 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
 }
 
 function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
-  const metricFacts = data.sections.flatMap((section) => section.metric_facts);
-  const visibleMetricFacts = metricFacts.slice(0, 4);
   const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
@@ -263,7 +252,7 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">{section.title}</h3>
               <span className="rounded-md border border-line px-2 py-1 text-xs text-slate-600">
-                {ahrefsSectionStatusLabel(section.status)}
+                {section.status_label}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">{section.summary}</p>
@@ -271,12 +260,6 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
           </article>
         ))}
       </div>
-      {visibleMetricFacts.length > 0 ? (
-        <AhrefsMetricTiles
-          facts={visibleMetricFacts}
-          labels={Object.assign({}, ...data.sections.map((section) => section.metric_fact_labels))}
-        />
-      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
@@ -285,7 +268,7 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
           label="Czego nie wolno obiecać"
           values={uniqueValues(
             data.decision_queue.flatMap((decision) =>
-              decision.blocked_claims.map(ahrefsBlockedClaimLabel)
+              decision.blocked_claim_labels
             )
           )}
         />
@@ -294,68 +277,10 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
   );
 }
 
-function AhrefsMetricTiles({
-  facts,
-  labels
-}: {
-  facts: AhrefsMetricFact[];
-  labels: Record<string, string>;
-}) {
-  return (
-    <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-      {facts.map((fact, index) => (
-        <MetricTile
-          key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
-          label={labels[fact.name] || "metryka Ahrefs"}
-          value={formatAhrefsMetricValue(fact.value)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function formatAhrefsMetricValue(value: string | number | boolean) {
-  if (typeof value === "boolean") return value ? "tak" : "nie";
-  return value;
-}
-
 function formatAhrefsEvidenceCount(count: number) {
   if (count === 0) return "brak";
   if (count === 1) return "1 ID";
   return `${count} ID`;
-}
-
-function ahrefsDecisionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  return status;
-}
-
-function ahrefsSectionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  if (status === "missing") return "brak danych";
-  return status;
-}
-
-function ahrefsConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje dostępu";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function ahrefsRefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  return status;
-}
-
-function ahrefsBlockedClaimLabel(value: string) {
-  const labels: Record<string, string> = {
-  };
-  return labels[value] ?? value;
 }
 
 function uniqueValues(values: string[]) {

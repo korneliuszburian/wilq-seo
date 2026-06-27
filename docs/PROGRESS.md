@@ -119,6 +119,13 @@ Date: 2026-06-27
   local React label dictionaries on the `/ads-doctor/demand-gen` marketer
   surface. Browser proof:
   `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
+- Ahrefs readiness/status labels now come from the WILQ API and shared schema:
+  connector status, live-data status, latest-refresh status, decision status,
+  priority, gap-contract status and section status. `/ahrefs` no longer has
+  Ahrefs route-local label helpers and no longer renders raw metric-fact values
+  such as `subdomains`, `completed`, `domain_rating=` or `content_gap` on the
+  marketer surface. Proof:
+  `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays
   such as blocker, checklist, missing-data and validation labels instead of

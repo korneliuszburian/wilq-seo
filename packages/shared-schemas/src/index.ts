@@ -381,6 +381,7 @@ export const AdsDiagnosticSectionSchema = z.object({
   id: z.string(),
   title: z.string(),
   status: z.enum(["ready", "blocked", "missing"]),
+  status_label: z.string().default(""),
   summary: z.string(),
   diagnosis: z.string(),
   next_step: z.string(),
@@ -1542,6 +1543,7 @@ export const MerchantDiagnosticSectionSchema = z.object({
   tactical_items: z.array(TacticalQueueItemSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -1792,6 +1794,7 @@ export const ContentDecisionItemSchema = z.object({
     "review_ahrefs_gap_records"
   ]),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   decision_type_label: z.string().default(""),
   title: z.string(),
   summary: z.string().nullable().optional(),
@@ -2204,6 +2207,7 @@ export const AhrefsDiagnosticSectionSchema = z.object({
   id: z.string(),
   title: z.string(),
   status: z.enum(["ready", "blocked", "missing"]),
+  status_label: z.string().default(""),
   summary: z.string(),
   diagnosis: z.string(),
   next_step: z.string(),
@@ -2213,6 +2217,7 @@ export const AhrefsDiagnosticSectionSchema = z.object({
   metric_fact_labels: z.record(z.string()).default({}),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -2225,12 +2230,14 @@ export const AhrefsDecisionItemSchema = z.object({
     "block_gap_claims"
   ]),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   decision_type_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   rationale: z.string(),
   next_step: z.string(),
   priority: z.number(),
+  priority_label: z.string().default(""),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   allowed_evidence: z.array(z.string()),
   allowed_evidence_labels: z.array(z.string()).default([]),
@@ -2242,6 +2249,7 @@ export const AhrefsDecisionItemSchema = z.object({
   metric_fact_labels: z.record(z.string()).default({}),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -2272,6 +2280,7 @@ export const AhrefsGapRecordSchema = z.object({
 export const AhrefsGapReadContractSchema = z.object({
   id: z.literal("ahrefs_gap_read_contract"),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   available_read_contracts: z.array(z.string()),
@@ -2281,6 +2290,7 @@ export const AhrefsGapReadContractSchema = z.object({
   allowed_evidence: z.array(z.string()),
   allowed_evidence_labels: z.array(z.string()).default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   operator_review_gates: z.array(z.string()),
   operator_review_gate_labels: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()),
@@ -2298,6 +2308,7 @@ export const AhrefsOperatorSummarySchema = z.object({
   next_step: z.string(),
   top_decision_ids: z.array(z.string()),
   gap_read_status: z.enum(["ready", "blocked"]),
+  gap_read_status_label: z.string().default(""),
   authority_fact_count: z.number(),
   gap_fact_count: z.number(),
   available_read_contracts: z.array(z.string()),
@@ -2307,7 +2318,8 @@ export const AhrefsOperatorSummarySchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const AhrefsDiagnosticsResponseSchema = z.object({
@@ -2315,7 +2327,10 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   language: z.literal("pl-PL"),
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
+  connector_status_label: z.string().default(""),
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  latest_refresh_status_label: z.string().nullable().optional(),
+  live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
   authority_fact_count: z.number(),
   gap_fact_count: z.number(),

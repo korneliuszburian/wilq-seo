@@ -593,6 +593,11 @@ WILQ is complete for this long-range goal when:
   evidence/metric sections; `what_blocks_us` now contains only real decision
   blockers such as GA4 claim readiness and Ads business context. Proof:
   `.local-lab/proof/20260627-marketing-brief-blockers/`.
+- 2026-06-27: Ahrefs status, priority and blocked-promise labels now come from
+  WILQ API/shared-schema fields. The `/ahrefs` route no longer owns Ahrefs
+  label helpers and no longer renders raw metric-fact values as first-screen
+  marketer copy. Proof:
+  `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
 
 ## Discoveries
 
