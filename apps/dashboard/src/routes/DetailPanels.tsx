@@ -175,14 +175,13 @@ type PayloadPreviewItem = {
     | "ga4TrackingQuality"
     | "localVisibility"
     | "keywordPlannerAccess"
-    | "adsBusinessGuardrail"
-    | "contentBrief"
-    | "wordpressDraft";
+    | "adsBusinessGuardrail";
   item: Record<string, unknown>;
 };
 
 function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPreviewItem[] {
   const apiCardsOnlyPayload =
+    payload.preview_contract === "content_brief_preview_v1" ||
     payload.preview_contract === "wordpress_draft_handoff_preview_v1";
   const genericItems = !apiCardsOnlyPayload && Array.isArray(payload.payload_preview)
     ? payload.payload_preview.filter(isRecord).map((item) => ({
@@ -200,16 +199,6 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "searchTermNgram" as const, item }))
     : [];
-  const contentBriefItems = Array.isArray(payload.content_brief_preview)
-    ? payload.content_brief_preview
-        .filter(isRecord)
-        .map((item) => ({ kind: "contentBrief" as const, item }))
-    : [];
-  const wordpressDraftItems = Array.isArray(payload.wordpress_draft_payload_preview)
-    ? payload.wordpress_draft_payload_preview
-        .filter(isRecord)
-        .map((item) => ({ kind: "wordpressDraft" as const, item }))
-    : [];
   const keywordPlannerAccessItems =
     payload.action_type === "configure_google_ads_keyword_planner_access"
       ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
@@ -224,9 +213,7 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
     ...budgetItems,
     ...ngramItems,
     ...keywordPlannerAccessItems,
-    ...adsBusinessGuardrailItems,
-    ...contentBriefItems,
-    ...wordpressDraftItems
+    ...adsBusinessGuardrailItems
   ];
 }
 
@@ -260,12 +247,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "adsBusinessGuardrail") {
     return <AdsBusinessGuardrailPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "contentBrief") {
-    return <ContentBriefPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "wordpressDraft") {
-    return <WordPressDraftPreviewCard item={previewItem.item} />;
   }
   return <GenericPayloadPreviewCard item={previewItem.item} />;
 }
@@ -647,117 +628,6 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
   );
 }
 
-function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Plan treści do sprawdzenia</h3>
-          <p className="mt-1 break-words text-xs text-slate-500">
-            {contentPrimaryUrlValue(item)}
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Temat: {stringValue(item.topic, "brak")}</div>
-        <div>Tryb: {stringValue(item.mode_label, "wymaga etykiety trybu z WILQ")}</div>
-        <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
-        <div>Opcje: {asStringArray(item.decision_option_labels).join(", ") || "brak"}</div>
-        <div>Cel planu treści: {stringValue(item.brief_goal, "brak")}</div>
-        <div>Intencja: {stringValue(item.intent, "brak")}</div>
-        <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
-        <div>Odbiorca: {stringValue(item.audience, "brak")}</div>
-        <div>H1: {stringValue(item.h1_direction, "brak")}</div>
-        <div>H2: {asStringArray(item.h2_direction).slice(0, 4).join(", ") || "brak"}</div>
-        <div>FAQ: {asStringArray(item.faq_direction).slice(0, 4).join(", ") || "brak"}</div>
-        <div>CTA: {stringValue(item.cta_direction, "brak")}</div>
-        <div>Adresy: {contentUrlSemanticsValue(item)}</div>
-        <div>Obiekcje: {asStringArray(item.key_objections).slice(0, 3).join(", ") || "brak"}</div>
-        <div>Źródła faktów: {asStringArray(item.source_facts).slice(0, 3).join(", ") || "brak"}</div>
-        <div>Brakujące dowody: {asStringArray(item.missing_evidence).slice(0, 3).join(", ") || "brak"}</div>
-        <div>
-          Kliknięcia: {formatNumber(metricSnapshot.clicks)}; Wyświetlenia:{" "}
-          {formatNumber(metricSnapshot.impressions)}
-        </div>
-        <div>
-          CTR: {formatPercent(metricSnapshot.ctr)}; Pozycja:{" "}
-          {formatNumber(metricSnapshot.average_position)}
-        </div>
-        <PreviewValues label="Blokady publikacji" values={asStringArray(item.publication_blocker_labels)} />
-        <PreviewValues label="Warunki sprawdzenia" values={asStringArray(item.required_validation_labels)} />
-        <div>
-          Publikacja: {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}; zapis zmian:{" "}
-          {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function contentPrimaryUrlValue(item: Record<string, unknown>) {
-  return stringValue(
-    item.final_canonical_url,
-    stringValue(
-      item.intended_final_url,
-      stringValue(item.source_public_url, stringValue(item.preview_url, "brak URL"))
-    )
-  );
-}
-
-function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const draftPayload = isRecord(item.draft_payload) ? item.draft_payload : {};
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Szkic WordPress do sprawdzenia</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            Szkic bez publikacji
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Temat: {stringValue(item.topic, "brak")}</div>
-        <div>Intencja: {stringValue(item.intent, "brak")}</div>
-        <div>
-          Status wpisu:{" "}
-          {stringValue(
-            item.post_status_label,
-            stringValue(draftPayload.post_status_label, "wymaga etykiety statusu z WILQ")
-          )}
-        </div>
-        <div>Tytuł szkicu: {stringValue(draftPayload.post_title, "brak")}</div>
-        <div>Adresy: {contentUrlSemanticsValue(item)}</div>
-        <PreviewValues label="Kontrole treści" values={asStringArray(item.content_gate_status_summary)} />
-        <PreviewValues label="Co blokuje szkic" values={asStringArray(item.draft_blocker_labels)} />
-        <PreviewValues label="Warunki szkicu" values={asStringArray(item.draft_generation_summary)} />
-        <PreviewValues label="Gotowość po sprawdzeniu" values={asStringArray(item.draft_readiness_review_summary)} />
-        <PreviewValues
-          label="Kontrola szkicu"
-          values={asStringArray(item.draft_readiness_review_contract_summary)}
-        />
-        <PreviewValues label="Szkic WordPress" values={asStringArray(item.wordpress_draft_handoff_summary)} />
-        <PreviewValues
-          label="Warunki szkicu WordPress"
-          values={asStringArray(item.wordpress_draft_handoff_contract_summary)}
-        />
-        <PreviewValues
-          label="Pomiar po publikacji"
-          values={asStringArray(item.post_publication_measurement_summary)}
-        />
-        <PreviewValues label="Warunki sprawdzenia" values={asStringArray(item.required_validation_labels)} />
-        <div>
-          Zapis zmian: {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}; gotowość systemu:{" "}
-          {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function prioritizePayloadPreviewItems(items: PayloadPreviewItem[]) {
   return [...items].sort((left, right) => {
     if (left.kind !== right.kind) {
@@ -772,12 +642,7 @@ function prioritizePayloadPreviewItems(items: PayloadPreviewItem[]) {
 
 function visiblePayloadPreviewItems(items: PayloadPreviewItem[]) {
   const sortedItems = prioritizePayloadPreviewItems(items);
-  const visibleItems = sortedItems.slice(0, 4);
-  const draftItem = sortedItems.find((item) => item.kind === "wordpressDraft");
-  if (draftItem && !visibleItems.some((item) => item.kind === "wordpressDraft")) {
-    visibleItems.splice(Math.max(visibleItems.length - 1, 0), 1, draftItem);
-  }
-  return visibleItems;
+  return sortedItems.slice(0, 4);
 }
 
 function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
@@ -791,8 +656,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "localVisibility") return 7;
   if (kind === "keywordPlannerAccess") return 9;
   if (kind === "adsBusinessGuardrail") return 10;
-  if (kind === "contentBrief") return 11;
-  if (kind === "wordpressDraft") return 12;
   return 13;
 }
 
@@ -1135,21 +998,6 @@ function TechnicalDetailsPanel({
       {isOpen ? children : null}
     </div>
   );
-}
-
-function contentUrlSemanticsValue(item: Record<string, unknown>) {
-  const sourceUrl = stringValue(item.source_public_url, "");
-  const finalUrl = stringValue(
-    item.final_canonical_url,
-    stringValue(item.intended_final_url, "")
-  );
-  const previewUrl = stringValue(item.preview_url, "");
-  const parts = [
-    sourceUrl ? `publiczny: ${sourceUrl}` : "",
-    finalUrl ? `kanoniczny: ${finalUrl}` : "",
-    previewUrl ? `podgląd: ${previewUrl}` : "",
-  ].filter(Boolean);
-  return parts.join("; ") || "brak";
 }
 
 function SectionHeading({ title }: { title: string }) {

@@ -3304,6 +3304,34 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         if action_id == "act_prepare_content_refresh_queue":
             content_payload = action["payload"]
             assert content_payload["preview_contract"] == "content_brief_preview_v1"
+            content_cards = action["preview_cards"]
+            assert content_cards
+            assert "content_brief_review" in {card["kind"] for card in content_cards}
+            if content_payload.get("wordpress_draft_payload_preview"):
+                assert "wordpress_draft_payload_review" in {
+                    card["kind"] for card in content_cards
+                }
+            content_card_text = json.dumps(
+                [
+                    {
+                        "title_label": card["title_label"],
+                        "subtitle_label": card["subtitle_label"],
+                        "status_label": card["status_label"],
+                        "rows": card["rows"],
+                    }
+                    for card in content_cards
+                ],
+                ensure_ascii=False,
+            )
+            assert "Plan treści do sprawdzenia" in content_card_text
+            if content_payload.get("wordpress_draft_payload_preview"):
+                assert "Szkic WordPress do sprawdzenia" in content_card_text
+            assert "URL publiczny" in content_card_text
+            assert "content_brief_" not in content_card_text
+            assert "content_brief_preview_v1" not in content_card_text
+            assert "wordpress_draft_payload_preview_v1" not in content_card_text
+            assert "target_site" not in content_card_text
+            assert "mapping_review" not in content_card_text
             assert content_payload["apply_allowed"] is False
             assert content_payload["api_mutation_ready"] is False
             assert "target_site_mapping_review_contract" not in content_payload

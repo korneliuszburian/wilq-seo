@@ -159,6 +159,11 @@ Latest cleanup state:
 - WordPress draft handoff action details now receive API-owned preview cards.
   The marketer-facing cards show URL/checklist rows instead of raw candidate
   IDs, preview-contract names or operation names.
+- Content refresh action details now receive API-owned preview cards for
+  content brief review and WordPress draft payload review. The marketer-facing
+  cards show public/final URL rows and safe writing blockers instead of raw
+  content payload contracts, `target_site`, `target_url` or mapping-review
+  wording.
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.

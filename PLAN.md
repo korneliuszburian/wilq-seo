@@ -238,6 +238,10 @@ Known cleanup already started:
 - WordPress draft handoff action details now have typed API preview cards
   without raw candidate IDs, preview-contract names or operation names in
   primary card copy.
+- Content refresh action details now have typed API preview cards for content
+  brief review and WordPress draft payload review. The primary card copy uses
+  public/final URL semantics and no longer depends on raw content payload
+  contracts, `target_site`, `target_url` or mapping-review wording.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric

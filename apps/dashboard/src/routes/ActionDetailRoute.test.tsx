@@ -1082,7 +1082,72 @@ const adsStrategyReviewActionFixture: ActionObject = {
 
 const contentActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "content_brief_preview_0",
+      kind: "content_brief_review",
+      title_label: "Plan treści do sprawdzenia",
+      subtitle_label: "brief bez pisania i bez publikacji",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Temat", value: "bdo co to" },
+        { label: "Tryb", value: "sprawdzić spis treści" },
+        {
+          label: "URL publiczny",
+          value: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+        },
+        {
+          label: "Opcje",
+          value: "odśwież istniejącą treść, scal z istniejącą treścią, zablokuj"
+        },
+        {
+          label: "Cel planu treści",
+          value:
+            "Sprawdź spis treści i duplikaty przed planem treści dla `bdo co to`. Bez potwierdzenia URL nie twórz nowej strony."
+        },
+        {
+          label: "Kąt treści",
+          value:
+            "Najpierw potwierdź kanoniczną stronę BDO, potem przygotuj plan treści bez obietnic pozycji."
+        },
+        { label: "H1", value: "H1 ma jasno odpowiedzieć na intencję `bdo co to`." },
+        {
+          label: "Brakujące dowody",
+          value: "brak potwierdzonego kanonicznego URL w WordPress"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value:
+            "istniejący URL potwierdzony w WordPress, kontrola duplikacji i kanibalizacji, potwierdzenie człowieka przed zapisem WordPress"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    },
+    {
+      id: "wordpress_draft_payload_preview_0",
+      kind: "wordpress_draft_payload_review",
+      title_label: "Szkic WordPress do sprawdzenia",
+      subtitle_label: "szkic bez publikacji",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Temat", value: "bdo co to" },
+        { label: "Status wpisu", value: "szkic" },
+        { label: "Tytuł szkicu", value: "Odświeżenie: zielony ład" },
+        {
+          label: "Kontrole treści",
+          value:
+            "spis treści: spis potwierdzony na obecnej stronie, URL kanoniczny: obecny URL potwierdzony, duplikaty: odśwież albo scal zamiast pisać od nowa"
+        },
+        {
+          label: "Szkic WordPress",
+          value: "status: zablokowany do przejścia kontroli szkicu"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_content",
   title: "Przygotuj kolejkę odświeżenia treści ekologus.pl",
   domain: "content",
@@ -1642,14 +1707,9 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Tryb: sprawdzić spis treści/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/wymaga etykiety trybu z WILQ/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
-    expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
     expect(screen.getAllByText(/Opcje: odśwież istniejącą treść, scal z istniejącą treścią/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kąt treści: Najpierw potwierdź kanoniczną stronę BDO/)).toBeInTheDocument();
-    expect(screen.getByText(/Odbiorca: Przedsiębiorca sprawdzający obowiązki BDO/)).toBeInTheDocument();
     expect(screen.getByText(/H1: H1 ma jasno odpowiedzieć na intencję `bdo co to`/)).toBeInTheDocument();
-    expect(screen.getByText(/H2: czym jest BDO, obowiązki przedsiębiorcy/)).toBeInTheDocument();
-    expect(screen.getByText(/FAQ: Co to jest BDO\?, Kto musi mieć BDO\?/)).toBeInTheDocument();
     expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
     expect(screen.getAllByText(/Warunki sprawdzenia: istniejący URL potwierdzony w WordPress/).length).toBeGreaterThan(0);
     expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
@@ -1667,10 +1727,11 @@ describe("Action detail route", () => {
     expect(source).not.toContain("adsMissingReadContractLabel");
     expect(source).not.toContain("marketerBlockedClaimLabels");
     expect(source).not.toContain("contentWordPressPostStatusLabel");
+    expect(source).not.toContain("contentBrief");
+    expect(source).not.toContain("wordpressDraft");
     expect(source).not.toContain("wordpressDraftHandoff");
     expect(source).toContain("action.preview_cards");
     expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");
-    expect(source).toContain("post_status_label");
   });
 });

@@ -685,6 +685,11 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Merchant issue clusters and issue decisions now receive
   API/domain reporting-context labels. The Merchant route no longer owns a
   reporting-context fallback.
+- 2026-06-27: Content refresh action details now receive API-owned preview
+  cards for content brief review and WordPress draft payload review.
+  `DetailPanels.tsx` no longer renders those cards by inferring raw payload
+  shape, and the live action/browser proof shows no `target_site`, `target_url`
+  or mapping-review wording in the primary cards.
 
 ## Discoveries
 
