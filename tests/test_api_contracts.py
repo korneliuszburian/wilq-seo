@@ -10393,6 +10393,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "missing_read_contracts"
     ]
     assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
+    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
+        "missing_read_contract_labels"
+    ]
     assert custom_segments_contract["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
@@ -10404,6 +10407,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "missing_read_contracts"
     ]
     assert "rozmiar odbiorców" in custom_segments_contract["blocked_claims"]
+    assert "rozmiar odbiorców" in custom_segments_contract["blocked_claim_labels"]
     audience_forecast_contract = custom_segments_contract[
         "audience_forecast_read_contract"
     ]
@@ -10413,11 +10417,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert audience_forecast_contract["missing_read_contracts"] == [
         "forecast_or_audience_size",
     ]
+    assert audience_forecast_contract["missing_read_contract_labels"] == [
+        "prognoza albo rozmiar odbiorców",
+    ]
     assert audience_forecast_contract["operator_review_gates"] == [
         "forecast_or_audience_size",
         "human_confirm_before_apply",
     ]
     assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claims"]
+    assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claim_labels"]
     forecast_row = audience_forecast_contract["forecast_rows"][0]
     assert forecast_row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
     assert forecast_row["custom_segment_name"] == (
@@ -10428,6 +10436,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert forecast_row["audience_size"] is None
     assert forecast_row["source_terms"] == ["bdo rejestracja", "odpady cena"]
     assert "prognozy albo rozmiaru odbiorców" in forecast_row["reason"]
+    assert "zwrot z reklam" in forecast_row["blocked_claim_labels"]
     assert forecast_row["evidence_ids"] == [
         refresh_response.json()["evidence_ids"][-1]
     ]
@@ -10444,6 +10453,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     }
     assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
     assert custom_segments_contract["candidates"][0]["review_score"] == 85
+    assert custom_segments_contract["candidates"][0]["confidence_label"] == "niska"
+    assert custom_segments_contract["candidates"][0]["validation_status_label"] == (
+        "do sprawdzenia"
+    )
+    assert "zwrot z reklam" in custom_segments_contract["candidates"][0][
+        "blocked_claim_labels"
+    ]
     assert "kolejność oceny segmentu" in custom_segments_contract["candidates"][0][
         "review_reason"
     ]
@@ -10467,9 +10483,24 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["payload_preview"][0]["apply_allowed"] is False
     assert custom_segments_contract["payload_preview"][0]["api_mutation_ready"] is False
     assert custom_segments_contract["payload_preview"][0]["destructive"] is False
+    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
+        "payload_preview"
+    ][0]["required_validation_labels"]
+    assert "zwrot z reklam" in custom_segments_contract["payload_preview"][0][
+        "blocked_claim_labels"
+    ]
+    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
+        "payload_preview"
+    ][0]["safety_review"]["missing_requirement_labels"]
+    assert "sprawdzenie zapisu zmian w Google Ads" in custom_segments_contract[
+        "payload_preview"
+    ][0]["safety_review"]["required_validation_labels"]
     targeting_preview = custom_segments_contract["payload_preview"][0][
         "targeting_preview"
     ][0]
+    assert "prognoza albo rozmiar odbiorców" in targeting_preview[
+        "required_validation_labels"
+    ]
     assert targeting_preview["operation_type"] == "custom_segment_targeting_review"
     assert targeting_preview["target_scope"] == "campaign_context_review"
     assert targeting_preview["campaign_id"] == "101"

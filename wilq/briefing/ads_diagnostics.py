@@ -6413,10 +6413,82 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         )
         for section in response.sections
     ]
+    _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
+
+
+def _hydrate_custom_segments_marketer_labels(
+    contract: AdsCustomSegmentsReadContract,
+) -> None:
+    contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        contract.missing_read_contracts
+    )
+    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    forecast_contract = contract.audience_forecast_read_contract
+    forecast_contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        forecast_contract.missing_read_contracts
+    )
+    forecast_contract.blocked_claim_labels = _unique(forecast_contract.blocked_claims)
+
+    for candidate in contract.candidates:
+        candidate.confidence_label = _ads_confidence_label(candidate.confidence)
+        candidate.validation_status_label = _ads_validation_status_label(
+            candidate.validation_status
+        )
+        candidate.blocked_claim_labels = _unique(candidate.blocked_claims)
+        if candidate.payload_preview is not None:
+            _hydrate_custom_segment_payload_preview_labels(candidate.payload_preview)
+
+    for preview in contract.payload_preview:
+        _hydrate_custom_segment_payload_preview_labels(preview)
+
+    for row in forecast_contract.forecast_rows:
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _hydrate_custom_segment_payload_preview_labels(
+    preview: AdsCustomSegmentPayloadPreview,
+) -> None:
+    preview.required_validation_labels = _ads_review_gate_labels(
+        preview.required_validation
+    )
+    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+    safety_review = preview.safety_review
+    safety_review.status_label = _ads_status_label(safety_review.status)
+    safety_review.missing_requirement_labels = _ads_missing_read_contract_labels(
+        safety_review.missing_requirements
+    )
+    safety_review.required_validation_labels = _ads_review_gate_labels(
+        safety_review.required_validation
+    )
+    safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
+    for target in preview.targeting_preview:
+        target.required_validation_labels = _ads_review_gate_labels(
+            target.required_validation
+        )
+        target.blocked_claim_labels = _unique(target.blocked_claims)
 
 
 def _ads_review_gate_labels(gates: Iterable[object]) -> list[str]:
     return [ADS_REVIEW_GATE_LABELS.get(str(gate), str(gate)) for gate in gates if str(gate)]
+
+
+def _ads_confidence_label(confidence: object) -> str:
+    labels = {
+        "low": "niska",
+        "medium": "średnia",
+        "high": "wysoka",
+    }
+    value = str(confidence)
+    return labels.get(value, value)
+
+
+def _ads_validation_status_label(status: object) -> str:
+    labels = {
+        "pending_validation": "do sprawdzenia",
+        "blocked": "zablokowane",
+    }
+    value = str(status)
+    return labels.get(value, value)
 
 
 def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:

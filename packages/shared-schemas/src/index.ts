@@ -1178,7 +1178,9 @@ export const AdsCustomSegmentTargetingPreviewSchema = z.object({
   operation_type: z.literal("custom_segment_targeting_review"),
   reason: z.string(),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()
@@ -1189,10 +1191,14 @@ export const AdsCustomSegmentApplySafetyReviewSchema = z.object({
   custom_segment_preview_id: z.string(),
   safety_contract: z.literal("custom_segment_apply_safety_v1"),
   status: z.literal("blocked"),
+  status_label: z.string().optional().default("zablokowane"),
   reason: z.string(),
   missing_requirements: z.array(z.string()),
+  missing_requirement_labels: z.array(z.string()).optional().default([]),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   evidence_ids: z.array(z.string()),
   audit_required: z.boolean(),
   api_mutation_ready: z.boolean(),
@@ -1212,7 +1218,9 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   targeting_preview: z.array(AdsCustomSegmentTargetingPreviewSchema).optional().default([]),
   safety_review: AdsCustomSegmentApplySafetyReviewSchema,
   api_mutation_ready: z.boolean(),
@@ -1230,7 +1238,8 @@ export const AdsCustomSegmentAudienceForecastRowSchema = z.object({
   source_terms: z.array(z.string()),
   reason: z.string(),
   evidence_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
@@ -1242,9 +1251,11 @@ export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
   forecast_row_count: z.number().int().nonnegative(),
   forecast_rows: z.array(AdsCustomSegmentAudienceForecastRowSchema),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   next_step: z.string()
@@ -1315,9 +1326,12 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   confidence: z.enum(["low", "medium", "high"]),
+  confidence_label: z.string().optional().default("niska"),
   validation_status: z.enum(["pending_validation", "blocked"]),
+  validation_status_label: z.string().optional().default("do sprawdzenia"),
   payload_preview: AdsCustomSegmentPayloadPreviewSchema.nullable().optional(),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   next_step: z.string()
 });
 
@@ -1333,9 +1347,11 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   action_ids: z.array(z.string()),
   next_step: z.string()
 });

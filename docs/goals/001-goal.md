@@ -185,9 +185,11 @@ Latest slice:
   GA4, Localo and Ahrefs found no collapsed status strings like `brakuje
   dostępudane` or `gotoweniskie`.
 - Custom Segments and Keyword Planner wording now uses API-owned Polish labels
-  and source summaries for preview member type, review gates, blocked promises
-  and blocked Keyword Planner access. Browser proof for
-  `/ads-doctor/custom-segments` is stored under
+  and source summaries for preview member type, review gates, blocked promises,
+  confidence, validation, safety requirements and blocked Keyword Planner
+  access. The dedicated route no longer imports Ads label translators and the
+  browser proof for `/ads-doctor/custom-segments` hides raw connector, evidence
+  and action IDs from the marketer surface:
   `.local-lab/proof/20260627-custom-segments-api-labels/browser/`.
 - Demand Gen readiness wording now uses API-owned Polish labels and source
   metrics for channel labels, review gates, missing-data labels and blocked

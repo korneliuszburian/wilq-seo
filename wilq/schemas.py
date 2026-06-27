@@ -1483,7 +1483,9 @@ class AdsCustomSegmentTargetingPreview(BaseModel):
     )
     reason: str
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
@@ -1496,10 +1498,14 @@ class AdsCustomSegmentApplySafetyReview(BaseModel):
         "custom_segment_apply_safety_v1"
     )
     status: Literal["blocked"] = "blocked"
+    status_label: str = "zablokowane"
     reason: str
     missing_requirements: list[str] = Field(default_factory=list)
+    missing_requirement_labels: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     audit_required: bool = True
     api_mutation_ready: bool = False
@@ -1519,7 +1525,9 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     targeting_preview: list[AdsCustomSegmentTargetingPreview] = Field(
         default_factory=list
     )
@@ -1540,6 +1548,7 @@ class AdsCustomSegmentAudienceForecastRow(BaseModel):
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
@@ -1553,9 +1562,11 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
         default_factory=list
     )
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     next_step: str
@@ -1640,9 +1651,12 @@ class AdsCustomSegmentCandidate(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     confidence: Literal["low", "medium", "high"] = "low"
+    confidence_label: str = "niska"
     validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
+    validation_status_label: str = "do sprawdzenia"
     payload_preview: AdsCustomSegmentPayloadPreview | None = None
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str
 
 
@@ -1659,9 +1673,11 @@ class AdsCustomSegmentsReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
 

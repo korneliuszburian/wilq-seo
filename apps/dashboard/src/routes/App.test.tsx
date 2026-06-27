@@ -6884,6 +6884,13 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/CustomSegmentsDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("missing_read_contract_labels");
+    expect(routeSource).toContain("blocked_claim_labels");
+    expect(routeSource).toContain("validation_status_label");
+    expect(routeSource).not.toContain("from \"./marketingLabels\"");
+    expect(routeSource).not.toContain(".map(adsMissingReadContractLabel)");
+    expect(routeSource).not.toContain(".map(adsBlockedClaimLabel)");
   });
 
   it("legacy operating routes do not fall back to registry dumps", async () => {

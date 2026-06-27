@@ -66,6 +66,11 @@ Date: 2026-06-27
   instead of mapping raw Ads contract keys in the route. Browser proof for
   `/ads-doctor` shows Polish labels for missing inputs and blocked promises
   without raw `target_roas_or_cpa`, `profit_margin` or `human_strategy_review`.
+- Custom Segments now render missing-contract, safety, validation, confidence
+  and blocked-promise labels from WILQ API/shared schema. The dedicated
+  `/ads-doctor/custom-segments` route no longer imports route-local Ads label
+  translators and the browser proof hides raw connector, evidence and action IDs
+  from the marketer surface while keeping them in API contracts.
 - Merchant product/performance and price-readiness blocked claims now use
   Polish source values from API/action/knowledge contracts. Dashboard fixtures
   and route labels no longer depend on Merchant legacy claim translators such

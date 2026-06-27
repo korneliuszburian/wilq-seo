@@ -4,11 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import { AdsDiagnosticsResponse, getAdsDiagnostics } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import {
-  adsBlockedClaimLabel,
-  adsMissingReadContractLabel
-} from "./marketingLabels";
+import { TraceLine } from "../components/TraceLine";
 
 type AdsCustomSegmentCandidate =
   AdsDiagnosticsResponse["custom_segments_read_contract"]["candidates"][number];
@@ -49,7 +45,7 @@ export function AdsCustomSegmentCandidatesPanel({
               <div>
                 <h4 className="text-sm font-semibold text-ink">{candidate.name}</h4>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {candidate.intent} / pewność: {candidate.confidence}
+                  {candidate.intent} / pewność: {candidate.confidence_label}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -79,10 +75,7 @@ export function AdsCustomSegmentCandidatesPanel({
               ) : null}
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Sprawdzenie w WILQ:{" "}
-              {candidate.validation_status === "pending_validation"
-                ? "do sprawdzenia"
-                : "zablokowane"}
+              Sprawdzenie w WILQ: {candidate.validation_status_label}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
             {candidate.payload_preview ? (
@@ -104,9 +97,7 @@ export function AdsCustomSegmentCandidatesPanel({
                     ? "audyt wymagany"
                     : "audyt niewymagany"}
                   . Braki:{" "}
-                  {candidate.payload_preview.safety_review.missing_requirements
-                    .map(adsMissingReadContractLabel)
-                    .join(", ")}
+                  {candidate.payload_preview.safety_review.missing_requirement_labels.join(", ")}
                   .
                 </div>
                 {candidate.payload_preview.targeting_preview.length > 0 ? (
@@ -158,7 +149,7 @@ export function AdsCustomSegmentCandidatesPanel({
               />
               <TraceLine
                 label="Nie wolno twierdzić"
-                values={candidate.blocked_claims.map(adsBlockedClaimLabel)}
+                values={candidate.blocked_claim_labels}
               />
             </div>
           </article>
@@ -220,7 +211,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
               />
               <TraceLine
                 label="Nie wolno twierdzić"
-                values={row.blocked_claims.map(adsBlockedClaimLabel)}
+                values={row.blocked_claim_labels}
               />
             </div>
           </article>
@@ -362,9 +353,9 @@ export function CustomSegmentsDiagnosticSurface() {
           <TraceLine
             label="Brakujące kontrakty"
             values={uniqueValues([
-              ...contract.missing_read_contracts,
-              ...audienceForecast.missing_read_contracts
-            ]).map(adsMissingReadContractLabel)}
+              ...contract.missing_read_contract_labels,
+              ...audienceForecast.missing_read_contract_labels
+            ])}
           />
             <TraceLine
               label="Wymaga oceny"
@@ -376,13 +367,19 @@ export function CustomSegmentsDiagnosticSurface() {
           <TraceLine
             label="Nie wolno twierdzić"
             values={uniqueValues([
-              ...contract.blocked_claims,
-              ...audienceForecast.blocked_claims
-            ]).map(adsBlockedClaimLabel)}
+              ...contract.blocked_claim_labels,
+              ...audienceForecast.blocked_claim_labels
+            ])}
           />
-          <TraceLine label="Źródła" values={contract.source_connectors} />
-          <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
-          <LinkedTraceLine label="Akcje" values={contract.action_ids} kind="actions" />
+          <TraceLine label="Źródła" values={[data.connector.label]} />
+          <TraceLine
+            label="Dowody"
+            values={[formatCustomSegmentsEvidenceCount(contract.evidence_ids.length)]}
+          />
+          <TraceLine
+            label="Akcje do sprawdzenia"
+            values={[formatCustomSegmentsActionCount(contract.action_ids.length)]}
+          />
           <TraceLine label="Tryb Codexa" values={["Segmenty z haseł"]} />
         </div>
       </section>
@@ -396,6 +393,12 @@ function uniqueValues(values: string[]) {
 
 function formatCustomSegmentsEvidenceCount(count: number) {
   if (count === 0) return "brak";
-  if (count === 1) return "1 ID";
-  return `${count} ID`;
+  if (count === 1) return "1 dowód";
+  return `${count} dowody`;
+}
+
+function formatCustomSegmentsActionCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 akcja";
+  return `${count} akcje`;
 }
