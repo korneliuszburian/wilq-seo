@@ -2792,7 +2792,7 @@ class ContentAhrefsCandidateRow(BaseModel):
     keyword: str | None = None
     competitor_domain: str | None = None
     source_url: str | None = None
-    target_url: str | None = None
+    referenced_public_url: str | None = None
     metric_name: str
     metric_value: int | float | str
     evidence_ids: list[str] = Field(default_factory=list)
@@ -3333,7 +3333,7 @@ class AhrefsGapRecord(BaseModel):
     title: str
     summary: str
     source_url: str | None = None
-    target_url: str | None = None
+    referenced_public_url: str | None = None
     competitor_domain: str | None = None
     keyword: str | None = None
     metric_facts: list[MetricFact] = Field(default_factory=list)

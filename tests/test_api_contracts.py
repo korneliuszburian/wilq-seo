@@ -839,7 +839,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "allowed_evidence": ["ahrefs_organic_keyword_gap_count"],
             "gap_type": "organic_keyword_gap",
             "source_url": "https://example.pl/poradnik/",
-            "target_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+            "referenced_public_url": (
+                "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+            ),
             "source_site_host": "www.ekologus.pl",
             "source_public_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
             "intended_final_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
@@ -929,7 +931,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["allowed_evidence"] == ["ahrefs_organic_keyword_gap_count"]
     assert redacted["gap_type"] == "organic_keyword_gap"
     assert redacted["source_url"] == "https://example.pl/poradnik/"
-    assert redacted["target_url"] == (
+    assert redacted["referenced_public_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     )
     assert redacted["source_site_host"] == "www.ekologus.pl"
@@ -1823,6 +1825,7 @@ def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregat
     assert previews[0]["cta_direction"]
     assert previews[0]["internal_link_direction"]
     assert previews[0]["source_facts"]
+    assert all("target_url=" not in fact for fact in previews[0]["source_facts"])
     assert previews[0]["missing_evidence"]
     assert "gwarancja pozycji" in previews[0]["forbidden_claims"]
     assert previews[0]["apply_allowed"] is False
@@ -2307,6 +2310,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["legal_review_notes"]
     assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
+    assert all("target_url=" not in fact for fact in brief_preview["source_facts"])
     assert brief_preview["missing_evidence"]
     assert brief_preview["metric_snapshot_labels"]["clicks"] == "kliknięcia"
     assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
@@ -6577,7 +6581,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
                 {
                     "competitor_domain": "example.pl",
                     "source_url": "https://example.pl/bdo/",
-                    "target_url": "https://www.ekologus.pl/bdo/",
+                    "referenced_public_url": "https://www.ekologus.pl/bdo/",
                 },
                 period="ahrefs_gap",
             ),
@@ -6587,7 +6591,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
                 {
                     "competitor_domain": "example.pl",
                     "keyword": "bdo szkolenie",
-                    "target_url": "https://www.ekologus.pl/bdo/",
+                    "referenced_public_url": "https://www.ekologus.pl/bdo/",
                 },
                 period="ahrefs_gap",
             ),
@@ -6605,7 +6609,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
                 5,
                 {
                     "keyword": "zielony ład obowiązki",
-                    "target_url": (
+                    "referenced_public_url": (
                         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
                     ),
                 },
@@ -6617,7 +6621,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
                 {
                     "competitor_domain": "example.pl",
                     "source_url": "https://example.pl/top-bdo/",
-                    "target_url": "https://www.ekologus.pl/bdo/",
+                    "referenced_public_url": "https://www.ekologus.pl/bdo/",
                 },
                 period="ahrefs_gap",
             ),
@@ -6679,12 +6683,14 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "luka słów organicznych",
         "luka najlepszych stron konkurencji",
     }
+    assert all("target_url" not in record for record in gap_contract["gap_records"])
     content_record = next(
         record
         for record in gap_contract["gap_records"]
         if record["gap_type"] == "content_gap"
     )
     assert content_record["keyword"] == "bdo szkolenie"
+    assert content_record["referenced_public_url"] == "https://www.ekologus.pl/bdo/"
     assert content_record["competitor_domain"] == "example.pl"
     assert "luki treści=2" in content_record["summary"]
     assert content_record["metric_fact_labels"]["ahrefs_content_gap_count"] == "luki treści"
@@ -6906,7 +6912,7 @@ def test_ahrefs_diagnostics_prioritizes_reviewable_ekologus_gap_records(
                     "gap_type": "content_gap",
                     "keyword": "bdo szkolenia środowiskowe",
                     "competitor_domain": "denios.pl",
-                    "target_url": "https://www.ekologus.pl/bdo/",
+                    "referenced_public_url": "https://www.ekologus.pl/bdo/",
                     "source_url": "https://www.denios.pl/bdo/",
                 },
                 period="ahrefs_gap",
@@ -7217,7 +7223,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
         metric_summary={"content_object_count": 1301},
         summary="Wide WordPress inventory seed.",
     )
-    target_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    wordpress_content_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
     metric_store().save_connector_refresh_metrics(
         gsc_run,
         detailed_facts=[
@@ -7226,7 +7232,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
                 value=4,
                 dimensions={
                     "query": "bdo co to",
-                    "page": target_url,
+                    "page": wordpress_content_url,
                 },
             ),
             VendorMetricFact(
@@ -7234,7 +7240,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
                 value=4429,
                 dimensions={
                     "query": "bdo co to",
-                    "page": target_url,
+                    "page": wordpress_content_url,
                 },
             ),
         ],
@@ -7262,7 +7268,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
                 dimensions={
                     "connector_id": "wordpress_ekologus",
                     "content_type": "sitemap",
-                    "content_url": target_url,
+                    "content_url": wordpress_content_url,
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
                 },
@@ -7280,7 +7286,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
     )
     assert item["dimensions"]["wordpress_match"] == "found"
     assert item["dimensions"]["wordpress_match_confidence"] == "exact_url"
-    assert item["dimensions"]["wordpress_content_url"] == target_url
+    assert item["dimensions"]["wordpress_content_url"] == wordpress_content_url
 
 
 def test_evidence_registry_exposes_connector_status_without_secret_values(

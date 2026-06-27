@@ -381,8 +381,8 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         )
         primary_query = queries[0] if queries else _short_path(page)
         page_path = _normalized_path(page)
-        wordpress_target_url = wordpress_urls_by_path.get(page_path)
-        wordpress_match = wordpress_target_url is not None
+        wordpress_content_url = wordpress_urls_by_path.get(page_path)
+        wordpress_match = wordpress_content_url is not None
         mode = "refresh" if wordpress_match else "inventory_check"
         decision_options = ["refresh", "merge", "block"] if wordpress_match else [
             "merge",
@@ -396,7 +396,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         )
         url_semantics = _content_preview_url_semantics(
             source_url=page,
-            wordpress_content_url=wordpress_target_url,
+            wordpress_content_url=wordpress_content_url,
         )
         publication_blockers = _publication_blockers()
         required_validation = _gsc_required_validation(wordpress_match)
@@ -1769,10 +1769,13 @@ def _ahrefs_source_facts(fact: MetricFact, topic: str) -> list[str]:
         f"metric_name={fact.name}",
         f"metric_value={fact.value}",
     ]
-    for key in ("gap_type", "keyword", "competitor_domain", "source_url", "target_url"):
+    for key in ("gap_type", "keyword", "competitor_domain", "source_url"):
         value = dimensions.get(key)
         if value:
             facts.append(f"{key}={value}")
+    referenced_public_url = dimensions.get("referenced_public_url")
+    if referenced_public_url:
+        facts.append(f"referenced_public_url={referenced_public_url}")
     return facts
 
 
@@ -1811,10 +1814,13 @@ def _gsc_required_validation(wordpress_match: bool) -> list[str]:
 
 def _ahrefs_topic(fact: MetricFact) -> str | None:
     dimensions = fact.dimensions
-    for key in ("keyword", "source_url", "target_url", "competitor_domain"):
+    for key in ("keyword", "source_url", "competitor_domain"):
         value = dimensions.get(key)
         if value:
             return value
+    referenced_public_url = dimensions.get("referenced_public_url")
+    if referenced_public_url:
+        return referenced_public_url
     return None
 
 
@@ -1828,7 +1834,7 @@ def _ahrefs_preview_score(fact: MetricFact, topic: str | None) -> int:
                 topic,
                 fact.dimensions.get("keyword"),
                 fact.dimensions.get("source_url"),
-                fact.dimensions.get("target_url"),
+                fact.dimensions.get("referenced_public_url"),
                 fact.dimensions.get("competitor_domain"),
             ]
             if value

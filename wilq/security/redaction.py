@@ -95,7 +95,7 @@ SAFE_IDENTIFIER_KEYS = {
     "reviewed_url",
     "source_metric_names",
     "supported_actions",
-    "target_url",
+    "referenced_public_url",
     "competitor_domain",
     "keyword",
     "wordpress_content_url",

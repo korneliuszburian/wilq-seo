@@ -747,14 +747,14 @@ def _ahrefs_gap_items(
     gap_groups = _group_ahrefs_gap_facts(facts)
     items: list[TacticalQueueItem] = []
     for index, group in enumerate(gap_groups.items(), start=1):
-        (gap_type, keyword, source_url, target_url, competitor_domain), group_facts = group
-        if _is_ahrefs_off_topic(keyword, source_url, target_url, competitor_domain):
+        (gap_type, keyword, source_url, referenced_public_url, competitor_domain), group_facts = group
+        if _is_ahrefs_off_topic(keyword, source_url, referenced_public_url, competitor_domain):
             continue
-        topic = _ahrefs_topic(keyword, source_url, target_url, competitor_domain)
+        topic = _ahrefs_topic(keyword, source_url, referenced_public_url, competitor_domain)
         confirmation = _ahrefs_content_confirmation(
             keyword,
             source_url,
-            target_url,
+            referenced_public_url,
             competitor_domain,
             gsc_signals,
             wordpress_signals,
@@ -776,7 +776,7 @@ def _ahrefs_gap_items(
                     "topic": topic,
                     "keyword": keyword,
                     "source_url": source_url,
-                    "target_url": target_url,
+                    "referenced_public_url": referenced_public_url,
                     "competitor_domain": competitor_domain,
                     "gsc_demand": "present" if confirmation.gsc_overlap_terms else "missing",
                     "wordpress_inventory_match": (
@@ -791,7 +791,7 @@ def _ahrefs_gap_items(
                     gap_type,
                     topic,
                     source_url,
-                    target_url,
+                    referenced_public_url,
                     competitor_domain,
                     group_facts,
                     confirmation,
@@ -821,7 +821,7 @@ def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], li
             gap_type,
             dimensions.get("keyword", ""),
             dimensions.get("source_url", ""),
-            dimensions.get("target_url", ""),
+            dimensions.get("referenced_public_url", ""),
             _normalized_domain(dimensions.get("competitor_domain", "")),
         )
         if not any(key):
@@ -840,13 +840,19 @@ def is_reviewable_ahrefs_gap_fact(fact: MetricFact) -> bool:
     dimensions = fact.dimensions
     if not any(
         dimensions.get(key)
-        for key in ("gap_type", "keyword", "source_url", "target_url", "competitor_domain")
+        for key in (
+            "gap_type",
+            "keyword",
+            "source_url",
+            "referenced_public_url",
+            "competitor_domain",
+        )
     ):
         return False
     return not _is_ahrefs_off_topic(
         dimensions.get("keyword", ""),
         dimensions.get("source_url", ""),
-        dimensions.get("target_url", ""),
+        dimensions.get("referenced_public_url", ""),
         _normalized_domain(dimensions.get("competitor_domain", "")),
     )
 
@@ -854,13 +860,13 @@ def is_reviewable_ahrefs_gap_fact(fact: MetricFact) -> bool:
 def _ahrefs_content_confirmation(
     keyword: str,
     source_url: str,
-    target_url: str,
+    referenced_public_url: str,
     competitor_domain: str,
     gsc_signals: tuple[ContentSignal, ...],
     wordpress_signals: tuple[ContentSignal, ...],
 ) -> AhrefsContentConfirmation:
     tokens = _content_tokens_from_text(
-        " ".join((keyword, source_url, target_url, competitor_domain))
+        " ".join((keyword, source_url, referenced_public_url, competitor_domain))
     )
     return AhrefsContentConfirmation(
         gsc_overlap_terms=_matching_signal_labels(tokens, gsc_signals),
@@ -869,8 +875,8 @@ def _ahrefs_content_confirmation(
 
 
 def _ahrefs_group_sort_key(item: tuple[tuple[str, ...], list[MetricFact]]) -> tuple[int, str]:
-    gap_type, keyword, source_url, target_url, competitor_domain = item[0]
-    topic = _ahrefs_topic(keyword, source_url, target_url, competitor_domain)
+    gap_type, keyword, source_url, referenced_public_url, competitor_domain = item[0]
+    topic = _ahrefs_topic(keyword, source_url, referenced_public_url, competitor_domain)
     return (_ahrefs_gap_priority(gap_type, topic, competitor_domain, 0), topic)
 
 
@@ -919,13 +925,13 @@ def _ahrefs_gap_priority(
 def _ahrefs_topic(
     keyword: str,
     source_url: str,
-    target_url: str,
+    referenced_public_url: str,
     competitor_domain: str,
 ) -> str:
     if keyword:
         return keyword
-    if target_url:
-        return _short_path(target_url)
+    if referenced_public_url:
+        return _short_path(referenced_public_url)
     if source_url:
         return _short_path(source_url)
     if competitor_domain:
@@ -937,7 +943,7 @@ def _ahrefs_gap_diagnosis(
     gap_type: str,
     topic: str,
     source_url: str,
-    target_url: str,
+    referenced_public_url: str,
     competitor_domain: str,
     facts: list[MetricFact],
     confirmation: AhrefsContentConfirmation,
@@ -947,7 +953,7 @@ def _ahrefs_gap_diagnosis(
         for part in (
             f"competitor_domain={competitor_domain}" if competitor_domain else None,
             f"source_url={source_url}" if source_url else None,
-            f"target_url={target_url}" if target_url else None,
+            f"referenced_public_url={referenced_public_url}" if referenced_public_url else None,
         )
         if part is not None
     )
@@ -996,12 +1002,14 @@ def _ahrefs_fact_summary(facts: list[MetricFact]) -> str:
 def _is_ahrefs_off_topic(
     keyword: str,
     source_url: str,
-    target_url: str,
+    referenced_public_url: str,
     competitor_domain: str,
 ) -> bool:
     if competitor_domain in AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS:
         return True
-    text = _normalize_ahrefs_text(" ".join((keyword, source_url, target_url, competitor_domain)))
+    text = _normalize_ahrefs_text(
+        " ".join((keyword, source_url, referenced_public_url, competitor_domain))
+    )
     return any(term in text for term in AHREFS_OFF_TOPIC_TERMS)
 
 

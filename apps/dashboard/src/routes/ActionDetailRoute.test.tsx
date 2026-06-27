@@ -1351,7 +1351,9 @@ const contentActionFixture: ActionObject = {
         mode: "inventory_check",
         mode_label: "sprawdzić spis treści",
         topic: "bdo co to",
-        target_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        source_public_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        intended_final_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        final_canonical_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         wordpress_inventory_match: "missing",
         decision_option_labels: [
           "odśwież istniejącą treść",
@@ -1415,7 +1417,9 @@ const contentActionFixture: ActionObject = {
         mode: "inventory_check",
         mode_label: "sprawdzić spis treści",
         topic: `temat dodatkowy ${index}`,
-        target_url: `https://www.ekologus.pl/extra-${index}/`,
+        source_public_url: `https://www.ekologus.pl/extra-${index}/`,
+        intended_final_url: `https://www.ekologus.pl/extra-${index}/`,
+        final_canonical_url: `https://www.ekologus.pl/extra-${index}/`,
         wordpress_inventory_match: "missing",
         decision_options: ["merge", "create", "block"],
         metric_snapshot: {

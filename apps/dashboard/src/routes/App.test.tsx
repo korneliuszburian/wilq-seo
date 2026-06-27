@@ -313,7 +313,9 @@ const actions = [
           mode: "refresh",
           mode_label: "odśwież istniejącą treść",
           topic: "zielony ład",
-          target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          source_public_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          intended_final_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          final_canonical_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           wordpress_inventory_match: "present",
           decision_option_labels: [
             "odśwież istniejącą treść",
@@ -421,7 +423,9 @@ const actions = [
           post_status: "draft",
           post_status_label: "szkic",
           topic: "zielony ład",
-          target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          source_public_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          intended_final_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          final_canonical_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           content_gate_status_summary: [
             "spis treści: spis potwierdzony na obecnej stronie",
             "URL kanoniczny: obecny URL potwierdzony",
@@ -5088,7 +5092,7 @@ const contentDiagnostics = {
           keyword: "audyt środowiskowy",
           competitor_domain: "konkurent.example",
           source_url: null,
-          target_url: null,
+          referenced_public_url: null,
           metric_name: "ahrefs_content_gap_count",
           metric_value: 1,
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
@@ -5808,7 +5812,7 @@ const ahrefsDiagnostics = {
         summary:
           "Luka treści: audyt środowiskowy. Dane Ahrefs: content_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: "https://competitor.example/audyt-srodowiskowy",
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "competitor.example",
         keyword: "audyt środowiskowy",
         metric_facts: [
@@ -5845,7 +5849,7 @@ const ahrefsDiagnostics = {
         summary:
           "Luka backlinków: example.org. Dane Ahrefs: referring_domain_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: "example.org",
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "competitor.example",
         keyword: null,
         metric_facts: [
@@ -5881,7 +5885,7 @@ const ahrefsDiagnostics = {
         summary:
           "Strona konkurencji: denios.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "denios.pl",
         keyword: null,
         metric_facts: [],
@@ -5900,7 +5904,7 @@ const ahrefsDiagnostics = {
         summary:
           "Strona konkurencji: manutan.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "manutan.pl",
         keyword: null,
         metric_facts: [],
@@ -5919,7 +5923,7 @@ const ahrefsDiagnostics = {
         summary:
           "Strona konkurencji: e-promag.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "e-promag.pl",
         keyword: null,
         metric_facts: [],
@@ -5938,7 +5942,7 @@ const ahrefsDiagnostics = {
         summary:
           "Strona konkurencji: hidden-noise.example. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: null,
-        target_url: null,
+        referenced_public_url: null,
         competitor_domain: "hidden-noise.example",
         keyword: null,
         metric_facts: [],

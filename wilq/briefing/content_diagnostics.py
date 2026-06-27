@@ -1736,7 +1736,7 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         keyword=dimensions.get("keyword") or None,
         competitor_domain=dimensions.get("competitor_domain") or None,
         source_url=dimensions.get("source_url") or None,
-        target_url=dimensions.get("target_url") or None,
+        referenced_public_url=dimensions.get("referenced_public_url") or None,
         metric_name=fact.name,
         metric_value=fact.value,
         evidence_ids=[fact.evidence_id],
@@ -1758,10 +1758,13 @@ def _content_ahrefs_reason_label(value: str) -> str:
 
 def _ahrefs_candidate_topic(fact: MetricFact) -> str:
     dimensions = fact.dimensions
-    for key in ("keyword", "source_url", "target_url", "competitor_domain"):
+    for key in ("keyword", "source_url", "competitor_domain"):
         value = dimensions.get(key)
         if value:
             return value
+    referenced_public_url = dimensions.get("referenced_public_url")
+    if referenced_public_url:
+        return referenced_public_url
     return fact.name
 
 
@@ -1818,7 +1821,7 @@ def _is_ahrefs_record_gap_fact(fact: MetricFact) -> bool:
             "gap_type",
             "keyword",
             "source_url",
-            "target_url",
+            "referenced_public_url",
             "competitor_domain",
         )
     )
@@ -1869,7 +1872,7 @@ def _score_ahrefs_gap_fact(
     dimensions = fact.dimensions
     keyword = dimensions.get("keyword", "")
     source_url = dimensions.get("source_url", "")
-    target_url = dimensions.get("target_url", "")
+    referenced_public_url = dimensions.get("referenced_public_url", "")
     competitor_domain = _normalized_domain(dimensions.get("competitor_domain"))
     source_domain = _normalized_domain(dimensions.get("referring_domain") or source_url)
     text = " ".join(
@@ -1877,7 +1880,7 @@ def _score_ahrefs_gap_fact(
         for value in (
             keyword,
             source_url,
-            target_url,
+            referenced_public_url,
             competitor_domain or "",
             dimensions.get("best_position_url", ""),
         )

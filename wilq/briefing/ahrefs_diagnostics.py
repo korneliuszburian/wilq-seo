@@ -515,9 +515,9 @@ def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
             "url",
             "page_url",
         )
-        target_url = _dimension_value(
+        referenced_public_url = _dimension_value(
             fact,
-            "target_url",
+            "referenced_public_url",
             "target_page",
             "ekologus_url",
             "ekologus_page",
@@ -530,14 +530,14 @@ def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
             "domain",
         )
         keyword = _dimension_value(fact, "keyword", "query", "organic_keyword")
-        key = (gap_type, source_url, target_url, competitor_domain, keyword)
+        key = (gap_type, source_url, referenced_public_url, competitor_domain, keyword)
         grouped_facts.setdefault(key, []).append(fact)
 
     records = [
         _ahrefs_gap_record(
             gap_type=gap_type,
             source_url=source_url,
-            target_url=target_url,
+            referenced_public_url=referenced_public_url,
             competitor_domain=competitor_domain,
             keyword=keyword,
             facts=facts,
@@ -545,7 +545,7 @@ def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
         for (
             gap_type,
             source_url,
-            target_url,
+            referenced_public_url,
             competitor_domain,
             keyword,
         ), facts in grouped_facts.items()
@@ -576,7 +576,7 @@ def _ahrefs_gap_record(
     *,
     gap_type: AhrefsGapType,
     source_url: str | None,
-    target_url: str | None,
+    referenced_public_url: str | None,
     competitor_domain: str | None,
     keyword: str | None,
     facts: list[MetricFact],
@@ -584,12 +584,12 @@ def _ahrefs_gap_record(
     title = _gap_record_title(
         gap_type=gap_type,
         source_url=source_url,
-        target_url=target_url,
+        referenced_public_url=referenced_public_url,
         competitor_domain=competitor_domain,
         keyword=keyword,
     )
     return AhrefsGapRecord(
-        id=_gap_record_id(gap_type, source_url, target_url, competitor_domain, keyword),
+        id=_gap_record_id(gap_type, source_url, referenced_public_url, competitor_domain, keyword),
         gap_type=gap_type,
         gap_type_label=_gap_type_label(gap_type),
         title=title,
@@ -598,7 +598,7 @@ def _ahrefs_gap_record(
             "To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu."
         ),
         source_url=source_url,
-        target_url=target_url,
+        referenced_public_url=referenced_public_url,
         competitor_domain=competitor_domain,
         keyword=keyword,
         metric_facts=sorted(facts, key=lambda fact: fact.name),
@@ -645,7 +645,7 @@ def _is_record_level_gap_fact(fact: MetricFact) -> bool:
             "source_page",
             "url",
             "page_url",
-            "target_url",
+            "referenced_public_url",
             "target_page",
             "ekologus_url",
             "ekologus_page",
@@ -666,11 +666,11 @@ def _gap_record_title(
     *,
     gap_type: AhrefsGapType,
     source_url: str | None,
-    target_url: str | None,
+    referenced_public_url: str | None,
     competitor_domain: str | None,
     keyword: str | None,
 ) -> str:
-    anchor = keyword or target_url or source_url or competitor_domain or "brak wymiaru"
+    anchor = keyword or referenced_public_url or source_url or competitor_domain or "brak wymiaru"
     labels = {
         "competitor_page": "Strona konkurencji",
         "content_gap": "Luka treści",
@@ -867,7 +867,7 @@ def _gap_record_relevance_score(record: AhrefsGapRecord) -> int:
         for value in (
             record.keyword,
             record.source_url,
-            record.target_url,
+            record.referenced_public_url,
             record.competitor_domain,
         )
         if value
@@ -918,11 +918,11 @@ def _gap_record_type_priority(gap_type: AhrefsGapType) -> int:
 def _gap_record_id(
     gap_type: AhrefsGapType,
     source_url: str | None,
-    target_url: str | None,
+    referenced_public_url: str | None,
     competitor_domain: str | None,
     keyword: str | None,
 ) -> str:
-    parts = [gap_type, competitor_domain, keyword, target_url, source_url]
+    parts = [gap_type, competitor_domain, keyword, referenced_public_url, source_url]
     return f"ahrefs_gap_{_slug('_'.join(part for part in parts if part))}"
 
 

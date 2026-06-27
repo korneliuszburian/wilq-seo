@@ -1851,9 +1851,7 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
     source_public_url = (
         item.get("source_public_url")
         if isinstance(item.get("source_public_url"), str)
-        else item.get("source_url")
-        if isinstance(item.get("source_url"), str)
-        else item.get("target_url")
+        else None
     )
     intended_final_url = (
         item.get("intended_final_url")
@@ -1887,7 +1885,6 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         "operation_type": "wordpress_draft_handoff_review",
         "candidate_id": item.get("candidate_id"),
         "topic": item.get("topic"),
-        "source_url": item.get("target_url"),
         "source_public_url": source_public_url,
         "intended_final_url": intended_final_url,
         "final_canonical_url": final_canonical_url,
