@@ -289,8 +289,8 @@ def build_content_preflight(
     primary_item = next((item for item in items if item.status != "blocked"), None)
     return ContentPreflightResponse(
         strict_instruction=(
-            "Bramka pisania działa przed briefem i szkicem. Nie wolno pisać "
-            "ani przygotowywać szkicu bez wyniku bramki pisania, briefu, "
+            "Bramka pisania działa przed planem treści i szkicem. Nie wolno pisać "
+            "ani przygotowywać szkicu bez wyniku bramki pisania, planu treści, "
             "sprawdzenia ryzykownych obietnic i decyzji człowieka."
         ),
         primary_item=primary_item or (items[0] if items else None),
@@ -497,7 +497,7 @@ def _content_preflight_next_step(
     if status == "blocked":
         return decision.next_step
     if recommended_mode == "refresh":
-        return "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
+        return "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
     if recommended_mode == "merge":
         return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
     return decision.next_step
@@ -598,7 +598,7 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
     if decision.decision_type == "refresh_or_merge":
         return (
             "Przejrzyj wskazany URL, zachowaj sekcje nadal aktualne, wypisz braki "
-            "w H1/H2/FAQ/CTA i dopiero potem przygotuj brief do sprawdzenia."
+            "w H1/H2/FAQ/CTA i dopiero potem przygotuj plan treści do sprawdzenia."
         )
     if decision.decision_type in {
         "merge_create_after_inventory_check",
@@ -606,7 +606,7 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
     }:
         return (
             "Potwierdź istniejący URL, kanoniczny adres i ryzyko duplikacji. Jeśli "
-            "kontrola przejdzie, WILQ może przygotować brief; jeśli nie, temat zostaje zablokowany."
+            "kontrola przejdzie, WILQ może przygotować plan treści; jeśli nie, temat zostaje zablokowany."
         )
     if decision.decision_type == "block_as_tracking_not_content":
         return "Napraw lub potwierdź tracking GA4, a potem wróć do oceny treści."
@@ -858,7 +858,7 @@ def _inventory_match_section(
                 "WILQ nie ma spisu treści WordPress, więc nie może odróżnić "
                 "odświeżenia albo scalenia od nowej treści bez ryzyka duplikacji."
             ),
-            next_step="Odśwież spis treści WordPress i dopiero potem generuj briefy treści.",
+            next_step="Odśwież spis treści WordPress i dopiero potem przygotuj plany treści.",
             source_connectors=["wordpress_ekologus", "wordpress_sklep"],
             evidence_ids=_refresh_or_connector_evidence_ids(
                 latest_refreshes,
@@ -886,7 +886,7 @@ def _inventory_match_section(
         diagnosis=(
             "Spis treści WordPress chroni marketera przed pisaniem drugi raz tego samego. "
             "Potwierdzone dopasowania idą w odświeżenie lub scalenie, a brak "
-            "dopasowania wymaga ręcznej kontroli przed nowym briefem."
+            "dopasowania wymaga ręcznej kontroli przed nowym planem treści."
         ),
         next_step=(
             "Najpierw obsłuż potwierdzone odświeżenia i scalenia; nowe treści "
@@ -1093,7 +1093,7 @@ def _gsc_content_decisions(
             title = _content_decision_title(decision_type, page, query_count, metrics)
             summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
-                "Przygotuj brief odświeżenia albo scalenia: title, H1/H2, sekcje "
+                "Przygotuj plan odświeżenia albo scalenia: title, H1/H2, sekcje "
                 "brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
             )
             rationale = (
@@ -1110,7 +1110,7 @@ def _gsc_content_decisions(
             )
             rationale = (
                 "Wiele zapytań prowadzi do jednego URL, ale spis treści nie potwierdza "
-                "strony, więc nowy brief bez kontroli grozi duplikacją."
+                "strony, więc nowy plan treści bez kontroli grozi duplikacją."
             )
         else:
             decision_type = "inventory_check_before_create"
@@ -1118,7 +1118,7 @@ def _gsc_content_decisions(
             summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
                 "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
-                "Jeśli nie istnieje, przygotuj brief dopiero po kontroli duplikatów."
+                "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
             )
             rationale = (
                 "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
@@ -1297,7 +1297,7 @@ def _content_gate_status(
             "duplicate_gate_status": "create_blocked_until_duplicate_check",
             "content_gate_summary": (
                 "GSC pokazuje popyt, ale WordPress nie potwierdza URL. "
-                "Brief nowej treści jest zablokowany do czasu kontroli inventory, canonical "
+                "Plan nowej treści jest zablokowany do czasu kontroli spisu, adresu kanonicznego "
                 "i duplikatów."
             ),
         }
@@ -1306,7 +1306,7 @@ def _content_gate_status(
         "canonical_gate_status": "not_applicable",
         "duplicate_gate_status": "not_applicable",
         "content_gate_summary": (
-            "Ta decyzja nie jest bezpośrednim briefem contentowym; wymaga osobnego "
+            "Ta decyzja nie jest bezpośrednim planem treści; wymaga osobnego "
             "sprawdzenia przed użyciem w planie treści."
         ),
     }
@@ -1432,7 +1432,7 @@ def _ahrefs_gap_record_decisions(
             id="content_decision_ahrefs_gap_records_review",
             decision_type="review_ahrefs_gap_records",
             status=decision_status,
-            title="Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
+            title="Ahrefs: zweryfikuj luki SEO przed planem treści",
             summary=(
                 f"WILQ ma {len(gap_facts)} rekordów luk Ahrefs: "
                 f"luki treści={gap_counts['content_gap']}, "
@@ -1467,7 +1467,7 @@ def _ahrefs_gap_record_decisions(
             expert_rule_ids=list(AHREFS_CONTENT_EXPERT_RULE_IDS),
             blocked_claims=[
                 "rekomendacja treści poza zakresem",
-                "brief bez kontroli trafności",
+                "plan treści bez kontroli trafności",
                 "wzrost ruchu",
                 "wzrost autorytetu",
                 "gwarancja pozycji",
@@ -1476,7 +1476,7 @@ def _ahrefs_gap_record_decisions(
             rationale=(
                 "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela "
                 "rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem. "
-                "WILQ nie może zrobić briefu z rekordu bez filtrowania, GSC demand "
+                "WILQ nie może zrobić planu treści z rekordu bez filtrowania, popytu z GSC "
                 "i dopasowania w spisie treści WordPress."
             ),
             next_step=(
@@ -1548,7 +1548,7 @@ def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
     if score.status == "review":
         return (
             f"Sprawdź ręcznie, czy `{topic}` pasuje do Ekologus; bez pokrycia w GSC/WP "
-            "nie twórz briefu."
+            "nie twórz planu treści."
         )
     return f"Odrzuć `{topic}` jako poza zakresem, chyba że operator poda biznesowy wyjątek."
 
@@ -2007,7 +2007,7 @@ def _content_decision_summary(
     match_label = "nie potwierdza" if wordpress_match == "missing" else "nie daje pewności"
     return (
         f"{metric_sentence} WordPress {match_label} URL, więc WILQ blokuje "
-        "brief nowej treści do czasu kontroli inventory."
+        "plan nowej treści do czasu kontroli spisu."
     )
 
 

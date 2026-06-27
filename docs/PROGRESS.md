@@ -138,6 +138,16 @@ Date: 2026-06-27
   `MERCHANT_ACTION`, `decision_queue`, `issue_clusters` or
   `reported_issue_occurrences`. Proof:
   `.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt`.
+- Content Planner and content skill context now use `plan treści` for active
+  marketer-facing copy instead of visible `brief` wording. The backend/action
+  source strings, dashboard route copy and tests were updated at the source;
+  internal schema/type names such as `content_brief_preview` remain internal
+  contract names only. Live proof after managed stack restart: API health and
+  live contract smoke pass, content skill smoke has no old visible brief terms,
+  and `/content-planner` browser scan has no `Brief`, `Przygotuj brief`,
+  `Podgląd briefów`, `Pokaż briefy` or `Zapisz sprawdzenie briefu` hits.
+  Proof:
+  `.local-lab/proof/20260627-content-plan-language/content-planner-final.txt`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for

@@ -167,6 +167,13 @@ Latest slice:
   `content_gap`, `organic_keyword_gap`, `top_page_gap`, `backlink_gap`,
   `competitor_page`, `Ahrefs Rank` or `DR` hits:
   `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
+- Content Planner active copy now says `plan treści` instead of visible
+  `brief` wording. The cleanup was made in API/action source strings and the
+  route copy, not through a route-local translator. After managed stack restart,
+  API health, live contract smoke, content skill smoke and `/content-planner`
+  browser proof pass; the rendered view has no `Brief`, `Przygotuj brief`,
+  `Podgląd briefów`, `Pokaż briefy` or `Zapisz sprawdzenie briefu` hits:
+  `.local-lab/proof/20260627-content-plan-language/content-planner-final.txt`.
 
 ### C. Dashboard Condensation
 

@@ -6063,3 +6063,41 @@ Result:
   `Ahrefs Rank` or `DR`.
 - Ahrefs skill smoke still passes against the live local WILQ API with Ahrefs,
   GSC and WordPress evidence boundaries.
+
+## 2026-06-27 - Content Planner plan treści language
+
+Purpose:
+
+- Verify that active Content Planner and content skill context no longer expose
+  visible `brief` wording to the marketer.
+- Keep existing internal schema/type names as internal contracts only; do not
+  repair marketer-facing language with route-local translators.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'content_preflight or content_action_preview_exposes_review_only_brief_payload or content_brief_preview_keeps_dev_site_as_optional_preview_only or content_strategist_context_pack' --maxfail=1
+pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'content route renders condensed selected decision with expandable detail'
+pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'content route keeps review language clean in expanded workflows'
+pnpm --dir apps/dashboard typecheck
+uv run python scripts/marketer_language_guard.py
+scripts/local_stack.sh restart
+uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-content-plan-language/content-planner-final.txt
+```
+
+Result:
+
+- API health and live contract smoke pass after managed stack restart.
+- Content skill smoke output has no old visible terms:
+  `Przygotuj brief`, `powstanie brief`, `briefem contentowym`,
+  `Szkic briefu`, `Brief treści` or `content brief without`.
+- `/content-planner` browser scan has no rendered hits for `Brief`,
+  `Przygotuj brief`, `Podgląd briefów`, `Pokaż briefy` or
+  `Zapisz sprawdzenie briefu`.

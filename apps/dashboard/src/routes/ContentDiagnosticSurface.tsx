@@ -154,16 +154,16 @@ function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Briefy do sprawdzenia
+            Plany treści do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Pierwszy ekran pokazuje jeden wybrany kierunek treści. Rozwiń briefy,
+            Pierwszy ekran pokazuje jeden wybrany kierunek treści. Rozwiń plany treści,
             gdy chcesz zobaczyć H1, H2, FAQ, CTA, blokady publikacji i szkice
             WordPress do sprawdzenia.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
-          <MetricTile label="Briefy" value={briefCount} />
+          <MetricTile label="Plany treści" value={briefCount} />
           <MetricTile label="Szkice" value={draftCount} />
         </div>
       </div>
@@ -173,7 +173,7 @@ function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
         onClick={() => setShowBriefs((current) => !current)}
         className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
       >
-        {showBriefs ? "Ukryj briefy Content" : "Pokaż briefy Content"}
+        {showBriefs ? "Ukryj plany treści" : "Pokaż plany treści"}
       </button>
 
       {showBriefs ? <div className="mt-4"><ContentBriefPreviewPanel actions={actions} /></div> : null}
@@ -302,15 +302,15 @@ function ContentPreflightPanel({
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             WILQ najpierw sprawdza, czy bezpieczny kierunek to zachowanie,
             odświeżenie, scalenie, utworzenie czy blokada. Szkic i WordPress
-            pozostają zablokowane, dopóki nie przejdą brief, ryzykowne obietnice
-            i decyzja człowieka.
+            pozostają zablokowane, dopóki nie przejdą plan treści, ryzykowne
+            obietnice i decyzja człowieka.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
           <MetricTile label="Tryb" value={item ? contentPreflightModeLabel(item.recommended_mode) : "brak"} />
           <MetricTile label="Status" value={item ? contentPreflightStatusLabel(item.status) : "brak"} />
           <MetricTile label="Blokady" value={data?.blocker_count ?? 0} />
-          <MetricTile label="Brief" value={item?.sales_brief_allowed ? "możliwy" : "zablokowany"} />
+          <MetricTile label="Plan treści" value={item?.sales_brief_allowed ? "możliwy" : "zablokowany"} />
         </div>
       </div>
 
@@ -381,7 +381,7 @@ function ContentSafetyGatePanel({ data }: { data: ContentDiagnosticsResponse }) 
               Brama bezpieczeństwa treści
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              WILQ może przygotować brief, kolejkę odświeżenia i podgląd zmian,
+              WILQ może przygotować plan treści, kolejkę odświeżenia i podgląd zmian,
               ale nie publikuje ani nie zmienia WordPress bez sprawdzenia w WILQ,
               jawnej zgody operatora i audytu.
             </p>
@@ -454,7 +454,7 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Podgląd briefów do sprawdzenia
+            Plany treści do sprawdzenia
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
             Co WILQ może przygotować bez publikacji
@@ -618,10 +618,10 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           ) : (
             <ClipboardCheck aria-hidden="true" size={15} />
           )}
-          {reviewMutation.isPending ? "Zapisuję sprawdzenie" : "Zapisz sprawdzenie briefu"}
+          {reviewMutation.isPending ? "Zapisuję sprawdzenie" : "Zapisz sprawdzenie planu treści"}
         </button>
         <span className="text-xs text-slate-600">
-          Zapisuje wybór briefu do sprawdzenia. Nie publikuje i nie zapisuje zmian.
+          Zapisuje wybór planu treści do sprawdzenia. Nie publikuje i nie zapisuje zmian.
         </span>
       </div>
       {reviewMutation.data ? (
@@ -836,7 +836,7 @@ function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionRevi
   return {
     outcome: "approved_for_prepare",
     reviewed_by: "operator_local_dashboard",
-    notes: `Wybrano propozycję briefu ${preview.candidate_id} (${preview.topic}) do dalszego przeglądu. Ten zapis nie publikuje treści i nie zapisuje zmian.`,
+    notes: `Wybrano propozycję planu treści ${preview.candidate_id} (${preview.topic}) do dalszego przeglądu. Ten zapis nie publikuje treści i nie zapisuje zmian.`,
     checked_items: uniqueValues([
       `candidate:${preview.candidate_id}`,
       `source_type:${preview.source_type}`,
@@ -903,7 +903,7 @@ function ContentSelectedDecisionPanel({
     return (
       <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
         <h2 className="text-base font-semibold tracking-normal text-ink">
-          Dzisiejszy brief do sprawdzenia
+          Dzisiejszy plan treści do sprawdzenia
         </h2>
         <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież dane GSC, WordPress i Ahrefs w WILQ." />
       </section>
@@ -915,7 +915,7 @@ function ContentSelectedDecisionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            {marketerDecision?.mode_label ?? "Dzisiejszy brief do sprawdzenia"}
+            {marketerDecision?.mode_label ?? "Dzisiejszy plan treści do sprawdzenia"}
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
             {marketerDecision?.decision ??
@@ -952,22 +952,22 @@ function ContentSelectedDecisionPanel({
             <TraceLine
               label="H1"
               values={primaryPreview?.h1_direction ? [primaryPreview.h1_direction] : []}
-              empty="do doprecyzowania w briefie"
+              empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="H2"
               values={primaryPreview?.h2_direction?.slice(0, 3) ?? []}
-              empty="do doprecyzowania w briefie"
+              empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="FAQ"
               values={primaryPreview?.faq_direction?.slice(0, 3) ?? []}
-              empty="do doprecyzowania w briefie"
+              empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="Wezwanie do działania"
               values={primaryPreview?.cta_direction ? [primaryPreview.cta_direction] : []}
-              empty="do doprecyzowania w briefie"
+              empty="do doprecyzowania w planie treści"
             />
           </div>
         </div>
@@ -1377,7 +1377,7 @@ function contentPreflightModeSentence(item: ContentPreflightItem) {
     return "WILQ wskazuje scalenie albo decyzję o połączeniu tematów przed pisaniem.";
   }
   if (item.recommended_mode === "create") {
-    return "WILQ dopuszcza nową treść, ale szkic nadal wymaga briefu, sprawdzenia ryzykownych obietnic i decyzji człowieka.";
+    return "WILQ dopuszcza nową treść, ale szkic nadal wymaga planu treści, sprawdzenia ryzykownych obietnic i decyzji człowieka.";
   }
   return "WILQ blokuje pisanie. Najpierw trzeba uzupełnić brakujące dane albo rozwiązać ryzyko.";
 }
@@ -1449,7 +1449,7 @@ function contentMetricSnapshotValue(
 
 function contentSelectedMeasurementPlan(preview: ContentBriefPreviewItem | undefined) {
   if (!preview) {
-    return "Najpierw zapisz sprawdzenie briefu. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
+    return "Najpierw zapisz sprawdzenie planu treści. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
   }
   return [
     "Po sprawdzeniu zapisz decyzję contentową i punkt odniesienia z GSC/WordPress.",

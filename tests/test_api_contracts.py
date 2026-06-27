@@ -1497,7 +1497,7 @@ def test_content_brief_preview_keeps_dev_site_as_optional_preview_only(
     assert decision["inventory_gate_status"] == "missing_inventory_match"
     assert decision["canonical_gate_status"] == "blocked_until_inventory_review"
     assert decision["duplicate_gate_status"] == "create_blocked_until_duplicate_check"
-    assert "canonical" in decision["content_gate_summary"]
+    assert "adresu kanonicznego" in decision["content_gate_summary"]
     assert "duplik" in decision["content_gate_summary"]
     assert diagnostics["operator_summary"]["current_site_match_count"] == 1
     assert not any(
@@ -12597,7 +12597,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert ahrefs_decision["status"] == "ready"
     assert ahrefs_decision["title"] == (
-        "Ahrefs: zweryfikuj luki SEO przed briefem contentowym"
+        "Ahrefs: zweryfikuj luki SEO przed planem treści"
     )
     assert ahrefs_decision["metric_tiles"] == {
         "rekordy Ahrefs": 4,

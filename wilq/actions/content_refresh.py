@@ -225,7 +225,7 @@ def content_refresh_payload_from_metric_facts(
             "potwierdź dopasowanie w spisie treści WordPress",
             "potwierdź publiczny URL kanoniczny",
             "sprawdź duplikaty i kanibalizację",
-            "zatwierdź brief przed jakąkolwiek zmianą WordPress",
+            "zatwierdź plan treści przed jakąkolwiek zmianą WordPress",
         ],
         "blocked_claims": CONTENT_BLOCKED_CLAIMS,
         "apply_allowed": False,
@@ -519,7 +519,7 @@ def _wordpress_draft_payload_preview(
     url_review: dict[str, str] | None = None,
     draft_readiness_review: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    topic = str(preview.get("topic") or "Brief treści")
+    topic = str(preview.get("topic") or "Plan treści")
     mode = str(preview.get("mode") or "review")
     source_type = str(preview.get("source_type") or "unknown")
     source_public_url = (
@@ -1128,7 +1128,7 @@ def _string_list(value: Any) -> list[str]:
 
 
 def _draft_title(topic: str, mode: str) -> str:
-    prefix = "Odświeżenie" if mode in {"refresh", "merge"} else "Brief"
+    prefix = "Odświeżenie" if mode in {"refresh", "merge"} else "Plan treści"
     return f"{prefix}: {topic}"
 
 
@@ -1136,7 +1136,7 @@ def _draft_excerpt_direction(preview: dict[str, Any]) -> str:
     goal = preview.get("brief_goal")
     if isinstance(goal, str) and goal:
         return goal
-    return "Szkic briefu do sprawdzenia. Nie publikować bez sprawdzenia operatora."
+    return "Szkic planu treści do sprawdzenia. Nie publikować bez sprawdzenia operatora."
 
 
 def _draft_content_blocks(preview: dict[str, Any]) -> list[dict[str, str]]:
@@ -1196,8 +1196,8 @@ def _content_gate_status_for_brief(
             "canonical_gate_status": "blocked_until_inventory_review",
             "duplicate_gate_status": "create_blocked_until_duplicate_check",
             "content_gate_summary": (
-                "GSC pokazuje popyt, ale WordPress nie potwierdza URL. Brief create "
-                "jest zablokowany do czasu kontroli inventory, canonical i duplikatów."
+                "GSC pokazuje popyt, ale WordPress nie potwierdza URL. Plan nowej treści "
+                "jest zablokowany do czasu kontroli spisu, adresu kanonicznego i duplikatów."
             ),
         }
     return {
@@ -1265,7 +1265,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 },
                 "brief_goal": (
                     "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim "
-                    "powstanie brief. To jest temat do sprawdzenia, nie decyzja "
+                    "powstanie plan treści. To jest temat do sprawdzenia, nie decyzja "
                     "utworzenia nowej treści."
                 ),
                 "intent": _ahrefs_content_intent(topic),
@@ -1444,11 +1444,11 @@ def _gsc_metric_snapshot_labels() -> dict[str, str]:
 def _gsc_brief_goal(wordpress_match: bool, primary_query: str) -> str:
     if wordpress_match:
         return (
-            f"Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat "
+            f"Przygotuj plan odświeżenia albo scalenia istniejącej treści pod temat "
             f"`{primary_query}`: title, H1/H2, braki w sekcjach, CTA i ryzykowne obietnice."
         )
     return (
-        f"Sprawdź spis treści i duplikaty przed briefem dla `{primary_query}`. "
+        f"Sprawdź spis treści i duplikaty przed planem treści dla `{primary_query}`. "
         "Bez potwierdzenia URL nie twórz nowej strony."
     )
 
@@ -1461,7 +1461,7 @@ def _content_angle(topic: str, wordpress_match: bool) -> str:
         )
     return (
         f"Najpierw potwierdź, czy temat `{topic}` nie ma już kanonicznej strony; "
-        "dopiero potem przygotuj nowy lub scalony brief."
+        "dopiero potem przygotuj nowy lub scalony plan treści."
     )
 
 
@@ -1507,7 +1507,7 @@ def _ahrefs_content_angle(topic: str) -> str:
 def _ahrefs_content_intent(topic: str) -> str:
     return (
         f"konkurencyjny sygnał do sprawdzenia: `{topic}` wymaga potwierdzenia "
-        "popytu w GSC, dopasowania WordPress i braku duplikacji przed briefem"
+        "popytu w GSC, dopasowania WordPress i braku duplikacji przed planem treści"
     )
 
 

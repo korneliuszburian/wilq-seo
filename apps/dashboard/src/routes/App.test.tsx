@@ -306,7 +306,7 @@ const actions = [
             ctr: 0.1
           },
           brief_goal:
-            "Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
+            "Przygotuj plan odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
           content_angle:
             "Odśwież istniejącą treść wokół intencji zielony ład bez obietnic pozycji.",
           audience: "Decydent środowiskowy szukający prostego wyjaśnienia regulacji.",
@@ -364,7 +364,7 @@ const actions = [
             "zablokuj"
           ],
           brief_goal:
-            "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim powstanie brief.",
+            "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim powstanie plan treści.",
           required_validation: [
             "business_relevance_review",
             "gsc_demand_check",
@@ -428,7 +428,7 @@ const actions = [
             post_status: "draft",
             post_title: "Odświeżenie: zielony ład",
             post_excerpt_direction:
-              "Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
+              "Przygotuj plan odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
             content_blocks: [
               {
                 section: "intent",
@@ -4520,14 +4520,14 @@ const contentDiagnostics = {
       rationale:
         "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
       next_step:
-        "Przygotuj brief odświeżenia albo scalenia: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
+        "Przygotuj plan odświeżenia albo scalenia: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
       risk: "low"
     },
     {
       id: "content_decision_ahrefs_gap_records_review",
       decision_type: "review_ahrefs_gap_records",
       status: "ready",
-      title: "Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
+      title: "Ahrefs: zweryfikuj luki SEO przed planem treści",
       summary:
         "WILQ ma 1 rekord luk Ahrefs: luki treści=1, słowa organiczne=0, najlepsze strony=0, luki backlinków=0. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC/WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
@@ -4587,7 +4587,7 @@ const contentDiagnostics = {
       action_ids: ["act_prepare_content_refresh_queue"],
       blocked_claims: [
         "rekomendacja treści poza zakresem",
-        "content brief without relevance review",
+        "plan treści bez kontroli trafności",
         "wzrost ruchu",
         "wzrost autorytetu",
         "gwarancja pozycji"
@@ -4644,7 +4644,7 @@ const contentDiagnostics = {
 const contentPreflight = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
-  strict_instruction: "Bramka pisania przed briefem i szkicem.",
+  strict_instruction: "Bramka pisania przed planem treści i szkicem.",
   primary_item: {
     id: "preflight_content_decision_https_www_ekologus_pl_bdo",
     technical_decision_id: "content_decision_https_www_ekologus_pl_bdo",
@@ -4669,7 +4669,7 @@ const contentPreflight = {
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
-    next_step: "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
+    next_step: "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
   },
   items: [
     {
@@ -4696,7 +4696,7 @@ const contentPreflight = {
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
-      next_step: "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
+      next_step: "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
     }
   ],
   evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
@@ -7036,8 +7036,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getByText(/Szkic i WordPress pozostają zablokowane/)).toBeInTheDocument();
-    expect(screen.getByText("Briefy do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż briefy Content" })).toBeInTheDocument();
+    expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż plany treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
@@ -7094,11 +7094,11 @@ describe("WILQ dashboard", () => {
     expect(contentProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
     expect(contentProof.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż briefy Content" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
     expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
     expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie briefu" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie planu treści" })[0]);
     await waitFor(() =>
       expect(
         screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
@@ -7197,12 +7197,12 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Dowody i ograniczenia Content").length).toBeGreaterThan(0);
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(
-      screen.getAllByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym").length
+      screen.getAllByText("Ahrefs: zweryfikuj luki SEO przed planem treści").length
     ).toBeGreaterThan(0);
     expect(screen.getByText("sprawdzenie luk Ahrefs")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż briefy Content" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
     await waitFor(() =>
-      expect(screen.getByText("Podgląd briefów do sprawdzenia")).toBeInTheDocument()
+      expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument()
     );
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
     expect(screen.getByText("Google Search Console / odświeżenie")).toBeInTheDocument();
@@ -7222,7 +7222,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Odświeżenie: zielony ład")).toBeInTheDocument();
     expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
     expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie briefu" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie planu treści" })[0]);
     await waitFor(() =>
       expect(
         screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
