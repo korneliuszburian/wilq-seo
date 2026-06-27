@@ -37,7 +37,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Brak dowodów Google Ads w /api/marketing/brief. WILQ nie pokaże rekomendacji o spendzie ani kampaniach bez odczytu Ads API.",
     safetyTitle: "Brama bezpieczeństwa Ads",
     safetyText:
-      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, sprawdzenia w WILQ i audytu. Brak dowodów na zapytania, CPA albo ROAS oznacza zakres blokad, nie powód do zgadywania.",
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, sprawdzenia w WILQ i audytu. Brak dowodów na zapytania, CPA albo zwrot z reklam oznacza zakres blokad, nie powód do zgadywania.",
     connectorIds: ["google_ads"],
     textNeedles: []
   },

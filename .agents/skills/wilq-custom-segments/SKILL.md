@@ -1,9 +1,9 @@
 ---
 name: wilq-custom-segments
-description: Proponuje akcje do sprawdzenia Google Ads custom segments dla Ekologus wyłącznie z WILQ API evidence, takich jak search terms, Keyword Planner evidence, istniejące kampanie i sprawdzone source connectors. Użyj, gdy marketer pyta "jakie custom segments/audiences stworzyć?", "zbuduj segmenty z search terms", "jak wykorzystać query i konkurencję w audience?", albo pyta o pomysły custom audience, segmenty Demand Gen/YouTube/PMax lub targeting z terminów źródłowych. Nigdy nie wolno wymyślać audience terms.
+description: Proponuje akcje do sprawdzenia segmentów niestandardowych Google Ads dla Ekologus wyłącznie z dowodów WILQ API, takich jak wyszukiwane hasła, dowody Keyword Planner, istniejące kampanie i sprawdzone źródła danych. Użyj, gdy marketer pyta "jakie segmenty niestandardowe stworzyć?", "zbuduj segmenty z wyszukiwanych haseł", "jak wykorzystać zapytania i konkurencję w odbiorcach?", albo pyta o pomysły segmentów dla Demand Gen/YouTube/PMax lub kierowanie reklam z terminów źródłowych. Nigdy nie wolno wymyślać terminów odbiorców.
 ---
 
-# WILQ Custom Segments
+# WILQ Segmenty Niestandardowe
 
 ## Skill Contract
 
@@ -17,10 +17,10 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 <triggers>
 
-- "Jakie custom segments możemy zrobić z realnych search terms?"
-- "Zbuduj audience candidates dla Demand Gen/PMax."
-- "Czy mamy evidence na segmenty konkurencyjne albo intencyjne?"
-- "Nie wymyślaj fraz, pokaż tylko segmenty z WILQ evidence."
+- "Jakie segmenty niestandardowe możemy zrobić z realnych wyszukiwanych haseł?"
+- "Zbuduj propozycje odbiorców dla Demand Gen/PMax."
+- "Czy mamy dowody na segmenty konkurencyjne albo intencyjne?"
+- "Nie wymyślaj fraz, pokaż tylko segmenty z dowodów WILQ."
 
 </triggers>
 
@@ -30,7 +30,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą custom segments, audience terms lub targetingu z search terms.
+3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą segmentów niestandardowych, terminów odbiorców lub kierowania reklam z wyszukiwanych haseł.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` i potwierdź, że `ads_diagnostics.custom_segments_read_contract` zgadza się z endpointem Ads diagnostics.
 5. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
 6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.

@@ -11,7 +11,7 @@ GA4_TRACKING_QUALITY_PREVIEW_CONTRACT: Literal["ga4_tracking_quality_review_v1"]
 )
 GA4_TRACKING_BLOCKED_CLAIMS = [
     "conversion rate",
-    "ROAS",
+    "zwrot z reklam",
     "revenue",
     "profitability",
     "conversion drop",

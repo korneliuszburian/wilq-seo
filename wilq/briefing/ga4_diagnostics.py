@@ -40,7 +40,7 @@ GA4_CONVERSION_METRIC_NAMES = {
 }
 GA4_CONVERSION_BLOCKED_CLAIMS = [
     "conversion rate",
-    "ROAS",
+    "zwrot z reklam",
     "revenue",
     "profitability",
     "conversion drop",
@@ -379,7 +379,7 @@ def _landing_behavior_section(
             ),
             diagnosis=(
                 "GA4 pozwala wskazać stronę wejścia do kontroli jakości "
-                "ruchu. To nadal nie jest dowód konwersji, ROAS ani opłacalności."
+                "ruchu. To nadal nie jest dowód konwersji, zwrotu z reklam ani opłacalności."
             ),
             next_step=(
                 "Sprawdź stronę wejścia, źródło ruchu i kampanię w kolejce decyzji oraz oddziel "
@@ -392,7 +392,7 @@ def _landing_behavior_section(
             metric_facts=_tactical_metric_facts(tactical_items)[:12],
             tactical_items=tactical_items[:6],
             action_ids=action_ids,
-            blocked_claims=["conversion rate", "ROAS", "revenue", "profitability"],
+            blocked_claims=["conversion rate", "zwrot z reklam", "revenue", "profitability"],
             risk=ActionRisk.low,
         )
     return Ga4DiagnosticSection(
@@ -405,7 +405,7 @@ def _landing_behavior_section(
         ),
         diagnosis=(
             "Fakty zachowania z GA4 pozwalają wskazać strony wejścia do kontroli jakości ruchu. "
-            "To nadal nie jest dowód konwersji, ROAS ani opłacalności."
+            "To nadal nie jest dowód konwersji, zwrotu z reklam ani opłacalności."
         ),
         next_step=(
             "Najpierw sprawdź grupy z niskim zaangażowaniem i dopiero potem oceniaj "
@@ -421,7 +421,7 @@ def _landing_behavior_section(
         metric_facts=dimensioned_facts[:12],
         tactical_items=tactical_items[:6],
         action_ids=action_ids,
-        blocked_claims=["conversion rate", "ROAS", "revenue", "profitability"],
+        blocked_claims=["conversion rate", "zwrot z reklam", "revenue", "profitability"],
         risk=ActionRisk.low,
     )
 
@@ -633,7 +633,7 @@ def _ga4_decision_queue(
                     [
                         *item.blocked_claims,
                         "conversion rate",
-                        "ROAS",
+                        "zwrot z reklam",
                         "revenue",
                         "profitability",
                     ]
@@ -728,7 +728,7 @@ def _ga4_decisions_from_dimensioned_facts(
                 action_ids=action_ids,
                 blocked_claims=[
                     "conversion rate",
-                    "ROAS",
+                    "zwrot z reklam",
                     "revenue",
                     "profitability",
                 ],

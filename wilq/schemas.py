@@ -725,7 +725,7 @@ class AdsCampaignMetricRow(BaseModel):
         "insufficient_data",
         "no_target",
     ] = "no_target"
-    target_status_label: str = "brak targetu"
+    target_status_label: str = "brak celu"
     review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
         "niski sygnał"
     )
@@ -863,7 +863,7 @@ class AdsDerivedKpiRow(BaseModel):
         "insufficient_data",
         "no_target",
     ] = "no_target"
-    target_status_label: str = "brak targetu"
+    target_status_label: str = "brak celu"
     target_review_priority: int = 90
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
@@ -1112,7 +1112,7 @@ class AdsCampaignTriageRow(BaseModel):
         "insufficient_data",
         "no_target",
     ] = "no_target"
-    target_status_label: str = "brak targetu"
+    target_status_label: str = "brak celu"
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
@@ -1538,15 +1538,15 @@ def default_ads_custom_segment_audience_forecast_contract() -> (
 ):
     return AdsCustomSegmentAudienceForecastReadContract(
         status="blocked",
-        title="Forecast i audience size custom segments",
+        title="Prognoza i rozmiar odbiorców segmentów",
         summary=(
-            "Brak propozycji custom segments do sprawdzenia forecastu albo audience size."
+            "Brak propozycji segmentów do sprawdzenia prognozy albo rozmiaru odbiorców."
         ),
         missing_read_contracts=["custom_segment_candidates", "forecast_or_audience_size"],
         operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
-        blocked_claims=["audience size", "conversion uplift", "ROAS", "targeting applied"],
+        blocked_claims=["rozmiar odbiorców", "wzrost konwersji", "zwrot z reklam", "zapis kierowania reklam"],
         next_step=(
-            "Najpierw zbuduj propozycje custom segments z realnych source terms."
+            "Najpierw zbuduj propozycje segmentów z realnych wyszukiwanych haseł."
         ),
     )
 

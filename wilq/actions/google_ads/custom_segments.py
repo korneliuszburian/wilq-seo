@@ -7,11 +7,11 @@ from wilq.schemas import MetricFact
 
 CUSTOM_SEGMENT_ACTION_ID = "act_prepare_custom_segments_from_search_terms"
 CUSTOM_SEGMENT_BLOCKED_CLAIMS = [
-    "audience size",
-    "conversion uplift",
-    "ROAS",
-    "targeting applied",
-    "campaign performance",
+    "rozmiar odbiorców",
+    "wzrost konwersji",
+    "zwrot z reklam",
+    "zapis kierowania reklam",
+    "skuteczność kampanii",
 ]
 CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT = "custom_segment_apply_safety_v1"
 CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION = [

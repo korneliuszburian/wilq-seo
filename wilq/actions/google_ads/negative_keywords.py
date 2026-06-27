@@ -11,7 +11,7 @@ NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
     "search-term waste",
     "conversion loss",
     "CPA",
-    "ROAS",
+    "zwrot z reklam",
 ]
 
 

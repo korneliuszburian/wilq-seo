@@ -940,7 +940,7 @@ def _operator_summary(
         summary=(
             "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, "
             "zapytania, KPI i rekomendacje można przeglądać jako ocenę opartą na dowodach, "
-            "ale zapis zmian, waste, werdykt CPA/ROAS i skalowanie budżetu pozostają za "
+            "ale zapis zmian, waste, werdykt CPA/zwrotu z reklam i skalowanie budżetu pozostają za "
             "bramkami sprawdzenia w WILQ oraz brakującymi kontraktami."
         ),
         next_step=(
@@ -1127,7 +1127,7 @@ def _oauth_or_live_section(
         summary=reason,
         diagnosis=(
             "WILQ widzi konfigurację Google Ads, ale ostatni odczyt danych nie "
-            "zebrał danych. Ads Doctor nie może uczciwie pokazać spendu, CPA, ROAS, "
+            "zebrał danych. Ads Doctor nie może uczciwie pokazać spendu, CPA, zwrot z reklam, "
             "search terms ani rekomendacji Google bez poprawnego OAuth."
         ),
         next_step=(
@@ -1140,7 +1140,7 @@ def _oauth_or_live_section(
         blocked_claims=[
             "wasted spend",
             "CPA",
-            "ROAS",
+            "zwrot z reklam",
             "search terms",
             "negative keyword candidates",
             "campaign scaling",
@@ -1167,7 +1167,7 @@ def _campaign_overview_section(
             diagnosis=(
                 "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
                 "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
-                "do diagnozy CPA, ROAS, waste na zapytaniach ani wykluczeń."
+                "do diagnozy CPA, zwrot z reklam, waste na zapytaniach ani wykluczeń."
             ),
             next_step=campaign_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1206,7 +1206,7 @@ def _derived_kpi_section(
         status=derived_kpi_read_contract.status,
         summary=derived_kpi_read_contract.summary,
         diagnosis=(
-            "WILQ może pokazać CTR, CPC, conversion rate, CPA i ROAS jako obliczenia "
+            "WILQ może pokazać CTR, CPC, conversion rate, CPA i zwrot z reklam jako obliczenie "
             "z bieżących campaign facts. To nie jest jeszcze diagnoza rentowności, "
             "waste ani zgoda na zmianę budżetu."
         ),
@@ -1268,7 +1268,7 @@ def _campaign_read_contract(
     ]
     blocked_claims = [
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
         "search-term waste",
         "wasted budget",
         "negative keyword candidates",
@@ -1305,7 +1305,7 @@ def _campaign_read_contract(
             campaign_rows=rows,
             next_step=(
                 "Użyj wierszy kampanii do sprawdzenia aktywności. Przed wnioskami o waste, "
-                "CPA, ROAS albo wykluczenia dodaj brakujące kontrakty odczytu."
+                "CPA, zwrotu z reklam albo wykluczenia dodaj brakujące kontrakty odczytu."
             ),
         )
 
@@ -1370,7 +1370,7 @@ def _account_currency_read_contract(
             "currency-formatted cost",
             "profitability",
             "CPA verdict",
-            "ROAS verdict",
+            "werdykt zwrotu z reklam",
         ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
@@ -2017,7 +2017,7 @@ def _campaign_metric_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=missing_metrics,
-        blocked_claims=["CPA", "ROAS", "search-term waste", "wasted budget"],
+        blocked_claims=["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
         target_status=target_context["target_status"],
         target_status_label=target_context["target_status_label"],
         review_priority=campaign_review_priority(review_score),
@@ -2101,7 +2101,7 @@ def _derived_kpi_read_contract(
             title="Google Ads: wyliczone KPI kampanii",
             summary=(
                 f"WILQ może policzyć KPI dla {len(kpi_rows)} kampanii: "
-                f"CPA dostępne dla {rows_with_cpa}, ROAS dostępny dla {rows_with_roas}. "
+                f"CPA dostępne dla {rows_with_cpa}, zwrot z reklam dostępny dla {rows_with_roas}. "
                 "To są obliczenia z bieżących metric facts, nie werdykt opłacalności."
                 f"{target_summary}"
             ),
@@ -2125,7 +2125,7 @@ def _derived_kpi_read_contract(
         summary="WILQ nie ma kompletnych campaign facts do wyliczenia KPI.",
         allowed_metrics=[],
         missing_read_contracts=["campaign activity", *missing_read_contracts],
-        blocked_claims=["CTR", "CPC", "CPA", "ROAS", *blocked_claims],
+        blocked_claims=["CTR", "CPC", "CPA", "zwrot z reklam", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=campaign_read_contract.evidence_ids,
         kpi_rows=[],
@@ -2212,7 +2212,7 @@ def _target_triage(
             return "outside_target", "zwrot z reklam poniżej celu", 20
         if (row.cost_micros or 0) > 0 and not row.conversion_value:
             return "spend_without_conversions", "koszt bez wartości konwersji", 15
-        return "insufficient_data", "brak ROAS do porównania", 70
+        return "insufficient_data", "brak zwrotu z reklam do porównania", 70
 
     return "no_target", "brak celu", 90
 
@@ -2782,7 +2782,7 @@ def _optimizer_readiness_contract(
                 "zmiana budżetu",
                 "zapis rekomendacji",
                 "dodanie wykluczających słów kluczowych",
-                "targeting applied",
+                "zapis kierowania reklam",
                 "campaign mutation",
             ],
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -2833,7 +2833,7 @@ def _optimizer_readiness_contract(
             for claim in [
                 *item.blocked_claims,
                 "CPA verdict",
-                "ROAS verdict",
+                "werdykt zwrotu z reklam",
                 "profitability",
             ]
         ),
@@ -3180,7 +3180,7 @@ def _search_terms_read_contract(
         "negative keyword candidates",
         "dodanie wykluczających słów kluczowych",
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
         "conversion loss",
     ]
     if rows:
@@ -3250,7 +3250,7 @@ def _search_term_review_summary_contract(
         "search-term waste",
         "dodanie wykluczających słów kluczowych",
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
     ]
     if not rows:
         return AdsSearchTermReviewSummaryContract(
@@ -3330,7 +3330,7 @@ def _search_term_review_row(row: AdsSearchTermMetricRow) -> AdsSearchTermReviewR
             "search-term waste",
             "dodanie wykluczających słów kluczowych",
             "CPA",
-            "ROAS",
+            "zwrot z reklam",
         ],
     )
 
@@ -3368,7 +3368,7 @@ def _search_term_campaign_review_rows(
                     "search-term waste",
                     "dodanie wykluczających słów kluczowych",
                     "CPA",
-                    "ROAS",
+                    "zwrot z reklam",
                 ],
             )
         )
@@ -3441,7 +3441,7 @@ def _search_term_metric_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"],
+        blocked_claims=["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"],
     )
 
 
@@ -3460,7 +3460,7 @@ def _search_term_ngram_read_contract(
         "negative keyword candidates",
         "dodanie wykluczających słów kluczowych",
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
         "conversion loss",
     ]
     if rows:
@@ -3579,7 +3579,7 @@ def _search_term_ngram_row(
         missing_metrics=missing_metrics,
         blocked_claims=[
             "CPA",
-            "ROAS",
+            "zwrot z reklam",
             "dodanie wykluczających słów kluczowych",
             "search-term waste",
         ],
@@ -3625,7 +3625,7 @@ def _search_term_safety_read_contract(
         "search-term waste",
         "conversion loss",
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
     ]
     if rows or read_attempted:
         total_clicks = sum(row.clicks_90d or 0 for row in rows)
@@ -3764,7 +3764,7 @@ def _search_term_safety_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"],
+        blocked_claims=["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"],
     )
 
 
@@ -3798,7 +3798,7 @@ def _keyword_match_context_read_contract(
         "search-term waste",
         "conversion loss",
         "CPA",
-        "ROAS",
+        "zwrot z reklam",
     ]
     if rows or read_attempted:
         match_types = _unique(row.match_type for row in rows if row.match_type)
@@ -4125,12 +4125,12 @@ def _keyword_planner_read_contract(
         else ""
     )
     blocked_claims = [
-        "audience size",
-        "forecast",
-        "conversion uplift",
-        "ROAS",
-        "targeting applied",
-        "campaign performance",
+        "rozmiar odbiorców",
+        "prognoza",
+        "wzrost konwersji",
+        "zwrot z reklam",
+        "zapis kierowania reklam",
+        "skuteczność kampanii",
     ]
     if rows:
         max_searches = max((row.avg_monthly_searches or 0 for row in rows), default=0)
@@ -4187,7 +4187,7 @@ def _keyword_planner_read_contract(
         )
     return AdsKeywordPlannerReadContract(
         status="blocked",
-        title="Keyword Planner: brak enrichmentu",
+        title="Keyword Planner: brak wzbogacenia",
         summary="WILQ nie ma jeszcze keyword_planner_* metric facts.",
         missing_read_contracts=["keyword_planner_enrichment"],
         blocked_claims=blocked_claims,
@@ -4267,11 +4267,11 @@ def _keyword_planner_idea_row(
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
-            "audience size",
-            "forecast",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied",
+            "rozmiar odbiorców",
+            "prognoza",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
         ],
     )
 
@@ -4293,7 +4293,7 @@ def _keyword_planner_section(
         diagnosis=(
             "Ten kontrakt wzbogaca hasła źródłowe o pomysły i historyczne metryki "
             "Keyword Planner. Nie jest prognozą, rozmiarem odbiorców ani zgodą na "
-            "zapis targetowania."
+            "zapis kierowania reklam."
         ),
         next_step=keyword_planner_read_contract.next_step,
         source_connectors=keyword_planner_read_contract.source_connectors,
@@ -4463,7 +4463,8 @@ def _custom_segment_audience_forecast_read_contract(
         ),
         next_step=(
             "Nie oceniaj zasięgu ani skuteczności segmentu. Najpierw dostarcz "
-            "forecast/audience-size evidence i dopiero potem wróć do targetowania."
+            "dowody prognozy albo rozmiaru odbiorców i dopiero potem wróć do "
+            "kierowania reklam."
         ),
     )
 
@@ -4651,8 +4652,8 @@ def _custom_segment_review_reason(
         f"koszt={_search_term_cost_review_value(rows)}, "
         f"konwersje={_format_float(float(total_conversions))}, "
         f"odrzucone terminy={len(_unique(rejected_terms))}. "
-        "To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, targetowania "
-        "ani wpływu na kampanię."
+        "To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania "
+        "reklam ani wpływu na kampanię."
     )
 
 
@@ -5388,7 +5389,7 @@ def _ads_decision_queue(
                 title="Sprawdź wyliczone KPI kampanii bez decyzji budżetowych",
                 summary=derived_kpi_read_contract.summary,
                 rationale=(
-                    "CPA i ROAS są tu wartościami obliczonymi z kosztu, konwersji "
+                    "CPA i zwrot z reklam są tu wartościami obliczonymi z kosztu, konwersji "
                     "i wartości konwersji w bieżącym Google Ads evidence. WILQ nadal "
                     "blokuje wniosek o rentowności, waste, skalowaniu budżetu i zapisie zmian."
                 ),
@@ -5925,7 +5926,7 @@ def _blocked_handoff(
         summary=_ads_blocker_reason(latest_refresh),
         marketer_message=(
             "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o "
-            "spendzie, CPA, ROAS, search terms i negative keywords. To jest kontrola jakości, "
+            "spendzie, CPA, zwrot z reklam, search terms i negative keywords. To jest kontrola jakości, "
             "nie brak wiedzy."
         ),
         repair_steps=[
@@ -5933,7 +5934,7 @@ def _blocked_handoff(
             "Zweryfikuj akcję `act_configure_google_ads_env`.",
             "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
             "Uruchom odczyt danych Google Ads.",
-            "Dopiero po świeżym evidence pokazuj spend, CPA, ROAS lub search terms.",
+            "Dopiero po świeżym evidence pokazuj spend, CPA, zwrot z reklam lub search terms.",
         ],
         allowed_demo_claims=[
             "Google Ads jest zablokowany przez OAuth/API access.",
@@ -6083,7 +6084,7 @@ def _ads_decision_metric_tiles(
         tiles: dict[str, int | float | str | None] = {
             "kampanie": len(decision.derived_kpi_rows),
             "wiersze CPA": rows_with_cpa,
-            "wiersze ROAS": rows_with_roas,
+            "wiersze zwrotu z reklam": rows_with_roas,
         }
         if rows_with_target_context:
             tiles["targety"] = rows_with_target_context

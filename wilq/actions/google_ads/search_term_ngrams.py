@@ -22,7 +22,7 @@ SEARCH_TERM_NGRAM_BLOCKED_CLAIMS = [
     "dodanie wykluczających słów kluczowych",
     "conversion loss",
     "CPA",
-    "ROAS",
+    "zwrot z reklam",
 ]
 SEARCH_TERM_NGRAM_STOPWORDS = {
     "a",

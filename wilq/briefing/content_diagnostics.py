@@ -1365,7 +1365,7 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
                     *(claim for item in tracking_gaps for claim in item.blocked_claims),
                     "przepisanie treści",
                     "wzrost konwersji",
-                    "ROAS",
+                    "zwrot z reklam",
                 ]
             ),
             rationale=(

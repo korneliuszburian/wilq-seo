@@ -284,10 +284,8 @@ export function wordpressMatchConfidenceLabel(value: string) {
 
 export function contentBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "conversion uplift": "wzrost konwersji",
     "lead quality": "jakość leadów",
     "ranking win": "wygrana pozycji",
-    ROAS: "ROAS",
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

@@ -80,6 +80,11 @@ Date: 2026-06-27
   promises. Obsolete route/backend label-map entries for old Demand Gen values
   were removed instead of kept as compatibility aliases. The language guard now
   blocks the old Demand Gen phrases.
+- Custom segments and Keyword Planner blocked-claim contracts now use Polish
+  source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
+  kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete
+  backend/dashboard label aliases for old values were removed instead of kept
+  as compatibility aliases. Ads target status defaults now use `brak celu`.
 
 ## Latest Proof Pointers
 
@@ -192,6 +197,25 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=1` passed: 6 tests.
   - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
   - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "Demand Gen|demand gen|action detail" --testTimeout=20000` passed: 3 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+- Custom segments and Keyword Planner blocked-claim language cleanup with live
+  local API proof in current session:
+  - Focused stale-term scans for old Custom Segments/Keyword Planner phrases
+    and stale Ads target wording across active WILQ sources, dashboard source,
+    eval cases and skill contracts found no active hits except technical
+    `WILQ_ADS_TARGET_ROAS` env names and guard definitions.
+  - `rtk scripts/local_stack.sh restart` brought the local WILQ API and
+    dashboard back to ready state.
+  - `rtk scripts/local_stack.sh status` confirmed managed API and dashboard are
+    ready.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python -m py_compile wilq/actions/google_ads/custom_segments.py wilq/actions/google_ads/keyword_planner.py wilq/actions/google_ads/negative_keywords.py wilq/actions/google_ads/search_term_ngrams.py wilq/actions/google_ads/campaign_review.py wilq/actions/ga4/tracking_quality.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py wilq/briefing/ga4_diagnostics.py wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/briefing/command_center.py wilq/briefing/blocked_claim_labels.py wilq/schemas.py scripts/marketer_language_guard.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segment or keyword_planner or ads_diagnostics_exposes_live_campaign_metric_facts or command_center_ads_plan or ga4" --maxfail=1` passed: 17 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_marketer_uat_packet.py -q --maxfail=1` passed: 7 tests.
+  - `rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py` passed against live local API.
+  - `rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py` passed against live local API.
+  - `rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py` passed against live local API.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "custom segments|segmenty|Keyword Planner|action detail|Ads Doctor|GA4" --testTimeout=20000` passed: 4 tests.
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.
@@ -775,6 +799,14 @@ Date: 2026-06-27
 - Some internal contract names are still technical. If they reach the marketer
   surface, migrate the contract or view-model in a focused slice rather than
   adding UI-only masking.
+- The next language cleanup slice should target active Ads/GA4/Merchant terms
+  still returned by live smokes or visible in dashboard/test fixtures:
+  `wasted budget`, `search-term waste`, `profitability`, `margin verdict`,
+  `campaign mutation`, `performance uplift`, `automatic recommendation accept`,
+  `change impact`, `tracking fixed`, `revenue`, remaining table labels `ROAS`,
+  and leftover Polish/English mixes such as `werdykty CPA/zwrotu z reklam`.
+  Replace them at API/domain/schema sources and tests; do not add route-local
+  translators or deprecated aliases.
 - Explicit debug context can expose more detail than default skill context. It
   must remain operator-only and must not become the normal skill prompt surface.
 - Some default skill context-packs are still large by operator standards.

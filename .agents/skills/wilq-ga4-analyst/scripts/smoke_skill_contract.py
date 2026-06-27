@@ -82,7 +82,12 @@ def main() -> int:
                 "Blocked GA4 conversion readiness must expose conversion/key-event mapping gap"
             )
         blocked_claims = set(readiness_contract.get("blocked_claims", []))
-        required_blocked_claims = {"conversion rate", "ROAS", "revenue", "profitability"}
+        required_blocked_claims = {
+            "conversion rate",
+            "zwrot z reklam",
+            "revenue",
+            "profitability",
+        }
         missing_claims = sorted(required_blocked_claims - blocked_claims)
         if missing_claims:
             raise SystemExit(

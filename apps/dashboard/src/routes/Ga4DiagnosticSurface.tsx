@@ -323,7 +323,7 @@ function Ga4MeasurementIssues({
           ))}
         </div>
       ) : (
-        <BlockerNotice message="Brak aktywnych `(not set)`/tracking-gap decyzji w top kolejce GA4. Wnioski o konwersjach, ROAS i revenue nadal pozostają zablokowane bez właściwych metryk." />
+        <BlockerNotice message="Brak aktywnych `(not set)`/tracking-gap decyzji w top kolejce GA4. Wnioski o konwersjach, zwrot z reklam i przychody nadal pozostają zablokowane bez właściwych metryk." />
       )}
     </section>
   );
@@ -817,7 +817,6 @@ function ga4BlockedClaimLabels(claims: string[]) {
     "GA4 write": "zapis do GA4",
     "profitability": "opłacalność",
     "revenue": "revenue",
-    "ROAS": "ROAS",
     "tracking fixed": "pomiar naprawiony",
     "tracking gap": "problem pomiaru"
   };

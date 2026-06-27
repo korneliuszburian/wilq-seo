@@ -752,7 +752,7 @@ def _ads_item_from_facts(
         blocked_claims=(
             [
                 "CPA",
-                "ROAS",
+                "zwrot z reklam",
                 "marnowanie budżetu na zapytaniach",
                 "dodanie wykluczających słów kluczowych",
                 "zmiana budżetu",
@@ -761,7 +761,7 @@ def _ads_item_from_facts(
                 "zmarnowany budżet",
             ]
             if live_data_available
-            else ["wydatki reklamowe", "CPA", "ROAS", "zapytania z reklam", "zmarnowany budżet"]
+            else ["wydatki reklamowe", "CPA", "zwrot z reklam", "zapytania z reklam", "zmarnowany budżet"]
         ),
         risk=ActionRisk.medium,
     )
@@ -836,7 +836,7 @@ def _ads_derived_kpi_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
     if cpa_rows:
         tiles["wiersze CPA"] = cpa_rows
     if roas_rows:
-        tiles["wiersze ROAS"] = roas_rows
+        tiles["wiersze zwrotu z reklam"] = roas_rows
     return tiles
 
 
@@ -1449,12 +1449,12 @@ def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
         f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
         f"KPI do sprawdzenia={metric_tiles.get('KPI do sprawdzenia', 0)}, "
         f"wiersze CPA={metric_tiles.get('wiersze CPA', 0)}, "
-        f"wiersze ROAS={metric_tiles.get('wiersze ROAS', 0)}, "
+        f"wiersze zwrotu z reklam={metric_tiles.get('wiersze zwrotu z reklam', 0)}, "
         f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "
         f"segmenty={metric_tiles.get('segmenty', 0)}. "
         "To są kolejki oceny z evidence i akcjami do sprawdzenia. KPI są "
         "sygnałem z bieżących metric facts; to nadal nie jest werdykt "
-        "opłacalności, CPA/ROAS ani ścieżka zapisu zmian."
+        "opłacalności, CPA/zwrotu z reklam ani ścieżka zapisu zmian."
     )
 
 
@@ -1562,7 +1562,7 @@ def _ga4_item_from_tactical(
             "jakość ruchu": traffic_quality_count,
             "braki kontraktu": 1,
         },
-        blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
+        blocked_claims=["zwrot z reklam", "revenue", "conversion drop", "tracking fixed"],
         risk=ActionRisk.medium,
     )
 
@@ -2079,14 +2079,14 @@ def _action_plan_item(
             priority=5,
             category="Google Ads",
             why_it_matters=(
-                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, CPA, ROAS ani search "
+                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, CPA, zwrot z reklam ani search "
                 "terms bez świeżego Ads evidence."
             ),
             operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzoną akcję.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj Ads blocker dla Ekologus "
-                "i przygotuj repair path bez diagnozowania spendu, CPA, ROAS ani search terms."
+                "i przygotuj repair path bez diagnozowania spendu, CPA, zwrot z reklam ani search terms."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -2311,7 +2311,7 @@ def _decision_observation(
             suffix=(
                 "To są kolejki oceny budżetu, rekomendacji, wykluczeń i "
                 "segmentów oraz KPI kampanii do sprawdzenia. Zapis zmian, ocena "
-                "rentowności i werdykty o CPA/ROAS albo przepalonym budżecie "
+                "rentowności i werdykty o CPA/zwrotu z reklam albo przepalonym budżecie "
                 "pozostają zablokowane."
             ),
         )

@@ -108,8 +108,8 @@ def main() -> int:
         raise SystemExit("Custom segments must expose audience forecast read contract")
     if audience_forecast_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Audience forecast read contract must be ready or blocked")
-    if "audience size" not in (audience_forecast_contract.get("blocked_claims") or []):
-        raise SystemExit("Audience forecast contract must block audience-size claims")
+    if "rozmiar odbiorców" not in (audience_forecast_contract.get("blocked_claims") or []):
+        raise SystemExit("Audience forecast contract must block rozmiar odbiorców claims")
 
     custom_segment_candidates = custom_segments_read_contract.get("candidates") or []
     custom_segment_action_validation: dict[str, Any] | None = None

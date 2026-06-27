@@ -54,7 +54,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "keyword_match_context_read_contract",
                 "keyword_match_context",
                 "custom_segments_read_contract",
-                "custom segments",
+                "segmenty niestandardowe",
                 "keyword_planner_read_contract",
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
@@ -63,8 +63,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "search terms",
                 "negative_keywords_read_contract",
                 "CPA",
-                "ROAS",
-                "blocked claims",
+                "zwrot z reklam",
+                "blokady",
             },
             "action_ids": {
                 "act_prepare_ads_campaign_review_queue",
@@ -212,7 +212,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "surface_path": "/ads-doctor",
             "terms": {
                 "Ads Doctor",
-                "custom segments",
+                "segmenty niestandardowe",
                 "ads_diagnostics",
                 "custom_segments_read_contract",
                 "audience_forecast_read_contract",
@@ -224,9 +224,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "review_reason",
                 "review segmentu",
                 "source_terms",
-                "blocked claims",
-                "audience size",
-                "ROAS",
+                "blokady",
+                "rozmiar odbiorców",
+                "zwrot z reklam",
             },
             "action_ids": {"act_prepare_custom_segments_from_search_terms"},
             "validated_action_ids": {"act_prepare_custom_segments_from_search_terms"},
@@ -409,8 +409,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "gotowość przejścia na Demand Gen" in demand_gen_case["blocked_claim_terms"]
     assert "wzrost skuteczności" in demand_gen_case["blocked_claim_terms"]
     custom_segments_case = cases["wilq-custom-segments"]
-    assert "audience size" in custom_segments_case["blocked_claim_terms"]
-    assert "targeting applied" in custom_segments_case["blocked_claim_terms"]
+    assert "rozmiar odbiorców" in custom_segments_case["blocked_claim_terms"]
+    assert "zapis kierowania reklam" in custom_segments_case["blocked_claim_terms"]
     daily_case = cases["wilq-daily-command"]
     assert "localo" in daily_case["expected_connectors"]
     assert "localo" not in daily_case["required_source_connectors"]
@@ -743,7 +743,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     }
     assert "content_landing_context" in campaign_case["expected_terms_pl"]
     assert "query_page_candidates" in campaign_case["expected_terms_pl"]
-    assert "campaign performance" in campaign_case["blocked_claim_terms"]
+    assert "skuteczność kampanii" in campaign_case["blocked_claim_terms"]
     campaign_smoke_script = Path(
         ".agents/skills/wilq-campaign-builder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")

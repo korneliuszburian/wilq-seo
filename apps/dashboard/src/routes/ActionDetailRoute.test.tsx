@@ -187,7 +187,7 @@ const customSegmentActionFixture: ActionObject = {
   risk: "medium",
   evidence_ids: ["ev_refresh_google_ads"],
   human_diagnosis: "Search terms mogą zasilić segment odbiorców do sprawdzenia.",
-  recommended_reason: "Przejrzyj źródłowe hasła i safety przed targetowaniem.",
+  recommended_reason: "Przejrzyj źródłowe hasła i kontrolę bezpieczeństwa przed kierowaniem reklam.",
   payload: {
     action_type: "custom_segment_review",
     preview_contract: "custom_segment_apply_preview_v1",
@@ -207,7 +207,7 @@ const customSegmentActionFixture: ActionObject = {
           "keyword_planner_enrichment",
           "forecast_or_audience_size"
         ],
-        blocked_claims: ["audience size", "conversion uplift", "targeting applied"],
+        blocked_claims: ["rozmiar odbiorców", "wzrost konwersji", "zapis kierowania reklam"],
         targeting_preview: [
           {
             campaign_id: "23848569273",
@@ -260,7 +260,7 @@ const negativeKeywordActionFixture: ActionObject = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -306,7 +306,7 @@ const ngramActionFixture: ActionObject = {
           "review_source_search_terms",
           "compare_90_day_safety_read"
         ],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"],
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -403,7 +403,7 @@ const ga4TrackingActionFixture: ActionObject = {
           "review_campaign_name_dimension",
           "review_conversion_or_key_event_mapping"
         ],
-        blocked_claims: ["conversion rate", "ROAS", "revenue", "tracking fixed"],
+        blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "tracking fixed"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -498,7 +498,7 @@ const socialDraftActionFixture: ActionObject = {
       "no_performance_claims_without_source_metric",
       "require_human_review_before_apply"
     ],
-    blocked_claims: ["ROAS", "revenue", "conversion uplift", "wdrożona poprawka produktu"],
+    blocked_claims: ["zwrot z reklam", "revenue", "wzrost konwersji", "wdrożona poprawka produktu"],
     destructive: false
   }
 };
@@ -534,7 +534,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "verify_keyword_planner_idea_rows",
       "human_confirm_before_apply"
     ],
-    blocked_claims: ["audience size", "forecast", "conversion uplift", "ROAS"],
+    blocked_claims: ["rozmiar odbiorców", "prognoza", "wzrost konwersji", "zwrot z reklam"],
     apply_allowed: false,
     destructive: false
   }

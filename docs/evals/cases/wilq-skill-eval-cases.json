@@ -57,8 +57,8 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
-    "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania CPA/ROAS, jeśli WILQ nie ma targetów albo change history.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, zwrot z reklam, search-term waste, wasted budget, budget scaling, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
+    "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania CPA/zwrotu z reklam, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",
@@ -70,9 +70,9 @@
       "read-only rows",
       "search terms",
       "CPA",
-      "ROAS",
+      "zwrot z reklam",
       "negative keywords",
-      "blocked claims",
+      "blokady",
       "ads_review_budget_context",
       "budget_pacing_read_contract",
       "card_google_ads_budget_review_playbook",
@@ -93,7 +93,7 @@
       "keyword_match_context_read_contract",
       "keyword_match_context",
       "custom_segments_read_contract",
-      "custom segments",
+      "segmenty niestandardowe",
       "keyword_planner_read_contract",
       "keyword_planner_enrichment",
       "forecast_or_audience_size",
@@ -333,7 +333,7 @@
     "blocked_claim_terms": [
       "opublikowanie posta",
       "wzrost skuteczności social",
-      "ROAS",
+      "zwrot z reklam",
       "przychód"
     ]
   },
@@ -354,8 +354,8 @@
     ],
     "expected_blocked": false,
     "blocked_claim_terms": [
-      "campaign performance",
-      "conversion uplift",
+      "skuteczność kampanii",
+      "wzrost konwersji",
       "gwarancja pozycji",
       "zmiana kampanii"
     ],
@@ -371,11 +371,11 @@
   {
     "skill": "wilq-custom-segments",
     "surface_path": "/ads-doctor",
-    "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować custom segment candidates z realnych source_terms i evidence. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj audience terms, audience size, ROAS ani efektu kampanii.",
+    "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować segmenty niestandardowe z realnych source_terms i dowodów. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj terminów odbiorców, rozmiaru odbiorców, zwrotu z reklam ani efektu kampanii.",
     "expected_connectors": ["google_ads", "google_search_console"],
     "expected_terms_pl": [
       "Ads Doctor",
-      "custom segments",
+      "segmenty niestandardowe",
       "ads_diagnostics",
       "custom_segments_read_contract",
       "audience_forecast_read_contract",
@@ -387,15 +387,15 @@
       "review_reason",
       "review segmentu",
       "source_terms",
-      "blocked claims",
-      "audience size",
-      "ROAS"
+      "blokady",
+      "rozmiar odbiorców",
+      "zwrot z reklam"
     ],
     "blocked_claim_terms": [
-      "audience size",
-      "ROAS",
-      "targeting applied",
-      "campaign performance"
+      "rozmiar odbiorców",
+      "zwrot z reklam",
+      "zapis kierowania reklam",
+      "skuteczność kampanii"
     ],
     "expected_action_ids": ["act_prepare_custom_segments_from_search_terms"],
     "expected_validated_action_ids": ["act_prepare_custom_segments_from_search_terms"]

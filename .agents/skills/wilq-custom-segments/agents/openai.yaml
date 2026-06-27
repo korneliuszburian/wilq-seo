@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ Custom Segments"
-  short_description: "Tworzy custom segments tylko z realnych źródeł"
-  default_prompt: "Użyj $wilq-custom-segments: zaproponuj custom segments dla Ekologus wyłącznie z search terms, Keyword Planner albo WILQ evidence."
+  display_name: "WILQ Segmenty Niestandardowe"
+  short_description: "Tworzy segmenty tylko z realnych źródeł"
+  default_prompt: "Użyj $wilq-custom-segments: zaproponuj segmenty niestandardowe dla Ekologus wyłącznie z wyszukiwanych haseł, Keyword Planner albo dowodów WILQ."

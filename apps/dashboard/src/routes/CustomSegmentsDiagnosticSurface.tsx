@@ -36,7 +36,7 @@ export function AdsCustomSegmentCandidatesPanel({
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             To jest kolejka tylko do przygotowania. WILQ nie twierdzi, że segment
-            ma zasięg, ROAS albo wpływ na kampanię bez osobnej prognozy i sprawdzenia.
+            ma zasięg, zwrot z reklam albo wpływ na kampanię bez osobnej prognozy i sprawdzenia.
           </p>
         </div>
       ) : null}
@@ -266,7 +266,7 @@ export function CustomSegmentsDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok propozycji segmentów z wyszukiwanych haseł Google Ads.
             WILQ pokazuje tylko hasła źródłowe z dowodami i podgląd zmian do
-            oceny; zasięg, uplift, ROAS i zapis kierowania pozostają zablokowane.
+            oceny; zasięg, uplift, zwrot z reklam i zapis kierowania pozostają zablokowane.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">

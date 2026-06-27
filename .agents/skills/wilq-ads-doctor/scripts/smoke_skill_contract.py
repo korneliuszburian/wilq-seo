@@ -91,8 +91,10 @@ def main() -> int:
         if not blocked_handoff.get("action_ids"):
             raise SystemExit("Blocked Ads handoff must include action IDs")
         blocked_claims = set(blocked_handoff.get("blocked_claims", []))
-        if not {"ROAS", "search terms"} <= blocked_claims:
-            raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
+        if not {"zwrot z reklam", "search terms"} <= blocked_claims:
+            raise SystemExit(
+                "Blocked Ads handoff must list blocked zwrot z reklam and search terms claims"
+            )
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     campaign_triage_read_contract = (
         ads_diagnostics.get("campaign_triage_read_contract") or {}
@@ -583,7 +585,7 @@ def main() -> int:
             "missing_read_contracts",
             [],
         ):
-            raise SystemExit("Keyword Planner must keep forecast/audience size blocked")
+            raise SystemExit("Keyword Planner must keep forecast or audience-size blocked")
     else:
         if "keyword_planner_enrichment" not in keyword_planner_read_contract.get(
             "missing_read_contracts",

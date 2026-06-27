@@ -74,7 +74,7 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
                     "status": "review",
                 }
             ],
-            "blocked_claims": ["CPA verdict", "ROAS verdict"],
+            "blocked_claims": ["CPA verdict", "werdykt zwrotu z reklam"],
             "action_ids": ["act_prepare_ads_campaign_review_queue"],
         },
         "ga4": {

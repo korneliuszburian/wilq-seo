@@ -2709,7 +2709,7 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
         f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/confirm",
         json={
             "confirmed_by": "operator_test",
-            "notes": "Potwierdzam roboczy target ROAS 4.2 do sprawdzenia kampanii.",
+            "notes": "Potwierdzam roboczy target zwrotu z reklam 4.2 do sprawdzenia kampanii.",
             "target_roas": 4.2,
         },
     )
@@ -2834,7 +2834,7 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     assert "DEVELOPER_TOKEN_NOT_APPROVED" in action["payload"]["blocked_reason"]
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
-    assert "audience size" in action["payload"]["blocked_claims"]
+    assert "rozmiar odbiorców" in action["payload"]["blocked_claims"]
     assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
     assert "client_secret" not in serialized
 
@@ -3734,7 +3734,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     )
     assert operator_summary["action_ids"] == payload["action_ids"]
     assert operator_summary["conversion_readiness_status"] == readiness_contract["status"]
-    assert "ROAS" in operator_summary["blocked_claims"]
+    assert "zwrot z reklam" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     sections = {section["id"]: section for section in payload["sections"]}
@@ -3862,7 +3862,7 @@ def test_ga4_operator_summary_uses_conversion_ready_copy(
     assert payload.conversion_readiness_contract.conversion_like_metric_count == 2
     assert "Brak metryk konwersji" not in payload.operator_summary.summary
     assert "metryki konwersji" in payload.operator_summary.summary
-    assert "ROAS" in payload.operator_summary.blocked_claims
+    assert "zwrot z reklam" in payload.operator_summary.blocked_claims
 
 
 def test_ga4_diagnostics_preserves_dimensioned_landing_facts_after_aggregate_noise(
@@ -4182,7 +4182,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["grupy ruchu"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["decyzje"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["braki kontraktu"] == 1
-    assert "zwrot z wydatków reklamowych" in brief_by_id[
+    assert "zwrot z reklam" in brief_by_id[
         "daily_ga4_landing_quality"
     ]["blocked_claims"]
     assert (
@@ -4405,7 +4405,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["metric_tiles"]["rekomendacje"] == 1
     assert ads_item["metric_tiles"]["KPI do sprawdzenia"] == 1
     assert ads_item["metric_tiles"]["wiersze CPA"] == 1
-    assert ads_item["metric_tiles"]["wiersze ROAS"] == 1
+    assert ads_item["metric_tiles"]["wiersze zwrotu z reklam"] == 1
     assert "kolejki oceny" in ads_item["summary"]
     assert "kliknięcia=12" in ads_item["summary"]
     assert "koszt=12 PLN" in ads_item["summary"]
@@ -4417,7 +4417,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "KPI kampanii" in ads_item["next_step"]
     assert "zmiana budżetu" in ads_item["blocked_claims"]
     assert "koszt pozyskania celu" in ads_item["blocked_claims"]
-    assert "zwrot z wydatków reklamowych" in ads_item["blocked_claims"]
+    assert "zwrot z reklam" in ads_item["blocked_claims"]
     assert "opłacalność" in ads_item["blocked_claims"]
     assert "zmarnowany budżet" in ads_item["blocked_claims"]
     assert "profitability" not in ads_item["blocked_claims"]
@@ -4476,21 +4476,21 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
     assert ads_decision["metric_tiles"]["KPI do sprawdzenia"] == 1
     assert ads_decision["metric_tiles"]["wiersze CPA"] == 1
-    assert ads_decision["metric_tiles"]["wiersze ROAS"] == 1
+    assert ads_decision["metric_tiles"]["wiersze zwrotu z reklam"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert "KPI do sprawdzenia=1" in ads_decision["co_widzimy"]
     assert "kolejki oceny" in ads_decision["co_widzimy"]
-    assert "werdykty o CPA/ROAS" in ads_decision["co_widzimy"]
+    assert "werdykty o CPA/zwrotu z reklam" in ads_decision["co_widzimy"]
     assert ads_decision["action_ids"] == ads_item["action_ids"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
     serialized = json.dumps(payload, ensure_ascii=False)
-    assert "conversion uplift" not in serialized
+    assert "wzrost konwersji" not in serialized
     assert "wasted budget" not in serialized
     assert "target CPA verdict" not in serialized
     assert "werdykt target CPA" not in serialized
-    assert "werdykt target ROAS" not in serialized
-    assert "ROAS verdict" not in serialized
+    assert "werdykt target zwrotu z reklam" not in serialized
+    assert "werdykt zwrotu z reklam" not in serialized
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
@@ -8057,7 +8057,7 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                 "wasted budget",
                 "profitability",
                 "CPA verdict",
-                "ROAS verdict",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -8166,7 +8166,7 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert "oauth_error=deleted_client" in handoff["summary"]
     assert "act_configure_google_ads_env" in handoff["action_ids"]
     assert "google_ads" in handoff["source_connectors"]
-    assert "ROAS" in handoff["blocked_claims"]
+    assert "zwrot z reklam" in handoff["blocked_claims"]
     assert any("nie zmyśla Ads metryk" in claim for claim in handoff["allowed_demo_claims"])
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
@@ -8798,7 +8798,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendations" not in read_contract["missing_read_contracts"]
     assert "impression_share" not in read_contract["missing_read_contracts"]
     assert "change_history" not in read_contract["missing_read_contracts"]
-    assert "ROAS" in read_contract["blocked_claims"]
+    assert "zwrot z reklam" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
         {
@@ -8814,9 +8814,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
-            "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
+            "blocked_claims": ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
             "target_status": "no_target",
-            "target_status_label": "brak targetu",
+            "target_status_label": "brak celu",
             "review_priority": "wysokie",
             "review_score": 50,
             "review_reason": read_contract["campaign_rows"][0]["review_reason"],
@@ -8869,7 +8869,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "google_ads" in operator_summary["source_connectors"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_prepare_ads_campaign_review_queue" in operator_summary["action_ids"]
-    assert "ROAS" in operator_summary["blocked_claims"]
+    assert "zwrot z reklam" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     marketer_text = "\n".join(
@@ -8927,7 +8927,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "uzupełnienie marży albo modelu wartości",
         "uzupełnienie celu biznesowego",
         "uzupełnienie celu budżetu",
-        "potwierdzenie targetu ROAS albo CPA",
+        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
     ]
     assert business_context_contract["allowed_metrics"] == []
     assert business_context_contract["missing_read_contracts"] == [
@@ -9023,7 +9023,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "target_cpa_micros": None,
             "cpa_vs_target_micros": None,
             "target_status": "no_target",
-            "target_status_label": "brak targetu",
+            "target_status_label": "brak celu",
             "target_review_priority": 90,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "source_metric_names": [
@@ -9109,7 +9109,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "wasted budget",
                 "profitability",
                 "CPA verdict",
-                "ROAS verdict",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
             "safety_review": budget_contract["payload_preview"][0]["safety_review"],
@@ -9157,7 +9157,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "wasted budget",
                 "profitability",
                 "CPA verdict",
-                "ROAS verdict",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -9413,7 +9413,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "next_step": campaign_triage_contract["triage_rows"][0]["next_step"],
             "target_status": "no_target",
-            "target_status_label": "brak targetu",
+            "target_status_label": "brak celu",
             "clicks": 9,
             "impressions": 90,
             "cost_micros": 12000000,
@@ -9656,7 +9656,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "missing_metrics": [],
             "blocked_claims": [
                 "CPA",
-                "ROAS",
+                "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "wasted budget",
             ],
@@ -9678,7 +9678,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "missing_metrics": [],
             "blocked_claims": [
                 "CPA",
-                "ROAS",
+                "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "wasted budget",
             ],
@@ -9710,7 +9710,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "search-term waste",
                 "dodanie wykluczających słów kluczowych",
                 "CPA",
-                "ROAS",
+                "zwrot z reklam",
             ],
         }
     ]
@@ -9834,7 +9834,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "missing_metrics": [],
             "blocked_claims": [
                 "CPA",
-                "ROAS",
+                "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "wasted budget",
             ],
@@ -9905,7 +9905,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "custom_segment_change_preview" not in custom_segments_contract[
         "missing_read_contracts"
     ]
-    assert "audience size" in custom_segments_contract["blocked_claims"]
+    assert "rozmiar odbiorców" in custom_segments_contract["blocked_claims"]
     audience_forecast_contract = custom_segments_contract[
         "audience_forecast_read_contract"
     ]
@@ -9919,7 +9919,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "forecast_or_audience_size",
         "human_confirm_before_apply",
     ]
-    assert "audience size" in audience_forecast_contract["blocked_claims"]
+    assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claims"]
     forecast_row = audience_forecast_contract["forecast_rows"][0]
     assert forecast_row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
     assert forecast_row["custom_segment_name"] == (
@@ -10119,7 +10119,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["metric_tiles"] == {
         "kampanie": 1,
         "wiersze CPA": 1,
-        "wiersze ROAS": 1,
+        "wiersze zwrotu z reklam": 1,
     }
     assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
@@ -10401,7 +10401,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
-    assert "ROAS" in custom_segments_decision["blocked_claims"]
+    assert "zwrot z reklam" in custom_segments_decision["blocked_claims"]
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
@@ -10707,8 +10707,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "campaign_rows"
     ][0]
     assert campaign_ready_row["target_status"] == "within_target"
-    assert campaign_ready_row["target_status_label"] == "ROAS w targetcie"
-    assert "target=ROAS w targetcie" in campaign_ready_row["review_reason"]
+    assert campaign_ready_row["target_status_label"] == "zwrot z reklam w granicy celu"
+    assert "target=zwrot z reklam w granicy celu" in campaign_ready_row["review_reason"]
     assert "review_target_context" in campaign_ready_row["human_review_gates"]
     assert "profit_margin" not in derived_ready_contract["missing_read_contracts"]
     assert "target_roas" in derived_ready_contract["allowed_metrics"]
@@ -10718,7 +10718,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_ready_contract["kpi_rows"][0]["target_cpa_micros"] is None
     assert derived_ready_contract["kpi_rows"][0]["cpa_vs_target_micros"] is None
     assert derived_ready_contract["kpi_rows"][0]["target_status"] == "within_target"
-    assert derived_ready_contract["kpi_rows"][0]["target_status_label"] == "ROAS w targetcie"
+    assert derived_ready_contract["kpi_rows"][0]["target_status_label"] == (
+        "zwrot z reklam w granicy celu"
+    )
     assert "human_budget_goal" not in business_ready_payload[
         "budget_pacing_read_contract"
     ]["missing_read_contracts"]
@@ -10759,7 +10761,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         if decision["id"] == "ads_review_derived_kpis"
     )
     assert derived_ready_decision["metric_tiles"]["targety"] == 1
-    assert derived_ready_decision["metric_tiles"]["w targetcie"] == 1
+    assert derived_ready_decision["metric_tiles"]["w celu"] == 1
     assert derived_ready_decision["derived_kpi_rows"][0]["roas_vs_target"] == 32.5625
     assert derived_ready_decision["derived_kpi_rows"][0]["target_status"] == "within_target"
 
@@ -14256,14 +14258,14 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
         status="blocked",
         priority=14,
         co_widzimy="GA4 ma problemy pomiaru.",
-        dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
+        dlaczego_to_ma_znaczenie="Brak kontraktu na zwrot z reklam i przychody.",
         bezpieczny_next_step="Otwórz /ga4 i sprawdź w WILQ review GA4.",
-        why_it_matters="Brak kontraktu na ROAS i revenue.",
+        why_it_matters="Brak kontraktu na zwrot z reklam i przychody.",
         operator_action="Otwórz /ga4 i sprawdź w WILQ review GA4.",
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["ROAS", "revenue"],
+        blocked_claims=["zwrot z reklam", "revenue"],
         risk=ActionRisk.low,
     )
     operator_brief_item = CommandCenterBriefItem(
@@ -14277,7 +14279,7 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["ROAS", "revenue"],
+        blocked_claims=["zwrot z reklam", "revenue"],
         risk=ActionRisk.low,
     )
     command_center = CommandCenterResponse(
@@ -14313,14 +14315,14 @@ def test_marketing_brief_daily_context_limits_safe_actions_to_daily_decisions() 
         status="blocked",
         priority=14,
         co_widzimy="GA4 ma problemy pomiaru.",
-        dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
+        dlaczego_to_ma_znaczenie="Brak kontraktu na zwrot z reklam i przychody.",
         bezpieczny_next_step="Otwórz /ga4 i sprawdź w WILQ review GA4.",
-        why_it_matters="Brak kontraktu na ROAS i revenue.",
+        why_it_matters="Brak kontraktu na zwrot z reklam i przychody.",
         operator_action="Otwórz /ga4 i sprawdź w WILQ review GA4.",
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["ROAS", "revenue"],
+        blocked_claims=["zwrot z reklam", "revenue"],
         risk=ActionRisk.low,
     )
     command_center = CommandCenterResponse(
@@ -16289,8 +16291,8 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "GSC content doctor" not in serialized
     assert "Localo visibility review" not in serialized
     assert "workflow jako" not in serialized
-    assert "ROAS verdict" not in serialized
-    assert "conversion uplift" not in serialized
+    assert "werdykt zwrotu z reklam" not in serialized
+    assert "wzrost konwersji" not in serialized
     assert "local ranking uplift" not in serialized
     assert "GBP performance verdict" not in serialized
 

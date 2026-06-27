@@ -42,11 +42,11 @@ function customSegmentSafetyReview(previewId: string) {
       "human_confirm_before_apply"
     ],
     blocked_claims: [
-      "audience size",
-      "conversion uplift",
-      "ROAS",
-      "targeting applied",
-      "campaign performance"
+      "rozmiar odbiorców",
+      "wzrost konwersji",
+      "zwrot z reklam",
+      "zapis kierowania reklam",
+      "skuteczność kampanii"
     ],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     audit_required: true,
@@ -210,7 +210,7 @@ const actions = [
             sessions: 30
           },
           reason:
-            "Lista sprawdzenia landing page, źródło i kampania do oceny jakości ruchu. To nie odblokowuje ROAS ani revenue.",
+            "Lista sprawdzenia landing page, źródło i kampania do oceny jakości ruchu. To nie odblokowuje zwrotu z reklam ani przychodów.",
           required_validation: [
             "review_landing_page_dimension",
             "review_source_medium_dimension",
@@ -218,7 +218,7 @@ const actions = [
             "review_conversion_or_key_event_mapping",
             "human_confirm_before_tracking_change"
           ],
-          blocked_claims: ["conversion rate", "ROAS", "revenue"],
+          blocked_claims: ["conversion rate", "zwrot z reklam", "revenue"],
           evidence_ids: ["ev_refresh_ga4"],
           api_mutation_ready: false,
           apply_allowed: false,
@@ -620,7 +620,7 @@ const adsDiagnostics = {
       "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
-    blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
+    blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     campaign_rows: [
@@ -654,7 +654,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"]
       }
     ],
     next_step: "Użyj wierszy kampanii do sprawdzenia aktywności."
@@ -776,7 +776,7 @@ const adsDiagnostics = {
       apply_allowed: false,
       destructive: false,
       next_step:
-        "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel budżetu i target ROAS/CPA, a potem zapisz outcome review."
+        "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel budżetu i target zwrotu z reklam/CPA, a potem zapisz outcome review."
     },
     allowed_metrics: [],
     missing_read_contracts: [
@@ -809,7 +809,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: wyliczone KPI kampanii",
     summary:
-      "WILQ może policzyć KPI dla 1 kampanii: CPA dostępne dla 1, ROAS dostępny dla 1. To są obliczenia z bieżących metryki, nie werdykt opłacalności.",
+      "WILQ może policzyć KPI dla 1 kampanii: CPA dostępne dla 1, zwrot z reklam dostępny dla 1. To są obliczenia z bieżących metryki, nie werdykt opłacalności.",
     allowed_metrics: [
       "ctr",
       "average_cpc_micros",
@@ -940,7 +940,7 @@ const adsDiagnostics = {
             "wasted budget",
             "profitability",
             "CPA verdict",
-            "ROAS verdict",
+            "werdykt zwrotu z reklam",
             "zapis rekomendacji"
           ],
           safety_review: {
@@ -1036,7 +1036,7 @@ const adsDiagnostics = {
           "wasted budget",
           "profitability",
           "CPA verdict",
-          "ROAS verdict",
+          "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ]
       }
@@ -1075,7 +1075,7 @@ const adsDiagnostics = {
           "wasted budget",
           "profitability",
           "CPA verdict",
-          "ROAS verdict",
+          "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ],
         safety_review: {
@@ -1332,7 +1332,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Kolejność oceny kampanii Ads",
     summary:
-      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt wasted budget, profitability, CPA ani ROAS.",
+      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt wasted budget, profitability, CPA ani zwrot z reklam.",
     allowed_metrics: [
       "clicks",
       "impressions",
@@ -1372,7 +1372,7 @@ const adsDiagnostics = {
         next_step:
           "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
         target_status: "no_target",
-        target_status_label: "brak targetu",
+        target_status_label: "brak celu",
         clicks: 107,
         impressions: 2783,
         cost_micros: 164591174,
@@ -1471,17 +1471,17 @@ const adsDiagnostics = {
       },
       {
         id: "custom_segments_review_queue",
-        title: "Custom segments do review",
+        title: "Segmenty niestandardowe do sprawdzenia",
         status: "ready",
         summary:
-          "Custom segments mogą być przygotowane do review z source terms i Keyword Planner evidence.",
+          "Segmenty niestandardowe mogą być przygotowane do sprawdzenia z wyszukiwanych haseł i dowodów Keyword Planner.",
         next_step:
-          "Przejrzyj source terms i enrichment przed jakimkolwiek targetowaniem.",
+          "Przejrzyj wyszukiwane hasła i wzbogacenie danych przed jakimkolwiek kierowaniem reklam.",
         source_contract_ids: ["ads_custom_segments_read_contract"],
         allowed_metrics: ["source_terms", "avg_monthly_searches"],
         missing_read_contracts: ["forecast_or_audience_size"],
         operator_review_gates: ["human_confirm_before_apply"],
-        blocked_claims: ["audience size", "targeting applied"],
+        blocked_claims: ["rozmiar odbiorców", "zapis kierowania reklam"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_custom_segments_from_search_terms"],
@@ -1550,7 +1550,7 @@ const adsDiagnostics = {
     blocked_claims: [
       "wasted budget",
       "CPA verdict",
-      "ROAS verdict",
+      "werdykt zwrotu z reklam",
       "change impact",
       "performance uplift",
       "campaign mutation"
@@ -1705,7 +1705,7 @@ const adsDiagnostics = {
       "negative keyword candidates",
       "dodanie wykluczających słów kluczowych",
       "CPA",
-      "ROAS"
+      "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1758,7 +1758,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
       }
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
@@ -1785,7 +1785,7 @@ const adsDiagnostics = {
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
-    blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"],
+    blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -1807,7 +1807,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"]
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
       }
     ],
     campaign_review_rows: [
@@ -1821,7 +1821,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "ROAS"]
+        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
       }
     ],
     next_step:
@@ -1857,7 +1857,7 @@ const adsDiagnostics = {
       "negative keyword candidates",
       "dodanie wykluczających słów kluczowych",
       "CPA",
-      "ROAS",
+      "zwrot z reklam",
       "conversion loss"
     ],
     source_connectors: ["google_ads"],
@@ -1876,7 +1876,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "search-term waste"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "search-term waste"]
       }
     ],
     next_step:
@@ -1908,7 +1908,7 @@ const adsDiagnostics = {
       "search-term waste",
       "conversion loss",
       "CPA",
-      "ROAS"
+      "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1928,7 +1928,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
       }
     ],
     next_step:
@@ -1955,7 +1955,7 @@ const adsDiagnostics = {
       "search-term waste",
       "conversion loss",
       "CPA",
-      "ROAS"
+      "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1980,9 +1980,9 @@ const adsDiagnostics = {
   keyword_planner_read_contract: {
     id: "ads_keyword_planner_read_contract",
     status: "ready",
-    title: "Keyword Planner: enrichment segmentów",
+    title: "Keyword Planner: wzbogacenie segmentów",
     summary:
-      "WILQ ma 1 pomysłów Keyword Planner dla source terms z Ads. Najwyższe avg_monthly_searches=100.",
+      "WILQ ma 1 pomysł Keyword Planner dla wyszukiwanych haseł z Ads. Najwyższe avg_monthly_searches=100.",
     allowed_metrics: [
       "keyword_idea_text",
       "keyword_planner_avg_monthly_searches",
@@ -1997,12 +1997,12 @@ const adsDiagnostics = {
       "human_confirm_before_apply"
     ],
     blocked_claims: [
-      "audience size",
-      "forecast",
-      "conversion uplift",
-      "ROAS",
-      "targeting applied",
-      "campaign performance"
+      "rozmiar odbiorców",
+      "prognoza",
+      "wzrost konwersji",
+      "zwrot z reklam",
+      "zapis kierowania reklam",
+      "skuteczność kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -2019,22 +2019,22 @@ const adsDiagnostics = {
         metric_facts: [],
         missing_metrics: [],
         blocked_claims: [
-          "audience size",
-          "forecast",
-          "conversion uplift",
-          "ROAS",
-          "targeting applied"
+          "rozmiar odbiorców",
+          "prognoza",
+          "wzrost konwersji",
+          "zwrot z reklam",
+          "zapis kierowania reklam"
         ]
       }
     ],
     next_step:
-      "Użyj enrichmentu jako dodatkowego kontekstu przy custom segments. Nie traktuj go jako forecastu."
+      "Użyj wzbogacenia jako dodatkowego kontekstu przy segmentach. Nie traktuj go jako prognozy."
   },
   custom_segments_read_contract: {
     id: "ads_custom_segments_read_contract",
     status: "ready",
-    title: "Custom segments z realnych listy wyszukiwanych haseł",
-    summary: "WILQ ma 1 propozycję custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
+    title: "Segmenty z realnych wyszukiwanych haseł",
+    summary: "WILQ ma 1 propozycję segmentu, 1 wyszukiwane hasło z dowodów Google Ads oraz 1 pomysł Keyword Planner.",
     candidates: [
       {
         id: "ads_custom_segment_123",
@@ -2043,12 +2043,12 @@ const adsDiagnostics = {
         review_priority: "wysokie",
         review_score: 65,
         review_reason:
-          "Source terms=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność review segmentu, nie dowód audience size, targetowania ani wpływu na kampanię.",
+          "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
         human_review_gates: [
-          "sprawdź intencję source terms",
+          "sprawdź intencję wyszukiwanych haseł",
           "odrzuć brand, konkurencję i low-intent frazy",
           "sprawdź Keyword Planner enrichment",
-          "sprawdź forecast albo audience size",
+          "sprawdź prognozę albo rozmiar odbiorców",
           "zatwierdź segment przed zapisem"
         ],
         source_terms: ["bdo rejestracja"],
@@ -2070,7 +2070,7 @@ const adsDiagnostics = {
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
             missing_metrics: [],
-            blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+            blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
           }
         ],
         keyword_planner_ideas: [
@@ -2086,11 +2086,11 @@ const adsDiagnostics = {
             metric_facts: [],
             missing_metrics: [],
             blocked_claims: [
-              "audience size",
-              "forecast",
-              "conversion uplift",
-              "ROAS",
-              "targeting applied"
+              "rozmiar odbiorców",
+              "prognoza",
+              "wzrost konwersji",
+              "zwrot z reklam",
+              "zapis kierowania reklam"
             ]
           }
         ],
@@ -2117,11 +2117,11 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "audience size",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied",
-            "campaign performance"
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
+            "skuteczność kampanii"
           ],
           targeting_preview: [
             {
@@ -2131,7 +2131,7 @@ const adsDiagnostics = {
               campaign_id: "123",
               campaign_name: "Ekologus Search",
               operation_type: "custom_segment_targeting_review",
-              reason: "Podgląd kontekstu targetowania; zapis zmian pozostaje zablokowany.",
+              reason: "Podgląd kontekstu kierowania reklam; zapis zmian pozostaje zablokowany.",
               required_validation: [
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
@@ -2139,11 +2139,11 @@ const adsDiagnostics = {
                 "mutation_audit_required"
               ],
               blocked_claims: [
-                "audience size",
-                "conversion uplift",
-                "ROAS",
-                "targeting applied",
-                "campaign performance"
+                "rozmiar odbiorców",
+                "wzrost konwersji",
+                "zwrot z reklam",
+                "zapis kierowania reklam",
+                "skuteczność kampanii"
               ],
               api_mutation_ready: false,
               apply_allowed: false,
@@ -2156,11 +2156,11 @@ const adsDiagnostics = {
           destructive: false
         },
         blocked_claims: [
-          "audience size",
-          "conversion uplift",
-          "ROAS",
-          "targeting applied",
-          "campaign performance"
+          "rozmiar odbiorców",
+          "wzrost konwersji",
+          "zwrot z reklam",
+          "zapis kierowania reklam",
+          "skuteczność kampanii"
         ],
         next_step: "Użyj tych terminów jako propozycji bez zapisu zmian."
       }
@@ -2184,11 +2184,11 @@ const adsDiagnostics = {
           "human_confirm_before_apply"
         ],
         blocked_claims: [
-          "audience size",
-          "conversion uplift",
-          "ROAS",
-          "targeting applied",
-          "campaign performance"
+          "rozmiar odbiorców",
+          "wzrost konwersji",
+          "zwrot z reklam",
+          "zapis kierowania reklam",
+          "skuteczność kampanii"
         ],
         safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
         api_mutation_ready: false,
@@ -2199,9 +2199,9 @@ const adsDiagnostics = {
     audience_forecast_read_contract: {
       id: "ads_custom_segment_audience_forecast_read_contract",
       status: "blocked",
-      title: "Forecast i audience size custom segments",
+      title: "Prognoza i rozmiar odbiorców segmentów",
       summary:
-        "WILQ sprawdził 1 propozycję custom segments, ale nie ma evidence forecastu ani audience size.",
+        "WILQ sprawdził 1 propozycję segmentu, ale nie ma dowodów prognozy ani rozmiaru odbiorców.",
       checked_candidate_count: 1,
       forecast_row_count: 1,
       forecast_rows: [
@@ -2214,25 +2214,25 @@ const adsDiagnostics = {
           audience_size: null,
           source_terms: ["bdo rejestracja"],
           reason:
-            "Brak WILQ evidence dla forecast albo audience size tego custom segmentu.",
+            "Brak dowodów WILQ dla prognozy albo rozmiaru odbiorców tego segmentu.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           blocked_claims: [
-            "audience size",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied",
-            "campaign performance"
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
+            "skuteczność kampanii"
           ]
         }
       ],
       missing_read_contracts: ["forecast_or_audience_size"],
       operator_review_gates: ["forecast_or_audience_size", "human_confirm_before_apply"],
       blocked_claims: [
-        "audience size",
-        "conversion uplift",
-        "ROAS",
-        "targeting applied",
-        "campaign performance"
+        "rozmiar odbiorców",
+        "wzrost konwersji",
+        "zwrot z reklam",
+        "zapis kierowania reklam",
+        "skuteczność kampanii"
       ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -2249,14 +2249,14 @@ const adsDiagnostics = {
       "human_confirm_before_apply"
     ],
     blocked_claims: [
-      "audience size",
-      "conversion uplift",
-      "ROAS",
-      "targeting applied",
-      "campaign performance"
+      "rozmiar odbiorców",
+      "wzrost konwersji",
+      "zwrot z reklam",
+      "zapis kierowania reklam",
+      "skuteczność kampanii"
     ],
     action_ids: ["act_prepare_custom_segments_from_search_terms"],
-    next_step: "Przejrzyj source terms i sprawdź propozycję w WILQ przed zapisem zmian."
+    next_step: "Przejrzyj wyszukiwane hasła i sprawdź propozycję w WILQ przed zapisem zmian."
   },
   negative_keywords_read_contract: {
     id: "ads_negative_keywords_read_contract",
@@ -2346,7 +2346,7 @@ const adsDiagnostics = {
         ],
         safety_status: "read_ready_needs_human_review",
         validation_status: "pending_validation",
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2384,7 +2384,7 @@ const adsDiagnostics = {
       "search-term waste",
       "conversion loss",
       "CPA",
-      "ROAS"
+      "zwrot z reklam"
     ],
     action_ids: ["act_prepare_negative_keyword_review_queue"],
     next_step: "Przejrzyj propozycje jako akcje do sprawdzenia i sprawdź podgląd zmian."
@@ -2418,7 +2418,7 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
-    blocked_claims: ["ROAS", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
+    blocked_claims: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
   decision_queue: [
     {
@@ -2456,7 +2456,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"]
         }
       ],
       derived_kpi_rows: [],
@@ -2479,7 +2479,7 @@ const adsDiagnostics = {
         "ads_scaling_candidates_v1",
         "ads_recommendations_v1"
       ],
-      blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
       risk: "low"
     },
     {
@@ -2541,7 +2541,7 @@ const adsDiagnostics = {
           next_step:
             "Sprawdź cel kampanii, jakość konwersji, budżet, listy wyszukiwanych haseł i rekomendacje bez zapisu zmian.",
           target_status: "no_target",
-          target_status_label: "brak targetu",
+          target_status_label: "brak celu",
           clicks: 107,
           impressions: 2783,
           cost_micros: 164591174,
@@ -3021,7 +3021,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3029,7 +3029,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"],
       risk: "medium"
     },
     {
@@ -3080,7 +3080,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3096,7 +3096,7 @@ const adsDiagnostics = {
         "ads_search_terms_v1",
         "ads_principles_v1"
       ],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
       risk: "medium"
     },
     {
@@ -3143,7 +3143,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       custom_segment_candidates: [],
@@ -3212,7 +3212,7 @@ const adsDiagnostics = {
           ],
           safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3243,17 +3243,17 @@ const adsDiagnostics = {
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "ROAS"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
       risk: "medium"
     },
     {
       id: "ads_prepare_custom_segments_from_search_terms",
       decision_type: "prepare_custom_segments",
       status: "ready",
-      title: "Przygotuj custom segments z realnych listy wyszukiwanych haseł",
-      summary: "WILQ ma 1 propozycję custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
-      rationale: "WILQ ma source terms z Google Ads evidence, więc może przygotować propozycje segmentów.",
-      next_step: "Przejrzyj source terms i sprawdź propozycję w WILQ przed zapisem zmian.",
+      title: "Przygotuj segmenty z realnych wyszukiwanych haseł",
+      summary: "WILQ ma 1 propozycję segmentu, 1 wyszukiwane hasło z dowodów Google Ads oraz 1 pomysł Keyword Planner.",
+      rationale: "WILQ ma wyszukiwane hasła z dowodów Google Ads, więc może przygotować propozycje segmentów.",
+      next_step: "Przejrzyj wyszukiwane hasła i sprawdź propozycję w WILQ przed zapisem zmian.",
       allowed_metrics: [
         "search_term",
         "search_term_clicks",
@@ -3294,7 +3294,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "ROAS", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
         }
       ],
       search_term_safety_rows: [],
@@ -3311,11 +3311,11 @@ const adsDiagnostics = {
           metric_facts: [],
           missing_metrics: [],
           blocked_claims: [
-            "audience size",
-            "forecast",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied"
+            "rozmiar odbiorców",
+            "prognoza",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam"
           ]
         }
       ],
@@ -3327,12 +3327,12 @@ const adsDiagnostics = {
           review_priority: "wysokie",
           review_score: 65,
           review_reason:
-            "Source terms=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność review segmentu, nie dowód audience size, targetowania ani wpływu na kampanię.",
+            "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
           human_review_gates: [
-            "sprawdź intencję source terms",
+            "sprawdź intencję wyszukiwanych haseł",
             "odrzuć brand, konkurencję i low-intent frazy",
             "sprawdź Keyword Planner enrichment",
-            "sprawdź forecast albo audience size",
+            "sprawdź prognozę albo rozmiar odbiorców",
             "zatwierdź segment przed zapisem"
           ],
           source_terms: ["bdo rejestracja"],
@@ -3352,11 +3352,11 @@ const adsDiagnostics = {
               metric_facts: [],
               missing_metrics: [],
               blocked_claims: [
-                "audience size",
-                "forecast",
-                "conversion uplift",
-                "ROAS",
-                "targeting applied"
+                "rozmiar odbiorców",
+                "prognoza",
+                "wzrost konwersji",
+                "zwrot z reklam",
+                "zapis kierowania reklam"
               ]
             }
           ],
@@ -3383,11 +3383,11 @@ const adsDiagnostics = {
               "human_confirm_before_apply"
             ],
             blocked_claims: [
-              "audience size",
-              "conversion uplift",
-              "ROAS",
-              "targeting applied",
-              "campaign performance"
+              "rozmiar odbiorców",
+              "wzrost konwersji",
+              "zwrot z reklam",
+              "zapis kierowania reklam",
+              "skuteczność kampanii"
             ],
             safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
             api_mutation_ready: false,
@@ -3395,11 +3395,11 @@ const adsDiagnostics = {
             destructive: false
           },
           blocked_claims: [
-            "audience size",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied",
-            "campaign performance"
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
+            "skuteczność kampanii"
           ],
           next_step: "Użyj tych terminów jako propozycji bez zapisu zmian."
         }
@@ -3423,10 +3423,10 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "audience size",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied"
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam"
           ],
           targeting_preview: [
             {
@@ -3436,7 +3436,7 @@ const adsDiagnostics = {
               campaign_id: "123",
               campaign_name: "Ekologus Search",
               operation_type: "custom_segment_targeting_review",
-              reason: "Podgląd kontekstu targetowania; zapis zmian pozostaje zablokowany.",
+              reason: "Podgląd kontekstu kierowania reklam; zapis zmian pozostaje zablokowany.",
               required_validation: [
                 "keyword_planner_enrichment",
                 "forecast_or_audience_size",
@@ -3444,11 +3444,11 @@ const adsDiagnostics = {
                 "mutation_audit_required"
               ],
               blocked_claims: [
-                "audience size",
-                "conversion uplift",
-                "ROAS",
-                "targeting applied",
-                "campaign performance"
+                "rozmiar odbiorców",
+                "wzrost konwersji",
+                "zwrot z reklam",
+                "zapis kierowania reklam",
+                "skuteczność kampanii"
               ],
               api_mutation_ready: false,
               apply_allowed: false,
@@ -3471,21 +3471,21 @@ const adsDiagnostics = {
           audience_size: null,
           source_terms: ["bdo rejestracja"],
           reason:
-            "Brak WILQ evidence dla forecast albo audience size tego custom segmentu.",
+            "Brak dowodów WILQ dla prognozy albo rozmiaru odbiorców tego segmentu.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           blocked_claims: [
-            "audience size",
-            "conversion uplift",
-            "ROAS",
-            "targeting applied",
-            "campaign performance"
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
+            "skuteczność kampanii"
           ]
         }
       ],
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: ["act_prepare_custom_segments_from_search_terms"],
-      blocked_claims: ["audience size", "conversion uplift", "ROAS", "targeting applied"],
+      blocked_claims: ["rozmiar odbiorców", "wzrost konwersji", "zwrot z reklam", "zapis kierowania reklam"],
       risk: "medium"
     },
     {
@@ -3523,7 +3523,7 @@ const adsDiagnostics = {
       title: "Google Ads: live data dostępne",
       status: "ready",
       summary: "WILQ ma zapisane metryki z odczytu odczytu danych Google Ads.",
-      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/ROAS.",
+      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/zwrotu z reklam.",
       next_step: "Analizuj tylko widoczne metryki i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
@@ -3539,7 +3539,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "ROAS", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "wasted budget"],
       risk: "medium"
     },
     {
@@ -3547,7 +3547,7 @@ const adsDiagnostics = {
       title: "Aktywność kampanii Google Ads",
       status: "ready",
       summary: "Metryki z dowodami: clicks=107, impressions=2783.",
-      diagnosis: "Są live campaign rows, ale CPA/ROAS wymagają osobnego read contract.",
+      diagnosis: "Są live campaign rows, ale CPA/zwrotu z reklam wymagają osobnego read contract.",
       next_step: "Sprawdź kampanie bez obietnic kosztu pozyskania celu ani zwrotu z wydatków reklamowych.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -3563,7 +3563,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "ROAS", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "wasted budget"],
       risk: "medium"
     }
   ],
@@ -3878,7 +3878,7 @@ const tacticalQueue = {
       },
       diagnosis: "Landing /oferta/ ma active_users=20 i wymaga sprawdzenia jakości ruchu.",
       next_step: "Sprawdź message match, CTA i tracking przed oceną kampanii.",
-      blocked_claims: ["conversion rate", "ROAS"],
+      blocked_claims: ["conversion rate", "zwrot z reklam"],
       action_ids: ["act_review_ga4_tracking_quality"]
     },
     {
@@ -3903,7 +3903,7 @@ const tacticalQueue = {
       },
       diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
       next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
-      blocked_claims: ["conversion uplift", "wpływ na przychód"],
+      blocked_claims: ["wzrost konwersji", "wpływ na przychód"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
     {
@@ -3939,7 +3939,7 @@ const tacticalQueue = {
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_gsc_second"],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["conversion uplift", "wpływ na przychód"]
+      blocked_claims: ["wzrost konwersji", "wpływ na przychód"]
     },
     {
       id: "ga4:landing_page_quality:/oferta/:google / cpc",
@@ -3952,7 +3952,7 @@ const tacticalQueue = {
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "ROAS"]
+      blocked_claims: ["conversion rate", "zwrot z reklam"]
     },
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
@@ -4373,7 +4373,7 @@ const contentDiagnostics = {
     action_ids: ["act_prepare_content_refresh_queue"],
     blocked_claims: [
       "wzrost liczby leadów",
-      "conversion uplift",
+      "wzrost konwersji",
       "gwarancja pozycji",
       "wzrost ruchu"
     ]
@@ -4421,7 +4421,7 @@ const contentDiagnostics = {
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
       rationale:
         "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
       next_step:
@@ -4517,7 +4517,7 @@ const contentDiagnostics = {
       metric_facts: [metricFacts[5]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
       risk: "low"
     },
     {
@@ -4570,7 +4570,7 @@ const contentPreflight = {
     service_mapping_status: "ready_for_service_review",
     similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
     query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-    blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
+    blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -4597,7 +4597,7 @@ const contentPreflight = {
       service_mapping_status: "ready_for_service_review",
       similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
       query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -4670,7 +4670,7 @@ const ga4Diagnostics = {
     source_connectors: ["google_analytics_4"],
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
+    blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"],
     next_step:
       "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
     risk: "medium"
@@ -4689,7 +4689,7 @@ const ga4Diagnostics = {
     source_connectors: ["google_analytics_4"],
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"]
+    blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"]
   },
   decision_queue: [
     {
@@ -4709,7 +4709,7 @@ const ga4Diagnostics = {
       evidence_ids: ["ev_refresh_ga4"],
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
+      blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"],
       rationale:
         "GA4 widzi ruch na landingu /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
@@ -4730,7 +4730,7 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "ROAS", "revenue"],
+      blocked_claims: ["conversion rate", "zwrot z reklam", "revenue"],
       risk: "low"
     },
     {
@@ -5675,7 +5675,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "ROAS", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
                 risk: "medium"
               }
             ],
@@ -5692,7 +5692,7 @@ function mockFetch() {
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
                 metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blockery: 1 },
-                blocked_claims: ["CPA", "ROAS", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
                 risk: "medium"
               },
               {
@@ -5758,7 +5758,7 @@ function mockFetch() {
                   "jakość ruchu": 0,
                   "brakujące dane": 1
                 },
-                blocked_claims: ["ROAS", "revenue", "conversion drop", "tracking fixed"],
+                blocked_claims: ["zwrot z reklam", "revenue", "conversion drop", "tracking fixed"],
                 risk: "medium"
               }
             ],
@@ -5848,7 +5848,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "ROAS", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
                 risk: "medium"
               }
             ],
@@ -6098,7 +6098,7 @@ function mockFetch() {
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
-              blocked_claims: ["werdykt ROAS"],
+              blocked_claims: ["werdykt zwrotu z reklam"],
               metric_tiles: { decyzje: 4, blockery: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               risk: "low",
@@ -6471,11 +6471,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.queryByText("status wymaga opisu")).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Pokaż opis procesu" }).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/ROAS verdict/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/werdykt zwrotu z reklam/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Braki:/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Zakazane obietnice:/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/conversion uplift/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/wzrost konwersji/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż powiązane akcje (1)" })).toBeInTheDocument();

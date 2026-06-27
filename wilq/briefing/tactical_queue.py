@@ -617,7 +617,7 @@ def _ga4_quality_items(
                     wordpress_match=wordpress_match,
                 ),
                 next_step=_ga4_next_step(has_not_set_dimension),
-                blocked_claims=["conversion rate", "ROAS", "revenue", "profitability"],
+                blocked_claims=["conversion rate", "zwrot z reklam", "revenue", "profitability"],
                 action_ids=action_ids_by_connector.get("google_analytics_4", []),
             )
         )

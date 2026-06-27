@@ -5,12 +5,12 @@ from typing import Any
 KEYWORD_PLANNER_ACCESS_ACTION_ID = "act_configure_google_ads_keyword_planner_access"
 KEYWORD_PLANNER_ACCESS_ACTION_TYPE = "configure_google_ads_keyword_planner_access"
 KEYWORD_PLANNER_ACCESS_BLOCKED_CLAIMS = [
-    "audience size",
-    "forecast",
-    "conversion uplift",
-    "ROAS",
-    "targeting applied",
-    "campaign performance",
+    "rozmiar odbiorców",
+    "prognoza",
+    "wzrost konwersji",
+    "zwrot z reklam",
+    "zapis kierowania reklam",
+    "skuteczność kampanii",
 ]
 
 

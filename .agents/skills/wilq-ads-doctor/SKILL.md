@@ -1,6 +1,6 @@
 ---
 name: wilq-ads-doctor
-description: Diagnozuje Google Ads dla Ekologus przez WILQ API evidence i bezpieczne kontrakty akcji. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź search terms", "czy dodać negative keywords?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, CPA/ROAS/spend, campaign review lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
+description: Diagnozuje Google Ads dla Ekologus przez WILQ API evidence i bezpieczne kontrakty akcji. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź search terms", "czy dodać negative keywords?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, CPA/zwrotu z reklam/spend, campaign review lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
 ---
 
 # WILQ Ads Doctor
@@ -21,7 +21,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - "Znajdź ostatnie kampanie i ich efekty."
 - "Co teraz pali budżet w Google Ads?"
 - "Sprawdź search terms i przygotuj negative keywords, jeśli evidence na to pozwala."
-- "Czy możemy ocenić CPA, ROAS albo wasted spend na podstawie obecnych danych?"
+- "Czy możemy ocenić CPA, zwrot z reklam albo wasted spend na podstawie obecnych danych?"
 
 </triggers>
 
@@ -82,7 +82,7 @@ Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
 - akcje do sprawdzenia traktuj jako przygotowanie do sprawdzenia w WILQ, dopóki API nie zwraca
   sprawdzonej w WILQ ścieżki zapisu zmian, podglądu, potwierdzenia i audytu.
 - Jeśli `live_data_available=false`, zwróć `blocked_handoff` i nie diagnozuj
-  spend, CPA, ROAS, search terms, wasted budget ani negative keywords.
+  spend, CPA, zwrot z reklam, search terms, wasted budget ani negative keywords.
 
 </evidence_requirements>
 

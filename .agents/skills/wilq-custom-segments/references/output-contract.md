@@ -1,10 +1,10 @@
-# WILQ Custom Segments Output Contract
+# WILQ Segmenty Niestandardowe Output Contract
 
 ## Cel
 
-Generowanie akcji do sprawdzenia custom segments wyłącznie z terminów i evidence dostępnych w WILQ API.
+Generowanie akcji do sprawdzenia segmentów niestandardowych wyłącznie z terminów i dowodów dostępnych w WILQ API.
 
-Oczekiwany wynik: segmenty do sprawdzenia z `source_terms`, `evidence_ids`, poziomem pewności, action IDs i blockerami sprawdzenia w WILQ.
+Oczekiwany wynik: segmenty do sprawdzenia z `source_terms`, `evidence_ids`, poziomem pewności, action IDs i blokadami sprawdzenia w WILQ.
 
 ## Wymagany kontekst API
 
@@ -36,13 +36,13 @@ Dla każdej propozycji z `custom_segments_read_contract.candidates` pokaż:
 - nazwę i intent z API;
 - `source_terms` bez dopisywania nowych fraz;
 - `review_priority`, `review_score` i dokładny sens `review_reason`, żeby operator
-  widział, że ranking kolejki review nie jest dowodem audience size ani wpływu
+  widział, że ranking kolejki sprawdzenia nie jest dowodem rozmiaru odbiorców ani wpływu
   na kampanię;
 - podgląd zmian z API jako materiał do sprawdzenia w WILQ, z informacją że zapis zmian nie jest dozwolony;
 - `evidence_ids` i `source_connectors`;
 - `confidence` oraz `validation_status`;
 - `action_ids`, jeśli API je wystawia;
-- `blocked_claims`, zwłaszcza `audience size`, `ROAS`, `targeting applied` i `campaign performance`.
+- `blocked_claims`, zwłaszcza `rozmiar odbiorców`, `zwrot z reklam`, `zapis kierowania reklam` i `skuteczność kampanii`.
 
 Jeśli akcji do sprawdzenia nie ma, pokaż `custom_segments_read_contract.missing_read_contracts` i `next_step`.
 

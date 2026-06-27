@@ -187,7 +187,7 @@ def campaign_target_context(
             label = "koszt bez wartości konwersji"
         else:
             status = "insufficient_data"
-            label = "brak ROAS do porównania"
+            label = "brak zwrotu z reklam do porównania"
     else:
         status = "no_target"
         label = "brak celu"

@@ -282,6 +282,22 @@ FORBIDDEN_PHRASES = (
         "Use ocena skuteczności assetów in Demand Gen blocked claims.",
     ),
     ForbiddenPhrase(
+        "audience size",
+        "Use rozmiar odbiorców in custom-segments and Keyword Planner blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "targeting applied",
+        "Use zapis kierowania reklam in custom-segments blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "conversion uplift",
+        "Use wzrost konwersji in custom-segments and Keyword Planner blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "campaign performance",
+        "Use skuteczność kampanii in custom-segments and Keyword Planner blocked claims.",
+    ),
+    ForbiddenPhrase(
         "lead uplift",
         "Use wzrost liczby leadów in content blocked claims.",
     ),

@@ -136,7 +136,7 @@ def main() -> int:
             "zapis do feedu",
         }.issubset(blocked_claims):
             raise SystemExit(
-                "Blocked product_performance_readiness must block product revenue/ROAS claims"
+                "Blocked product_performance_readiness must block product revenue/zwrot z reklam claims"
             )
     else:
         raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")
@@ -170,7 +170,7 @@ def main() -> int:
             "opłacalność produktu",
             "zapis do feedu",
         }.issubset(blocked_claims):
-            raise SystemExit("Blocked price_impact_readiness must block price/ROAS claims")
+            raise SystemExit("Blocked price_impact_readiness must block price/zwrot z reklam claims")
         if not price_impact_readiness.get("missing_read_contracts"):
             raise SystemExit("Blocked price_impact_readiness must list missing read contracts")
     else:
