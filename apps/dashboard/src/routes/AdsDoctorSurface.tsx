@@ -1142,7 +1142,7 @@ function AdsCampaignRowsTable({
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
               <td className="max-w-md py-2 pr-4 text-xs leading-5 text-slate-600">
-                {adsCampaignReviewReason(row, currencyCode)}
+                {row.review_reason}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
             </tr>
@@ -1226,7 +1226,7 @@ function AdsCampaignTriageRowsPanel({
             </div>
 
             <p className="mt-3 text-xs leading-5 text-slate-700">
-              {adsCampaignTriageReason(row, currencyCode)}
+              {row.review_reason}
             </p>
             <p className="mt-2 text-xs font-medium text-ink">
               {adsCampaignTriageNextStep(row)}
@@ -1318,7 +1318,7 @@ function AdsDerivedKpiRowsTable({
                 </span>
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+                {row.blocked_claim_labels.slice(0, 2).join(", ")}
               </td>
             </tr>
           ))}
@@ -1361,8 +1361,7 @@ function AdsBudgetPacingRowsTable({
               <td className="py-2 pl-3 pr-4 font-medium text-ink">
                 <div>{row.campaign_name}</div>
                 <div className="text-xs font-normal text-slate-500">
-                  {row.advertising_channel_type ?? "kanał: brak"} /{" "}
-                  {row.budget_period ?? "okres: brak"}
+                  {row.advertising_channel_type_label} / {row.budget_period_label}
                 </div>
               </td>
               <td className="py-2 pr-4 text-slate-700">
@@ -1392,7 +1391,7 @@ function AdsBudgetPacingRowsTable({
                       )}
                     </div>
                     <div>
-                      {adsGoogleOperationLabel(row.payload_preview.operation_type)} /{" "}
+                      {row.payload_preview.operation_type_label} /{" "}
                       {row.payload_preview.apply_allowed
                         ? "wymaga sprawdzenia"
                         : "zapis zmian zablokowany"}
@@ -1415,7 +1414,7 @@ function AdsBudgetPacingRowsTable({
                 )}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+                {row.blocked_claim_labels.slice(0, 2).join(", ")}
               </td>
             </tr>
           ))}
@@ -1493,8 +1492,7 @@ function AdsSharedBudgetDistributionPanel({
                     <div>
                       <div className="font-semibold text-ink">{share.campaign_name}</div>
                       <div className="mt-1 text-slate-500">
-                        {share.advertising_channel_type ?? "kanał: brak"} /{" "}
-                        {share.campaign_status ?? "status: brak"}
+                        {share.advertising_channel_type_label} / {share.campaign_status_label}
                       </div>
                     </div>
                     <div className="text-right text-slate-700">
@@ -1515,7 +1513,7 @@ function AdsSharedBudgetDistributionPanel({
               />
               <TraceLine
                 label="Nie wolno twierdzić"
-                values={row.blocked_claims.map(adsBlockedClaimLabel)}
+                values={row.blocked_claim_labels}
               />
             </div>
           </article>
@@ -2520,30 +2518,6 @@ function adsStrategyContextValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "brak";
   if (typeof value === "number") return adsNumber(value);
   return String(value);
-}
-
-function adsCampaignReviewReason(row: AdsCampaignMetricRow, currencyCode?: string) {
-  const parts = [
-    `${adsNumber(row.clicks)} kliknięć`,
-    `${adsNumber(row.impressions)} wyświetleń`,
-    `${adsCost(row.cost_micros, currencyCode)} kosztu`,
-    `${adsNumber(row.conversions)} konwersji`
-  ];
-  return `Kampania do oceny na podstawie bieżącego odczytu: ${parts.join(
-    ", "
-  )}. Nie jest to ocena kosztu pozyskania celu, zwrotu z reklam ani opłacalności.`;
-}
-
-function adsCampaignTriageReason(row: AdsCampaignTriageRow, currencyCode?: string) {
-  const facts = [
-    `${adsCost(row.cost_micros, currencyCode)} kosztu`,
-    `${adsNumber(row.clicks)} kliknięć`,
-    `${adsNumber(row.conversions)} konwersji`,
-    row.advertising_channel_type ? `kanał ${row.advertising_channel_type}` : null
-  ].filter(Boolean);
-  return `WILQ ustawia tę kampanię w kolejce oceny na podstawie faktów: ${facts.join(
-    ", "
-  )}. To nie jest ocena zmarnowanego budżetu, kosztu pozyskania celu, zwrotu z reklam ani opłacalności.`;
 }
 
 function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {

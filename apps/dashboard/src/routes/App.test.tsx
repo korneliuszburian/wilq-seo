@@ -985,6 +985,12 @@ const adsDiagnostics = {
           "skalowanie budżetu",
           "zmarnowany budżet",
           "zapis rekomendacji"
+        ],
+        blocked_claim_labels: [
+          "opłacalność",
+          "skalowanie budżetu",
+          "zmarnowany budżet",
+          "zapis rekomendacji"
         ]
       }
     ],
@@ -1031,7 +1037,9 @@ const adsDiagnostics = {
         budget_id: "777",
         budget_name: "Ekologus Search budget",
         budget_period: "DAILY",
+        budget_period_label: "dzienny",
         budget_status: "ENABLED",
+        budget_status_label: "aktywna",
         budget_amount_micros: 30000000,
         cost_micros_7d: 164591174,
         seven_day_budget_micros: 210000000,
@@ -1048,6 +1056,7 @@ const adsDiagnostics = {
           campaign_budget_id: "777",
           campaign_budget_name: "Ekologus Search budget",
           operation_type: "CampaignBudgetOperation",
+          operation_type_label: "zmiana budżetu kampanii",
           current_budget_amount_micros: 30000000,
           proposed_budget_amount_micros: 42000000,
           proposed_budget_delta_micros: 12000000,
@@ -1068,7 +1077,27 @@ const adsDiagnostics = {
             "campaign_budget_operation_preview",
             "human_confirm_before_apply"
           ],
+          required_validation_labels: [
+            "sprawdzenie aktywności kampanii",
+            "sprawdzenie waluty konta",
+            "tempo wydawania budżetu",
+            "udział w wyświetleniach",
+            "historia zmian",
+            "cel budżetu od człowieka",
+            "sprawdzenie zapisu budżetu w Google Ads",
+            "potwierdzenie człowieka przed zapisem"
+          ],
           blocked_claims: [
+            "skalowanie budżetu",
+            "zmiana budżetu",
+            "wstrzymanie kampanii",
+            "zmarnowany budżet",
+            "opłacalność",
+            "ocena kosztu pozyskania celu",
+            "ocena zwrotu z reklam",
+            "zapis rekomendacji"
+          ],
+          blocked_claim_labels: [
             "skalowanie budżetu",
             "zmiana budżetu",
             "wstrzymanie kampanii",
@@ -1165,6 +1194,16 @@ const adsDiagnostics = {
         ],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         blocked_claims: [
+          "skalowanie budżetu",
+          "zmiana budżetu",
+          "wstrzymanie kampanii",
+          "zmarnowany budżet",
+          "opłacalność",
+          "ocena kosztu pozyskania celu",
+          "ocena zwrotu z reklam",
+          "zapis rekomendacji"
+        ],
+        blocked_claim_labels: [
           "skalowanie budżetu",
           "zmiana budżetu",
           "wstrzymanie kampanii",
@@ -6972,6 +7011,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
+    expect(routeSource).toContain("row.budget_period_label");
+    expect(routeSource).toContain("row.blocked_claim_labels");
+    expect(routeSource).toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
@@ -6980,6 +7022,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("adsOptimizerModeLabel");
     expect(routeSource).not.toContain("adsBusinessUseLabel");
     expect(routeSource).not.toContain("adsStrategyReviewStatusLabel");
+    expect(routeSource).not.toContain("adsCampaignReviewReason");
+    expect(routeSource).not.toContain("adsCampaignTriageReason");
     expect(routeSource).not.toContain("interpretation.interpretation_contract");
     expect(routeSource).not.toContain("interpretation.status}");
     expect(routeSource).not.toContain(

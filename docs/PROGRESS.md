@@ -82,6 +82,13 @@ Date: 2026-06-27
   API-owned status and validation labels, including budget operation and
   mutation-audit checks. Browser proof:
   `.local-lab/proof/20260627-ads-triage-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor derived-KPI, budget-pacing and campaign queue copy now uses
+  API-owned labels/reasons for blocked promises, campaign channel/status,
+  budget period/status and budget operation type. The dashboard no longer
+  renders raw `CampaignBudgetOperation`, `SEARCH`, `ENABLED`, `DAILY`, `typ=`,
+  `wskaźniki=` or `udział_w_wyświetleniach` in the expanded Ads proof.
+  Browser proof:
+  `.local-lab/proof/20260627-ads-kpi-budget-api-labels/browser/ads-doctor-expanded.txt`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

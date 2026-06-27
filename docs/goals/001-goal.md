@@ -257,6 +257,13 @@ Latest slice:
   budget operation and mutation-audit checks are no longer raw keys in live API
   output. Browser proof:
   `.local-lab/proof/20260627-ads-triage-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor derived KPI, budget pacing and campaign queue copy now consumes
+  API-owned marketer labels and reasons for blocked promises, campaign channel
+  and status, budget period and status, and budget operation type. Expanded
+  browser proof no longer exposes raw `CampaignBudgetOperation`, `SEARCH`,
+  `ENABLED`, `DAILY`, `typ=`, `wskaźniki=` or `udział_w_wyświetleniach` for
+  that slice:
+  `.local-lab/proof/20260627-ads-kpi-budget-api-labels/browser/ads-doctor-expanded.txt`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

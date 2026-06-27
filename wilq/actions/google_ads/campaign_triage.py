@@ -112,7 +112,7 @@ def campaign_review_reason(
     elif (cost_micros or 0) > 0:
         signals.append("koszt bez konwersji w bieżących dowodach")
     if advertising_channel_type:
-        signals.append(f"typ={advertising_channel_type}")
+        signals.append(f"kanał={_campaign_channel_label(advertising_channel_type)}")
     if target_status != "no_target" and target_status_label:
         signals.append(f"target={target_status_label}")
     if is_draft_campaign_name(campaign_name):
@@ -235,6 +235,23 @@ def _format_micros(value: int | None) -> str:
 
 def _format_float(value: float) -> str:
     return f"{value:g}"
+
+
+def _campaign_channel_label(channel_type: object) -> str:
+    labels = {
+        "SEARCH": "sieć wyszukiwania",
+        "PERFORMANCE_MAX": "Performance Max",
+        "SHOPPING": "Zakupy Google",
+        "DISPLAY": "sieć reklamowa",
+        "DEMAND_GEN": "Demand Gen",
+        "VIDEO": "wideo",
+        "LOCAL": "lokalna",
+        "SMART": "Smart",
+        "UNKNOWN": "kanał nieznany",
+        "UNSPECIFIED": "kanał nieokreślony",
+    }
+    value = str(channel_type)
+    return labels.get(value, value)
 
 
 def _unique(values: list[str]) -> list[str]:

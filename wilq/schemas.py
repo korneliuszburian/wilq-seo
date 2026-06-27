@@ -906,6 +906,7 @@ class AdsDerivedKpiRow(BaseModel):
     source_metric_names: list[str] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsDerivedKpiReadContract(BaseModel):
@@ -954,6 +955,7 @@ class AdsBudgetApplyPreview(BaseModel):
     campaign_budget_id: str | None = None
     campaign_budget_name: str | None = None
     operation_type: Literal["CampaignBudgetOperation"] = "CampaignBudgetOperation"
+    operation_type_label: str = ""
     current_budget_amount_micros: int | None = None
     proposed_budget_amount_micros: int | None = None
     proposed_budget_delta_micros: int | None = None
@@ -961,7 +963,9 @@ class AdsBudgetApplyPreview(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     safety_review: AdsBudgetApplySafetyReview
     api_mutation_ready: bool = False
     apply_allowed: bool = False
@@ -972,11 +976,15 @@ class AdsBudgetPacingRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str = ""
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str = ""
     budget_id: str | None = None
     budget_name: str | None = None
     budget_period: str | None = None
+    budget_period_label: str = ""
     budget_status: str | None = None
+    budget_status_label: str = ""
     budget_amount_micros: int | None = None
     cost_micros_7d: int | None = None
     seven_day_budget_micros: int | None = None
@@ -989,13 +997,16 @@ class AdsBudgetPacingRow(BaseModel):
     payload_preview: AdsBudgetApplyPreview | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsSharedBudgetCampaignShare(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str = ""
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str = ""
     cost_micros_7d: int | None = None
     spend_share_7d: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1012,6 +1023,7 @@ class AdsSharedBudgetDistributionRow(BaseModel):
     campaign_shares: list[AdsSharedBudgetCampaignShare] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsBudgetPacingReadContract(BaseModel):

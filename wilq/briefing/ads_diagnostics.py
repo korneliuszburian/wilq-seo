@@ -172,6 +172,10 @@ ADS_REVIEW_GATE_LABELS = {
     ),
     "review_campaign_activity": "sprawdzenie aktywności kampanii",
     "verify_account_currency": "sprawdzenie waluty konta",
+    "budget_pacing": "tempo wydawania budżetu",
+    "impression_share": "udział w wyświetleniach",
+    "change_history": "historia zmian",
+    "human_budget_goal": "cel budżetu od człowieka",
     "budget_apply_preview": "podgląd zmiany budżetu",
     "campaign_budget_apply_safety": "bezpieczeństwo zmiany budżetu",
     "campaign_budget_operation_preview": "sprawdzenie zapisu budżetu w Google Ads",
@@ -2480,10 +2484,11 @@ def _campaign_triage_row(
         review_score=campaign_row.review_score,
         review_reason=(
             f"{campaign_row.review_reason} Dodatkowy kontekst oceny: "
-            f"wskaźniki={'tak' if kpi_row is not None else 'brak'}, "
-            f"budżet={'tak' if budget_row is not None else 'brak'}, "
-            f"rekomendacje={len(recommendation_rows)}, "
-            f"udział_w_wyświetleniach={'tak' if impression_share_row is not None else 'brak'}."
+            f"wskaźniki {'dostępne' if kpi_row is not None else 'niedostępne'}, "
+            f"budżet {'dostępny' if budget_row is not None else 'niedostępny'}, "
+            f"rekomendacje do sprawdzenia: {len(recommendation_rows)}, "
+            "udział w wyświetleniach "
+            f"{'dostępny' if impression_share_row is not None else 'niedostępny'}."
         ),
         next_step=(
             "Otwórz kampanię w Ads Doctor, sprawdź cel, konwersje, budżet, "
@@ -6421,6 +6426,8 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
     _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
+    for row in response.derived_kpi_read_contract.kpi_rows:
+        row.blocked_claim_labels = _unique(row.blocked_claims)
     _hydrate_budget_pacing_marketer_labels(response.budget_pacing_read_contract)
 
 
@@ -6444,11 +6451,32 @@ def _hydrate_budget_pacing_marketer_labels(
     for preview in contract.payload_preview:
         _hydrate_budget_payload_preview_labels(preview)
     for row in contract.budget_rows:
+        row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
+        row.advertising_channel_type_label = _ads_channel_type_label(
+            row.advertising_channel_type
+        )
+        row.budget_period_label = _ads_budget_period_label(row.budget_period)
+        row.budget_status_label = _ads_campaign_status_label(row.budget_status)
+        row.blocked_claim_labels = _unique(row.blocked_claims)
         if row.payload_preview is not None:
             _hydrate_budget_payload_preview_labels(row.payload_preview)
+    for row in contract.shared_budget_distribution_rows:
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+        for share in row.campaign_shares:
+            share.campaign_status_label = _ads_campaign_status_label(
+                share.campaign_status
+            )
+            share.advertising_channel_type_label = _ads_channel_type_label(
+                share.advertising_channel_type
+            )
 
 
 def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> None:
+    preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
+    preview.required_validation_labels = _ads_review_gate_labels(
+        preview.required_validation
+    )
+    preview.blocked_claim_labels = _unique(preview.blocked_claims)
     safety_review = preview.safety_review
     safety_review.status_label = _ads_status_label(safety_review.status)
     safety_review.missing_requirement_labels = _ads_missing_read_contract_labels(
@@ -6635,6 +6663,29 @@ def _ads_channel_type_label(channel_type: object | None) -> str:
         "UNSPECIFIED": "kanał nieokreślony",
     }
     value = str(channel_type)
+    return labels.get(value, value)
+
+
+def _ads_budget_period_label(period: object | None) -> str:
+    if period is None or str(period) == "":
+        return "okres: brak"
+    labels = {
+        "DAILY": "dzienny",
+        "CUSTOM_PERIOD": "niestandardowy okres",
+        "FIXED_DAILY": "stały dzienny",
+        "UNKNOWN": "okres nieznany",
+        "UNSPECIFIED": "okres nieokreślony",
+    }
+    value = str(period)
+    return labels.get(value, value)
+
+
+def _ads_google_operation_label(operation_type: object) -> str:
+    labels = {
+        "CampaignBudgetOperation": "zmiana budżetu kampanii",
+        "ApplyRecommendationOperation": "zastosowanie rekomendacji Google Ads",
+    }
+    value = str(operation_type)
     return labels.get(value, value)
 
 

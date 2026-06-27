@@ -604,7 +604,8 @@ export const AdsDerivedKpiRowSchema = z.object({
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsDerivedKpiReadContractSchema = z.object({
@@ -651,6 +652,7 @@ export const AdsBudgetApplyPreviewSchema = z.object({
   campaign_budget_id: z.string().nullable().optional(),
   campaign_budget_name: z.string().nullable().optional(),
   operation_type: z.literal("CampaignBudgetOperation"),
+  operation_type_label: z.string().optional().default(""),
   current_budget_amount_micros: z.number().nullable().optional(),
   proposed_budget_amount_micros: z.number().nullable().optional(),
   proposed_budget_delta_micros: z.number().nullable().optional(),
@@ -658,7 +660,9 @@ export const AdsBudgetApplyPreviewSchema = z.object({
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   safety_review: AdsBudgetApplySafetyReviewSchema,
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
@@ -669,11 +673,15 @@ export const AdsBudgetPacingRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
   campaign_status: z.string().nullable().optional(),
+  campaign_status_label: z.string().optional().default(""),
   advertising_channel_type: z.string().nullable().optional(),
+  advertising_channel_type_label: z.string().optional().default(""),
   budget_id: z.string().nullable().optional(),
   budget_name: z.string().nullable().optional(),
   budget_period: z.string().nullable().optional(),
+  budget_period_label: z.string().optional().default(""),
   budget_status: z.string().nullable().optional(),
+  budget_status_label: z.string().optional().default(""),
   budget_amount_micros: z.number().nullable().optional(),
   cost_micros_7d: z.number().nullable().optional(),
   seven_day_budget_micros: z.number().nullable().optional(),
@@ -685,14 +693,17 @@ export const AdsBudgetPacingRowSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   payload_preview: AdsBudgetApplyPreviewSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsSharedBudgetCampaignShareSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
   campaign_status: z.string().nullable().optional(),
+  campaign_status_label: z.string().optional().default(""),
   advertising_channel_type: z.string().nullable().optional(),
+  advertising_channel_type_label: z.string().optional().default(""),
   cost_micros_7d: z.number().nullable().optional(),
   spend_share_7d: z.number().nullable().optional(),
   evidence_ids: z.array(z.string())
@@ -708,7 +719,8 @@ export const AdsSharedBudgetDistributionRowSchema = z.object({
   spend_to_budget_ratio_7d: z.number().nullable().optional(),
   campaign_shares: z.array(AdsSharedBudgetCampaignShareSchema),
   evidence_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([])
 });
 
 export const AdsBudgetPacingReadContractSchema = z.object({

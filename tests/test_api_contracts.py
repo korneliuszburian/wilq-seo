@@ -9581,6 +9581,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmarnowany budżet",
                 "zapis rekomendacji",
             ],
+            "blocked_claim_labels": [
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmarnowany budżet",
+                "zapis rekomendacji",
+            ],
         }
     ]
     live_section = next(
@@ -9616,50 +9622,56 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget_apply_preview" not in budget_contract["missing_read_contracts"]
     assert "shared_budget_distribution" not in budget_contract["missing_read_contracts"]
     assert budget_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert budget_contract["payload_preview"] == [
-        {
-            "id": "budget_apply_preview_101_701",
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "campaign_budget_id": "701",
-            "campaign_budget_name": "Brand budget",
-            "operation_type": "CampaignBudgetOperation",
-            "current_budget_amount_micros": 30000000,
-            "proposed_budget_amount_micros": 42000000,
-            "proposed_budget_delta_micros": 12000000,
-            "reason": budget_contract["payload_preview"][0]["reason"],
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "source_metric_names": budget_contract["payload_preview"][0][
-                "source_metric_names"
-            ],
-            "required_validation": [
-                "review_campaign_activity",
-                "verify_account_currency",
-                "budget_pacing",
-                "impression_share",
-                "change_history",
-                "human_budget_goal",
-                "campaign_budget_apply_safety",
-                "campaign_budget_operation_preview",
-                "human_confirm_before_apply",
-            ],
-            "blocked_claims": [
-                "skalowanie budżetu",
-                "zmiana budżetu",
-                "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "ocena kosztu pozyskania celu",
-                "ocena zwrotu z reklam",
-                "zapis rekomendacji",
-            ],
-            "safety_review": budget_contract["payload_preview"][0]["safety_review"],
-            "api_mutation_ready": False,
-            "apply_allowed": False,
-            "destructive": False,
-        }
+    assert len(budget_contract["payload_preview"]) == 1
+    budget_preview = budget_contract["payload_preview"][0]
+    assert budget_preview["id"] == "budget_apply_preview_101_701"
+    assert budget_preview["campaign_id"] == "101"
+    assert budget_preview["campaign_name"] == "Brand Search"
+    assert budget_preview["campaign_budget_id"] == "701"
+    assert budget_preview["campaign_budget_name"] == "Brand budget"
+    assert budget_preview["operation_type"] == "CampaignBudgetOperation"
+    assert budget_preview["operation_type_label"] == "zmiana budżetu kampanii"
+    assert budget_preview["current_budget_amount_micros"] == 30000000
+    assert budget_preview["proposed_budget_amount_micros"] == 42000000
+    assert budget_preview["proposed_budget_delta_micros"] == 12000000
+    assert budget_preview["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
+    assert budget_preview["required_validation"] == [
+        "review_campaign_activity",
+        "verify_account_currency",
+        "budget_pacing",
+        "impression_share",
+        "change_history",
+        "human_budget_goal",
+        "campaign_budget_apply_safety",
+        "campaign_budget_operation_preview",
+        "human_confirm_before_apply",
     ]
-    budget_safety_review = budget_contract["payload_preview"][0]["safety_review"]
+    assert budget_preview["required_validation_labels"] == [
+        "sprawdzenie aktywności kampanii",
+        "sprawdzenie waluty konta",
+        "tempo wydawania budżetu",
+        "udział w wyświetleniach",
+        "historia zmian",
+        "cel budżetu od człowieka",
+        "bezpieczeństwo zmiany budżetu",
+        "sprawdzenie zapisu budżetu w Google Ads",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert budget_preview["blocked_claims"] == [
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "wstrzymanie kampanii",
+        "zmarnowany budżet",
+        "opłacalność",
+        "ocena kosztu pozyskania celu",
+        "ocena zwrotu z reklam",
+        "zapis rekomendacji",
+    ]
+    assert budget_preview["blocked_claim_labels"] == budget_preview["blocked_claims"]
+    assert budget_preview["api_mutation_ready"] is False
+    assert budget_preview["apply_allowed"] is False
+    assert budget_preview["destructive"] is False
+    budget_safety_review = budget_preview["safety_review"]
     assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
     assert budget_safety_review["status"] == "blocked"
     assert budget_safety_review["status_label"] == "zablokowane"
@@ -9676,11 +9688,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_id": "101",
             "campaign_name": "Brand Search",
             "campaign_status": "ENABLED",
+            "campaign_status_label": "aktywna",
             "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "sieć wyszukiwania",
             "budget_id": "701",
             "budget_name": "Brand budget",
             "budget_period": "DAILY",
+            "budget_period_label": "dzienny",
             "budget_status": "ENABLED",
+            "budget_status_label": "aktywna",
             "budget_amount_micros": 30000000,
             "cost_micros_7d": 12000000,
             "seven_day_budget_micros": 210000000,
@@ -9693,6 +9709,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "payload_preview": budget_contract["payload_preview"][0],
             "missing_metrics": [],
             "blocked_claims": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "ocena kosztu pozyskania celu",
+                "ocena zwrotu z reklam",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_labels": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
