@@ -229,6 +229,9 @@ Known cleanup already started:
 - GA4 diagnostic metric facts now carry API-owned metric and dimension labels;
   `Ga4DiagnosticSurface` no longer owns a local metric-label dictionary for
   GA4 proof metric tiles.
+- GA4 tracking-quality action previews now carry API-owned operation and
+  missing-dimension labels; `Ga4DiagnosticSurface` no longer owns those
+  preview translators.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ

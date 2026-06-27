@@ -108,6 +108,7 @@ def _review_rows(facts: list[MetricFact]) -> list[dict[str, Any]]:
                 id=f"ga4_tracking_review_{index}",
                 preview_contract=GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
                 operation_type="tracking_quality_review",
+                operation_type_label=_operation_type_label("tracking_quality_review"),
                 landing_page=landing_page or None,
                 landing_page_label=_dimension_value_label(
                     landing_page,
@@ -124,6 +125,9 @@ def _review_rows(facts: list[MetricFact]) -> list[dict[str, Any]]:
                     missing_label="brak kampanii w raporcie",
                 ),
                 tracking_dimension_gaps=dimension_gaps,
+                tracking_dimension_gap_labels=[
+                    _tracking_dimension_gap_label(value) for value in dimension_gaps
+                ],
                 metric_snapshot=_metric_snapshot(group),
                 metric_snapshot_labels=_metric_snapshot_labels(group),
                 reason=_reason(dimension_gaps),
@@ -160,6 +164,22 @@ def _dimension_gaps(
     if not campaign_name or campaign_name == "(not set)":
         gaps.append("campaign_name")
     return gaps
+
+
+def _operation_type_label(value: str) -> str:
+    labels = {
+        "tracking_quality_review": "ocena jakości pomiaru",
+    }
+    return labels.get(value, value)
+
+
+def _tracking_dimension_gap_label(value: str) -> str:
+    labels = {
+        "landing_page": "strona wejścia",
+        "source_medium": "źródło i medium ruchu",
+        "campaign_name": "kampania",
+    }
+    return labels.get(value, value)
 
 
 def _metric_snapshot(facts: list[MetricFact]) -> dict[str, float | int | str]:

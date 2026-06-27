@@ -650,6 +650,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: GA4 diagnostic metric facts now receive API/domain metric and
   dimension labels. The GA4 route no longer owns a local metric-label
   dictionary for its proof metric tiles.
+- 2026-06-27: GA4 tracking-quality action previews now receive API/domain
+  operation and missing-dimension labels. The GA4 route no longer owns those
+  preview translators.
 
 ## Discoveries
 
@@ -767,6 +770,8 @@ WILQ is complete for this long-range goal when:
   view-model, not in `MerchantDiagnosticSurface`.
 - GA4 metric labels belong in the GA4 diagnostics API/domain view-model, not
   in `Ga4DiagnosticSurface`.
+- GA4 action preview operation and missing-dimension labels belong in the GA4
+  action payload contract, not in `Ga4DiagnosticSurface`.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

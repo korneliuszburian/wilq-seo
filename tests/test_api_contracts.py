@@ -4246,6 +4246,11 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     preview = ga4_action["payload"]["payload_preview"][0]
     assert preview["preview_contract"] == "ga4_tracking_quality_review_v1"
     assert preview["operation_type"] == "tracking_quality_review"
+    assert preview["operation_type_label"] == "ocena jakości pomiaru"
+    assert len(preview["tracking_dimension_gap_labels"]) == len(
+        preview["tracking_dimension_gaps"]
+    )
+    assert preview["operation_type_label"] != preview["operation_type"]
     assert preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
     assert preview["metric_snapshot_labels"]["engagement_rate"] == "zaangażowanie"
     assert "review_conversion_or_key_event_mapping" in preview["required_validation"]

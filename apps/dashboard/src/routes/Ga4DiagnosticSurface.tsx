@@ -23,6 +23,7 @@ type Ga4TrackingQualityPreviewItem = {
   id: string;
   preview_contract: string;
   operation_type: string;
+  operation_type_label?: string;
   landing_page?: string | null;
   landing_page_label?: string;
   source_medium?: string | null;
@@ -30,6 +31,7 @@ type Ga4TrackingQualityPreviewItem = {
   campaign_name?: string | null;
   campaign_name_label?: string;
   tracking_dimension_gaps: string[];
+  tracking_dimension_gap_labels?: string[];
   metric_snapshot: Record<string, string | number>;
   metric_snapshot_labels: Record<string, string>;
   reason: string;
@@ -535,7 +537,7 @@ function Ga4TrackingQualityPreviewCard({
             Strona wejścia: {preview.landing_page_label || preview.landing_page || "brak strony wejścia w raporcie"}
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {ga4OperationLabel(preview.operation_type)} /{" "}
+            {preview.operation_type_label || "operacja GA4 bez etykiety"} /{" "}
             {preview.apply_allowed ? "zapis możliwy" : "zapis zablokowany"}
           </p>
         </div>
@@ -547,7 +549,7 @@ function Ga4TrackingQualityPreviewCard({
         <TraceLine label="Kampania" values={[preview.campaign_name_label || preview.campaign_name || "brak kampanii w raporcie"]} />
         <TraceLine
           label="Braki wymiarów"
-          values={preview.tracking_dimension_gaps.map(ga4TrackingDimensionLabel)}
+          values={preview.tracking_dimension_gap_labels ?? []}
           empty="brak"
         />
         <TraceLine
@@ -602,8 +604,11 @@ function isGa4TrackingQualityPreviewItem(
     typeof value.id === "string" &&
     value.preview_contract === "ga4_tracking_quality_review_v1" &&
     typeof value.operation_type === "string" &&
+    typeof value.operation_type_label === "string" &&
     Array.isArray(value.tracking_dimension_gaps) &&
     value.tracking_dimension_gaps.every((item) => typeof item === "string") &&
+    Array.isArray(value.tracking_dimension_gap_labels) &&
+    value.tracking_dimension_gap_labels.every((item) => typeof item === "string") &&
     isMetricSnapshot(value.metric_snapshot) &&
     isMetricSnapshotLabels(value.metric_snapshot_labels) &&
     typeof value.reason === "string" &&
@@ -706,22 +711,6 @@ function formatGa4ActionCount(count: number) {
   if (count === 0) return "brak";
   if (count === 1) return "1 akcja";
   return `${count} akcji`;
-}
-
-function ga4TrackingDimensionLabel(value: string) {
-  const labels: Record<string, string> = {
-    landing_page: "strona wejścia",
-    source_medium: "źródło i medium ruchu",
-    campaign_name: "kampania"
-  };
-  return labels[value] ?? value;
-}
-
-function ga4OperationLabel(value: string) {
-  const labels: Record<string, string> = {
-    tracking_quality_review: "ocena jakości pomiaru"
-  };
-  return labels[value] ?? value;
 }
 
 function uniqueValues(values: string[]) {

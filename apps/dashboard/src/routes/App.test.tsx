@@ -223,6 +223,7 @@ const actions = [
           id: "ga4_tracking_review_fixture",
           preview_contract: "ga4_tracking_quality_review_v1",
           operation_type: "tracking_quality_review",
+          operation_type_label: "ocena jakości pomiaru",
           landing_page: "/oferta/",
           landing_page_label: "/oferta/",
           source_medium: "google / cpc",
@@ -230,6 +231,7 @@ const actions = [
           campaign_name: "(2026) Ekologus Ogólna",
           campaign_name_label: "(2026) Ekologus Ogólna",
           tracking_dimension_gaps: [],
+          tracking_dimension_gap_labels: [],
           metric_snapshot: {
             active_users: 20,
             sessions: 30

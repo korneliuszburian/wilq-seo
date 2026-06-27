@@ -129,6 +129,8 @@ Wilku can inspect it without reading technical internals.
 - GA4 diagnostics now label GA4 metric facts and GA4 metric dimensions at the
   API/domain layer; the GA4 route no longer owns a local metric-label
   dictionary for proof metric tiles.
+- GA4 tracking-quality action previews now carry API-owned operation and
+  missing-dimension labels; the GA4 route no longer owns those translators.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -144,7 +146,7 @@ are resolved or explicitly deferred.
    path for Merchant feed issues, but remaining action kinds still infer active
    preview cards from raw payload shape. Migrate those action kinds one by one;
    raw payload may remain only in collapsed technical detail.
-3. GA4, Merchant, Demand Gen, registry/workflow and knowledge routes still have
+3. Merchant, Demand Gen, registry/workflow and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.
 4. Repeated metric/dimension naming in dashboard components should become

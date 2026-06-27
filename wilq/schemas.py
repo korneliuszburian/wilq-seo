@@ -2955,6 +2955,7 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
     id: str
     preview_contract: Literal["ga4_tracking_quality_review_v1"]
     operation_type: Literal["tracking_quality_review"]
+    operation_type_label: str = ""
     landing_page: str | None = None
     landing_page_label: str = ""
     source_medium: str | None = None
@@ -2964,6 +2965,7 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
     tracking_dimension_gaps: list[
         Literal["landing_page", "source_medium", "campaign_name"]
     ] = Field(default_factory=list)
+    tracking_dimension_gap_labels: list[str] = Field(default_factory=list)
     metric_snapshot: dict[str, float | int | str] = Field(default_factory=dict)
     metric_snapshot_labels: dict[str, str] = Field(default_factory=dict)
     reason: str

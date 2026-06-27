@@ -122,6 +122,10 @@ Latest cleanup state:
 - GA4 diagnostics now attach API-owned `metric_label`, `dimension_labels` and
   `dimension_value_labels` to GA4 metric facts. The GA4 route no longer owns a
   local metric-label dictionary for proof metric tiles.
+- GA4 tracking-quality action previews now carry API-owned
+  `operation_type_label` and `tracking_dimension_gap_labels`. The GA4 route no
+  longer owns local translators for GA4 preview operation or missing-dimension
+  labels.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -244,6 +248,16 @@ Proof:
   Browser proof is blocked in this session by local browser tooling:
   `agent-browser` returns CDP `Connection refused`, and Playwright cannot launch
   the available Chrome (`SIGTRAP`) or its own browser is not installed.
+- GA4 tracking preview label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_ga4_tracking_quality` returned
+  `operation_type_label="ocena jakości pomiaru"` and matching
+  `tracking_dimension_gap_labels`.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -257,7 +271,7 @@ Next cleanup queue:
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.
 2. Primary route raw fallbacks:
-   - clean remaining GA4, Merchant, Demand Gen, registry/workflow and knowledge
+   - clean remaining Merchant, Demand Gen, registry/workflow and knowledge
      route fallbacks that still return raw enum keys or technical values when
      API labels are missing.
 3. Metric labels:
