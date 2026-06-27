@@ -6,7 +6,6 @@ import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { TraceLine } from "../components/TraceLine";
-import { priorityLabel } from "./marketingLabels";
 
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
 
@@ -56,16 +55,16 @@ export function LocaloDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              Źródło Localo: {localoConnectorStatusLabel(data.connector.status)}
+              Źródło Localo: {data.connector_status_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {localoAccessStatusLabel(data.access_probe.status)}
+              {data.access_probe.status_label}
               <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {localoRefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt: {data.latest_refresh_status_label}
                 <span className="sr-only">; </span>
               </span>
             ) : null}
@@ -111,7 +110,7 @@ export function LocaloDiagnosticSurface() {
             label="Czego nie wolno obiecać"
             values={uniqueValues(
               data.decision_queue.flatMap((decision) =>
-                decision.blocked_claims.map(localoBlockedClaimLabel)
+                decision.blocked_claim_labels
               )
             )}
           />
@@ -119,7 +118,7 @@ export function LocaloDiagnosticSurface() {
             label="Brakujące dane"
             values={uniqueValues(
               data.decision_queue.flatMap((decision) =>
-                decision.missing_read_contracts.map(localoMissingContractLabel)
+                decision.missing_read_contract_labels
               )
             )}
           />
@@ -160,7 +159,7 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
               </p>
             </div>
             <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-              {localoDecisionStatusLabel(visibilityDecision.status)}
+              {visibilityDecision.status_label}
             </span>
           </div>
           {metricEntries.length > 0 ? (
@@ -231,13 +230,12 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Localo / {localoDecisionTypeLabel(decision.decision_type)} /{" "}
-            {priorityLabel(decision.priority)}
+            Localo / {decision.decision_type_label} / {decision.priority_label}
           </p>
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-          {localoDecisionStatusLabel(decision.status)}
+          {decision.status_label}
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{decision.summary}</p>
@@ -251,18 +249,18 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <TraceLine label="Dostęp" values={[localoAccessStatusLabel(decision.access_status)]} />
+        <TraceLine label="Dostęp" values={[decision.access_status_label]} />
         <TraceLine
           label="Dozwolone dowody"
-          values={decision.allowed_evidence.map(localoAllowedEvidenceLabel)}
+          values={decision.allowed_evidence_labels}
         />
         <TraceLine
           label="Brakujące dane"
-          values={decision.missing_read_contracts.map(localoMissingContractLabel)}
+          values={decision.missing_read_contract_labels}
         />
         <TraceLine
           label="Czego nie wolno obiecać"
-          values={decision.blocked_claims.map(localoBlockedClaimLabel)}
+          values={decision.blocked_claim_labels}
         />
         <TraceLine
           label="Dowody"
@@ -306,10 +304,10 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
             <MetricTile label="Test dostępu" value={probe.mcp_initialize_status ?? "brak"} />
             <MetricTile
               label="OAuth code"
-              value={localoBooleanLabel(probe.authorization_code_supported)}
+              value={probe.authorization_code_supported_label}
             />
-            <MetricTile label="PKCE S256" value={localoBooleanLabel(probe.pkce_s256_supported)} />
-            <MetricTile label="Token" value={localoTokenPresenceLabel(probe.access_token_present)} />
+            <MetricTile label="PKCE S256" value={probe.pkce_s256_supported_label} />
+            <MetricTile label="Token" value={probe.access_token_present_label} />
           </div>
           <div className="mt-4 grid gap-3 xl:grid-cols-3">
             {data.sections.map((section) => (
@@ -317,7 +315,7 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="text-sm font-semibold">{section.title}</h3>
                   <span className="rounded-md border border-line px-2 py-1 text-xs text-slate-600">
-                    {localoSectionStatusLabel(section.status)}
+                    {section.status_label}
                   </span>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-700">{section.summary}</p>
@@ -338,92 +336,6 @@ function formatLocaloEvidenceCount(count: number) {
   if (count === 0) return "brak";
   if (count === 1) return "1 ID";
   return `${count} ID`;
-}
-
-function localoDecisionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  return status;
-}
-
-function localoSectionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  if (status === "missing") return "brak danych";
-  return status;
-}
-
-function localoDecisionTypeLabel(value: string) {
-  const labels: Record<string, string> = {
-    access_ready_wait_for_visibility_facts: "status źródła",
-    fix_access: "napraw dostęp",
-    review_local_visibility: "przejrzyj widoczność",
-    block_visibility_claims: "blokada obietnic"
-  };
-  return labels[value] ?? value;
-}
-
-function localoConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje dostępu";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function localoRefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  return status;
-}
-
-function localoAccessStatusLabel(status: string) {
-  if (status === "access_ready") return "dostęp działa";
-  if (status === "access_blocked") return "dostęp zablokowany";
-  return "dostęp niepewny";
-}
-
-function localoBooleanLabel(value: boolean | null | undefined) {
-  if (value === true) return "tak";
-  if (value === false) return "nie";
-  return "brak";
-}
-
-function localoTokenPresenceLabel(value: boolean | null | undefined) {
-  if (value === true) return "obecny";
-  if (value === false) return "brak";
-  return "brak danych";
-}
-
-function localoAllowedEvidenceLabel(value: string) {
-  const labels: Record<string, string> = {
-    access_token_presence: "obecność tokenu",
-    competitor_visibility: "widoczność konkurencji",
-    gbp_visibility: "widoczność profilu firmy w Google",
-    local_rankings: "rankingi lokalne",
-    mcp_initialize: "potwierdzenie dostępu Localo",
-    oauth_metadata: "metadane autoryzacji",
-    place_inventory: "lista lokalizacji",
-    reviews: "opinie"
-  };
-  return labels[value] ?? value;
-}
-
-function localoMissingContractLabel(value: string) {
-  const labels: Record<string, string> = {
-    competitor_visibility: "widoczność konkurencji",
-    gbp_visibility: "widoczność profilu firmy w Google",
-    local_rankings: "rankingi lokalne",
-    local_tasks: "zadania lokalne",
-    mcp_initialize: "test dostępu",
-    place_inventory: "lista lokalizacji",
-    reviews: "opinie"
-  };
-  return labels[value] ?? value;
-}
-
-function localoBlockedClaimLabel(value: string) {
-  return value;
 }
 
 function uniqueValues(values: string[]) {

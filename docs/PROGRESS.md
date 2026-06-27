@@ -218,6 +218,11 @@ Date: 2026-06-27
   `mode=subdomains`, `content_gap`, `organic_keyword_gap`, `top_page_gap`,
   `backlink_gap`, `competitor_page`, `Ahrefs Rank` or `DR`. Proof:
   `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
+- Localo status, access, decision-type, priority, allowed-evidence,
+  missing-data, contract-status and blocked-claim labels now come from the WILQ
+  API/shared schema. `/localo` no longer carries route-local Localo enum
+  translators. Live API proof and browser screenshot:
+  `.local-lab/proof/20260627-localo-api-labels/`.
 - Command Center daily-decision labels now come from WILQ API/shared schema,
   not from route-local React copy maps. The API exposes operator labels for
   decision state, route, CTA, priority, source connectors, evidence summary,

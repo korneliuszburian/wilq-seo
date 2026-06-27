@@ -2493,11 +2493,15 @@ class Ga4DiagnosticsResponse(BaseModel):
 
 class LocaloAccessProbe(BaseModel):
     status: Literal["access_ready", "access_blocked", "unknown"]
+    status_label: str = ""
     source_run_id: str | None = None
     mcp_initialize_status: int | None = None
     authorization_code_supported: bool | None = None
+    authorization_code_supported_label: str = ""
     pkce_s256_supported: bool | None = None
+    pkce_s256_supported_label: str = ""
     access_token_present: bool | None = None
+    access_token_present_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     summary: str
 
@@ -2506,6 +2510,7 @@ class LocaloDiagnosticSection(BaseModel):
     id: str
     title: str
     status: Literal["ready", "blocked", "missing"]
+    status_label: str = ""
     summary: str
     diagnosis: str
     next_step: str
@@ -2516,6 +2521,7 @@ class LocaloDiagnosticSection(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
 
@@ -2528,10 +2534,14 @@ class LocaloReadContractStatus(BaseModel):
         "reviews",
         "local_tasks",
     ]
+    id_label: str = ""
     status: Literal["ready", "missing"]
+    status_label: str = ""
     evidence_kind: str
     metric_fact_names: list[str] = Field(default_factory=list)
+    metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str
 
 
@@ -2543,24 +2553,32 @@ class LocaloDecisionItem(BaseModel):
         "review_local_visibility",
         "block_visibility_claims",
     ]
+    decision_type_label: str = ""
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     rationale: str
     next_step: str
     access_status: Literal["access_ready", "access_blocked", "unknown"]
+    access_status_label: str = ""
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_evidence: list[str] = Field(default_factory=list)
+    allowed_evidence_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
 
@@ -2571,13 +2589,16 @@ class LocaloOperatorSummary(BaseModel):
     next_step: str
     top_decision_ids: list[str] = Field(default_factory=list)
     access_status: Literal["access_ready", "access_blocked", "unknown"]
+    access_status_label: str = ""
     visibility_fact_count: int = 0
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class LocaloDiagnosticsResponse(BaseModel):
@@ -2585,7 +2606,9 @@ class LocaloDiagnosticsResponse(BaseModel):
     language: Literal["pl-PL"] = "pl-PL"
     strict_instruction: str
     connector: ConnectorStatus
+    connector_status_label: str = ""
     latest_refresh: ConnectorRefreshRun | None = None
+    latest_refresh_status_label: str | None = None
     access_probe: LocaloAccessProbe
     live_data_available: bool
     visibility_fact_count: int = 0

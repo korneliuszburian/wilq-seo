@@ -667,6 +667,7 @@ const adsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
   strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
+  connector_status_label: "dostęp skonfigurowany",
   connector: {
     ...connectors[0],
     status: "configured",
@@ -4930,13 +4931,18 @@ const localoDiagnostics = {
     errors: [],
     redacted: true
   },
+  latest_refresh_status_label: "zakończony",
   access_probe: {
     status: "access_ready",
+    status_label: "dostęp działa",
     source_run_id: "refresh_localo_access_ready_test",
     mcp_initialize_status: 200,
     authorization_code_supported: true,
+    authorization_code_supported_label: "tak",
     pkce_s256_supported: true,
+    pkce_s256_supported_label: "tak",
     access_token_present: true,
+    access_token_present_label: "obecny",
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
     summary:
       "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji."
@@ -4955,6 +4961,7 @@ const localoDiagnostics = {
       "localo_block_visibility_claims_without_read_contract"
     ],
     access_status: "access_ready",
+    access_status_label: "dostęp działa",
     visibility_fact_count: 0,
     missing_read_contracts: [
       "local_rankings",
@@ -4963,10 +4970,23 @@ const localoDiagnostics = {
       "reviews",
       "local_tasks"
     ],
+    missing_read_contract_labels: [
+      "rankingi lokalne",
+      "widoczność profilu firmy w Google",
+      "widoczność konkurencji",
+      "opinie",
+      "zadania lokalne"
+    ],
     source_connectors: ["localo"],
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
     action_ids: [],
     blocked_claims: [
+      "lokalne rankingi",
+      "wyniki profilu firmy w Google",
+      "widoczności konkurencji",
+      "poprawa widoczności lokalnej"
+    ],
+    blocked_claim_labels: [
       "lokalne rankingi",
       "wyniki profilu firmy w Google",
       "widoczności konkurencji",
@@ -4977,7 +4997,9 @@ const localoDiagnostics = {
     {
       id: "localo_access_ready_wait_for_visibility_facts",
       decision_type: "access_ready_wait_for_visibility_facts",
+      decision_type_label: "status źródła",
       status: "ready",
+      status_label: "gotowe",
       title: "Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google",
       summary:
         "Localo potwierdził dostęp do odczytu danych. WILQ nie ma jeszcze lokalnych rankingów, profilu firmy w Google, konkurencji ani recenzji.",
@@ -4986,19 +5008,33 @@ const localoDiagnostics = {
       next_step:
         "Zostaw Localo jako status źródła i dodaj odczyt danych rankingów, profilu firmy w Google, konkurencji i recenzji.",
       access_status: "access_ready",
+      access_status_label: "dostęp działa",
       priority: 30,
+      priority_label: "wysoki priorytet",
       metric_tiles: {
         "dostęp Localo": 1,
         "dane Localo": 0,
         "brakujące dane": 5
       },
       allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
+      allowed_evidence_labels: [
+        "potwierdzenie dostępu Localo",
+        "metadane autoryzacji",
+        "obecność tokenu"
+      ],
       missing_read_contracts: [
         "local_rankings",
         "gbp_visibility",
         "competitor_visibility",
         "reviews",
         "local_tasks"
+      ],
+      missing_read_contract_labels: [
+        "rankingi lokalne",
+        "widoczność profilu firmy w Google",
+        "widoczność konkurencji",
+        "opinie",
+        "zadania lokalne"
       ],
       source_connectors: ["localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
@@ -5010,12 +5046,20 @@ const localoDiagnostics = {
         "widoczności konkurencji",
         "poprawa widoczności lokalnej"
       ],
+      blocked_claim_labels: [
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
+      ],
       risk: "low"
     },
     {
       id: "localo_block_visibility_claims_without_read_contract",
       decision_type: "block_visibility_claims",
+      decision_type_label: "blokada obietnic",
       status: "blocked",
+      status_label: "zablokowane",
       title: "Nie wyciągaj wniosków o lokalnej widoczności bez danych Localo",
       summary:
         "WILQ blokuje obietnice o rankingach, profilu firmy w Google, konkurencji, recenzjach i wzroście widoczności, dopóki Localo nie dostarczy tych danych.",
@@ -5024,12 +5068,15 @@ const localoDiagnostics = {
       next_step:
         "Najpierw dodaj odczyt danych Localo; dopiero potem buduj lokalne akcje do sprawdzenia.",
       access_status: "access_ready",
+      access_status_label: "dostęp działa",
       priority: 10,
+      priority_label: "pilne",
       metric_tiles: {
         "blokady obietnic": 5,
         "brakujące dane": 5
       },
       allowed_evidence: ["mcp_initialize"],
+      allowed_evidence_labels: ["potwierdzenie dostępu Localo"],
       missing_read_contracts: [
         "local_rankings",
         "gbp_visibility",
@@ -5037,11 +5084,24 @@ const localoDiagnostics = {
         "reviews",
         "local_tasks"
       ],
+      missing_read_contract_labels: [
+        "rankingi lokalne",
+        "widoczność profilu firmy w Google",
+        "widoczność konkurencji",
+        "opinie",
+        "zadania lokalne"
+      ],
       source_connectors: ["localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
+      ],
+      blocked_claim_labels: [
         "lokalne rankingi",
         "wyniki profilu firmy w Google",
         "widoczności konkurencji",
@@ -5055,6 +5115,7 @@ const localoDiagnostics = {
       id: "localo_access_status",
       title: "Localo: status dostępu do danych",
       status: "ready",
+      status_label: "gotowe",
       summary:
         "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji.",
       diagnosis: "Dostęp Localo pozwala WILQ odczytywać dane Localo.",
@@ -5065,12 +5126,14 @@ const localoDiagnostics = {
       metric_facts: [],
       action_ids: [],
       blocked_claims: [],
+      blocked_claim_labels: [],
       risk: "low"
     },
     {
       id: "localo_visibility_contract",
       title: "Localo: dane rankingów i profilu firmy w Google",
       status: "missing",
+      status_label: "brak danych",
       summary:
         "WILQ nie ma jeszcze rankingów, danych profilu firmy w Google, widoczności konkurencji ani recenzji z Localo.",
       diagnosis:
@@ -5082,6 +5145,12 @@ const localoDiagnostics = {
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
+        "lokalne rankingi",
+        "wyniki profilu firmy w Google",
+        "widoczności konkurencji",
+        "poprawa widoczności lokalnej"
+      ],
+      blocked_claim_labels: [
         "lokalne rankingi",
         "wyniki profilu firmy w Google",
         "widoczności konkurencji",

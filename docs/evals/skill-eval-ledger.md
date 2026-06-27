@@ -25,6 +25,42 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - Localo API-label and route proof
+
+Purpose:
+
+- Verify that Localo access, decision, priority, allowed-evidence,
+  missing-contract, read-contract and blocked-claim labels come from WILQ API
+  contracts instead of the `/localo` route.
+- Prove that `wilq-localo-operator` still receives valid Localo diagnostics
+  after the API label expansion.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "localo route renders workflow-specific blockers"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Browser/API proof:
+
+```txt
+.local-lab/proof/20260627-localo-api-labels/
+```
+
+Result:
+
+- Focused API, dashboard, typecheck, language guard and Localo skill smoke
+  passed.
+- `/localo` no longer owns Localo enum translators for status, access, evidence
+  or missing-contract labels.
+- Live API response includes Polish label fields such as `dostęp działa`,
+  `przejrzyj widoczność`, `wysoki priorytet`, `lista lokalizacji`,
+  `zadania lokalne` and `poprawa widoczności lokalnej`.
+
 ## 2026-06-27 - Content Planner API-label proof
 
 Purpose:

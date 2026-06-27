@@ -5274,14 +5274,24 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert response.status_code == 200
     payload = response.json()
     assert payload["language"] == "pl-PL"
+    assert payload["connector_status_label"] == "dostęp skonfigurowany"
+    assert payload["latest_refresh_status_label"] == "zakończony"
     assert payload["access_probe"]["status"] == "access_ready"
+    assert payload["access_probe"]["status_label"] == "dostęp działa"
     assert payload["access_probe"]["mcp_initialize_status"] == 200
+    assert payload["access_probe"]["authorization_code_supported_label"] == "tak"
+    assert payload["access_probe"]["pkce_s256_supported_label"] == "tak"
+    assert payload["access_probe"]["access_token_present_label"] == "obecny"
     assert payload["live_data_available"] is False
     assert payload["visibility_fact_count"] == 0
     assert payload["evidence_ids"] == ["ev_refresh_refresh_localo_access_ready_diag_test"]
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     access_decision = decision_by_id["localo_access_ready_wait_for_visibility_facts"]
     assert access_decision["status"] == "ready"
+    assert access_decision["status_label"] == "gotowe"
+    assert access_decision["decision_type_label"] == "status źródła"
+    assert access_decision["access_status_label"] == "dostęp działa"
+    assert access_decision["priority_label"] == "wysoki priorytet"
     assert access_decision["priority"] == 30
     assert access_decision["metric_tiles"] == {
         "dostęp Localo": 1,
@@ -5289,9 +5299,15 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
         "brakujące dane": 5,
     }
     assert "local_rankings" in access_decision["missing_read_contracts"]
+    assert "rankingi lokalne" in access_decision["missing_read_contract_labels"]
+    assert "potwierdzenie dostępu Localo" in access_decision["allowed_evidence_labels"]
     assert "wyniki profilu firmy w Google" in access_decision["blocked_claims"]
+    assert "wyniki profilu firmy w Google" in access_decision["blocked_claim_labels"]
     block_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert block_decision["status"] == "blocked"
+    assert block_decision["status_label"] == "zablokowane"
+    assert block_decision["decision_type_label"] == "blokada obietnic"
+    assert block_decision["priority_label"] == "pilne"
     assert block_decision["priority"] == 10
     assert block_decision["metric_tiles"] == {
         "blokady obietnic": 5,
@@ -5306,11 +5322,14 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
         decision["id"] for decision in payload["decision_queue"][:4]
     ]
     assert operator_summary["access_status"] == "access_ready"
+    assert operator_summary["access_status_label"] == "dostęp działa"
     assert operator_summary["visibility_fact_count"] == 0
     assert "local_rankings" in operator_summary["missing_read_contracts"]
+    assert "rankingi lokalne" in operator_summary["missing_read_contract_labels"]
     assert "localo" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_localo_access_ready_diag_test" in operator_summary["evidence_ids"]
     assert "wyniki profilu firmy w Google" in operator_summary["blocked_claims"]
+    assert "wyniki profilu firmy w Google" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     serialized = json.dumps(payload, ensure_ascii=False)
@@ -5422,6 +5441,9 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     review_decision = decision_by_id["localo_review_visibility_facts"]
     assert review_decision["status"] == "ready"
+    assert review_decision["status_label"] == "gotowe"
+    assert review_decision["decision_type_label"] == "przejrzyj widoczność"
+    assert review_decision["access_status_label"] == "dostęp działa"
     assert review_decision["action_ids"] == [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
     assert review_decision["allowed_evidence"] == [
         "place_inventory",
@@ -5433,14 +5455,33 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
         "competitor_visibility",
         "local_tasks",
     ]
+    assert review_decision["missing_read_contract_labels"] == [
+        "widoczność profilu firmy w Google",
+        "widoczność konkurencji",
+        "zadania lokalne",
+    ]
     contract_status_by_id = {
         item["id"]: item for item in payload["read_contract_statuses"]
     }
     assert contract_status_by_id["place_inventory"]["status"] == "ready"
+    assert contract_status_by_id["place_inventory"]["id_label"] == "lista lokalizacji"
+    assert contract_status_by_id["place_inventory"]["status_label"] == "gotowe"
     assert contract_status_by_id["local_rankings"]["status"] == "ready"
+    assert (
+        contract_status_by_id["local_rankings"]["metric_fact_labels"][
+            "localo_tracked_keyword_count"
+        ]
+        == "monitorowane frazy"
+    )
     assert contract_status_by_id["reviews"]["status"] == "ready"
     assert contract_status_by_id["gbp_visibility"]["status"] == "missing"
+    assert contract_status_by_id["gbp_visibility"]["status_label"] == "brak danych"
     assert contract_status_by_id["gbp_visibility"]["blocked_claims"] == [
+        "wyniki profilu firmy w Google",
+        "zapis zmian w profilu firmy",
+        "poprawa widoczności lokalnej",
+    ]
+    assert contract_status_by_id["gbp_visibility"]["blocked_claim_labels"] == [
         "wyniki profilu firmy w Google",
         "zapis zmian w profilu firmy",
         "poprawa widoczności lokalnej",
@@ -5488,6 +5529,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert section_by_id["localo_visibility_contract"]["action_ids"] == [
         LOCALO_VISIBILITY_REVIEW_ACTION_ID
     ]
+    assert section_by_id["localo_visibility_contract"]["status_label"] == "gotowe"
     assert all(fact["source_connector"] == "localo" for fact in review_decision["metric_facts"])
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized

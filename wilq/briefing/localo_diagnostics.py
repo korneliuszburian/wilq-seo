@@ -99,9 +99,11 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
     latest_refresh = _latest_relevant_localo_refresh(refresh_runs)
     metric_facts = _metric_facts_for_refresh(latest_refresh)
     visibility_facts = _visibility_facts(metric_facts)
-    access_probe = _access_probe(
-        connector_missing=connector.missing_credentials,
-        run=latest_refresh,
+    access_probe = _label_localo_access_probe(
+        _access_probe(
+            connector_missing=connector.missing_credentials,
+            run=latest_refresh,
+        )
     )
     live_data_available = bool(visibility_facts)
     sections = _localo_sections(access_probe, latest_refresh, visibility_facts)
@@ -120,7 +122,11 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
     return LocaloDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
+        connector_status_label=_localo_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
+        latest_refresh_status_label=_localo_refresh_status_label(latest_refresh.status)
+        if latest_refresh
+        else None,
         access_probe=access_probe,
         live_data_available=live_data_available,
         visibility_fact_count=len(visibility_facts),
@@ -149,7 +155,7 @@ def _operator_summary(
 ) -> LocaloOperatorSummary:
     top_decisions = decisions[:4]
     missing_contracts = _missing_contract_ids(read_contract_statuses)
-    return LocaloOperatorSummary(
+    return _label_localo_operator_summary(LocaloOperatorSummary(
         title="Co marketer ma wiedzieć o Localo",
         summary=_operator_summary_text(visibility_fact_count, missing_contracts),
         next_step=_operator_summary_next_step(visibility_fact_count, missing_contracts),
@@ -182,7 +188,7 @@ def _operator_summary(
         blocked_claims=_unique(
             claim for decision in top_decisions for claim in decision.blocked_claims
         ),
-    )
+    ))
 
 
 def _operator_summary_text(visibility_fact_count: int, missing_contracts: list[str]) -> str:
@@ -441,7 +447,11 @@ def _localo_sections(
         ],
         risk=ActionRisk.medium,
     )
-    return [access_section, visibility_section, safety_section]
+    return [
+        _label_localo_section(access_section),
+        _label_localo_section(visibility_section),
+        _label_localo_section(safety_section),
+    ]
 
 
 def _localo_decision_queue(
@@ -573,7 +583,7 @@ def _localo_decisions_with_lineage(
     decisions: list[LocaloDecisionItem],
 ) -> list[LocaloDecisionItem]:
     return [
-        decision.model_copy(
+        _label_localo_decision(decision).model_copy(
             update={
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *LOCALO_KNOWLEDGE_CARD_IDS]
@@ -658,6 +668,207 @@ def _blocked_visibility_decision(
     )
 
 
+def _label_localo_access_probe(probe: LocaloAccessProbe) -> LocaloAccessProbe:
+    return probe.model_copy(
+        update={
+            "status_label": _localo_access_status_label(probe.status),
+            "authorization_code_supported_label": _localo_bool_label(
+                probe.authorization_code_supported
+            ),
+            "pkce_s256_supported_label": _localo_bool_label(probe.pkce_s256_supported),
+            "access_token_present_label": _localo_token_presence_label(
+                probe.access_token_present
+            ),
+        }
+    )
+
+
+def _label_localo_section(section: LocaloDiagnosticSection) -> LocaloDiagnosticSection:
+    return section.model_copy(
+        update={
+            "status_label": _localo_section_status_label(section.status),
+            "blocked_claim_labels": section.blocked_claims,
+        }
+    )
+
+
+def _label_localo_read_contract_status(
+    contract_status: LocaloReadContractStatus,
+) -> LocaloReadContractStatus:
+    return contract_status.model_copy(
+        update={
+            "id_label": _localo_contract_label(str(contract_status.id)),
+            "status_label": _localo_read_contract_status_label(contract_status.status),
+            "metric_fact_labels": {
+                name: _localo_metric_fact_label(name)
+                for name in contract_status.metric_fact_names
+            },
+            "blocked_claim_labels": contract_status.blocked_claims,
+        }
+    )
+
+
+def _label_localo_decision(decision: LocaloDecisionItem) -> LocaloDecisionItem:
+    return decision.model_copy(
+        update={
+            "decision_type_label": _localo_decision_type_label(decision.decision_type),
+            "status_label": _localo_decision_status_label(decision.status),
+            "access_status_label": _localo_access_status_label(decision.access_status),
+            "priority_label": _localo_priority_label(decision.priority),
+            "allowed_evidence_labels": [
+                _localo_evidence_label(value) for value in decision.allowed_evidence
+            ],
+            "missing_read_contract_labels": [
+                _localo_contract_label(value) for value in decision.missing_read_contracts
+            ],
+            "metric_fact_labels": {
+                fact.name: _localo_metric_fact_label(fact.name)
+                for fact in decision.metric_facts
+            },
+            "blocked_claim_labels": decision.blocked_claims,
+        }
+    )
+
+
+def _label_localo_operator_summary(
+    summary: LocaloOperatorSummary,
+) -> LocaloOperatorSummary:
+    return summary.model_copy(
+        update={
+            "access_status_label": _localo_access_status_label(summary.access_status),
+            "missing_read_contract_labels": [
+                _localo_contract_label(value) for value in summary.missing_read_contracts
+            ],
+            "blocked_claim_labels": summary.blocked_claims,
+        }
+    )
+
+
+def _localo_decision_status_label(status: str) -> str:
+    labels = {"ready": "gotowe", "blocked": "zablokowane"}
+    return labels.get(status, status)
+
+
+def _localo_section_status_label(status: str) -> str:
+    labels = {"ready": "gotowe", "blocked": "zablokowane", "missing": "brak danych"}
+    return labels.get(status, status)
+
+
+def _localo_read_contract_status_label(status: str) -> str:
+    labels = {"ready": "gotowe", "missing": "brak danych"}
+    return labels.get(status, status)
+
+
+def _localo_decision_type_label(value: str) -> str:
+    labels = {
+        "access_ready_wait_for_visibility_facts": "status źródła",
+        "fix_access": "napraw dostęp",
+        "review_local_visibility": "przejrzyj widoczność",
+        "block_visibility_claims": "blokada obietnic",
+    }
+    return labels.get(value, value)
+
+
+def _localo_connector_status_label(status: str) -> str:
+    labels = {
+        "configured": "dostęp skonfigurowany",
+        "missing_credentials": "brakuje dostępu",
+        "disabled": "źródło wyłączone",
+    }
+    return labels.get(status, f"status: {status}")
+
+
+def _localo_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
+    value = status.value if isinstance(status, ConnectorRefreshStatus) else status
+    labels = {"completed": "zakończony", "blocked": "zablokowany", "failed": "błąd"}
+    return labels.get(value, value)
+
+
+def _localo_access_status_label(status: str) -> str:
+    labels = {
+        "access_ready": "dostęp działa",
+        "access_blocked": "dostęp zablokowany",
+        "unknown": "dostęp niepewny",
+    }
+    return labels.get(status, "dostęp niepewny")
+
+
+def _localo_bool_label(value: bool | None) -> str:
+    if value is True:
+        return "tak"
+    if value is False:
+        return "nie"
+    return "brak"
+
+
+def _localo_token_presence_label(value: bool | None) -> str:
+    if value is True:
+        return "obecny"
+    if value is False:
+        return "brak"
+    return "brak danych"
+
+
+def _localo_priority_label(priority: int) -> str:
+    if priority <= 10:
+        return "pilne"
+    if priority <= 30:
+        return "wysoki priorytet"
+    if priority <= 60:
+        return "średni priorytet"
+    return "niski priorytet"
+
+
+def _localo_contract_label(value: str) -> str:
+    labels = {
+        "competitor_visibility": "widoczność konkurencji",
+        "gbp_visibility": "widoczność profilu firmy w Google",
+        "local_rankings": "rankingi lokalne",
+        "local_tasks": "zadania lokalne",
+        "mcp_initialize": "test dostępu",
+        "place_inventory": "lista lokalizacji",
+        "reviews": "opinie",
+    }
+    return labels.get(value, value)
+
+
+def _localo_evidence_label(value: str) -> str:
+    labels = {
+        "access_token_presence": "obecność tokenu",
+        "mcp_initialize": "potwierdzenie dostępu Localo",
+        "oauth_metadata": "metadane autoryzacji",
+    }
+    return labels.get(value, _localo_contract_label(value))
+
+
+def _localo_metric_fact_label(value: str) -> str:
+    labels = {
+        "localo_active_place_count": "aktywne lokalizacje",
+        "localo_avg_latest_grid_position": "średnia pozycja w siatce",
+        "localo_avg_rating": "średnia ocena",
+        "localo_avg_visibility_change": "zmiana widoczności",
+        "localo_avg_visibility_current": "średnia widoczność",
+        "localo_competitor_change_count": "zmiany konkurencji",
+        "localo_competitor_count": "konkurenci",
+        "localo_favorite_competitor_count": "obserwowani konkurenci",
+        "localo_gbp_actions_total": "akcje profilu firmy w Google",
+        "localo_gbp_impressions_total": "wyświetlenia profilu firmy w Google",
+        "localo_gbp_metric_point_count": "punkty danych profilu firmy w Google",
+        "localo_keyword_volume_count": "frazy z wolumenem",
+        "localo_latest_grid_position_count": "pozycje z siatki",
+        "localo_place_detail_count": "szczegóły lokalizacji",
+        "localo_review_reply_rate": "udział odpowiedzi na opinie",
+        "localo_reviews_count": "opinie",
+        "localo_reviews_removed_count": "usunięte opinie",
+        "localo_reviews_replied_count": "opinie z odpowiedzią",
+        "localo_snapshot_reviews_count": "opinie w zrzucie",
+        "localo_total_keyword_volume": "łączny wolumen fraz",
+        "localo_tracked_keyword_count": "monitorowane frazy",
+        "localo_visibility_score_count": "punkty widoczności",
+    }
+    return labels.get(value, value)
+
+
 def _present_contracts(visibility_facts: list[MetricFact]) -> list[str]:
     fact_names = {fact.name for fact in visibility_facts}
     present = [
@@ -679,7 +890,7 @@ def _localo_read_contract_statuses(
             facts_by_contract.setdefault(contract, []).append(fact)
 
     return [
-        LocaloReadContractStatus(
+        _label_localo_read_contract_status(LocaloReadContractStatus(
             id=contract,  # type: ignore[arg-type]
             status="ready" if facts_by_contract.get(contract) else "missing",
             evidence_kind=_localo_contract_evidence_kind(contract),
@@ -691,7 +902,7 @@ def _localo_read_contract_statuses(
                 contract,
                 ready=bool(facts_by_contract.get(contract)),
             ),
-        )
+        ))
         for contract in LOCALO_CONTRACT_ORDER
     ]
 
