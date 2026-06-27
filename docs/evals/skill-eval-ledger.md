@@ -6101,3 +6101,37 @@ Result:
 - `/content-planner` browser scan has no rendered hits for `Brief`,
   `Przygotuj brief`, `Podgląd briefów`, `Pokaż briefy` or
   `Zapisz sprawdzenie briefu`.
+
+## 2026-06-27 - Action Detail content plan language
+
+Purpose:
+
+- Verify that the content action detail view no longer exposes old `brief`
+  headings after the Content Planner cleanup.
+- Add a durable guardrail so the old headings cannot return in active source.
+
+Focused proof:
+
+```bash
+pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'renders content plan and WordPress podgląd szkicu without requiring raw JSON'
+pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000
+pnpm --dir apps/dashboard typecheck
+uv run python scripts/marketer_language_guard.py
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-action-detail-content-plan-language/action-detail-content.txt
+```
+
+Result:
+
+- `/actions/act_prepare_content_refresh_queue` renders
+  `Plan treści do sprawdzenia` and `Cel planu treści`.
+- Browser scan found no `Brief treści do sprawdzenia`, `Cel briefu`,
+  `Przygotuj brief`, `Sprawdź inventory`,
+  `content brief without relevance review` or
+  `brief treści bez oceny trafności` hits.
+- `scripts/marketer_language_guard.py` now blocks `Brief treści do
+  sprawdzenia` and `Cel briefu` in active source.

@@ -697,7 +697,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Brief treści do sprawdzenia</h3>
+          <h3 className="text-sm font-semibold text-ink">Plan treści do sprawdzenia</h3>
           <p className="mt-1 break-words text-xs text-slate-500">
             {contentPrimaryUrlValue(item)}
           </p>
@@ -709,7 +709,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Tryb: {contentModeLabel(stringValue(item.mode, "brak"))}</div>
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
         <div>Opcje: {asStringArray(item.decision_option_labels).join(", ") || "brak"}</div>
-        <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
+        <div>Cel planu treści: {stringValue(item.brief_goal, "brak")}</div>
         <div>Intencja: {stringValue(item.intent, "brak")}</div>
         <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
         <div>Odbiorca: {stringValue(item.audience, "brak")}</div>

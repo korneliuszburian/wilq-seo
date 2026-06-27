@@ -780,7 +780,7 @@ const contentActionFixture: ActionObject = {
   risk: "medium",
   evidence_ids: ["ev_refresh_gsc"],
   human_diagnosis: "GSC i WordPress wskazują treści do sprawdzenia.",
-  recommended_reason: "Przejrzyj brief i podgląd szkicu bez publikacji.",
+  recommended_reason: "Przejrzyj plan treści i podgląd szkicu bez publikacji.",
   payload: {
     action_type: "content_refresh_queue",
     preview_contract: "content_brief_preview_v1",
@@ -806,9 +806,9 @@ const contentActionFixture: ActionObject = {
           average_position: 9.441183111311808
         },
         brief_goal:
-          "Sprawdź inventory i duplikaty przed briefem dla `bdo co to`. Bez potwierdzenia URL nie twórz nowej strony.",
+          "Sprawdź spis treści i duplikaty przed planem treści dla `bdo co to`. Bez potwierdzenia URL nie twórz nowej strony.",
         content_angle:
-          "Najpierw potwierdź kanoniczną stronę BDO, potem przygotuj brief bez obietnic pozycji.",
+          "Najpierw potwierdź kanoniczną stronę BDO, potem przygotuj plan treści bez obietnic pozycji.",
         audience: "Przedsiębiorca sprawdzający obowiązki BDO.",
         key_objections: ["czy istnieje już kanoniczny URL", "czy intencja wymaga checklisty"],
         h1_direction: "H1 ma jasno odpowiedzieć na intencję `bdo co to`.",
@@ -862,7 +862,7 @@ const contentActionFixture: ActionObject = {
           clicks: index,
           impressions: 100 + index
         },
-        brief_goal: "Dodatkowy brief do testu limitu kart.",
+        brief_goal: "Dodatkowy plan treści do testu limitu kart.",
         required_validation: ["wordpress_inventory_check"],
         blocked_claims: ["wzrost liczby leadów"],
         source_connectors: ["google_search_console"],
@@ -913,7 +913,7 @@ const contentActionFixture: ActionObject = {
         draft_payload: {
           post_status: "draft",
           post_title: "Odświeżenie: zielony ład",
-          post_excerpt_direction: "Sprawdź inventory i duplikaty przed briefem.",
+          post_excerpt_direction: "Sprawdź spis treści i duplikaty przed planem treści.",
           content_blocks: []
         },
         required_validation_labels: [
@@ -1279,7 +1279,7 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders content brief and WordPress podgląd szkicu without requiring raw JSON", async () => {
+  it("renders content plan and WordPress podgląd szkicu without requiring raw JSON", async () => {
     renderActionDetail("act_content");
     await waitFor(() =>
       expect(
@@ -1288,7 +1288,8 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Brief treści do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Plan treści do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Brief treści do sprawdzenia")).not.toBeInTheDocument();
     expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Tryb: sprawdzić istniejącą treść/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();

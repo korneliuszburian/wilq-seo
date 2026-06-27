@@ -148,6 +148,12 @@ Date: 2026-06-27
   `Podgląd briefów`, `Pokaż briefy` or `Zapisz sprawdzenie briefu` hits.
   Proof:
   `.local-lab/proof/20260627-content-plan-language/content-planner-final.txt`.
+- Action Detail content preview now also uses `Plan treści do sprawdzenia` and
+  `Cel planu treści` instead of the old visible `brief` headings. The generic
+  content operating surface and tactical queue test fixtures were cleaned in
+  the same slice, and `scripts/marketer_language_guard.py` now blocks those old
+  headings in active source. Browser proof:
+  `.local-lab/proof/20260627-action-detail-content-plan-language/action-detail-content.txt`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for

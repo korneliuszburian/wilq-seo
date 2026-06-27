@@ -105,7 +105,6 @@ function marketerBlockedClaimLabel(value: string) {
     "campaign creation": "utworzenie kampanii",
     "zapis zmian kampanii": "zmiana kampanii",
     "wpływ zmian": "wpływ zmian",
-    "content brief without relevance review": "brief treści bez oceny trafności",
     "spadek konwersji": "spadek konwersji",
     "utrata konwersji": "utrata konwersji",
     "współczynnik konwersji": "współczynnik konwersji",

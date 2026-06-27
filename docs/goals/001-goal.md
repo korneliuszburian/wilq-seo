@@ -174,6 +174,12 @@ Latest slice:
   browser proof pass; the rendered view has no `Brief`, `Przygotuj brief`,
   `Podgląd briefów`, `Pokaż briefy` or `Zapisz sprawdzenie briefu` hits:
   `.local-lab/proof/20260627-content-plan-language/content-planner-final.txt`.
+- Action Detail content preview copy now matches the same language:
+  `Plan treści do sprawdzenia` and `Cel planu treści`. The old headings are
+  blocked by `scripts/marketer_language_guard.py`, and browser proof for
+  `/actions/act_prepare_content_refresh_queue` confirms the new wording with
+  no old `Brief treści do sprawdzenia`, `Cel briefu` or `Przygotuj brief` hits:
+  `.local-lab/proof/20260627-action-detail-content-plan-language/action-detail-content.txt`.
 
 ### C. Dashboard Condensation
 

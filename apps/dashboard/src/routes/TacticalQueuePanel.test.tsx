@@ -25,7 +25,7 @@ const queue: TacticalQueueResponse = {
         page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
       diagnosis: "Raw query/page item.",
-      next_step: "Przygotuj brief po sprawdzeniu inventory.",
+      next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
       blocked_claims: ["gwarancja pozycji"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
@@ -44,7 +44,7 @@ const queue: TacticalQueueResponse = {
         page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
       diagnosis: "Raw query/page item.",
-      next_step: "Przygotuj brief po sprawdzeniu inventory.",
+      next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
       blocked_claims: ["gwarancja pozycji"],
       action_ids: ["act_prepare_content_refresh_queue"]
     }

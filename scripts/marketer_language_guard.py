@@ -222,6 +222,14 @@ FORBIDDEN_PHRASES = (
         "Use public/final URL review language instead of mapping_review.",
     ),
     ForbiddenPhrase(
+        "Brief treści do sprawdzenia",
+        "Use Plan treści do sprawdzenia in marketer-facing content action detail.",
+    ),
+    ForbiddenPhrase(
+        "Cel briefu",
+        "Use Cel planu treści in marketer-facing content action detail.",
+    ),
+    ForbiddenPhrase(
         "target_site",
         "Use source_public_url, final_canonical_url, intended_final_url or preview_url.",
     ),

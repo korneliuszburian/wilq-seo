@@ -90,7 +90,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Brak dowodów contentowych w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
     safetyTitle: "Brama bezpieczeństwa treści",
     safetyText:
-      "Briefy, przepisywanie treści i szkice wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje obietnic bez pokrycia w danych.",
+      "Plany treści, przepisywanie treści i szkice wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje obietnic bez pokrycia w danych.",
     connectorIds: [
       "google_search_console",
       "google_analytics_4",
