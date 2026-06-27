@@ -2,9 +2,9 @@
 
 ## Cel
 
-Planowanie treści z API evidence, istniejącego spisu treści i knowledge cards.
+Planowanie treści z dowodów WILQ API, istniejącego spisu treści i kart wiedzy.
 
-Oczekiwany wynik: priorytetowy content plan z evidence IDs, source connectors, kontrolą istniejących treści i akcjami do sprawdzenia.
+Oczekiwany wynik: priorytetowy plan treści z evidence IDs, source connector IDs, kontrolą istniejących treści i akcjami do sprawdzenia.
 
 ## Wymagany kontekst API
 
@@ -25,9 +25,9 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i action IDs zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: `content_diagnostics` section IDs, tactical item IDs, evidence IDs, connector IDs, freshness notes, query/page facts i status dopasowania w spisie treści WordPress wyłącznie z WILQ API.
-3. `Diagnoza`: co evidence wspiera dla zachowania, odświeżenia, scalenia, nowej treści albo blokady, z niepewnością, jeśli evidence jest zagregowane, stare albo niepełne.
+1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
+2. `Dowody`: `content_diagnostics` section IDs, tactical item IDs, evidence IDs, connector IDs, świeżość danych, fakty o zapytaniach/stronach i status dopasowania w spisie treści WordPress wyłącznie z WILQ API.
+3. `Diagnoza`: co dowody wspierają dla zachowania, odświeżenia, scalenia, nowej treści albo blokady, z niepewnością, jeśli dowody są zagregowane, stare albo niepełne.
 4. `Akcje do sprawdzenia`: tactical queue item IDs, opportunity IDs i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
@@ -35,17 +35,17 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 ## Kolejka decyzji
 
 Użyj `content_diagnostics.decision_queue` z WILQ API jako kanonicznej kolejki
-contentowej. Skill nie powinien sam klasyfikować URL-i ani przepisywać reguł
+treści. Skill nie powinien sam klasyfikować adresów ani przepisywać reguł
 deduplikacji z promptu.
 
-## Warunki odmowy lub downgrade do blockera
+## Warunki odmowy lub obniżenia do blokady
 
-Odmów albo obniż odpowiedź do blocker report, gdy:
+Odmów albo obniż odpowiedź do raportu blokady, gdy:
 
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
-- `content_diagnostics.live_data_available=false`, a użytkownik prosi o content plan zamiast readiness/blocker status.
+- Żądana metryka albo akcja nie występuje w context-pack, dowodach, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
+- `content_diagnostics.live_data_available=false`, a użytkownik prosi o plan treści zamiast statusu gotowości/blokady.
 - Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
 
 ## Reguły evidence

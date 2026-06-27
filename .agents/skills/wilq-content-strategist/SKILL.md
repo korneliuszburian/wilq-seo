@@ -1,6 +1,6 @@
 ---
 name: wilq-content-strategist
-description: 'Planuje strategię treści Ekologus z WILQ API evidence, knowledge cards, GSC, GA4, Ahrefs, Merchant i spisem treści WordPress. Użyj, gdy marketer pyta "co napisać albo odświeżyć?", "zrób content plan", "przygotuj brief SEO", "jakie treści dadzą największą szansę?", "co zrobić z tym URL/query?", albo chce decyzje: zachować, odświeżyć, scalić, przepisać, utworzyć albo zablokować. Musi używać evidence IDs, source connectors i knowledge cards, nie generycznego brainstormingu.'
+description: 'Planuje strategię treści Ekologus z WILQ API, dowodami, kartami wiedzy, GSC, GA4, Ahrefs, Merchant i spisem treści WordPress. Użyj, gdy marketer pyta "co napisać albo odświeżyć?", "zrób plan treści", "przygotuj brief SEO", "jakie treści dadzą największą szansę?", "co zrobić z tym adresem albo zapytaniem?", albo chce decyzje: zachować, odświeżyć, scalić, przepisać, utworzyć albo zablokować. Musi używać evidence IDs, source connector IDs i knowledge card IDs jako identyfikatorów źródeł, nie generycznego brainstormingu.'
 ---
 
 # WILQ Content Strategist
@@ -9,7 +9,7 @@ description: 'Planuje strategię treści Ekologus z WILQ API evidence, knowledge
 
 <operating_rule>
 
-Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed obietnicami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje dowodów, zwróć blokadę zamiast wypełniać luki.
 
 </operating_rule>
 
@@ -30,7 +30,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/content/diagnostics` przed budową content planu lub kolejki.
+3. Wywołaj `GET /api/content/diagnostics` przed budową planu treści lub kolejki.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-content-strategist"}` i potwierdź, że istnieje osadzone `content_diagnostics`.
 5. Użyj `content_diagnostics.decision_queue` jako kanonicznej kolejki decyzji. Nie odtwarzaj klasyfikacji contentowej w promptach.
 6. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
@@ -74,7 +74,7 @@ Wymagane powierzchnie connectorów dla tego skilla:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
 
 </evidence_requirements>
 
@@ -82,7 +82,7 @@ Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ AP
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
 
 Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
 

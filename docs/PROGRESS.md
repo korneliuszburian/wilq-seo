@@ -111,6 +111,11 @@ Date: 2026-06-27
   `negative keywords`, `CPA`, `optional preview`, `blocked claims`,
   `read-only rows`, `campaign review queue` and `spend` in active Ads eval/skill
   prose.
+- Content Strategist skill and active Codex eval prompts now use Polish
+  operator wording for brief preview, source facts, missing evidence and
+  forbidden promises. The eval now expects a safe blocker for full drafting when
+  fresh GSC/GA4 credentials are missing, while preserving actionable Content
+  Planner recommendations from available API evidence.
 
 ## Latest Proof Pointers
 
@@ -145,6 +150,17 @@ Date: 2026-06-27
   - Focused scan across active Ads skill prose, active eval cases and static
     eval tests found no remaining active hits for the old Ads eval prompt
     phrases outside the new forbidden-list assertions.
+- Content Strategist skill/eval prompt cleanup:
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1`
+    passed: 7 tests.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk env CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
+    passed against the managed local API; result artifact:
+    `.local-lab/evals/codex-skill/20260627T021047Z`.
+  - `rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+    passed and confirmed API health, content diagnostics and action validation;
+    required GSC/GA4 connector freshness remains blocked by local credential
+    parsing status, so full drafting stays safely blocked.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

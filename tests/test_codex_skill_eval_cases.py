@@ -7,6 +7,10 @@ CASES_PATH = Path("docs/evals/cases/wilq-skill-eval-cases.json")
 HARNESS_PATH = Path("scripts/codex_skill_eval.sh")
 ADS_SKILL_PATH = Path(".agents/skills/wilq-ads-doctor/SKILL.md")
 ADS_OUTPUT_CONTRACT_PATH = Path(".agents/skills/wilq-ads-doctor/references/output-contract.md")
+CONTENT_SKILL_PATH = Path(".agents/skills/wilq-content-strategist/SKILL.md")
+CONTENT_OUTPUT_CONTRACT_PATH = Path(
+    ".agents/skills/wilq-content-strategist/references/output-contract.md"
+)
 
 
 def test_skill_hygiene_blocks_recovery_artifacts_in_skill_prose() -> None:
@@ -42,6 +46,31 @@ def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:
         "read-only rows",
         "campaign review queue",
         "spend",
+    ):
+        assert phrase not in active_text
+
+
+def test_active_eval_prompts_do_not_reintroduce_content_schema_labels() -> None:
+    active_text = "\n".join(
+        [
+            CASES_PATH.read_text(encoding="utf-8"),
+            CONTENT_SKILL_PATH.read_text(encoding="utf-8"),
+            CONTENT_OUTPUT_CONTRACT_PATH.read_text(encoding="utf-8"),
+        ]
+    )
+
+    for phrase in (
+        "source_facts",
+        "missing_evidence",
+        "forbidden_claims",
+        "content_angle",
+        "key_objections",
+        "h1_direction",
+        "h2_direction",
+        "faq_direction",
+        "content plan",
+        "URL/query",
+        "blocker report",
     ):
         assert phrase not in active_text
 
@@ -208,13 +237,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "inventory_check_before_create",
                 "merge_create_after_inventory_check",
                 "review_ahrefs_gap_records",
-                "content_brief_preview_v1",
-                "content_angle",
-                "audience",
-                "key_objections",
-                "h1_direction",
-                "h2_direction",
-                "faq_direction",
+                "podgląd briefu treści",
+                "kąt treści",
+                "odbiorca",
+                "obiekcje",
+                "kierunek H1",
+                "kierunek H2",
+                "kierunek FAQ",
                 "source_public_url",
                 "final_canonical_url",
                 "intended_final_url",
@@ -223,9 +252,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "opcjonalny podgląd",
                 "canonical",
                 "duplicate",
-                "source_facts",
-                "missing_evidence",
-                "forbidden_claims",
+                "fakty źródłowe",
+                "brakujące dowody",
+                "zakazane obietnice",
                 "bdo co to",
                 "zielony ład",
             },
@@ -385,13 +414,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "freshness" in content_case["expected_terms_pl"]
     assert "stale" in content_case["expected_terms_pl"]
     for term in (
-        "content_brief_preview_v1",
-        "content_angle",
-        "audience",
-        "key_objections",
-        "h1_direction",
-        "h2_direction",
-        "faq_direction",
+        "podgląd briefu treści",
+        "kąt treści",
+        "odbiorca",
+        "obiekcje",
+        "kierunek H1",
+        "kierunek H2",
+        "kierunek FAQ",
         "source_public_url",
         "final_canonical_url",
         "intended_final_url",
@@ -400,19 +429,19 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "opcjonalny podgląd",
         "canonical",
         "duplicate",
-        "source_facts",
-        "missing_evidence",
-        "forbidden_claims",
+        "fakty źródłowe",
+        "brakujące dowody",
+        "zakazane obietnice",
     ):
         assert term in content_case["expected_terms_pl"]
-    assert content_case["expected_blocked"] is False
+    assert content_case["expected_blocked"] is True
     for term in (
-        "ekologus.dev.proudsite.pl source evidence",
-        "WordPress publish",
-        "wordpress_draft_write",
+        "adres podglądu jako źródło dowodu",
+        "publikacja w WordPress",
+        "zapis szkicu WordPress",
         "gwarancja braku duplikatów",
         "gwarancja pozycji",
-        "ranking_or_lead_uplift_claim",
+        "obietnica wzrostu pozycji albo leadów",
         "wzrost liczby leadów",
         "wpływ na przychód",
     ):
@@ -530,6 +559,8 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "evidence_backed_reasoning must be true",
         "messy_marketer_prompt",
         "messy_task_pl",
+        "task_pl = case.get(\"task_pl\") or messy_task_pl",
+        "requires task_pl or messy_task_pl",
     ):
         assert required in harness
 
