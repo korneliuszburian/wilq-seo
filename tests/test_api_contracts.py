@@ -11583,6 +11583,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keyword_action["payload"]["api_mutation_ready"] is False
     assert negative_keyword_action["payload"]["payload_preview"][0]["match_type"] == "EXACT"
     assert negative_keyword_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    assert negative_keyword_action["preview_cards"]
+    negative_keyword_preview_card = negative_keyword_action["preview_cards"][0]
+    assert negative_keyword_preview_card["kind"] == "google_ads_negative_keyword_review"
+    assert negative_keyword_preview_card["title_label"] == "Wykluczenie słowa do sprawdzenia"
+    negative_keyword_preview_rows = {
+        row["label"]: row["value"] for row in negative_keyword_preview_card["rows"]
+    }
+    assert negative_keyword_preview_rows["Dopasowanie"] == "dopasowanie ścisłe"
+    assert negative_keyword_preview_rows["Poziom"] == "grupa reklam"
+    assert "EXACT" not in str(negative_keyword_preview_card)
+    assert "ad_group" not in str(negative_keyword_preview_card)
+    assert "101" not in str(negative_keyword_preview_card)
     assert negative_keyword_action["payload"]["keyword_match_context_available"] is True
     assert negative_keyword_action["payload"]["keyword_match_context"][0][
         "keyword_text"

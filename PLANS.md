@@ -565,6 +565,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Ads Doctor start-here copy, effect-check plan copy and business
   context status copy moved from React helpers into Ads API/shared-schema
   presentation fields.
+- 2026-06-27: Google Ads negative-keyword action details now use typed API
+  preview cards with Polish match/level labels and no raw Google Ads IDs in the
+  primary card.
 - 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
   knowledge rules now use Polish operating language. Old active values such as
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and

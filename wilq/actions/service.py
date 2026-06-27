@@ -2515,6 +2515,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _ads_budget_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "recommendation_apply_preview_v1":
         return _ads_recommendation_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "negative_keyword_change_preview_v1":
+        return _ads_negative_keyword_preview_cards(action.payload)
     return []
 
 
@@ -2626,6 +2628,64 @@ def _ads_recommendation_preview_cards(
                 subtitle_label=str(
                     item.get("operation_type_label") or "ocena rekomendacji bez zapisu zmian"
                 ),
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
+
+
+def _ads_negative_keyword_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("payload_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        rows = [
+            _preview_row("Hasło", str(item.get("search_term") or "hasło do sprawdzenia")),
+            _preview_row(
+                "Wykluczenie",
+                str(item.get("negative_keyword_text") or "wykluczenie do sprawdzenia"),
+            ),
+            _preview_row(
+                "Dopasowanie",
+                str(item.get("match_type_label") or "dopasowanie do sprawdzenia"),
+            ),
+            _preview_row("Poziom", str(item.get("level_label") or "poziom do sprawdzenia")),
+            _preview_row(
+                "Kampania",
+                str(item.get("campaign_name") or "kampania do sprawdzenia"),
+            ),
+            _preview_row(
+                "Grupa reklam",
+                str(item.get("ad_group_name") or "grupa reklam do sprawdzenia"),
+            ),
+        ]
+        requirement_labels = _string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"ads_negative_keyword_preview_{index}",
+                kind="google_ads_negative_keyword_review",
+                title_label="Wykluczenie słowa do sprawdzenia",
+                subtitle_label="ocena intencji zapytania bez zapisu zmian",
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
@@ -3610,6 +3670,13 @@ def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
         item["recommendation_type_label"] = _ads_recommendation_type_label(
             item["recommendation_type"]
         )
+    if item.get("match_type_label") in (None, "") and isinstance(
+        item.get("match_type"),
+        str,
+    ):
+        item["match_type_label"] = _ads_keyword_match_type_label(item["match_type"])
+    if item.get("level_label") in (None, "") and isinstance(item.get("level"), str):
+        item["level_label"] = _ads_negative_keyword_level_label(item["level"])
 
 
 def _operator_state_label(value: str) -> str:
@@ -3643,6 +3710,25 @@ def _ads_recommendation_type_label(value: str) -> str:
         "UNSPECIFIED": "typ rekomendacji nieokreślony",
     }
     return labels.get(value, value.replace("_", " ").lower())
+
+
+def _ads_keyword_match_type_label(value: str) -> str:
+    labels = {
+        "BROAD": "dopasowanie przybliżone",
+        "PHRASE": "dopasowanie do wyrażenia",
+        "EXACT": "dopasowanie ścisłe",
+        "UNKNOWN": "dopasowanie nieznane",
+        "UNSPECIFIED": "dopasowanie nieokreślone",
+    }
+    return labels.get(value, "dopasowanie do sprawdzenia")
+
+
+def _ads_negative_keyword_level_label(value: str) -> str:
+    labels = {
+        "ad_group": "grupa reklam",
+        "campaign_review_required": "poziom kampanii wymaga sprawdzenia",
+    }
+    return labels.get(value, "poziom do sprawdzenia")
 
 
 def _wordpress_post_status_label(value: str) -> str:

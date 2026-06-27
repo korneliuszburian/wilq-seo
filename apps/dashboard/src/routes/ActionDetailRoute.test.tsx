@@ -364,7 +364,43 @@ const customSegmentActionFixture: ActionObject = {
 
 const negativeKeywordActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ads_negative_keyword_preview_0",
+      kind: "google_ads_negative_keyword_review",
+      title_label: "Wykluczenie słowa do sprawdzenia",
+      subtitle_label: "ocena intencji zapytania bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Hasło",
+          value: "alba czeladź"
+        },
+        {
+          label: "Wykluczenie",
+          value: "alba czeladź"
+        },
+        {
+          label: "Dopasowanie",
+          value: "dopasowanie ścisłe"
+        },
+        {
+          label: "Poziom",
+          value: "grupa reklam"
+        },
+        {
+          label: "Kampania",
+          value: "Kompendium PPWR"
+        },
+        {
+          label: "Grupa reklam",
+          value: "Grupa reklam 1"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_negative_keywords",
   title: "Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
   domain: "google_ads",
@@ -375,14 +411,16 @@ const negativeKeywordActionFixture: ActionObject = {
   recommended_reason: "Przejrzyj kontekst wyszukiwanego hasła i safety przed wykluczeniem.",
   payload: {
     action_type: "negative_keyword_review",
-    preview_contract: "negative_keyword_review_preview_v1",
+    preview_contract: "negative_keyword_change_preview_v1",
     payload_preview: [
       {
         id: "negative_keyword_preview_23848569273_alba",
         search_term: "alba czeladź",
         negative_keyword_text: "alba czeladź",
         match_type: "EXACT",
+        match_type_label: "dopasowanie ścisłe",
         level: "ad_group",
+        level_label: "grupa reklam",
         campaign_id: "23848569273",
         campaign_name: "Kompendium PPWR",
         ad_group_id: "203360679544",
@@ -1235,14 +1273,17 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Wykluczenie słowa do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("ocena intencji zapytania bez zapisu zmian")).toBeInTheDocument();
     expect(screen.getByText(/Hasło: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Wykluczenie: alba czeladź/)).toBeInTheDocument();
-    expect(screen.getByText(/Dopasowanie: EXACT/)).toBeInTheDocument();
-    expect(screen.getByText(/Poziom: ad_group/)).toBeInTheDocument();
+    expect(screen.getByText(/Dopasowanie: dopasowanie ścisłe/)).toBeInTheDocument();
+    expect(screen.getByText(/Poziom: grupa reklam/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: Kompendium PPWR/)).toBeInTheDocument();
     expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: sprawdzenie intencji zapytania/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: dodanie wykluczających słów kluczowych/)).toBeInTheDocument();
+    expect(screen.queryByText(/EXACT/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ad_group/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/23848569273/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/203360679544/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
