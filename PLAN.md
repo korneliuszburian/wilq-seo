@@ -230,6 +230,8 @@ Known cleanup already started:
   in primary card copy.
 - Demand Gen action details now have typed API preview cards without raw Google
   Ads channel enum keys in primary card copy.
+- Keyword Planner access blocker action details now have typed API preview
+  cards without raw Google Ads API error strings in primary card copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric

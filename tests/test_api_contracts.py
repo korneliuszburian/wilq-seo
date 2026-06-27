@@ -3116,6 +3116,16 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
     assert "rozmiar odbiorców" in action["payload"]["blocked_claims"]
+    assert action["preview_cards"]
+    preview_card = action["preview_cards"][0]
+    assert preview_card["kind"] == "google_ads_keyword_planner_access_review"
+    assert preview_card["title_label"] == "Dostęp do Keyword Plannera do odblokowania"
+    preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
+    assert preview_rows["Powód"] == (
+        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
+    )
+    assert "api_code=403" not in str(preview_card)
+    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in str(preview_card)
     assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
     assert "client_secret" not in serialized
 

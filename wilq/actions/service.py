@@ -60,6 +60,7 @@ from wilq.actions.google_ads.demand_gen import (
 )
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_ID,
+    KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
     keyword_planner_access_payload,
 )
 from wilq.actions.google_ads.negative_keywords import (
@@ -2522,6 +2523,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _ads_negative_keyword_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "demand_gen_readiness_review_preview_v1":
         return _demand_gen_readiness_preview_cards(action.payload)
+    if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
+        return _keyword_planner_access_preview_cards(action.payload)
     return []
 
 
@@ -2846,6 +2849,53 @@ def _demand_gen_readiness_preview_cards(
             )
         )
     return cards
+
+
+def _keyword_planner_access_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    rows = [
+        _preview_row(
+            "Zablokowany dostęp",
+            str(payload.get("blocked_api") or "Keyword Planner"),
+        ),
+        _preview_row(
+            "Powód",
+            "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera",
+        ),
+    ]
+    required_state_labels = _string_list(payload.get("required_google_ads_state_labels"))
+    if required_state_labels:
+        rows.append(_preview_row("Wymagany stan", ", ".join(required_state_labels[:4])))
+    rows.append(
+        _preview_row(
+            "Następny krok",
+            "sprawdź status tokena deweloperskiego w Google Ads, a po akceptacji ponów odczyt danych",
+        )
+    )
+    requirement_labels = _string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+    blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            _preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="keyword_planner_access_preview",
+            kind="google_ads_keyword_planner_access_review",
+            title_label="Dostęp do Keyword Plannera do odblokowania",
+            subtitle_label="blokada dostępu bez zapisu zmian",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=_apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label="wymaga zmiany po stronie Google Ads",
+        )
+    ]
 
 
 def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:

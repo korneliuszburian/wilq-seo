@@ -802,7 +802,31 @@ const socialDraftActionFixture: ActionObject = {
 
 const keywordPlannerAccessActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "keyword_planner_access_preview",
+      kind: "google_ads_keyword_planner_access_review",
+      title_label: "Dostęp do Keyword Plannera do odblokowania",
+      subtitle_label: "blokada dostępu bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Zablokowany dostęp",
+          value: "Keyword Planner"
+        },
+        {
+          label: "Powód",
+          value: "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
+        },
+        {
+          label: "Wymagany stan",
+          value: "token deweloperski zatwierdzony dla Keyword Plannera, Keyword Planner może generować propozycje"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "wymaga zmiany po stronie Google Ads"
+    }
+  ],
   id: "act_keyword_planner_access",
   title: "Odblokuj Keyword Planner dla Google Ads",
   domain: "google_ads",
@@ -1481,14 +1505,18 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Dostęp do Keyword Plannera do odblokowania")).toBeInTheDocument();
+    expect(screen.getByText("blokada dostępu bez zapisu zmian")).toBeInTheDocument();
     expect(screen.getByText(/Zablokowany dostęp: Keyword Planner/)).toBeInTheDocument();
-    expect(screen.getByText(/Powód: api_code=403/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Powód: token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera/
+      )
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Wymagany stan: token deweloperski zatwierdzony dla Keyword Plannera/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Kroki: Sprawdź status tokena deweloperskiego Google Ads API/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: potwierdź akceptację tokena deweloperskiego/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
+    expect(screen.queryByText(/api_code=403/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/DEVELOPER_TOKEN_NOT_APPROVED/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

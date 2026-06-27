@@ -574,6 +574,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Demand Gen action details now use typed API preview cards with
   labelled channel counts and no raw Google Ads channel enum keys in the
   primary card.
+- 2026-06-27: Keyword Planner access blocker action details now use typed API
+  preview cards with a clean access reason and next step instead of raw Google
+  Ads API error strings in the primary card.
 - 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
   knowledge rules now use Polish operating language. Old active values such as
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
