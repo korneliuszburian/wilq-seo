@@ -569,6 +569,10 @@ WILQ is complete for this long-range goal when:
   `ActionObjectPanels`; action panels now rely on API-owned label arrays instead
   of route-local raw-key translation. A stale dashboard expectation for raw
   Merchant vendor text was inverted into a guard against showing that text.
+- 2026-06-27: Merchant skill context-pack now treats `skill_id` as a first-class
+  alias for `skill`, so accidental skill-scoped calls no longer fall back to
+  full context. The default Merchant context is condensed to labels, counts,
+  evidence and action IDs, with raw Merchant vendor enum values removed.
 
 ## Discoveries
 
@@ -593,6 +597,12 @@ WILQ is complete for this long-range goal when:
 - Dead route-local dictionaries are still product risk even when unused. Remove
   them when API-owned labels already exist, and turn stale raw-string fixtures
   into guards instead of preserving them.
+- Request shape drift is product risk. If an operator/runtime naturally sends
+  `skill_id`, the API must route it to the same scoped context as `skill`
+  instead of silently returning the full cross-system context.
+- Skill context size is a product surface. A skill-default context must contain
+  condensed decisions and labels, not full payloads or raw vendor enums that
+  force Codex to parse implementation detail.
 
 ## Decision Log
 
@@ -606,3 +616,6 @@ WILQ is complete for this long-range goal when:
 - Route-local action gate translations are not a compatibility layer. The WILQ
   API/domain contract must provide marketer-facing labels for active action
   gates and blockers.
+- Default skill contexts are operator contracts. Full raw context stays behind
+  explicit `full_context: true`; default skill calls must remain condensed and
+  free of unnecessary raw vendor values.

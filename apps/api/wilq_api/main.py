@@ -209,9 +209,16 @@ async def require_local_api_access(request: Request, call_next: Any) -> Any:
 
 class ContextPackRequest(BaseModel):
     skill: str | None = None
+    skill_id: str | None = None
     focus: str | None = None
     max_opportunities: int = Field(default=5, ge=1, le=25)
     full_context: bool = False
+
+
+def _request_skill(request: ContextPackRequest | None) -> str | None:
+    if request is None:
+        return None
+    return request.skill or request.skill_id
 
 
 def connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
@@ -225,7 +232,7 @@ def connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
 
 
 def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
-    skill = request.skill if request else None
+    skill = _request_skill(request)
     if request and skill == "wilq-daily-command" and not request.full_context:
         return _daily_command_context_pack(request, list_opportunities())
     connectors = list_connector_statuses()
@@ -1062,7 +1069,7 @@ def _skill_scoped_context_pack(
     cached_pack = _read_skill_context_cache(request)
     if cached_pack is not None:
         return cached_pack
-    skill = request.skill or "unknown"
+    skill = _request_skill(request) or "unknown"
     scoped_connectors = SKILL_CONNECTOR_SCOPES.get(skill, set())
     if not scoped_connectors:
         scoped_connectors = {connector.id for connector in connectors if connector.configured}
@@ -1215,7 +1222,7 @@ def _write_skill_context_cache(request: ContextPackRequest, payload: dict[str, A
 def _skill_context_cache_key(request: ContextPackRequest) -> str:
     return "|".join(
         [
-            request.skill or "",
+            _request_skill(request) or "",
             request.focus or "",
             str(request.max_opportunities),
         ]
@@ -1854,13 +1861,159 @@ def _compact_merchant_diagnostics_for_context(
 ) -> dict[str, Any]:
     compact = dict(_without_metric_facts(merchant_diagnostics))
     sections = compact.pop("sections", [])
+    issue_clusters = compact.pop("issue_clusters", [])
+    decision_queue = compact.pop("decision_queue", [])
+    product_performance = compact.get("product_performance_readiness")
+    if isinstance(product_performance, dict):
+        performance_rows = product_performance.get("performance_rows")
+        if isinstance(performance_rows, list):
+            product_performance["performance_rows_total"] = len(performance_rows)
+            product_performance["performance_rows"] = []
+            product_performance["performance_rows_included"] = 0
+    operator_summary = compact.get("operator_summary")
+    if isinstance(operator_summary, dict):
+        operator_summary.pop("top_decision_ids", None)
+        operator_summary.pop("top_issue_cluster_ids", None)
+        operator_summary.pop("top_tactical_item_ids", None)
+        operator_summary["decision_source"] = "kolejka decyzji Merchant"
+        operator_summary["drilldown_source"] = "szczegóły problemów feedu"
+        operator_summary["count_semantics"] = "zgłoszenia problemów, nie unikalne produkty"
+    compact["issue_cluster_summaries"] = _compact_merchant_issue_clusters_for_context(
+        issue_clusters
+    )
+    compact["decision_queue"] = _compact_merchant_decision_queue_for_context(
+        decision_queue
+    )
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
         "sections_omitted": True,
         "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "issue_clusters_total": len(issue_clusters) if isinstance(issue_clusters, list) else 0,
+        "issue_clusters_included": len(compact["issue_cluster_summaries"]),
+        "decision_queue_total": len(decision_queue) if isinstance(decision_queue, list) else 0,
+        "decision_queue_included": len(compact["decision_queue"]),
+        "raw_merchant_vendor_values_removed": True,
         "full_endpoint": "/api/merchant/diagnostics",
     }
     return compact
+
+
+def _compact_merchant_issue_clusters_for_context(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    compact_clusters: list[dict[str, Any]] = []
+    for cluster in value[:4]:
+        if not isinstance(cluster, dict):
+            continue
+        compact_clusters.append(
+            {
+                "problem": cluster.get("issue_type_label") or "problem feedu",
+                "atrybut": cluster.get("affected_attribute_label") or "atrybut",
+                "kontekst": cluster.get("reporting_context_label")
+                or "kontekst raportowania",
+                "status": cluster.get("severity_label") or cluster.get("risk"),
+                "rozwiązanie": cluster.get("resolution_label")
+                or "wymaga sprawdzenia w Merchant",
+                "zgłoszenia": cluster.get("product_count"),
+                "country": cluster.get("country"),
+                "next_step": _context_pack_text(cluster.get("next_step"), limit=180),
+                "evidence_ids": (cluster.get("evidence_ids") or [])[:3],
+                "action_id": cluster.get("action_id"),
+            }
+        )
+    return compact_clusters
+
+
+def _compact_merchant_decision_queue_for_context(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    selected_decisions = _selected_merchant_context_decisions(value)
+    compact_decisions: list[dict[str, Any]] = []
+    for index, decision in enumerate(selected_decisions, start=1):
+        if not isinstance(decision, dict):
+            continue
+        payload_preview = decision.get("payload_preview")
+        compact_decision = {
+            "decision_ref": f"merchant_decision_{index}",
+            "decision_type": decision.get("decision_type"),
+            "status": decision.get("status"),
+            "priority": decision.get("priority"),
+            "problem": decision.get("issue_type_label") or "problem feedu",
+            "atrybut": decision.get("affected_attribute_label") or "atrybut",
+            "kontekst": (
+                decision.get("reporting_context_label")
+                or "kontekst raportowania"
+            ),
+            "summary": _context_pack_text(decision.get("summary"), limit=220),
+            "next_step": _context_pack_text(decision.get("next_step"), limit=200),
+            "metric_tiles": decision.get("metric_tiles") or {},
+            "payload_preview_total": (
+                len(payload_preview) if isinstance(payload_preview, list) else 0
+            ),
+            "payload_preview": _compact_merchant_issue_preview_for_context(
+                payload_preview if isinstance(payload_preview, list) else []
+            ),
+            "evidence_ids": (decision.get("evidence_ids") or [])[:4],
+            "source_connectors": decision.get("source_connectors") or [],
+            "action_ids": decision.get("action_ids") or [],
+            "blocked_claims": _priority_limited_strings(
+                decision.get("blocked_claims"),
+                [
+                    "wpływ zmiany ceny",
+                    "zwrot z reklam na poziomie produktu",
+                    "opłacalność produktu",
+                    "zapis do feedu",
+                    "odzyskany przychód produktu",
+                    "efekt naprawy produktu",
+                ],
+                limit=6,
+            ),
+            "count_semantics": "zgłoszenia problemów, nie unikalne produkty",
+        }
+        safe_id = _safe_merchant_context_id(decision.get("id"))
+        if safe_id is not None:
+            compact_decision["id"] = safe_id
+        compact_decisions.append(compact_decision)
+    return compact_decisions
+
+
+def _selected_merchant_context_decisions(value: list[Any]) -> list[Any]:
+    required_ids = {
+        "merchant_decision_review_ads_product_state_mapping",
+        "merchant_decision_review_price_impact_readiness",
+    }
+    selected: list[Any] = []
+    seen: set[int] = set()
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        if item.get("id") in required_ids:
+            selected.append(item)
+            seen.add(id(item))
+    for item in value:
+        if len(selected) >= 6:
+            break
+        if not isinstance(item, dict) or id(item) in seen:
+            continue
+        selected.append(item)
+        seen.add(id(item))
+    return selected
+
+
+def _safe_merchant_context_id(value: Any) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    blocked_fragments = {
+        "landing_page_error",
+        "shopping_ads",
+        "merchant_action",
+        "free_listings",
+        "n_link",
+    }
+    lowered = value.lower()
+    if any(fragment in lowered for fragment in blocked_fragments):
+        return None
+    return value
 
 
 def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
@@ -2831,7 +2984,12 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
         compact["metrics_total"] = len(metrics)
-        compact["metrics"] = [] if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID else metrics[:1]
+        compact["metrics"] = (
+            []
+            if compact.get("id")
+            in {SEARCH_TERM_NGRAM_ACTION_ID, "act_review_merchant_feed_issues"}
+            else metrics[:1]
+        )
         compact["metrics_included"] = len(compact["metrics"])
     payload = compact.get("payload")
     if not isinstance(payload, dict):
@@ -2905,6 +3063,10 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact_payload.get("preview_contract") == "merchant_feed_issue_review_preview_v1"
         and isinstance(payload_preview, list)
     ):
+        issue_clusters = compact_payload.get("issue_clusters")
+        if isinstance(issue_clusters, list):
+            compact_payload["issue_clusters_total"] = len(issue_clusters)
+            compact_payload.pop("issue_clusters", None)
         compact_payload["payload_preview_total"] = len(payload_preview)
         compact_payload["payload_preview"] = _compact_merchant_issue_preview_for_context(
             payload_preview
@@ -3169,21 +3331,14 @@ def _compact_merchant_issue_preview_for_context(
 ) -> list[dict[str, Any]]:
     compact_items: list[dict[str, Any]] = []
     keep_keys = {
-        "id",
         "preview_contract",
         "operation_type",
-        "cluster_id",
-        "issue_type",
-        "affected_attribute",
         "country",
-        "reporting_context",
-        "severity",
-        "resolution",
         "metric_snapshot",
         "sample_products_available",
         "sample_unavailable_reason",
         "reason",
-        "required_validation",
+        "required_validation_labels",
         "blocked_claims",
         "evidence_ids",
         "api_mutation_ready",
@@ -3194,10 +3349,11 @@ def _compact_merchant_issue_preview_for_context(
         if not isinstance(item, dict):
             continue
         compact_item = {key: item[key] for key in keep_keys if key in item}
-        required_validation = compact_item.get("required_validation")
+        compact_item["issue_summary"] = _context_pack_text(item.get("reason"), limit=180)
+        required_validation = compact_item.get("required_validation_labels")
         if isinstance(required_validation, list):
             compact_item["required_validation_total"] = len(required_validation)
-            compact_item["required_validation"] = required_validation[:4]
+            compact_item["required_validation_labels"] = required_validation[:4]
         blocked_claims = compact_item.get("blocked_claims")
         if isinstance(blocked_claims, list):
             compact_item["blocked_claims"] = blocked_claims[:5]

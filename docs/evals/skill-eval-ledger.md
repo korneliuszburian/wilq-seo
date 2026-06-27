@@ -6347,3 +6347,38 @@ Result:
   Merchant fixture string `availability_updated / n:availability`.
 - `ActionDetailRoute` now asserts that the raw Merchant string is absent instead
   of preserving it as expected output.
+
+## 2026-06-27 - Merchant skill context-pack condensation
+
+Purpose:
+
+- Prevent `wilq-merchant-feed-operator` from receiving the full cross-system
+  context when the caller sends `skill_id` instead of `skill`.
+- Keep the default Merchant skill context focused on labels, counts, evidence
+  and action IDs instead of raw Merchant vendor enum values.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k "scopes_merchant_payload_preview" --maxfail=1
+uv run pytest tests/test_api_contracts.py -q -k "context_pack and (merchant or daily_context_pack_preserves_action_review_gates or full_context_keeps_diagnostic_surfaces)" --maxfail=1
+uv run python -m py_compile apps/api/wilq_api/main.py
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Runtime proof:
+
+```txt
+.local-lab/proof/20260627-merchant-context-pack-condensation/skill-final.json
+.local-lab/proof/20260627-merchant-context-pack-condensation/skill_id-final.json
+```
+
+Result:
+
+- `skill` and `skill_id` request bodies both return `context_scope.mode=skill`
+  and `context_scope.skill=wilq-merchant-feed-operator`.
+- Live default Merchant context-pack is about 54 KB instead of the previous
+  accidental full context of about 6.8 MB.
+- Live scans found zero hits for `landing_page_error`, `SHOPPING_ADS`,
+  `MERCHANT_ACTION`, `ActionObject`, `target_site` and `mapping_review` in the
+  default Merchant skill context.

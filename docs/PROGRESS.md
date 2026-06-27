@@ -127,7 +127,12 @@ Date: 2026-06-27
   inverted so the test now protects the marketer surface from that raw string.
   Browser proof:
   `.local-lab/proof/20260627-remove-action-gate-ui-map/`.
-  `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
+- Merchant skill context-pack is now actually skill-scoped for both `skill` and
+  `skill_id` request bodies. The default Merchant context no longer falls back
+  to the full 6.8 MB cross-system pack and no longer includes raw Merchant
+  vendor enums such as `landing_page_error`, `SHOPPING_ADS` or
+  `MERCHANT_ACTION`; the full endpoint remains available explicitly. Live proof:
+  `.local-lab/proof/20260627-merchant-context-pack-condensation/`.
 - GA4 readiness now sources missing-data labels from the WILQ API/domain
   contract, and GA4 route cards render condensed API metric tiles instead of
   raw metric facts. Browser proof for `/ga4` found no hits for `landing page`,

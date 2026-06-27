@@ -125,6 +125,12 @@ Done when:
 
 Latest slice:
 
+- Merchant skill context-pack now accepts both `skill` and `skill_id` without
+  falling back to the full context. The default
+  `wilq-merchant-feed-operator` context is condensed to the Merchant evidence,
+  action, labels and counts it needs, with raw Merchant vendor enums removed
+  from the default skill payload. Live proof:
+  `.local-lab/proof/20260627-merchant-context-pack-condensation/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays for
   blocker, checklist, missing-data and validation wording instead of translating

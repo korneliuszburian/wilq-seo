@@ -15621,13 +15621,31 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     preview = payload["payload_preview"][0]
     assert preview["preview_contract"] == "merchant_feed_issue_review_preview_v1"
     assert preview["operation_type"] == "MerchantIssueClusterReview"
-    assert preview["issue_type"] == "missing_image"
+    assert "issue_type" not in preview
+    assert "cluster_id" not in preview
+    assert "reporting_context" not in preview
+    assert "issue_summary" in preview
     assert preview["metric_snapshot"] == {"issue_product_count": 3}
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
     assert preview["destructive"] is False
     assert "zapis do feedu" in preview["blocked_claims"]
-    assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
+    serialized = json.dumps(data, ensure_ascii=False)
+    assert "landing_page_error" not in serialized
+    assert "SHOPPING_ADS" not in serialized
+    assert "MERCHANT_ACTION" not in serialized
+    assert "command_center" not in data
+    assert len(serialized.encode()) < 80_000
+
+    alias_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill_id": "wilq-merchant-feed-operator"},
+    )
+    assert alias_response.status_code == 200
+    alias_data = alias_response.json()
+    assert alias_data["context_scope"]["mode"] == "skill"
+    assert alias_data["context_scope"]["skill"] == "wilq-merchant-feed-operator"
+    assert "command_center" not in alias_data
 
 
 def test_ads_doctor_context_pack_uses_summary_diagnostics(
