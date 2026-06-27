@@ -137,6 +137,9 @@ Latest cleanup state:
 - Google Ads recommendation action details now receive API-owned preview cards.
   The marketer-facing card shows Polish recommendation type and neutral
   campaign/budget labels instead of raw recommendation enums or Google Ads IDs.
+- Ads Doctor no longer carries unused route-local decision status/risk
+  translators or the unused connector label import; tests guard against
+  reintroducing those route-local helpers.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 

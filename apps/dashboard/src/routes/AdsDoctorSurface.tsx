@@ -9,7 +9,6 @@ import {
   getAdsDiagnosticsSummary,
   getConnectors
 } from "../lib/api";
-import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
@@ -2361,19 +2360,6 @@ function AdsBlockedHandoffPanel({
       </div>
     </section>
   );
-}
-
-function adsDecisionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  return "status do sprawdzenia";
-}
-
-function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
-  if (risk === "critical") return "krytyczne";
-  if (risk === "high") return "wysokie";
-  if (risk === "medium") return "średnie";
-  return "niskie";
 }
 
 function adsStrategyContextValue(value: unknown) {

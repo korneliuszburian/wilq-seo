@@ -7363,6 +7363,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("adsCampaignReviewReason");
     expect(routeSource).not.toContain("adsCampaignTriageReason");
     expect(routeSource).not.toContain("adsRecommendationReviewReason");
+    expect(routeSource).not.toContain("adsDecisionStatusLabel");
+    expect(routeSource).not.toContain("adsRiskLabel");
+    expect(routeSource).not.toContain("connectorLabelsFromStatuses");
     expect(routeSource).not.toContain("interpretation.interpretation_contract");
     expect(routeSource).not.toContain("interpretation.status}");
     expect(routeSource).not.toContain(

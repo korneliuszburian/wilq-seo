@@ -140,6 +140,8 @@ Wilku can inspect it without reading technical internals.
   labels; the route no longer falls back to raw freshness enum states.
 - Google Ads recommendation action details now render API-owned preview cards
   without raw recommendation enums or raw Google Ads IDs in primary card copy.
+- Ads Doctor dead route-local status/risk label helpers were removed and are
+  guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
