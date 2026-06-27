@@ -25,15 +25,11 @@ import {
   contentDecisionTypeLabel,
   contentDraftGenerationStatusLabel,
   contentDraftOperationLabel,
-  contentDraftOutputKindLabel,
-  contentContractValueLabel,
   contentGateStatusLabel,
   contentMetricFactLabel,
-  contentPostPublicationMeasurementStatusLabel,
   contentPublicationReadinessLabel,
   contentRefreshStatusLabel,
   contentSectionLabel,
-  contentWordPressDraftHandoffStatusLabel,
   contentWordPressPostStatusLabel,
   formatContentMetricValue,
   wordpressMatchConfidenceLabel,
@@ -415,6 +411,7 @@ type ContentBriefPreviewItem = {
   wordpress_inventory_match?: string | null;
   gsc_demand?: string | null;
   metric_snapshot: Record<string, string | number | boolean | null>;
+  metric_snapshot_labels?: Record<string, string>;
   brief_goal: string;
   intent?: string | null;
   content_angle?: string | null;
@@ -432,10 +429,12 @@ type ContentBriefPreviewItem = {
   brand_voice_notes?: string[];
   publication_readiness_status?: string | null;
   publication_blockers?: string[];
+  publication_blocker_labels?: string[];
   source_facts?: string[];
   missing_evidence?: string[];
   forbidden_claims?: string[];
   required_validation: string[];
+  required_validation_labels?: string[];
   blocked_claims: string[];
   source_connectors?: string[];
   evidence_ids: string[];
@@ -546,7 +545,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
           <MetricTile
             key={`${preview.candidate_id}-${label}`}
-            label={label}
+            label={preview.metric_snapshot_labels?.[label] ?? label}
             value={contentBriefMetricValue(label, value)}
           />
         ))}
@@ -572,9 +571,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         />
         <TraceLine
           label="Blokady publikacji"
-          values={(preview.publication_blockers ?? [])
-            .slice(0, 6)
-            .map(contentContractValueLabel)}
+          values={(preview.publication_blocker_labels ?? []).slice(0, 6)}
           empty="brak"
         />
         <TraceLine
@@ -592,7 +589,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
         <TraceLine
           label="Warunki sprawdzenia"
-          values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
+          values={(preview.required_validation_labels ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Nie wolno obiecać"
@@ -656,8 +653,10 @@ type WordPressDraftPayloadPreviewItem = {
   canonical_gate_status?: string | null;
   duplicate_gate_status?: string | null;
   content_gate_summary?: string | null;
+  content_gate_status_summary?: string[];
   draft_generation_status?: string | null;
   draft_blockers?: string[];
+  draft_blocker_labels?: string[];
   draft_generation_contract?: {
     contract_version?: string;
     language?: string;
@@ -668,6 +667,7 @@ type WordPressDraftPayloadPreviewItem = {
     output_must_include?: string[];
     forbidden_outputs?: string[];
   };
+  draft_generation_summary?: string[];
   draft_readiness_review_contract?: {
     contract_version?: string;
     scope?: string;
@@ -675,14 +675,18 @@ type WordPressDraftPayloadPreviewItem = {
     required_fields?: string[];
     blocked_outputs?: string[];
   };
+  draft_readiness_review_contract_summary?: string[];
   draft_readiness_review_recorded_outcome?: string | null;
   canonical_review_recorded_outcome?: string | null;
   duplicate_review_recorded_outcome?: string | null;
   legal_factual_review_recorded_outcome?: string | null;
   human_review_recorded_outcome?: string | null;
   draft_readiness_review_notes?: string | null;
+  draft_readiness_review_summary?: string[];
   wordpress_draft_handoff_status?: string | null;
   wordpress_draft_handoff_blockers?: string[];
+  wordpress_draft_handoff_blocker_labels?: string[];
+  wordpress_draft_handoff_summary?: string[];
   wordpress_draft_handoff_contract?: {
     contract_version?: string;
     scope?: string;
@@ -693,6 +697,7 @@ type WordPressDraftPayloadPreviewItem = {
     required_next_action_contract?: string;
     blocked_outputs?: string[];
   };
+  wordpress_draft_handoff_contract_summary?: string[];
   post_publication_measurement_plan?: {
     contract_version?: string;
     scope?: string;
@@ -705,13 +710,15 @@ type WordPressDraftPayloadPreviewItem = {
     requires_before_claims?: string[];
     blocked_outputs?: string[];
   };
+  post_publication_measurement_summary?: string[];
   draft_payload: {
     post_status?: string;
     post_title?: string;
     post_excerpt_direction?: string;
-    content_blocks?: Array<{ section: string; instruction: string }>;
+    content_blocks?: Array<{ section: string; section_label?: string; instruction: string }>;
   };
   required_validation: string[];
+  required_validation_labels?: string[];
   blocked_claims: string[];
   evidence_ids: string[];
   mutation_allowed: boolean;
@@ -765,12 +772,12 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine label="Kontrole treści" values={contentDraftGateValues(preview)} empty="brak" />
         <TraceLine
           label="Co blokuje szkic"
-          values={(preview.draft_blockers ?? []).slice(0, 6).map(contentContractValueLabel)}
+          values={(preview.draft_blocker_labels ?? []).slice(0, 6)}
           empty="brak"
         />
         <TraceLine
           label="Warunki szkicu"
-          values={contentDraftContractValues(preview.draft_generation_contract)}
+          values={contentDraftContractValues(preview)}
           empty="brak"
         />
         <TraceLine
@@ -780,7 +787,7 @@ function WordPressDraftPayloadPreviewCard({
         />
         <TraceLine
           label="Kontrola szkicu"
-          values={contentDraftReadinessContractValues(preview.draft_readiness_review_contract)}
+          values={contentDraftReadinessContractValues(preview)}
           empty="brak"
         />
         <TraceLine
@@ -790,25 +797,23 @@ function WordPressDraftPayloadPreviewCard({
         />
         <TraceLine
           label="Warunki szkicu WordPress"
-          values={contentWordPressDraftHandoffContractValues(preview.wordpress_draft_handoff_contract)}
+          values={contentWordPressDraftHandoffContractValues(preview)}
           empty="brak"
         />
         <TraceLine
           label="Pomiar po publikacji"
-          values={contentPostPublicationMeasurementValues(
-            preview.post_publication_measurement_plan
-          )}
+          values={contentPostPublicationMeasurementValues(preview)}
           empty="brak"
         />
         <TraceLine
           label="Bloki"
           values={(preview.draft_payload.content_blocks ?? [])
             .slice(0, 4)
-            .map((block) => block.section)}
+            .map((block) => block.section_label ?? block.section)}
         />
         <TraceLine
           label="Warunki sprawdzenia"
-          values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
+          values={(preview.required_validation_labels ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Nie wolno obiecać"
@@ -869,8 +874,8 @@ function ContentSelectedDecisionPanel({
     ...(primaryDecision?.blocked_claims ?? [])
   ]);
   const missingInputs = uniqueValues([
-    ...(primaryPreview?.publication_blockers ?? []).map(contentContractValueLabel),
-    ...(primaryPreview?.required_validation ?? []).map(contentContractValueLabel)
+    ...(primaryPreview?.publication_blocker_labels ?? []),
+    ...(primaryPreview?.required_validation_labels ?? [])
   ]);
   const evidenceIds = uniqueValues([
     ...(primaryPreview?.evidence_ids ?? []),
@@ -1525,100 +1530,51 @@ function contentAddressValues(
 }
 
 function contentDraftGateValues(
-  item: Pick<
-    ContentBriefPreviewItem,
-    | "inventory_gate_status"
-    | "canonical_gate_status"
-    | "duplicate_gate_status"
-    | "content_gate_summary"
-  >
+  item: Pick<WordPressDraftPayloadPreviewItem, "content_gate_status_summary">
 ): string[] {
-  return [
-    item.inventory_gate_status ? `inventory: ${contentGateStatusLabel(item.inventory_gate_status)}` : "",
-    item.canonical_gate_status ? `canonical: ${contentGateStatusLabel(item.canonical_gate_status)}` : "",
-    item.duplicate_gate_status ? `duplikaty: ${contentGateStatusLabel(item.duplicate_gate_status)}` : "",
-    item.content_gate_summary ?? ""
-  ].filter((value) => value.trim().length > 0);
+  return (item.content_gate_status_summary ?? []).filter((value) => value.trim().length > 0);
 }
 
 function contentDraftContractValues(
-  contract: WordPressDraftPayloadPreviewItem["draft_generation_contract"]
+  item: WordPressDraftPayloadPreviewItem
 ): string[] {
-  if (!contract) return [];
-  return [
-    contract.allowed_output_kind ? `output: ${contentDraftOutputKindLabel(contract.allowed_output_kind)}` : "",
-    ...(contract.requires_passed_gates ?? []).slice(0, 3).map((value) => `warunek: ${contentContractValueLabel(value)}`),
-    ...(contract.forbidden_outputs ?? []).slice(0, 3).map((value) => `zakaz: ${contentContractValueLabel(value)}`)
-  ].filter((value) => value.trim().length > 0);
+  return (item.draft_generation_summary ?? []).filter((value) => value.trim().length > 0);
 }
 
 function contentDraftReadinessReviewValues(
   item: WordPressDraftPayloadPreviewItem
 ): string[] {
-  return [
-    item.draft_readiness_review_recorded_outcome
-      ? `szkic: ${contentContractValueLabel(item.draft_readiness_review_recorded_outcome)}`
-      : "",
-    item.canonical_review_recorded_outcome
-      ? `kanoniczny URL: ${contentContractValueLabel(item.canonical_review_recorded_outcome)}`
-      : "",
-    item.duplicate_review_recorded_outcome
-      ? `duplikaty: ${contentContractValueLabel(item.duplicate_review_recorded_outcome)}`
-      : "",
-    item.legal_factual_review_recorded_outcome
-      ? `legal/fakty: ${contentContractValueLabel(item.legal_factual_review_recorded_outcome)}`
-      : "",
-    item.human_review_recorded_outcome ? `człowiek: ${contentContractValueLabel(item.human_review_recorded_outcome)}` : "",
-    item.draft_readiness_review_notes ? `notatka: ${contentContractValueLabel(item.draft_readiness_review_notes)}` : ""
-  ].filter((value) => value.trim().length > 0);
+  return (item.draft_readiness_review_summary ?? []).filter(
+    (value) => value.trim().length > 0
+  );
 }
 
 function contentDraftReadinessContractValues(
-  contract: WordPressDraftPayloadPreviewItem["draft_readiness_review_contract"]
+  item: WordPressDraftPayloadPreviewItem
 ): string[] {
-  if (!contract) return [];
-  return [
-    contract.scope ? `zakres: ${contentContractValueLabel(contract.scope)}` : "",
-    ...(contract.allowed_outcomes ?? []).slice(0, 3).map((value) => `wynik: ${contentContractValueLabel(value)}`),
-    ...(contract.required_fields ?? []).slice(0, 4).map((value) => `wymaga: ${contentContractValueLabel(value)}`),
-    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
-  ].filter((value) => value.trim().length > 0);
+  return (item.draft_readiness_review_contract_summary ?? []).filter(
+    (value) => value.trim().length > 0
+  );
 }
 
 function contentWordPressDraftHandoffValues(item: WordPressDraftPayloadPreviewItem): string[] {
-  return [
-    item.wordpress_draft_handoff_status
-      ? `status: ${contentWordPressDraftHandoffStatusLabel(item.wordpress_draft_handoff_status)}`
-      : "",
-    ...(item.wordpress_draft_handoff_blockers ?? []).slice(0, 5).map((value) => `blokada: ${contentContractValueLabel(value)}`)
-  ].filter((value) => value.trim().length > 0);
+  return (item.wordpress_draft_handoff_summary ?? []).filter((value) => value.trim().length > 0);
 }
 
 function contentWordPressDraftHandoffContractValues(
-  contract: WordPressDraftPayloadPreviewItem["wordpress_draft_handoff_contract"]
+  item: WordPressDraftPayloadPreviewItem
 ): string[] {
-  if (!contract) return [];
-  return [
-    contract.scope ? `zakres: ${contentContractValueLabel(contract.scope)}` : "",
-    contract.required_next_action_contract ? `następny krok: ${contentContractValueLabel(contract.required_next_action_contract)}` : "",
-    ...(contract.requires_passed_gates ?? []).slice(0, 4).map((value) => `warunek: ${contentContractValueLabel(value)}`),
-    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
-  ].filter((value) => value.trim().length > 0);
+  return (item.wordpress_draft_handoff_contract_summary ?? []).filter(
+    (value) => value.trim().length > 0
+  );
 }
 
 function contentPostPublicationMeasurementValues(
-  plan: WordPressDraftPayloadPreviewItem["post_publication_measurement_plan"]
+  item: WordPressDraftPayloadPreviewItem
 ): string[] {
-  if (!plan) return [];
-  return [
-    plan.status ? `status: ${contentPostPublicationMeasurementStatusLabel(plan.status)}` : "",
-    plan.baseline_window ? `punkt odniesienia: ${contentContractValueLabel(plan.baseline_window)}` : "",
-    ...(plan.followup_windows ?? []).slice(0, 3).map((value) => `sprawdzenie: ${contentContractValueLabel(value)}`),
-    ...(plan.required_source_connectors ?? [])
-      .slice(0, 3)
-      .map((value) => `źródło: ${contentContractValueLabel(value)}`),
-    ...(plan.blocked_outputs ?? []).slice(0, 3).map((value) => `blokuje: ${contentContractValueLabel(value)}`)
-  ].filter((value) => value.trim().length > 0);
+  return (item.post_publication_measurement_summary ?? []).filter(
+    (value) => value.trim().length > 0
+  );
 }
 
 function contentBriefMetricValue(metricName: string, value: string | number | boolean | null) {

@@ -116,6 +116,14 @@ Date: 2026-06-27
   forbidden promises. The eval now expects a safe blocker for full drafting when
   fresh GSC/GA4 credentials are missing, while preserving actionable Content
   Planner recommendations from available API evidence.
+- Content Planner no longer translates content action contract values in the
+  route for brief blockers, draft gates, WordPress handoff and measurement
+  summaries. `wilq/actions/content_refresh.py` now owns the Polish source
+  labels/summaries for those payloads, including metric labels, draft block
+  labels and review gate summaries. Browser proof on `/content-planner`
+  expanded brief/draft panels found no active hits for the previous raw
+  contract/version phrases, `inventory:`, `canonical:` or `human review
+  outcome`.
 
 ## Latest Proof Pointers
 
@@ -161,6 +169,16 @@ Date: 2026-06-27
     passed and confirmed API health, content diagnostics and action validation;
     required GSC/GA4 connector freshness remains blocked by local credential
     parsing status, so full drafting stays safely blocked.
+- Content Planner API-sourced label cleanup:
+  - `rtk uv run python -m py_compile wilq/actions/content_refresh.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "metric_backed_prepare_actions_are_evidence_grounded or content_brief_preview or content_public_url or codex_context_pack_scopes_content_strategist_payload" --maxfail=1`
+    passed: 4 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ContentDiagnosticSurface.test.ts --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+    passed: 5 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - Browser proof text:
+    `.local-lab/proof/20260627-content-contract-source-labels/browser/content-planner-briefs-expanded-body-final-v3.txt`.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

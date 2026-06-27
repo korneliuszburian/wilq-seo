@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 
 import {
   contentBriefModeLabel,
@@ -10,6 +11,11 @@ import {
 } from "../lib/contentLabels";
 
 describe("formatContentMetricValue", () => {
+  it("keeps content route contract wording sourced from API summaries", () => {
+    const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).not.toContain("contentContractValueLabel");
+  });
+
   it("formats marketer-facing SEO metric values without raw float noise", () => {
     expect(formatContentMetricValue("ctr", 0.0445468509984639)).toBe("4,45%");
     expect(formatContentMetricValue("average_position", 1.6897081413210446)).toBe("1,69");

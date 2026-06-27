@@ -1976,6 +1976,15 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["canonical_gate_status"]
     assert draft_preview["duplicate_gate_status"]
     assert draft_preview["content_gate_summary"]
+    assert "spis treści: spis potwierdzony na obecnej stronie" in draft_preview[
+        "content_gate_status_summary"
+    ]
+    assert "URL kanoniczny: obecny URL potwierdzony" in draft_preview[
+        "content_gate_status_summary"
+    ]
+    assert "duplikaty: odśwież albo scal zamiast pisać od nowa" in draft_preview[
+        "content_gate_status_summary"
+    ]
     draft_contract = draft_preview["draft_generation_contract"]
     assert draft_contract["contract_version"] == "content_draft_generation_v1"
     assert draft_contract["language"] == "pl-PL"
@@ -2066,7 +2075,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         json={
             "outcome": "approved_for_prepare",
             "reviewed_by": "operator_test",
-            "notes": f"Wybrano kandydata briefu {candidate_id} do context-pack proof.",
+            "notes": f"Wybrano propozycję briefu {candidate_id} do context-pack proof.",
             "checked_items": [
                 f"candidate:{candidate_id}",
                 f"source_type:{candidate['source_type']}",
@@ -2113,10 +2122,14 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["internal_link_direction"]
     assert brief_preview["publication_readiness_status"] == "blocked_until_review"
     assert "legal_factual_review" in brief_preview["publication_blockers"]
+    assert "kontrola prawna i faktograficzna" in brief_preview[
+        "publication_blocker_labels"
+    ]
     assert brief_preview["legal_review_notes"]
     assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
     assert brief_preview["missing_evidence"]
+    assert brief_preview["metric_snapshot_labels"]["clicks"] == "kliknięcia"
     assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
     assert brief_preview["source_public_url"]
     assert brief_preview["final_canonical_url"]
@@ -2132,6 +2145,9 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         "duplicate_or_cannibalization_check"
         in brief_preview["required_validation"]
     )
+    assert "kontrola duplikacji i kanibalizacji" in brief_preview[
+        "required_validation_labels"
+    ]
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]
@@ -2140,6 +2156,11 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
+    assert draft_preview["draft_payload"]["post_title"].startswith("Odświeżenie:")
+    assert any(
+        block.get("section_label") == "intencja"
+        for block in draft_preview["draft_payload"]["content_blocks"]
+    )
     assert draft_preview["source_public_url"]
     assert draft_preview["final_canonical_url"]
     assert draft_preview["intended_final_url"]
@@ -2172,6 +2193,12 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         "requires_passed_gates"
     ]
     assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
+    assert "warunek: kontrola duplikacji i kanibalizacji" in draft_preview[
+        "draft_generation_summary"
+    ]
+    assert "zakaz: obietnica gotowości do publikacji" in draft_preview[
+        "draft_generation_summary"
+    ]
     assert draft_preview["wordpress_draft_handoff_status"] in {
         "blocked_until_draft_gates_pass",
         "blocked_until_draft_readiness_review",
@@ -2180,10 +2207,19 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "wordpress_draft_write_not_requested" in draft_preview[
         "wordpress_draft_handoff_blockers"
     ]
+    assert "zapis szkicu WordPress nie został zlecony" in draft_preview[
+        "wordpress_draft_handoff_blocker_labels"
+    ]
+    assert "blokada: zapis szkicu WordPress nie został zlecony" in draft_preview[
+        "wordpress_draft_handoff_summary"
+    ]
     wordpress_draft_contract = draft_preview["wordpress_draft_handoff_contract"]
     assert wordpress_draft_contract["contract_version"] == "wordpress_draft_handoff_v1"
     assert wordpress_draft_contract["scope"] == "blocked_preview_only"
     assert "wordpress_publish" in wordpress_draft_contract["blocked_outputs"]
+    assert "blokuje: publikacja WordPress" in draft_preview[
+        "wordpress_draft_handoff_contract_summary"
+    ]
     measurement_plan = draft_preview["post_publication_measurement_plan"]
     assert (
         measurement_plan["contract_version"]
@@ -2194,11 +2230,23 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "google_search_console" in measurement_plan["required_source_connectors"]
     assert "google_analytics_4" in measurement_plan["required_source_connectors"]
     assert "content_success_verdict" in measurement_plan["blocked_outputs"]
+    assert "blokuje: werdykt skuteczności treści" in draft_preview[
+        "post_publication_measurement_summary"
+    ]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
+    assert "potwierdzenie człowieka przed zapisem WordPress" in draft_preview[
+        "draft_blocker_labels"
+    ]
+    assert "wymaga: wynik decyzji człowieka" in draft_preview[
+        "draft_readiness_review_contract_summary"
+    ]
     assert (
         "duplicate_or_cannibalization_check"
         in draft_preview["required_validation"]
     )
+    assert "kontrola duplikacji i kanibalizacji" in draft_preview[
+        "required_validation_labels"
+    ]
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]
@@ -2958,7 +3006,15 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert url_contract["contract"] == "content_url_preflight_review_v1"
             assert url_contract["scope"] == "review_only"
             assert "confirm_final_canonical_url" in url_contract["allowed_outcomes"]
+            assert "potwierdź finalny URL kanoniczny" in url_contract[
+                "allowed_outcome_labels"
+            ]
+            assert "docelowy URL publiczny" in url_contract["required_field_labels"]
             assert "wordpress_publish" in url_contract["blocked_outputs"]
+            assert "publikacja WordPress" in url_contract["blocked_output_labels"]
+            assert "obietnica braku duplikacji" in url_contract[
+                "blocked_output_labels"
+            ]
             assert "content_url_preflight_review" in content_payload["required_validation"]
             assert "target_site_mapping_review" not in content_payload["required_validation"]
             assert "content_brief_preview" in content_payload
