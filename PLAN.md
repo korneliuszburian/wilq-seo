@@ -235,6 +235,9 @@ Known cleanup already started:
 - Social draft action details now have typed API preview cards without raw
   source connector IDs or metric keys in primary card copy, and the old
   `source_inputs` payload fallback was removed from Action Detail.
+- WordPress draft handoff action details now have typed API preview cards
+  without raw candidate IDs, preview-contract names or operation names in
+  primary card copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric

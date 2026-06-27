@@ -2535,6 +2535,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _ads_negative_keyword_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "demand_gen_readiness_review_preview_v1":
         return _demand_gen_readiness_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
+        return _wordpress_draft_handoff_preview_cards(action.payload)
     if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
         return _keyword_planner_access_preview_cards(action.payload)
     if action.payload.get("action_type") in {
@@ -2543,6 +2545,80 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
     }:
         return _social_draft_input_preview_cards(action.payload)
     return []
+
+
+def _wordpress_draft_handoff_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("payload_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        rows = [
+            _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
+            _preview_row(
+                "URL publiczny",
+                str(item.get("source_public_url") or item.get("final_canonical_url") or "brak"),
+            ),
+            _preview_row(
+                "URL kanoniczny",
+                str(item.get("final_canonical_url") or "brak"),
+            ),
+        ]
+        preview_url = item.get("preview_url")
+        if isinstance(preview_url, str) and preview_url:
+            rows.append(_preview_row("Podgląd projektu", preview_url))
+        rows.extend(
+            [
+                _preview_row(
+                    "Kontrola URL-a",
+                    str(item.get("canonical_gate_status_label") or "wymaga sprawdzenia"),
+                ),
+                _preview_row(
+                    "Duplikaty",
+                    str(item.get("duplicate_gate_status_label") or "wymaga sprawdzenia"),
+                ),
+                _preview_row(
+                    "Następny krok",
+                    str(item.get("required_next_action_label") or "sprawdzenie szkicu"),
+                ),
+            ]
+        )
+        handoff_summary = _string_list(item.get("wordpress_draft_handoff_summary"))
+        if handoff_summary:
+            rows.append(_preview_row("Szkic WordPress", ", ".join(handoff_summary[:3])))
+        measurement_summary = _string_list(item.get("post_publication_measurement_summary"))
+        if measurement_summary:
+            rows.append(_preview_row("Pomiar po publikacji", ", ".join(measurement_summary[:3])))
+        validation_labels = _string_list(item.get("required_validation_labels"))
+        if validation_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(validation_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"wordpress_draft_handoff_{index}",
+                kind="wordpress_draft_handoff_review",
+                title_label="Szkic WordPress do sprawdzenia",
+                subtitle_label="podgląd bez zapisu i bez publikacji",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
 
 
 def _social_draft_input_preview_cards(

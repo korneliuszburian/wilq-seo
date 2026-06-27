@@ -3352,6 +3352,31 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert wordpress_draft_payload["preview_contract"] == (
                 "wordpress_draft_handoff_preview_v1"
             )
+            handoff_cards = action["preview_cards"]
+            assert handoff_cards
+            assert {card["kind"] for card in handoff_cards} == {
+                "wordpress_draft_handoff_review"
+            }
+            handoff_card_text = json.dumps(
+                [
+                    {
+                        "title_label": card["title_label"],
+                        "subtitle_label": card["subtitle_label"],
+                        "status_label": card["status_label"],
+                        "rows": card["rows"],
+                    }
+                    for card in handoff_cards
+                ],
+                ensure_ascii=False,
+            )
+            assert "Szkic WordPress do sprawdzenia" in handoff_card_text
+            assert "URL publiczny" in handoff_card_text
+            assert "URL kanoniczny" in handoff_card_text
+            assert "Szkic WordPress" in handoff_card_text
+            assert "candidate_id" not in handoff_card_text
+            assert "content_brief_" not in handoff_card_text
+            assert "wordpress_draft_handoff_preview_v1" not in handoff_card_text
+            assert "wordpress_draft_handoff_review" not in handoff_card_text
             assert wordpress_draft_payload["depends_on_action_id"] == (
                 "act_prepare_content_refresh_queue"
             )

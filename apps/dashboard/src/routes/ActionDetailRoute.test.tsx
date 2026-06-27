@@ -1667,6 +1667,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("adsMissingReadContractLabel");
     expect(source).not.toContain("marketerBlockedClaimLabels");
     expect(source).not.toContain("contentWordPressPostStatusLabel");
+    expect(source).not.toContain("wordpressDraftHandoff");
     expect(source).toContain("action.preview_cards");
     expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");

@@ -156,6 +156,9 @@ Latest cleanup state:
   marketer-facing cards show clean source and metric labels instead of raw
   connector IDs or metric keys, and the old `source_inputs` payload fallback
   was removed from Action Detail.
+- WordPress draft handoff action details now receive API-owned preview cards.
+  The marketer-facing cards show URL/checklist rows instead of raw candidate
+  IDs, preview-contract names or operation names.
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.
@@ -353,6 +356,17 @@ Proof:
   `social_draft_input_review` preview cards with no raw
   `google_search_console`, `google_merchant_center`, `clicks` or
   `issue_product_count` in card text.
+- WordPress draft handoff preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "metric_backed_prepare_actions_are_evidence_grounded" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart` through `/api/actions`:
+  `act_prepare_wordpress_draft_handoff` returned 4
+  `wordpress_draft_handoff_review` preview cards with no raw `candidate_id`,
+  `content_brief_`, `wordpress_draft_handoff_preview_v1` or
+  `wordpress_draft_handoff_review` in card text.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
@@ -399,6 +413,7 @@ Next cleanup queue:
    - Demand Gen readiness previews have typed API cards.
    - Keyword Planner access blocker previews have typed API cards.
    - Social draft source-input previews have typed API cards.
+   - WordPress draft handoff previews have typed API cards.
    - migrate remaining action kinds one by one from `DetailPanels.tsx`
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.

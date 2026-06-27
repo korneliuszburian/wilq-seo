@@ -154,6 +154,9 @@ Wilku can inspect it without reading technical internals.
 - Social draft action details now render API-owned preview cards without raw
   source connector IDs or metric keys in primary card copy, and the old
   `source_inputs` payload fallback was removed from Action Detail.
+- WordPress draft handoff action details now render API-owned preview cards
+  without raw candidate IDs, preview-contract names or operation names in
+  primary card copy.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
@@ -171,9 +174,10 @@ are resolved or explicitly deferred.
    Merchant feed issues, Google Ads budget reviews, Google Ads recommendation
    reviews, Google Ads negative-keyword reviews, Google Ads custom-segment
    reviews, Demand Gen readiness reviews, Keyword Planner access blocker
-   reviews and social draft inputs, but remaining action kinds still infer active
-   preview cards from raw payload shape. Migrate those action kinds one by one;
-   raw payload may remain only in collapsed technical detail.
+   reviews, social draft inputs and WordPress draft handoff reviews, but
+   remaining action kinds still infer active preview cards from raw payload
+   shape. Migrate those action kinds one by one; raw payload may remain only in
+   collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.

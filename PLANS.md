@@ -580,6 +580,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Social draft action details now use typed API preview cards with
   clean source and metric labels instead of raw connector IDs or metric keys;
   the Action Detail `source_inputs` payload fallback was removed.
+- 2026-06-27: WordPress draft handoff action details now use typed API preview
+  cards with clean URL/checklist rows instead of raw candidate IDs,
+  preview-contract names or operation names.
 - 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
   knowledge rules now use Polish operating language. Old active values such as
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
