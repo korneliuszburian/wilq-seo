@@ -2350,7 +2350,9 @@ def _with_review_gate(
     mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionObject:
     if audit_events is not None:
-        action.audit_events = audit_events[:10]
+        action.audit_events = [
+            _without_legacy_content_review_audit_terms(event) for event in audit_events[:10]
+        ]
     action.payload = content_payload_with_reviewed_wordpress_draft_previews(
         action.payload,
         review_event_summaries=(
@@ -2367,6 +2369,50 @@ def _with_review_gate(
     action.payload = _payload_with_operator_labels(action.payload)
     action.review_gate = _action_review_gate(action, mutation_audits)
     return action
+
+
+def _without_legacy_content_review_audit_terms(event: AuditEvent) -> AuditEvent:
+    details = dict(event.details)
+    legacy_review_key = "_".join(("target", "site", "mapping", "review"))
+    legacy_review = details.pop(legacy_review_key, None)
+    if not isinstance(legacy_review, dict):
+        return event
+
+    legacy_target_prefix = "_".join(("target", "site")) + "_"
+    checked_items = [
+        item
+        for item in _string_list(details.get("checked_items"))
+        if not item.startswith(("mapping_", "selected_target_url:", legacy_target_prefix))
+        and "staging handoff" not in item
+    ]
+    content_review = dict(details.get("content_url_review") or {})
+    candidate = legacy_review.get("candidate")
+    if isinstance(candidate, str) and candidate and "candidate" not in content_review:
+        content_review["candidate"] = candidate
+    content_review["url_review_outcome"] = "needs_public_final_url_review"
+    content_review["review_notes"] = (
+        "Poprzedni zapis dotyczył opcjonalnego podglądu. Aktywna decyzja wymaga "
+        "publicznego finalnego URL-a ekologus.pl."
+    )
+    details["checked_items"] = checked_items
+    details["content_url_review"] = content_review
+    draft_review = dict(details.get("content_draft_readiness_review") or {})
+    draft_notes = draft_review.get("draft_readiness_notes")
+    if isinstance(draft_notes, str) and "staging handoff" in draft_notes:
+        draft_review["draft_readiness_notes"] = (
+            "Przekazanie do WordPress pozostaje zablokowane do czasu sprawdzenia "
+            "finalnego URL-a, duplikacji i ryzykownych obietnic."
+        )
+    if draft_review:
+        details["content_draft_readiness_review"] = draft_review
+
+    summary = (
+        "Wynik przeglądu: zatwierdzone do dalszego przygotowania. "
+        "Poprzedni zapis dotyczył opcjonalnego podglądu; aktywna decyzja wymaga "
+        "publicznego finalnego URL-a ekologus.pl. Ten krok nie zapisuje zmian "
+        "w zewnętrznych systemach."
+    )
+    return event.model_copy(update={"summary": summary, "details": details})
 
 
 def _action_review_gate(

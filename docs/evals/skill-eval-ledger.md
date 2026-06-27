@@ -6237,6 +6237,42 @@ Result:
 - `scripts/marketer_language_guard.py` now blocks `Brief treści do
   sprawdzenia` and `Cel briefu` in active source.
 
+## 2026-06-27 - Legacy content review audit cleanup
+
+Purpose:
+
+- Prevent old local-state content review audit events from leaking dev-preview
+  review terms back into the active `/api/actions` contract.
+- Keep cleanup at the action service/API boundary instead of adding dashboard
+  masking.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k "legacy_content_review or actions or content_action" --maxfail=1
+uv run python scripts/marketer_language_guard.py
+pnpm --dir apps/dashboard typecheck
+scripts/local_stack.sh restart
+uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Runtime proof:
+
+```txt
+.local-lab/proof/latest-actions-after-legacy-audit-cleanup.json
+.local-lab/proof/20260627-legacy-content-audit-cleanup/actions.txt
+```
+
+Result:
+
+- Live `/api/actions` scan found zero hits for `target_site`,
+  `mapping_review`, `mapping_outcome`, `selected_target_url`,
+  `staging handoff` and `ekologus.dev.proudsite.pl`.
+- `/actions` browser scan found zero hits for those terms plus `payload` and
+  `ActionObject`.
+- Added `test_actions_api_normalizes_legacy_content_review_audit_terms` so old
+  persisted audit details cannot reappear as active action API output.
+
 ## 2026-06-27 - GA4 and Merchant mapping-language cleanup
 
 Purpose:

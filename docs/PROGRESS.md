@@ -182,6 +182,13 @@ Date: 2026-06-27
   do sprawdzenia`, active eval fixtures expect `podgląd planu treści`, and the
   language guard blocks the old phrases. Browser proof:
   `.local-lab/proof/20260627-actions-content-plan-language/actions.txt`.
+- Legacy content-review audit events are now normalized when actions are loaded,
+  so `/api/actions` no longer leaks old dev-preview review terms from local
+  state. Live API proof found zero hits for `target_site`, `mapping_review`,
+  `mapping_outcome`, `selected_target_url`, `staging handoff` and
+  `ekologus.dev.proudsite.pl`; `/actions` browser proof also found zero hits
+  for those terms plus `payload` and `ActionObject`. Proof:
+  `.local-lab/proof/20260627-legacy-content-audit-cleanup/actions.txt`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for

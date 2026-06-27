@@ -209,6 +209,13 @@ Latest slice:
   `podgląd planu treści`, and `scripts/marketer_language_guard.py` blocks the
   old phrases. Browser proof:
   `.local-lab/proof/20260627-actions-content-plan-language/actions.txt`.
+- Persisted legacy content-review audit events are normalized at the action
+  service boundary. `/api/actions` no longer exposes old local-state details
+  such as `target_site`, `mapping_review`, `mapping_outcome`,
+  `selected_target_url`, `staging handoff` or the dev preview host. Focused
+  action/content API tests, `scripts/marketer_language_guard.py`,
+  `scripts/live_contract_smoke.py` and `/actions` browser proof pass. Proof:
+  `.local-lab/proof/20260627-legacy-content-audit-cleanup/actions.txt`.
 
 ### C. Dashboard Condensation
 

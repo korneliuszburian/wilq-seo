@@ -562,6 +562,9 @@ WILQ is complete for this long-range goal when:
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
   `local visibility uplift` are now language-guarded instead of translated in
   React.
+- 2026-06-27: Legacy content-review audit events are normalized at the action
+  service boundary, so old dev-preview review terms stored in local state no
+  longer leak through `/api/actions`.
 
 ## Discoveries
 
@@ -580,6 +583,9 @@ WILQ is complete for this long-range goal when:
 - Knowledge/playbook text can reintroduce old operator language even when API
   payloads are clean. Treat active knowledge sources as product sources and
   clean them with the same guardrails.
+- Persisted local-state records can reintroduce old product semantics even
+  after current action payloads are clean. Treat API-visible history as part of
+  the active contract and normalize or migrate it at the service boundary.
 
 ## Decision Log
 
@@ -588,3 +594,5 @@ WILQ is complete for this long-range goal when:
 - No compatibility strategy for stale dev/migration contracts.
 - No UI translators or hardcoded cleanup helpers.
 - Full condensation is product behavior, not a presentation layer only.
+- Historical audit data may keep storage lineage, but API-visible action output
+  must not expose obsolete dev-preview or review-language fields.

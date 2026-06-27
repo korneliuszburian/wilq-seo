@@ -1993,6 +1993,7 @@ def test_content_brief_candidate_review_persists_audit_event(
         == "merge_required_before_draft"
     )
     assert draft_preview["legal_factual_review_recorded_outcome"] == "needs_expert_review"
+
     assert draft_preview["human_review_recorded_outcome"] == "prepare_only_review_recorded"
     assert (
         draft_preview["draft_readiness_review_notes"]
@@ -2089,6 +2090,74 @@ def test_content_brief_candidate_review_persists_audit_event(
         and item.get("candidate_id") == candidate_id
         for item in preview_items
     )
+
+
+def test_actions_api_normalizes_legacy_content_review_audit_terms(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "legacy_content_review.sqlite3"))
+
+    local_state_store().save_audit_event(
+        AuditEvent(
+            id="audit_legacy_content_url_review",
+            action_id="act_prepare_content_refresh_queue",
+            event_type="human_review_approved_for_prepare",
+            actor="operator_legacy_review",
+            summary=(
+                "Wynik review: zatwierdzone. Sprawdzone: "
+                "mapping_outcome:confirm_alternative_candidate, "
+                "selected_target_url:[stored in audit details], "
+                "mapping_notes:target wybrany tylko do review staging handoff."
+            ),
+            evidence_ids=["ev_refresh_wordpress_content_contract_test"],
+            details={
+                "review_outcome": "approved_for_prepare",
+                "reviewed_by": "operator_legacy_review",
+                "checked_items": [
+                    "candidate:content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
+                    "mapping_outcome:confirm_alternative_candidate",
+                    "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
+                    "mapping_notes:target wybrany tylko do review staging handoff",
+                    "draft_readiness_outcome:needs_duplicate_resolution",
+                ],
+                "target_site_mapping_review": {
+                    "candidate": "content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
+                    "mapping_outcome": "confirm_alternative_candidate",
+                    "mapping_notes": "target wybrany tylko do review staging handoff",
+                    "selected_target_url": "https://ekologus.dev.proudsite.pl/bdo/",
+                },
+                "content_draft_readiness_review": {
+                    "draft_readiness_notes": "staging handoff pozostaje zablokowany",
+                },
+            },
+        )
+    )
+
+    response = client.get("/api/actions")
+
+    assert response.status_code == 200
+    actions = response.json()
+    content_action = next(
+        action for action in actions if action["id"] == "act_prepare_content_refresh_queue"
+    )
+    serialized = json.dumps(content_action, ensure_ascii=False)
+    for stale_term in (
+        "target_site",
+        "mapping_review",
+        "mapping_outcome",
+        "selected_target_url",
+        "staging handoff",
+        "ekologus.dev.proudsite.pl",
+    ):
+        assert stale_term not in serialized
+    review = content_action["audit_events"][0]["details"]["content_url_review"]
+    assert review["url_review_outcome"] == "needs_public_final_url_review"
+    assert "publicznego finalnego URL-a ekologus.pl" in review["review_notes"]
+    assert "publicznego finalnego URL-a ekologus.pl" in content_action["audit_events"][0][
+        "summary"
+    ]
 
 
 def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
