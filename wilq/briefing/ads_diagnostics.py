@@ -5507,10 +5507,10 @@ def _ads_decision_queue(
                 title="Przejrzyj rekomendacje Google Ads bez zapisu zmian",
                 summary=recommendations_read_contract.summary,
                 rationale=(
-                    "Google Ads recommendations są sygnałem do kontroli, nie "
+                    "Rekomendacje Google Ads są sygnałem do kontroli, nie "
                     "automatyczną strategią. WILQ pokazuje typ rekomendacji i "
                     "powiązanie z kampanią/budżetem, ale blokuje akceptację i zapis zmian bez "
-                    "strategii, RMF/compliance review, potwierdzenia i audytu."
+                    "strategii, oceny zgodności Google Ads, potwierdzenia i audytu."
                 ),
                 next_step=recommendations_read_contract.next_step,
                 allowed_metrics=recommendations_read_contract.allowed_metrics,
@@ -6846,6 +6846,7 @@ def _ads_recommendation_type_label(recommendation_type: object) -> str:
         "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
         "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
         "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
+        "DYNAMIC_IMAGE_EXTENSION_OPT_IN": "dynamiczne rozszerzenia graficzne",
         "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
         "UNKNOWN": "typ rekomendacji nieznany",
         "UNSPECIFIED": "typ rekomendacji nieokreślony",

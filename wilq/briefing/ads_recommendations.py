@@ -52,7 +52,11 @@ def build_recommendations_read_contract(
     ]
     if rows or read_attempted:
         if rows:
-            types = _unique(row.recommendation_type for row in rows)
+            types = _unique(
+                row.recommendation_type_label
+                or _recommendation_type_label(row.recommendation_type)
+                for row in rows
+            )
             summary = (
                 f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do sprawdzenia. "
                 f"Typy: {', '.join(types[:5])}. Podgląd wpływu dostępny dla "
@@ -105,11 +109,11 @@ def build_recommendations_read_contract(
     return AdsRecommendationsReadContract(
         status="blocked",
         title="Google Ads: brak kontraktu rekomendacji",
-        summary="WILQ nie ma jeszcze danych z zasobu recommendation.",
+        summary="WILQ nie ma jeszcze odczytu rekomendacji Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["recommendations", *missing_read_contracts],
         operator_review_gates=[],
-        blocked_claims=["Google recommendations", *blocked_claims],
+        blocked_claims=["rekomendacje Google Ads", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=fallback_evidence_ids,
         recommendation_rows=[],
@@ -449,6 +453,7 @@ def _recommendation_type_label(recommendation_type: object) -> str:
         "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
         "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
         "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
+        "DYNAMIC_IMAGE_EXTENSION_OPT_IN": "dynamiczne rozszerzenia graficzne",
         "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
         "UNKNOWN": "typ rekomendacji nieznany",
         "UNSPECIFIED": "typ rekomendacji nieokreślony",

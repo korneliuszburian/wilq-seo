@@ -51,6 +51,10 @@ Wilku can inspect it without reading technical internals.
 - That slice added API-owned negative-keyword labels for safety, validation,
   required checks, match type, exclusion level and keyword context, with focused
   API/dashboard tests and live browser proof.
+- The current verified Ads recommendation/keyword-context cleanup removes raw
+  recommendation enum summaries, mixed English/Polish recommendation-review
+  wording, raw keyword match/status rendering and fixed English shorthand
+  labels.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -59,14 +63,8 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. Ads Doctor still has recommendation and keyword-context copy debt:
-   - `Google Ads recommendations`
-   - `RMF/compliance review`
-   - raw recommendation enum summaries such as `CAMPAIGN_BUDGET`
-   - keyword context table paths that can render raw `BROAD`, `EXACT`,
-     `ENABLED`
-   - fixed UI labels such as `Safety 90d`, `Keywords`, `Źródłowe query`
-   - route-local raw-key fallbacks.
+1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
+   paths. These should disappear as API labels cover the remaining panels.
 2. Merchant first-screen and expanded panels still expose raw connector/evidence
    and contract language:
    - source connector IDs

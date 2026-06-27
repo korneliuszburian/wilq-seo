@@ -25,11 +25,13 @@ Date: 2026-06-27
   compatibility aliases as a strategy. Migrate touched active consumers
   directly.
 
-## Latest Verified Slice
+## Latest Verified Slices
 
-Commit:
+Recent commits:
 
 - `6497044 fix(ads): source negative keyword labels from api`
+- Current Ads recommendation/keyword-context cleanup is verified locally and
+  ready to commit.
 
 What changed:
 
@@ -43,6 +45,12 @@ What changed:
   - blocked promises.
 - The dashboard consumes those labels instead of rendering raw Google Ads enum
   values or route-local translations.
+- Ads recommendation summaries now use Polish recommendation type labels instead
+  of raw Google Ads enum values. Recommendation rationale no longer says
+  mixed English/Polish recommendation-review wording.
+- Ads keyword-context tables now consume API-owned match/status labels, and
+  fixed dashboard labels use `Bezpieczeństwo 90 dni`, `Słowa kluczowe` and
+  `Źródłowe zapytania`.
 
 Proof:
 
@@ -56,19 +64,16 @@ Proof:
   `rtk uv run python scripts/marketer_language_guard.py`
 - Live API/browser proof:
   `.local-lab/proof/20260627-ads-negative-keyword-api-labels/`
+- Live API/browser proof:
+  `.local-lab/proof/20260627-ads-recommendation-keyword-context-cleanup/`
 
 ## Active Gaps
 
 Next cleanup queue:
 
 1. Ads Doctor:
-   - recommendation rationale still contains `Google Ads recommendations` and
-     `RMF/compliance review`,
-   - recommendation summaries can expose raw enum values such as
-     `CAMPAIGN_BUDGET`,
-   - keyword context table can render raw match/status enum values,
-   - visible labels still include `Safety 90d`, `Keywords`, `Źródłowe query`,
-   - route-local raw-key fallbacks still exist.
+   - route-local raw-key fallbacks still exist in secondary helper paths and
+     should be retired as API labels cover those paths.
 2. Merchant:
    - primary decision screen can expose raw source connector IDs and evidence
      IDs,

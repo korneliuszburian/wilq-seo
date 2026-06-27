@@ -897,8 +897,8 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Ocena zapytań" value={searchTermReview.total_search_term_count} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="N-gramy" value={searchTermNgramRows.length} />
-          <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
-          <MetricTile label="Keywords" value={keywordContextRows.length} />
+          <MetricTile label="Bezpieczeństwo 90 dni" value={searchTermSafetyRows.length} />
+          <MetricTile label="Słowa kluczowe" value={keywordContextRows.length} />
           <MetricTile label="Ocena wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
@@ -1475,7 +1475,7 @@ function AdsSharedBudgetDistributionPanel({
                   {row.budget_name ?? row.budget_id}
                 </h4>
                 <p className="mt-1 text-xs text-slate-500">
-                  budget_id={row.budget_id} / kampanie={row.campaign_count}
+                  ID budżetu: {row.budget_id ?? "brak"} / kampanie: {row.campaign_count}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -2051,7 +2051,7 @@ function AdsSearchTermNgramRowsTable({
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
             <th className="py-2 pl-3 pr-4 font-semibold">Temat z zapytań</th>
-            <th className="py-2 pr-4 font-semibold">Źródłowe query</th>
+            <th className="py-2 pr-4 font-semibold">Źródłowe zapytania</th>
             <th className="py-2 pr-4 font-semibold">Przykłady</th>
             <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
             <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
@@ -2173,9 +2173,11 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
               }`}
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.keyword_text}</td>
-              <td className="py-2 pr-4 text-slate-700">{row.match_type}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.negative ? "wykluczające" : row.criterion_status ?? "brak"}
+                {row.match_type_label || "typ dopasowania: brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.negative_label || row.criterion_status_label || "status: brak"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.campaign_name ?? row.campaign_id ?? "brak"}
@@ -2428,7 +2430,7 @@ function adsCondensedMeasurementPlan(decision: AdsDecisionItem | undefined) {
 function adsDecisionStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "zablokowane";
-  return status;
+  return "status do sprawdzenia";
 }
 
 function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
@@ -2455,7 +2457,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_custom_segments") return "Segmenty niestandardowe";
   if (sectionId === "ads_action_safety") return "Bezpieczeństwo akcji Ads";
   if (sectionId === "ads_oauth_blocker") return "Dostęp Google Ads";
-  return sectionId;
+  return "Sekcja Ads";
 }
 
 function adsBusinessContextStatusValue(
@@ -2529,7 +2531,7 @@ function adsAllowedMetricLabel(value: string) {
     ad_group: "grupa reklam",
     status: "status zapytania"
   };
-  return labels[value] ?? value;
+  return labels[value] ?? "metryka Ads";
 }
 
 function adsStrategyContextValue(value: unknown) {

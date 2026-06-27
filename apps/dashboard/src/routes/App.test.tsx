@@ -1307,9 +1307,9 @@ const adsDiagnostics = {
   recommendations_read_contract: {
     id: "ads_recommendations_read_contract",
     status: "ready",
-    title: "Google Ads: rekomendacje do review",
+    title: "Google Ads: rekomendacje do sprawdzenia",
     summary:
-      "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: CAMPAIGN_BUDGET. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
+      "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: budżet kampanii. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
     allowed_metrics: [
       "recommendation_available",
       "recommendation_campaign_count",
@@ -1501,7 +1501,7 @@ const adsDiagnostics = {
     ],
     action_ids: ["act_prepare_google_ads_recommendation_review_queue"],
     next_step:
-      "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię."
+      "Potraktuj rekomendacje Google jako materiał do sprawdzenia, nie jako gotową strategię."
   },
   impression_share_read_contract: {
     id: "ads_impression_share_read_contract",
@@ -3090,11 +3090,11 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj rekomendacje Google Ads bez zapisu zmian",
       summary:
-        "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: CAMPAIGN_BUDGET. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
+        "WILQ ma 1 aktywną rekomendację Google Ads do sprawdzenia. Typy: budżet kampanii. Podgląd wpływu dostępny dla 1; podgląd zmian dla 1.",
       rationale:
-        "Google Ads recommendations są sygnałem do kontroli, nie automatyczną strategią.",
+        "Rekomendacje Google Ads są sygnałem do kontroli, nie automatyczną strategią.",
       next_step:
-        "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię.",
+        "Potraktuj rekomendacje Google jako materiał do sprawdzenia, nie jako gotową strategię.",
       priority: 35,
       metric_tiles: {
         rekomendacje: 1,
