@@ -237,7 +237,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "inventory_check_before_create",
                 "merge_create_after_inventory_check",
                 "review_ahrefs_gap_records",
-                "podgląd briefu treści",
+                "podgląd planu treści",
                 "kąt treści",
                 "odbiorca",
                 "obiekcje",
@@ -414,7 +414,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "freshness" in content_case["expected_terms_pl"]
     assert "stale" in content_case["expected_terms_pl"]
     for term in (
-        "podgląd briefu treści",
+        "podgląd planu treści",
         "kąt treści",
         "odbiorca",
         "obiekcje",

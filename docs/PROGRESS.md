@@ -177,6 +177,11 @@ Date: 2026-06-27
   sprawdzenia wykluczeń`. Obsolete `search terms` blocked-claim aliases were
   removed instead of kept as compatibility labels. Live API and browser proof:
   `.local-lab/proof/20260627-ads-negative-keyword-language/`.
+- The Actions route no longer exposes old `podgląd briefu` wording for the
+  content action. The action source now says `Traktuj plan treści jako materiał
+  do sprawdzenia`, active eval fixtures expect `podgląd planu treści`, and the
+  language guard blocks the old phrases. Browser proof:
+  `.local-lab/proof/20260627-actions-content-plan-language/actions.txt`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for

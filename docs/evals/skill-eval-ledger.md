@@ -134,6 +134,38 @@ Result:
 - Browser proof for `/ads-doctor` has no visible `negative keywords`,
   `search terms`, `payload` or `ActionObject` hits.
 
+## 2026-06-27 - Actions route content plan wording
+
+Purpose:
+
+- Remove the old `podgląd briefu` content wording from active action source,
+  skill eval fixtures and the visible `/actions` route.
+- Keep content planning language aligned with `plan treści`.
+
+Proof:
+
+```bash
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q -k "content or route_specific" --maxfail=1
+rtk uv run pytest tests/test_api_contracts.py -q -k "actions or content_action" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "actions route"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-actions-content-plan-language/actions.txt
+```
+
+Result:
+
+- Browser proof has no `podgląd briefu`, `podgląd briefu treści`,
+  `Brief treści`, `Cel briefu`, `payload` or `ActionObject` hits.
+- The visible action copy says `Traktuj plan treści jako materiał do
+  sprawdzenia`.
+
 ## 2026-06-27 - GA4 expanded preview metric labels
 
 Purpose:

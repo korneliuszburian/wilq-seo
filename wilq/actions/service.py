@@ -903,7 +903,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             recommended_reason=(
                 "Na /content-planner przygotuj kolejkę zachowania, odświeżenia, scalenia, "
                 "nowej treści albo blokady. "
-                "Traktuj podgląd briefu jako materiał do sprawdzenia: GSC/WordPress może dać "
+                "Traktuj plan treści jako materiał do sprawdzenia: GSC/WordPress może dać "
                 "odświeżenie albo scalenie, a Ahrefs tylko tematy do oceny po "
                 "dodatkowym sprawdzeniu popytu z GSC i spisu treści."
             ),

@@ -204,6 +204,11 @@ Latest slice:
   source; live API proof confirms no old English terms in the Ads diagnostics
   payload:
   `.local-lab/proof/20260627-ads-negative-keyword-language/`.
+- Actions route content copy now uses `plan treści` consistently instead of
+  old `podgląd briefu` wording. Active skill/eval terms were migrated to
+  `podgląd planu treści`, and `scripts/marketer_language_guard.py` blocks the
+  old phrases. Browser proof:
+  `.local-lab/proof/20260627-actions-content-plan-language/actions.txt`.
 
 ### C. Dashboard Condensation
 

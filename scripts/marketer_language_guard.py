@@ -238,6 +238,14 @@ FORBIDDEN_PHRASES = (
         "Use Cel planu treści in marketer-facing content action detail.",
     ),
     ForbiddenPhrase(
+        "podgląd briefu",
+        "Use plan treści / podgląd planu treści in marketer-facing content copy.",
+    ),
+    ForbiddenPhrase(
+        "podgląd briefu treści",
+        "Use plan treści / podgląd planu treści in marketer-facing content copy.",
+    ),
+    ForbiddenPhrase(
         "mapowanie konwersji",
         "Use powiązanie konwersji in marketer-facing GA4 copy.",
     ),
