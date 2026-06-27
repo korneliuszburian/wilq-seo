@@ -11431,6 +11431,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["budget_payload_preview"][0][
         "operation_type"
     ] == "CampaignBudgetOperation"
+    assert campaign_review_action["preview_cards"]
+    budget_preview_card = campaign_review_action["preview_cards"][0]
+    assert budget_preview_card["kind"] == "google_ads_budget_review"
+    assert budget_preview_card["title_label"] == "Budżet kampanii do sprawdzenia"
+    budget_preview_rows = {row["label"]: row["value"] for row in budget_preview_card["rows"]}
+    assert budget_preview_rows["Kampania"] == "Brand Search"
+    assert budget_preview_rows["Budżet"] == "Brand budget"
+    assert budget_preview_rows["Obecny budżet"] == "30.00 PLN"
+    assert budget_preview_rows["Propozycja"] == "42.00 PLN"
+    assert "CampaignBudgetOperation" not in str(budget_preview_card)
+    assert "101" not in str(budget_preview_card)
+    assert "701" not in str(budget_preview_card)
     assert campaign_review_action["payload"]["budget_payload_preview"][0][
         "proposed_budget_amount_micros"
     ] == 42000000

@@ -135,7 +135,39 @@ const actionFixture: ActionObject = {
 
 const adsActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ads_budget_preview_0",
+      kind: "google_ads_budget_review",
+      title_label: "Budżet kampanii do sprawdzenia",
+      subtitle_label: "ocena budżetu bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Kampania",
+          value: "(2026) Ekologus Ogólna"
+        },
+        {
+          label: "Budżet",
+          value: "(2026) Ekologus Ogólna"
+        },
+        {
+          label: "Obecny budżet",
+          value: "10.00 PLN"
+        },
+        {
+          label: "Propozycja",
+          value: "brak"
+        },
+        {
+          label: "Bezpieczeństwo",
+          value: "zablokowane"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ads",
   title: "Przygotuj kolejkę przeglądu kampanii Google Ads",
   domain: "google_ads",
@@ -1134,12 +1166,15 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Budżet kampanii do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Ocena budżetu bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.getByText("ocena budżetu bez zapisu zmian")).toBeInTheDocument();
     expect(screen.queryByText("CampaignBudgetOperation")).not.toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
-    expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
+    expect(screen.getByText(/Budżet: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
+    expect(screen.getByText(/Obecny budżet: 10.00 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
+    expect(screen.queryByText(/23704710371/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/15473121355/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

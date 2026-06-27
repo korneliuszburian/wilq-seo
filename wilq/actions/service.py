@@ -2511,9 +2511,72 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
 def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewModel]:
     if action.payload.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT:
         return _merchant_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "budget_apply_preview_v1":
+        return _ads_budget_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "recommendation_apply_preview_v1":
         return _ads_recommendation_preview_cards(action.payload)
     return []
+
+
+def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("budget_payload_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        safety_review = item.get("safety_review") if isinstance(item.get("safety_review"), dict) else {}
+        rows = [
+            _preview_row("Kampania", str(item.get("campaign_name") or "kampania do sprawdzenia")),
+            _preview_row(
+                "Budżet",
+                str(item.get("campaign_budget_name") or "budżet kampanii do sprawdzenia"),
+            ),
+            _preview_row(
+                "Obecny budżet",
+                _micros_money_label(item.get("current_budget_amount_micros")),
+            ),
+            _preview_row(
+                "Propozycja",
+                _micros_money_label(item.get("proposed_budget_amount_micros")),
+            ),
+            _preview_row(
+                "Bezpieczeństwo",
+                str(safety_review.get("status_label") or "wymaga sprawdzenia"),
+            ),
+        ]
+        missing_requirement_labels = _string_list(safety_review.get("missing_requirement_labels"))
+        if missing_requirement_labels:
+            rows.append(_preview_row("Braki", ", ".join(missing_requirement_labels[:4])))
+        requirement_labels = _string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"ads_budget_preview_{index}",
+                kind="google_ads_budget_review",
+                title_label="Budżet kampanii do sprawdzenia",
+                subtitle_label=str(
+                    item.get("operation_type_label") or "ocena budżetu bez zapisu zmian"
+                ),
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
 
 
 def _ads_recommendation_preview_cards(
@@ -2644,6 +2707,12 @@ def _merchant_issue_count_label(value: Any) -> str:
                 return f"{count} zgłoszenia problemu"
             return f"{count} zgłoszeń problemu"
     return "brak liczby zgłoszeń"
+
+
+def _micros_money_label(value: Any, currency_code: str = "PLN") -> str:
+    if not isinstance(value, int | float):
+        return "brak"
+    return f"{value / 1_000_000:.2f} {currency_code}"
 
 
 def _merchant_sample_summary(item: dict[str, Any]) -> str:

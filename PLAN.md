@@ -221,6 +221,8 @@ Known cleanup already started:
   action kinds still need direct migration away from payload-shape inference.
 - Google Ads recommendation action details now have typed API preview cards
   without raw recommendation enums or raw Google Ads IDs in primary card copy.
+- Google Ads budget action details now have typed API preview cards without raw
+  operation names or raw Google Ads IDs in primary card copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric

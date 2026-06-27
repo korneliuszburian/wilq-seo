@@ -643,6 +643,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Google Ads recommendation action details now use API-owned typed
   `preview_cards` without raw recommendation enums or raw campaign/budget IDs
   in primary card text.
+- 2026-06-27: Google Ads budget action details now use API-owned typed
+  `preview_cards` without raw operation names or raw campaign/budget IDs in
+  primary card text.
 - 2026-06-27: Localo metric labels now live in one domain label source used by
   Localo diagnostics and marketing brief. `MetricFactChips` no longer owns a
   metric-name dictionary; it renders API `metric_label` and exposes missing

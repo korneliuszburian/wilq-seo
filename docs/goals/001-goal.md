@@ -140,6 +140,8 @@ Wilku can inspect it without reading technical internals.
   labels; the route no longer falls back to raw freshness enum states.
 - Google Ads recommendation action details now render API-owned preview cards
   without raw recommendation enums or raw Google Ads IDs in primary card copy.
+- Google Ads budget action details now render API-owned preview cards without
+  raw operation names or raw Google Ads IDs in primary card copy.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
@@ -154,10 +156,10 @@ are resolved or explicitly deferred.
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 2. `DetailPanels.tsx` now has typed action-detail preview view-model paths for
-   Merchant feed issues and Google Ads recommendation reviews, but remaining
-   action kinds still infer active preview cards from raw payload shape.
-   Migrate those action kinds one by one; raw payload may remain only in
-   collapsed technical detail.
+   Merchant feed issues, Google Ads budget reviews and Google Ads
+   recommendation reviews, but remaining action kinds still infer active
+   preview cards from raw payload shape. Migrate those action kinds one by one;
+   raw payload may remain only in collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.
