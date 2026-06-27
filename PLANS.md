@@ -701,6 +701,10 @@ WILQ is complete for this long-range goal when:
   raw payload shape, and live API/browser proof shows no raw preview-contract
   names, operation names, metric keys or source metric keys in the primary
   card. Runtime remains slow and needs a focused performance slice.
+- 2026-06-27: Localo visibility action details now receive API-owned preview
+  cards. `DetailPanels.tsx` no longer renders Localo visibility cards by
+  inferring raw payload shape, and the API card is condensed to key
+  visibility/review metrics with no raw `localo_*` metric keys in marketer copy.
 
 ## Discoveries
 

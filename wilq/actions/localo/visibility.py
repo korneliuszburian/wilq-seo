@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.schemas import MetricFact
 
 LOCALO_VISIBILITY_REVIEW_ACTION_ID = "act_review_localo_visibility_facts"
@@ -70,6 +71,7 @@ def localo_visibility_review_payload_from_metric_facts(
                 "operation_type": "local_visibility_review",
                 "source_metric_names": source_metric_names,
                 "metric_snapshot": _metric_snapshot(visibility_facts),
+                "metric_snapshot_labels": _metric_snapshot_labels(visibility_facts),
                 "allowed_contracts": present_contracts,
                 "missing_read_contracts": missing_contracts,
                 "reason": (
@@ -120,6 +122,13 @@ def validate_localo_visibility_review_payload(payload: dict[str, Any]) -> list[s
                 )
             if not isinstance(preview.get("metric_snapshot"), dict):
                 errors.append("local_visibility_task payload_preview requires metric_snapshot.")
+            if preview.get("metric_snapshot") and not isinstance(
+                preview.get("metric_snapshot_labels"), dict
+            ):
+                errors.append(
+                    "local_visibility_task payload_preview requires "
+                    "metric_snapshot_labels for visible metrics."
+                )
             if not isinstance(preview.get("required_validation"), list):
                 errors.append(
                     "local_visibility_task payload_preview requires required_validation list."
@@ -187,6 +196,14 @@ def _metric_snapshot(facts: list[MetricFact]) -> dict[str, int | float | str]:
         if fact.name not in snapshot:
             snapshot[fact.name] = fact.value
     return snapshot
+
+
+def _metric_snapshot_labels(facts: list[MetricFact]) -> dict[str, str]:
+    labels: dict[str, str] = {}
+    for fact in facts:
+        if fact.name not in labels:
+            labels[fact.name] = localo_metric_fact_label(fact.name)
+    return labels
 
 
 def _unique(items: Iterable[str]) -> list[str]:

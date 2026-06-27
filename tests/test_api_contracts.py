@@ -5937,6 +5937,10 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert localo_preview["operation_type"] == "local_visibility_review"
     assert localo_preview["metric_snapshot"]["localo_active_place_count"] == 4
     assert localo_preview["metric_snapshot"]["localo_tracked_keyword_count"] == 23
+    assert (
+        localo_preview["metric_snapshot_labels"]["localo_avg_visibility_current"]
+        == "średnia widoczność"
+    )
     assert localo_preview["allowed_contracts"] == [
         "place_inventory",
         "local_rankings",
@@ -5958,6 +5962,27 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "gbp_visibility" in localo_action["payload"]["missing_read_contracts"]
     assert "local_visibility_task" in json.dumps(localo_action, ensure_ascii=False)
     assert "localo-access-test" not in json.dumps(localo_action, ensure_ascii=False)
+    assert localo_action["preview_cards"]
+    localo_preview_card = localo_action["preview_cards"][0]
+    assert localo_preview_card["kind"] == "localo_visibility_review"
+    assert localo_preview_card["title_label"] == "Widoczność lokalna do sprawdzenia"
+    localo_preview_rows = {
+        row["label"]: row["value"] for row in localo_preview_card["rows"]
+    }
+    assert localo_preview_rows["średnia widoczność"]
+    assert localo_preview_rows["monitorowane frazy"] == "23"
+    assert "Dozwolone odczyty" in localo_preview_rows
+    assert "Braki" in localo_preview_rows
+    localo_marketer_card_text = str(
+        {
+            key: localo_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "local_visibility_review_preview_v1" not in localo_marketer_card_text
+    assert "local_visibility_review" not in localo_marketer_card_text
+    assert "localo_avg_visibility_current" not in localo_marketer_card_text
+    assert "source_metric_names" not in localo_marketer_card_text
 
     validate_response = client.post(
         f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/validate"

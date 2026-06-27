@@ -171,7 +171,6 @@ type PayloadPreviewItem = {
     | "customSegment"
     | "negativeKeyword"
     | "demandGenReadiness"
-    | "localVisibility"
     | "keywordPlannerAccess"
     | "adsBusinessGuardrail";
   item: Record<string, unknown>;
@@ -224,9 +223,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "demandGenReadiness") {
     return <DemandGenReadinessPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "localVisibility") {
-    return <LocalVisibilityPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "keywordPlannerAccess") {
     return <KeywordPlannerAccessPreviewCard item={previewItem.item} />;
@@ -421,44 +417,6 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
   );
 }
 
-function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Widoczność lokalna do sprawdzenia</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            Ocena lokalna bez zapisu zmian
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Widoczność: {formatNumber(metricSnapshot.localo_avg_visibility_current)}</div>
-        <div>Zmiana widoczności: {formatPercent(metricSnapshot.localo_avg_visibility_change)}</div>
-        <div>Średnia pozycja grid: {formatNumber(metricSnapshot.localo_avg_latest_grid_position)}</div>
-        <div>Monitorowane frazy: {formatNumber(metricSnapshot.localo_tracked_keyword_count)}</div>
-        <div>Aktywne miejsca: {formatNumber(metricSnapshot.localo_active_place_count)}</div>
-        <div>Ocena: {formatNumber(metricSnapshot.localo_avg_rating)}</div>
-        <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
-        <div>Odsetek odpowiedzi na opinie: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
-        <PreviewValues label="Dozwolone odczyty" values={readContractValues(item.allowed_contract_labels)} />
-        <PreviewValues
-          label="Braki"
-          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
-        />
-        <PreviewValues
-          label="Warunki sprawdzenia"
-          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
-        />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
-        <ExecutionStateLine item={item} />
-      </div>
-    </article>
-  );
-}
-
 function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknown> }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
@@ -567,7 +525,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "customSegment") return 2;
   if (kind === "negativeKeyword") return 3;
   if (kind === "demandGenReadiness") return 5;
-  if (kind === "localVisibility") return 7;
   if (kind === "keywordPlannerAccess") return 9;
   if (kind === "adsBusinessGuardrail") return 10;
   return 13;
@@ -597,12 +554,6 @@ function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewIt
     stringValue(item.preview_contract, "") === "demand_gen_readiness_review_preview_v1"
   ) {
     return "demandGenReadiness";
-  }
-  if (
-    stringValue(item.operation_type, "") === "local_visibility_review" ||
-    stringValue(item.preview_contract, "") === "local_visibility_review_preview_v1"
-  ) {
-    return "localVisibility";
   }
   return "generic";
 }

@@ -750,7 +750,40 @@ const ga4TrackingActionFixture: ActionObject = {
 
 const localoActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "localo_visibility_review",
+      kind: "localo_visibility_review",
+      title_label: "Widoczność lokalna do sprawdzenia",
+      subtitle_label: "ocena lokalna bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "średnia pozycja w siatce", value: "3.2632" },
+        { label: "zmiana widoczności", value: "69.57%" },
+        { label: "średnia widoczność", value: "53.1739" },
+        { label: "monitorowane frazy", value: "23" },
+        { label: "aktywne lokalizacje", value: "4" },
+        { label: "średnia ocena", value: "4.75" },
+        { label: "udział odpowiedzi na opinie", value: "81.33%" },
+        { label: "opinie", value: "798" },
+        { label: "Dozwolone odczyty", value: "lokalne pozycje, lista lokalizacji, opinie" },
+        {
+          label: "Braki",
+          value: "widoczność Google Business Profile, widoczność konkurencji, lokalne zadania do wykonania"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value: "sprawdź listę lokalizacji, sprawdź zbiorcze dane lokalnych pozycji, sprawdź zbiorcze dane opinii"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "wyniki profilu firmy w Google, widoczność konkurencji, poprawa widoczności lokalnej"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_localo",
   title: "Przygotuj sprawdzenie widoczności lokalnej Localo",
   domain: "localo",
@@ -777,6 +810,17 @@ const localoActionFixture: ActionObject = {
           localo_review_reply_rate: 0.813283,
           localo_reviews_count: 798,
           localo_read_contract_count: 3
+        },
+        metric_snapshot_labels: {
+          localo_active_place_count: "aktywne lokalizacje",
+          localo_avg_latest_grid_position: "średnia pozycja w siatce",
+          localo_avg_rating: "średnia ocena",
+          localo_avg_visibility_change: "zmiana widoczności",
+          localo_avg_visibility_current: "średnia widoczność",
+          localo_read_contract_count: "odczytane obszary",
+          localo_review_reply_rate: "udział odpowiedzi na opinie",
+          localo_reviews_count: "opinie",
+          localo_tracked_keyword_count: "monitorowane frazy"
         },
         allowed_contracts: ["local_rankings", "place_inventory", "reviews"],
         allowed_contract_labels: ["lokalne pozycje", "lista lokalizacji", "opinie"],
@@ -1642,14 +1686,14 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Widoczność lokalna do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/Widoczność: 53,174/)).toBeInTheDocument();
-    expect(screen.getByText(/Zmiana widoczności: 69,57%/)).toBeInTheDocument();
-    expect(screen.getByText(/Średnia pozycja grid: 3,263/)).toBeInTheDocument();
-    expect(screen.getByText(/Monitorowane frazy: 23/)).toBeInTheDocument();
-    expect(screen.getByText(/Aktywne miejsca: 4/)).toBeInTheDocument();
-    expect(screen.getByText(/Ocena: 4,75/)).toBeInTheDocument();
-    expect(screen.getByText(/Opinie: 798/)).toBeInTheDocument();
-    expect(screen.getByText(/Odsetek odpowiedzi na opinie: 81,33%/)).toBeInTheDocument();
+    expect(screen.getByText(/średnia widoczność: 53.1739/)).toBeInTheDocument();
+    expect(screen.getByText(/zmiana widoczności: 69.57%/)).toBeInTheDocument();
+    expect(screen.getByText(/średnia pozycja w siatce: 3.2632/)).toBeInTheDocument();
+    expect(screen.getByText(/monitorowane frazy: 23/)).toBeInTheDocument();
+    expect(screen.getByText(/aktywne lokalizacje: 4/)).toBeInTheDocument();
+    expect(screen.getByText(/średnia ocena: 4.75/)).toBeInTheDocument();
+    expect(screen.getByText(/opinie: 798/)).toBeInTheDocument();
+    expect(screen.getByText(/udział odpowiedzi na opinie: 81.33%/)).toBeInTheDocument();
     expect(screen.getByText(/Dozwolone odczyty: lokalne pozycje/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: widoczność Google Business Profile/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: wyniki profilu firmy w Google/)).toBeInTheDocument();
@@ -1789,8 +1833,8 @@ describe("Action detail route", () => {
     expect(source).not.toContain("wordpressDraftHandoff");
     expect(source).not.toContain("searchTermNgram");
     expect(source).not.toContain("ga4TrackingQuality");
+    expect(source).not.toContain("localVisibility");
     expect(source).toContain("action.preview_cards");
-    expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");
   });
 });

@@ -32,6 +32,7 @@ LOCALO_METRIC_FACT_LABELS = {
     "localo_keyword_volume_count": "frazy z wolumenem",
     "localo_latest_grid_position_count": "pozycje z siatki",
     "localo_place_detail_count": "szczegóły lokalizacji",
+    "localo_read_contract_count": "odczytane obszary",
     "localo_review_reply_rate": "udział odpowiedzi na opinie",
     "localo_reviews_count": "opinie",
     "localo_reviews_removed_count": "usunięte opinie",

@@ -185,8 +185,8 @@ are resolved or explicitly deferred.
    reviews, Demand Gen readiness reviews, Keyword Planner access blocker
    reviews, social draft inputs, WordPress draft handoff reviews and content
    refresh reviews plus Google Ads search-term n-gram reviews and GA4
-   tracking-quality reviews, but remaining action kinds still infer active
-   preview cards from raw payload shape.
+   tracking-quality reviews plus Localo visibility reviews, but remaining
+   action kinds still infer active preview cards from raw payload shape.
    Migrate those action kinds one by one; raw payload may remain only in
    collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have

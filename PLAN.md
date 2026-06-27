@@ -251,6 +251,9 @@ Known cleanup already started:
   marketing brief and shared metric chips; remaining dimension labels in metric
   chips now come from API-owned `dimension_labels` and
   `dimension_value_labels`.
+- Localo visibility action details now have typed API preview cards;
+  `DetailPanels.tsx` no longer renders Localo cards by inferring raw payload
+  shape. The card is condensed to key visibility/review metrics.
 - Merchant diagnostic metric facts now carry API-owned metric and dimension
   labels; `MerchantDiagnosticSurface` no longer owns a local metric-label
   dictionary for Merchant metric tiles.

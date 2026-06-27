@@ -112,6 +112,10 @@ Latest cleanup state:
   diagnostics and marketing brief share one domain label source, and the
   dashboard no longer keeps a local metric-name dictionary for
   `MetricFactChips`.
+- Localo visibility action details now use API-owned typed preview cards.
+  `DetailPanels.tsx` no longer renders Localo cards by inferring raw payload
+  shape. The API card is condensed to the key visibility/review metrics and
+  does not expose raw `localo_*` metric keys or preview-contract names.
 - `MetricFact` now carries `dimension_labels` and `dimension_value_labels`.
   `MetricFactChips` renders those API-owned labels and no longer owns local
   dimension key/value dictionaries.
@@ -418,6 +422,21 @@ Proof:
   or `source_metric_names` in the marketer-facing card text. `agent-browser`
   confirmed the same visible card on
   `/actions/act_review_ga4_tracking_quality`. Runtime: about 16 seconds.
+- Localo visibility preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_localo_visibility_facts` returned one
+  `localo_visibility_review` preview card with 12 condensed rows and no raw
+  `local_visibility_review_preview_v1`, `local_visibility_review`,
+  `localo_avg_visibility_current`, `localo_read_contract_count` or
+  `source_metric_names` in marketer-facing card text. Browser proof for the
+  Localo action detail did not complete in this slice because the dashboard
+  stayed on loader while many parallel route requests were still active; this
+  is a separate loading/performance slice.
 - Merchant preview-contract label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics" --maxfail=1`
   `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
@@ -446,6 +465,7 @@ Next cleanup queue:
    - Content refresh previews have typed API cards.
    - Google Ads search-term n-gram previews have typed API cards.
    - GA4 tracking-quality previews have typed API cards.
+   - Localo visibility previews have typed API cards.
    - migrate remaining action kinds one by one from `DetailPanels.tsx`
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.
