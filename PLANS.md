@@ -690,6 +690,12 @@ WILQ is complete for this long-range goal when:
   `DetailPanels.tsx` no longer renders those cards by inferring raw payload
   shape, and the live action/browser proof shows no `target_site`, `target_url`
   or mapping-review wording in the primary cards.
+- 2026-06-27: Google Ads search-term n-gram action details now receive
+  API-owned preview cards. `DetailPanels.tsx` no longer renders n-gram cards
+  by inferring raw payload shape, and browser proof shows no raw
+  `SearchTermNgramReview`, preview-contract names or n-gram-to-negative-keyword
+  contract keys in the primary cards. Runtime remains slow and needs a focused
+  performance slice.
 
 ## Discoveries
 

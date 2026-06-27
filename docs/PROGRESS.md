@@ -164,6 +164,11 @@ Latest cleanup state:
   cards show public/final URL rows and safe writing blockers instead of raw
   content payload contracts, `target_site`, `target_url` or mapping-review
   wording.
+- Google Ads search-term n-gram action details now receive API-owned preview
+  cards. The marketer-facing cards show topic, examples, cost and blockers
+  without raw `SearchTermNgramReview`, preview-contract names or
+  n-gram-to-negative-keyword contract keys. The live route passed browser proof
+  but remains slow enough to keep as a performance risk.
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.

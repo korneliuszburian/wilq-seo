@@ -11285,6 +11285,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngram_action["payload"]["apply_allowed"] is False
     assert ngram_action["payload"]["destructive"] is False
     assert ngram_action["payload"]["api_mutation_ready"] is False
+    assert ngram_action["preview_cards"]
+    ngram_preview_card = ngram_action["preview_cards"][0]
+    assert ngram_preview_card["kind"] == "google_ads_search_term_ngram_review"
+    assert ngram_preview_card["title_label"] == "Temat zapytań do sprawdzenia"
+    ngram_preview_rows = {row["label"]: row["value"] for row in ngram_preview_card["rows"]}
+    assert ngram_preview_rows["Temat"]
+    assert ngram_preview_rows["Przykłady"]
+    assert "SearchTermNgramReview" not in str(ngram_preview_card)
+    assert "search_term_ngram_review_v1" not in str(ngram_preview_card)
+    assert "ngram_to_negative_keyword_change_preview" not in str(ngram_preview_card)
     ngram_validate_response = client.post(
         f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate"
     )

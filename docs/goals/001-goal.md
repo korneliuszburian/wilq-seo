@@ -161,6 +161,11 @@ Wilku can inspect it without reading technical internals.
   brief review and WordPress draft payload review. The primary card copy uses
   public/final URL semantics and no longer depends on raw content payload
   contracts, `target_site`, `target_url` or mapping-review wording.
+- Google Ads search-term n-gram action details now render API-owned preview
+  cards without raw `SearchTermNgramReview`, preview-contract names or
+  n-gram-to-negative-keyword contract keys in primary card copy. Live browser
+  proof passed, but this route remains slow enough to need a separate
+  performance slice.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
@@ -179,9 +184,10 @@ are resolved or explicitly deferred.
    reviews, Google Ads negative-keyword reviews, Google Ads custom-segment
    reviews, Demand Gen readiness reviews, Keyword Planner access blocker
    reviews, social draft inputs, WordPress draft handoff reviews and content
-   refresh reviews, but remaining action kinds still infer active preview cards
-   from raw payload shape. Migrate those action kinds one by one; raw payload
-   may remain only in collapsed technical detail.
+   refresh reviews plus Google Ads search-term n-gram reviews, but remaining
+   action kinds still infer active preview cards from raw payload shape.
+   Migrate those action kinds one by one; raw payload may remain only in
+   collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.

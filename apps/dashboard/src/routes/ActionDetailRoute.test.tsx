@@ -484,7 +484,35 @@ const negativeKeywordActionFixture: ActionObject = {
 
 const ngramActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "search_term_ngram_review_asekol_1",
+      kind: "google_ads_search_term_ngram_review",
+      title_label: "Temat zapytań do sprawdzenia",
+      subtitle_label: "ocena intencji zapytań bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Temat", value: "asekol" },
+        { label: "Rozmiar", value: "1" },
+        { label: "Zapytania użytkowników", value: "1" },
+        {
+          label: "Przykłady",
+          value: "asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a"
+        },
+        { label: "Kliknięcia", value: "1" },
+        { label: "Wyświetlenia", value: "1" },
+        { label: "Koszt", value: "24.17 PLN" },
+        { label: "Konwersje", value: "0" },
+        { label: "Braki", value: "ręczna ocena intencji" },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "marnowanie budżetu na zapytaniach, dodanie wykluczających słów kluczowych, CPA, zwrot z reklam"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ngrams",
   title: "Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
   domain: "google_ads",
@@ -1526,7 +1554,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Przykłady: asekol pl organizacja odzysku/)).toBeInTheDocument();
     expect(screen.getByText(/Kliknięcia: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 1/)).toBeInTheDocument();
-    expect(screen.getByText(/Koszt: 24,17 PLN/)).toBeInTheDocument();
+    expect(screen.getByText(/Koszt: 24.17 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: ręczna ocena intencji/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: marnowanie budżetu na zapytaniach/)).toBeInTheDocument();
@@ -1730,6 +1758,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("contentBrief");
     expect(source).not.toContain("wordpressDraft");
     expect(source).not.toContain("wordpressDraftHandoff");
+    expect(source).not.toContain("searchTermNgram");
     expect(source).toContain("action.preview_cards");
     expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");

@@ -73,6 +73,7 @@ from wilq.actions.google_ads.recommendations import (
 )
 from wilq.actions.google_ads.search_term_ngrams import (
     SEARCH_TERM_NGRAM_ACTION_ID,
+    SEARCH_TERM_NGRAM_PREVIEW_CONTRACT,
     search_term_ngram_payload_from_metric_facts,
 )
 from wilq.actions.localo.visibility import (
@@ -2562,6 +2563,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _ads_negative_keyword_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "demand_gen_readiness_review_preview_v1":
         return _demand_gen_readiness_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == SEARCH_TERM_NGRAM_PREVIEW_CONTRACT:
+        return _search_term_ngram_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "content_brief_preview_v1":
         return _content_refresh_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
@@ -3132,6 +3135,67 @@ def _demand_gen_readiness_preview_cards(
                 kind="google_ads_demand_gen_readiness_review",
                 title_label="Gotowość Demand Gen do sprawdzenia",
                 subtitle_label="ocena gotowości bez zapisu zmian",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
+
+
+def _search_term_ngram_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("ngram_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        sample_terms = _string_list(item.get("sample_search_terms"))
+        rows = [
+            _preview_row("Temat", str(item.get("ngram") or "temat do sprawdzenia")),
+            _preview_row("Rozmiar", _plain_metric_value_label(item.get("ngram_size"))),
+            _preview_row(
+                "Zapytania użytkowników",
+                _plain_metric_value_label(item.get("source_search_term_count")),
+            ),
+            _preview_row(
+                "Przykłady",
+                ", ".join(sample_terms[:3]) if sample_terms else "brak przykładów",
+            ),
+            _preview_row("Kliknięcia", _plain_metric_value_label(item.get("clicks"))),
+            _preview_row(
+                "Wyświetlenia",
+                _plain_metric_value_label(item.get("impressions")),
+            ),
+            _preview_row("Koszt", _micros_money_label(item.get("cost_micros"))),
+            _preview_row("Konwersje", _plain_metric_value_label(item.get("conversions"))),
+        ]
+        missing_read_contract_labels = _string_list(item.get("missing_read_contract_labels"))
+        if missing_read_contract_labels:
+            rows.append(_preview_row("Braki", ", ".join(missing_read_contract_labels[:4])))
+        requirement_labels = _string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=str(item.get("id") or f"search_term_ngram_preview_{index}"),
+                kind="google_ads_search_term_ngram_review",
+                title_label="Temat zapytań do sprawdzenia",
+                subtitle_label="ocena intencji zapytań bez zapisu zmian",
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),

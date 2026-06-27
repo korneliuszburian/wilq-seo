@@ -170,7 +170,6 @@ type PayloadPreviewItem = {
     | "recommendation"
     | "customSegment"
     | "negativeKeyword"
-    | "searchTermNgram"
     | "demandGenReadiness"
     | "ga4TrackingQuality"
     | "localVisibility"
@@ -194,11 +193,6 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "budget" as const, item }))
     : [];
-  const ngramItems = Array.isArray(payload.ngram_preview)
-    ? payload.ngram_preview
-        .filter(isRecord)
-        .map((item) => ({ kind: "searchTermNgram" as const, item }))
-    : [];
   const keywordPlannerAccessItems =
     payload.action_type === "configure_google_ads_keyword_planner_access"
       ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
@@ -211,7 +205,6 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
   return [
     ...genericItems,
     ...budgetItems,
-    ...ngramItems,
     ...keywordPlannerAccessItems,
     ...adsBusinessGuardrailItems
   ];
@@ -229,9 +222,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "negativeKeyword") {
     return <NegativeKeywordPayloadPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "searchTermNgram") {
-    return <SearchTermNgramPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "demandGenReadiness") {
     return <DemandGenReadinessPreviewCard item={previewItem.item} />;
@@ -293,42 +283,6 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
         <div>
           Grupa reklam: {stringValue(item.ad_group_name, stringValue(item.ad_group_id, "brak"))}
         </div>
-        <PreviewValues
-          label="Warunki sprawdzenia"
-          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
-        />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
-        <ExecutionStateLine item={item} />
-      </div>
-    </article>
-  );
-}
-
-function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> }) {
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Temat zapytań do sprawdzenia</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            Ocena intencji zapytań bez zapisu zmian
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Temat: {stringValue(item.ngram, "brak")}</div>
-        <div>Rozmiar: {formatNumber(item.ngram_size)}</div>
-        <div>Zapytania użytkowników: {formatNumber(item.source_search_term_count)}</div>
-        <PreviewValues label="Przykłady" values={asStringArray(item.sample_search_terms)} />
-        <div>Kliknięcia: {formatNumber(item.clicks)}</div>
-        <div>Wyświetlenia: {formatNumber(item.impressions)}</div>
-        <div>Koszt: {formatMicrosAsPln(item.cost_micros)}</div>
-        <div>Konwersje: {formatNumber(item.conversions)}</div>
-        <PreviewValues
-          label="Braki"
-          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
-        />
         <PreviewValues
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
@@ -650,7 +604,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "recommendation") return 1;
   if (kind === "customSegment") return 2;
   if (kind === "negativeKeyword") return 3;
-  if (kind === "searchTermNgram") return 4;
   if (kind === "demandGenReadiness") return 5;
   if (kind === "ga4TrackingQuality") return 6;
   if (kind === "localVisibility") return 7;
