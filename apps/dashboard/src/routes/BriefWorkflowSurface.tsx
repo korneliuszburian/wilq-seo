@@ -28,7 +28,7 @@ export type BriefSurfaceConfig = {
 
 export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ads-doctor": {
-    title: "Ads Doctor",
+    title: "Google Ads",
     description:
       "Widok Google Ads oparty o WILQ. Pokazuje dowody, decyzje i twierdzenia, których nie wolno używać; jeśli Ads jest zablokowany, pokazuje blokadę zamiast diagnozy wydatków.",
     focusTitle: "Decyzje Ads",

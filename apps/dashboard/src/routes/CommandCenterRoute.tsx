@@ -152,7 +152,7 @@ export function CommandCenter() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Command Center</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Centrum pracy</h1>
           <p className="mt-1 text-sm text-slate-600">{data.strict_instruction}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">

@@ -192,6 +192,10 @@ Latest cleanup state:
 - Dashboard error and trace rows in touched Ads, Merchant, GA4 and tactical
   queue paths now avoid endpoint names, route wording, raw evidence/action link
   labels and `ID` evidence counters in normal marketer copy.
+- Primary dashboard navigation and touched route headings now use Polish
+  marketer-facing labels such as `Centrum pracy`, `Treści` and `Google Ads`
+  instead of mixed working names like `Command Center`, `Content` and
+  `Ads Doctor`.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -231,6 +235,11 @@ Proof:
   the primary card text.
 - Dashboard P0 trace/error copy cleanup:
   `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx -t "renders compact decision groups without raw evidence or action IDs|merchant route renders dedicated feed diagnostics|ads doctor route renders live metric-backed diagnostics|ga4 route renders measurement diagnostics" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+- Dashboard primary-label cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx src/routes/App.test.tsx src/routes/KnowledgePanels.test.tsx -t "Polish daily decision cockpit|ads doctor route renders live metric-backed diagnostics|actions route starts from marketer-facing actions instead of registry dumps|hides legacy Ads Doctor" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
   `rtk git diff --check`

@@ -66,7 +66,7 @@ export function AdsDoctorSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Ads. Ads Doctor nie może udawać diagnozy bez WILQ." />
+        <BlockerNotice message="Nie udało się odczytać danych Ads. WILQ nie może udawać diagnozy bez danych." />
       </main>
     );
   }
@@ -98,7 +98,7 @@ export function AdsDoctorSurface() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Ads Doctor</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Google Ads</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Google Ads z WILQ. Pokazuje, co marketer może
             uczciwie sprawdzić na podstawie kampanii i zapytań oraz które wnioski
@@ -1097,7 +1097,7 @@ function AdsCampaignRowsTable({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak wymiarowych wierszy kampanii. Ads Doctor nie może analizować kampanii bez odczytu Google Ads." />
+      <BlockerNotice message="Brak szczegółowych wierszy kampanii. WILQ nie może analizować kampanii bez odczytu Google Ads." />
     );
   }
   return (
@@ -1975,7 +1975,7 @@ function AdsSearchTermRowsTable({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak wymiarowych wierszy zapytań. Ads Doctor nie może analizować zapytań ani strat budżetu bez danych o wyszukiwanych hasłach." />
+      <BlockerNotice message="Brak szczegółowych wierszy zapytań. WILQ nie może analizować zapytań ani strat budżetu bez danych o wyszukiwanych hasłach." />
     );
   }
   return (

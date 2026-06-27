@@ -4014,7 +4014,7 @@ const adsDiagnostics = {
       title: "Google Ads: live data dostępne",
       status: "ready",
       summary: "WILQ ma zapisane metryki z odczytu odczytu danych Google Ads.",
-      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie kosztu pozyskania celu ani zwrotu z reklam.",
+      diagnosis: "Google Ads może pokazać metryki kampanii i wyszukiwanych haseł, ale nie kosztu pozyskania celu ani zwrotu z reklam.",
       next_step: "Analizuj tylko widoczne metryki i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
@@ -6993,7 +6993,7 @@ function mockFetch() {
               route: "/command-center",
               route_label: "Plan dnia",
               skill_id: "wilq-daily-command",
-              safe_next_step: "Otwórz Command Center i przejdź decyzje według priorytetu.",
+              safe_next_step: "Otwórz Centrum pracy i przejdź decyzje według priorytetu.",
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
@@ -7137,7 +7137,7 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
-    expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają core path/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
@@ -7193,7 +7193,7 @@ describe("WILQ dashboard", () => {
   it("ads doctor route renders live metric-backed diagnostics", async () => {
     renderApp("/ads-doctor");
     expect(
-      await screen.findByRole("heading", { name: "Ads Doctor" }, { timeout: 5000 })
+      await screen.findByRole("heading", { name: "Google Ads" }, { timeout: 5000 })
     ).toBeInTheDocument();
     expect(screen.getByText("Decyzja skondensowana")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();

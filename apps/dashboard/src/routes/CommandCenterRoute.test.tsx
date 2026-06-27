@@ -183,7 +183,7 @@ describe("CommandCenter route", () => {
     renderCommandCenter();
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Centrum pracy" })).toBeInTheDocument()
     );
 
     expect(screen.getByText("Dzisiejsze decyzje marketera")).toBeInTheDocument();

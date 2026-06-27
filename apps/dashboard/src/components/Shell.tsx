@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 
 export const primaryRoutes = [
-  { to: "/command-center", label: "Command Center", icon: Activity },
+  { to: "/command-center", label: "Centrum pracy", icon: Activity },
   { to: "/merchant", label: "Merchant", icon: ShoppingBag },
-  { to: "/content-planner", label: "Content", icon: FileText },
-  { to: "/ads-doctor", label: "Ads Doctor", icon: Megaphone },
+  { to: "/content-planner", label: "Treści", icon: FileText },
+  { to: "/ads-doctor", label: "Google Ads", icon: Megaphone },
   { to: "/ga4", label: "GA4", icon: BarChart3 },
   { to: "/workflows", label: "Procesy", icon: Boxes },
   { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
@@ -31,7 +31,9 @@ export function Shell() {
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-line bg-white lg:block">
         <div className="border-b border-line px-5 py-4">
           <div className="text-lg font-semibold tracking-normal">WILQ</div>
-          <div className="text-xs uppercase tracking-normal text-slate-500">Ekologus Marketing OS</div>
+          <div className="text-xs uppercase tracking-normal text-slate-500">
+            System marketingowy Ekologus
+          </div>
         </div>
         <nav className="space-y-1 p-3">
           {primaryRoutes.map((route) => {

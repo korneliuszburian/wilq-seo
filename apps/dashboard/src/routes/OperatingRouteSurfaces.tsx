@@ -48,7 +48,7 @@ export function OpportunitiesSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Szanse i decyzje</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Kolejka szans z danych WILQ oparta o te same decyzje, które widzi Command Center.
+            Kolejka szans z danych WILQ oparta o te same decyzje, które widzi Centrum pracy.
             Każda karta musi mieć dowody, źródła, liczby i bezpieczny następny krok.
             Sam dostęp do źródła danych albo dane testowe nie są rekomendacją marketingową.
           </p>
@@ -167,8 +167,9 @@ export function ActionsSurface() {
         <section>
           <SectionHeading title="Najważniejsze na start" />
           <p className="mb-3 max-w-3xl text-sm leading-6 text-slate-600">
-            Zacznij od sprawdzeń, które odpowiadają core path: Merchant, Content,
-            GA4 i Ads. Pełna lista zostaje schowana, dopóki nie jest potrzebna.
+            Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy:
+            Merchant, treści, GA4 i Google Ads. Pełna lista zostaje schowana,
+            dopóki nie jest potrzebna.
           </p>
           <ActionPriorityFocus actions={priorityActions} />
         </section>
@@ -207,7 +208,7 @@ function getPriorityActions(actions: ActionObject[]) {
 function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
-      <BlockerNotice message="Brak priorytetowych akcji z core path. Pełna lista niżej nadal pokazuje dostępne akcje do sprawdzenia." />
+      <BlockerNotice message="Brak priorytetowych akcji z głównej ścieżki pracy. Pełna lista niżej nadal pokazuje dostępne akcje do sprawdzenia." />
     );
   }
 
@@ -327,7 +328,7 @@ export function WorkflowsSurface() {
           ) : (
             <p className="mt-2 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-600">
               Historia uruchomień jest schowana na wejściu. Najpierw wybierz proces
-              albo przejdź do widoku pracy, a runy sprawdzaj tylko przy audycie.
+              albo przejdź do widoku pracy, a uruchomienia sprawdzaj tylko przy audycie.
             </p>
           )}
         </section>

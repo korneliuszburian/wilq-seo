@@ -252,6 +252,9 @@ Known cleanup already started:
 - Touched Ads, Merchant, GA4 and tactical queue paths no longer show endpoint
   names, route wording, raw evidence/action link labels or `ID` evidence
   counters in normal marketer copy.
+- Primary dashboard navigation and touched route headings now use Polish
+  marketer-facing labels instead of mixed working names like `Command Center`,
+  `Content` and `Ads Doctor`.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
