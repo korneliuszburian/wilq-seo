@@ -143,6 +143,9 @@ Latest cleanup state:
 - Google Ads negative-keyword action details now receive API-owned preview
   cards. The marketer-facing card shows Polish match/level labels and campaign
   names instead of raw `EXACT`, `ad_group` or Google Ads IDs.
+- Google Ads custom-segment action details now receive API-owned preview cards.
+  The marketer-facing card shows Polish audience/source/safety rows instead of
+  raw `KEYWORD`, the old English internal segment name or Google Ads IDs.
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.
@@ -298,6 +301,16 @@ Proof:
   `/api/actions/act_prepare_negative_keyword_review_queue` returned 4
   `google_ads_negative_keyword_review` preview cards with no raw match type,
   level enum or campaign/ad-group IDs in card text.
+- Google Ads custom-segment action preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_exposes_live_campaign_metric_facts" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_prepare_custom_segments_from_search_terms` returned 1
+  `google_ads_custom_segment_review` preview card with no raw member type, old
+  English internal segment name or campaign IDs in card text.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
@@ -339,8 +352,8 @@ Next cleanup queue:
 
 1. Action detail previews:
    - Merchant feed issue previews have typed API cards.
-   - Google Ads budget, recommendation and negative-keyword previews have typed
-     API cards.
+   - Google Ads budget, recommendation, negative-keyword and custom-segment
+     previews have typed API cards.
    - migrate remaining action kinds one by one from `DetailPanels.tsx`
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.

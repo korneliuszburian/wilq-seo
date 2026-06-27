@@ -99,6 +99,12 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
     evidence_ids = _unique(fact.evidence_id for fact in eligible_facts)
     if not evidence_ids:
         return None
+    campaign_name = _first_dimension(eligible_facts, "campaign_name")
+    custom_segment_name = (
+        f"Wyszukiwane hasła: {campaign_name}"
+        if campaign_name
+        else "Segment z wyszukiwanych haseł"
+    )
     return {
         "action_type": "custom_segment_candidate",
         "connector": "google_ads",
@@ -109,7 +115,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
         "payload_preview": [
             {
                 "id": "custom_segment_preview_google_ads_search_terms",
-                "custom_segment_name": "WILQ search-term intent review",
+                "custom_segment_name": custom_segment_name,
                 "member_type": "KEYWORD",
                 "member_type_label": "słowa kluczowe",
                 "source_terms": terms[:20],
@@ -131,7 +137,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                     _custom_segment_targeting_preview(
                         preview_id="custom_segment_preview_google_ads_search_terms",
                         campaign_id=_first_dimension(eligible_facts, "campaign_id"),
-                        campaign_name=_first_dimension(eligible_facts, "campaign_name"),
+                        campaign_name=campaign_name,
                     )
                 ],
                 "safety_review": custom_segment_apply_safety_review(

@@ -299,7 +299,43 @@ const adsRecommendationActionFixture: ActionObject = {
 
 const customSegmentActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ads_custom_segment_preview_0",
+      kind: "google_ads_custom_segment_review",
+      title_label: "Segment odbiorców do sprawdzenia",
+      subtitle_label: "ocena segmentu bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Nazwa",
+          value: "Segment z wyszukiwanych haseł"
+        },
+        {
+          label: "Typ odbiorców",
+          value: "słowa kluczowe"
+        },
+        {
+          label: "Hasła źródłowe",
+          value: "alba czeladź, asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a, bdo szkolenia stacjonarne"
+        },
+        {
+          label: "Kampania do sprawdzenia",
+          value: "Kompendium PPWR"
+        },
+        {
+          label: "Bezpieczeństwo",
+          value: "zablokowane"
+        },
+        {
+          label: "Braki",
+          value: "prognoza albo rozmiar odbiorców, wzbogacenie danych przez Keyword Planner"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_custom_segments",
   title: "Przygotuj propozycje segmentów z wyszukiwanych haseł",
   domain: "google_ads",
@@ -310,11 +346,11 @@ const customSegmentActionFixture: ActionObject = {
   recommended_reason: "Przejrzyj źródłowe hasła i kontrolę bezpieczeństwa przed kierowaniem reklam.",
   payload: {
     action_type: "custom_segment_review",
-    preview_contract: "custom_segment_apply_preview_v1",
+    preview_contract: "custom_segment_change_preview_v1",
     payload_preview: [
       {
         id: "custom_segment_preview_google_ads_search_terms",
-        custom_segment_name: "WILQ search-term intent review",
+        custom_segment_name: "Segment z wyszukiwanych haseł",
         member_type: "KEYWORD",
         member_type_label: "słowa kluczowe",
         source_terms: [
@@ -1253,13 +1289,16 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Segment odbiorców do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText(/Nazwa: WILQ search-term intent review/)).toBeInTheDocument();
+    expect(screen.getByText("ocena segmentu bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.getByText(/Nazwa: Segment z wyszukiwanych haseł/)).toBeInTheDocument();
     expect(screen.getByText(/Typ odbiorców: słowa kluczowe/)).toBeInTheDocument();
     expect(screen.getByText(/Hasła źródłowe: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania do sprawdzenia: Kompendium PPWR/)).toBeInTheDocument();
     expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: prognoza albo rozmiar odbiorców/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
+    expect(screen.queryByText(/WILQ search-term intent review/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/KEYWORD/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/23848569273/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

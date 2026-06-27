@@ -11538,6 +11538,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "słowa kluczowe"
     )
     assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    assert custom_segment_action["preview_cards"]
+    custom_segment_preview_card = custom_segment_action["preview_cards"][0]
+    assert custom_segment_preview_card["kind"] == "google_ads_custom_segment_review"
+    assert custom_segment_preview_card["title_label"] == "Segment odbiorców do sprawdzenia"
+    custom_segment_preview_rows = {
+        row["label"]: row["value"] for row in custom_segment_preview_card["rows"]
+    }
+    assert custom_segment_preview_rows["Nazwa"] == "Wyszukiwane hasła: Brand Search"
+    assert custom_segment_preview_rows["Typ odbiorców"] == "słowa kluczowe"
+    assert custom_segment_preview_rows["Kampania do sprawdzenia"] == "Brand Search"
+    assert "KEYWORD" not in str(custom_segment_preview_card)
+    assert "101" not in str(custom_segment_preview_card)
     custom_segment_safety_review = custom_segment_action["payload"]["payload_preview"][0][
         "safety_review"
     ]
