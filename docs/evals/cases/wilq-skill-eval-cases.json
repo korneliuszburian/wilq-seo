@@ -418,12 +418,12 @@
     ],
     "expected_blocked": true,
     "blocked_claim_terms": [
-      "Demand Gen launch recommendation",
-      "Demand Gen transition ready",
-      "creative quality verdict",
-      "asset performance verdict",
+      "rekomendacja uruchomienia Demand Gen",
+      "gotowość przejścia na Demand Gen",
+      "ocena jakości kreacji",
+      "ocena skuteczności assetów",
       "zmiana kampanii",
-      "performance uplift"
+      "wzrost skuteczności"
     ],
     "expected_action_ids": ["act_review_demand_gen_readiness"],
     "expected_validated_action_ids": ["act_review_demand_gen_readiness"],

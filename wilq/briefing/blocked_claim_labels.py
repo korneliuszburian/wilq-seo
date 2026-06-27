@@ -20,7 +20,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "conversion rate": "współczynnik konwersji",
     "conversion setup applied": "wdrożona konfiguracja konwersji",
     "conversion uplift": "wzrost konwersji",
-    "creative quality verdict": "werdykt jakości kreacji",
     "Demand Gen launch ready": "gotowość uruchomienia Demand Gen",
     "GBP performance verdict": "werdykt skuteczności profilu firmy",
     "GBP write": "zapis zmian w profilu firmy",

@@ -266,6 +266,22 @@ FORBIDDEN_PHRASES = (
         "Use wzrost skuteczności social in social blocked claims.",
     ),
     ForbiddenPhrase(
+        "Demand Gen launch recommendation",
+        "Use rekomendacja uruchomienia Demand Gen in Demand Gen blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "Demand Gen transition ready",
+        "Use gotowość przejścia na Demand Gen in Demand Gen blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "creative quality verdict",
+        "Use ocena jakości kreacji in Demand Gen blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "asset performance verdict",
+        "Use ocena skuteczności assetów in Demand Gen blocked claims.",
+    ),
+    ForbiddenPhrase(
         "lead uplift",
         "Use wzrost liczby leadów in content blocked claims.",
     ),

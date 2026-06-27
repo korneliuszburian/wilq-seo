@@ -75,6 +75,11 @@ Date: 2026-06-27
   ranking, lead, revenue, traffic, authority, duplicate and WordPress-publish
   promises. Obsolete dashboard/backend label-map entries for those old values
   were removed instead of kept as compatibility aliases.
+- Demand Gen readiness blocked-claim contracts now use Polish source values for
+  launch, transition, creative quality, asset effectiveness and effectiveness
+  promises. Obsolete route/backend label-map entries for old Demand Gen values
+  were removed instead of kept as compatibility aliases. The language guard now
+  blocks the old Demand Gen phrases.
 
 ## Latest Proof Pointers
 
@@ -176,6 +181,17 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs or content_brief_preview or content_diagnostics or codex_context_pack_scopes_content_strategist_payload or content_public_url" --maxfail=1` passed: 16 tests.
   - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
   - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx src/routes/CommandCenterRoute.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "content planner|ahrefs|Content|action detail|Command Center|compact decision groups" --testTimeout=20000` passed: 3 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+- Demand Gen blocked-claim language cleanup without live API/browser proof in
+  current session:
+  - Focused stale-term scan for old Demand Gen blocked-claim terms across
+    active WILQ sources, dashboard source, eval cases and the Demand Gen skill
+    found no active hits outside guard rule definitions.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python -m py_compile wilq/actions/google_ads/demand_gen.py wilq/briefing/blocked_claim_labels.py scripts/marketer_language_guard.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=1` passed: 6 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "Demand Gen|demand gen|action detail" --testTimeout=20000` passed: 3 tests.
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.

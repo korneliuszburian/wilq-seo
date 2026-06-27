@@ -5354,12 +5354,12 @@ const demandGenDiagnostics = {
     "demand_gen_transition_constraints"
   ],
   blocked_claims: [
-    "Demand Gen launch recommendation",
-    "Demand Gen transition ready",
-    "creative quality verdict",
-    "asset performance verdict",
+    "rekomendacja uruchomienia Demand Gen",
+    "gotowość przejścia na Demand Gen",
+    "ocena jakości kreacji",
+    "ocena skuteczności assetów",
     "zmiana kampanii",
-    "performance uplift"
+    "wzrost skuteczności"
   ],
   source_connectors: ["google_ads", "google_analytics_4"],
   evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
@@ -5430,12 +5430,12 @@ const demandGenDiagnostics = {
         "human_confirm_before_apply"
       ],
       blocked_claims: [
-        "Demand Gen launch recommendation",
-        "Demand Gen transition ready",
-        "creative quality verdict",
-        "asset performance verdict",
+        "rekomendacja uruchomienia Demand Gen",
+        "gotowość przejścia na Demand Gen",
+        "ocena jakości kreacji",
+        "ocena skuteczności assetów",
         "zmiana kampanii",
-        "performance uplift"
+        "wzrost skuteczności"
       ],
       evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
       api_mutation_ready: false,
@@ -7095,7 +7095,7 @@ describe("WILQ dashboard", () => {
       within(demandGenOperatorSection as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
     expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
-    expect(screen.getByText(/rekomendacja launchu Demand Gen/)).toBeInTheDocument();
+    expect(screen.getByText(/rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();

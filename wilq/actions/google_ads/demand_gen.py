@@ -33,12 +33,12 @@ DEMAND_GEN_READINESS_REQUIRED_VALIDATION = [
     "human_confirm_before_apply",
 ]
 DEMAND_GEN_READINESS_BLOCKED_CLAIMS = [
-    "Demand Gen launch recommendation",
-    "Demand Gen transition ready",
-    "creative quality verdict",
-    "asset performance verdict",
+    "rekomendacja uruchomienia Demand Gen",
+    "gotowość przejścia na Demand Gen",
+    "ocena jakości kreacji",
+    "ocena skuteczności assetów",
     "zmiana kampanii",
-    "performance uplift",
+    "wzrost skuteczności",
 ]
 
 

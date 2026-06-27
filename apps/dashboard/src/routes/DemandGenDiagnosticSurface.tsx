@@ -342,12 +342,7 @@ function demandGenContractLabel(contract: string) {
 
 function demandGenBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "asset performance verdict": "werdykt skuteczności assetów",
     "zapis kampanii": "zapis kampanii",
-    "creative quality verdict": "werdykt jakości kreacji",
-    "Demand Gen launch recommendation": "rekomendacja launchu Demand Gen",
-    "Demand Gen transition ready": "gotowość przejścia Demand Gen",
-    "performance uplift": "wzrost skuteczności"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

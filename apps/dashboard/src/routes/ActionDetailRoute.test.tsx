@@ -353,10 +353,10 @@ const demandGenActionFixture: ActionObject = {
           "review_demand_gen_missing_contracts"
         ],
         blocked_claims: [
-          "Demand Gen launch recommendation",
-          "Demand Gen transition ready",
-          "creative quality verdict",
-          "performance uplift"
+          "rekomendacja uruchomienia Demand Gen",
+          "gotowość przejścia na Demand Gen",
+          "ocena jakości kreacji",
+          "wzrost skuteczności"
         ],
         api_mutation_ready: false,
         apply_allowed: false,
@@ -978,7 +978,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: brakujący odczyt techniczny/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: Demand Gen launch recommendation/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

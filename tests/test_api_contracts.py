@@ -817,7 +817,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
                 "keyword_match_context_read_contract",
                 "search_term_safety_read_contract",
             ],
-            "blocked_claims": ["Demand Gen launch recommendation"],
+            "blocked_claims": ["rekomendacja uruchomienia Demand Gen"],
             "cluster_id": (
                 "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
             ),
@@ -901,7 +901,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
         "keyword_match_context_read_contract",
         "search_term_safety_read_contract",
     ]
-    assert redacted["blocked_claims"] == ["Demand Gen launch recommendation"]
+    assert redacted["blocked_claims"] == ["rekomendacja uruchomienia Demand Gen"]
     assert redact_mapping({"name": "localo_latest_grid_position_count"})["name"] == (
         "localo_latest_grid_position_count"
     )
@@ -15849,7 +15849,7 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
         assert "demand_gen_creative_asset_rows" in readiness["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in readiness["available_read_contracts"]
     assert "demand_gen_action_object" not in readiness["missing_read_contracts"]
-    assert "Demand Gen launch recommendation" in readiness["blocked_claims"]
+    assert "rekomendacja uruchomienia Demand Gen" in readiness["blocked_claims"]
     assert "sections" not in data["ga4_diagnostics"]
     assert '"metric_facts":' not in json.dumps(data["ga4_diagnostics"])
     assert data["ga4_diagnostics"]["context_pack_compaction"][
@@ -15924,7 +15924,7 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert "demand_gen_transition_constraints" not in data["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
     assert "demand_gen_action_object" not in data["missing_read_contracts"]
-    assert "Demand Gen launch recommendation" in data["blocked_claims"]
+    assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
 
 
 def test_demand_gen_diagnostics_does_not_require_full_ga4_builder(
@@ -16115,7 +16115,7 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert preview["demand_gen_landing_quality_row_count"] == 1
     assert preview["demand_gen_transition_constraint_row_count"] == 1
     assert preview["apply_allowed"] is False
-    assert "Demand Gen launch recommendation" in data["blocked_claims"]
+    assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
 
 
 def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:
@@ -16130,7 +16130,7 @@ def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
     assert action["payload"]["payload_preview"][0]["api_mutation_ready"] is False
-    assert "Demand Gen launch recommendation" in action["payload"]["blocked_claims"]
+    assert "rekomendacja uruchomienia Demand Gen" in action["payload"]["blocked_claims"]
 
     validation = client.post(
         "/api/actions/act_review_demand_gen_readiness/validate",
