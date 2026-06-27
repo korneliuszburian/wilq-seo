@@ -14,6 +14,7 @@ def source_connector_label(connector_id: str) -> str:
         "linkedin": "LinkedIn",
         "localo": "Localo",
         "wordpress_ekologus": "WordPress ekologus.pl",
+        "wordpress_sklep": "WordPress sklep.ekologus.pl",
     }
     return labels.get(connector_id, connector_id)
 

@@ -77,6 +77,9 @@ use the cleaned language.
 - Ahrefs/content public contracts now use `referenced_public_url`; active
   diagnostics, source facts, tactical queue and WordPress draft handoff no
   longer expose or fall back to `target_url`.
+- Knowledge operating map now carries API-owned labels for source connectors,
+  evidence summaries, missing data and blocked claims, so the Knowledge route
+  does not show playbook refusal rules or raw connector IDs on the first screen.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

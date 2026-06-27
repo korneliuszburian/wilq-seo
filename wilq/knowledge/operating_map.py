@@ -4,7 +4,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from wilq.expert.rules import list_expert_rule_summaries
+from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.knowledge.compilers.playbook_compiler import compile_playbook_cards, list_playbooks
+from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionRisk,
     KnowledgeCard,
@@ -171,6 +173,7 @@ def _binding_from_blueprint(
     ]
     playbook_values = [playbooks[playbook_id] for playbook_id in valid_playbook_ids]
     card_values = [cards[card_id] for card_id in valid_card_ids]
+    blocked_claims = _unique(workflow.blocked_claims)
     return KnowledgeDecisionBinding(
         id=f"knowledge_{workflow.id}",
         title=workflow.label,
@@ -183,7 +186,9 @@ def _binding_from_blueprint(
         next_step=workflow.safe_next_step
         or "Użyj tej wiedzy tylko z dowodami WILQ i sprawdzeniem akcji.",
         source_connectors=workflow.source_connectors,
+        source_connector_labels=source_connector_labels(workflow.source_connectors),
         evidence_ids=workflow.evidence_ids,
+        evidence_summary_label=evidence_count_label(workflow.evidence_ids),
         action_ids=workflow.action_ids,
         metric_tiles=workflow.metric_tiles,
         knowledge_card_ids=valid_card_ids,
@@ -193,12 +198,9 @@ def _binding_from_blueprint(
             item for playbook in playbook_values for item in playbook.required_evidence
         ),
         missing_contracts=workflow.missing_contracts,
-        blocked_claims=_unique(
-            [
-                *workflow.blocked_claims,
-                *(rule for playbook in playbook_values for rule in playbook.refusal_rules),
-            ]
-        ),
+        missing_contract_labels=_operator_missing_contract_labels(workflow.missing_contracts),
+        blocked_claims=blocked_claims,
+        blocked_claim_labels=operator_blocked_claims(blocked_claims),
         source_lineage=_unique(
             [
                 *(line for card in card_values for line in card.source_lineage),
@@ -213,6 +215,40 @@ def _binding_from_blueprint(
 
 def _unique(values: Iterable[str]) -> list[str]:
     return list(dict.fromkeys(value for value in values if value))
+
+
+def _operator_missing_contract_labels(contracts: Iterable[str]) -> list[str]:
+    label_map = {
+        "monthly_comparison_window": "okno porównania miesiąca",
+        "client_report_payload": "zakres raportu dla klienta",
+        "change_history_summary": "podsumowanie historii zmian",
+        "pre_post_change_window": "okno przed i po zmianie",
+        "human_strategy_review": "sprawdzenie strategii przez człowieka",
+        "profit_margin_or_business_goal": "cel biznesowy albo marża",
+        "pre_post_change_impact": "wpływ zmian przed i po",
+        "operator_change_notes": "notatki operatora o zmianach",
+        "ngram_cluster_contract": "grupowanie fragmentów wyszukiwanych haseł",
+        "90_day_cross_check_by_ngram": "90-dniowe porównanie fragmentów wyszukiwań",
+        "forecast_or_audience_size": "prognoza albo wielkość grupy odbiorców",
+        "targeting_apply_preview": "podgląd zmiany targetowania",
+        "creative_asset_readiness": "gotowość kreacji",
+        "audience_readiness": "gotowość odbiorców",
+        "competitor_gap_matrix": "macierz luk względem konkurencji",
+        "backlink_gap_rows": "rekordy luk linków",
+        "local_ranking_rows": "lokalne pozycje",
+        "gbp_performance_rows": "wyniki profilu firmy",
+        "review_rows": "opinie",
+        "editorial_calendar_payload": "zakres kalendarza treści",
+        "owner_due_date_review": "właściciel i termin sprawdzenia",
+        "social_publish_permission": "uprawnienie do publikacji social",
+        "post_payload_preview": "podgląd posta przed publikacją",
+    }
+    labels: list[str] = []
+    for contract in contracts:
+        label = label_map.get(str(contract), str(contract).replace("_", " ").strip())
+        if label and label not in labels:
+            labels.append(label)
+    return labels
 
 
 def _binding_sort_key(binding: KnowledgeDecisionBinding) -> tuple[int, str]:

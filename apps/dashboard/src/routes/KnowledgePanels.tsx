@@ -31,7 +31,7 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
       <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
         <MetricTile label="Decyzje z wiedzą" value={map.binding_count} />
         <MetricTile label="Blokady" value={blockedCount} />
-        <MetricTile label="Brakujące kontrakty" value={missingContractCount} />
+        <MetricTile label="Brakujące dane" value={missingContractCount} />
         <MetricTile label="Zakazane obietnice" value={blockedClaimCount} />
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
@@ -52,10 +52,11 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
               <p>{binding.next_step}</p>
             </div>
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-              <div>Dowody: {binding.evidence_ids.length}</div>
+              <div>Dowody: {binding.evidence_summary_label}</div>
               <div>
                 Źródła danych:{" "}
-                {formatPolishCount(binding.source_connectors.length, "źródło", "źródła", "źródeł")}
+                {binding.source_connector_labels.join(", ") ||
+                  formatPolishCount(binding.source_connectors.length, "źródło", "źródła", "źródeł")}
               </div>
               <div>
                 Akcje do sprawdzenia:{" "}
@@ -64,7 +65,7 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
             </div>
             {binding.blocked_claims.length > 0 ? (
               <p className="mt-3 text-xs leading-5 text-slate-600">
-                Zakazane obietnice: {binding.blocked_claims.length}
+                Zakazane obietnice: {binding.blocked_claim_labels.join(", ") || binding.blocked_claims.length}
               </p>
             ) : null}
           </article>
@@ -200,14 +201,14 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
         <p>{binding.next_step}</p>
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <div>Dowody: {formatCount(binding.evidence_ids.length, "dowód")}</div>
-        <div>Źródła danych: {formatCount(binding.source_connectors.length, "źródło")}</div>
+        <div>Dowody: {binding.evidence_summary_label}</div>
+        <div>Źródła danych: {binding.source_connector_labels.join(", ") || "brak"}</div>
         <div>Wiedza użyta w decyzji: {formatCount(knowledgeCount, "element")}</div>
-        <div>Braki: {binding.missing_contracts.length > 0 ? binding.missing_contracts.length : "brak"}</div>
+        <div>Braki: {binding.missing_contract_labels.join(", ") || "brak"}</div>
       </div>
       {binding.blocked_claims.length > 0 ? (
         <p className="mt-3 text-xs text-slate-600">
-          Zablokowane obietnice: {formatCount(binding.blocked_claims.length, "pozycja")}
+          Zablokowane obietnice: {binding.blocked_claim_labels.join(", ")}
         </p>
       ) : null}
       <button
@@ -219,15 +220,11 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       </button>
       {showDetails ? (
         <div className="mt-3 grid gap-2 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
-          <div>Źródła: {binding.source_connectors.join(", ") || "brak"}</div>
+          <div>Źródła techniczne: {binding.source_connectors.join(", ") || "brak"}</div>
+          <div>Źródła: {binding.source_connector_labels.join(", ") || "brak"}</div>
           <div>
             Dowody:{" "}
-            {formatPolishCount(
-              binding.evidence_ids.length,
-              "dowód źródłowy",
-              "dowody źródłowe",
-              "dowodów źródłowych"
-            )}
+            {binding.evidence_summary_label}
           </div>
           <div>
             Akcje:{" "}
@@ -242,7 +239,7 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
           <div>Zasady pracy: {binding.playbook_ids.length}</div>
           <div>Reguły decyzji: {binding.expert_rule_ids.length}</div>
           <div>Wymagane dowody: {binding.required_evidence.length}</div>
-          <div>Brakujące kontrakty: {binding.missing_contracts.length}</div>
+          <div>Brakujące dane: {binding.missing_contract_labels.join(", ") || "brak"}</div>
           <div>Ślady źródłowe: {formatCount(binding.source_lineage.length, "element")}</div>
           <div>Identyfikator: {binding.id}</div>
         </div>

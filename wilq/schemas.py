@@ -697,7 +697,9 @@ class KnowledgeDecisionBinding(BaseModel):
     summary: str
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     knowledge_card_ids: list[str] = Field(default_factory=list)
@@ -705,7 +707,9 @@ class KnowledgeDecisionBinding(BaseModel):
     expert_rule_ids: list[str] = Field(default_factory=list)
     required_evidence: list[str] = Field(default_factory=list)
     missing_contracts: list[str] = Field(default_factory=list)
+    missing_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
     risk_label: str = ""

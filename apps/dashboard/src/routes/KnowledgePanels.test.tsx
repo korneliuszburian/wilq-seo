@@ -103,7 +103,9 @@ describe("KnowledgePanels", () => {
                 summary: "Decyzja oparta o karty wiedzy i dowody.",
                 next_step: "Otwórz Ads i sprawdź decyzję z dowodami.",
                 source_connectors: ["google_ads"],
+                source_connector_labels: ["Google Ads"],
                 evidence_ids: ["ev_refresh_google_ads"],
+                evidence_summary_label: "1 dowód źródłowy",
                 action_ids: ["act_prepare_ads"],
                 metric_tiles: {},
                 knowledge_card_ids: ["card_google_ads_search_playbook"],
@@ -111,7 +113,9 @@ describe("KnowledgePanels", () => {
                 expert_rule_ids: ["ads_search_terms_v1"],
                 required_evidence: ["search_terms"],
                 missing_contracts: [],
+                missing_contract_labels: [],
                 blocked_claims: [],
+                blocked_claim_labels: [],
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
                 risk: "low",
                 risk_label: "ryzyko z API"
@@ -123,6 +127,8 @@ describe("KnowledgePanels", () => {
     );
 
     expect(screen.getByText("Widok: Ads z API")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("gotowe z API")).toBeInTheDocument();
     expect(screen.getByText("ryzyko z API")).toBeInTheDocument();
     expect(screen.queryByText("widok Google Ads")).not.toBeInTheDocument();

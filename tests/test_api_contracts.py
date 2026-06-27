@@ -17679,6 +17679,10 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert daily["knowledge_card_ids"] == ["card_goal_001_rules"]
     assert daily["metric_tiles"]["decyzje"] >= 1
     assert daily["evidence_ids"]
+    assert daily["evidence_summary_label"]
+    assert daily["source_connector_labels"]
+    assert "blocked_claim_labels" in daily
+    assert "missing_contract_labels" in daily
 
     ads = binding_by_id["knowledge_ads_daily_check"]
     assert ads["route"] == "/ads-doctor"
@@ -17697,6 +17701,7 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert localo["status_label"] == "zablokowane"
     assert localo["route_label"] == "Localo"
     assert "local_ranking_rows" in localo["missing_contracts"]
+    assert "lokalne pozycje" in localo["missing_contract_labels"]
     assert "card_localo_local_seo_playbook" in localo["knowledge_card_ids"]
 
 
