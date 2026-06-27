@@ -2393,7 +2393,9 @@ class Ga4ConversionReadinessContract(BaseModel):
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
     available_read_contracts: list[str] = Field(default_factory=list)
+    available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     conversion_like_metric_count: int = 0
     dimensioned_behavior_metric_count: int = 0
     landing_group_count: int = 0

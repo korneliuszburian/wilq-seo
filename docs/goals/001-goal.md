@@ -125,6 +125,12 @@ Done when:
 
 Latest slice:
 
+- GA4 readiness labels now come from the WILQ API/shared schema, not from
+  route-local read-contract mapping. `/ga4` renders condensed API metric tiles
+  and hides raw GA4 metric fact names from decision cards; browser proof found
+  no `landing page`, `Landing:`, `message match`, `key events`,
+  `ecommerce_purchases`, `engagement`, raw action ID, `payload` or
+  `ActionObject` hits in the rendered GA4 text.
 - Custom Segments and Keyword Planner wording now uses API-owned Polish labels
   and source summaries for preview member type, review gates, blocked promises
   and blocked Keyword Planner access. Browser proof for

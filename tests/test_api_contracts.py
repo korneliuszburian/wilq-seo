@@ -3854,7 +3854,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert all(decision["status"] in {"ready", "blocked"} for decision in decision_by_id.values())
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
     assert all(decision["metric_tiles"] for decision in decision_by_id.values())
-    assert any("engagement" in decision["metric_tiles"] for decision in decision_by_id.values())
+    assert any("zaangażowanie" in decision["metric_tiles"] for decision in decision_by_id.values())
     assert all(
         decision["knowledge_card_ids"] == ["card_ga4_behavior_diagnostics_playbook"]
         for decision in decision_by_id.values()
@@ -3919,6 +3919,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert readiness_contract["landing_group_count"] >= 1
     assert readiness_contract["missing_read_contracts"] == [
         "conversion_or_key_event_mapping"
+    ]
+    assert readiness_contract["missing_read_contract_labels"] == [
+        "mapowanie konwersji i zdarzeń kluczowych"
     ]
     assert {
         "conversions",
@@ -4346,7 +4349,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert "pomiar i jakość ruchu" in brief_by_id["daily_ga4_landing_quality"]["title"]
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["grupy ruchu"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["decyzje"] >= 1
-    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["braki kontraktu"] == 1
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["brakujące dane"] == 1
     assert "zwrot z reklam" in brief_by_id[
         "daily_ga4_landing_quality"
     ]["blocked_claims"]
@@ -4378,7 +4381,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert "decyzji GA4 do sprawdzenia" in plan_by_id[
         "plan_review_ga4_landing_quality"
     ]["why_it_matters"]
-    assert "akcję do sprawdzenia" in plan_by_id[
+    assert "propozycję przeglądu GA4 w WILQ" in plan_by_id[
         "plan_review_ga4_landing_quality"
     ]["operator_action"]
     assert "Zapis zmian wymaga sprawdzenia" in plan_by_id[
@@ -4482,8 +4485,10 @@ def test_command_center_exposes_polish_operator_brief(
     assert "grup strona wejścia, źródło ruchu i kampania" in ga4_decision[
         "co_widzimy"
     ]
-    assert "Status blocked oznacza" in ga4_decision["co_widzimy"]
-    assert ga4_decision["co_widzimy"].count("Status blocked oznacza") == 1
+    assert "Blokada oznacza" in ga4_decision["co_widzimy"]
+    assert "Status blocked" not in ga4_decision["co_widzimy"]
+    assert "brak kontraktu" not in ga4_decision["co_widzimy"]
+    assert ga4_decision["co_widzimy"].count("Blokada oznacza") == 1
     operator_guidance_text = "\n".join(
         [
             *[item["next_step"] for item in payload["operator_brief"] if item["next_step"]],

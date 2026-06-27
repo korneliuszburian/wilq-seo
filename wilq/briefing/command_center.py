@@ -734,7 +734,7 @@ def _ads_item_from_facts(
             if live_data_available
             else (
                 "Otwórz widok Ads i wykonaj bezpieczną ścieżkę naprawy OAuth "
-                "przez sprawdzoną akcję."
+                "przez sprawdzenie w WILQ."
             )
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1541,12 +1541,12 @@ def _ga4_item_from_tactical(
             f"{measurement_issue_count} problemów pomiaru, "
             f"{traffic_quality_count} decyzji jakości ruchu i "
             f"{len(matched_items)} dopasowań WordPress. "
-            "Status blocked oznacza brak kontraktu na zwrot z reklam, przychód, spadek "
-            "konwersji i naprawiony pomiar, nie awarię źródła danych."
+            "Blokada oznacza brak danych do wniosków o zwrocie z reklam, przychodzie, "
+            "spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych."
         ),
         next_step=(
-            "Otwórz widok GA4, sprawdź kolejkę jakości ruchu i sprawdź przegląd GA4 "
-            "jako sprawdzoną akcję."
+            "Otwórz widok GA4, sprawdź kolejkę jakości ruchu i przejdź przez "
+            "propozycję przeglądu GA4 w WILQ."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1560,7 +1560,7 @@ def _ga4_item_from_tactical(
             "decyzje": decision_count,
             "pomiar": measurement_issue_count,
             "jakość ruchu": traffic_quality_count,
-            "braki kontraktu": 1,
+            "brakujące dane": 1,
         },
         blocked_claims=["zwrot z reklam", "przychód", "spadek konwersji", "naprawiony pomiar"],
         risk=ActionRisk.medium,
@@ -1963,12 +1963,12 @@ def _action_plan_item(
                 f"WILQ ma {landing_groups} grup strona wejścia, źródło ruchu i kampania i "
                 f"{decision_count} decyzji GA4 do sprawdzenia: pomiar={measurement_count}, "
                 f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
-                "nie ocenę skuteczności, bo zwrot z reklam, przychód, spadek konwersji "
-                "i naprawiony pomiar pozostają zablokowane bez osobnych kontraktów."
+                "nie ocena skuteczności. Wnioski o zwrocie z reklam, przychodzie, "
+                "spadku konwersji i naprawionym pomiarze pozostają zablokowane bez osobnych danych."
             ),
             operator_action=(
                 "Otwórz widok GA4, przejdź przez kolejkę decyzji pomiaru i jakości "
-                "ruchu, a potem sprawdź przegląd GA4 jako akcję do sprawdzenia. "
+                "ruchu, a potem przejdź przez propozycję przeglądu GA4 w WILQ. "
                 "Zapis zmian wymaga sprawdzenia w WILQ. Nie oceniaj opłacalności."
             ),
             skill_id="wilq-ga4-analyst",
@@ -2082,7 +2082,7 @@ def _action_plan_item(
                 "Ads Doctor ma blokadę OAuth. WILQ nie pokaże kosztu, kosztu pozyskania celu, zwrotu z reklam ani "
                 "wyszukiwanych haseł bez świeżych dowodów Ads."
             ),
-            operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzoną akcję.",
+            operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzenie w WILQ.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj blokadę Ads dla Ekologus "
@@ -2292,12 +2292,12 @@ def _decision_observation(
             ),
         )
     if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
-        if "Status blocked oznacza" in brief_item.summary:
+        if "Blokada oznacza" in brief_item.summary:
             return brief_item.summary
         return (
-            f"{brief_item.summary} Status blocked oznacza brak kontraktu na "
-            "zwrot z reklam, przychód, spadek konwersji i naprawiony pomiar, "
-            "nie awarię źródła danych."
+            f"{brief_item.summary} Blokada oznacza brak danych do wniosków o "
+            "zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; "
+            "to nie jest awaria źródła danych."
         )
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (

@@ -25,6 +25,39 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - GA4 API-label and dashboard language proof
+
+Purpose:
+
+- Verify that GA4 missing-data labels are sourced by the WILQ API/shared schema
+  instead of a route-local read-contract dictionary.
+- Prove that `/ga4` decision cards do not show raw GA4 metric names or raw
+  action/debug terms to the marketer.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "ga4 or command_center" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "ga4 route renders workflow-specific brief focus"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-ga4-api-labels/ga4.txt
+```
+
+Result:
+
+- Focused API and dashboard checks passed.
+- `wilq-ga4-analyst` smoke passed against the managed local API.
+- The rendered GA4 route scan found no `landing page`, `Landing:`,
+  `message match`, `key events`, `ecommerce_purchases`, `engagement`, raw
+  action ID, `payload` or `ActionObject` hits.
+
 ## 2026-06-27 - wilq-demand-gen-operator API-label smoke
 
 Purpose:

@@ -47,6 +47,10 @@ GA4_CONVERSION_BLOCKED_CLAIMS = [
     "diagnoza lejka",
     "ocena atrybucji",
 ]
+GA4_READ_CONTRACT_LABELS = {
+    "conversion_or_key_event_mapping": "mapowanie konwersji i zdarzeń kluczowych",
+    "conversion_or_key_event_metric_facts": "metryki konwersji i zdarzeń kluczowych",
+}
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
 GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]
 Ga4DecisionType = Literal[
@@ -498,6 +502,10 @@ def _conversion_readiness_contract(
         _tactical_landing_group_count(tactical_items),
     )
     status: Literal["ready", "blocked"] = "ready" if conversion_like_facts else "blocked"
+    available_read_contracts = (
+        ["conversion_or_key_event_metric_facts"] if conversion_like_facts else []
+    )
+    missing_read_contracts = [] if conversion_like_facts else ["conversion_or_key_event_mapping"]
     evidence_ids = _unique(
         [
             *(fact.evidence_id for fact in conversion_like_facts),
@@ -508,19 +516,17 @@ def _conversion_readiness_contract(
     )
     return Ga4ConversionReadinessContract(
         status=status,
-        title="GA4: kontrakt konwersji i zdarzeń kluczowych",
+        title="GA4: gotowość konwersji i zdarzeń kluczowych",
         summary=(
             "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, "
             "zwrotu z reklam, przychodu i opłacalności wymagają osobnych metryk konwersji "
             "albo zdarzeń kluczowych."
         ),
         allowed_metrics=sorted(GA4_CONVERSION_METRIC_NAMES),
-        available_read_contracts=(
-            ["conversion_or_key_event_metric_facts"] if conversion_like_facts else []
-        ),
-        missing_read_contracts=(
-            [] if conversion_like_facts else ["conversion_or_key_event_mapping"]
-        ),
+        available_read_contracts=available_read_contracts,
+        available_read_contract_labels=_ga4_read_contract_labels(available_read_contracts),
+        missing_read_contracts=missing_read_contracts,
+        missing_read_contract_labels=_ga4_read_contract_labels(missing_read_contracts),
         conversion_like_metric_count=len(conversion_like_facts),
         dimensioned_behavior_metric_count=len(dimensioned_facts),
         landing_group_count=landing_group_count,
@@ -529,11 +535,15 @@ def _conversion_readiness_contract(
         action_ids=action_ids,
         blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
         next_step=(
-            "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie "
+            "Sprawdź jakość pomiaru w WILQ i potwierdź mapowanie "
             "konwersji i zdarzeń kluczowych przed wnioskami o opłacalności."
         ),
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
     )
+
+
+def _ga4_read_contract_labels(values: Iterable[str]) -> list[str]:
+    return [GA4_READ_CONTRACT_LABELS.get(value, value) for value in values]
 
 
 def _ga4_action_safety_section(
@@ -550,9 +560,9 @@ def _ga4_action_safety_section(
         diagnosis=(
             "WILQ może przygotować listę sprawdzenia jakości pomiaru i przegląd stron wejścia. Nie może "
             "zmieniać konfiguracji GA4 ani twierdzić, że naprawił pomiar bez osobnego "
-            "kontraktu akcji, sprawdzenia i audytu."
+            "potwierdzenia, sprawdzenia i audytu."
         ),
-        next_step="Sprawdź `act_review_ga4_tracking_quality` w WILQ i zatrzymaj zapis zmian.",
+        next_step="Sprawdź jakość pomiaru w WILQ i zatrzymaj zapis zmian.",
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=action_ids,
@@ -704,7 +714,7 @@ def _ga4_decisions_from_dimensioned_facts(
             )
             next_step = (
                 "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. Jeśli trzeba, "
-                "sprawdź w WILQ `act_review_ga4_tracking_quality` jako akcję do sprawdzenia w WILQ."
+                "sprawdź jakość pomiaru w WILQ jako akcję do sprawdzenia."
             )
             risk = ActionRisk.low
 
@@ -782,7 +792,7 @@ def _ga4_metric_tiles(facts: Iterable[MetricFact]) -> dict[str, float | int | st
     engagement_fact = latest_by_name.get("engagement_rate")
     if engagement_fact is not None:
         engagement_value = _numeric_value(engagement_fact.value)
-        tiles["engagement"] = _format_percent(engagement_value)
+        tiles["zaangażowanie"] = _format_percent(engagement_value)
     return tiles
 
 

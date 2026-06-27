@@ -64,7 +64,7 @@ function marketerMetricLabel(label: string) {
     "Ahrefs review": "ocena Ahrefs",
     "dopasowania WordPress": "dopasowania WordPress",
     "WP match": "dopasowania WordPress",
-    "braki kontraktu": "braki danych",
+    "brakujące dane": "brakujące dane",
     "jakość ruchu": "jakość ruchu",
     "luki linków": "luki linków",
     "link gaps": "luki linków",
@@ -192,10 +192,10 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
     const groups = metricDisplay(item, "grupy ruchu");
     const measurementIssues = metricDisplay(item, "pomiar");
     const qualitySignals = metricDisplay(item, "jakość ruchu");
-    const contractGaps = metricDisplay(item, "braki kontraktu");
+    const missingData = metricDisplay(item, "brakujące dane");
     return {
       title: "Sprawdź pomiar GA4 zanim ocenimy kampanie",
-      what: `GA4 pokazuje ${groups} grup ruchu, ${measurementIssues} problemy pomiaru, ${qualitySignals} sygnały jakości ruchu i ${contractGaps} brak danych wymaganych do pełnej oceny.`,
+      what: `GA4 pokazuje ${groups} grup ruchu, ${measurementIssues} problemy pomiaru, ${qualitySignals} sygnały jakości ruchu i ${missingData} brak danych wymaganych do pełnej oceny.`,
       why:
         "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o zwrot z reklam, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie ocena skuteczności kampanii.",
       nextStep:

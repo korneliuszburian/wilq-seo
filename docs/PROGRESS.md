@@ -119,6 +119,12 @@ Date: 2026-06-27
   local React label dictionaries on the `/ads-doctor/demand-gen` marketer
   surface. Browser proof:
   `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
+- GA4 readiness now sources missing-data labels from the WILQ API/domain
+  contract, and GA4 route cards render condensed API metric tiles instead of
+  raw metric facts. Browser proof for `/ga4` found no hits for `landing page`,
+  `Landing:`, `message match`, `key events`, `ecommerce_purchases`,
+  `engagement`, raw action IDs, `payload` or `ActionObject`:
+  `.local-lab/proof/20260627-ga4-api-labels/ga4.txt`.
 - Ads, GA4 and Merchant blocked-claim contracts now also use Polish source
   values for budget-loss checks, query review, profitability boundaries, margin
   checks, campaign write paths, change assessment, GA4 write/fix states,

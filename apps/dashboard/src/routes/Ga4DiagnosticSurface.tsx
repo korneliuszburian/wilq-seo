@@ -307,7 +307,7 @@ function Ga4MeasurementIssues({
           <p className="mt-1 text-sm leading-6 text-slate-600">
             Wiersze `(not set)` i braki w pomiarze są problemem pomiaru lub
             atrybucji. WILQ pokazuje je osobno, żeby nie mieszać ich z oceną
-            jakości landingu albo kampanii.
+            jakości strony wejścia albo kampanii.
           </p>
         </div>
         <MetricTile label="Do kontroli" value={measurementDecisions.length} />
@@ -411,8 +411,8 @@ function Ga4OperatorSummary({
               ]}
             />
             <TraceLine
-              label="Braki kontraktu"
-              values={conversionReadiness.missing_read_contracts.map(ga4ReadContractLabel)}
+              label="Brakujące dane"
+              values={conversionReadiness.missing_read_contract_labels}
               empty="brak"
             />
             <TraceLine
@@ -475,7 +475,7 @@ function Ga4DecisionCard({
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
         {decision.landing_page ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Landing: {decision.landing_page}
+            Strona wejścia: {decision.landing_page}
           </span>
         ) : null}
         {decision.source_medium ? (
@@ -511,9 +511,6 @@ function Ga4DecisionCard({
         />
         <TraceLine label="Nie wolno twierdzić" values={ga4BlockedClaimLabels(decision.blocked_claims)} />
       </div>
-      {decision.metric_facts.length > 0 ? (
-        <Ga4MetricTiles facts={decision.metric_facts.slice(0, 5)} />
-      ) : null}
     </article>
   );
 }
@@ -719,7 +716,7 @@ function formatGa4ActionCount(count: number) {
 
 function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
   if (decisionType === "fix_measurement") return "problem pomiaru";
-  if (decisionType === "review_landing_mapping") return "sprawdzenie mapowania landingu";
+  if (decisionType === "review_landing_mapping") return "sprawdzenie mapowania strony wejścia";
   return "kontrola jakości ruchu";
 }
 
@@ -746,14 +743,6 @@ function ga4ConversionReadinessStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "blokuje wnioski o konwersjach";
   return status;
-}
-
-function ga4ReadContractLabel(value: string) {
-  const labels: Record<string, string> = {
-    conversion_or_key_event_mapping: "mapowanie konwersji i zdarzeń kluczowych",
-    conversion_or_key_event_metric_facts: "metryki konwersji i zdarzeń kluczowych"
-  };
-  return labels[value] ?? value;
 }
 
 function ga4TrackingDimensionLabel(value: string) {
