@@ -83,6 +83,7 @@ CONTENT_CONTRACT_LABELS = {
     "automatic_wordpress_write": "automatyczny zapis WordPress",
     "block_until_public_inventory_known": "blokada do czasu spisu publicznych treści",
     "blocked_preview_only": "zablokowane do czasu kontroli",
+    "block": "zablokuj",
     "business_relevance_review": "sprawdzenie dopasowania biznesowego",
     "canonical_review": "kontrola URL-a kanonicznego",
     "canonical_needs_target_confirmation": "trzeba potwierdzić URL kanoniczny",
@@ -95,18 +96,21 @@ CONTENT_CONTRACT_LABELS = {
     "content_url_preflight_review": "potwierdzenie publicznego URL-a",
     "content_url_preflight_review_v1": "potwierdzenie publicznego URL-a",
     "content_url_review_recorded_review_only": "kontrola URL-a zapisana do sprawdzenia",
+    "create": "utwórz po kontroli",
     "duplicate_free_claim_without_review": "obietnica braku duplikacji bez kontroli",
     "duplicate_free_claim": "obietnica braku duplikacji",
     "duplicate_or_cannibalization_check": "kontrola duplikacji i kanibalizacji",
     "duplicate_review_outcome": "wynik kontroli duplikacji",
     "evidence_ids_present": "dowody są podpięte",
     "final_canonical_review": "kontrola URL-a kanonicznego",
+    "inventory_check": "sprawdź spis treści",
     "legal_factual_review": "kontrola prawna i faktograficzna",
     "legal_factual_review_outcome": "wynik kontroli prawnej i faktograficznej",
     "human_confirm_before_wordpress_write": "potwierdzenie człowieka przed zapisem WordPress",
     "mark_preview_design_context_not_required": "podgląd projektu nie jest wymagany",
     "operator_review_approved_for_prepare": "operator zatwierdził przygotowanie",
     "merge_required_before_draft": "najpierw trzeba rozstrzygnąć scalenie",
+    "merge": "scal z istniejącą treścią",
     "needs_canonical_fix": "trzeba poprawić kanoniczny URL",
     "needs_duplicate_resolution": "trzeba rozstrzygnąć duplikację",
     "needs_expert_review": "wymaga kontroli eksperta",
@@ -120,6 +124,7 @@ CONTENT_CONTRACT_LABELS = {
     "public_content_inventory_required": "wymagany spis publicznych treści",
     "ready_for_review": "gotowe do sprawdzenia",
     "ranking_guarantee": "gwarancja pozycji",
+    "refresh": "odśwież istniejącą treść",
     "review_only": "do kontroli",
     "wordpress_draft_handoff_action_required": "wymagany osobny krok WordPress",
     "wordpress_draft_handoff_v1": "zapis szkicu WordPress",
@@ -278,6 +283,14 @@ def _content_contract_labels(values: Iterable[str]) -> list[str]:
     return [_content_contract_label(value) for value in values if value]
 
 
+def content_contract_label(value: str) -> str:
+    return _content_contract_label(value)
+
+
+def content_contract_labels(values: Iterable[str]) -> list[str]:
+    return _content_contract_labels(values)
+
+
 def _prefixed_labels(prefix: str, values: Iterable[str]) -> list[str]:
     return [f"{prefix}: {label}" for label in _content_contract_labels(values)]
 
@@ -379,6 +392,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 **content_gate_status,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
                 "decision_options": decision_options,
+                "decision_option_labels": _content_contract_labels(decision_options),
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
                 "metric_snapshot_labels": _gsc_metric_snapshot_labels(),
                 "brief_goal": _gsc_brief_goal(wordpress_match, primary_query),
@@ -972,7 +986,17 @@ def _draft_generation_summary(contract: Mapping[str, Any]) -> list[str]:
     output_kind = contract.get("allowed_output_kind")
     if isinstance(output_kind, str) and output_kind:
         values.append(f"wynik: {_content_contract_label(output_kind)}")
-    values.extend(_prefixed_labels("warunek", _string_list(contract.get("requires_passed_gates"))[:3]))
+    required_gates = _prioritized_content_contract_values(
+        _string_list(contract.get("requires_passed_gates")),
+        [
+            "duplicate_or_cannibalization_check",
+            "final_canonical_review",
+            "content_url_preflight_review",
+            "legal_factual_review",
+            "human_confirm_before_wordpress_write",
+        ],
+    )
+    values.extend(_prefixed_labels("warunek", required_gates[:5]))
     values.extend(_prefixed_labels("zakaz", _string_list(contract.get("forbidden_outputs"))[:3]))
     return values
 
@@ -1055,13 +1079,35 @@ def _post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
     status = plan.get("status")
     if isinstance(status, str) and status:
         values.append(f"status: {_post_publication_measurement_status_label(status)}")
+    blocked_outputs = _prioritized_content_contract_values(
+        _string_list(plan.get("blocked_outputs")),
+        [
+            "content_success_verdict",
+            "ranking_gain_claim",
+            "lead_uplift_claim",
+            "revenue_impact_claim",
+        ],
+    )
+    values.extend(_prefixed_labels("blokuje", blocked_outputs[:4]))
     baseline_window = plan.get("baseline_window")
     if isinstance(baseline_window, str) and baseline_window:
         values.append(f"punkt odniesienia: {_content_contract_label(baseline_window)}")
     values.extend(_prefixed_labels("sprawdzenie", _string_list(plan.get("followup_windows"))[:3]))
     values.extend(_prefixed_labels("źródło", _string_list(plan.get("required_source_connectors"))[:3]))
-    values.extend(_prefixed_labels("blokuje", _string_list(plan.get("blocked_outputs"))[:3]))
     return values
+
+
+def _prioritized_content_contract_values(
+    values: Iterable[str],
+    priority: Iterable[str],
+) -> list[str]:
+    value_list = list(values)
+    priority_list = [item for item in priority if item in value_list]
+    return [*priority_list, *[item for item in value_list if item not in priority_list]]
+
+
+def post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
+    return _post_publication_measurement_summary(plan)
 
 
 def _content_wordpress_draft_handoff_status_label(value: str) -> str:
@@ -1209,6 +1255,9 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "wordpress_inventory_match": "unknown",
                 "gsc_demand": "unknown",
                 "decision_options": ["refresh", "merge", "create", "block"],
+                "decision_option_labels": _content_contract_labels(
+                    ["refresh", "merge", "create", "block"]
+                ),
                 "metric_snapshot": {
                     "metric_name": fact.name,
                     "metric_value": fact.value,

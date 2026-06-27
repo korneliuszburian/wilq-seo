@@ -124,6 +124,12 @@ Date: 2026-06-27
   expanded brief/draft panels found no active hits for the previous raw
   contract/version phrases, `inventory:`, `canonical:` or `human review
   outcome`.
+- Action Detail content previews now consume API-sourced Polish labels for
+  content brief options, publication blockers, draft gates, WordPress draft
+  handoff and post-publication measurement. The context-pack compactor now
+  preserves those condensed labels for `wilq-content-strategist`, and summary
+  ordering keeps duplicate/canonical checks plus "no success verdict yet"
+  visible before lower-priority measurement details.
 
 ## Latest Proof Pointers
 
@@ -179,6 +185,16 @@ Date: 2026-06-27
   - `rtk uv run python scripts/marketer_language_guard.py` passed.
   - Browser proof text:
     `.local-lab/proof/20260627-content-contract-source-labels/browser/content-planner-briefs-expanded-body-final-v3.txt`.
+- Action Detail content API-label cleanup:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "metric_backed_prepare_actions_are_evidence_grounded or content_strategist_context_pack_preserves_reviewed_draft_preview" --maxfail=1`
+    passed: 2 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+    passed: 14 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk git diff --check` passed.
+  - Live API and browser proof text:
+    `.local-lab/proof/20260627-action-detail-content-api-labels/browser/content-action-detail-body.txt`.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

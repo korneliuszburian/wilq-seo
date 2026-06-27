@@ -671,7 +671,11 @@ const contentActionFixture: ActionObject = {
         topic: "bdo co to",
         target_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         wordpress_inventory_match: "missing",
-        decision_options: ["merge", "create", "block"],
+        decision_option_labels: [
+          "odśwież istniejącą treść",
+          "scal z istniejącą treścią",
+          "zablokuj"
+        ],
         metric_snapshot: {
           queries: 1,
           clicks: 4,
@@ -705,6 +709,11 @@ const contentActionFixture: ActionObject = {
           "wordpress_inventory_check",
           "duplicate_or_cannibalization_check",
           "human_confirm_before_wordpress_write"
+        ],
+        required_validation_labels: [
+          "istniejący URL potwierdzony w WordPress",
+          "kontrola duplikacji i kanibalizacji",
+          "potwierdzenie człowieka przed zapisem WordPress"
         ],
         blocked_claims: [
           "wzrost liczby leadów",
@@ -748,12 +757,48 @@ const contentActionFixture: ActionObject = {
         operation_type: "prepare_new_content_draft_review",
         post_status: "draft",
         topic: "bdo co to",
+        content_gate_status_summary: [
+          "spis treści: spis potwierdzony na obecnej stronie",
+          "URL kanoniczny: obecny URL potwierdzony",
+          "duplikaty: odśwież albo scal zamiast pisać od nowa"
+        ],
+        draft_blocker_labels: [
+          "kontrola URL-a kanonicznego",
+          "kontrola duplikacji i kanibalizacji"
+        ],
+        draft_generation_summary: [
+          "wynik: plan treści do czasu kontroli",
+          "warunek: dowody są podpięte"
+        ],
+        draft_readiness_review_summary: [
+          "szkic: wymaga decyzji człowieka",
+          "człowiek: brak zatwierdzenia"
+        ],
+        draft_readiness_review_contract_summary: [
+          "wymaga: wynik decyzji człowieka",
+          "blokuje: zapis szkicu WordPress"
+        ],
+        wordpress_draft_handoff_summary: [
+          "status: zablokowany do przejścia kontroli szkicu"
+        ],
+        wordpress_draft_handoff_contract_summary: [
+          "warunek: kontrola duplikacji i kanibalizacji",
+          "blokuje: publikacja WordPress"
+        ],
+        post_publication_measurement_summary: [
+          "status: zablokowany do publikacji i danych po publikacji"
+        ],
         draft_payload: {
           post_status: "draft",
-          post_title: "Brief: bdo co to",
+          post_title: "Odświeżenie: zielony ład",
           post_excerpt_direction: "Sprawdź inventory i duplikaty przed briefem.",
           content_blocks: []
         },
+        required_validation_labels: [
+          "operator zatwierdził przygotowanie",
+          "istniejący URL potwierdzony w WordPress",
+          "potwierdzenie człowieka przed zapisem WordPress"
+        ],
         apply_allowed: false,
         api_mutation_ready: false,
         destructive: false
@@ -1126,17 +1171,19 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Tryb: sprawdzić istniejącą treść/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Opcje: merge, create, block/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Opcje: odśwież istniejącą treść, scal z istniejącą treścią/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kąt treści: Najpierw potwierdź kanoniczną stronę BDO/)).toBeInTheDocument();
     expect(screen.getByText(/Odbiorca: Przedsiębiorca sprawdzający obowiązki BDO/)).toBeInTheDocument();
     expect(screen.getByText(/H1: H1 ma jasno odpowiedzieć na intencję `bdo co to`/)).toBeInTheDocument();
     expect(screen.getByText(/H2: czym jest BDO, obowiązki przedsiębiorcy/)).toBeInTheDocument();
     expect(screen.getByText(/FAQ: Co to jest BDO\?, Kto musi mieć BDO\?/)).toBeInTheDocument();
     expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Warunki sprawdzenia: warunek techniczny do sprawdzenia/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Warunki sprawdzenia: istniejący URL potwierdzony w WordPress/).length).toBeGreaterThan(0);
     expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/Kandydat: content_brief_gsc_bdo/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Tytuł szkicu: Brief: bdo co to/)).toBeInTheDocument();
+    expect(screen.getByText(/Tytuł szkicu: Odświeżenie: zielony ład/)).toBeInTheDocument();
+    expect(screen.getByText(/Kontrole treści: spis treści: spis potwierdzony/)).toBeInTheDocument();
+    expect(screen.getByText(/Szkic WordPress: status: zablokowany/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 });

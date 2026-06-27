@@ -273,6 +273,11 @@ const actions = [
           topic: "zielony ład",
           target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           wordpress_inventory_match: "present",
+          decision_option_labels: [
+            "odśwież istniejącą treść",
+            "scal z istniejącą treścią",
+            "zablokuj"
+          ],
           gsc_demand: "present",
           metric_snapshot: {
             clicks: 12,
@@ -293,11 +298,22 @@ const actions = [
           source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
           missing_evidence: ["brak dowodu wzrost liczby leadów"],
           forbidden_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          publication_blocker_labels: [
+            "potwierdzenie publicznego URL-a",
+            "kontrola duplikacji i kanibalizacji",
+            "potwierdzenie człowieka przed zapisem WordPress"
+          ],
           required_validation: [
             "wordpress_existing_url_confirmed",
             "gsc_query_page_check",
             "duplicate_or_cannibalization_check",
             "human_confirm_before_wordpress_write"
+          ],
+          required_validation_labels: [
+            "istniejący URL potwierdzony w WordPress",
+            "sprawdzenie zapytań i URL-i z GSC",
+            "kontrola duplikacji i kanibalizacji",
+            "potwierdzenie człowieka przed zapisem WordPress"
           ],
           blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_gsc"],
@@ -320,6 +336,12 @@ const actions = [
             metric_name: "ahrefs_content_gap_count",
             metric_value: 1
           },
+          decision_option_labels: [
+            "odśwież istniejącą treść",
+            "scal z istniejącą treścią",
+            "utwórz po kontroli",
+            "zablokuj"
+          ],
           brief_goal:
             "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim powstanie brief.",
           required_validation: [
@@ -348,6 +370,39 @@ const actions = [
           post_status: "draft",
           topic: "zielony ład",
           target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          content_gate_status_summary: [
+            "spis treści: spis potwierdzony na obecnej stronie",
+            "URL kanoniczny: obecny URL potwierdzony",
+            "duplikaty: odśwież albo scal zamiast pisać od nowa"
+          ],
+          draft_blocker_labels: [
+            "kontrola URL-a kanonicznego",
+            "kontrola duplikacji i kanibalizacji"
+          ],
+          draft_generation_summary: [
+            "wynik: plan treści do czasu kontroli",
+            "warunek: dowody są podpięte"
+          ],
+          draft_readiness_review_summary: [
+            "szkic: trzeba rozstrzygnąć duplikację",
+            "człowiek: zapisano ocenę przygotowania"
+          ],
+          draft_readiness_review_contract_summary: [
+            "wymaga: wynik decyzji człowieka",
+            "blokuje: zapis szkicu WordPress"
+          ],
+          wordpress_draft_handoff_summary: [
+            "status: zablokowany do przejścia kontroli szkicu",
+            "blokada: kontrola duplikacji i kanibalizacji"
+          ],
+          wordpress_draft_handoff_contract_summary: [
+            "warunek: kontrola duplikacji i kanibalizacji",
+            "blokuje: publikacja WordPress"
+          ],
+          post_publication_measurement_summary: [
+            "status: zablokowany do publikacji i danych po publikacji",
+            "sprawdzenie: 28 dni po publikacji"
+          ],
           draft_payload: {
             post_status: "draft",
             post_title: "Odświeżenie: zielony ład",
@@ -368,6 +423,11 @@ const actions = [
             "operator_review_approved_for_prepare",
             "wordpress_existing_url_confirmed",
             "human_confirm_before_wordpress_write"
+          ],
+          required_validation_labels: [
+            "operator zatwierdził przygotowanie",
+            "istniejący URL potwierdzony w WordPress",
+            "potwierdzenie człowieka przed zapisem WordPress"
           ],
           blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],

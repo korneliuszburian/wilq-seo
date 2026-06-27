@@ -21,8 +21,6 @@ import {
   actionAuditSummaryLabel
 } from "./ActionObjectPanels";
 import {
-  contentContractValueLabel,
-  contentWordPressDraftHandoffStatusLabel,
   contentWordPressPostStatusLabel
 } from "../lib/contentLabels";
 import { adsMissingReadContractLabel, marketerBlockedClaimLabels } from "./marketingLabels";
@@ -293,20 +291,16 @@ function WordPressDraftHandoffPreviewCard({ item }: { item: Record<string, unkno
         <div>Źródło: {stringValue(item.source_public_url, "brak")}</div>
         <div>Kanoniczny: {stringValue(item.final_canonical_url, "brak")}</div>
         <div>Podgląd: {stringValue(item.preview_url, "brak")}</div>
-        <div>Kontrola URL-a kanonicznego: {stringValue(item.canonical_gate_status, "brak")}</div>
-        <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
-        <div>
-          Przekazanie:{" "}
-          {contentWordPressDraftHandoffStatusLabel(stringValue(item.wordpress_draft_handoff_status, "zablokowany"))}
-        </div>
-        <div>
-          Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
-        </div>
-        <div>
-          Następny krok: {contentContractValueLabel(stringValue(item.required_next_action_contract, "brak"))}
-        </div>
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
-        <PreviewValues label="Czego nie wolno twierdzić" values={blockedClaimValues(item.blocked_claims)} />
+        <div>Kontrola URL-a kanonicznego: {stringValue(item.canonical_gate_status_label, "brak")}</div>
+        <div>Duplikaty: {stringValue(item.duplicate_gate_status_label, "brak")}</div>
+        <PreviewValues label="Przekazanie" values={asStringArray(item.wordpress_draft_handoff_summary)} />
+        <PreviewValues
+          label="Pomiar po publikacji"
+          values={asStringArray(item.post_publication_measurement_summary)}
+        />
+        <div>Następny krok: {stringValue(item.required_next_action_label, "brak")}</div>
+        <PreviewValues label="Warunki sprawdzenia" values={asStringArray(item.required_validation_labels)} />
+        <PreviewValues label="Czego nie wolno twierdzić" values={asStringArray(item.blocked_claim_labels)} />
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -660,7 +654,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Temat: {stringValue(item.topic, "brak")}</div>
         <div>Tryb: {contentModeLabel(stringValue(item.mode, "brak"))}</div>
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
-        <div>Opcje: {asStringArray(item.decision_options).join(", ") || "brak"}</div>
+        <div>Opcje: {asStringArray(item.decision_option_labels).join(", ") || "brak"}</div>
         <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
         <div>Intencja: {stringValue(item.intent, "brak")}</div>
         <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
@@ -681,7 +675,8 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
           CTR: {formatPercent(metricSnapshot.ctr)}; Pozycja:{" "}
           {formatNumber(metricSnapshot.average_position)}
         </div>
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues label="Blokady publikacji" values={asStringArray(item.publication_blocker_labels)} />
+        <PreviewValues label="Warunki sprawdzenia" values={asStringArray(item.required_validation_labels)} />
         <div>
           Publikacja: {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}; zapis zmian:{" "}
           {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}
@@ -725,42 +720,24 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
         </div>
         <div>Tytuł szkicu: {stringValue(draftPayload.post_title, "brak")}</div>
         <div>Adresy: {contentUrlSemanticsValue(item)}</div>
-        <div>
-          Zapis przeglądu URL:{" "}
-          {contentUrlReviewOutcomeLabel(
-            stringValue(item.content_url_review_recorded_outcome, "brak")
-          )}
-          {item.content_url_review_reviewed_url
-            ? ` -> ${stringValue(item.content_url_review_reviewed_url, "")}`
-            : ""}
-        </div>
-        <div>
-          Gotowość po przeglądzie:{" "}
-          {[
-            stringValue(item.draft_readiness_review_recorded_outcome, ""),
-            stringValue(item.canonical_review_recorded_outcome, ""),
-            stringValue(item.duplicate_review_recorded_outcome, ""),
-            stringValue(item.legal_factual_review_recorded_outcome, ""),
-            stringValue(item.human_review_recorded_outcome, "")
-          ]
-            .filter(Boolean)
-            .join(", ") || "brak zapisu"}
-        </div>
-        <div>Notatka gotowości: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
-        <div>
-          Przekazanie do WordPress:{" "}
-          {contentWordPressDraftHandoffStatusLabel(stringValue(item.wordpress_draft_handoff_status, "zablokowany"))}
-        </div>
-        <div>
-          Blokady przekazania:{" "}
-          {asStringArray(item.wordpress_draft_handoff_blockers)
-            .slice(0, 5)
-            .map(contentContractValueLabel)
-            .join(", ") || "brak"}
-        </div>
-        <div>
-          Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
-        </div>
+        <PreviewValues label="Kontrole treści" values={asStringArray(item.content_gate_status_summary)} />
+        <PreviewValues label="Co blokuje szkic" values={asStringArray(item.draft_blocker_labels)} />
+        <PreviewValues label="Warunki szkicu" values={asStringArray(item.draft_generation_summary)} />
+        <PreviewValues label="Gotowość po sprawdzeniu" values={asStringArray(item.draft_readiness_review_summary)} />
+        <PreviewValues
+          label="Kontrola szkicu"
+          values={asStringArray(item.draft_readiness_review_contract_summary)}
+        />
+        <PreviewValues label="Szkic WordPress" values={asStringArray(item.wordpress_draft_handoff_summary)} />
+        <PreviewValues
+          label="Warunki szkicu WordPress"
+          values={asStringArray(item.wordpress_draft_handoff_contract_summary)}
+        />
+        <PreviewValues
+          label="Pomiar po publikacji"
+          values={asStringArray(item.post_publication_measurement_summary)}
+        />
+        <PreviewValues label="Warunki sprawdzenia" values={asStringArray(item.required_validation_labels)} />
         <div>
           Zapis zmian: {item.apply_allowed === true ? "dopuszczony" : "zablokowany"}; gotowość systemu:{" "}
           {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
@@ -1069,20 +1046,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function postPublicationMeasurementValue(value: unknown) {
-  if (!isRecord(value)) return "brak";
-  const parts = [
-    stringValue(value.contract_version, ""),
-    stringValue(value.status, ""),
-    stringValue(value.baseline_window, ""),
-    ...asStringArray(value.followup_windows).slice(0, 2),
-    ...asStringArray(value.blocked_outputs)
-      .slice(0, 2)
-      .map((item) => `blokuje: ${item}`)
-  ].filter(Boolean);
-  return parts.join(" · ") || "brak";
-}
-
 export function EvidenceDetailSurface({ evidenceId }: { evidenceId: string }) {
   const evidence = useQuery({
     queryKey: ["evidence", evidenceId],
@@ -1163,17 +1126,6 @@ function contentUrlSemanticsValue(item: Record<string, unknown>) {
     previewUrl ? `podgląd: ${previewUrl}` : "",
   ].filter(Boolean);
   return parts.join("; ") || "brak";
-}
-
-function contentUrlReviewOutcomeLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirm_exact_candidate: "potwierdzono wskazany adres",
-    confirm_alternative_candidate: "wybrano alternatywny adres do dalszego przeglądu",
-    manual_mapping_required: "wymaga ręcznego wskazania adresu",
-    reject_all_candidates: "odrzucono propozycje adresu",
-    brak: "brak"
-  };
-  return labels[value] ?? value;
 }
 
 function SectionHeading({ title }: { title: string }) {

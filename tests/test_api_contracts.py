@@ -2148,6 +2148,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "kontrola duplikacji i kanibalizacji" in brief_preview[
         "required_validation_labels"
     ]
+    assert "odśwież istniejącą treść" in brief_preview["decision_option_labels"]
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]
@@ -3093,6 +3094,29 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 "required_source_connectors"
             ]
             assert "lead_uplift_claim" in wordpress_draft_measurement_plan["blocked_outputs"]
+            assert first_wordpress_draft_preview["canonical_gate_status_label"]
+            assert first_wordpress_draft_preview["duplicate_gate_status_label"]
+            assert (
+                "status: zablokowany do przejścia kontroli szkicu"
+                in first_wordpress_draft_preview["wordpress_draft_handoff_summary"]
+            )
+            assert (
+                first_wordpress_draft_preview["required_next_action_label"]
+                == "zapis szkicu WordPress"
+            )
+            assert "potwierdzenie publicznego URL-a" in first_wordpress_draft_preview[
+                "required_validation_labels"
+            ]
+            assert "publikacja WordPress" in first_wordpress_draft_preview[
+                "blocked_claim_labels"
+            ]
+            assert "blokuje: obietnica wzrostu pozycji" in (
+                " ".join(
+                    first_wordpress_draft_preview[
+                        "post_publication_measurement_summary"
+                    ]
+                )
+            )
             assert ahrefs_preview["mode"] == "review"
             assert ahrefs_preview["topic"] == "audyt środowiskowy"
             assert ahrefs_preview["gsc_demand"] == "unknown"

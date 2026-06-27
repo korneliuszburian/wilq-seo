@@ -6,10 +6,13 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from wilq.actions.content_refresh import (
+    content_contract_label,
+    content_contract_labels,
     content_payload_with_reviewed_wordpress_draft_previews,
     content_refresh_payload_from_metric_facts,
     content_url_review_contract,
     post_publication_measurement_plan,
+    post_publication_measurement_summary,
 )
 from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
 from wilq.actions.google_ads.business_context import (
@@ -1813,6 +1816,23 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         if isinstance(item.get("final_canonical_url"), str)
         else intended_final_url
     )
+    required_validation = [
+        "content_url_preflight_review",
+        "final_canonical_review",
+        "duplicate_or_cannibalization_check",
+        "legal_factual_review",
+        "content_draft_readiness_review",
+        "human_confirm_before_wordpress_write",
+    ]
+    blocked_claims = [
+        "wordpress_draft_write",
+        "wordpress_publish",
+        "publish_ready_claim",
+        "ranking_or_lead_uplift_claim",
+    ]
+    measurement_plan = post_publication_measurement_plan(
+        final_canonical_url=str(final_canonical_url) if final_canonical_url else None,
+    )
     return {
         "preview_contract": "wordpress_draft_handoff_preview_v1",
         "operation_type": "wordpress_draft_handoff_review",
@@ -1826,26 +1846,27 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         if isinstance(item.get("preview_url"), str)
         else None,
         "canonical_gate_status": item.get("canonical_gate_status"),
-        "duplicate_gate_status": item.get("duplicate_gate_status"),
-        "wordpress_draft_handoff_status": "blocked_until_draft_gates_pass",
-        "required_next_action_contract": "wordpress_draft_handoff_v1",
-        "post_publication_measurement_plan": post_publication_measurement_plan(
-            final_canonical_url=str(final_canonical_url) if final_canonical_url else None,
+        "canonical_gate_status_label": content_contract_label(
+            str(item.get("canonical_gate_status") or "")
         ),
-        "required_validation": [
-            "content_url_preflight_review",
-            "final_canonical_review",
-            "duplicate_or_cannibalization_check",
-            "legal_factual_review",
-            "content_draft_readiness_review",
-            "human_confirm_before_wordpress_write",
+        "duplicate_gate_status": item.get("duplicate_gate_status"),
+        "duplicate_gate_status_label": content_contract_label(
+            str(item.get("duplicate_gate_status") or "")
+        ),
+        "wordpress_draft_handoff_status": "blocked_until_draft_gates_pass",
+        "wordpress_draft_handoff_summary": [
+            "status: zablokowany do przejścia kontroli szkicu"
         ],
-        "blocked_claims": [
-            "wordpress_draft_write",
-            "wordpress_publish",
-            "publish_ready_claim",
-            "ranking_or_lead_uplift_claim",
-        ],
+        "required_next_action_contract": "wordpress_draft_handoff_v1",
+        "required_next_action_label": content_contract_label("wordpress_draft_handoff_v1"),
+        "post_publication_measurement_plan": measurement_plan,
+        "post_publication_measurement_summary": post_publication_measurement_summary(
+            measurement_plan
+        ),
+        "required_validation": required_validation,
+        "required_validation_labels": content_contract_labels(required_validation),
+        "blocked_claims": blocked_claims,
+        "blocked_claim_labels": content_contract_labels(blocked_claims),
         "apply_allowed": False,
         "api_mutation_ready": False,
         "destructive": False,
