@@ -143,6 +143,13 @@ Latest slice:
   protects against showing `availability_updated / n:availability` to the
   marketer. Browser proof:
   `.local-lab/proof/20260627-remove-action-gate-ui-map/`.
+- Action panels now also rely on API/shared-schema labels for action status,
+  validation status, risk, mode, review-gate status, result status and audit
+  event names. Action audit summaries are cleaned in the API, not by React, so
+  the visible history uses plain Polish and does not expose `status=...`, raw
+  audit IDs or raw connector IDs. Verification: focused action API tests,
+  dashboard action tests, `scripts/live_contract_smoke.py`, and browser proof
+  on `/actions/act_review_merchant_feed_issues`.
 - GA4 readiness labels now come from the WILQ API/shared schema, not from
   route-local read-contract mapping. `/ga4` renders condensed API metric tiles
   and hides raw GA4 metric fact names from decision cards; browser proof found

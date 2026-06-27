@@ -191,6 +191,7 @@ class AuditEvent(BaseModel):
     id: str
     action_id: str | None = None
     event_type: str
+    event_type_label: str = ""
     actor: str
     created_at: datetime = Field(default_factory=utc_now)
     summary: str
@@ -205,6 +206,7 @@ class ActionMutationAuditRecord(BaseModel):
     connector: str
     action_type: str | None = None
     status: Literal["blocked", "applied", "failed"]
+    status_label: str = ""
     mutation_attempted: bool = False
     mutation_adapter: str | None = None
     actor: str
@@ -246,6 +248,7 @@ class ActionReviewGate(BaseModel):
         "ready_to_apply",
         "blocked_apply",
     ] = "pending_validation"
+    status_label: str = ""
     summary: str = "Wymaga walidacji akcji przed kolejnym krokiem."
     required_checks: list[str] = Field(default_factory=list)
     required_check_labels: list[str] = Field(default_factory=list)
@@ -256,6 +259,7 @@ class ActionReviewGate(BaseModel):
     confirmation_required: bool = True
     apply_allowed: bool = False
     last_review_outcome: ActionReviewOutcome | None = None
+    last_review_outcome_label: str | None = None
     last_reviewed_by: str | None = None
     last_reviewed_at: datetime | None = None
     last_review_summary: str | None = None
@@ -263,11 +267,13 @@ class ActionReviewGate(BaseModel):
     last_confirmation_at: datetime | None = None
     last_confirmation_summary: str | None = None
     last_impact_check_status: Literal["checked", "blocked"] | None = None
+    last_impact_check_status_label: str | None = None
     last_impact_checked_by: str | None = None
     last_impact_checked_at: datetime | None = None
     last_impact_check_summary: str | None = None
     last_mutation_audit_id: str | None = None
     last_mutation_audit_status: Literal["blocked", "applied", "failed"] | None = None
+    last_mutation_audit_status_label: str | None = None
     last_mutation_audit_actor: str | None = None
     last_mutation_audit_at: datetime | None = None
     last_mutation_audit_summary: str | None = None
@@ -285,15 +291,20 @@ class ActionObject(BaseModel):
     title: str
     domain: OpportunityDomain
     connector: str
+    connector_label: str = ""
     mode: ActionMode
+    mode_label: str = ""
     risk: ActionRisk
+    risk_label: str = ""
     status: ActionStatus
+    status_label: str = ""
     evidence_ids: list[str] = Field(min_length=1)
     metrics: list[MetricFact] = Field(default_factory=list)
     human_diagnosis: str = Field(min_length=1)
     recommended_reason: str
     payload: dict[str, Any]
     validation_status: Literal["not_validated", "valid", "invalid"]
+    validation_status_label: str = ""
     review_gate: ActionReviewGate = Field(default_factory=ActionReviewGate)
     created_by: str
     created_at: datetime = Field(default_factory=utc_now)
@@ -312,6 +323,7 @@ class ActionValidationResult(BaseModel):
     action_id: str
     valid: bool
     status: Literal["valid", "invalid"]
+    status_label: str = ""
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     checked_at: datetime = Field(default_factory=utc_now)
@@ -321,6 +333,7 @@ class ActionApplyResult(BaseModel):
     action_id: str
     applied: bool
     status: Literal["applied", "blocked", "failed"]
+    status_label: str = ""
     audit_event: AuditEvent
     mutation_audit: ActionMutationAuditRecord
     errors: list[str] = Field(default_factory=list)
@@ -334,6 +347,7 @@ class ActionPreviewRequest(BaseModel):
 class ActionPreviewResult(BaseModel):
     action_id: str
     status: Literal["preview_ready", "blocked"]
+    status_label: str = ""
     dry_run: bool = True
     mutation_allowed: bool = False
     preview_contract: str | None = None
@@ -349,6 +363,7 @@ class ActionPreviewResult(BaseModel):
 class ActionReviewResult(BaseModel):
     action_id: str
     status: Literal["recorded"]
+    status_label: str = ""
     audit_event: AuditEvent
     review_gate: ActionReviewGate
 
@@ -365,6 +380,7 @@ class ActionConfirmResult(BaseModel):
     action_id: str
     confirmed: bool
     status: Literal["confirmed", "blocked"]
+    status_label: str = ""
     blockers: list[str] = Field(default_factory=list)
     blocker_labels: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
@@ -417,6 +433,7 @@ class ActionImpactCheckRequest(BaseModel):
 class ActionImpactCheckResult(BaseModel):
     action_id: str
     status: Literal["checked", "blocked"]
+    status_label: str = ""
     pre_window_days: int
     post_window_days: int
     metric_fact_count: int = 0

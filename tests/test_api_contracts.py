@@ -1319,9 +1319,16 @@ def test_action_review_records_human_outcome_without_apply(
     assert review_response.status_code == 200
     review_payload = review_response.json()
     assert review_payload["status"] == "recorded"
+    assert review_payload["status_label"] == "zapisane"
     assert review_payload["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+    assert review_payload["audit_event"]["event_type_label"] == "Przegląd operatora zapisany"
     assert review_payload["audit_event"]["actor"] == "operator_test"
     assert review_payload["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert (
+        review_payload["review_gate"]["last_review_outcome_label"]
+        == "zatwierdzone do dalszego przygotowania"
+    )
+    assert review_payload["review_gate"]["status_label"]
     assert review_payload["review_gate"]["apply_allowed"] is False
     assert "zmian w zewnętrznych systemach" in review_payload["audit_event"]["summary"]
 
@@ -1335,8 +1342,18 @@ def test_action_review_records_human_outcome_without_apply(
     action_response = client.get("/api/actions/act_review_merchant_feed_issues")
     assert action_response.status_code == 200
     action = action_response.json()
+    assert action["connector_label"] == "Google Merchant Center"
+    assert action["mode_label"] == "przygotowanie"
+    assert action["status_label"]
+    assert action["risk_label"]
+    assert action["validation_status_label"]
     assert action["audit_events"][0]["event_type"] == "human_review_approved_for_prepare"
+    assert action["audit_events"][0]["event_type_label"] == "Przegląd operatora zapisany"
     assert action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert (
+        action["review_gate"]["last_review_outcome_label"]
+        == "zatwierdzone do dalszego przygotowania"
+    )
     assert action["review_gate"]["last_reviewed_by"] == "operator_test"
     assert action["review_gate"]["apply_allowed"] is False
 
@@ -1356,16 +1373,21 @@ def test_action_preview_generates_dry_run_audit_without_apply(
     assert preview_response.status_code == 200
     preview = preview_response.json()
     assert preview["status"] in {"preview_ready", "blocked"}
+    assert preview["status_label"] in {"podgląd gotowy", "zablokowany"}
     assert preview["dry_run"] is True
     assert preview["mutation_allowed"] is False
     assert preview["audit_event"]["event_type"] == "action_preview_generated"
+    assert preview["audit_event"]["event_type_label"] == "Podgląd zmian wygenerowany"
     assert preview["audit_event"]["actor"] == "operator_test"
     assert preview["preview_items_total"] >= len(preview["preview_items"])
     assert len(preview["preview_items"]) <= 3
     assert preview["review_gate"]["apply_allowed"] is False
+    assert preview["review_gate"]["status_label"]
     assert len(preview["blocker_labels"]) == len(preview["blockers"])
     assert "warunek techniczny do sprawdzenia" not in preview["blocker_labels"]
-    assert "zapis zmian=zablokowany" in preview["audit_event"]["summary"]
+    assert "status=" not in preview["audit_event"]["summary"]
+    assert "zapis zmian=" not in preview["audit_event"]["summary"]
+    assert "zapis zmian pozostaje zablokowany" in preview["audit_event"]["summary"]
 
     audit_response = client.get(
         "/api/audit/events?action_id=act_review_merchant_feed_issues"
@@ -2421,11 +2443,14 @@ def test_action_confirm_requires_prior_preview(
     confirmation = confirm_response.json()
     assert confirmation["confirmed"] is False
     assert confirmation["status"] == "blocked"
+    assert confirmation["status_label"] == "zablokowany"
     assert "dry_run_preview_required" in confirmation["blockers"]
     assert "wymagany wcześniejszy podgląd zmian" in confirmation["blocker_labels"]
     assert "warunek techniczny do sprawdzenia" not in confirmation["blocker_labels"]
     assert confirmation["audit_event"]["event_type"] == "action_confirmation_blocked"
+    assert confirmation["audit_event"]["event_type_label"] == "Potwierdzenie zablokowane"
     assert confirmation["review_gate"]["apply_allowed"] is False
+    assert confirmation["review_gate"]["status_label"]
 
     audit_response = client.get(
         "/api/audit/events?action_id=act_review_merchant_feed_issues"
@@ -2504,6 +2529,8 @@ def test_action_impact_check_requires_confirmation(
     assert "wymagane potwierdzenie podglądu zmian" in result["blocker_labels"]
     assert "warunek techniczny do sprawdzenia" not in result["blocker_labels"]
     assert result["audit_event"]["event_type"] == "action_impact_check_blocked"
+    assert "status=" not in result["audit_event"]["summary"]
+    assert "google_merchant_center" not in result["audit_event"]["summary"]
     assert result["review_gate"]["last_impact_check_status"] == "blocked"
     assert result["review_gate"]["apply_allowed"] is False
     assert "impact_sanity_check_required" in result["review_gate"]["apply_blockers"]
@@ -2544,6 +2571,8 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert response.status_code == 200
     result = response.json()
     assert result["status"] == "checked"
+    assert "status=" not in result["audit_event"]["summary"]
+    assert "google_merchant_center" not in result["audit_event"]["summary"]
     assert result["pre_window_days"] == 7
     assert result["post_window_days"] == 14
     assert result["metric_fact_count"] > 0

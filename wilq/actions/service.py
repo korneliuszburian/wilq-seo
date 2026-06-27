@@ -2082,6 +2082,7 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
         action_id=action.id,
         valid=valid,
         status="valid" if valid else "invalid",
+        status_label=_action_result_status_label("valid" if valid else "invalid"),
         errors=errors,
         warnings=warnings,
     )
@@ -2095,6 +2096,7 @@ def record_action_review(
         id=f"audit_{action.id}_human_review_{uuid4().hex[:12]}",
         action_id=action.id,
         event_type=f"human_review_{request.outcome}",
+        event_type_label=_action_audit_event_label(f"human_review_{request.outcome}"),
         actor=request.reviewed_by,
         summary=_action_review_summary(request),
         evidence_ids=action.evidence_ids,
@@ -2105,8 +2107,9 @@ def record_action_review(
     return ActionReviewResult(
         action_id=action.id,
         status="recorded",
-        audit_event=audit,
-        review_gate=action.review_gate,
+        status_label=_action_result_status_label("recorded"),
+        audit_event=_audit_event_with_operator_label(audit),
+        review_gate=_review_gate_with_operator_labels(action.review_gate),
     )
 
 
@@ -2124,11 +2127,12 @@ def preview_action(
         id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
         action_id=action.id,
         event_type="action_preview_generated",
+        event_type_label=_action_audit_event_label("action_preview_generated"),
         actor=preview_request.requested_by or "wilq_api",
-        summary=(
-            f"Podgląd zmian wygenerowany: status={status}, "
-            f"pozycje={len(included_items)}/{len(preview_items)}, "
-            "zapis zmian=zablokowany. Nie zapisano zmian w zewnętrznych systemach."
+        summary=_action_preview_summary(
+            status=status,
+            included_items=len(included_items),
+            preview_items=len(preview_items),
         ),
         evidence_ids=action.evidence_ids,
     )
@@ -2136,6 +2140,7 @@ def preview_action(
     return ActionPreviewResult(
         action_id=action.id,
         status=status,
+        status_label=_action_result_status_label(status),
         dry_run=True,
         mutation_allowed=False,
         preview_contract=_preview_contract(action.payload, preview_items),
@@ -2144,8 +2149,8 @@ def preview_action(
         omitted_items=max(len(preview_items) - len(included_items), 0),
         blockers=blockers,
         blocker_labels=_action_gate_labels(blockers),
-        audit_event=audit,
-        review_gate=action.review_gate,
+        audit_event=_audit_event_with_operator_label(audit),
+        review_gate=_review_gate_with_operator_labels(action.review_gate),
     )
 
 
@@ -2161,6 +2166,9 @@ def confirm_action(
         id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
         action_id=action.id,
         event_type=_action_confirmation_event_type(action, confirmed),
+        event_type_label=_action_audit_event_label(
+            _action_confirmation_event_type(action, confirmed)
+        ),
         actor=request.confirmed_by,
         summary=_action_confirmation_summary(action, request, blockers, latest_preview),
         evidence_ids=action.evidence_ids,
@@ -2171,10 +2179,11 @@ def confirm_action(
         action_id=action.id,
         confirmed=confirmed,
         status="confirmed" if confirmed else "blocked",
+        status_label=_action_result_status_label("confirmed" if confirmed else "blocked"),
         blockers=blockers,
         blocker_labels=_action_gate_labels(blockers),
-        audit_event=audit,
-        review_gate=action.review_gate,
+        audit_event=_audit_event_with_operator_label(audit),
+        review_gate=_review_gate_with_operator_labels(action.review_gate),
     )
 
 
@@ -2198,6 +2207,11 @@ def impact_check_action(
         event_type="action_impact_check_completed"
         if status == "checked"
         else "action_impact_check_blocked",
+        event_type_label=_action_audit_event_label(
+            "action_impact_check_completed"
+            if status == "checked"
+            else "action_impact_check_blocked"
+        ),
         actor=request.checked_by,
         summary=_action_impact_check_summary(
             request=request,
@@ -2213,6 +2227,7 @@ def impact_check_action(
     return ActionImpactCheckResult(
         action_id=action.id,
         status=status,
+        status_label=_action_result_status_label(status),
         pre_window_days=request.pre_window_days,
         post_window_days=request.post_window_days,
         metric_fact_count=len(action.metrics),
@@ -2220,8 +2235,8 @@ def impact_check_action(
         evidence_ids=evidence_ids,
         blockers=blockers,
         blocker_labels=_action_gate_labels(blockers),
-        audit_event=audit,
-        review_gate=action.review_gate,
+        audit_event=_audit_event_with_operator_label(audit),
+        review_gate=_review_gate_with_operator_labels(action.review_gate),
     )
 
 
@@ -2265,6 +2280,7 @@ def apply_action(
         id=f"audit_{action.id}_{len(action.audit_events) + 1}",
         action_id=action.id,
         event_type=_apply_audit_event_type(errors),
+        event_type_label=_action_audit_event_label(_apply_audit_event_type(errors)),
         actor=actor,
         summary="; ".join(errors) if errors else "Zmiany zapisane przez sprawdzoną ścieżkę API.",
         evidence_ids=action.evidence_ids,
@@ -2284,7 +2300,8 @@ def apply_action(
             action_id=action.id,
             applied=False,
             status="blocked",
-            audit_event=audit,
+            status_label=_action_result_status_label("blocked"),
+            audit_event=_audit_event_with_operator_label(audit),
             mutation_audit=mutation_audit,
             errors=errors,
         )
@@ -2294,7 +2311,8 @@ def apply_action(
         action_id=action.id,
         applied=True,
         status="applied",
-        audit_event=audit,
+        status_label=_action_result_status_label("applied"),
+        audit_event=_audit_event_with_operator_label(audit),
         mutation_audit=mutation_audit,
     )
 
@@ -2327,6 +2345,7 @@ def _action_mutation_audit_record(
         connector=action.connector,
         action_type=action_type if isinstance(action_type, str) else None,
         status=status,
+        status_label=_action_mutation_audit_status_label(status),
         mutation_attempted=status == "applied",
         mutation_adapter=mutation_adapter,
         actor=actor,
@@ -2390,7 +2409,57 @@ def _with_review_gate(
     )
     action.payload = _payload_with_operator_labels(action.payload)
     action.review_gate = _action_review_gate(action, mutation_audits)
-    return action
+    return _action_with_operator_labels(action)
+
+
+def _action_with_operator_labels(action: ActionObject) -> ActionObject:
+    connector = get_connector_status(action.connector)
+    return action.model_copy(
+        update={
+            "connector_label": connector.label if connector is not None else "źródło danych",
+            "mode_label": _action_mode_label(action.mode),
+            "risk_label": _action_risk_label(action.risk),
+            "status_label": _action_status_label(action.status),
+            "validation_status_label": _action_validation_status_label(
+                action.validation_status
+            ),
+            "review_gate": _review_gate_with_operator_labels(action.review_gate),
+            "audit_events": [
+                _audit_event_with_operator_label(event) for event in action.audit_events
+            ],
+        }
+    )
+
+
+def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGate:
+    return gate.model_copy(
+        update={
+            "status_label": _action_review_gate_status_label(gate.status),
+            "last_review_outcome_label": _review_outcome_label(gate.last_review_outcome)
+            if gate.last_review_outcome
+            else None,
+            "last_impact_check_status_label": _action_result_status_label(
+                gate.last_impact_check_status
+            )
+            if gate.last_impact_check_status
+            else None,
+            "last_mutation_audit_status_label": _action_mutation_audit_status_label(
+                gate.last_mutation_audit_status
+            )
+            if gate.last_mutation_audit_status
+            else None,
+        }
+    )
+
+
+def _audit_event_with_operator_label(event: AuditEvent) -> AuditEvent:
+    return event.model_copy(
+        update={
+            "event_type_label": event.event_type_label
+            or _action_audit_event_label(event.event_type),
+            "summary": _action_audit_summary_for_operator(event),
+        }
+    )
 
 
 def _without_legacy_content_review_audit_terms(event: AuditEvent) -> AuditEvent:
@@ -2834,11 +2903,12 @@ def _action_impact_check_summary(
     blockers: list[str],
 ) -> str:
     parts = [
-        f"Sprawdzenie efektu: status={status}.",
+        f"Sprawdzenie efektu: {_action_result_status_label(status)}.",
         f"Okno przed zmianą: {request.pre_window_days} dni.",
         f"Okno po zmianie: {request.post_window_days} dni.",
         f"Metryki z dowodami: {metric_fact_count}.",
-        f"Źródła: {', '.join(source_connectors) if source_connectors else 'brak'}.",
+        "Źródła: "
+        f"{', '.join(_source_connector_labels(source_connectors)) if source_connectors else 'brak'}.",
     ]
     if blockers:
         parts.append(f"Blokady: {', '.join(blockers)}.")
@@ -2919,6 +2989,185 @@ def _action_gate_labels(values: Iterable[str]) -> list[str]:
         if label and label not in labels:
             labels.append(label)
     return labels
+
+
+def _action_mode_label(value: ActionMode | str) -> str:
+    labels = {
+        "suggest": "propozycja",
+        "prepare": "przygotowanie",
+        "apply": "zapis zmian",
+    }
+    return labels.get(str(value), "tryb akcji")
+
+
+def _action_risk_label(value: ActionRisk | str) -> str:
+    labels = {
+        "low": "niskie ryzyko",
+        "medium": "średnie ryzyko",
+        "high": "wysokie ryzyko",
+        "critical": "krytyczne ryzyko",
+    }
+    return labels.get(str(value), "ryzyko do sprawdzenia")
+
+
+def _action_status_label(value: ActionStatus | str) -> str:
+    labels = {
+        "new": "nowa",
+        "ready": "gotowa do sprawdzenia",
+        "needs_validation": "wymaga sprawdzenia w WILQ",
+        "validation_failed": "sprawdzenie wykazało problem",
+        "ready_to_apply": "gotowa do potwierdzenia zapisu",
+        "applying": "zapis zmian w toku",
+        "applied": "zmiany zapisane",
+        "failed": "błąd zapisu",
+        "dismissed": "odrzucona",
+        "blocked": "zablokowana",
+    }
+    return labels.get(str(value), "status akcji do sprawdzenia")
+
+
+def _action_validation_status_label(value: str) -> str:
+    labels = {
+        "not_validated": "nie sprawdzono w WILQ",
+        "valid": "sprawdzone w WILQ",
+        "invalid": "wymaga poprawek",
+    }
+    return labels.get(value, "status sprawdzenia")
+
+
+def _action_review_gate_status_label(value: str) -> str:
+    labels = {
+        "pending_validation": "czeka na sprawdzenie",
+        "validated_prepare_only": "sprawdzone w WILQ",
+        "ready_to_apply": "gotowe do potwierdzenia",
+        "blocked_apply": "zapis zmian zablokowany",
+    }
+    return labels.get(value, "status warunków")
+
+
+def _action_mutation_audit_status_label(value: str | None) -> str:
+    labels = {
+        "blocked": "zablokowany",
+        "applied": "zapisany",
+        "failed": "błąd",
+    }
+    return labels.get(value or "", "brak")
+
+
+def _action_result_status_label(value: str | None) -> str:
+    labels = {
+        "preview_ready": "podgląd gotowy",
+        "generated": "wygenerowany",
+        "confirmed": "potwierdzony",
+        "recorded": "zapisane",
+        "completed": "zapisane",
+        "checked": "sprawdzone",
+        "valid": "poprawna",
+        "invalid": "wymaga poprawek",
+        "applied": "zapisane",
+        "blocked": "zablokowany",
+        "failed": "błąd",
+    }
+    return labels.get(value or "", "zapisane")
+
+
+def _source_connector_label(connector_id: str) -> str:
+    connector = get_connector_status(connector_id)
+    return connector.label if connector is not None and connector.label else "źródło danych"
+
+
+def _source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
+    labels: list[str] = []
+    for connector_id in connector_ids:
+        label = _source_connector_label(connector_id)
+        if label not in labels:
+            labels.append(label)
+    return labels
+
+
+def _action_preview_summary(
+    *,
+    status: Literal["preview_ready", "blocked"],
+    included_items: int,
+    preview_items: int,
+) -> str:
+    if status == "blocked":
+        return (
+            f"Podgląd zmian przygotowany, ale zapis zmian pozostaje zablokowany. "
+            f"Pokazano {included_items} z {preview_items} pozycji do sprawdzenia. "
+            "Nie zapisano zmian w zewnętrznych systemach."
+        )
+    return (
+        f"Podgląd zmian przygotowany. Pokazano {included_items} z {preview_items} "
+        "pozycji do sprawdzenia. Nie zapisano zmian w zewnętrznych systemach."
+    )
+
+
+def _action_audit_summary_for_operator(event: AuditEvent) -> str:
+    if event.event_type == "action_preview_generated":
+        return _legacy_or_current_preview_summary(event.summary)
+    if event.event_type in {"action_apply_confirmed", "action_apply_confirmation_confirmed"}:
+        return "Podgląd zmian potwierdzony. Nie zapisano zmian w zewnętrznych systemach."
+    if event.event_type in {"action_confirmation_blocked", "action_apply_confirmation_blocked"}:
+        return "Potwierdzenie podglądu zablokowane. Nie zapisano zmian w zewnętrznych systemach."
+    if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
+        return _legacy_or_current_impact_summary(event.summary)
+    if event.event_type == "action_apply_blocked":
+        return "Zapis zmian zablokowany przez warunki bezpieczeństwa WILQ."
+    if event.event_type == "action_apply_completed":
+        return "Zapis zmian wykonany i zapisany w audycie bezpieczeństwa."
+    return event.summary
+
+
+def _legacy_or_current_preview_summary(summary: str) -> str:
+    item_summary = ""
+    if "pozycje=" in summary:
+        item_fragment = summary.split("pozycje=", 1)[1].split(",", 1)[0].split(".", 1)[0]
+        if item_fragment:
+            item_summary = f" Pokazano {item_fragment} pozycji do sprawdzenia."
+    if "blocked" in summary or "zablokowany" in summary:
+        return (
+            "Podgląd zmian przygotowany, ale zapis zmian pozostaje zablokowany."
+            f"{item_summary} Nie zapisano zmian w zewnętrznych systemach."
+        )
+    return (
+        "Podgląd zmian przygotowany."
+        f"{item_summary} Nie zapisano zmian w zewnętrznych systemach."
+    )
+
+
+def _legacy_or_current_impact_summary(summary: str) -> str:
+    if "status=blocked" in summary or "zablok" in summary:
+        prefix = "Sprawdzenie efektu zablokowane."
+    else:
+        prefix = "Sprawdzenie efektu zapisane."
+    window_parts = [
+        part.strip()
+        for part in summary.split(".")
+        if part.strip().startswith(("Okno przed zmianą", "Okno po zmianie", "Metryki z dowodami"))
+    ]
+    clean_parts = [prefix, *[f"{part}." for part in window_parts]]
+    if "Ten krok nie zapisuje zmian" not in " ".join(clean_parts):
+        clean_parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
+    return " ".join(clean_parts)
+
+
+def _action_audit_event_label(event_type: str) -> str:
+    labels = {
+        "action_preview_generated": "Podgląd zmian wygenerowany",
+        "human_review_approved_for_prepare": "Przegląd operatora zapisany",
+        "human_review_needs_changes": "Przegląd wymaga poprawek",
+        "human_review_rejected": "Przegląd odrzucony",
+        "human_review_deferred": "Przegląd odłożony",
+        "action_apply_confirmed": "Podgląd potwierdzony",
+        "action_confirmation_blocked": "Potwierdzenie zablokowane",
+        "action_apply_confirmation_blocked": "Potwierdzenie zablokowane",
+        "action_impact_check_completed": "Sprawdzenie efektu zapisane",
+        "action_impact_check_blocked": "Sprawdzenie efektu zablokowane",
+        "action_apply_blocked": "Zapis zmian zablokowany",
+        "action_apply_completed": "Zapis zmian wykonany",
+    }
+    return labels.get(event_type, "Zdarzenie audytu")
 
 
 def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:

@@ -44,15 +44,15 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
               <div>
                 <h3 className="text-sm font-semibold">{action.title}</h3>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {actionConnectorLabel(action.connector)} / {actionModeLabel(action.mode)}
+                  {action.connector_label} / {action.mode_label}
                 </p>
               </div>
-              <StatusBadge value={action.validation_status} />
+              <StatusBadge value={action.validation_status_label} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge value={action.status} />
-              <StatusBadge value={action.risk} />
+              <StatusBadge value={action.status_label} />
+              <StatusBadge value={action.risk_label} />
             </div>
             {action.mode !== "apply" ? (
             <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
@@ -134,7 +134,7 @@ function ActionPreviewResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Podgląd: <span className="font-semibold">{actionResultStatusLabel(result.status)}</span>
+        Podgląd: <span className="font-semibold">{result.status_label}</span>
       </div>
       <div>
         Bez zapisu zmian: {result.dry_run ? "tak" : "nie"}; zapis zmian:{" "}
@@ -145,7 +145,7 @@ function ActionPreviewResultPanel({
         {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
       </div>
       <TraceLine label="Blokady podglądu" values={result.blocker_labels} empty="brak" />
-      <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
+      <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
     </div>
   );
 }
@@ -176,31 +176,6 @@ const ACTION_REVIEW_OPTIONS: Array<{ value: ActionReviewOutcome; label: string }
   { value: "deferred", label: "odłożone" }
 ];
 
-function actionConnectorLabel(value: string) {
-  const labels: Record<string, string> = {
-    google_ads: "Google Ads",
-    google_analytics_4: "GA4",
-    google_merchant_center: "Merchant Center",
-    google_search_console: "Google Search Console",
-    wordpress_ekologus: "WordPress Ekologus",
-    wordpress_sklep: "WordPress sklep",
-    ahrefs: "Ahrefs",
-    localo: "Localo",
-    linkedin: "LinkedIn",
-    facebook: "Facebook"
-  };
-  return labels[value] ?? value;
-}
-
-function actionModeLabel(value: string) {
-  const labels: Record<string, string> = {
-    prepare: "przygotowanie",
-    review: "sprawdzenie",
-    apply: "zapis zmian"
-  };
-  return labels[value] ?? value;
-}
-
 export function ActionHumanReviewControls({ action }: { action: ActionObject }) {
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<ActionReviewOutcome>("approved_for_prepare");
@@ -222,9 +197,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
     }
   });
   const lastOutcome = action.review_gate.last_review_outcome;
-  const lastReviewLabel = lastOutcome
-    ? ACTION_REVIEW_OPTIONS.find((option) => option.value === lastOutcome)?.label ?? lastOutcome
-    : null;
+  const lastReviewLabel = action.review_gate.last_review_outcome_label ?? null;
   const canSave = notes.trim().length > 0 && !reviewMutation.isPending;
 
   return (
@@ -242,10 +215,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       </div>
       {action.review_gate.last_review_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
-          {actionAuditSummaryLabel(
-            "human_review_approved_for_prepare",
-            action.review_gate.last_review_summary
-          )}
+          {action.review_gate.last_review_summary}
         </p>
       ) : null}
       <div className="mt-3 grid gap-3 md:grid-cols-[220px_1fr_auto]">
@@ -289,7 +259,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       </div>
       {reviewMutation.data ? (
         <div className="mt-2 text-slate-600">
-          Zapisano sprawdzenie: {actionAuditEventLabel(reviewMutation.data.audit_event.event_type)}
+          Zapisano sprawdzenie: {reviewMutation.data.audit_event.event_type_label}
         </div>
       ) : null}
       {reviewMutation.error instanceof Error ? (
@@ -310,7 +280,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           </div>
           <p className="mt-1 leading-5 text-slate-600">{actionReviewGateSummary(gate)}</p>
         </div>
-        <StatusBadge value={actionReviewGateStatusLabel(gate.status)} />
+        <StatusBadge value={gate.status_label} />
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <TraceLine
@@ -338,7 +308,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <div className="font-semibold text-risk">Ostatni zapis bezpieczeństwa</div>
           <p className="mt-1 leading-5">{actionMutationAuditSummary(gate)}</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
-            <div>Wynik: {actionMutationAuditStatusLabel(gate.last_mutation_audit_status)}</div>
+            <div>Wynik: {gate.last_mutation_audit_status_label ?? "brak"}</div>
             <div>Czy próbowano zapisu: {gate.last_mutation_attempted ? "tak" : "nie"}</div>
             <div>
               System zewnętrzny: {gate.last_mutation_adapter ? "wskazany" : "brak"}
@@ -356,25 +326,6 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
       ) : null}
     </div>
   );
-}
-
-function actionMutationAuditStatusLabel(value?: string | null) {
-  const labels: Record<string, string> = {
-    blocked: "zablokowany",
-    applied: "zapisany",
-    failed: "błąd"
-  };
-  return value ? labels[value] ?? value : "brak";
-}
-
-function actionReviewGateStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    pending_validation: "czeka na sprawdzenie",
-    validated_prepare_only: "sprawdzone w WILQ",
-    ready_to_apply: "gotowe do potwierdzenia",
-    blocked_apply: "zapis zmian zablokowany"
-  };
-  return labels[value] ?? value;
 }
 
 function actionReviewGateSummary(gate: ActionObject["review_gate"]) {
@@ -490,7 +441,7 @@ function ActionValidationResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Wynik: <span className="font-semibold">{validation.valid ? "poprawna" : "wymaga poprawek"}</span>
+        Wynik: <span className="font-semibold">{validation.status_label}</span>
       </div>
       <TraceLine label="Błędy" values={validation.errors} empty="brak" />
       <TraceLine label="Ostrzeżenia" values={validation.warnings} empty="brak" />
@@ -518,10 +469,10 @@ function ActionConfirmResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Potwierdzenie: <span className="font-semibold">{actionResultStatusLabel(result.status)}</span>
+        Potwierdzenie: <span className="font-semibold">{result.status_label}</span>
       </div>
       <TraceLine label="Blokady potwierdzenia" values={result.blocker_labels} empty="brak" />
-      <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
+      <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.
       </div>
@@ -600,7 +551,7 @@ function ActionImpactCheckResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Sprawdzenie efektu: <span className="font-semibold">{actionResultStatusLabel(result.status)}</span>
+        Sprawdzenie efektu: <span className="font-semibold">{result.status_label}</span>
       </div>
       <div>
         Okna: {result.pre_window_days} dni przed / {result.post_window_days} dni po.
@@ -608,23 +559,12 @@ function ActionImpactCheckResultPanel({
       <div>Metryki z dowodami: {result.metric_fact_count}</div>
       <TraceLine label="Źródła" values={result.source_connectors} empty="brak" />
       <TraceLine label="Blokady sprawdzenia efektu" values={result.blocker_labels} empty="brak" />
-      <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
+      <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.
       </div>
     </div>
   );
-}
-
-function actionResultStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    generated: "wygenerowany",
-    confirmed: "potwierdzony",
-    completed: "zapisane",
-    blocked: "zablokowany",
-    failed: "błąd"
-  };
-  return labels[value] ?? "zapisane";
 }
 
 function SectionHeading({ title }: { title: string }) {
@@ -633,24 +573,4 @@ function SectionHeading({ title }: { title: string }) {
       {title}
     </h2>
   );
-}
-
-export function actionAuditEventLabel(eventType: string) {
-  const labels: Record<string, string> = {
-    action_preview_generated: "Podgląd zmian wygenerowany",
-    human_review_approved_for_prepare: "Przegląd operatora zapisany",
-    action_apply_confirmed: "Podgląd potwierdzony",
-    action_impact_check_completed: "Sprawdzenie efektu zapisane"
-  };
-  return labels[eventType] ?? eventType;
-}
-
-export function actionAuditSummaryLabel(eventType: string, summary: string) {
-  if (eventType === "human_review_approved_for_prepare") {
-    return "Przegląd operatora zapisany. Zapis zmian w zewnętrznych systemach pozostaje zablokowany.";
-  }
-  if (eventType === "action_preview_generated") {
-    return "Podgląd zmian wygenerowany. Nie zapisano zmian w zewnętrznych systemach.";
-  }
-  return summary;
 }

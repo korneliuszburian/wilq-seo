@@ -17,9 +17,7 @@ import {
   ActionHumanReviewControls,
   ActionPreviewControls,
   ActionReviewGatePanel,
-  ActionValidationControls,
-  actionAuditEventLabel,
-  actionAuditSummaryLabel
+  ActionValidationControls
 } from "./ActionObjectPanels";
 import { contentWordPressPostStatusLabel } from "../lib/contentLabels";
 import { adsMissingReadContractLabel, marketerBlockedClaimLabels } from "./marketingLabels";
@@ -56,9 +54,9 @@ function ActionDetail({ action }: { action: ActionObject }) {
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-normal">{action.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={action.status} />
-        <StatusBadge value={action.validation_status} />
-        <StatusBadge value={action.risk} />
+        <StatusBadge value={action.status_label} />
+        <StatusBadge value={action.validation_status_label} />
+        <StatusBadge value={action.risk_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Dowody i diagnoza" />
@@ -96,9 +94,9 @@ function ActionDetail({ action }: { action: ActionObject }) {
             ) : null}
             {visibleAuditEvents.map((event) => (
               <div key={event.id} className="rounded-md border border-line p-3 text-sm">
-                <div className="font-medium">{actionAuditEventLabel(event.event_type)}</div>
+                <div className="font-medium">{event.event_type_label}</div>
                 <div className="mt-1 text-slate-600">
-                  {actionAuditSummaryLabel(event.event_type, event.summary)}
+                  {event.summary}
                 </div>
               </div>
             ))}

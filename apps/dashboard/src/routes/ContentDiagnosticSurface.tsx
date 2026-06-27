@@ -34,7 +34,6 @@ import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import {
   ActionObjectFocus,
   ActionObjectIdFocus,
-  actionAuditEventLabel
 } from "./ActionObjectPanels";
 import { shortPath } from "./TacticalQueuePanel";
 
@@ -619,7 +618,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
       </div>
       {reviewMutation.data ? (
         <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
-          Zapisano sprawdzenie: {actionAuditEventLabel(reviewMutation.data.audit_event.event_type)}. Zapis zmian nadal:{" "}
+          Zapisano sprawdzenie: {reviewMutation.data.audit_event.event_type_label}. Zapis zmian nadal:{" "}
           {reviewMutation.data.review_gate.apply_allowed ? "otwarte" : "zablokowane"}.
         </p>
       ) : null}

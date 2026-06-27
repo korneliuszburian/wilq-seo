@@ -103,6 +103,7 @@ export const AuditEventSchema = z.object({
   id: z.string(),
   action_id: z.string().nullable().optional(),
   event_type: z.string(),
+  event_type_label: z.string().default(""),
   actor: z.string(),
   created_at: z.string(),
   summary: z.string(),
@@ -129,6 +130,7 @@ export const ActionReviewGateSchema = z.object({
   status: z
     .enum(["pending_validation", "validated_prepare_only", "ready_to_apply", "blocked_apply"])
     .default("pending_validation"),
+  status_label: z.string().default(""),
   summary: z.string().default("Wymaga sprawdzenia w WILQ przed kolejnym krokiem."),
   required_checks: z.array(z.string()).default([]),
   required_check_labels: z.array(z.string()).default([]),
@@ -139,6 +141,7 @@ export const ActionReviewGateSchema = z.object({
   confirmation_required: z.boolean().default(true),
   apply_allowed: z.boolean().default(false),
   last_review_outcome: ActionReviewOutcomeSchema.nullable().optional(),
+  last_review_outcome_label: z.string().nullable().optional(),
   last_reviewed_by: z.string().nullable().optional(),
   last_reviewed_at: z.string().nullable().optional(),
   last_review_summary: z.string().nullable().optional(),
@@ -146,11 +149,13 @@ export const ActionReviewGateSchema = z.object({
   last_confirmation_at: z.string().nullable().optional(),
   last_confirmation_summary: z.string().nullable().optional(),
   last_impact_check_status: z.enum(["checked", "blocked"]).nullable().optional(),
+  last_impact_check_status_label: z.string().nullable().optional(),
   last_impact_checked_by: z.string().nullable().optional(),
   last_impact_checked_at: z.string().nullable().optional(),
   last_impact_check_summary: z.string().nullable().optional(),
   last_mutation_audit_id: z.string().nullable().optional(),
   last_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional(),
+  last_mutation_audit_status_label: z.string().nullable().optional(),
   last_mutation_audit_actor: z.string().nullable().optional(),
   last_mutation_audit_at: z.string().nullable().optional(),
   last_mutation_audit_summary: z.string().nullable().optional(),
@@ -166,14 +171,19 @@ export const ActionObjectSchema = z.object({
   title: z.string(),
   domain: z.string(),
   connector: z.string(),
+  connector_label: z.string().default(""),
   mode: z.enum(["suggest", "prepare", "apply"]),
+  mode_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default(""),
   status: z.string(),
+  status_label: z.string().default(""),
   evidence_ids: z.array(z.string()).min(1),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string(),
   recommended_reason: z.string(),
   validation_status: z.string(),
+  validation_status_label: z.string().default(""),
   review_gate: ActionReviewGateSchema.optional().default({}),
   payload: z.record(z.unknown()),
   audit_events: z.array(AuditEventSchema)
@@ -183,6 +193,7 @@ export const ActionValidationResultSchema = z.object({
   action_id: z.string(),
   valid: z.boolean(),
   status: z.enum(["valid", "invalid"]),
+  status_label: z.string().default(""),
   errors: z.array(z.string()),
   warnings: z.array(z.string()),
   checked_at: z.string()
@@ -194,6 +205,7 @@ export const ActionMutationAuditRecordSchema = z.object({
   connector: z.string(),
   action_type: z.string().nullable().optional(),
   status: z.enum(["blocked", "applied", "failed"]),
+  status_label: z.string().default(""),
   mutation_attempted: z.boolean(),
   mutation_adapter: z.string().nullable().optional(),
   actor: z.string(),
@@ -209,6 +221,7 @@ export const ActionApplyResultSchema = z.object({
   action_id: z.string(),
   applied: z.boolean(),
   status: z.enum(["applied", "blocked", "failed"]),
+  status_label: z.string().default(""),
   audit_event: AuditEventSchema,
   mutation_audit: ActionMutationAuditRecordSchema,
   errors: z.array(z.string())
@@ -222,6 +235,7 @@ export const ActionPreviewRequestSchema = z.object({
 export const ActionPreviewResultSchema = z.object({
   action_id: z.string(),
   status: z.enum(["preview_ready", "blocked"]),
+  status_label: z.string().default(""),
   dry_run: z.boolean(),
   mutation_allowed: z.boolean(),
   preview_contract: z.string().nullable().optional(),
@@ -237,6 +251,7 @@ export const ActionPreviewResultSchema = z.object({
 export const ActionReviewResultSchema = z.object({
   action_id: z.string(),
   status: z.enum(["recorded"]),
+  status_label: z.string().default(""),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
 });
@@ -253,6 +268,7 @@ export const ActionConfirmResultSchema = z.object({
   action_id: z.string(),
   confirmed: z.boolean(),
   status: z.enum(["confirmed", "blocked"]),
+  status_label: z.string().default(""),
   blockers: z.array(z.string()),
   blocker_labels: z.array(z.string()).default([]),
   audit_event: AuditEventSchema,
@@ -269,6 +285,7 @@ export const ActionImpactCheckRequestSchema = z.object({
 export const ActionImpactCheckResultSchema = z.object({
   action_id: z.string(),
   status: z.enum(["checked", "blocked"]),
+  status_label: z.string().default(""),
   pre_window_days: z.number(),
   post_window_days: z.number(),
   metric_fact_count: z.number(),

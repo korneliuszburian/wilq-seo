@@ -100,6 +100,14 @@ Date: 2026-06-27
   active API/action sources must provide explicit Polish label arrays. Live
   proof for `act_confirm_ads_target_guardrails` shows Polish labels for missing
   target, validation and after-confirmation uses with no generic fallback hits.
+- Action status, risk, mode, validation, review-gate, result and audit-event
+  labels now come from the WILQ API/shared schema, not route-local React
+  dictionaries. Action audit summaries are hydrated by the API into plain
+  operator language, so the action history no longer exposes `status=...`, raw
+  audit IDs or raw connector IDs on the marketer surface. Live proof:
+  `/api/actions/act_review_merchant_feed_issues`,
+  `scripts/live_contract_smoke.py`, and browser route
+  `/actions/act_review_merchant_feed_issues`.
 - Localo action, skill eval and knowledge sources now use Polish source values
   for blocked local claims: ukończone zadanie lokalne, zapis zmian w profilu
   firmy and poprawa widoczności lokalnej. Old active values such as
