@@ -9605,6 +9605,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "rentowności" in derived_kpi_section["diagnosis"]
     budget_contract = payload["budget_pacing_read_contract"]
     assert budget_contract["status"] == "ready"
+    assert budget_contract["empty_state_message"] == (
+        "Brak wierszy budżetu kampanii w tym widoku. Odśwież dane Google Ads, "
+        "żeby pokazać koszt względem budżetu dziennego."
+    )
+    assert "campaign_budget.amount_micros" not in budget_contract["empty_state_message"]
+    assert "budget_amount_micros" not in budget_contract["next_step"]
+    assert "recommended budget" not in budget_contract["summary"]
+    assert "recommended budget" not in budget_contract["next_step"]
+    assert "impression share" not in budget_contract["next_step"]
+    assert "review" not in budget_contract["next_step"]
     assert budget_contract["allowed_metrics"] == [
         "budget_amount_micros",
         "cost_micros_7d",
@@ -9935,6 +9945,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     impression_share_contract = payload["impression_share_read_contract"]
     assert impression_share_contract["status"] == "ready"
+    assert impression_share_contract["empty_state_message"] == (
+        "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej "
+        "ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach."
+    )
+    assert "impression share" not in impression_share_contract["summary"]
+    assert "impression share" not in impression_share_contract["empty_state_message"]
+    assert "budget-lost" not in impression_share_contract["summary"]
+    assert "rank-lost" not in impression_share_contract["summary"]
     assert impression_share_contract["allowed_metrics"] == [
         "search_impression_share",
         "search_budget_lost_impression_share",

@@ -62,8 +62,12 @@ def build_budget_pacing_read_contract(
                 f"WILQ ma budżetowy kontekst dla {len(rows)} kampanii; "
                 f"{len(daily_rows)} ma policzalny stosunek kosztu z 7 dni do "
                 f"budżetu dziennego, a {len(recommended_rows)} ma sygnał "
-                "recommended budget z Google Ads. "
+                "rekomendowanego budżetu z Google Ads. "
                 f"Wspólne budżety: {len(shared_budget_distribution_rows)}."
+            ),
+            empty_state_message=(
+                "Brak wierszy budżetu kampanii w tym widoku. Odśwież dane Google Ads, "
+                "żeby pokazać koszt względem budżetu dziennego."
             ),
             allowed_metrics=[
                 "budget_amount_micros",
@@ -83,10 +87,10 @@ def build_budget_pacing_read_contract(
             payload_preview=payload_preview,
             action_ids=[CAMPAIGN_REVIEW_ACTION_ID] if payload_preview else [],
             next_step=(
-                "Użyj tego jako kontekstu review: które kampanie mają koszt względem "
+                "Użyj tego jako kontekstu oceny: które kampanie mają koszt względem "
                 "budżetu dziennego, czy dzielą wspólny budżet i czy Google pokazuje "
-                "recommended budget. Nie skaluj budżetu bez historii zmian, impression "
-                "share, celu biznesowego i akcji sprawdzonej w WILQ."
+                "rekomendowany budżet. Nie skaluj budżetu bez historii zmian, udziału "
+                "w wyświetleniach, celu biznesowego i akcji sprawdzonej w WILQ."
             ),
         )
 
@@ -94,6 +98,10 @@ def build_budget_pacing_read_contract(
         status="blocked",
         title="Google Ads: brak kontekstu budżetu kampanii",
         summary="WILQ nie ma jeszcze metryk budżetu kampanii z Google Ads.",
+        empty_state_message=(
+            "Brak kontekstu budżetu kampanii. Odśwież dane Google Ads z polami budżetu, "
+            "żeby pokazać koszt względem budżetu dziennego."
+        ),
         allowed_metrics=[],
         missing_read_contracts=["campaign_budget", *missing_read_contracts],
         blocked_claims=["budget amount", "budget pacing", *blocked_claims],
@@ -105,7 +113,7 @@ def build_budget_pacing_read_contract(
         action_ids=[],
         next_step=(
             "Uruchom odczyt danych Google Ads z polami budżetu kampanii. "
-            "Nie oceniaj tempa budżetu bez budget_amount_micros."
+            "Nie oceniaj tempa budżetu bez kwoty budżetu kampanii."
         ),
     )
 
@@ -311,8 +319,8 @@ def _budget_apply_preview(
         if proposed_budget_amount_micros is not None
         else (
             "Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił "
-            "recommended budget, więc WILQ pokazuje bieżący budżet i blokuje "
-            "propozycję kwoty do czasu human_budget_goal."
+            "rekomendowanego budżetu, więc WILQ pokazuje bieżący budżet i blokuje "
+            "propozycję kwoty do czasu uzupełnienia celu budżetowego."
         )
     )
     preview_id = (

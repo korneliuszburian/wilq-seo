@@ -1003,6 +1003,8 @@ const adsDiagnostics = {
     title: "Google Ads: kontekst budżetu kampanii",
     summary:
       "WILQ ma budżetowy kontekst dla 1 kampanii; 1 ma policzalny stosunek kosztu z 7 dni do budżetu dziennego.",
+    empty_state_message:
+      "Brak wierszy budżetu kampanii w tym widoku. Odśwież dane Google Ads, żeby pokazać koszt względem budżetu dziennego.",
     allowed_metrics: [
       "budget_amount_micros",
       "cost_micros_7d",
@@ -1505,7 +1507,10 @@ const adsDiagnostics = {
     id: "ads_impression_share_read_contract",
     status: "ready",
     title: "Google Ads: udział w wyświetleniach",
-    summary: "WILQ ma impression share dla 1 kampanii; budget-lost > 0 w 1, rank-lost > 0 w 1.",
+    summary:
+      "WILQ ma udział w wyświetleniach dla 1 kampanii; utrata przez budżet występuje w 1, a utrata przez ranking w 1.",
+    empty_state_message:
+      "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach.",
     allowed_metrics: [
       "search_impression_share",
       "search_budget_lost_impression_share",
@@ -3224,7 +3229,10 @@ const adsDiagnostics = {
       decision_type: "review_impression_share",
       status: "ready",
       title: "Sprawdź utracony udział w wyświetleniach",
-      summary: "WILQ ma impression share dla 1 kampanii; budget-lost > 0 w 1, rank-lost > 0 w 1.",
+      summary:
+        "WILQ ma udział w wyświetleniach dla 1 kampanii; utrata przez budżet występuje w 1, a utrata przez ranking w 1.",
+      empty_state_message:
+        "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach.",
       rationale:
         "Impression share pokazuje, czy kampania traci ekspozycję przez budżet albo ranking.",
       next_step:

@@ -1031,6 +1031,7 @@ class AdsBudgetPacingReadContract(BaseModel):
     status: Literal["ready", "blocked"]
     title: str
     summary: str
+    empty_state_message: str = ""
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -1147,6 +1148,7 @@ class AdsImpressionShareReadContract(BaseModel):
     status: Literal["ready", "blocked"]
     title: str
     summary: str
+    empty_state_message: str = ""
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

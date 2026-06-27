@@ -43,8 +43,9 @@ def build_impression_share_read_contract(
                 if (row.search_rank_lost_impression_share or 0) > 0
             )
             summary = (
-                f"WILQ ma impression share dla {len(rows)} kampanii; "
-                f"budget-lost > 0 w {budget_limited}, rank-lost > 0 w {rank_limited}."
+                f"WILQ ma udział w wyświetleniach dla {len(rows)} kampanii; "
+                f"utrata przez budżet występuje w {budget_limited}, a utrata przez ranking "
+                f"w {rank_limited}."
             )
         else:
             summary = (
@@ -55,6 +56,10 @@ def build_impression_share_read_contract(
             status="ready",
             title="Google Ads: udział w wyświetleniach",
             summary=summary,
+            empty_state_message=(
+                "Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej "
+                "ekspozycji przez budżet albo ranking bez metryk udziału w wyświetleniach."
+            ),
             allowed_metrics=[
                 "search_impression_share",
                 "search_budget_lost_impression_share",
@@ -79,9 +84,13 @@ def build_impression_share_read_contract(
         status="blocked",
         title="Google Ads: brak udziału w wyświetleniach",
         summary="WILQ nie ma jeszcze metryk udziału w wyświetleniach z Google Ads.",
+        empty_state_message=(
+            "Brak wierszy udziału w wyświetleniach. Odśwież dane Google Ads z metrykami "
+            "udziału w wyświetleniach, żeby ocenić utraconą ekspozycję."
+        ),
         allowed_metrics=[],
         missing_read_contracts=["impression_share", *missing_read_contracts],
-        blocked_claims=["impression share", *blocked_claims],
+        blocked_claims=["udział w wyświetleniach", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=fallback_evidence_ids,
         impression_share_rows=[],

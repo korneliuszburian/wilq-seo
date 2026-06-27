@@ -949,7 +949,11 @@ function AdsMetricEvidencePanel({
         <div className="mt-4 grid gap-4">
           <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
           <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
-          <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
+          <AdsBudgetPacingRowsTable
+            rows={budgetRows}
+            currencyCode={currencyCode}
+            emptyStateMessage={data.budget_pacing_read_contract.empty_state_message}
+          />
           <AdsSharedBudgetDistributionPanel
             rows={sharedBudgetRows}
             currencyCode={currencyCode}
@@ -958,7 +962,10 @@ function AdsMetricEvidencePanel({
             rows={recommendationRows}
             currencyCode={currencyCode}
           />
-          <AdsImpressionShareRowsTable rows={impressionShareRows} />
+          <AdsImpressionShareRowsTable
+            rows={impressionShareRows}
+            emptyStateMessage={data.impression_share_read_contract.empty_state_message}
+          />
           <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
           <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
           <AdsSearchTermNgramRowsTable
@@ -1330,14 +1337,21 @@ function AdsDerivedKpiRowsTable({
 
 function AdsBudgetPacingRowsTable({
   rows,
-  currencyCode
+  currencyCode,
+  emptyStateMessage
 }: {
   rows: AdsBudgetPacingRow[];
   currencyCode?: string;
+  emptyStateMessage?: string;
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak kontekstu budżetu kampanii. WILQ potrzebuje campaign_budget.amount_micros z Google Ads, żeby pokazać koszt względem budżetu dziennego." />
+      <BlockerNotice
+        message={
+          emptyStateMessage ||
+          "Brak kontekstu budżetu kampanii. Odśwież dane Google Ads z polami budżetu, żeby pokazać koszt względem budżetu dziennego."
+        }
+      />
     );
   }
   return (
@@ -1636,10 +1650,21 @@ function AdsRecommendationRowsPanel({
   );
 }
 
-function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }) {
+function AdsImpressionShareRowsTable({
+  rows,
+  emptyStateMessage
+}: {
+  rows: AdsImpressionShareRow[];
+  emptyStateMessage?: string;
+}) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej ekspozycji przez budżet albo ranking bez impression share facts." />
+      <BlockerNotice
+        message={
+          emptyStateMessage ||
+          "Brak wierszy udziału w wyświetleniach. Odśwież dane Google Ads z metrykami udziału w wyświetleniach, żeby ocenić utraconą ekspozycję."
+        }
+      />
     );
   }
   return (
@@ -2469,7 +2494,7 @@ function adsAllowedMetricLabel(value: string) {
     cost_micros_7d: "koszt 7 dni",
     seven_day_budget_micros: "budżet 7 dni",
     spend_to_budget_ratio_7d: "wydanie względem budżetu",
-    budget_has_recommended_budget: "sygnał recommended budget",
+    budget_has_recommended_budget: "sygnał rekomendowanego budżetu",
     budget_recommended_amount_micros: "rekomendowany budżet",
     recommendation_available: "rekomendacja dostępna",
     recommendation_campaign_count: "kampanie w rekomendacji",

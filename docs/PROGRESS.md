@@ -104,6 +104,13 @@ Date: 2026-06-27
   `resource_change_operation`, `changed_fields`, `readiness` or `change rows`
   text in this slice. Browser proof:
   `.local-lab/proof/20260627-ads-change-history-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor budget and impression-share empty states now come from WILQ API
+  contracts, not hardcoded React blocker copy. Budget and lost-impression copy
+  no longer exposes raw `campaign_budget.amount_micros`,
+  `budget_amount_micros`, `recommended budget`, `impression share`,
+  `budget-lost`, `rank-lost` or `impression share facts` in the checked live
+  API output. Proof:
+  `.local-lab/proof/20260627-ads-budget-impression-empty-state-api-labels/ads-budget-impression.json`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

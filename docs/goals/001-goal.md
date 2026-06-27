@@ -279,6 +279,13 @@ Latest slice:
   `resource_change_operation`, `changed_fields`, `readiness` or `change rows`
   text in this slice:
   `.local-lab/proof/20260627-ads-change-history-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor budget and impression-share empty states now come from WILQ API
+  contracts, not hardcoded React blocker copy. Budget and lost-impression copy
+  no longer exposes raw `campaign_budget.amount_micros`,
+  `budget_amount_micros`, `recommended budget`, `impression share`,
+  `budget-lost`, `rank-lost` or `impression share facts` in the checked live
+  API output:
+  `.local-lab/proof/20260627-ads-budget-impression-empty-state-api-labels/ads-budget-impression.json`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`
