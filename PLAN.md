@@ -221,7 +221,8 @@ Known cleanup already started:
   action kinds still need direct migration away from payload-shape inference.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
-  chips still need API-owned migration.
+  chips now come from API-owned `dimension_labels` and
+  `dimension_value_labels`.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ

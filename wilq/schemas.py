@@ -158,6 +158,8 @@ class MetricFact(BaseModel):
     source_connector: str
     evidence_id: str
     dimensions: dict[str, str] = Field(default_factory=dict)
+    dimension_labels: dict[str, str] = Field(default_factory=dict)
+    dimension_value_labels: dict[str, str] = Field(default_factory=dict)
     unit: str | None = None
     collected_at: datetime | None = None
     previous_value: float | int | str | None = None
@@ -168,6 +170,54 @@ class MetricFact(BaseModel):
     trend: Literal["up", "down", "flat", "unknown"] = "unknown"
     freshness_state: Literal["fresh", "stale", "unknown"] = "unknown"
     freshness_label: str | None = None
+
+    @model_validator(mode="after")
+    def fill_dimension_labels(self) -> MetricFact:
+        if not self.dimension_labels:
+            self.dimension_labels = {
+                key: _metric_dimension_label(key) for key in self.dimensions
+            }
+        if not self.dimension_value_labels:
+            self.dimension_value_labels = {
+                key: _metric_dimension_value_label(value)
+                for key, value in self.dimensions.items()
+            }
+        return self
+
+
+def _metric_dimension_label(value: str) -> str:
+    labels = {
+        "affected_attribute": "atrybut",
+        "campaign_name": "kampania",
+        "competitor_domain": "konkurent",
+        "contract": "obszar",
+        "country": "kraj",
+        "gap_type": "typ luki",
+        "issue_type": "problem",
+        "keyword": "fraza",
+        "landing_page": "strona wejścia",
+        "metric_bucket": "zakres",
+        "page": "strona",
+        "query": "zapytanie",
+        "scope": "zakres",
+        "source_medium": "źródło",
+        "source_url": "URL źródłowy",
+        "target_domain": "domena docelowa",
+    }
+    return labels.get(value, "wymiar")
+
+
+def _metric_dimension_value_label(value: str) -> str:
+    labels = {
+        "active_places": "aktywne miejsca",
+        "authority_summary": "autorytet domeny",
+        "competitor_visibility": "widoczność konkurencji",
+        "gbp_visibility": "profil firmy w Google",
+        "local_rankings": "lokalne pozycje",
+        "place_inventory": "spis miejsc",
+        "reviews": "opinie",
+    }
+    return labels.get(value, value)
 
 
 class Opportunity(BaseModel):

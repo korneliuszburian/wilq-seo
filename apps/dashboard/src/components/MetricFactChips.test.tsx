@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { MetricFactChips } from "./MetricFactChips";
@@ -18,6 +18,14 @@ describe("MetricFactChips", () => {
             dimensions: {
               contract: "competitor_visibility",
               scope: "active_places"
+            },
+            dimension_labels: {
+              contract: "obszar",
+              scope: "zakres"
+            },
+            dimension_value_labels: {
+              contract: "widoczność konkurencji",
+              scope: "aktywne miejsca"
             },
             unit: null,
             delta: null,
@@ -50,6 +58,8 @@ describe("MetricFactChips", () => {
             source_connector: "localo",
             evidence_id: "ev_refresh_localo_test",
             dimensions: {},
+            dimension_labels: {},
+            dimension_value_labels: {},
             unit: null,
             delta: null,
             delta_percent: null,
@@ -63,5 +73,35 @@ describe("MetricFactChips", () => {
     expect(screen.getByText(/Metryka bez etykiety/)).toBeInTheDocument();
     expect(screen.queryByText(/Łączny wolumen fraz/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localo_total_keyword_volume/)).not.toBeInTheDocument();
+  });
+
+  it("does not translate dimension names or values in React when API labels are missing", () => {
+    const { container } = render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "localo_competitor_change_count",
+            metric_label: "Zmiany konkurencji",
+            value: 0,
+            period: "localo_mcp_read",
+            source_connector: "localo",
+            evidence_id: "ev_refresh_localo_test",
+            dimensions: {
+              contract: "competitor_visibility"
+            },
+            dimension_labels: {},
+            dimension_value_labels: {},
+            unit: null,
+            delta: null,
+            delta_percent: null,
+            trend: "unknown",
+            freshness_label: ""
+          }
+        ]}
+      />
+    );
+
+    expect(within(container).getByText(/Wymiar bez etykiety=competitor_visibility/)).toBeInTheDocument();
+    expect(within(container).queryByText(/obszar=widoczność konkurencji/)).not.toBeInTheDocument();
   });
 });

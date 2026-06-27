@@ -641,6 +641,9 @@ WILQ is complete for this long-range goal when:
   Localo diagnostics and marketing brief. `MetricFactChips` no longer owns a
   metric-name dictionary; it renders API `metric_label` and exposes missing
   labels instead of guessing them.
+- 2026-06-27: `MetricFact` now carries API-owned dimension key/value labels.
+  `MetricFactChips` no longer owns dimension dictionaries and renders
+  `dimension_labels` plus `dimension_value_labels` directly.
 
 ## Discoveries
 
@@ -710,6 +713,9 @@ WILQ is complete for this long-range goal when:
 - Showing "Metryka bez etykiety" in the dashboard is useful as a failure
   signal. Do not hide missing API labels with React dictionaries; fix the
   producing domain contract and add a test.
+- Dimension labels follow the same rule as metric labels. If a dimension key or
+  value is visible to a marketer, the API contract must carry the label; React
+  may only display it.
 
 ## Decision Log
 
@@ -744,8 +750,9 @@ WILQ is complete for this long-range goal when:
   as a temporary fallback for unmigrated action kinds or inside technical
   detail.
 - Metric chip names must come from `MetricFact.metric_label`. Dimension
-  key/value labels are the next cleanup target; do not add new dashboard
-  dictionaries for metric semantics.
+  key/value labels must come from `MetricFact.dimension_labels` and
+  `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries
+  for metric semantics.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

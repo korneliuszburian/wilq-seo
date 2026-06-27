@@ -120,6 +120,9 @@ Wilku can inspect it without reading technical internals.
 - Localo metric facts now share a domain label source across diagnostics and
   marketing brief, and `MetricFactChips` reads `metric_label` instead of a
   React-side metric-name dictionary.
+- Metric fact dimensions now carry API-owned `dimension_labels` and
+  `dimension_value_labels`; `MetricFactChips` no longer owns dimension
+  key/value dictionaries.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -140,8 +143,9 @@ are resolved or explicitly deferred.
    labels; do not add route-local replacement dictionaries.
 4. Repeated metric/dimension naming in dashboard components should become
    API-owned labels. Metric names in `MetricFactChips` now use `metric_label`;
-   dimension key/value labels still need migration out of the component. Pure
-   numeric formatting can stay in UI.
+   dimension key/value labels now use `dimension_labels` and
+   `dimension_value_labels`. Keep removing route-local metric dictionaries as
+   they are found. Pure numeric formatting can stay in UI.
 
 ## Execution Policy
 

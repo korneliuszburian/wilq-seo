@@ -60,40 +60,10 @@ function formatMetricDelta(fact: MetricFact) {
 
 function formatMetricDimensions(fact: MetricFact) {
   return Object.entries(fact.dimensions ?? {})
-    .map(([key, value]) => `${metricDimensionLabel(key)}=${metricDimensionValueLabel(value)}`)
+    .map(([key, value]) => {
+      const keyLabel = fact.dimension_labels[key] || "Wymiar bez etykiety";
+      const valueLabel = fact.dimension_value_labels[key] || value;
+      return `${keyLabel}=${valueLabel}`;
+    })
     .join(", ");
-}
-
-function metricDimensionLabel(dimensionName: string) {
-  const labels: Record<string, string> = {
-    affected_attribute: "atrybut",
-    campaign_name: "kampania",
-    competitor_domain: "konkurent",
-    contract: "obszar",
-    country: "kraj",
-    gap_type: "typ luki",
-    issue_type: "problem",
-    keyword: "fraza",
-    landing_page: "landing",
-    metric_bucket: "zakres",
-    page: "strona",
-    query: "zapytanie",
-    scope: "zakres",
-    source_medium: "źródło",
-    source_url: "URL źródłowy",
-    target_domain: "domena docelowa"
-  };
-  return labels[dimensionName] ?? "wymiar";
-}
-
-function metricDimensionValueLabel(value: string) {
-  const labels: Record<string, string> = {
-    active_places: "aktywne miejsca",
-    competitor_visibility: "widoczność konkurencji",
-    gbp_visibility: "profil firmy w Google",
-    local_rankings: "lokalne pozycje",
-    place_inventory: "spis miejsc",
-    reviews: "opinie"
-  };
-  return labels[value] ?? value;
 }

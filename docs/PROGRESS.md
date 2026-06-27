@@ -112,6 +112,9 @@ Latest cleanup state:
   diagnostics and marketing brief share one domain label source, and the
   dashboard no longer keeps a local metric-name dictionary for
   `MetricFactChips`.
+- `MetricFact` now carries `dimension_labels` and `dimension_value_labels`.
+  `MetricFactChips` renders those API-owned labels and no longer owns local
+  dimension key/value dictionaries.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -208,8 +211,9 @@ Proof:
   Live proof after `rtk scripts/local_stack.sh restart`:
   `/api/localo/diagnostics` returned Localo decision metric labels with no
   missing labels, `/api/marketing/brief` returned Localo metric labels in the
-  brief and top metric facts, and `agent-browser read` confirmed `/localo`
-  shows named Localo metrics instead of "Metryka bez etykiety".
+  brief and top metric facts, `/api/localo/diagnostics` returned metric
+  dimension labels/value labels, and `agent-browser read` confirmed `/localo`
+  shows named Localo metrics and dimensions instead of dashboard fallback copy.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -228,9 +232,10 @@ Next cleanup queue:
      API labels are missing.
 3. Metric labels:
    - metric names in `MetricFactChips` now come from `metric_label`.
-   - migrate remaining metric dimension label/value naming out of
-     `MetricFactChips` into API-owned fields; keep pure numeric formatting in
-     UI.
+   - metric dimensions in `MetricFactChips` now come from `dimension_labels`
+     and `dimension_value_labels`.
+   - continue removing any remaining route-local dictionaries for metric or
+     dimension semantics; keep pure numeric formatting in UI.
 4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.

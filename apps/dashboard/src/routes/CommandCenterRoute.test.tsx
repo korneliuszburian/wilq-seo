@@ -47,7 +47,9 @@ const commandCenterFixture: CommandCenterResponse = {
           period: "connector_refresh",
           source_connector: "google_merchant_center",
           evidence_id: "ev_refresh_merchant_feed",
-          dimensions: {}
+          dimensions: {},
+          dimension_labels: {},
+          dimension_value_labels: {}
         }
       ],
       co_widzimy:
@@ -105,7 +107,9 @@ const commandCenterFixture: CommandCenterResponse = {
           period: "connector_refresh",
           source_connector: "google_search_console",
           evidence_id: "ev_refresh_gsc",
-          dimensions: {}
+          dimensions: {},
+          dimension_labels: {},
+          dimension_value_labels: {}
         }
       ],
       co_widzimy:

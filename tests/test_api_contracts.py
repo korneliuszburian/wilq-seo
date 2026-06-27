@@ -5759,6 +5759,11 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert metric_labels_by_name["localo_active_place_count"] == "aktywne lokalizacje"
     assert metric_labels_by_name["localo_avg_visibility_current"] == "średnia widoczność"
     assert all(fact["metric_label"] for fact in review_decision["metric_facts"])
+    first_metric_fact = review_decision["metric_facts"][0]
+    assert first_metric_fact["dimension_labels"]["contract"] == "obszar"
+    assert first_metric_fact["dimension_labels"]["scope"] == "zakres"
+    assert first_metric_fact["dimension_value_labels"]["contract"] == "spis miejsc"
+    assert first_metric_fact["dimension_value_labels"]["scope"] == "aktywne miejsca"
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized
     assert "localo-token-test" not in serialized
