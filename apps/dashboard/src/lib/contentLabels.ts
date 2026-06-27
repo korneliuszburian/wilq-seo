@@ -284,21 +284,10 @@ export function wordpressMatchConfidenceLabel(value: string) {
 
 export function contentBlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "auto publish": "automatyczna publikacja",
-    "content rewrite": "przepisanie treści bez dowodu",
     "conversion uplift": "wzrost konwersji",
-    "duplicate avoidance": "uniknięcie duplikacji",
-    "duplicate-free guarantee": "gwarancja braku duplikatów",
     "lead quality": "jakość leadów",
-    "lead uplift": "wzrost leadów",
-    "merge plan": "plan scalenia",
-    "new article without inventory check": "nowy artykuł bez kontroli spisu treści",
-    "ranking guarantee": "gwarancja pozycji",
     "ranking win": "wygrana pozycji",
-    "refresh plan": "plan odświeżenia",
-    "revenue impact": "wpływ na przychód",
     ROAS: "ROAS",
-    "wordpress write": "zapis do WordPress"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

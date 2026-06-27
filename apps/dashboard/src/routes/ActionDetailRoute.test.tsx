@@ -706,7 +706,11 @@ const contentActionFixture: ActionObject = {
           "duplicate_or_cannibalization_check",
           "human_confirm_before_wordpress_write"
         ],
-        blocked_claims: ["lead uplift", "revenue impact", "automatic WordPress publish"],
+        blocked_claims: [
+          "wzrost liczby leadów",
+          "wpływ na przychód",
+          "automatyczna publikacja WordPress"
+        ],
         source_connectors: ["google_search_console"],
         evidence_ids: ["ev_refresh_gsc"],
         apply_allowed: false,
@@ -729,7 +733,7 @@ const contentActionFixture: ActionObject = {
         },
         brief_goal: "Dodatkowy brief do testu limitu kart.",
         required_validation: ["wordpress_inventory_check"],
-        blocked_claims: ["lead uplift"],
+        blocked_claims: ["wzrost liczby leadów"],
         source_connectors: ["google_search_console"],
         evidence_ids: ["ev_refresh_gsc"],
         apply_allowed: false,

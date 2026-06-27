@@ -155,7 +155,7 @@
   {
     "skill": "wilq-ahrefs-gap-finder",
     "surface_path": "/ahrefs",
-    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. WILQ ma authority facts, strony konkurencji, top pages konkurentów, organic keywords by URL, backlink gap records i content gap records. Pokaż, co wolno przejrzeć, i zablokuj tylko unsupported uplift/authority claims.",
+    "task_pl": "Sprawdź, czy dostępne dowody Ahrefs pozwalają wskazać luki SEO, treści i linków. WILQ ma fakty autorytetu, strony konkurencji, najlepsze strony konkurentów, organic keywords by URL, rekordy luk linków i rekordy luk treści. Pokaż, co wolno przejrzeć, i zablokuj tylko niepotwierdzony wzrost oraz obietnice autorytetu.",
     "expected_connectors": ["ahrefs"],
     "expected_terms_pl": [
       "Ahrefs",
@@ -173,18 +173,18 @@
       "ahrefs_rank",
       "top pages",
       "organic keywords",
-      "content gap",
-      "backlink gap",
+      "luka treści",
+      "luka linków",
       "gap_read_contract",
       "stale",
       "do sprawdzenia w WILQ",
-      "Zablokowane claims"
+      "Zablokowane obietnice"
     ],
     "expected_blocked": false,
     "expected_no_action_ids": true,
     "blocked_claim_terms": [
-      "traffic uplift",
-      "authority improvement"
+      "wzrost ruchu",
+      "wzrost autorytetu"
     ],
     "forbidden_connectors": [
       "google_search_console",
@@ -299,11 +299,11 @@
       "ekologus.dev.proudsite.pl source evidence",
       "WordPress publish",
       "wordpress_draft_write",
-      "duplicate-free guarantee",
-      "ranking guarantee",
+      "gwarancja braku duplikatów",
+      "gwarancja pozycji",
       "ranking_or_lead_uplift_claim",
-      "lead uplift",
-      "revenue impact"
+      "wzrost liczby leadów",
+      "wpływ na przychód"
     ]
   },
   {
@@ -356,7 +356,7 @@
     "blocked_claim_terms": [
       "campaign performance",
       "conversion uplift",
-      "ranking guarantee",
+      "gwarancja pozycji",
       "zmiana kampanii"
     ],
     "expected_action_ids": [

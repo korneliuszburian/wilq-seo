@@ -69,12 +69,12 @@ AHREFS_OFF_TOPIC_TERMS = (
     "ltesty.pl",
 )
 CONTENT_BLOCKED_CLAIMS = [
-    "lead uplift",
-    "revenue impact",
-    "ranking guarantee",
-    "traffic uplift",
-    "authority improvement",
-    "automatic WordPress publish",
+    "wzrost liczby leadów",
+    "wpływ na przychód",
+    "gwarancja pozycji",
+    "wzrost ruchu",
+    "wzrost autorytetu",
+    "automatyczna publikacja WordPress",
 ]
 
 
@@ -1332,7 +1332,7 @@ def _gsc_source_facts(page: str, page_facts: list[MetricFact], wordpress_match: 
 
 def _gsc_missing_evidence(wordpress_match: bool) -> list[str]:
     missing = [
-        "brak dowodu lead quality, revenue impact i wzrostu pozycji",
+        "brak dowodu jakości leadów, wpływu na przychód i wzrostu pozycji",
         "brak zatwierdzonego szkicu zmian WordPress",
     ]
     if not wordpress_match:

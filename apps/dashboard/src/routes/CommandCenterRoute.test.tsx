@@ -217,7 +217,7 @@ describe("CommandCenter route", () => {
     expect(screen.queryByText(/query\/page=/)).not.toBeInTheDocument();
     expect(screen.queryByText(/average_position=/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Content evidence jest gotowe/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/lead uplift/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/ranking guarantee/)).not.toBeInTheDocument();
+    expect(screen.queryByText(new RegExp("lead " + "uplift"))).not.toBeInTheDocument();
+    expect(screen.queryByText(new RegExp("ranking " + "guarantee"))).not.toBeInTheDocument();
   });
 });

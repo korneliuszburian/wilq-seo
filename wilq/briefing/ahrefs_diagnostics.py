@@ -56,16 +56,16 @@ AHREFS_GAP_READ_CONTRACTS = [
     "ahrefs_top_pages_by_competitor",
 ]
 AHREFS_GAP_BLOCKED_CLAIMS = [
-    "competitor gap",
-    "content gap",
-    "backlink gap",
-    "ranking opportunity",
-    "traffic uplift",
-    "authority improvement",
+    "luka względem konkurencji",
+    "luka treści",
+    "luka linków",
+    "szansa na wzrost pozycji",
+    "wzrost ruchu",
+    "wzrost autorytetu",
 ]
 AHREFS_GAP_IMPACT_BLOCKED_CLAIMS = [
-    "traffic uplift",
-    "authority improvement",
+    "wzrost ruchu",
+    "wzrost autorytetu",
 ]
 AHREFS_KNOWLEDGE_CARD_IDS = ["card_ahrefs_content_gap_playbook"]
 AHREFS_EXPERT_RULE_IDS = ["content_brief_rules_v1"]
@@ -1159,11 +1159,11 @@ def _allowed_gap_evidence(
 
 def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
     claims_by_contract = {
-        "ahrefs_competitor_pages": "competitor gap",
-        "ahrefs_content_gap_records": "content gap",
-        "ahrefs_backlink_gap_records": "backlink gap",
-        "ahrefs_organic_keywords_by_url": "ranking opportunity",
-        "ahrefs_top_pages_by_competitor": "traffic uplift",
+        "ahrefs_competitor_pages": "luka względem konkurencji",
+        "ahrefs_content_gap_records": "luka treści",
+        "ahrefs_backlink_gap_records": "luka linków",
+        "ahrefs_organic_keywords_by_url": "szansa na wzrost pozycji",
+        "ahrefs_top_pages_by_competitor": "wzrost ruchu",
     }
     claims = [
         claim

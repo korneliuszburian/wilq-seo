@@ -26,7 +26,7 @@ const queue: TacticalQueueResponse = {
       },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj brief po sprawdzeniu inventory.",
-      blocked_claims: ["ranking guarantee"],
+      blocked_claims: ["gwarancja pozycji"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
     {
@@ -45,7 +45,7 @@ const queue: TacticalQueueResponse = {
       },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj brief po sprawdzeniu inventory.",
-      blocked_claims: ["ranking guarantee"],
+      blocked_claims: ["gwarancja pozycji"],
       action_ids: ["act_prepare_content_refresh_queue"]
     }
   ],
@@ -62,7 +62,7 @@ const queue: TacticalQueueResponse = {
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc_a", "ev_refresh_gsc_b"],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["ranking guarantee"]
+      blocked_claims: ["gwarancja pozycji"]
     }
   ],
   evidence_ids: ["ev_refresh_gsc_a", "ev_refresh_gsc_b"],

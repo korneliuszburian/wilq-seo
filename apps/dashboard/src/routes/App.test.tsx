@@ -291,15 +291,15 @@ const actions = [
           cta_direction: "CTA do rozmowy o wpływie regulacji na firmę.",
           internal_link_direction: ["powiązane treści o regulacjach środowiskowych"],
           source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
-          missing_evidence: ["brak dowodu lead uplift"],
-          forbidden_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
+          missing_evidence: ["brak dowodu wzrost liczby leadów"],
+          forbidden_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           required_validation: [
             "wordpress_existing_url_confirmed",
             "gsc_query_page_check",
             "duplicate_or_cannibalization_check",
             "human_confirm_before_wordpress_write"
           ],
-          blocked_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
+          blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_gsc"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           apply_allowed: false,
@@ -328,7 +328,7 @@ const actions = [
             "wordpress_inventory_check",
             "duplicate_or_cannibalization_check"
           ],
-          blocked_claims: ["traffic uplift", "authority improvement", "ranking guarantee"],
+          blocked_claims: ["wzrost ruchu", "wzrost autorytetu", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
           source_connectors: ["ahrefs"],
           apply_allowed: false,
@@ -369,7 +369,7 @@ const actions = [
             "wordpress_existing_url_confirmed",
             "human_confirm_before_wordpress_write"
           ],
-          blocked_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
+          blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           evidence_ids: ["ev_refresh_gsc"],
           mutation_allowed: false,
@@ -3903,7 +3903,7 @@ const tacticalQueue = {
       },
       diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
       next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
-      blocked_claims: ["conversion uplift", "revenue impact"],
+      blocked_claims: ["conversion uplift", "wpływ na przychód"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
     {
@@ -3939,7 +3939,7 @@ const tacticalQueue = {
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_gsc_second"],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["conversion uplift", "revenue impact"]
+      blocked_claims: ["conversion uplift", "wpływ na przychód"]
     },
     {
       id: "ga4:landing_page_quality:/oferta/:google / cpc",
@@ -4372,10 +4372,10 @@ const contentDiagnostics = {
     ],
     action_ids: ["act_prepare_content_refresh_queue"],
     blocked_claims: [
-      "lead uplift",
+      "wzrost liczby leadów",
       "conversion uplift",
-      "ranking guarantee",
-      "traffic uplift"
+      "gwarancja pozycji",
+      "wzrost ruchu"
     ]
   },
   decision_queue: [
@@ -4421,7 +4421,7 @@ const contentDiagnostics = {
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["lead uplift", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
       rationale:
         "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
       next_step:
@@ -4491,11 +4491,11 @@ const contentDiagnostics = {
       ],
       action_ids: ["act_prepare_content_refresh_queue"],
       blocked_claims: [
-        "off-topic content recommendation",
+        "rekomendacja treści poza zakresem",
         "content brief without relevance review",
-        "traffic uplift",
-        "authority improvement",
-        "ranking guarantee"
+        "wzrost ruchu",
+        "wzrost autorytetu",
+        "gwarancja pozycji"
       ],
       rationale:
         "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem.",
@@ -4517,7 +4517,7 @@ const contentDiagnostics = {
       metric_facts: [metricFacts[5]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["lead uplift", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
       risk: "low"
     },
     {
@@ -4532,7 +4532,7 @@ const contentDiagnostics = {
       metric_facts: [metricFacts[0]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["new article without inventory check"],
+      blocked_claims: ["nowa treść bez kontroli spisu treści"],
       risk: "low"
     }
   ],
@@ -4570,7 +4570,7 @@ const contentPreflight = {
     service_mapping_status: "ready_for_service_review",
     similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
     query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-    blocked_claims: ["lead uplift", "conversion uplift"],
+    blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -4597,7 +4597,7 @@ const contentPreflight = {
       service_mapping_status: "ready_for_service_review",
       similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
       query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-      blocked_claims: ["lead uplift", "conversion uplift"],
+      blocked_claims: ["wzrost liczby leadów", "conversion uplift"],
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -5015,7 +5015,7 @@ const ahrefsDiagnostics = {
       "ahrefs_content_gap_count",
       "ahrefs_referring_domain_gap_count"
     ],
-    blocked_claims: ["traffic uplift", "authority improvement"],
+    blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
     operator_review_gates: [
       "ahrefs_gap_records_required",
       "content_planner_review_required",
@@ -5052,7 +5052,7 @@ const ahrefsDiagnostics = {
           }
         ],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
@@ -5084,7 +5084,7 @@ const ahrefsDiagnostics = {
           }
         ],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Sprawdź ręcznie jakość domen/linków i nie planuj link buildingu bez review ryzyka oraz źródła.",
         risk: "medium"
@@ -5101,7 +5101,7 @@ const ahrefsDiagnostics = {
         keyword: null,
         metric_facts: [],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
@@ -5118,7 +5118,7 @@ const ahrefsDiagnostics = {
         keyword: null,
         metric_facts: [],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
@@ -5135,7 +5135,7 @@ const ahrefsDiagnostics = {
         keyword: null,
         metric_facts: [],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
@@ -5152,7 +5152,7 @@ const ahrefsDiagnostics = {
         keyword: null,
         metric_facts: [],
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-        blocked_claims: ["traffic uplift", "authority improvement"],
+        blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
           "Połącz rekord z GSC i spisem treści WordPress, potem zdecyduj: zachowanie, odświeżenie, scalenie, utworzenie albo blokada.",
         risk: "medium"
@@ -5188,7 +5188,7 @@ const ahrefsDiagnostics = {
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     action_ids: [],
-    blocked_claims: ["traffic uplift", "authority improvement"]
+    blocked_claims: ["wzrost ruchu", "wzrost autorytetu"]
   },
   decision_queue: [
     {
@@ -5234,8 +5234,8 @@ const ahrefsDiagnostics = {
       ],
       action_ids: [],
       blocked_claims: [
-        "traffic uplift",
-        "authority improvement"
+        "wzrost ruchu",
+        "wzrost autorytetu"
       ],
       risk: "low"
     },
@@ -5280,7 +5280,7 @@ const ahrefsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["traffic uplift", "authority improvement"],
+      blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
     }
   ],
@@ -5313,7 +5313,7 @@ const ahrefsDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
       action_ids: [],
-      blocked_claims: ["traffic uplift", "authority improvement"],
+      blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
     }
   ],
@@ -5652,7 +5652,7 @@ function mockFetch() {
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
-                blocked_claims: ["lead uplift", "ranking guarantee"],
+                blocked_claims: ["wzrost liczby leadów", "gwarancja pozycji"],
                 risk: "low"
               },
               {
@@ -5735,7 +5735,7 @@ function mockFetch() {
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
                 metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
-                blocked_claims: ["lead uplift", "ranking guarantee"],
+                blocked_claims: ["wzrost liczby leadów", "gwarancja pozycji"],
                 risk: "low"
               },
               {
@@ -5833,7 +5833,7 @@ function mockFetch() {
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
-                blocked_claims: ["lead uplift", "ranking guarantee"],
+                blocked_claims: ["wzrost liczby leadów", "gwarancja pozycji"],
                 risk: "low"
               },
               {
@@ -6988,7 +6988,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Odbiorca: Decydent środowiskowy/)).toBeInTheDocument();
     expect(screen.getByText(/CTA: CTA do rozmowy/)).toBeInTheDocument();
     expect(screen.getByText(/czy tekst jest aktualny prawnie/)).toBeInTheDocument();
-    expect(screen.getByText(/brak dowodu lead uplift/)).toBeInTheDocument();
+    expect(screen.getByText(/brak dowodu wzrost liczby leadów/)).toBeInTheDocument();
     expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("GSC: jest")).toBeInTheDocument();
     expect(screen.getByText("WP: jest")).toBeInTheDocument();
@@ -7057,7 +7057,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane konkretne luki Ahrefs/)).toBeInTheDocument();
-    expect(screen.getAllByText(/poprawa autorytetu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wzrost autorytetu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Pokazuję top 6 z 6 rekordów.")).toBeInTheDocument();
     expect(screen.getByText("Strona konkurencji: hidden-noise.example")).toBeInTheDocument();
     expect(

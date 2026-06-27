@@ -1370,7 +1370,7 @@ def test_content_action_preview_exposes_review_only_brief_payload(
         assert item["apply_allowed"] is False
         assert item["api_mutation_ready"] is False
         assert item["evidence_ids"]
-        assert "ranking guarantee" in item["blocked_claims"]
+        assert "gwarancja pozycji" in item["blocked_claims"]
     assert "action_mode_prepare_only" in preview["blockers"]
 
 
@@ -1748,10 +1748,10 @@ def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregat
     assert previews[0]["internal_link_direction"]
     assert previews[0]["source_facts"]
     assert previews[0]["missing_evidence"]
-    assert "ranking guarantee" in previews[0]["forbidden_claims"]
+    assert "gwarancja pozycji" in previews[0]["forbidden_claims"]
     assert previews[0]["apply_allowed"] is False
     assert previews[0]["api_mutation_ready"] is False
-    assert "ranking guarantee" in previews[0]["blocked_claims"]
+    assert "gwarancja pozycji" in previews[0]["blocked_claims"]
 
 
 def test_content_brief_preview_homepage_candidate_id_is_traceable(
@@ -1868,7 +1868,7 @@ def test_content_brief_candidate_review_persists_audit_event(
             "blockers": [
                 "payload_apply_allowed_false",
                 "wordpress_write_not_requested",
-                "blocked_claim:ranking guarantee",
+                "blocked_claim:gwarancja pozycji",
             ],
         },
     )
@@ -2029,7 +2029,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "human_confirm_before_wordpress_write" in draft_preview[
         "required_validation"
     ]
-    assert "ranking guarantee" in draft_preview["blocked_claims"]
+    assert "gwarancja pozycji" in draft_preview["blocked_claims"]
     assert draft_preview["evidence_ids"]
 
     preview_response = client.post(
@@ -2075,7 +2075,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
             "blockers": [
                 "payload_apply_allowed_false",
                 "wordpress_write_not_requested",
-                "blocked_claim:ranking guarantee",
+                "blocked_claim:gwarancja pozycji",
             ],
         },
     )
@@ -2117,7 +2117,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
     assert brief_preview["missing_evidence"]
-    assert "ranking guarantee" in brief_preview["forbidden_claims"]
+    assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
     assert brief_preview["source_public_url"]
     assert brief_preview["final_canonical_url"]
     assert brief_preview["intended_final_url"]
@@ -2202,7 +2202,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]
-    assert "ranking guarantee" in draft_preview["blocked_claims"]
+    assert "gwarancja pozycji" in draft_preview["blocked_claims"]
     assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
 
 
@@ -2973,7 +2973,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert gsc_preview["metric_snapshot"]["clicks"] == 12
             assert gsc_preview["metric_snapshot"]["impressions"] == 120
             assert gsc_preview["apply_allowed"] is False
-            assert "ranking guarantee" in gsc_preview["blocked_claims"]
+            assert "gwarancja pozycji" in gsc_preview["blocked_claims"]
             assert "human_confirm_before_wordpress_write" in gsc_preview[
                 "required_validation"
             ]
@@ -3629,7 +3629,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert ahrefs_beczka_item["dimensions"]["gsc_overlap_terms"] == ""
     assert ahrefs_beczka_item["dimensions"]["wordpress_overlap_urls"] == ""
     assert all(item["domain"] == "content" for item in ahrefs_items)
-    assert all("traffic uplift" in item["blocked_claims"] for item in ahrefs_items)
+    assert all("wzrost ruchu" in item["blocked_claims"] for item in ahrefs_items)
     assert all(
         item["dimensions"].get("competitor_domain") != "cuk.pl"
         for item in ahrefs_items
@@ -5542,7 +5542,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert gap_contract["gap_records"] == []
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
-    assert "content gap" in gap_contract["blocked_claims"]
+    assert "luka treści" in gap_contract["blocked_claims"]
     assert gap_contract["operator_review_gates"] == [
         "ahrefs_gap_records_required",
         "content_planner_review_required",
@@ -5561,7 +5561,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
     assert "rows=0" in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
-    assert "content gap" in authority_decision["blocked_claims"]
+    assert "luka treści" in authority_decision["blocked_claims"]
     assert authority_decision["knowledge_card_ids"] == [
         "card_ahrefs_content_gap_playbook"
     ]
@@ -5583,7 +5583,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs_content_gap_records" in operator_summary["missing_read_contracts"]
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
-    assert "content gap" in operator_summary["blocked_claims"]
+    assert "luka treści" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
@@ -5656,7 +5656,7 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
     dirty_card = KnowledgeCard(
         id="card_dirty_ahrefs_history",
         card_type="seo_context",
-        title="Ahrefs content gaps and backlink gaps playbook",
+        title="Ahrefs luka treścis and luka linkóws playbook",
         summary="Use Content gap rows, Backlink gap rows and top pages as raw skill text.",
         source_type="doc",
         source_id="dirty-ahrefs-doc",
@@ -5715,8 +5715,8 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
         "gap records",
         "Content gap rows",
         "Backlink gap rows",
-        "content gaps",
-        "backlink gaps",
+        "luka treścis",
+        "luka linkóws",
         "top pages",
         "organic keywords",
     )
@@ -5853,7 +5853,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert content_record["keyword"] == "bdo szkolenie"
     assert content_record["competitor_domain"] == "example.pl"
     assert "luki treści=2" in content_record["summary"]
-    assert "traffic uplift" in content_record["blocked_claims"]
+    assert "wzrost ruchu" in content_record["blocked_claims"]
 
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     gap_decision = decision_by_id["ahrefs_review_gap_records"]
@@ -5868,7 +5868,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "brakujące dane": 0,
     }
     assert gap_decision["missing_read_contracts"] == []
-    assert "traffic uplift" in gap_decision["blocked_claims"]
+    assert "wzrost ruchu" in gap_decision["blocked_claims"]
     assert "ahrefs_block_gap_claims_without_records" not in decision_by_id
     operator_summary = payload["operator_summary"]
     assert operator_summary["gap_read_status"] == "ready"
@@ -12026,7 +12026,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
         "ev_connector_wordpress_ekologus_status",
     ]
     assert decision.metric_tiles == {"blockery": 2}
-    assert "content recommendation" in decision.blocked_claims
+    assert "rekomendacja bez danych źródłowych" in decision.blocked_claims
     assert "odczyt danych" in decision.next_step
     assert diagnostics.operator_summary.top_decision_ids == [decision.id]
     assert "blokada do czasu odczytu danych" in (
@@ -12253,7 +12253,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any(key.startswith("transition_candidate") for key in operator_summary)
     assert "odświeżenie albo scalenie" in operator_summary["decision_type_labels"]
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
-    assert "lead uplift" in operator_summary["blocked_claims"]
+    assert "wzrost liczby leadów" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     marketer_decision = payload["marketer_decision"]
@@ -12423,8 +12423,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "content_brief_rules_v1",
         "content_duplication_rules_v1",
     ]
-    assert "off-topic content recommendation" in ahrefs_decision["blocked_claims"]
-    assert "traffic uplift" in ahrefs_decision["blocked_claims"]
+    assert "rekomendacja treści poza zakresem" in ahrefs_decision["blocked_claims"]
+    assert "wzrost ruchu" in ahrefs_decision["blocked_claims"]
     assert "ev_refresh_ahrefs_gap_records" in payload["evidence_ids"]
 
     context_response = client.post(

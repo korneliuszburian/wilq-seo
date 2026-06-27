@@ -470,7 +470,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "brak danych GSC",
                             "brak spisu treści WordPress",
                         ],
-                        "forbidden_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                        "forbidden_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
                         "required_validation": [
                             "gsc_query_page_check",
                             "wordpress_inventory_check",
@@ -478,7 +478,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "duplicate_or_cannibalization_check",
                             "human_confirm_before_wordpress_write",
                         ],
-                        "blocked_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                        "blocked_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
                         "source_connectors": ["google_search_console", "wordpress_ekologus"],
                         "evidence_ids": [
                             connector_evidence_id("wordpress_ekologus"),
@@ -489,7 +489,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "destructive": False,
                     }
                 ],
-                "blocked_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                "blocked_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
                 "destructive": False,
             },
             validation_status="not_validated",

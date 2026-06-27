@@ -405,8 +405,8 @@ def validate_content_action_preview(
         assert_current_content_url_keys(preview, "Content context-pack preview")
     if not first_preview.get("evidence_ids"):
         raise SystemExit("Content brief preview lacks evidence IDs")
-    if "ranking guarantee" not in set(first_preview.get("blocked_claims") or []):
-        raise SystemExit("Content brief preview must block ranking guarantee claims")
+    if "gwarancja pozycji" not in set(first_preview.get("blocked_claims") or []):
+        raise SystemExit("Content brief preview must block gwarancja pozycji claims")
     required_string_fields = [
         "intent",
         "content_angle",
@@ -441,8 +441,8 @@ def validate_content_action_preview(
         value = first_preview.get(field)
         if not isinstance(value, list) or not value:
             raise SystemExit(f"Content brief preview lacks {field}")
-    if "ranking guarantee" not in set(first_preview.get("forbidden_claims") or []):
-        raise SystemExit("Content brief preview forbidden_claims must block ranking guarantee")
+    if "gwarancja pozycji" not in set(first_preview.get("forbidden_claims") or []):
+        raise SystemExit("Content brief preview forbidden_claims must block gwarancja pozycji")
     for field in (
         "source_public_url",
         "final_canonical_url",

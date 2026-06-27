@@ -541,7 +541,7 @@ def _gsc_content_items(
                     wordpress_match=wordpress_match,
                 ),
                 next_step=_content_next_step(intent),
-                blocked_claims=["lead quality", "conversion uplift", "revenue impact"],
+                blocked_claims=["jakość leadów", "wzrost konwersji", "wpływ na przychód"],
                 action_ids=action_ids_by_connector.get("wordpress_ekologus", []),
             )
         )
@@ -793,10 +793,10 @@ def _ahrefs_gap_items(
                 ),
                 next_step=_ahrefs_gap_next_step(topic, confirmation),
                 blocked_claims=[
-                    "traffic uplift",
-                    "authority improvement",
-                    "ranking guarantee",
-                    "lead uplift",
+                    "wzrost ruchu",
+                    "wzrost autorytetu",
+                    "gwarancja pozycji",
+                    "wzrost liczby leadów",
                     "content brief without GSC/WordPress check",
                 ],
                 action_ids=action_ids_by_connector.get("ahrefs", []),

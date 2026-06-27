@@ -1356,7 +1356,7 @@ def _content_item_from_tactical(
         blocked_claims=_unique(
             claim for item in content_items for claim in item.blocked_claims
         )
-        or ["lead uplift", "revenue impact", "ranking guarantee"],
+        or ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
         risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
 

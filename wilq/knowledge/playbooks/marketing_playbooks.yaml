@@ -241,7 +241,7 @@ playbooks:
     expert_rule_ids:
       - local_visibility_v1
       - local_reviews_v1
-    compact_playbook: Diagnose local ranking drops, competitor gaps and review tasks from Localo/GBP evidence before suggesting public-facing changes.
+    compact_playbook: Diagnozuj spadki lokalnych pozycji, luki względem konkurencji i zadania review z dowodów Localo/GBP przed sugerowaniem zmian publicznych.
     refusal_rules:
       - Refuse GBP write suggestions without review evidence.
       - Refuse local ranking diagnosis without location and competitor context.

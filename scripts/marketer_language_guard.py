@@ -266,6 +266,34 @@ FORBIDDEN_PHRASES = (
         "Use wzrost skuteczności social in social blocked claims.",
     ),
     ForbiddenPhrase(
+        "lead uplift",
+        "Use wzrost liczby leadów in content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "revenue impact",
+        "Use wpływ na przychód in content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "ranking guarantee",
+        "Use gwarancja pozycji in content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "traffic uplift",
+        "Use wzrost ruchu in Ahrefs/content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "authority improvement",
+        "Use wzrost autorytetu in Ahrefs/content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "duplicate-free guarantee",
+        "Use gwarancja braku duplikatów in content blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "automatic WordPress publish",
+        "Use automatyczna publikacja WordPress in content blocked claims.",
+    ),
+    ForbiddenPhrase(
         "LinkedIn credentials",
         "Use dostęp LinkedIn.",
     ),

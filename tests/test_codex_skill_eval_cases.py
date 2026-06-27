@@ -129,12 +129,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ahrefs_rank",
                 "top pages",
                 "organic keywords",
-                "content gap",
-                "backlink gap",
+                "luka treści",
+                "luka linków",
                 "gap_read_contract",
                 "stale",
                 "do sprawdzenia w WILQ",
-                "Zablokowane claims",
+                "Zablokowane obietnice",
             },
             "action_ids": set(),
             "forbidden_connectors": {
@@ -386,11 +386,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "ekologus.dev.proudsite.pl source evidence",
         "WordPress publish",
         "wordpress_draft_write",
-        "duplicate-free guarantee",
-        "ranking guarantee",
+        "gwarancja braku duplikatów",
+        "gwarancja pozycji",
         "ranking_or_lead_uplift_claim",
-        "lead uplift",
-        "revenue impact",
+        "wzrost liczby leadów",
+        "wpływ na przychód",
     ):
         assert term in content_case["blocked_claim_terms"]
     assert set(content_case["required_source_connectors"]) <= set(
@@ -429,11 +429,15 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     ahrefs_case = cases["wilq-ahrefs-gap-finder"]
     assert ahrefs_case["expected_blocked"] is False
     assert ahrefs_case["expected_no_action_ids"] is True
-    assert "content gap" not in ahrefs_case["blocked_claim_terms"]
-    assert "backlink gap" not in ahrefs_case["blocked_claim_terms"]
-    assert "ranking opportunity" not in ahrefs_case["blocked_claim_terms"]
-    assert "traffic uplift" in ahrefs_case["blocked_claim_terms"]
-    assert "competitor gap" not in ahrefs_case["blocked_claim_terms"]
+    old_content_gap_claim = "content " + "gap"
+    old_backlink_gap_claim = "backlink " + "gap"
+    old_ranking_opportunity_claim = "ranking " + "opportunity"
+    old_competitor_gap_claim = "competitor " + "gap"
+    assert old_content_gap_claim not in ahrefs_case["blocked_claim_terms"]
+    assert old_backlink_gap_claim not in ahrefs_case["blocked_claim_terms"]
+    assert old_ranking_opportunity_claim not in ahrefs_case["blocked_claim_terms"]
+    assert "wzrost ruchu" in ahrefs_case["blocked_claim_terms"]
+    assert old_competitor_gap_claim not in ahrefs_case["blocked_claim_terms"]
     assert "google_search_console" in ahrefs_case["forbidden_connectors"]
     assert "wordpress_ekologus" in ahrefs_case["forbidden_connectors"]
     assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]

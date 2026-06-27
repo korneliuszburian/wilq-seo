@@ -648,15 +648,6 @@ def _content_marketer_missing_inputs(
 
 def _content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
     labels = {
-        "auto publish": "automatyczna publikacja",
-        "content recommendation": "rekomendacja bez danych źródłowych",
-        "duplicate-free guarantee": "gwarancja braku duplikatów",
-        "lead quality": "jakość leadów",
-        "lead uplift": "obietnica wzrostu leadów",
-        "new article without inventory check": "nowy artykuł bez kontroli spisu treści",
-        "ranking uplift": "obietnica wzrostu pozycji",
-        "revenue impact": "wpływ na przychód",
-        "conversion uplift": "obietnica wzrostu konwersji",
         "wordpress_publish": "publikacja w WordPress bez sprawdzenia",
         "wordpress_write": "zapis do WordPress bez potwierdzenia",
         "wordpress_draft_ready_claim": "twierdzenie, że szkic jest gotowy do sprawdzenia",
@@ -829,7 +820,7 @@ def _query_page_section(
             "seo_gsc_opportunities_v1",
             "seo_query_page_matrix_v1",
         ],
-        blocked_claims=["lead uplift", "conversion uplift", "revenue impact"],
+        blocked_claims=["wzrost liczby leadów", "wzrost konwersji", "wpływ na przychód"],
         risk=ActionRisk.low,
     )
 
@@ -876,7 +867,11 @@ def _inventory_match_section(
             action_ids=action_ids,
             knowledge_card_ids=["card_wordpress_content_refresh_playbook"],
             expert_rule_ids=["content_duplication_rules_v1", "content_brief_rules_v1"],
-            blocked_claims=["duplicate avoidance", "refresh plan", "merge plan"],
+            blocked_claims=[
+                "uniknięcie duplikacji",
+                "plan odświeżenia",
+                "plan scalenia",
+            ],
             risk=ActionRisk.medium,
         )
     return ContentDiagnosticSection(
@@ -912,7 +907,7 @@ def _inventory_match_section(
             "content_duplication_rules_v1",
             "content_brief_rules_v1",
         ],
-        blocked_claims=["new article without inventory check", "duplicate-free guarantee"],
+        blocked_claims=["nowa treść bez kontroli spisu treści", "gwarancja braku duplikatów"],
         risk=ActionRisk.low,
     )
 
@@ -953,7 +948,7 @@ def _content_action_safety_section(
         action_ids=action_ids,
         knowledge_card_ids=["card_wordpress_content_refresh_playbook"],
         expert_rule_ids=["content_brief_rules_v1", "content_voice_rules_v1"],
-        blocked_claims=["wordpress write", "auto publish", "ranking guarantee"],
+        blocked_claims=["zapis do WordPress bez potwierdzenia", "automatyczna publikacja", "gwarancja pozycji"],
         risk=ActionRisk.medium,
     )
 
@@ -1047,10 +1042,10 @@ def _content_vendor_read_blocker_decision(
         knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
         expert_rule_ids=list(GSC_CONTENT_EXPERT_RULE_IDS),
         blocked_claims=[
-            "content recommendation",
-            "ranking uplift",
-            "lead uplift",
-            "auto publish",
+            "rekomendacja bez danych źródłowych",
+            "wzrost pozycji",
+            "wzrost liczby leadów",
+            "automatyczna publikacja",
         ],
         rationale=(
             f"GSC blocker: {gsc_reason} WordPress blocker: {wordpress_reason} "
@@ -1368,8 +1363,8 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
             blocked_claims=_unique(
                 [
                     *(claim for item in tracking_gaps for claim in item.blocked_claims),
-                    "content rewrite",
-                    "conversion uplift",
+                    "przepisanie treści",
+                    "wzrost konwersji",
                     "ROAS",
                 ]
             ),
@@ -1471,12 +1466,12 @@ def _ahrefs_gap_record_decisions(
             knowledge_card_ids=list(AHREFS_CONTENT_KNOWLEDGE_CARD_IDS),
             expert_rule_ids=list(AHREFS_CONTENT_EXPERT_RULE_IDS),
             blocked_claims=[
-                "off-topic content recommendation",
-                "content brief without relevance check",
-                "traffic uplift",
-                "authority improvement",
-                "ranking guarantee",
-                "lead uplift",
+                "rekomendacja treści poza zakresem",
+                "brief bez kontroli trafności",
+                "wzrost ruchu",
+                "wzrost autorytetu",
+                "gwarancja pozycji",
+                "wzrost liczby leadów",
             ],
             rationale=(
                 "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela "

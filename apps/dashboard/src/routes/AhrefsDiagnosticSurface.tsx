@@ -387,12 +387,6 @@ function ahrefsMissingContractLabel(value: string) {
 
 function ahrefsBlockedClaimLabel(value: string) {
   const labels: Record<string, string> = {
-    "authority improvement": "poprawa autorytetu",
-    "backlink gap": "luka backlinków",
-    "competitor gap": "przewaga konkurencji",
-    "content gap": "luka treści",
-    "ranking opportunity": "okazja rankingowa",
-    "traffic uplift": "wzrost ruchu"
   };
   return labels[value] ?? value;
 }

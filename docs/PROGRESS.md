@@ -71,6 +71,10 @@ Date: 2026-06-27
   source values for publishing and social-performance promises. The language
   guard now blocks the old social phrases `post published` and
   `social performance uplift` in active skill/eval contracts.
+- Content and Ahrefs blocked-claim contracts now use Polish source values for
+  ranking, lead, revenue, traffic, authority, duplicate and WordPress-publish
+  promises. Obsolete dashboard/backend label-map entries for those old values
+  were removed instead of kept as compatibility aliases.
 
 ## Latest Proof Pointers
 
@@ -161,6 +165,17 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "social_context_pack or social_draft_actions" --maxfail=1` passed: 3 tests.
   - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
   - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "social route renders workflow-specific blockers" --testTimeout=20000` passed: 1 test.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+- Content/Ahrefs blocked-claim language cleanup without live API/browser proof
+  in current session:
+  - Focused stale-term scan for old content/Ahrefs blocked-claim terms across
+    active WILQ sources, dashboard source, eval cases and content skill files
+    found no active hits.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python -m py_compile wilq/actions/content_refresh.py wilq/actions/service.py wilq/briefing/content_diagnostics.py wilq/briefing/ahrefs_diagnostics.py wilq/briefing/blocked_claim_labels.py wilq/briefing/command_center.py wilq/briefing/tactical_queue.py scripts/marketer_language_guard.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs or content_brief_preview or content_diagnostics or codex_context_pack_scopes_content_strategist_payload or content_public_url" --maxfail=1` passed: 16 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx src/routes/CommandCenterRoute.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "content planner|ahrefs|Content|action detail|Command Center|compact decision groups" --testTimeout=20000` passed: 3 tests.
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.
