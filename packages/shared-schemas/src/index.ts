@@ -4,6 +4,7 @@ export const ConnectorStatusSchema = z.object({
   id: z.string(),
   label: z.string(),
   status: z.string(),
+  status_label: z.string().default(""),
   configured: z.boolean(),
   missing_credentials: z.array(z.string()),
   available_credential_sources: z.array(z.string()),
@@ -25,6 +26,7 @@ export const DecisionStateSchema = z.enum(["ready", "stale", "blocked", "missing
 
 export const MetricFactSchema = z.object({
   name: z.string(),
+  metric_label: z.string().default(""),
   value: z.union([z.string(), z.number()]),
   period: z.string(),
   source_connector: z.string(),
@@ -73,6 +75,7 @@ export const ConnectorRefreshRunSchema = z.object({
   connector_id: z.string(),
   mode: z.enum(["status_probe", "vendor_read"]),
   status: z.enum(["completed", "blocked", "failed"]),
+  status_label: z.string().default(""),
   started_at: z.string(),
   completed_at: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()),
@@ -1994,6 +1997,7 @@ export const ContentDiagnosticSectionSchema = z.object({
   tactical_items: z.array(TacticalQueueItemSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -2091,7 +2095,8 @@ export const ContentOperatorSummarySchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const ContentMarketerDecisionSchema = z.object({

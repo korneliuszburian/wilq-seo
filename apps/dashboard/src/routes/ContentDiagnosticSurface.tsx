@@ -14,14 +14,7 @@ import {
   reviewAction
 } from "../lib/api";
 import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
-import {
-  contentBlockedClaimLabels,
-  contentConnectorStatusLabel,
-  contentMetricFactLabel,
-  contentRefreshStatusLabel,
-  contentSectionLabel,
-  formatContentMetricValue
-} from "../lib/contentLabels";
+import { formatContentMetricValue } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -64,7 +57,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
   const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
   const latestStatuses = data.latest_refreshes.map((refresh) => {
     const [label] = connectorLabelsFromStatuses([refresh.connector_id], data.connectors);
-    return `${label}: ${contentRefreshStatusLabel(refresh.status)}`;
+    return `${label}: ${refresh.status_label}`;
   });
 
   return (
@@ -103,7 +96,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
                 key={connector.id}
                 className="rounded-md border border-line px-2 py-1 text-slate-600"
               >
-                {connector.label}: {contentConnectorStatusLabel(connector.status)}
+                {connector.label}: {connector.status_label}
                 <span className="sr-only">; </span>
               </span>
             ))}
@@ -375,7 +368,7 @@ function ContentSafetyGatePanel({ data }: { data: ContentDiagnosticsResponse }) 
         </div>
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+          values={data.sections.flatMap((section) => section.blocked_claim_labels)}
         />
       </section>
   );
@@ -876,7 +869,7 @@ function ContentSelectedDecisionPanel({
     ...(primaryDecision?.source_connectors ?? [])
   ]);
   const marketerDecision = data.marketer_decision;
-  const panelBlockedClaims = marketerDecision?.blocked_claims ?? contentBlockedClaimLabels(blockedClaims);
+  const panelBlockedClaims = marketerDecision?.blocked_claims ?? blockedClaims;
   const panelMissingInputs = marketerDecision?.missing_inputs ?? missingInputs;
   const panelEvidenceSummary =
     marketerDecision?.evidence_summary ?? formatContentEvidenceCount(evidenceIds.length);
@@ -1099,7 +1092,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             <TraceLine label="Akcje" values={[formatContentActionCount(actionIds.length)]} />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={contentBlockedClaimLabels(summary.blocked_claims)}
+              values={summary.blocked_claim_labels}
             />
           </div>
           {actionIds.length > 0 ? (
@@ -1291,12 +1284,12 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
       </div>
       {visibleMetricFacts.length > 0 ? <ContentMetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => contentSectionLabel(section.id))} />
+        <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.title)} />
         <TraceLine label="Źródła danych" values={data.source_connector_labels} />
         <TraceLine label="Akcje" values={[formatContentActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+          values={data.sections.flatMap((section) => section.blocked_claim_labels)}
         />
       </div>
     </section>
@@ -1309,7 +1302,7 @@ function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
       {facts.map((fact, index) => (
         <MetricTile
           key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
-          label={contentMetricFactLabel(fact.name)}
+          label={fact.metric_label}
           value={formatContentMetricValue(fact.name, fact.value)}
         />
       ))}

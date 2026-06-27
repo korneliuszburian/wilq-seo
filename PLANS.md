@@ -692,6 +692,10 @@ WILQ is complete for this long-range goal when:
   in the active runtime path.
   Keep proof scans as part of every route cleanup slice and promote repeated
   findings into API/domain labels or language guards.
+- Content Planner diagnostic labels follow the same rule as action preview
+  labels: connector status, refresh status, section blockers and metric names
+  are API/domain semantics. React may format numbers, but it must not own the
+  meaning of those fields.
 
 ## Decision Log
 
@@ -724,6 +728,9 @@ WILQ is complete for this long-range goal when:
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.
+- If a marketer route needs a semantic dictionary to explain a status, blocker,
+  metric, source or action, treat it as a missing API/schema/view-model field.
+  Do not add or preserve route-local translators as cleanup strategy.
 
 ## Outcomes & Retrospective
 
@@ -732,6 +739,10 @@ WILQ is complete for this long-range goal when:
 - Latest accepted proof: Merchant, Content Planner and Ahrefs no longer show
   targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
   and the focused API/dashboard checks plus language guard passed.
+- Latest content cleanup proof: Content Planner diagnostics now expose
+  API-owned status, blocked-claim and metric labels; focused API/dashboard
+  tests, typecheck, language guard, live API proof and `agent-browser read` for
+  `/content-planner` passed.
 - Remaining risk: docs, dashboard routes and skill/context-pack fixtures can
   drift back into append-only history or raw vendor terminology unless every
   repeated issue becomes a focused guardrail.

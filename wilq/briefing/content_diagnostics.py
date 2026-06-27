@@ -20,6 +20,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ConnectorStatus,
     ContentAhrefsCandidateRow,
     ContentDecisionItem,
     ContentDiagnosticSection,
@@ -179,6 +180,40 @@ CONTENT_AHREFS_REASON_LABELS = {
     "off_topic_competitor_domain": "konkurent poza tematem",
     "broad_backlink_domain": "szeroki backlink",
 }
+CONTENT_CONNECTOR_STATUS_LABELS = {
+    "configured": "dostęp skonfigurowany",
+    "missing_credentials": "brakuje dostępu",
+    "disabled": "źródło wyłączone",
+    "missing_dependency": "brak zależności",
+    "unreachable": "źródło niedostępne",
+    "auth_error": "błąd dostępu",
+    "rate_limited": "limit odczytu",
+    "error": "błąd źródła",
+}
+CONTENT_REFRESH_STATUS_LABELS = {
+    "completed": "zakończony",
+    "blocked": "zablokowany",
+    "failed": "błąd",
+}
+CONTENT_METRIC_FACT_LABELS = {
+    "ahrefs_backlink_gap_count": "Luki linków z Ahrefs",
+    "ahrefs_competitor_page_count": "Strony konkurencji z Ahrefs",
+    "ahrefs_content_gap_count": "Luki treści z Ahrefs",
+    "ahrefs_organic_keyword_gap_count": "Luki fraz z Ahrefs",
+    "ahrefs_referring_domain_gap_count": "Luki domen linkujących z Ahrefs",
+    "ahrefs_top_page_gap_count": "Mocne strony konkurencji",
+    "average_position": "Pozycja",
+    "clicks": "Kliknięcia",
+    "content_object_count": "Obiekty WordPress",
+    "content_object_seen": "Treść w spisie",
+    "ctr": "CTR",
+    "engaged_sessions": "Sesje zaangażowane",
+    "engagement_rate": "Współczynnik zaangażowania",
+    "impressions": "Wyświetlenia",
+    "pages_total": "Strony WordPress",
+    "posts_total": "Wpisy WordPress",
+    "sessions": "Sesje",
+}
 AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS = {
     "cuk.pl",
     "ltesty.pl",
@@ -270,6 +305,7 @@ def build_content_diagnostics(
         if metric_facts is not None
         else _content_metric_facts(CONTENT_CONNECTOR_IDS)
     )
+    metric_facts = [_content_metric_fact_with_api_label(fact) for fact in metric_facts]
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
     all_tactical_items = (
@@ -303,6 +339,7 @@ def build_content_diagnostics(
             action_ids,
         ),
     ]
+    sections = [_content_section_with_api_labels(section) for section in sections]
     evidence_ids = _unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
@@ -331,8 +368,10 @@ def build_content_diagnostics(
     )
     return ContentDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
-        connectors=connectors,
-        latest_refreshes=latest_refreshes,
+        connectors=[_content_connector_with_api_label(connector) for connector in connectors],
+        latest_refreshes=[
+            _content_refresh_with_api_label(refresh) for refresh in latest_refreshes
+        ],
         live_data_available=live_data_available,
         query_page_count=_query_page_count(content_tactical_items),
         matched_inventory_count=_matched_inventory_count(content_tactical_items),
@@ -417,6 +456,9 @@ def _operator_summary(
         ),
         action_ids=action_ids,
         blocked_claims=_unique(
+            claim for section in sections for claim in section.blocked_claims
+        ),
+        blocked_claim_labels=_content_blocked_claim_labels(
             claim for section in sections for claim in section.blocked_claims
         ),
     )
@@ -1108,8 +1150,52 @@ def _content_decision_with_api_labels(decision: ContentDecisionItem) -> ContentD
             "canonical_gate_status_label": _content_gate_label(decision.canonical_gate_status),
             "duplicate_gate_status_label": _content_gate_label(decision.duplicate_gate_status),
             "blocked_claim_labels": _content_blocked_claim_labels(decision.blocked_claims),
+            "metric_facts": [
+                _content_metric_fact_with_api_label(fact) for fact in decision.metric_facts
+            ],
         }
     )
+
+
+def _content_connector_with_api_label(connector: ConnectorStatus) -> ConnectorStatus:
+    return connector.model_copy(
+        update={"status_label": _content_connector_status_label(str(connector.status))}
+    )
+
+
+def _content_refresh_with_api_label(refresh: ConnectorRefreshRun) -> ConnectorRefreshRun:
+    return refresh.model_copy(
+        update={"status_label": _content_refresh_status_label(str(refresh.status))}
+    )
+
+
+def _content_section_with_api_labels(
+    section: ContentDiagnosticSection,
+) -> ContentDiagnosticSection:
+    return section.model_copy(
+        update={
+            "metric_facts": [
+                _content_metric_fact_with_api_label(fact) for fact in section.metric_facts
+            ],
+            "blocked_claim_labels": _content_blocked_claim_labels(section.blocked_claims),
+        }
+    )
+
+
+def _content_metric_fact_with_api_label(fact: MetricFact) -> MetricFact:
+    return fact.model_copy(update={"metric_label": _content_metric_fact_label(fact.name)})
+
+
+def _content_connector_status_label(value: str) -> str:
+    return CONTENT_CONNECTOR_STATUS_LABELS.get(value, content_contract_label(value))
+
+
+def _content_refresh_status_label(value: str) -> str:
+    return CONTENT_REFRESH_STATUS_LABELS.get(value, content_contract_label(value))
+
+
+def _content_metric_fact_label(value: str) -> str:
+    return CONTENT_METRIC_FACT_LABELS.get(value, content_contract_label(value))
 
 
 def _content_decision_queue(

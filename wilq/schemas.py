@@ -94,6 +94,7 @@ class ConnectorStatus(BaseModel):
     id: str
     label: str
     status: ConnectorStatusValue
+    status_label: str = ""
     configured: bool
     missing_credentials: list[str] = Field(default_factory=list)
     available_credential_sources: list[str] = Field(default_factory=list)
@@ -135,6 +136,7 @@ class ConnectorRefreshRun(BaseModel):
     connector_id: str
     mode: ConnectorRefreshMode
     status: ConnectorRefreshStatus
+    status_label: str = ""
     started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
     evidence_ids: list[str] = Field(default_factory=list)
@@ -150,6 +152,7 @@ class ConnectorRefreshRun(BaseModel):
 
 class MetricFact(BaseModel):
     name: str
+    metric_label: str = ""
     value: float | int | str
     period: str
     source_connector: str
@@ -2695,6 +2698,7 @@ class ContentDiagnosticSection(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
 
@@ -2792,6 +2796,7 @@ class ContentOperatorSummary(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class ContentMarketerDecision(BaseModel):

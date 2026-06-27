@@ -42,6 +42,7 @@ const commandCenterFixture: CommandCenterResponse = {
       metric_facts: [
         {
           name: "issue_count",
+          metric_label: "Zgłoszenia problemów",
           value: 15,
           period: "connector_refresh",
           source_connector: "google_merchant_center",
@@ -99,6 +100,7 @@ const commandCenterFixture: CommandCenterResponse = {
       metric_facts: [
         {
           name: "clicks",
+          metric_label: "Kliknięcia",
           value: 138,
           period: "connector_refresh",
           source_connector: "google_search_console",

@@ -99,6 +99,11 @@ Latest cleanup state:
   content brief mode, WordPress draft operation, WordPress post status, draft
   generation status or publication readiness. Content action payload previews
   now carry those API-owned labels, and the route renders them directly.
+- Content Planner no longer owns local connector status, refresh status,
+  section blocked-claim, section title or metric-name translators. Content
+  diagnostics now return API-owned `status_label`, `metric_label` and
+  `blocked_claim_labels`, and the old content label registry was pruned down to
+  numeric value formatting only.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -164,6 +169,17 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
+- Content Planner diagnostic label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics or content_brief_preview" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ContentDiagnosticSurface.test.ts --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`: `/api/content/diagnostics`
+  returned all required content `*_label` fields and `agent-browser read`
+  confirmed `/content-planner` renders live marketer copy without console
+  errors.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -174,12 +190,13 @@ Next cleanup queue:
 1. Action detail previews:
    - replace `DetailPanels.tsx` payload-shape inference with typed API preview
      rows; keep raw payload only in collapsed technical detail.
-2. Content Planner:
-   - move remaining connector refresh, connector status, section-level
-     blocked-claim and metric labels into content/action API contracts.
+2. Primary route raw fallbacks:
+   - clean remaining GA4, Merchant, Demand Gen, registry/workflow and knowledge
+     route fallbacks that still return raw enum keys or technical values when
+     API labels are missing.
 3. Metric labels:
-   - move repeated metric/dimension naming into API-owned metric label fields;
-     keep pure numeric formatting in UI.
+   - continue moving repeated metric/dimension naming into API-owned metric
+     label fields; keep pure numeric formatting in UI.
 4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
@@ -187,8 +204,8 @@ Next cleanup queue:
 ## Next Best Move
 
 1. Start the next cleanup slice from the active queue. The highest-impact next
-   target is either the Content Planner/contentLabels slice or the larger typed
-   action-detail preview view-model.
+   target is the typed action-detail preview view-model, with route-specific
+   raw fallback cleanup as parallel audit/worker slices.
 
 ## Guardrails
 

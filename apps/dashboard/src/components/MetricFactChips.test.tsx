@@ -10,6 +10,7 @@ describe("MetricFactChips", () => {
         facts={[
           {
             name: "localo_competitor_change_count",
+            metric_label: "Zmiany konkurencji",
             value: 0,
             period: "localo_mcp_read",
             source_connector: "localo",

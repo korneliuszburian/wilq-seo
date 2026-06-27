@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-import {
-  contentContractValueLabel,
-  contentGateStatusLabel,
-  formatContentMetricValue
-} from "../lib/contentLabels";
+import { formatContentMetricValue } from "../lib/contentLabels";
 
 describe("formatContentMetricValue", () => {
   it("keeps content route contract wording sourced from API summaries", () => {
@@ -24,6 +20,11 @@ describe("formatContentMetricValue", () => {
     expect(routeSource).not.toContain("contentWordPressPostStatusLabel");
     expect(routeSource).not.toContain("contentDraftGenerationStatusLabel");
     expect(routeSource).not.toContain("contentPublicationReadinessLabel");
+    expect(routeSource).not.toContain("contentMetricFactLabel");
+    expect(routeSource).not.toContain("contentConnectorStatusLabel");
+    expect(routeSource).not.toContain("contentRefreshStatusLabel");
+    expect(routeSource).not.toContain("contentBlockedClaimLabels");
+    expect(routeSource).not.toContain("contentSectionLabel");
     expect(routeSource).toContain("decision.decision_type_label");
     expect(routeSource).toContain("decision.inventory_gate_status_label");
     expect(routeSource).toContain("candidate.gap_type_label");
@@ -34,6 +35,11 @@ describe("formatContentMetricValue", () => {
     expect(routeSource).toContain("preview.post_status_label");
     expect(routeSource).toContain("preview.draft_generation_status_label");
     expect(routeSource).toContain("preview.publication_readiness_status_label");
+    expect(routeSource).toContain("connector.status_label");
+    expect(routeSource).toContain("refresh.status_label");
+    expect(routeSource).toContain("section.blocked_claim_labels");
+    expect(routeSource).toContain("summary.blocked_claim_labels");
+    expect(routeSource).toContain("fact.metric_label");
   });
 
   it("formats marketer-facing SEO metric values without raw float noise", () => {
@@ -44,27 +50,19 @@ describe("formatContentMetricValue", () => {
     expect(formatContentMetricValue("wordpress_match", true)).toBe("tak");
   });
 
-  it("keeps remaining content domain labels out of route-local copy", () => {
-    expect(contentGateStatusLabel("confirmed_current_inventory")).toBe(
-      "potwierdzone na obecnej stronie"
-    );
-  });
-
-  it("hides internal contract version suffixes from content labels", () => {
-    expect(contentContractValueLabel("content_draft_generation_v1")).toBe("generowanie szkicu");
-    expect(contentContractValueLabel("content_url_preflight_review_v1")).toBe(
-      "potwierdzenie publicznego URL-a"
-    );
-    expect(contentContractValueLabel("wordpress_draft_handoff_v1")).toBe(
-      "zapis szkicu WordPress"
-    );
-    expect(contentContractValueLabel("wordpress_draft_handoff_preview_v1")).toBe(
-      "podgląd szkicu WordPress"
-    );
-  });
-
   it("keeps removed content preview helpers out of the dashboard label registry", () => {
     const labelRegistry = readFileSync("src/lib/contentLabels.ts", "utf8");
+    expect(labelRegistry).not.toContain("contentMetricFactLabel");
+    expect(labelRegistry).not.toContain("contentContractValueLabel");
+    expect(labelRegistry).not.toContain("contentGateStatusLabel");
+    expect(labelRegistry).not.toContain("contentDecisionTypeLabel");
+    expect(labelRegistry).not.toContain("contentAhrefsGapTypeLabel");
+    expect(labelRegistry).not.toContain("contentAhrefsRelevanceLabel");
+    expect(labelRegistry).not.toContain("contentAhrefsReasonLabel");
+    expect(labelRegistry).not.toContain("contentConnectorStatusLabel");
+    expect(labelRegistry).not.toContain("contentRefreshStatusLabel");
+    expect(labelRegistry).not.toContain("contentBlockedClaimLabels");
+    expect(labelRegistry).not.toContain("contentSectionLabel");
     expect(labelRegistry).not.toContain("contentBriefSourceLabel");
     expect(labelRegistry).not.toContain("contentBriefModeLabel");
     expect(labelRegistry).not.toContain("contentDraftOperationLabel");

@@ -110,6 +110,10 @@ Wilku can inspect it without reading technical internals.
   content brief mode, WordPress draft operation, WordPress post status, draft
   generation status or publication readiness. Content action preview payloads
   now carry those labels from the backend.
+- Content Planner no longer owns connector status, refresh status, section
+  blocked-claim, section title or metric-name translators. Content diagnostics
+  now return typed API labels for those fields, and the dashboard renders them
+  directly.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -125,9 +129,9 @@ are resolved or explicitly deferred.
    It no longer owns the old `marketingLabels.ts` translator, but it still
    needs a typed action-detail preview view-model; raw payload may remain only
    in collapsed technical detail.
-3. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own remaining
-   connector refresh/status, section-level blocked-claim and metric labels.
-   These need API/schema ownership.
+3. GA4, Merchant, Demand Gen, registry/workflow and knowledge routes still have
+   scattered raw fallback paths. Fix them by adding typed API/schema/view-model
+   labels; do not add route-local replacement dictionaries.
 4. Repeated metric/dimension naming in dashboard components should become
    API-owned metric labels; pure numeric formatting can stay in UI.
 

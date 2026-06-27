@@ -12981,6 +12981,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     )
 
     assert diagnostics.live_data_available is False
+    assert all(connector.status_label for connector in diagnostics.connectors)
     assert len(diagnostics.decision_queue) == 1
     decision = diagnostics.decision_queue[0]
     assert decision.id == "content_block_vendor_read"
@@ -12998,6 +12999,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert "rekomendacja bez danych źródłowych" in decision.blocked_claims
     assert "odczyt danych" in decision.next_step
     assert diagnostics.operator_summary.top_decision_ids == [decision.id]
+    assert diagnostics.operator_summary.blocked_claim_labels
     assert "blokada do czasu odczytu danych" in (
         diagnostics.operator_summary.decision_type_labels
     )
@@ -13173,6 +13175,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     payload = response.json()
     preflight_payload = preflight_response.json()
     assert payload["language"] == "pl-PL"
+    assert all(connector["status_label"] for connector in payload["connectors"])
+    assert all(refresh["status_label"] for refresh in payload["latest_refreshes"])
     assert payload["live_data_available"] is True
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
@@ -13181,6 +13185,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         section for section in payload["sections"] if section["id"] == "content_query_page_matrix"
     )
     assert query_section["status"] == "ready"
+    assert isinstance(query_section["blocked_claim_labels"], list)
+    assert all(fact["metric_label"] for fact in query_section["metric_facts"])
     assert query_section["tactical_items"]
     assert any(
         item["dimensions"].get("query") == "zielony ład"
@@ -13190,6 +13196,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         section for section in payload["sections"] if section["id"] == "content_inventory_match"
     )
     assert inventory_section["status"] == "ready"
+    assert isinstance(inventory_section["blocked_claim_labels"], list)
+    assert all(fact["metric_label"] for fact in inventory_section["metric_facts"])
     assert any(
         item["dimensions"].get("wordpress_match") == "found"
         for item in inventory_section["tactical_items"]
@@ -13223,6 +13231,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "odświeżenie albo scalenie" in operator_summary["decision_type_labels"]
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claims"]
+    assert "wzrost liczby leadów" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     marketer_decision = payload["marketer_decision"]
@@ -13256,6 +13265,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         if decision["decision_type"] == "refresh_or_merge"
     )
     assert first_decision["decision_type"] == "refresh_or_merge"
+    assert all(fact["metric_label"] for fact in first_decision["metric_facts"])
     assert first_decision["status"] == "ready"
     assert first_decision["priority"] == 23
     assert first_decision["metric_tiles"] == {

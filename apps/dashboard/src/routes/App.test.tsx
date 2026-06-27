@@ -692,6 +692,7 @@ const connectorRefreshRuns = [
     connector_id: "google_ads",
     mode: "status_probe",
     status: "completed",
+    status_label: "zakończony",
     started_at: "2026-06-17T10:00:00Z",
     completed_at: "2026-06-17T10:00:01Z",
     evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
@@ -4098,6 +4099,7 @@ const metricFacts = [
   },
   {
     name: "total_products",
+    metric_label: "Produkty",
     value: 10900,
     period: "connector_refresh",
     source_connector: "google_merchant_center",
@@ -4113,6 +4115,7 @@ const metricFacts = [
   },
   {
     name: "issue_product_count",
+    metric_label: "Produkty z problemami",
     value: 23,
     period: "connector_refresh",
     source_connector: "google_merchant_center",
@@ -4132,6 +4135,7 @@ const metricFacts = [
   },
   {
     name: "active_users",
+    metric_label: "Aktywni użytkownicy",
     value: 20,
     period: "connector_refresh",
     source_connector: "google_analytics_4",
@@ -4152,6 +4156,7 @@ const metricFacts = [
   },
   {
     name: "clicks",
+    metric_label: "Kliknięcia",
     value: 12,
     period: "connector_refresh",
     source_connector: "google_search_console",
@@ -4167,6 +4172,7 @@ const metricFacts = [
   },
   {
     name: "ahrefs_content_gap_count",
+    metric_label: "Luki treści z Ahrefs",
     value: 1,
     period: "connector_refresh",
     source_connector: "ahrefs",
