@@ -3330,6 +3330,8 @@ def _hydrate_operator_labels_recursive(value: Any) -> None:
 def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
     if item.get("status_label") in (None, "") and isinstance(item.get("status"), str):
         item["status_label"] = _operator_state_label(item["status"])
+    if item.get("post_status_label") in (None, "") and isinstance(item.get("post_status"), str):
+        item["post_status_label"] = _wordpress_post_status_label(item["post_status"])
     label_fields = {
         "required_validation": "required_validation_labels",
         "operator_review_gates": "operator_review_gate_labels",
@@ -3339,6 +3341,9 @@ def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
         "missing_requirements": "missing_requirement_labels",
         "required_google_ads_state": "required_google_ads_state_labels",
         "allowed_uses_after_confirmation": "allowed_uses_after_confirmation_labels",
+        "allowed_contracts": "allowed_contract_labels",
+        "target_roas_or_cpa": "target_roas_or_cpa_labels",
+        "blocked_claims": "blocked_claim_labels",
     }
     for source_key, label_key in label_fields.items():
         existing_labels = _string_list(item.get(label_key))
@@ -3361,6 +3366,16 @@ def _operator_state_label(value: str) -> str:
         "blocked_apply": "zapis zmian zablokowany",
     }
     return labels.get(value, "do sprawdzenia")
+
+
+def _wordpress_post_status_label(value: str) -> str:
+    labels = {
+        "draft": "szkic",
+        "pending": "czeka na sprawdzenie",
+        "private": "prywatny",
+        "publish": "opublikowany",
+    }
+    return labels.get(value, "status wpisu do sprawdzenia")
 
 
 def _action_gate_label(value: str) -> str | None:
@@ -3469,6 +3484,7 @@ def _action_gate_label(value: str) -> str | None:
         "demand_gen_transition_constraints": "ograniczenia przejścia na Demand Gen",
         "demand_gen_ad_group_ad_rows": "wiersze grup reklam Demand Gen",
         "demand_gen_creative_asset_rows": "wiersze kreacji i zasobów Demand Gen",
+        "place_inventory": "lista lokalizacji",
         "local_tasks": "lokalne zadania do wykonania",
         "local_rankings": "lokalne pozycje",
         "reviews": "opinie",
@@ -3481,6 +3497,8 @@ def _action_gate_label(value: str) -> str | None:
         "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
         "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot z reklam albo koszt pozyskania celu",
         "record_human_strategy_review_outcome": "zapisz wynik sprawdzenia strategii przez człowieka",
+        "WILQ_ADS_TARGET_ROAS": "docelowy zwrot z reklam",
+        "WILQ_ADS_TARGET_CPA_MICROS": "docelowy koszt pozyskania celu",
         "target_metrics_review": "przegląd wskaźników względem celu",
         "campaign_review_context": "kontekst przeglądu kampanii",
         "budget_review_context": "kontekst przeglądu budżetu",

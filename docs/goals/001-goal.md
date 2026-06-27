@@ -100,6 +100,9 @@ Wilku can inspect it without reading technical internals.
 - Tactical Queue, Brief Workflow, Merchant tactical snippets, Ads Doctor and
   Knowledge panels now consume API/shared-schema labels for the touched
   priority/source/evidence/action/blocker/dimension/status/display label paths.
+- Action detail previews no longer import `marketingLabels.ts`; the old
+  route-local Ads/blocked-claim translator file has been deleted. The touched
+  action preview labels now come from API-owned payload label fields.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -115,8 +118,9 @@ are resolved or explicitly deferred.
    start-here summaries, measurement plans and business-readiness fallback
    composition. Those must move to API/domain view-model fields.
 3. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
-   It needs a typed action-detail preview view-model; raw payload may remain
-   only in collapsed technical detail.
+   It no longer owns the old `marketingLabels.ts` translator, but it still
+   needs a typed action-detail preview view-model; raw payload may remain only
+   in collapsed technical detail.
 4. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
    content/action preview labels, blocked-claim labels and status labels. These
    need API/schema ownership.

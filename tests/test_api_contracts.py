@@ -2122,6 +2122,8 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "ranking_gain_claim" in measurement_plan["blocked_outputs"]
     assert "obietnica wzrostu leadów" in measurement_plan["blocked_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
+    assert draft_preview["post_status_label"] == "szkic"
+    assert draft_preview["draft_payload"]["post_status_label"] == "szkic"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
         "required_validation"
@@ -2921,6 +2923,10 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert action["payload"]["target_env_options"]["target_roas_or_cpa"] == [
         "WILQ_ADS_TARGET_ROAS",
         "WILQ_ADS_TARGET_CPA_MICROS",
+    ]
+    assert action["payload"]["target_env_options"]["target_roas_or_cpa_labels"] == [
+        "docelowy zwrot z reklam",
+        "docelowy koszt pozyskania celu",
     ]
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
@@ -5759,6 +5765,11 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
         "place_inventory",
         "local_rankings",
         "reviews",
+    ]
+    assert localo_preview["allowed_contract_labels"] == [
+        "lista lokalizacji",
+        "lokalne pozycje",
+        "opinie",
     ]
     assert localo_preview["missing_read_contracts"] == [
         "gbp_visibility",

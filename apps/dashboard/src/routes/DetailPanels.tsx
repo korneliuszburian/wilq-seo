@@ -18,8 +18,6 @@ import {
   ActionReviewGatePanel,
   ActionValidationControls
 } from "./ActionObjectPanels";
-import { contentWordPressPostStatusLabel } from "../lib/contentLabels";
-import { adsMissingReadContractLabel, marketerBlockedClaimLabels } from "./marketingLabels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
   const action = useQuery({
@@ -331,7 +329,7 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -367,7 +365,7 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -412,7 +410,7 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -439,7 +437,7 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -498,7 +496,7 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -532,7 +530,7 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -561,7 +559,7 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Ocena: {formatNumber(metricSnapshot.localo_avg_rating)}</div>
         <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
         <div>Odsetek odpowiedzi na opinie: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
-        <PreviewValues label="Dozwolone odczyty" values={readContractValues(item.allowed_contracts)} />
+        <PreviewValues label="Dozwolone odczyty" values={readContractValues(item.allowed_contract_labels)} />
         <PreviewValues
           label="Braki"
           values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
@@ -570,7 +568,7 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -598,7 +596,7 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
           label="Ograniczenia"
           values={operatorRequirementValues(item.draft_constraints, item.draft_constraint_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <PublicationStateLine item={item} />
       </div>
     </article>
@@ -631,7 +629,7 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -665,7 +663,7 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
         />
         <PreviewValues
           label="Opcje celu"
-          values={targetOptionValues(targetEnvOptions.target_roas_or_cpa)}
+          values={targetOptionValues(targetEnvOptions.target_roas_or_cpa_labels)}
         />
         <PreviewValues
           label="Po potwierdzeniu"
@@ -683,7 +681,7 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
           label="Warunki sprawdzenia"
           values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
         />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -767,8 +765,9 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
         <div>Intencja: {stringValue(item.intent, "brak")}</div>
         <div>
           Status wpisu:{" "}
-          {contentWordPressPostStatusLabel(
-            stringValue(item.post_status, stringValue(draftPayload.post_status, ""))
+          {stringValue(
+            item.post_status_label,
+            stringValue(draftPayload.post_status_label, "wymaga etykiety statusu z WILQ")
           )}
         </div>
         <div>Tytuł szkicu: {stringValue(draftPayload.post_title, "brak")}</div>
@@ -903,17 +902,17 @@ function PreviewValues({ label, values }: { label: string; values: string[] }) {
 }
 
 function operatorRequirementValues(value: unknown, labelValue?: unknown) {
-  const labelValues = asStringArray(labelValue);
+  const labelValues = uniqueStringArray(labelValue);
   if (labelValues.length > 0) {
-    return labelValues.filter((item, index, values) => values.indexOf(item) === index);
+    return labelValues;
   }
   return asStringArray(value).filter((item) => !looksLikeTechnicalKey(item));
 }
 
 function missingContractValues(value: unknown, labelValue?: unknown) {
-  const labelValues = asStringArray(labelValue);
+  const labelValues = uniqueStringArray(labelValue);
   if (labelValues.length > 0) {
-    return labelValues.filter((item, index, values) => values.indexOf(item) === index);
+    return labelValues;
   }
   return asStringArray(value).filter((item) => !looksLikeTechnicalKey(item));
 }
@@ -923,26 +922,11 @@ function looksLikeTechnicalKey(value: string) {
 }
 
 function readContractValues(value: unknown) {
-  const labels: Record<string, string> = {
-    local_rankings: "lokalne pozycje",
-    reviews: "opinie",
-    gbp_visibility: "widoczność Google Business Profile",
-    competitor_visibility: "widoczność konkurencji"
-  };
-  return asStringArray(value)
-    .map((item) => {
-      const label = labels[item] ?? adsMissingReadContractLabel(item);
-      return label !== item ? label : "odczyt techniczny";
-    })
-    .filter((item, index, values) => values.indexOf(item) === index);
+  return uniqueStringArray(value);
 }
 
 function targetOptionValues(value: unknown) {
-  const labels: Record<string, string> = {
-    WILQ_ADS_TARGET_ROAS: "docelowy zwrot z reklam",
-    WILQ_ADS_TARGET_CPA_MICROS: "docelowy koszt pozyskania celu"
-  };
-  return asStringArray(value).map((item) => labels[item] ?? "opcja celu do ustawienia");
+  return uniqueStringArray(value);
 }
 
 function technicalDetailCount(value: Record<string, unknown>) {
@@ -975,8 +959,16 @@ function PublicationStateLine({ item }: { item: Record<string, unknown> }) {
   );
 }
 
-function blockedClaimValues(value: unknown) {
-  return marketerBlockedClaimLabels(asStringArray(value));
+function blockedClaimValues(value: unknown, labelValue?: unknown) {
+  const labelValues = uniqueStringArray(labelValue);
+  if (labelValues.length > 0) {
+    return labelValues;
+  }
+  return asStringArray(value).filter((item) => !looksLikeTechnicalKey(item));
+}
+
+function uniqueStringArray(value: unknown) {
+  return asStringArray(value).filter((item, index, values) => values.indexOf(item) === index);
 }
 
 function previewIssueLabel(item: Record<string, unknown>) {

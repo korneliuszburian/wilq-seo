@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionObject } from "../lib/api";
@@ -523,6 +524,7 @@ const localoActionFixture: ActionObject = {
           localo_read_contract_count: 3
         },
         allowed_contracts: ["local_rankings", "place_inventory", "reviews"],
+        allowed_contract_labels: ["lokalne pozycje", "lista lokalizacji", "opinie"],
         missing_read_contracts: ["gbp_visibility", "competitor_visibility", "local_tasks"],
         missing_read_contract_labels: [
           "widoczność Google Business Profile",
@@ -675,7 +677,11 @@ const adsTargetGuardrailActionFixture: ActionObject = {
       target_confirmation_id: null
     },
     target_env_options: {
-      target_roas_or_cpa: ["WILQ_ADS_TARGET_ROAS", "WILQ_ADS_TARGET_CPA_MICROS"]
+      target_roas_or_cpa: ["WILQ_ADS_TARGET_ROAS", "WILQ_ADS_TARGET_CPA_MICROS"],
+      target_roas_or_cpa_labels: [
+        "docelowy zwrot z reklam",
+        "docelowy koszt pozyskania celu"
+      ]
     },
     missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
     missing_read_contract_labels: [
@@ -894,6 +900,7 @@ const contentActionFixture: ActionObject = {
         candidate_id: "content_brief_gsc_bdo",
         operation_type: "prepare_new_content_draft_review",
         post_status: "draft",
+        post_status_label: "szkic",
         topic: "bdo co to",
         content_gate_status_summary: [
           "spis treści: spis potwierdzony na obecnej stronie",
@@ -1331,5 +1338,17 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kontrole treści: spis treści: spis potwierdzony/)).toBeInTheDocument();
     expect(screen.getByText(/Szkic WordPress: status: zablokowany/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
+  });
+
+  it("keeps action detail labels sourced from API payload labels", () => {
+    const source = readFileSync("src/routes/DetailPanels.tsx", "utf8");
+
+    expect(source).not.toContain("from \"./marketingLabels\"");
+    expect(source).not.toContain("adsMissingReadContractLabel");
+    expect(source).not.toContain("marketerBlockedClaimLabels");
+    expect(source).not.toContain("contentWordPressPostStatusLabel");
+    expect(source).toContain("allowed_contract_labels");
+    expect(source).toContain("target_roas_or_cpa_labels");
+    expect(source).toContain("post_status_label");
   });
 });

@@ -89,8 +89,11 @@ Latest cleanup state:
   summary and section label paths now use API/shared-schema label fields.
 - Knowledge panels no longer own route/status/risk/card/source display maps;
   knowledge cards, playbooks and decision bindings now carry API-owned labels.
-- Backend and dashboard tests assert the tactical, Ads and Knowledge label
-  contracts.
+- Action detail previews no longer import the deleted `marketingLabels.ts`.
+  `DetailPanels.tsx` now reads API-owned payload label fields for blocked
+  claims, Localo allowed reads, Ads target options and WordPress post status.
+- Backend and dashboard tests assert the tactical, Ads, Knowledge and action
+  detail label contracts.
 
 Proof:
 
@@ -138,6 +141,11 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx src/routes/App.test.tsx -t "KnowledgePanels|knowledge route maps source knowledge to decisions" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
+- Action detail label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "content_brief_candidate_review_persists_audit_event or google_ads_business_context_allows_empty_preliminary_targets or localo_diagnostics_exposes_partial_visibility_contracts" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -151,7 +159,7 @@ Next cleanup queue:
      summaries and business-readiness fallback composition.
 2. Action detail previews:
    - replace `DetailPanels.tsx` payload-shape inference with typed API preview
-     rows and labels; keep raw payload only in collapsed technical detail.
+     rows; keep raw payload only in collapsed technical detail.
 3. Content Planner:
    - move active `contentLabels.ts` semantics for action preview, status,
      blocked-claim and metric labels into content/action API contracts.
@@ -165,8 +173,8 @@ Next cleanup queue:
 ## Next Best Move
 
 1. Start the next cleanup slice from the active queue. The highest-impact next
-   target is `DetailPanels.tsx`, because it is now the only active consumer of
-   `marketingLabels.ts`.
+   target is either Ads Doctor's remaining route-local product semantics or the
+   larger typed action-detail preview view-model.
 
 ## Guardrails
 

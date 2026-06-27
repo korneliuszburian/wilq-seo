@@ -557,6 +557,11 @@ WILQ is complete for this long-range goal when:
   Unknown technical keys are not converted into generic marketer copy; active
   API sources must provide explicit Polish label arrays. Live API/browser proof
   for Ads target guardrails found no generic fallback labels.
+- 2026-06-27: The last active `marketingLabels.ts` consumer was removed and
+  the file was deleted. Action detail now reads API-owned payload label fields
+  for blocked claims, Localo allowed reads, Ads target options and WordPress
+  post status; route-local Ads/blocked-claim label translation is not allowed
+  to return.
 - 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
   knowledge rules now use Polish operating language. Old active values such as
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
