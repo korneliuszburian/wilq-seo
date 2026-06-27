@@ -14,6 +14,17 @@ describe("formatContentMetricValue", () => {
   it("keeps content route contract wording sourced from API summaries", () => {
     const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
     expect(routeSource).not.toContain("contentContractValueLabel");
+    expect(routeSource).not.toContain("contentDecisionTypeLabel");
+    expect(routeSource).not.toContain("contentGateStatusLabel");
+    expect(routeSource).not.toContain("wordpressMatchLabel");
+    expect(routeSource).not.toContain("wordpressMatchConfidenceLabel");
+    expect(routeSource).not.toContain("contentAhrefsGapTypeLabel");
+    expect(routeSource).not.toContain("contentAhrefsRelevanceLabel");
+    expect(routeSource).not.toContain("contentAhrefsReasonLabel");
+    expect(routeSource).toContain("decision.decision_type_label");
+    expect(routeSource).toContain("decision.inventory_gate_status_label");
+    expect(routeSource).toContain("candidate.gap_type_label");
+    expect(routeSource).toContain("candidate.business_relevance_reason_labels");
   });
 
   it("formats marketer-facing SEO metric values without raw float noise", () => {

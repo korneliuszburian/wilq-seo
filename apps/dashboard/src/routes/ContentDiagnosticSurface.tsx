@@ -15,25 +15,18 @@ import {
 } from "../lib/api";
 import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import {
-  contentAhrefsGapTypeLabel,
-  contentAhrefsReasonLabel,
-  contentAhrefsRelevanceLabel,
   contentBlockedClaimLabels,
   contentBriefModeLabel,
   contentBriefSourceLabel,
   contentConnectorStatusLabel,
-  contentDecisionTypeLabel,
   contentDraftGenerationStatusLabel,
   contentDraftOperationLabel,
-  contentGateStatusLabel,
   contentMetricFactLabel,
   contentPublicationReadinessLabel,
   contentRefreshStatusLabel,
   contentSectionLabel,
   contentWordPressPostStatusLabel,
-  formatContentMetricValue,
-  wordpressMatchConfidenceLabel,
-  wordpressMatchLabel
+  formatContentMetricValue
 } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
@@ -307,8 +300,8 @@ function ContentPreflightPanel({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          <MetricTile label="Tryb" value={item ? contentPreflightModeLabel(item.recommended_mode) : "brak"} />
-          <MetricTile label="Status" value={item ? contentPreflightStatusLabel(item.status) : "brak"} />
+          <MetricTile label="Tryb" value={item ? item.recommended_mode_label : "brak"} />
+          <MetricTile label="Status" value={item ? item.status_label : "brak"} />
           <MetricTile label="Blokady" value={data?.blocker_count ?? 0} />
           <MetricTile label="Plan treści" value={item?.sales_brief_allowed ? "możliwy" : "zablokowany"} />
         </div>
@@ -1150,7 +1143,7 @@ function ContentDecisionCard({
         <div>
           <h3 className="text-sm font-semibold text-ink">{contentDecisionTitle(decision)}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {contentDecisionTypeLabel(decision.decision_type)}
+            {decision.decision_type_label || decision.decision_type}
           </p>
         </div>
         <StatusBadge value={decision.status} />
@@ -1182,12 +1175,12 @@ function ContentDecisionCard({
         ) : null}
         {decision.wordpress_match ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            WordPress: {wordpressMatchLabel(decision.wordpress_match)}
+            WordPress: {decision.wordpress_match_label ?? decision.wordpress_match}
           </span>
         ) : null}
         {decision.wordpress_match_confidence ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Dopasowanie: {wordpressMatchConfidenceLabel(decision.wordpress_match_confidence)}
+            Dopasowanie: {decision.wordpress_match_confidence_label ?? decision.wordpress_match_confidence}
           </span>
         ) : null}
         {canonicalUrl ? (
@@ -1202,17 +1195,17 @@ function ContentDecisionCard({
         ) : null}
         {decision.inventory_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Spis: {contentGateStatusLabel(decision.inventory_gate_status)}
+            Spis: {decision.inventory_gate_status_label ?? decision.inventory_gate_status}
           </span>
         ) : null}
         {decision.canonical_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Kanoniczny: {contentGateStatusLabel(decision.canonical_gate_status)}
+            Kanoniczny: {decision.canonical_gate_status_label ?? decision.canonical_gate_status}
           </span>
         ) : null}
         {decision.duplicate_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Duplikaty: {contentGateStatusLabel(decision.duplicate_gate_status)}
+            Duplikaty: {decision.duplicate_gate_status_label ?? decision.duplicate_gate_status}
           </span>
         ) : null}
       </div>
@@ -1231,24 +1224,24 @@ function ContentDecisionCard({
                   <div>
                     <div className="text-sm font-semibold text-ink">{candidate.topic}</div>
                     <div className="mt-0.5 text-xs text-slate-500">
-                      {contentAhrefsGapTypeLabel(candidate.gap_type)} /{" "}
-                      {contentAhrefsRelevanceLabel(candidate.relevance_status)} / score{" "}
+                      {candidate.gap_type_label || candidate.gap_type} /{" "}
+                      {candidate.relevance_status_label || candidate.relevance_status} / score{" "}
                       {candidate.relevance_score}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 text-xs">
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      GSC: {candidate.gsc_demand === "present" ? "jest" : "brak"}
+                      GSC: {candidate.gsc_demand_label || candidate.gsc_demand}
                     </span>
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      WP: {candidate.wordpress_inventory_match === "present" ? "jest" : "brak"}
+                      WP: {candidate.wordpress_inventory_match_label || candidate.wordpress_inventory_match}
                     </span>
                   </div>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-600">{candidate.next_step}</p>
                 <TraceLine
                   label="Powody"
-                  values={candidate.business_relevance_reasons.map(contentAhrefsReasonLabel)}
+                  values={candidate.business_relevance_reason_labels}
                 />
                 <TraceLine
                   label="Overlap GSC"
@@ -1271,7 +1264,7 @@ function ContentDecisionCard({
         />
         <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectors)} />
         <TraceLine label="Akcje" values={[formatContentActionCount(decision.action_ids.length)]} />
-        <TraceLine label="Nie wolno twierdzić" values={contentBlockedClaimLabels(decision.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>
       {decision.metric_facts.length > 0 ? (
         <ContentMetricTiles facts={decision.metric_facts.slice(0, 4)} />
@@ -1350,20 +1343,6 @@ function formatContentActionCount(count: number) {
     return `${count} akcje`;
   }
   return `${count} akcji`;
-}
-
-function contentPreflightModeLabel(mode: ContentPreflightItem["recommended_mode"]) {
-  if (mode === "preserve") return "zachować";
-  if (mode === "refresh") return "odświeżyć";
-  if (mode === "merge") return "scalić";
-  if (mode === "create") return "utworzyć";
-  return "blokada";
-}
-
-function contentPreflightStatusLabel(status: ContentPreflightItem["status"]) {
-  if (status === "allowed") return "można iść dalej";
-  if (status === "review_required") return "wymaga sprawdzenia";
-  return "zablokowane";
 }
 
 function contentPreflightModeSentence(item: ContentPreflightItem) {

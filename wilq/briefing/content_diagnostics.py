@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlparse
 
+from wilq.actions.content_refresh import content_contract_label
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -126,6 +127,57 @@ AHREFS_OFF_TOPIC_TERMS = (
     "oc",
     "ac",
 )
+CONTENT_WORDPRESS_MATCH_LABELS = {
+    "found": "potwierdzony",
+    "missing": "brak potwierdzenia",
+}
+CONTENT_WORDPRESS_MATCH_CONFIDENCE_LABELS = {
+    "exact_url": "dokładny URL",
+    "host_alias_sitemap": "alias hosta z sitemap",
+    "path_fallback": "dopasowanie ścieżki",
+    "missing": "brak dopasowania",
+}
+CONTENT_PREFLIGHT_MODE_LABELS = {
+    "preserve": "zachować",
+    "refresh": "odświeżyć",
+    "merge": "scalić",
+    "create": "utworzyć",
+    "block": "zablokować",
+}
+CONTENT_PREFLIGHT_STATUS_LABELS = {
+    "allowed": "można przygotować",
+    "review_required": "wymaga sprawdzenia",
+    "blocked": "zablokowane",
+}
+CONTENT_AHREFS_GAP_TYPE_LABELS = {
+    "content_gap": "luka treści",
+    "organic_keyword_gap": "luka fraz",
+    "top_page_gap": "mocna strona konkurencji",
+    "backlink_gap": "luka linków",
+    "competitor_page": "strona konkurencji",
+    "ahrefs_content_gap_count": "luka treści",
+    "ahrefs_organic_keyword_gap_count": "luka fraz",
+    "ahrefs_top_page_gap_count": "mocna strona konkurencji",
+    "ahrefs_competitor_page_count": "strona konkurencji",
+    "ahrefs_referring_domain_gap_count": "luka linków",
+    "ahrefs_backlink_gap_count": "luka linków",
+}
+CONTENT_AHREFS_RELEVANCE_LABELS = {
+    "relevant": "pasuje",
+    "review": "do sprawdzenia",
+    "off_topic": "poza tematem",
+}
+CONTENT_AHREFS_REASON_LABELS = {
+    "ekologus_domain_term": "pasuje do zakresu Ekologus",
+    "relevant_competitor_domain": "istotny konkurent",
+    "gsc_overlap": "pokrywa się z GSC",
+    "wordpress_inventory_overlap": "pokrywa się z WordPress",
+    "content_candidate": "propozycja treści",
+    "backlink_review_only": "sprawdzenie linków",
+    "off_topic_phrase": "fraza poza tematem",
+    "off_topic_competitor_domain": "konkurent poza tematem",
+    "broad_backlink_domain": "szeroki backlink",
+}
 AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS = {
     "cuk.pl",
     "ltesty.pl",
@@ -424,7 +476,9 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
         id=f"preflight_{decision.id}",
         technical_decision_id=decision.id,
         recommended_mode=recommended_mode,
+        recommended_mode_label=_content_preflight_mode_label(recommended_mode),
         status=status,
+        status_label=_content_preflight_status_label(status),
         create_allowed=recommended_mode == "create" and status == "allowed",
         draft_allowed=False,
         wordpress_draft_allowed=False,
@@ -435,10 +489,15 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
         intended_final_url=decision.intended_final_url or source_public_url,
         final_canonical_url=final_canonical_url,
         inventory_gate_status=decision.inventory_gate_status,
+        inventory_gate_status_label=_content_gate_label(decision.inventory_gate_status),
         canonical_gate_status=decision.canonical_gate_status,
+        canonical_gate_status_label=_content_gate_label(decision.canonical_gate_status),
         duplicate_gate_status=decision.duplicate_gate_status,
+        duplicate_gate_status_label=_content_gate_label(decision.duplicate_gate_status),
         claim_gate_status=claim_gate_status,
+        claim_gate_status_label=content_contract_label(claim_gate_status),
         service_mapping_status=service_mapping_status,
+        service_mapping_status_label=content_contract_label(service_mapping_status),
         similar_existing_urls=_content_preflight_similar_urls(decision),
         query_overlap_summary=_content_preflight_query_overlap(decision),
         blocked_claims=_content_marketer_blocked_claims(decision.blocked_claims),
@@ -992,6 +1051,52 @@ def _unique(values: Iterable[object]) -> list[str]:
     return unique_values
 
 
+def _content_gate_label(value: str | None) -> str | None:
+    if not value:
+        return None
+    return content_contract_label(value)
+
+
+def _content_preflight_mode_label(value: str) -> str:
+    return CONTENT_PREFLIGHT_MODE_LABELS.get(value, content_contract_label(value))
+
+
+def _content_preflight_status_label(value: str) -> str:
+    return CONTENT_PREFLIGHT_STATUS_LABELS.get(value, content_contract_label(value))
+
+
+def _content_wordpress_match_label(value: str | None) -> str | None:
+    if not value:
+        return None
+    return CONTENT_WORDPRESS_MATCH_LABELS.get(value, content_contract_label(value))
+
+
+def _content_wordpress_match_confidence_label(value: str | None) -> str | None:
+    if not value:
+        return None
+    return CONTENT_WORDPRESS_MATCH_CONFIDENCE_LABELS.get(value, content_contract_label(value))
+
+
+def _content_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
+    return _content_marketer_blocked_claims(claims)
+
+
+def _content_decision_with_api_labels(decision: ContentDecisionItem) -> ContentDecisionItem:
+    return decision.model_copy(
+        update={
+            "decision_type_label": _content_decision_type_summary_label(decision.decision_type),
+            "wordpress_match_label": _content_wordpress_match_label(decision.wordpress_match),
+            "wordpress_match_confidence_label": _content_wordpress_match_confidence_label(
+                decision.wordpress_match_confidence
+            ),
+            "inventory_gate_status_label": _content_gate_label(decision.inventory_gate_status),
+            "canonical_gate_status_label": _content_gate_label(decision.canonical_gate_status),
+            "duplicate_gate_status_label": _content_gate_label(decision.duplicate_gate_status),
+            "blocked_claim_labels": _content_blocked_claim_labels(decision.blocked_claims),
+        }
+    )
+
+
 def _content_decision_queue(
     items: list[TacticalQueueItem],
     metric_facts: list[MetricFact],
@@ -1004,8 +1109,15 @@ def _content_decision_queue(
         *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
     if decisions:
-        return sorted(decisions, key=_content_decision_sort_key)[:5]
-    return [_content_vendor_read_blocker_decision(latest_refreshes, action_ids)]
+        return [
+            _content_decision_with_api_labels(decision)
+            for decision in sorted(decisions, key=_content_decision_sort_key)[:5]
+        ]
+    return [
+        _content_decision_with_api_labels(
+            _content_vendor_read_blocker_decision(latest_refreshes, action_ids)
+        )
+    ]
 
 
 def _content_vendor_read_blocker_decision(
@@ -1506,11 +1618,18 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         id=f"ahrefs_candidate_{_slug(f'{topic}_{fact.name}_{fact.evidence_id}')}",
         topic=topic,
         gap_type=dimensions.get("gap_type") or fact.name,
+        gap_type_label=_content_ahrefs_gap_type_label(dimensions.get("gap_type") or fact.name),
         relevance_status=score.status,
+        relevance_status_label=_content_ahrefs_relevance_label(score.status),
         relevance_score=score.score,
         business_relevance_reasons=list(score.reasons),
+        business_relevance_reason_labels=[
+            _content_ahrefs_reason_label(reason) for reason in score.reasons
+        ],
         gsc_demand="present" if gsc_overlap else "missing",
+        gsc_demand_label="jest" if gsc_overlap else "brak",
         wordpress_inventory_match="present" if wordpress_overlap else "missing",
+        wordpress_inventory_match_label="jest" if wordpress_overlap else "brak",
         gsc_overlap_terms=list(score.gsc_overlap_terms),
         wordpress_overlap_urls=list(score.wordpress_overlap_urls),
         keyword=dimensions.get("keyword") or None,
@@ -1522,6 +1641,18 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         evidence_ids=[fact.evidence_id],
         next_step=_ahrefs_candidate_next_step(score, topic),
     )
+
+
+def _content_ahrefs_gap_type_label(value: str) -> str:
+    return CONTENT_AHREFS_GAP_TYPE_LABELS.get(value, content_contract_label(value))
+
+
+def _content_ahrefs_relevance_label(value: str) -> str:
+    return CONTENT_AHREFS_RELEVANCE_LABELS.get(value, content_contract_label(value))
+
+
+def _content_ahrefs_reason_label(value: str) -> str:
+    return CONTENT_AHREFS_REASON_LABELS.get(value, content_contract_label(value))
 
 
 def _ahrefs_candidate_topic(fact: MetricFact) -> str:

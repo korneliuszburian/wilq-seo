@@ -25,6 +25,44 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - Content Planner API-label proof
+
+Purpose:
+
+- Verify that active Content Planner decision, gate, WordPress match,
+  preflight and Ahrefs candidate labels come from the WILQ API/domain contract.
+- Prove that `wilq-content-strategist` still receives valid content context
+  after moving route-facing labels out of React helper maps.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "content" --maxfail=1
+rtk pnpm --dir apps/dashboard test -- --runInBand ContentDiagnosticSurface.test.ts
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Browser/API proof:
+
+```txt
+.local-lab/proof/20260627-content-api-labels/
+```
+
+Result:
+
+- Focused API, dashboard, typecheck, language guard, live contract and content
+  skill checks passed.
+- `/content-planner` renders labels such as `odświeżyć`, `wymaga sprawdzenia`,
+  `spis potwierdzony na obecnej stronie` and `odśwież albo scal zamiast pisać
+  od nowa` from API-owned fields.
+- The expanded browser scan found no active hits for raw dev-preview/migration
+  terms or raw content gate values such as `confirmed_current_inventory`,
+  `current_url_confirmed`, `refresh_or_merge_required`, `target_site` or
+  `mapping_review`.
+
 ## 2026-06-27 - Merchant API-label and expanded route proof
 
 Purpose:

@@ -2181,11 +2181,16 @@ class ContentAhrefsCandidateRow(BaseModel):
     id: str
     topic: str
     gap_type: str
+    gap_type_label: str = ""
     relevance_status: Literal["relevant", "review", "off_topic"]
+    relevance_status_label: str = ""
     relevance_score: int
     business_relevance_reasons: list[str] = Field(default_factory=list)
+    business_relevance_reason_labels: list[str] = Field(default_factory=list)
     gsc_demand: Literal["present", "missing"]
+    gsc_demand_label: str = ""
     wordpress_inventory_match: Literal["present", "missing"]
+    wordpress_inventory_match_label: str = ""
     gsc_overlap_terms: list[str] = Field(default_factory=list)
     wordpress_overlap_urls: list[str] = Field(default_factory=list)
     keyword: str | None = None
@@ -2209,6 +2214,7 @@ class ContentDecisionItem(BaseModel):
         "review_ahrefs_gap_records",
     ]
     status: Literal["ready", "blocked"] = "ready"
+    decision_type_label: str = ""
     title: str
     summary: str | None = None
     priority: int = 50
@@ -2223,14 +2229,19 @@ class ContentDecisionItem(BaseModel):
     aggregate_ctr: float | None = None
     best_average_position: float | None = None
     wordpress_match: str | None = None
+    wordpress_match_label: str | None = None
     wordpress_match_confidence: str | None = None
+    wordpress_match_confidence_label: str | None = None
     source_public_url: str | None = None
     preview_url: str | None = None
     intended_final_url: str | None = None
     final_canonical_url: str | None = None
     inventory_gate_status: str | None = None
+    inventory_gate_status_label: str | None = None
     canonical_gate_status: str | None = None
+    canonical_gate_status_label: str | None = None
     duplicate_gate_status: str | None = None
+    duplicate_gate_status_label: str | None = None
     content_gate_summary: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2240,6 +2251,7 @@ class ContentDecisionItem(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     rationale: str
     next_step: str
     risk: ActionRisk = ActionRisk.low
@@ -2285,7 +2297,9 @@ class ContentPreflightItem(BaseModel):
     id: str
     technical_decision_id: str
     recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"]
+    recommended_mode_label: str = ""
     status: Literal["allowed", "review_required", "blocked"]
+    status_label: str = ""
     create_allowed: bool = False
     draft_allowed: bool = False
     wordpress_draft_allowed: bool = False
@@ -2295,10 +2309,15 @@ class ContentPreflightItem(BaseModel):
     intended_final_url: str | None = None
     final_canonical_url: str | None = None
     inventory_gate_status: str | None = None
+    inventory_gate_status_label: str | None = None
     canonical_gate_status: str | None = None
+    canonical_gate_status_label: str | None = None
     duplicate_gate_status: str | None = None
+    duplicate_gate_status_label: str | None = None
     claim_gate_status: str
+    claim_gate_status_label: str = ""
     service_mapping_status: str
+    service_mapping_status_label: str = ""
     similar_existing_urls: list[str] = Field(default_factory=list)
     query_overlap_summary: str
     blocked_claims: list[str] = Field(default_factory=list)

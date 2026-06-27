@@ -218,6 +218,12 @@ Date: 2026-06-27
   `mode=subdomains`, `content_gap`, `organic_keyword_gap`, `top_page_gap`,
   `backlink_gap`, `competitor_page`, `Ahrefs Rank` or `DR`. Proof:
   `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
+- Content Planner decision, preflight and Ahrefs-row labels now come from the
+  WILQ API/domain contract. The route consumes API fields such as
+  `decision_type_label`, gate labels, preflight labels and Ahrefs candidate
+  labels instead of React helper maps for active content decisions. Browser/API
+  proof:
+  `.local-lab/proof/20260627-content-api-labels/`.
 - Dashboard status chips now include text-reader separators, so compact header
   status rows no longer collapse into unreadable strings such as `brakuje
   dostępudane do odświeżenia`. Browser proof across Command Center, Merchant,

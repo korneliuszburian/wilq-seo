@@ -234,6 +234,13 @@ Latest slice:
   action/content API tests, `scripts/marketer_language_guard.py`,
   `scripts/live_contract_smoke.py` and `/actions` browser proof pass. Proof:
   `.local-lab/proof/20260627-legacy-content-audit-cleanup/actions.txt`.
+- Content Planner active decision, preflight and Ahrefs labels now come from
+  WILQ API/domain output. `ContentDiagnosticSurface` no longer carries local
+  helper maps for content decision type, content gates, WordPress match state
+  or Ahrefs candidate labels on the active decision surface. Focused content
+  API tests, dashboard tests, typecheck, language guard, live contract smoke,
+  content skill smoke and browser proof pass. Proof:
+  `.local-lab/proof/20260627-content-api-labels/`.
 
 ### C. Dashboard Condensation
 

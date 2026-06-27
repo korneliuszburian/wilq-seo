@@ -578,6 +578,11 @@ WILQ is complete for this long-range goal when:
   `candidate_inputs` field and social "permissions" wording were removed from
   active context, smoke tests and eval cases. Social source inputs carry
   condensed `context_summary` values instead of raw vendor dimensions.
+- 2026-06-27: Content Planner active decision labels, content gate labels,
+  WordPress match labels, preflight labels and Ahrefs candidate labels now come
+  from WILQ API/domain output. The content route consumes those fields instead
+  of owning React-side label helper maps for active content decisions. Proof is
+  stored under `.local-lab/proof/20260627-content-api-labels/`.
 
 ## Discoveries
 
@@ -612,6 +617,10 @@ WILQ is complete for this long-range goal when:
   primary action cards look clean. Context-pack proof must scan nested
   skill-specific brief and tactical queue surfaces, not only the direct action
   payload.
+- Content decision labels are product semantics, not presentation cleanup.
+  Existing API-owned labels should be consumed directly by the route; active
+  route-local label helpers are debt unless they are only rendering old action
+  payload preview contracts waiting for their own migration slice.
 
 ## Decision Log
 
@@ -634,3 +643,7 @@ WILQ is complete for this long-range goal when:
 - `source_inputs` is the active social draft source-evidence contract. Do not
   restore `candidate_inputs` or publish-permissions wording as compatibility
   aliases.
+- Active Content Planner decision, gate, WordPress match, preflight and Ahrefs
+  candidate labels are API-owned. Do not reintroduce React dictionaries for
+  those labels; migrate remaining action-preview label helpers only through
+  typed API/action source fields.

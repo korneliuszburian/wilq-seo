@@ -1495,8 +1495,15 @@ def test_content_brief_preview_keeps_dev_site_as_optional_preview_only(
     assert not any(key.startswith("mapping_review_") for key in decision)
     assert not any(key.startswith("transition_candidate") for key in decision)
     assert decision["inventory_gate_status"] == "missing_inventory_match"
+    assert decision["inventory_gate_status_label"] == "brak dopasowania w spisie treści"
     assert decision["canonical_gate_status"] == "blocked_until_inventory_review"
+    assert decision["canonical_gate_status_label"] == "zablokowane do sprawdzenia spisu"
     assert decision["duplicate_gate_status"] == "create_blocked_until_duplicate_check"
+    assert decision["duplicate_gate_status_label"] == (
+        "utworzenie zablokowane do kontroli duplikacji"
+    )
+    assert decision["decision_type_label"]
+    assert decision["blocked_claim_labels"]
     assert "adresu kanonicznego" in decision["content_gate_summary"]
     assert "duplik" in decision["content_gate_summary"]
     assert diagnostics["operator_summary"]["current_site_match_count"] == 1
@@ -12646,7 +12653,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert preflight_payload["primary_item"] == preflight_item
     assert preflight_item["recommended_mode"] == "refresh"
+    assert preflight_item["recommended_mode_label"] == "odświeżyć"
     assert preflight_item["status"] == "review_required"
+    assert preflight_item["status_label"] == "wymaga sprawdzenia"
     assert preflight_item["create_allowed"] is False
     assert preflight_item["draft_allowed"] is False
     assert preflight_item["wordpress_draft_allowed"] is False
@@ -12655,8 +12664,17 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert preflight_item["final_canonical_url"] == first_decision["final_canonical_url"]
     assert preflight_item["preview_url"] is None
     assert preflight_item["inventory_gate_status"] == "confirmed_current_inventory"
+    assert preflight_item["inventory_gate_status_label"] == (
+        "spis potwierdzony na obecnej stronie"
+    )
     assert preflight_item["canonical_gate_status"] == "current_url_confirmed"
+    assert preflight_item["canonical_gate_status_label"] == "obecny URL potwierdzony"
     assert preflight_item["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert preflight_item["duplicate_gate_status_label"] == (
+        "odśwież albo scal zamiast pisać od nowa"
+    )
+    assert preflight_item["claim_gate_status_label"]
+    assert preflight_item["service_mapping_status_label"]
     assert preflight_item["similar_existing_urls"] == [
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     ]
