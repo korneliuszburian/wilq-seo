@@ -68,7 +68,7 @@ export function DemandGenDiagnosticSurface() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-              Operator Demand Gen
+              Sprawdzenie Demand Gen
             </div>
             <h2 className="mt-1 text-base font-semibold tracking-normal">
               Co marketer ma wiedzieć przed planem Demand Gen
@@ -129,7 +129,7 @@ export function DemandGenDiagnosticSurface() {
             </div>
             <h3 className="mt-1 text-sm font-semibold text-ink">Podgląd gotowości Demand Gen</h3>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              WILQ pokazuje skondensowany podgląd akcji z API. Nie tworzy kampanii,
+              WILQ pokazuje skondensowany podgląd bezpiecznego następnego kroku. Nie tworzy kampanii,
               nie przenosi budżetu i nie odblokowuje zapisu zmian.
             </p>
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
@@ -169,7 +169,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <MetricTile label="Aktywni" value={row.active_users ?? "brak"} />
                   <MetricTile label="Sesje" value={row.sessions ?? "brak"} />
-                  <MetricTile label="Engagement" value={adsPercent(row.engagement_rate)} />
+                  <MetricTile label="Zaangażowanie" value={adsPercent(row.engagement_rate)} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
@@ -250,7 +250,7 @@ export function DemandGenDiagnosticSurface() {
             values={[formatDemandGenIdCount(data.action_ids.length, "akcja", "akcji")]}
           />
           <TraceLine
-            label="Bramki operatora"
+            label="Warunki sprawdzenia"
             values={data.operator_review_gate_labels}
           />
           <TraceLine

@@ -7775,7 +7775,7 @@ describe("WILQ dashboard", () => {
     expect(ga4MeasurementCopy).not.toMatch(/ev_/);
     expect(ga4MeasurementCopy).not.toMatch(/act_/);
     const ga4OperatorSection = screen
-      .getByText("Operator GA4")
+      .getByText("Przegląd GA4")
       .closest("section");
     expect(ga4OperatorSection).not.toBeNull();
     const ga4OperatorCopy = ga4OperatorSection?.textContent ?? "";

@@ -244,8 +244,8 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     status: "w trakcie porządkowania",
     nextStep: "Przejdź do widoku treści i sprawdź kolejkę zachowania, odświeżenia, scalenia albo blokady.",
     blockers: [
-      "pełny Content Inventory v2 nie jest jeszcze gotowy",
-      "brak finalnego preflightu duplikacji i kanonicznych URL-i"
+      "pełny spis treści nie jest jeszcze gotowy",
+      "brak finalnego sprawdzenia duplikatów i adresów kanonicznych"
     ],
     safeRoute: "/content-planner"
   },
@@ -265,13 +265,13 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
   "/codex-runs": {
     title: "Uruchomienia Codex",
     description:
-      "Miejsce na historię pracy operatora i skill evale. Domyślny widok nie pokazuje surowych promptów ani pełnych danych technicznych.",
-    status: "częściowo dostępne przez proofy i eval ledger",
+      "Miejsce na historię pracy operatora i sprawdzenia jakości odpowiedzi. Domyślny widok nie pokazuje roboczych poleceń ani pełnych danych technicznych.",
+    status: "częściowo dostępne przez zapisane wyniki sprawdzeń",
     nextStep:
-      "Sprawdź `docs/PROGRESS.md` i `docs/evals/skill-eval-ledger.md`, jeśli potrzebujesz dowodu ostatniego przebiegu.",
+      "Sprawdź ostatni zapis postępu, jeśli potrzebujesz potwierdzenia ostatniego przebiegu.",
     blockers: [
-      "brak osobnego widoku historii uruchomień z redakcją surowych promptów",
-      "brak finalnego podziału na proof użytkowy i widok techniczny operatora"
+      "brak osobnego widoku historii uruchomień z oczyszczonymi poleceniami roboczymi",
+      "brak finalnego podziału na potwierdzenie dla marketera i widok techniczny operatora"
     ]
   },
   "/security": {
@@ -280,7 +280,7 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
       "Kontrola zasad bezpieczeństwa WILQ: brak sekretów w UI, brak zapisu zmian bez audytu i brak rekomendacji bez dowodów.",
     status: "zasady aktywne, widok produktowy do dopracowania",
     nextStep:
-      "Do weryfikacji użyj aktualnych testów redakcji, action gates i proofów w `docs/PROGRESS.md`.",
+      "Do weryfikacji użyj aktualnych testów języka, blokad zapisu zmian i zapisanego postępu.",
     blockers: [
       "brak pełnego dashboardu bezpieczeństwa",
       "brak produkcyjnych ról i uprawnień"

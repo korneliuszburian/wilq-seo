@@ -303,7 +303,7 @@ export function CustomSegmentsDiagnosticSurface() {
         <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-              Operator segmentów
+              Segmenty do sprawdzenia
             </div>
             <h2 className="mt-1 text-base font-semibold tracking-normal">
               Co marketer może przygotować teraz
@@ -316,11 +316,11 @@ export function CustomSegmentsDiagnosticSurface() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
             <MetricTile
-              label="Braki kontraktu"
+              label="Brakujące dane"
               value={contract.missing_read_contracts.length}
             />
             <MetricTile
-              label="Bramki oceny"
+              label="Warunki sprawdzenia"
               value={contract.operator_review_gates.length}
             />
           </div>

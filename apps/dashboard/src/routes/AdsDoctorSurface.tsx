@@ -443,7 +443,7 @@ function AdsOperatorSummary({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Operator Ads
+            Przegląd Google Ads
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">{summary.title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">

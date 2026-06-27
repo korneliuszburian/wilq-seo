@@ -4413,40 +4413,22 @@ def _action_audit_summary_for_operator(event: AuditEvent) -> str:
 
 
 def _operator_audit_summary_text(summary: str) -> str:
-    clean_summary = str(summary or "")
-    legacy_ranking_claim = " ".join(("ranking", "guarantee"))
-    legacy_blocked_ranking_claim = f"blocked_claim:{legacy_ranking_claim}"
-    replacements = {
-        "payload_apply_allowed_false": _review_blocker_label("payload_apply_allowed_false"),
-        "wordpress_write_not_requested": _review_blocker_label("wordpress_write_not_requested"),
-        legacy_blocked_ranking_claim: _review_blocker_label(legacy_blocked_ranking_claim),
-        "blocked_claim:gwarancja pozycji": _review_blocker_label(
-            "blocked_claim:gwarancja pozycji"
-        ),
-        legacy_ranking_claim: content_contract_label("ranking_guarantee"),
-        "source_type:gsc_query_page": "źródło: GSC i publiczny URL",
-        "mode:refresh": f"tryb: {content_contract_label('refresh')}",
-    }
-    for raw, label in replacements.items():
-        clean_summary = clean_summary.replace(raw, label)
-    if "candidate:" in clean_summary:
-        clean_summary = _replace_candidate_fragment(clean_summary)
+    clean_summary = str(summary or "").strip()
+    if _contains_raw_audit_contract_text(clean_summary):
+        return "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
     return clean_summary
 
 
-def _replace_candidate_fragment(summary: str) -> str:
-    parts = summary.split("candidate:")
-    clean = parts[0]
-    for part in parts[1:]:
-        suffix = part
-        for delimiter in (",", "."):
-            if delimiter in suffix:
-                suffix = suffix.split(delimiter, 1)[1]
-                clean += f"wybrano pozycję do sprawdzenia{delimiter}{suffix}"
-                break
-        else:
-            clean += "wybrano pozycję do sprawdzenia"
-    return clean
+def _contains_raw_audit_contract_text(summary: str) -> bool:
+    raw_fragments = (
+        "blocked_claim:",
+        "candidate:",
+        "mapping_",
+        "payload_",
+        "source_type:",
+        "target_",
+    )
+    return any(fragment in summary for fragment in raw_fragments)
 
 
 def _legacy_or_current_preview_summary(summary: str) -> str:

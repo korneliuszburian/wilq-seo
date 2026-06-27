@@ -364,7 +364,7 @@ function Ga4OperatorSummary({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Operator GA4
+            Przegląd GA4
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
             {summary.title}

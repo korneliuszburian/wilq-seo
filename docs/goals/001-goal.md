@@ -70,6 +70,10 @@ use the cleaned language.
   payloads remain available only behind the collapsed technical detail panel.
 - Demand Gen diagnostics expose typed API preview cards; the route no longer
   builds its primary preview from raw `payload_preview` shape.
+- Generic status routes, Demand Gen, Merchant, GA4, Ads, Content and custom
+  segment first-screen labels have been tightened to marketer-readable Polish.
+- Legacy raw audit summaries are no longer cleaned by string replacement
+  helpers; raw historical summaries collapse to a neutral audit note.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -80,9 +84,12 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Remove scattered raw fallback paths in registry/workflow and knowledge
+2. Remove active content URL semantics debt: Ahrefs content rows still expose
+   `target_url`, and draft-handoff preview logic still has legacy `target_url`
+   fallback paths. Migrate directly to public URL semantics.
+3. Remove scattered raw fallback paths in registry/workflow and knowledge
    routes by adding typed API/schema/view-model labels.
-3. Continue moving repeated metric, dimension, source, blocker and evidence
+4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
 ## Execution Policy

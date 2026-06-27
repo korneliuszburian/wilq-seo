@@ -20,7 +20,12 @@ from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
-from wilq.actions.service import _social_draft_actions, apply_action, list_actions
+from wilq.actions.service import (
+    _operator_audit_summary_text,
+    _social_draft_actions,
+    apply_action,
+    list_actions,
+)
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
@@ -2433,6 +2438,23 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["evidence_ids"]
     assert "gwarancja pozycji" in draft_preview["blocked_claims"]
     assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+
+
+def test_legacy_raw_audit_summary_is_not_rewritten_with_string_labels() -> None:
+    summary = (
+        "Blokady: payload_apply_allowed_false, wordpress_write_not_requested, "
+        "blocked_claim:ranking guarantee. Sprawdzone: "
+        "candidate:content_brief_gsc_bdo, source_type:gsc_query_page."
+    )
+
+    cleaned = _operator_audit_summary_text(summary)
+
+    assert cleaned == (
+        "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
+    )
+    assert "payload_apply_allowed_false" not in cleaned
+    assert "candidate:" not in cleaned
+    assert "blocked_claim:" not in cleaned
 
 
 def test_daily_context_pack_preserves_action_preview_audit(

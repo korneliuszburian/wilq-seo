@@ -56,7 +56,7 @@ export function MerchantDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok feedu i produktów oparty o dane Merchant w WILQ.
             Pokazuje metryki produktów, kolejkę problemów i bezpieczne akcje
-            bez surowych dumpów produktów i bez obietnic naprawy feedu.
+            bez nieprzetworzonych danych produktów i bez obietnic naprawy feedu.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -445,7 +445,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Operator Merchant
+            Przegląd Merchant
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
             {summary.title}
