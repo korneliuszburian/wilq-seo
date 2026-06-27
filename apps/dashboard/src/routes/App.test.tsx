@@ -620,7 +620,7 @@ const adsDiagnostics = {
       "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
-    blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+    blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     campaign_rows: [
@@ -654,7 +654,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
       }
     ],
     next_step: "Użyj wierszy kampanii do sprawdzenia aktywności."
@@ -764,7 +764,7 @@ const adsDiagnostics = {
       ],
       blocked_claims: [
         "ocena opłacalności",
-        "ocena KPI względem celu",
+        "ocena wskaźników względem celu",
         "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
@@ -940,7 +940,7 @@ const adsDiagnostics = {
             "zmarnowany budżet",
             "opłacalność",
             "ocena kosztu pozyskania celu",
-            "werdykt zwrotu z reklam",
+            "ocena zwrotu z reklam",
             "zapis rekomendacji"
           ],
           safety_review: {
@@ -1036,7 +1036,7 @@ const adsDiagnostics = {
           "zmarnowany budżet",
           "opłacalność",
           "ocena kosztu pozyskania celu",
-          "werdykt zwrotu z reklam",
+          "ocena zwrotu z reklam",
           "zapis rekomendacji"
         ]
       }
@@ -1075,7 +1075,7 @@ const adsDiagnostics = {
           "zmarnowany budżet",
           "opłacalność",
           "ocena kosztu pozyskania celu",
-          "werdykt zwrotu z reklam",
+          "ocena zwrotu z reklam",
           "zapis rekomendacji"
         ],
         safety_review: {
@@ -1550,7 +1550,7 @@ const adsDiagnostics = {
     blocked_claims: [
       "zmarnowany budżet",
       "ocena kosztu pozyskania celu",
-      "werdykt zwrotu z reklam",
+      "ocena zwrotu z reklam",
       "wpływ zmian",
       "obietnica poprawy wyniku",
       "zapis zmian kampanii"
@@ -1704,7 +1704,7 @@ const adsDiagnostics = {
       "marnowanie budżetu na zapytaniach",
       "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
-      "CPA",
+      "koszt pozyskania celu",
       "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
@@ -1758,7 +1758,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
       }
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
@@ -1785,7 +1785,7 @@ const adsDiagnostics = {
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
-    blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
+    blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -1807,7 +1807,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
+        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"]
       }
     ],
     campaign_review_rows: [
@@ -1821,7 +1821,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
+        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"]
       }
     ],
     next_step:
@@ -1856,7 +1856,7 @@ const adsDiagnostics = {
       "marnowanie budżetu na zapytaniach",
       "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
-      "CPA",
+      "koszt pozyskania celu",
       "zwrot z reklam",
       "utrata konwersji"
     ],
@@ -1876,7 +1876,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"]
+        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"]
       }
     ],
     next_step:
@@ -1907,7 +1907,7 @@ const adsDiagnostics = {
       "dodanie wykluczających słów kluczowych",
       "marnowanie budżetu na zapytaniach",
       "utrata konwersji",
-      "CPA",
+      "koszt pozyskania celu",
       "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
@@ -1928,7 +1928,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
       }
     ],
     next_step:
@@ -1954,7 +1954,7 @@ const adsDiagnostics = {
       "dodanie wykluczających słów kluczowych",
       "marnowanie budżetu na zapytaniach",
       "utrata konwersji",
-      "CPA",
+      "koszt pozyskania celu",
       "zwrot z reklam"
     ],
     source_connectors: ["google_ads"],
@@ -2070,7 +2070,7 @@ const adsDiagnostics = {
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
             missing_metrics: [],
-            blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+            blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
           }
         ],
         keyword_planner_ideas: [
@@ -2271,7 +2271,7 @@ const adsDiagnostics = {
         review_priority: "wysokie",
         review_score: 53,
         review_reason:
-          "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie werdykt zmarnowanego budżetu.",
+          "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie ocena zmarnowanego budżetu.",
         human_review_gates: [
           "sprawdź intencję zapytania",
           "porównaj z istniejącymi keywords i match types",
@@ -2346,7 +2346,7 @@ const adsDiagnostics = {
         ],
         safety_status: "read_ready_needs_human_review",
         validation_status: "pending_validation",
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2383,7 +2383,7 @@ const adsDiagnostics = {
       "dodanie wykluczających słów kluczowych",
       "marnowanie budżetu na zapytaniach",
       "utrata konwersji",
-      "CPA",
+      "koszt pozyskania celu",
       "zwrot z reklam"
     ],
     action_ids: ["act_prepare_negative_keyword_review_queue"],
@@ -2456,7 +2456,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
         }
       ],
       derived_kpi_rows: [],
@@ -2479,7 +2479,7 @@ const adsDiagnostics = {
         "ads_scaling_candidates_v1",
         "ads_recommendations_v1"
       ],
-      blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
       risk: "low"
     },
     {
@@ -3021,7 +3021,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3029,7 +3029,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
+      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
       risk: "medium"
     },
     {
@@ -3080,7 +3080,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3096,7 +3096,7 @@ const adsDiagnostics = {
         "ads_search_terms_v1",
         "ads_principles_v1"
       ],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
       risk: "medium"
     },
     {
@@ -3143,7 +3143,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3154,7 +3154,7 @@ const adsDiagnostics = {
           review_priority: "wysokie",
           review_score: 53,
           review_reason:
-            "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie werdykt zmarnowanego budżetu.",
+            "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie ocena zmarnowanego budżetu.",
           human_review_gates: [
             "sprawdź intencję zapytania",
             "porównaj z istniejącymi keywords i match types",
@@ -3212,7 +3212,7 @@ const adsDiagnostics = {
           ],
           safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3243,7 +3243,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
       risk: "medium"
     },
     {
@@ -3294,7 +3294,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       search_term_safety_rows: [],
@@ -3539,7 +3539,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "zmarnowany budżet"],
+      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "zmarnowany budżet"],
       risk: "medium"
     },
     {
@@ -3563,7 +3563,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "zmarnowany budżet"],
+      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "zmarnowany budżet"],
       risk: "medium"
     }
   ],
@@ -5675,7 +5675,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -5692,7 +5692,7 @@ function mockFetch() {
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
                 metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blockery: 1 },
-                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               },
               {
@@ -5848,7 +5848,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -6098,7 +6098,7 @@ function mockFetch() {
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
-              blocked_claims: ["werdykt zwrotu z reklam"],
+              blocked_claims: ["ocena zwrotu z reklam"],
               metric_tiles: { decyzje: 4, blockery: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               risk: "low",
@@ -6375,7 +6375,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeInTheDocument();
     expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Wartość konw.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Wartość konwersji").length).toBeGreaterThan(0);
     expect(screen.getAllByText("450,75").length).toBeGreaterThan(0);
     expect(screen.getAllByText("kliknięcia").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wyświetlenia").length).toBeGreaterThan(0);
@@ -6398,14 +6398,14 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Reguły:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ads_scaling_candidates_v1/)).not.toBeInTheDocument();
     expect(screen.queryByText(/wartość_konwersji=120/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brakujące dane/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Wymagana ocena/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ocena strategii przez człowieka/).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Gotowość oceny strategii Ads" })
     ).toBeInTheDocument();
     expect(screen.getAllByText("brak oceny").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ocena KPI względem celu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ocena wskaźników względem celu/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Source terms:/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);

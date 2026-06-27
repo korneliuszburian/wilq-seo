@@ -27,7 +27,7 @@ CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "zmarnowany budżet",
     "opłacalność",
     "ocena kosztu pozyskania celu",
-    "werdykt zwrotu z reklam",
+    "ocena zwrotu z reklam",
     "zapis rekomendacji",
 ]
 CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION = [

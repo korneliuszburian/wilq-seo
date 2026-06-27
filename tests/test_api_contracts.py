@@ -4489,7 +4489,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "target CPA" not in serialized
     assert "werdykt target CPA" not in serialized
     assert "werdykt target zwrotu z reklam" not in serialized
-    assert "werdykt zwrotu z reklam" not in serialized
+    assert "ocena zwrotu z reklam" not in serialized
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
@@ -8056,7 +8056,7 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                 "zmarnowany budżet",
                 "opłacalność",
                 "ocena kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
+                "ocena zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -8161,12 +8161,12 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert custom_segments_contract["candidates"] == []
     handoff = payload["blocked_handoff"]
     assert handoff["status"] == "blocked"
-    assert handoff["title"] == "Google Ads: finalny handoff blockera OAuth"
+    assert handoff["title"] == "Google Ads: końcowe przekazanie blokady OAuth"
     assert "oauth_error=deleted_client" in handoff["summary"]
     assert "act_configure_google_ads_env" in handoff["action_ids"]
     assert "google_ads" in handoff["source_connectors"]
     assert "zwrot z reklam" in handoff["blocked_claims"]
-    assert any("nie zmyśla Ads metryk" in claim for claim in handoff["allowed_demo_claims"])
+    assert any("nie zmyśla metryk Ads" in claim for claim in handoff["allowed_demo_claims"])
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief_metric_item_ids = {
@@ -8813,7 +8813,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
-            "blocked_claims": ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+            "blocked_claims": [
+                "koszt pozyskania celu",
+                "zwrot z reklam",
+                "marnowanie budżetu na zapytaniach",
+                "zmarnowany budżet",
+            ],
             "target_status": "no_target",
             "target_status_label": "brak celu",
             "review_priority": "wysokie",
@@ -9108,7 +9113,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmarnowany budżet",
                 "opłacalność",
                 "ocena kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
+                "ocena zwrotu z reklam",
                 "zapis rekomendacji",
             ],
             "safety_review": budget_contract["payload_preview"][0]["safety_review"],
@@ -9156,7 +9161,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmarnowany budżet",
                 "opłacalność",
                 "ocena kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
+                "ocena zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -9654,7 +9659,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "metric_facts": search_terms_contract["search_term_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
-                "CPA",
+                "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "zmarnowany budżet",
@@ -9676,7 +9681,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "metric_facts": search_terms_contract["search_term_rows"][1]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
-                "CPA",
+                "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "zmarnowany budżet",
@@ -9708,7 +9713,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": [
                 "marnowanie budżetu na zapytaniach",
                 "dodanie wykluczających słów kluczowych",
-                "CPA",
+                "koszt pozyskania celu",
                 "zwrot z reklam",
             ],
         }
@@ -9832,7 +9837,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "CPA",
+                "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
                 "zmarnowany budżet",
@@ -10008,7 +10013,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "kolejność oceny" in negative_keywords_contract["candidates"][0][
         "review_reason"
     ]
-    assert "nie werdykt zmarnowanego budżetu" in negative_keywords_contract[
+    assert "nie ocena zmarnowanego budżetu" in negative_keywords_contract[
         "candidates"
     ][0]["review_reason"]
     assert negative_keywords_contract["candidates"][0]["human_review_gates"] == [
@@ -16290,7 +16295,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "GSC content doctor" not in serialized
     assert "Localo visibility review" not in serialized
     assert "workflow jako" not in serialized
-    assert "werdykt zwrotu z reklam" not in serialized
+    assert "ocena zwrotu z reklam" not in serialized
     assert "wzrost konwersji" not in serialized
     assert "local ranking uplift" not in serialized
     assert "GBP performance verdict" not in serialized

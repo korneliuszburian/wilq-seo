@@ -96,6 +96,14 @@ Date: 2026-06-27
   `/api/dashboard/command-center` scan found no marketer-payload hits for the
   previous English/technical phrases after the managed stack restart; the
   browser read of `/command-center` matched the cleaned wording.
+- Ads Doctor API/action sources and first-screen route copy now use Polish
+  marketer wording for campaign review, budget review, search-term review,
+  n-grams, negative keyword safety and OAuth handoff. The live
+  `/api/ads/diagnostics` scan after managed stack restart found no active
+  marketer-text hits for `KPI`, `CPA`, `werdykt`, `waste`, `search terms`,
+  `blocker`, `campaign facts` or `evidence IDs`; browser read of
+  `/ads-doctor` shows the condensed first-step Ads decision and Polish
+  missing-data/measurement wording.
 
 ## Latest Proof Pointers
 
@@ -118,6 +126,9 @@ Date: 2026-06-27
   `.local-lab/proof/20260626-command-center-freshness-language-cleanup/browser/command-center-browser-scan.json`.
 - Content strategist context-pack condensation:
   `.local-lab/proof/20260625-context-pack-condensation/api-context/content-context-pack-final.json`.
+- Ads Doctor first-screen/API language cleanup: live API scan and browser read
+  were run directly after `scripts/local_stack.sh restart` in the 2026-06-27
+  cleanup slice; detailed proof was not persisted beyond command output.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

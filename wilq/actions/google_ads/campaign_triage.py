@@ -97,7 +97,7 @@ def campaign_review_reason(
     if missing_metrics:
         return (
             "Kampania ma niepełne metryki kampanii: "
-            f"{', '.join(missing_metrics)}. To jest blocker danych, nie "
+            f"{', '.join(missing_metrics)}. To jest blokada danych, nie "
             "rekomendacja optymalizacyjna."
         )
     signals: list[str] = []
@@ -110,17 +110,17 @@ def campaign_review_reason(
     if conversions is not None and conversions > 0:
         signals.append(f"konwersje={_format_float(conversions)}")
     elif (cost_micros or 0) > 0:
-        signals.append("koszt bez konwersji w bieżącym evidence")
+        signals.append("koszt bez konwersji w bieżących dowodach")
     if advertising_channel_type:
         signals.append(f"typ={advertising_channel_type}")
     if target_status != "no_target" and target_status_label:
         signals.append(f"target={target_status_label}")
     if is_draft_campaign_name(campaign_name):
         signals.append("nazwa wygląda jak draft/NIE URUCHAMIAĆ")
-    signal_text = ", ".join(signals) or "brak aktywności w bieżącym evidence"
+    signal_text = ", ".join(signals) or "brak aktywności w bieżących dowodach"
     return (
         f"Kolejność oceny kampanii wynika z faktów: {signal_text}. "
-        "To nie jest werdykt przepalonego budżetu, CPA ani zwrot z reklam; przed decyzją potrzebna "
+        "To nie jest ocena przepalonego budżetu, kosztu pozyskania celu ani zwrotu z reklam; przed decyzją potrzebna "
         "jest ocena celu, jakości konwersji, budżetu i wyszukiwanych haseł."
     )
 
@@ -173,7 +173,7 @@ def campaign_target_context(
             label = "koszt bez konwersji"
         else:
             status = "insufficient_data"
-            label = "brak CPA do porównania"
+            label = "brak kosztu pozyskania celu do porównania"
     elif target_roas is not None:
         if roas is not None:
             if roas >= target_roas:

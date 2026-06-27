@@ -21,7 +21,7 @@ SEARCH_TERM_NGRAM_BLOCKED_CLAIMS = [
     "marnowanie budżetu na zapytaniach",
     "dodanie wykluczających słów kluczowych",
     "utrata konwersji",
-    "CPA",
+    "koszt pozyskania celu",
     "zwrot z reklam",
 ]
 SEARCH_TERM_NGRAM_STOPWORDS = {
@@ -214,7 +214,7 @@ def _ngram_preview(
         "conversion_value": _sum_metric(facts, "search_term_conversion_value"),
         "operation_type": SEARCH_TERM_NGRAM_OPERATION_TYPE,
         "reason": (
-            "Podgląd powtarzającego się tematu w search terms do sprawdzenia w WILQ. "
+            "Podgląd powtarzającego się tematu w wyszukiwanych hasłach do sprawdzenia w WILQ. "
             "To skraca analizę intencji, ale nie jest gotowym wykluczeniem."
         ),
         "missing_read_contracts": [

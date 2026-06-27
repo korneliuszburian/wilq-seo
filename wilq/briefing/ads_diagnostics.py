@@ -939,10 +939,10 @@ def _operator_summary(
         title="Co marketer ma sprawdzić teraz w Google Ads",
         summary=(
             "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, "
-            "zapytania, KPI i rekomendacje można przeglądać jako ocenę opartą na dowodach, "
+            "zapytania, wskaźniki i rekomendacje można przeglądać jako ocenę opartą na dowodach, "
             "ale zapis zmian, ocena zmarnowanego budżetu, koszt pozyskania celu, zwrot z reklam "
             "i skalowanie budżetu pozostają za "
-            "bramkami sprawdzenia w WILQ oraz brakującymi kontraktami."
+            "sprawdzeniem w WILQ oraz brakującymi danymi."
         ),
         next_step=(
             "Przejrzyj top decyzje w tej kolejności. Nie zapisuj wykluczeń, budżetów "
@@ -1105,7 +1105,7 @@ def _oauth_or_live_section(
             ),
             next_step=(
                 "Użyj wierszy kampanii i zapytań do sprawdzenia. Następnie dodaj "
-                "rekomendacje, historię zmian, safety checks i akcje do sprawdzenia przed "
+                "rekomendacje, historię zmian, kontrole bezpieczeństwa i akcje do sprawdzenia przed "
                 "rekomendacjami zapisu zmian."
             ),
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1123,13 +1123,13 @@ def _oauth_or_live_section(
     reason = _ads_blocker_reason(latest_refresh)
     return AdsDiagnosticSection(
         id="ads_oauth_blocker",
-        title="Google Ads: OAuth blokuje live metryki",
+        title="Google Ads: OAuth blokuje aktualne metryki",
         status="blocked",
         summary=reason,
         diagnosis=(
             "WILQ widzi konfigurację Google Ads, ale ostatni odczyt danych nie "
-            "zebrał danych. Ads Doctor nie może uczciwie pokazać spendu, koszt pozyskania celu, zwrot z reklam, "
-            "search terms ani rekomendacji Google bez poprawnego OAuth."
+            "zebrał danych. Ads Doctor nie może uczciwie pokazać wydatków, kosztu pozyskania celu, zwrotu z reklam, "
+            "wyszukiwanych haseł ani rekomendacji Google bez poprawnego OAuth."
         ),
         next_step=(
             "Użyj akcji `act_configure_google_ads_env`, odśwież token z zakresem "
@@ -1140,11 +1140,11 @@ def _oauth_or_live_section(
         action_ids=action_ids,
         blocked_claims=[
             "zmarnowany koszt",
-            "CPA",
+            "koszt pozyskania celu",
             "zwrot z reklam",
-            "search terms",
+            "wyszukiwane hasła",
             "propozycje wykluczeń",
-            "campaign scaling",
+            "skalowanie kampanii",
         ],
         risk=ActionRisk.medium,
     )
@@ -1168,7 +1168,7 @@ def _campaign_overview_section(
             diagnosis=(
                 "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
                 "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
-                "do diagnozy koszt pozyskania celu, zwrot z reklam, waste na zapytaniach ani wykluczeń."
+                "do diagnozy kosztu pozyskania celu, zwrotu z reklam, strat budżetu na zapytaniach ani wykluczeń."
             ),
             next_step=campaign_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1186,14 +1186,14 @@ def _campaign_overview_section(
         status="blocked",
         summary="Brak metryk kampanii z Google Ads.",
         diagnosis=(
-            "Nie ma live campaign rows, więc dashboard nie pokazuje spendu ani trendów "
-            "kampanii. To jest blocker, nie puste miejsce na estymację."
+            "Nie ma aktualnych wierszy kampanii, więc dashboard nie pokazuje kosztu ani trendów "
+            "kampanii. To jest blokada, nie puste miejsce na estymację."
         ),
         next_step="Napraw OAuth i wykonaj odczyt danych Google Ads.",
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=evidence_ids,
         action_ids=[],
-        blocked_claims=["spend", "clicks", "impressions", "campaign trend"],
+        blocked_claims=["wydatki reklamowe", "kliknięcia", "wyświetlenia", "trend kampanii"],
         risk=ActionRisk.medium,
     )
 
@@ -1203,13 +1203,13 @@ def _derived_kpi_section(
 ) -> AdsDiagnosticSection:
     return AdsDiagnosticSection(
         id="ads_derived_kpi",
-        title="Wyliczone KPI kampanii Google Ads",
+        title="Wyliczone wskaźniki kampanii Google Ads",
         status=derived_kpi_read_contract.status,
         summary=derived_kpi_read_contract.summary,
         diagnosis=(
-            "WILQ może pokazać CTR, CPC, współczynnik konwersji, CPA i zwrot z reklam jako obliczenie "
-            "z bieżących campaign facts. To nie jest jeszcze diagnoza rentowności, "
-            "waste ani zgoda na zmianę budżetu."
+            "WILQ może pokazać współczynnik kliknięć, koszt kliknięcia, współczynnik konwersji, "
+            "koszt pozyskania celu i zwrot z reklam jako obliczenia z bieżących danych kampanii. "
+            "To nie jest jeszcze diagnoza rentowności, ocena zmarnowanego budżetu ani zgoda na zmianę budżetu."
         ),
         next_step=derived_kpi_read_contract.next_step,
         source_connectors=derived_kpi_read_contract.source_connectors,
@@ -1229,7 +1229,7 @@ def _business_context_section(
         status=business_context_read_contract.status,
         summary=business_context_read_contract.summary,
         diagnosis=(
-            "WILQ oddziela wyliczone KPI od decyzji biznesowej. Marża, cel biznesowy, "
+            "WILQ oddziela wyliczone wskaźniki od decyzji biznesowej. Marża, cel biznesowy, "
             "cel budżetu, docelowy zwrot z reklam i docelowy koszt pozyskania celu "
             "są kontraktem operatora, nie danymi z Google Ads."
         ),
@@ -1268,7 +1268,7 @@ def _campaign_read_contract(
         "impression_share",
     ]
     blocked_claims = [
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
         "marnowanie budżetu na zapytaniach",
         "zmarnowany budżet",
@@ -1305,18 +1305,18 @@ def _campaign_read_contract(
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             campaign_rows=rows,
             next_step=(
-                "Użyj wierszy kampanii do sprawdzenia aktywności. Przed wnioskami o waste, "
-                "CPA, zwrotu z reklam albo wykluczenia dodaj brakujące kontrakty odczytu."
+                "Użyj wierszy kampanii do sprawdzenia aktywności. Przed wnioskami o stracie budżetu, "
+                "koszcie pozyskania celu, zwrocie z reklam albo wykluczeniach uzupełnij brakujące dane."
             ),
         )
 
     return AdsCampaignReadContract(
         status="blocked",
         title="Google Ads: brak aktywności kampanii",
-        summary="WILQ nie ma wymiarowych campaign facts z Google Ads.",
+        summary="WILQ nie ma wymiarowych danych kampanii z Google Ads.",
         allowed_metrics=[],
-        missing_read_contracts=["campaign activity", *missing_read_contracts],
-        blocked_claims=["clicks", "impressions", "spend", *blocked_claims],
+        missing_read_contracts=["aktywność kampanii", *missing_read_contracts],
+        blocked_claims=["kliknięcia", "wyświetlenia", "wydatki reklamowe", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         campaign_rows=[],
@@ -1356,8 +1356,8 @@ def _account_currency_read_contract(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
             next_step=(
-                "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj "
-                "rentowności bez marży, celu biznesowego i walidowanego preview."
+                "Pokazuj koszt, koszt kliknięcia i koszt pozyskania celu w walucie konta. Nadal nie oceniaj "
+                "rentowności bez marży, celu biznesowego i sprawdzonego podglądu zmian."
             ),
         )
     return AdsAccountCurrencyReadContract(
@@ -1368,10 +1368,10 @@ def _account_currency_read_contract(
         allowed_metrics=[],
         missing_read_contracts=["account_currency"],
         blocked_claims=[
-            "currency-formatted cost",
+            "koszt w walucie konta",
             "opłacalność",
             "ocena kosztu pozyskania celu",
-            "werdykt zwrotu z reklam",
+            "ocena zwrotu z reklam",
         ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
@@ -1491,21 +1491,21 @@ def _business_context_read_contract(
                 "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
                 "biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania "
                 "celu jest celowo pusty, więc "
-                "KPI względem celu pozostają bez werdyktu i nie odblokowują skalowania "
+                "wskaźniki względem celu pozostają bez oceny i nie odblokowują skalowania "
                 "ani zapisu zmian."
             )
             next_step = (
                 "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
                 "operator potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu "
                 "przez sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu "
-                "werdykt celu zostaje "
+                "ocena celu zostaje "
                 "zablokowany."
             )
         else:
             summary = (
                 "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
                 "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. To pozwala "
-                "interpretować KPI ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
+                "interpretować wskaźniki ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
             )
             next_step = (
                 "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
@@ -1514,10 +1514,10 @@ def _business_context_read_contract(
             )
     else:
         summary = (
-            "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego "
+            "WILQ ma aktualne metryki Google Ads, ale nie ma kompletnego lokalnego "
             "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
-            "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego KPI są "
-            "tylko wstępnym przeglądem, nie werdyktem."
+            "docelowego zwrotu z reklam lub kosztu pozyskania celu. Bez tego wskaźniki są "
+            "tylko wstępnym przeglądem, nie oceną."
         )
         next_step = (
             "Uzupełnij nie-sekretne wartości w repo-local .env: "
@@ -1610,7 +1610,7 @@ def _strategy_review_readiness_contract(
     ]
     blocked_claims = [
         "ocena opłacalności",
-        "ocena KPI względem celu",
+        "ocena wskaźników względem celu",
         "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
@@ -1639,7 +1639,7 @@ def _strategy_review_readiness_contract(
     else:
         summary = (
             "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może "
-            "tylko przygotować kolejki do oceny. Werdykt celu, werdykt "
+            "tylko przygotować kolejki do oceny. Ocena celu, ocena "
             "opłacalności, skalowanie i zapis zmian pozostają zablokowane."
         )
         next_step = (
@@ -1712,7 +1712,7 @@ def _business_target_interpretation(
         return AdsBusinessTargetInterpretation(
             status="blocked",
             summary=(
-                "WILQ nie interpretuje KPI biznesowo, dopóki brakuje marży, celu "
+                "WILQ nie interpretuje wskaźników biznesowo, dopóki brakuje marży, celu "
                 "biznesowego albo celu budżetu."
             ),
             allowed_uses=[],
@@ -1749,7 +1749,7 @@ def _business_target_interpretation(
     if target_missing:
         summary = (
             "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
-            "oceny, ale blokuje werdykt KPI względem celu, ocenę rentowności i zapis zmian "
+            "oceny, ale blokuje ocenę wskaźników względem celu, ocenę rentowności i zapis zmian "
             "do czasu potwierdzenia docelowego zwrotu z reklam albo kosztu pozyskania celu."
         )
         blocked_uses = [
@@ -1763,7 +1763,7 @@ def _business_target_interpretation(
     elif not strategy_review_approved:
         summary = (
             "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu, "
-            "ale blokuje werdykt KPI względem celu i zapis zmian, dopóki ocena strategii "
+            "ale blokuje ocenę wskaźników względem celu i zapis zmian, dopóki ocena strategii "
             "przez człowieka nie będzie zatwierdzona."
         )
         blocked_uses = [
@@ -1781,7 +1781,7 @@ def _business_target_interpretation(
     else:
         summary = (
             "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
-            "i może porównywać KPI do celu po zatwierdzeniu przez człowieka. Zapis zmian nadal wymaga "
+            "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. Zapis zmian nadal wymaga "
             "akcji sprawdzonej w WILQ, podglądu, potwierdzenia i audytu."
         )
         blocked_uses = [
@@ -2018,7 +2018,12 @@ def _campaign_metric_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=missing_metrics,
-        blocked_claims=["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+        blocked_claims=[
+            "koszt pozyskania celu",
+            "zwrot z reklam",
+            "marnowanie budżetu na zapytaniach",
+            "zmarnowany budżet",
+        ],
         target_status=target_context["target_status"],
         target_status_label=target_context["target_status_label"],
         review_priority=campaign_review_priority(review_score),
@@ -2057,7 +2062,7 @@ def _derived_kpi_read_contract(
         "skalowanie budżetu",
         "zmarnowany budżet",
         "zapis rekomendacji",
-        "incrementality",
+            "wpływ samej zmiany",
     ]
     kpi_rows = [
         _derived_kpi_row(row, business_context_read_contract)
@@ -2099,10 +2104,10 @@ def _derived_kpi_read_contract(
             allowed_metrics.extend(["target_cpa_micros", "cpa_vs_target_micros", "target_status"])
         return AdsDerivedKpiReadContract(
             status="ready",
-            title="Google Ads: wyliczone KPI kampanii",
+            title="Google Ads: wyliczone wskaźniki kampanii",
             summary=(
                 f"WILQ może policzyć wskaźniki dla {len(kpi_rows)} kampanii: "
-                f"CPA dostępne dla {rows_with_cpa}, zwrot z reklam dostępny dla {rows_with_roas}. "
+                f"koszt pozyskania celu dostępny dla {rows_with_cpa}, zwrot z reklam dostępny dla {rows_with_roas}. "
                 "To są obliczenia z bieżących danych źródłowych, nie ocena opłacalności."
                 f"{target_summary}"
             ),
@@ -2115,18 +2120,24 @@ def _derived_kpi_read_contract(
             ),
             kpi_rows=kpi_rows,
             next_step=(
-                "Użyj KPI i ewentualnego porównania z celem do ustalenia kolejności oceny kampanii. "
+                "Użyj wskaźników i ewentualnego porównania z celem do ustalenia kolejności oceny kampanii. "
                 "Przed decyzją budżetową sprawdź marżę, pacing budżetu, historię "
                 "zmian i rekomendacje."
             ),
         )
     return AdsDerivedKpiReadContract(
         status="blocked",
-        title="Google Ads: brak wyliczalnych KPI kampanii",
-        summary="WILQ nie ma kompletnych campaign facts do wyliczenia KPI.",
+        title="Google Ads: brak wyliczalnych wskaźników kampanii",
+        summary="WILQ nie ma kompletnych danych kampanii do wyliczenia wskaźników.",
         allowed_metrics=[],
-        missing_read_contracts=["campaign activity", *missing_read_contracts],
-        blocked_claims=["CTR", "CPC", "CPA", "zwrot z reklam", *blocked_claims],
+        missing_read_contracts=["aktywność kampanii", *missing_read_contracts],
+        blocked_claims=[
+            "współczynnik kliknięć",
+            "koszt kliknięcia",
+            "koszt pozyskania celu",
+            "zwrot z reklam",
+            *blocked_claims,
+        ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=campaign_read_contract.evidence_ids,
         kpi_rows=[],
@@ -2204,7 +2215,7 @@ def _target_triage(
             return "outside_target", "koszt pozyskania celu powyżej celu", 20
         if (row.cost_micros or 0) > 0 and not row.conversions:
             return "spend_without_conversions", "koszt bez konwersji", 15
-        return "insufficient_data", "brak CPA do porównania", 70
+        return "insufficient_data", "brak kosztu pozyskania celu do porównania", 70
 
     if target_roas is not None:
         if roas is not None:
@@ -2363,8 +2374,8 @@ def _campaign_triage_read_contract(
             status="ready",
             title="Kolejność oceny kampanii Ads",
             summary=(
-                f"WILQ połączył aktywność kampanii, KPI, budżet, rekomendacje i "
-                f"impression share dla {len(rows)} kampanii. Pilne={urgent_rows}, "
+                f"WILQ połączył aktywność kampanii, wskaźniki, budżet, rekomendacje i "
+                f"udział w wyświetleniach dla {len(rows)} kampanii. Pilne={urgent_rows}, "
                 f"wysokie={high_rows}. To nie jest ocena zmarnowanego budżetu, "
                 "opłacalności, kosztu pozyskania celu ani zwrotu z reklam; to kolejność ręcznej oceny."
             ),
@@ -2458,15 +2469,15 @@ def _campaign_triage_row(
         review_priority=campaign_row.review_priority,
         review_score=campaign_row.review_score,
         review_reason=(
-            f"{campaign_row.review_reason} Dodatkowy kontekst review: "
-            f"KPI={'tak' if kpi_row is not None else 'brak'}, "
+            f"{campaign_row.review_reason} Dodatkowy kontekst oceny: "
+            f"wskaźniki={'tak' if kpi_row is not None else 'brak'}, "
             f"budżet={'tak' if budget_row is not None else 'brak'}, "
             f"rekomendacje={len(recommendation_rows)}, "
-            f"impression_share={'tak' if impression_share_row is not None else 'brak'}."
+            f"udział_w_wyświetleniach={'tak' if impression_share_row is not None else 'brak'}."
         ),
         next_step=(
             "Otwórz kampanię w Ads Doctor, sprawdź cel, konwersje, budżet, "
-            "search terms i rekomendacje. Nie zapisuj zmian bez akcji sprawdzonej w WILQ "
+            "wyszukiwane hasła i rekomendacje. Nie zapisuj zmian bez akcji sprawdzonej w WILQ "
             "i potwierdzenia człowieka."
         ),
         target_status=campaign_row.target_status,
@@ -2834,7 +2845,7 @@ def _optimizer_readiness_contract(
             for claim in [
                 *item.blocked_claims,
                 "ocena kosztu pozyskania celu",
-                "werdykt zwrotu z reklam",
+                "ocena zwrotu z reklam",
                 "opłacalność",
             ]
         ),
@@ -2846,7 +2857,7 @@ def _optimizer_readiness_contract(
         next_step=(
             "Pracuj od obszarów ready, ale każdy wniosek o zmianie budżetu, "
             "rekomendacji, wykluczeń, segmentów albo wpływie zmian traktuj jako "
-            "blocked, dopóki odpowiedni kontrakt odczytu, zapisu zmian i audytu nie będzie gotowy."
+            "zablokowany, dopóki odpowiedni odczyt, zapis zmian i audyt nie będą gotowe."
         ),
     )
 
@@ -3180,7 +3191,7 @@ def _search_terms_read_contract(
         "marnowanie budżetu na zapytaniach",
         "propozycje wykluczeń",
         "dodanie wykluczających słów kluczowych",
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
         "utrata konwersji",
     ]
@@ -3219,8 +3230,8 @@ def _search_terms_read_contract(
             search_term_rows=rows,
             next_step=(
                 "Użyj wierszy zapytań jako przeglądu danych z reklam. Nie twórz "
-                "wykluczeń ani obietnic o marnowaniu budżetu bez kontekstu dopasowania, 90-dniowego "
-                "checku i sprawdzonej akcji."
+                "wykluczeń ani obietnic o marnowaniu budżetu bez kontekstu dopasowania, 90-dniowej "
+                "kontroli i sprawdzonej akcji."
             ),
         )
 
@@ -3230,7 +3241,7 @@ def _search_terms_read_contract(
         summary="WILQ nie ma jeszcze wymiarowych faktów z `search_term_view`.",
         allowed_metrics=[],
         missing_read_contracts=["search_term_view", *missing_read_contracts],
-        blocked_claims=["search terms", *blocked_claims],
+        blocked_claims=["wyszukiwane hasła", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         search_term_rows=[],
@@ -3250,7 +3261,7 @@ def _search_term_review_summary_contract(
     blocked_claims = [
         "marnowanie budżetu na zapytaniach",
         "dodanie wykluczających słów kluczowych",
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
     ]
     if not rows:
@@ -3264,7 +3275,7 @@ def _search_term_review_summary_contract(
             allowed_metrics=[],
             missing_read_contracts=["search_term_view"],
             operator_review_gates=[],
-            blocked_claims=["search terms", *blocked_claims],
+            blocked_claims=["wyszukiwane hasła", *blocked_claims],
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             top_cost_search_terms=[],
@@ -3308,7 +3319,7 @@ def _search_term_review_summary_contract(
         campaign_review_rows=campaign_review_rows,
         next_step=(
             "Najpierw przejrzyj kampanie i zapytania z największym kosztem. "
-            "Nie nazywaj ich waste i nie twórz wykluczeń bez oceny intencji, "
+            "Nie nazywaj ich stratą budżetu i nie twórz wykluczeń bez oceny intencji, "
             "kontroli 90 dni, podglądu zmian i sprawdzenia w WILQ."
         ),
     )
@@ -3330,7 +3341,7 @@ def _search_term_review_row(row: AdsSearchTermMetricRow) -> AdsSearchTermReviewR
         blocked_claims=[
             "marnowanie budżetu na zapytaniach",
             "dodanie wykluczających słów kluczowych",
-            "CPA",
+            "koszt pozyskania celu",
             "zwrot z reklam",
         ],
     )
@@ -3368,7 +3379,7 @@ def _search_term_campaign_review_rows(
                 blocked_claims=[
                     "marnowanie budżetu na zapytaniach",
                     "dodanie wykluczających słów kluczowych",
-                    "CPA",
+                    "koszt pozyskania celu",
                     "zwrot z reklam",
                 ],
             )
@@ -3442,7 +3453,12 @@ def _search_term_metric_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
+        blocked_claims=[
+            "koszt pozyskania celu",
+            "zwrot z reklam",
+            "dodanie wykluczających słów kluczowych",
+            "zmarnowany budżet",
+        ],
     )
 
 
@@ -3460,7 +3476,7 @@ def _search_term_ngram_read_contract(
         "marnowanie budżetu na zapytaniach",
         "propozycje wykluczeń",
         "dodanie wykluczających słów kluczowych",
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
         "utrata konwersji",
     ]
@@ -3515,7 +3531,7 @@ def _search_term_ngram_read_contract(
         allowed_metrics=[],
         missing_read_contracts=["search_term_view"],
         operator_review_gates=[],
-        blocked_claims=["search terms", *blocked_claims],
+        blocked_claims=["wyszukiwane hasła", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         ngram_rows=[],
@@ -3579,7 +3595,7 @@ def _search_term_ngram_row(
         metric_facts=metric_facts[:12],
         missing_metrics=missing_metrics,
         blocked_claims=[
-            "CPA",
+            "koszt pozyskania celu",
             "zwrot z reklam",
             "dodanie wykluczających słów kluczowych",
             "marnowanie budżetu na zapytaniach",
@@ -3625,7 +3641,7 @@ def _search_term_safety_read_contract(
         "dodanie wykluczających słów kluczowych",
         "marnowanie budżetu na zapytaniach",
         "utrata konwersji",
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
     ]
     if rows or read_attempted:
@@ -3765,7 +3781,12 @@ def _search_term_safety_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
+        blocked_claims=[
+            "koszt pozyskania celu",
+            "zwrot z reklam",
+            "dodanie wykluczających słów kluczowych",
+            "zmarnowany budżet",
+        ],
     )
 
 
@@ -3798,16 +3819,16 @@ def _keyword_match_context_read_contract(
         "dodanie wykluczających słów kluczowych",
         "marnowanie budżetu na zapytaniach",
         "utrata konwersji",
-        "CPA",
+        "koszt pozyskania celu",
         "zwrot z reklam",
     ]
     if rows or read_attempted:
         match_types = _unique(row.match_type for row in rows if row.match_type)
         return AdsKeywordMatchContextReadContract(
             status="ready",
-            title="Google Ads: kontekst dopasowań keywords",
+        title="Google Ads: kontekst dopasowań słów kluczowych",
             summary=(
-                f"WILQ ma kontekst {len(rows)} istniejących keywordów "
+                f"WILQ ma kontekst {len(rows)} istniejących słów kluczowych "
                 f"z typami dopasowań: {', '.join(match_types) if match_types else 'brak wierszy'}."
             ),
             allowed_metrics=[
@@ -3836,7 +3857,7 @@ def _keyword_match_context_read_contract(
 
     return AdsKeywordMatchContextReadContract(
         status="blocked",
-        title="Google Ads: brak kontekstu dopasowań keywords",
+        title="Google Ads: brak kontekstu dopasowań słów kluczowych",
         summary="WILQ nie ma jeszcze danych z ad_group_criterion keyword.",
         allowed_metrics=[],
         missing_read_contracts=["keyword_match_context_read"],
@@ -3997,7 +4018,7 @@ def _search_terms_section(
             diagnosis=(
                 "WILQ ma wiersze zapytań z Google Ads. To jeszcze nie "
                 "odblokowuje wykluczeń: brakuje kontekstu dopasowania, 90-dniowego "
-                "safety checku i sprawdzonej akcji."
+                "kontroli bezpieczeństwa i sprawdzonej akcji."
             ),
             next_step=search_terms_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -4014,9 +4035,9 @@ def _search_terms_section(
         status="blocked",
         summary=search_terms_read_contract.summary,
         diagnosis=(
-            "BDOS-klasa wymaga search terms, kosztu, konwersji i 90-dniowego checku "
-            "ochronnego przed wykluczeniami. WILQ nie może z tego tworzyć negative "
-            "keyword candidates bez kompletnego evidence."
+            "Twarda ocena wymaga wyszukiwanych haseł, kosztu, konwersji i 90-dniowej kontroli "
+            "ochronnej przed wykluczeniami. WILQ nie może z tego tworzyć propozycji "
+            "wykluczających słów kluczowych bez kompletnych dowodów."
         ),
         next_step=search_terms_read_contract.next_step,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -4043,7 +4064,7 @@ def _search_term_ngram_section(
         diagnosis=(
             "N-gramy kondensują powtarzające się tematy w wyszukiwanych hasłach. "
             "To pomaga szybciej znaleźć obszary do ręcznej oceny, ale nie jest "
-            "werdyktem o waste ani gotową zmianą wykluczeń."
+            "oceną straty budżetu ani gotową zmianą wykluczeń."
         ),
         next_step=search_term_ngram_read_contract.next_step,
         source_connectors=search_term_ngram_read_contract.source_connectors,
@@ -4175,7 +4196,7 @@ def _keyword_planner_read_contract(
         return AdsKeywordPlannerReadContract(
             status="blocked",
             title="Keyword Planner: enrichment zablokowany",
-            summary=f"Keyword Planner read został podjęty, ale nie zwrócił idei ({blocker}).",
+            summary=f"Odczyt Keyword Plannera został podjęty, ale nie zwrócił pomysłów ({blocker}).",
             missing_read_contracts=["keyword_planner_enrichment"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -4337,8 +4358,8 @@ def _custom_segments_read_contract(
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
             action_ids=[],
             next_step=(
-                "Najpierw zbierz fakty Google Ads z `search_term_view`. Nie wymyślaj "
-                "haseł odbiorców bez haseł źródłowych i evidence IDs."
+                "Najpierw zbierz fakty Google Ads o wyszukiwanych hasłach. Nie wymyślaj "
+                "haseł odbiorców bez haseł źródłowych i identyfikatorów dowodów."
             ),
         )
 
@@ -4782,7 +4803,7 @@ def _custom_segments_section(
             "WILQ może przygotować akcji do sprawdzenia segmentów tylko z realnych "
             "haseł źródłowych. Wzbogacenie Keyword Planner jest dodatkowym kontekstem, "
             "ale rozmiar odbiorców i skuteczność pozostają zablokowane bez osobnych "
-            "kontraktów."
+            "danych."
         ),
         next_step=custom_segments_read_contract.next_step,
         source_connectors=custom_segments_read_contract.source_connectors,
@@ -5073,9 +5094,9 @@ def _negative_keyword_review_reason(
         else "brak kontekstu dopasowań słów kluczowych dla tej grupy"
     )
     return (
-        f"Bieżący read: kliknięcia={row.clicks or 0}, koszt={current_cost or '0'}, "
+        f"Bieżący odczyt: kliknięcia={row.clicks or 0}, koszt={current_cost or '0'}, "
         f"konwersje={current_conversions}; {safety_part}; {context_part}. "
-        "To jest kolejność oceny, nie werdykt zmarnowanego budżetu."
+        "To jest kolejność oceny, nie ocena zmarnowanego budżetu."
     )
 
 
@@ -5286,7 +5307,7 @@ def _ads_decision_queue(
                 ),
                 next_step=(
                     "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów. "
-                    "Nie podejmuj decyzji budżetowych bez brakujących kontraktów odczytu."
+                    "Nie podejmuj decyzji budżetowych bez brakujących danych."
                 ),
                 allowed_metrics=campaign_read_contract.allowed_metrics,
                 missing_read_contracts=_remove_available_contracts(
@@ -5320,10 +5341,10 @@ def _ads_decision_queue(
                 title="Ustal kolejność oceny kampanii Ads",
                 summary=campaign_triage_read_contract.summary,
                 rationale=(
-                    "Ta kolejka łączy kampanie, KPI, pacing budżetu, rekomendacje "
-                    "i impression share w jeden widok decyzyjny. WILQ pokazuje, "
-                    "co sprawdzić najpierw, ale nadal blokuje werdykt waste/"
-                    "opłacalność, zapis zmian budżetu i zapis rekomendacji."
+                    "Ta kolejka łączy kampanie, wskaźniki, tempo wydawania budżetu, rekomendacje "
+                    "i udział w wyświetleniach w jeden widok decyzyjny. WILQ pokazuje, "
+                    "co sprawdzić najpierw, ale nadal blokuje ocenę strat budżetu, "
+                    "opłacalności, zapis zmian budżetu i zapis rekomendacji."
                 ),
                 next_step=campaign_triage_read_contract.next_step,
                 allowed_metrics=campaign_triage_read_contract.allowed_metrics,
@@ -5348,22 +5369,22 @@ def _ads_decision_queue(
             decision_type="review_business_context",
             status=business_context_read_contract.status,
             title=(
-                "Użyj kontekstu biznesowego w review Ads"
+                "Użyj kontekstu biznesowego w ocenie Ads"
                 if business_context_read_contract.status == "ready"
                 else "Uzupełnij kontekst biznesowy przed decyzjami Ads"
             ),
             summary=business_context_read_contract.summary,
             rationale=(
-                "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI. "
-                "WILQ używa lokalnego typed contractu z marżą, celem biznesowym, "
+                "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników. "
+                "WILQ używa lokalnego kontraktu z marżą, celem biznesowym, "
                 "celem budżetu oraz docelowym zwrotem z reklam albo kosztem pozyskania celu jako kontekstu oceny, ale "
-                "nadal blokuje zapis zmian i twarde werdykty bez pełnych kontraktów "
-                "pacingu, historii zmian, rekomendacji i audytu."
+                "nadal blokuje zapis zmian i twarde oceny bez pełnych danych "
+                "tempa wydawania budżetu, historii zmian, rekomendacji i audytu."
                 if business_context_read_contract.status == "ready"
                 else (
-                    "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI, ale "
+                    "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników, ale "
                     "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
-                    "WILQ musi mieć ten kontekst jako typed contract, zanim nazwie coś "
+                    "WILQ musi mieć ten kontekst jako zatwierdzony kontrakt, zanim nazwie coś "
                     "rentowne, nierentowne albo gotowe do skalowania."
                 )
             ),
@@ -5387,12 +5408,12 @@ def _ads_decision_queue(
                 id="ads_review_derived_kpis",
                 decision_type="review_derived_kpi",
                 status="ready",
-                title="Sprawdź wyliczone KPI kampanii bez decyzji budżetowych",
+                title="Sprawdź wyliczone wskaźniki kampanii bez decyzji budżetowych",
                 summary=derived_kpi_read_contract.summary,
                 rationale=(
-                    "CPA i zwrot z reklam są tu wartościami obliczonymi z kosztu, konwersji "
-                    "i wartości konwersji w bieżącym Google Ads evidence. WILQ nadal "
-                    "blokuje wniosek o rentowności, waste, skalowaniu budżetu i zapisie zmian."
+                    "Koszt pozyskania celu i zwrot z reklam są tu wartościami obliczonymi z kosztu, konwersji "
+                    "i wartości konwersji w bieżących dowodach Google Ads. WILQ nadal "
+                    "blokuje wniosek o rentowności, stracie budżetu, skalowaniu budżetu i zapisie zmian."
                 ),
                 next_step=derived_kpi_read_contract.next_step,
                 allowed_metrics=derived_kpi_read_contract.allowed_metrics,
@@ -5574,7 +5595,7 @@ def _ads_decision_queue(
                 ),
                 next_step=(
                     "Przejrzyj zapytania z najwyższym kosztem. Jeśli chcesz wykluczenia, "
-                    "najpierw dodaj kontekst dopasowania, 90-dniowy safety check i "
+                    "najpierw dodaj kontekst dopasowania, 90-dniową kontrolę bezpieczeństwa i "
                     "akcję tylko do przygotowania."
                 ),
                 allowed_metrics=search_terms_read_contract.allowed_metrics,
@@ -5605,9 +5626,9 @@ def _ads_decision_queue(
                 title="Sprawdź powtarzające się tematy w zapytaniach",
                 summary=search_term_ngram_read_contract.summary,
                 rationale=(
-                    "N-gramy pokazują, które słowa i frazy powtarzają się w search "
-                    "terms oraz jaki mają koszt, kliknięcia i konwersje w evidence. "
-                    "To skraca review, ale nadal wymaga ręcznego sprawdzenia intencji "
+                    "N-gramy pokazują, które słowa i frazy powtarzają się w wyszukiwanych "
+                    "hasłach oraz jaki mają koszt, kliknięcia i konwersje w dowodach. "
+                    "To skraca ocenę, ale nadal wymaga ręcznego sprawdzenia intencji "
                     "i nie odblokowuje wykluczeń."
                 ),
                 next_step=search_term_ngram_read_contract.next_step,
@@ -5700,7 +5721,7 @@ def _ads_decision_queue(
                 rationale=(
                     "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją "
                     "w bieżących dowodach oraz podgląd zmian do sprawdzenia. To jest "
-                    "sygnał do oceny, nie dowód waste ani zgoda na automatyczne "
+                    "sygnał do oceny, nie dowód straty budżetu ani zgoda na automatyczne "
                     "wykluczenie."
                 ),
                 next_step=negative_keywords_read_contract.next_step,
@@ -5923,23 +5944,23 @@ def _blocked_handoff(
         return None
     return AdsBlockedHandoff(
         status="blocked",
-        title="Google Ads: finalny handoff blockera OAuth",
+        title="Google Ads: końcowe przekazanie blokady OAuth",
         summary=_ads_blocker_reason(latest_refresh),
         marketer_message=(
             "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o "
-            "spendzie, koszt pozyskania celu, zwrot z reklam, search terms i negative keywords. To jest kontrola jakości, "
+            "wydatkach, koszcie pozyskania celu, zwrocie z reklam, wyszukiwanych hasłach i wykluczających słowach kluczowych. To jest kontrola jakości, "
             "nie brak wiedzy."
         ),
         repair_steps=[
-            "Otwórz /ads-doctor i pokaż redacted OAuth blocker.",
+            "Otwórz /ads-doctor i pokaż zanonimizowaną blokadę OAuth.",
             "Zweryfikuj akcję `act_configure_google_ads_env`.",
             "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
             "Uruchom odczyt danych Google Ads.",
-            "Dopiero po świeżym evidence pokazuj spend, koszt pozyskania celu, zwrot z reklam lub search terms.",
+            "Dopiero po świeżych dowodach pokazuj wydatki, koszt pozyskania celu, zwrot z reklam lub wyszukiwane hasła.",
         ],
         allowed_demo_claims=[
-            "Google Ads jest zablokowany przez OAuth/API access.",
-            "WILQ nie zmyśla Ads metryk bez vendor evidence.",
+            "Google Ads jest zablokowany przez dostęp OAuth/API.",
+            "WILQ nie zmyśla metryk Ads bez dowodów z Google Ads.",
             "Naprawa dostępu ma akcję i bramkę sprawdzenia.",
         ],
         blocked_claims=blocked_claims,

@@ -27,7 +27,7 @@ from wilq.storage.metric_store import metric_store
 
 STRICT_BRIEF_INSTRUCTION = (
     "WILQ pokazuje tylko metryki i dowody z danych źródłowych. Brak danych "
-    "oznacza blocker, nie domysł marketingowy."
+    "oznacza blokadę, nie domysł marketingowy."
 )
 
 CONNECTOR_LABELS = {
@@ -159,7 +159,7 @@ def build_marketing_brief(
         MarketingBriefSection(
             id="recommended_focus",
             title="Rekomendowany fokus",
-            description="Priorytety oparte o dostępne metryki albo jawne blockery.",
+            description="Priorytety oparte o dostępne metryki albo jawne blokady.",
             items=recommendation_items,
         ),
     ]
@@ -718,14 +718,14 @@ def _recommendation_items(
         items.append(
             MarketingBriefItem(
                 id="brief_focus_google_ads_blocker",
-                title="Google Ads: najpierw napraw OAuth, potem diagnozuj spend",
+                title="Google Ads: najpierw napraw OAuth, potem diagnozuj wydatki",
                 kind="recommendation",
                 priority=61,
                 source_connectors=["google_ads"],
                 evidence_ids=google_ads_blocker.evidence_ids,
                 summary=(
                     "WILQ nie może uczciwie diagnozować zmarnowanego kosztu bez aktualnych dowodów Ads. "
-                    "Obecny stan musi być pokazany jako blocker, nie rekomendacja."
+                    "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
                 next_step="Użyj akcji `act_configure_google_ads_env` i helperów OAuth.",
                 risk=ActionRisk.medium,
@@ -912,7 +912,7 @@ def _blocker_next_step(connector_id: str, reason: str) -> str:
         )
     if connector_id == "localo":
         return "Dokończ OAuth Localo i dopiero potem pokazuj dane lokalnej widoczności."
-    return "Uzupełnij wskazany blocker albo zostaw tę rekomendację zablokowaną."
+    return "Uzupełnij wskazaną blokadę albo zostaw tę rekomendację zablokowaną."
 
 
 def _localo_access_token_blocked(run: ConnectorRefreshRun) -> bool:

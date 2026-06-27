@@ -10,7 +10,7 @@ NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
     "dodanie wykluczających słów kluczowych",
     "marnowanie budżetu na zapytaniach",
     "utrata konwersji",
-    "CPA",
+    "koszt pozyskania celu",
     "zwrot z reklam",
 ]
 

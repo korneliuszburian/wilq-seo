@@ -142,12 +142,12 @@ def ads_target_confirmation_payload(
             "human_strategy_review",
         ],
         "allowed_uses_after_confirmation": [
-            "target_kpi_review",
+            "target_metrics_review",
             "campaign_review_context",
             "budget_review_context",
         ],
         "blocked_claims": [
-            "ocena KPI względem celu przed potwierdzeniem",
+            "ocena wskaźników względem celu przed potwierdzeniem",
             "ocena opłacalności",
             "skalowanie budżetu",
             "zmiana budżetu",
