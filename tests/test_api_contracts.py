@@ -20,7 +20,7 @@ from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
-from wilq.actions.service import _social_draft_actions, apply_action
+from wilq.actions.service import _social_draft_actions, apply_action, list_actions
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
@@ -1269,6 +1269,31 @@ def test_apply_ready_action_blocks_without_mutation_adapter(
         result.model_dump(mode="json"),
         ensure_ascii=False,
     )
+
+
+def test_action_operator_labels_are_specific(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "action_labels.sqlite3"))
+    leaks: list[tuple[str, str]] = []
+
+    def walk(action_id: str, value: Any, path: str = "") -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                item_path = f"{path}.{key}" if path else str(key)
+                if key.endswith("_labels") and isinstance(item, list):
+                    if "warunek techniczny do sprawdzenia" in item:
+                        leaks.append((action_id, item_path))
+                walk(action_id, item, item_path)
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                walk(action_id, item, f"{path}[{index}]")
+
+    for action in list_actions():
+        walk(action.id, action.model_dump(mode="json"))
+
+    assert leaks == []
 
 
 def test_action_review_records_human_outcome_without_apply(
@@ -3001,6 +3026,33 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             "apply_blocker_labels"
         ]
         assert action["evidence_ids"]
+        for preview_key in (
+            "payload_preview",
+            "budget_payload_preview",
+            "content_brief_preview",
+            "wordpress_draft_payload_preview",
+        ):
+            preview_items = action["payload"].get(preview_key)
+            if isinstance(preview_items, dict):
+                preview_items = [preview_items]
+            if not isinstance(preview_items, list):
+                continue
+            for preview in preview_items:
+                if not isinstance(preview, dict) or not preview.get("required_validation"):
+                    continue
+                assert preview.get("required_validation_labels"), (
+                    action_id,
+                    preview_key,
+                    preview.get("required_validation"),
+                )
+                assert not any(
+                    "_" in label
+                    for label in preview["required_validation_labels"]
+                    if isinstance(label, str)
+                )
+                assert "warunek techniczny do sprawdzenia" not in preview[
+                    "required_validation_labels"
+                ]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
             assert action["domain"] == "social"
             assert action["payload"]["candidate_inputs"]

@@ -328,7 +328,10 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
         <div>
           Grupa reklam: {stringValue(item.ad_group_name, stringValue(item.ad_group_id, "brak"))}
         </div>
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -357,8 +360,14 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Wyświetlenia: {formatNumber(item.impressions)}</div>
         <div>Koszt: {formatMicrosAsPln(item.cost_micros)}</div>
         <div>Konwersje: {formatNumber(item.conversions)}</div>
-        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Braki"
+          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
+        />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -393,8 +402,17 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
             : "brak"}
         </div>
         <div>Bezpieczeństwo: {actionStateLabel(stringValue(safetyReview.status, "brak"))}</div>
-        <PreviewValues label="Braki" values={missingContractValues(safetyReview.missing_requirements)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Braki"
+          values={missingContractValues(
+            safetyReview.missing_requirements,
+            safetyReview.missing_requirement_labels
+          )}
+        />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -418,7 +436,10 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
         <div>Typ: {stringValue(item.recommendation_type, "brak")}</div>
         <div>Kampania: {stringValue(item.campaign_id, "brak")}</div>
         <div>Budżet kampanii: {stringValue(item.campaign_budget_id, "brak")}</div>
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -469,8 +490,14 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
         <div>Grupy reklam Demand Gen: {formatNumber(item.demand_gen_ad_group_ad_row_count)}</div>
         <div>Kreacje/assets: {formatNumber(item.demand_gen_creative_asset_row_count)}</div>
         <div>Wiersze jakości stron wejścia: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
-        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Braki"
+          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
+        />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -501,7 +528,10 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
         <div>Zdarzenia: {formatNumber(metricSnapshot.event_count)}</div>
         <div>Wyświetlenia stron: {formatNumber(metricSnapshot.screen_page_views)}</div>
         <PreviewValues label="Braki wymiarów" values={asStringArray(item.tracking_dimension_gaps)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -532,8 +562,14 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
         <div>Odsetek odpowiedzi na opinie: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
         <PreviewValues label="Dozwolone odczyty" values={readContractValues(item.allowed_contracts)} />
-        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Braki"
+          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
+        />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -559,7 +595,10 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
         <div>Metryka: {stringValue(item.metric_name, "brak")}</div>
         <div>Wartość: {formatMetricValue(item.value)}</div>
         <div>Szczegóły źródłowe: {technicalDetailCount(dimensions)}</div>
-        <PreviewValues label="Ograniczenia" values={operatorRequirementValues(item.draft_constraints)} />
+        <PreviewValues
+          label="Ograniczenia"
+          values={operatorRequirementValues(item.draft_constraints, item.draft_constraint_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <PublicationStateLine item={item} />
       </div>
@@ -586,10 +625,13 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
         <div>Powód: {stringValue(item.blocked_reason, "brak")}</div>
         <PreviewValues
           label="Wymagany stan"
-          values={missingContractValues(item.required_google_ads_state)}
+          values={missingContractValues(item.required_google_ads_state, item.required_google_ads_state_labels)}
         />
         <PreviewValues label="Kroki" values={asStringArray(item.helper_steps)} />
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -618,7 +660,10 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
         <div>Docelowy zwrot z reklam: {formatMetricValue(context.target_roas)}</div>
         <div>Docelowy koszt pozyskania celu: {formatMicrosAsPln(context.target_cpa_micros)}</div>
         <PreviewValues label="Źródła konfiguracji" values={asStringArray(context.configured_sources)} />
-        <PreviewValues label="Braki" values={missingContractValues(item.missing_read_contracts)} />
+        <PreviewValues
+          label="Braki"
+          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
+        />
         <PreviewValues
           label="Opcje celu"
           values={targetOptionValues(targetEnvOptions.target_roas_or_cpa)}
@@ -627,9 +672,15 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
           label="Po potwierdzeniu"
           values={operatorRequirementValues(item.allowed_uses_after_confirmation)}
         />
-        <PreviewValues label="Warunki przeglądu" values={operatorRequirementValues(item.operator_review_gates)} />
+        <PreviewValues
+          label="Warunki przeglądu"
+          values={operatorRequirementValues(item.operator_review_gates, item.operator_review_gate_labels)}
+        />
         <div>Ostatni przegląd strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
-        <PreviewValues label="Warunki sprawdzenia" values={operatorRequirementValues(item.required_validation)} />
+        <PreviewValues
+          label="Warunki sprawdzenia"
+          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
+        />
         <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
         <ExecutionStateLine item={item} />
       </div>
@@ -849,7 +900,11 @@ function PreviewValues({ label, values }: { label: string; values: string[] }) {
   );
 }
 
-function operatorRequirementValues(value: unknown) {
+function operatorRequirementValues(value: unknown, labelValue?: unknown) {
+  const labelValues = asStringArray(labelValue);
+  if (labelValues.length > 0) {
+    return labelValues.filter((item, index, values) => values.indexOf(item) === index);
+  }
   return asStringArray(value)
     .map((item) => {
       const gateLabel = actionGateLabel(item);
@@ -861,7 +916,11 @@ function operatorRequirementValues(value: unknown) {
     .filter((item, index, values) => values.indexOf(item) === index);
 }
 
-function missingContractValues(value: unknown) {
+function missingContractValues(value: unknown, labelValue?: unknown) {
+  const labelValues = asStringArray(labelValue);
+  if (labelValues.length > 0) {
+    return labelValues.filter((item, index, values) => values.indexOf(item) === index);
+  }
   return asStringArray(value)
     .map((item) => {
       const label = adsMissingReadContractLabel(item);

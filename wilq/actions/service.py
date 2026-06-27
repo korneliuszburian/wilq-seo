@@ -2360,6 +2360,7 @@ def _with_review_gate(
             if event.event_type == "human_review_approved_for_prepare"
         ),
     )
+    action.payload = _payload_with_operator_labels(action.payload)
     action.review_gate = _action_review_gate(action, mutation_audits)
     return action
 
@@ -2848,6 +2849,41 @@ def _action_gate_labels(values: Iterable[str]) -> list[str]:
     return labels
 
 
+def _payload_with_operator_labels(payload: dict[str, Any]) -> dict[str, Any]:
+    enriched = dict(payload)
+    _hydrate_operator_labels_recursive(enriched)
+    return enriched
+
+
+def _hydrate_operator_labels_recursive(value: Any) -> None:
+    if isinstance(value, dict):
+        _hydrate_operator_label_fields(value)
+        for item in value.values():
+            _hydrate_operator_labels_recursive(item)
+    elif isinstance(value, list):
+        for item in value:
+            _hydrate_operator_labels_recursive(item)
+
+
+def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
+    label_fields = {
+        "required_validation": "required_validation_labels",
+        "operator_review_gates": "operator_review_gate_labels",
+        "human_review_gates": "human_review_gate_labels",
+        "draft_constraints": "draft_constraint_labels",
+        "missing_read_contracts": "missing_read_contract_labels",
+        "missing_requirements": "missing_requirement_labels",
+        "required_google_ads_state": "required_google_ads_state_labels",
+    }
+    for source_key, label_key in label_fields.items():
+        existing_labels = _string_list(item.get(label_key))
+        if existing_labels and "warunek techniczny do sprawdzenia" not in existing_labels:
+            continue
+        source_values = _string_list(item.get(source_key))
+        if source_values:
+            item[label_key] = _action_gate_labels(source_values)
+
+
 def _action_gate_label(value: str) -> str:
     if value.startswith("blocked_claim:"):
         claim_labels = operator_blocked_claims([value.removeprefix("blocked_claim:")])
@@ -2877,6 +2913,9 @@ def _action_gate_label(value: str) -> str:
         "budget_apply_preview": "sprawdź podgląd zmiany budżetu",
         "campaign_budget_apply_safety": "sprawdź bezpieczeństwo zmiany budżetu",
         "campaign_budget_operation_preview": "sprawdź operację budżetu",
+        "budget_delta_limit_30_percent": "sprawdź limit zmiany budżetu do 30%",
+        "budget_delta_percent": "sprawdź procent zmiany budżetu",
+        "budget_target_or_seasonality": "sprawdź cel budżetu albo sezonowość",
         "human_budget_goal": "potwierdź cel budżetu",
         "content_url_preflight_review": "potwierdzenie publicznego URL-a",
         "final_canonical_review": "kontrola URL-a kanonicznego",
@@ -2889,28 +2928,84 @@ def _action_gate_label(value: str) -> str:
         "content_draft_readiness_review": "kontrola gotowości szkicu",
         "wordpress_draft_payload_preview": "podgląd wpisu WordPress",
         "human_confirm_before_wordpress_write": "potwierdzenie człowieka przed zapisem WordPress",
+        "gsc_query_page_check": "sprawdzenie zapytań i URL-i z GSC",
+        "wordpress_inventory_check": "sprawdzenie spisu treści WordPress",
         "review_recommendation_type": "sprawdź typ rekomendacji",
         "review_impact_metrics": "sprawdź metryki wpływu",
         "review_change_history": "sprawdź historię zmian",
         "review_business_goal": "sprawdź cel biznesowy",
+        "recommendation_apply_preview": "sprawdź podgląd rekomendacji",
+        "recommendations": "sprawdź rekomendacje Google Ads",
+        "profit_margin_or_value_model": "sprawdź marżę albo model wartości",
         "google_ads_rmf_compliance_review": "sprawdź zgodność Google Ads",
+        "review_issue_type_and_attribute": "sprawdź typ problemu i atrybut feedu",
+        "review_reporting_context": "sprawdź kontekst raportowania",
         "group_issue_reasons": "pogrupuj powody problemów",
         "identify_disapproved_products": "ustal produkty i zgłoszenia do sprawdzenia",
+        "mutation_audit_required": "wymagany ślad bezpieczeństwa",
+        "mutation_audit": "ślad bezpieczeństwa zapisu",
         "negative_keyword_action_validation": "sprawdzenie w WILQ dla wykluczeń",
         "prepare_feed_fix_preview": "przygotuj podgląd zmian feedu",
         "require_human_confirm_before_apply": "człowiek potwierdza przed zapisem",
+        "require_human_confirm_before_any_write": "człowiek potwierdza przed każdym zapisem",
         "reject_brand_or_low_intent_terms": "odrzuć brandowe lub niskointencyjne frazy",
         "rerun_google_ads_data_read": "uruchom ponowny odczyt Google Ads",
+        "review_ads_campaign_channel_context": "sprawdź kanały kampanii Ads",
+        "review_campaign_goal": "sprawdź cel kampanii",
         "review_campaign_name_dimension": "sprawdź nazwę kampanii",
+        "review_conversion_quality": "sprawdź jakość konwersji",
         "review_conversion_or_key_event_mapping": "sprawdź mapowanie konwersji lub zdarzenia kluczowego",
+        "review_budget_context": "sprawdź kontekst budżetu",
+        "review_demand_gen_missing_contracts": "sprawdź braki danych Demand Gen",
+        "review_ga4_landing_source_campaign_context": "sprawdź stronę wejścia, źródło i kampanię w GA4",
         "review_human_budget_goal": "sprawdź cel budżetu od człowieka",
         "review_landing_page_dimension": "sprawdź stronę wejścia",
+        "review_local_rankings_aggregate": "sprawdź zbiorcze dane lokalnych pozycji",
         "review_ngram_intent": "sprawdź intencję tematu zapytań",
+        "review_place_inventory": "sprawdź listę lokalizacji",
         "review_profit_margin_model": "sprawdź model marży",
+        "review_reviews_aggregate": "sprawdź zbiorcze dane opinii",
+        "review_search_term_context": "sprawdź kontekst wyszukiwanego hasła",
+        "review_search_terms_before_budget_decision": "sprawdź wyszukiwane hasła przed decyzją budżetową",
         "review_source_medium_dimension": "sprawdź źródło i medium ruchu",
         "review_source_search_terms": "sprawdź źródłowe wyszukiwane hasła",
         "review_source_terms": "sprawdź źródłowe hasła",
         "review_target_fit": "sprawdź dopasowanie do celu",
+        "review_conversion_tracking": "sprawdź pomiar konwersji",
+        "review_pmax_asset_feed_context": "sprawdź kontekst zasobów i feedu PMax",
+        "check_existing_keywords_and_match_types": "sprawdź istniejące słowa kluczowe i dopasowania",
+        "90_day_safety_check": "sprawdź bezpieczeństwo z 90 dni",
+        "negative_keyword_change_preview": "sprawdź podgląd wykluczenia słowa",
+        "change_history": "sprawdź historię zmian",
+        "forecast_or_audience_size": "sprawdź prognozę albo wielkość odbiorców",
+        "custom_segment_operation_preview": "sprawdź podgląd segmentu odbiorców",
+        "google_ads_mutation_audit": "ślad bezpieczeństwa Google Ads",
+        "human_strategy_review": "człowiek sprawdza strategię",
+        "human_intent_review": "człowiek sprawdza intencję",
+        "human_confirm_before_tracking_change": "człowiek potwierdza przed zmianą pomiaru",
+        "keyword_planner_enrichment": "wzbogać dane przez Keyword Planner",
+        "ngram_to_negative_keyword_change_preview": "podgląd przejścia z tematu zapytań do wykluczenia",
+        "block_local_tasks_without_contract": "blokuj lokalne zadania bez kontraktu",
+        "demand_gen_landing_quality_by_campaign": "jakość stron wejścia Demand Gen według kampanii",
+        "demand_gen_transition_constraints": "ograniczenia przejścia na Demand Gen",
+        "demand_gen_ad_group_ad_rows": "wiersze grup reklam Demand Gen",
+        "demand_gen_creative_asset_rows": "wiersze kreacji i zasobów Demand Gen",
+        "local_tasks": "lokalne zadania do wykonania",
+        "local_rankings": "lokalne pozycje",
+        "reviews": "opinie",
+        "gbp_visibility": "widoczność Google Business Profile",
+        "competitor_visibility": "widoczność konkurencji",
+        "use_only_wilq_evidence": "użyj tylko dowodów z WILQ",
+        "write_in_polish": "pisz po polsku",
+        "no_performance_claims_without_source_metric": "bez obietnic skuteczności bez metryk źródłowych",
+        "no_publishing_without_connector_credentials": "bez publikacji bez danych dostępowych źródła",
+        "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
+        "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot albo koszt pozyskania celu",
+        "record_human_strategy_review_outcome": "zapisz wynik sprawdzenia strategii przez człowieka",
+        "recommended_budget_missing": "brak proponowanego budżetu",
+        "target_roas_or_cpa": "docelowy zwrot albo koszt pozyskania celu",
+        "developer_token_approved_for_keyword_planner": "token deweloperski zatwierdzony dla Keyword Plannera",
+        "keyword_planner_generate_ideas_allowed": "Keyword Planner może generować propozycje",
         "verify_keyword_planner_idea_rows": "sprawdź wiersze Keyword Planner",
     }
     if value in labels:

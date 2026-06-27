@@ -83,6 +83,12 @@ Date: 2026-06-27
   Polish labels for checklist and write blockers; raw blocker keys remain only
   as internal traceability fields. Proof:
   `.local-lab/proof/20260627-action-review-gate-api-labels/browser/content-action-review-gate-body.txt`.
+- Action preview validation and missing-data labels now also come from the WILQ
+  API. The action service hydrates labels for active preview rows, nested safety
+  reviews and action review gates; `DetailPanels` prefers API labels instead of
+  translating raw keys. A focused API guard fails on generic `warunek techniczny
+  do sprawdzenia` labels. Browser proof:
+  `.local-lab/proof/20260627-action-preview-api-labels/browser/demand-gen-action-detail-body.txt`.
 - Custom segments and Keyword Planner blocked-claim contracts now use Polish
   source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete

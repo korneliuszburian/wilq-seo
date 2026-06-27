@@ -545,12 +545,19 @@ WILQ is complete for this long-range goal when:
   API/dashboard/skill checks passed. Cleanup is not complete for the whole
   cockpit: Command Center, Ads, Merchant, GA4 and Localo backend copy still
   needs source-level marketer-language cleanup before Milestone 2 starts.
+- 2026-06-27: Action review-gate and preview validation labels are now sourced
+  from WILQ API/domain output instead of route-local cleanup. `DetailPanels`
+  prefers API label arrays for preview requirements and missing-data rows, and
+  API tests fail if action label arrays fall back to generic technical wording.
 
 ## Discoveries
 
 - Stale dev/staging assumptions can create large fake product work. Treat them
   as cleanup blockers, not backlog.
 - Marketer-facing copy must be clean at source, not patched in React.
+- Generic labels such as "warunek techniczny do sprawdzenia" are not useful
+  enough for active action surfaces when the raw source key is known. Add a
+  source label and a guardrail instead of preserving the fallback.
 
 ## Decision Log
 
