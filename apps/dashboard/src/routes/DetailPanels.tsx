@@ -171,8 +171,7 @@ type PayloadPreviewItem = {
     | "customSegment"
     | "negativeKeyword"
     | "demandGenReadiness"
-    | "keywordPlannerAccess"
-    | "adsBusinessGuardrail";
+    | "keywordPlannerAccess";
   item: Record<string, unknown>;
 };
 
@@ -195,16 +194,10 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
     payload.action_type === "configure_google_ads_keyword_planner_access"
       ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
       : [];
-  const adsBusinessGuardrailItems =
-    payload.action_type === "confirm_ads_target_guardrails" ||
-    payload.action_type === "record_ads_strategy_review"
-      ? [{ kind: "adsBusinessGuardrail" as const, item: payload }]
-      : [];
   return [
     ...genericItems,
     ...budgetItems,
-    ...keywordPlannerAccessItems,
-    ...adsBusinessGuardrailItems
+    ...keywordPlannerAccessItems
   ];
 }
 
@@ -226,9 +219,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "keywordPlannerAccess") {
     return <KeywordPlannerAccessPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "adsBusinessGuardrail") {
-    return <AdsBusinessGuardrailPreviewCard item={previewItem.item} />;
   }
   return <GenericPayloadPreviewCard item={previewItem.item} />;
 }
@@ -450,58 +440,6 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
   );
 }
 
-function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const context = isRecord(item.current_context) ? item.current_context : {};
-  const targetEnvOptions = isRecord(item.target_env_options) ? item.target_env_options : {};
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Zasady bezpieczeństwa Ads do sprawdzenia</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            Ocena celu biznesowego bez zapisu zmian
-          </p>
-        </div>
-        <StatusBadge value="blocked" />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Marża: {formatPercent(context.profit_margin)}</div>
-        <div>Cel biznesowy: {stringValue(context.business_goal, "brak")}</div>
-        <div>Cel budżetu: {stringValue(context.budget_goal, "brak")}</div>
-        <div>Docelowy zwrot z reklam: {formatMetricValue(context.target_roas)}</div>
-        <div>Docelowy koszt pozyskania celu: {formatMicrosAsPln(context.target_cpa_micros)}</div>
-        <PreviewValues label="Źródła konfiguracji" values={asStringArray(context.configured_sources)} />
-        <PreviewValues
-          label="Braki"
-          values={missingContractValues(item.missing_read_contracts, item.missing_read_contract_labels)}
-        />
-        <PreviewValues
-          label="Opcje celu"
-          values={targetOptionValues(targetEnvOptions.target_roas_or_cpa_labels)}
-        />
-        <PreviewValues
-          label="Po potwierdzeniu"
-          values={operatorRequirementValues(
-            item.allowed_uses_after_confirmation,
-            item.allowed_uses_after_confirmation_labels
-          )}
-        />
-        <PreviewValues
-          label="Warunki przeglądu"
-          values={operatorRequirementValues(item.operator_review_gates, item.operator_review_gate_labels)}
-        />
-        <div>Ostatni przegląd strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
-        <PreviewValues
-          label="Warunki sprawdzenia"
-          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
-        />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
-        <ExecutionStateLine item={item} />
-      </div>
-    </article>
-  );
-}
-
 function prioritizePayloadPreviewItems(items: PayloadPreviewItem[]) {
   return [...items].sort((left, right) => {
     if (left.kind !== right.kind) {
@@ -526,7 +464,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "negativeKeyword") return 3;
   if (kind === "demandGenReadiness") return 5;
   if (kind === "keywordPlannerAccess") return 9;
-  if (kind === "adsBusinessGuardrail") return 10;
   return 13;
 }
 
@@ -598,10 +535,6 @@ function readContractValues(value: unknown) {
   return uniqueStringArray(value);
 }
 
-function targetOptionValues(value: unknown) {
-  return uniqueStringArray(value);
-}
-
 function technicalDetailCount(value: Record<string, unknown>) {
   const count = Object.values(value).filter(
     (dimensionValue) =>
@@ -660,13 +593,6 @@ function payloadPreviewKey(item: Record<string, unknown>, index: number) {
   return typeof item.id === "string" ? item.id : `payload-preview-${index}`;
 }
 
-function strategyReviewSummary(value: unknown) {
-  if (!isRecord(value)) {
-    return "brak";
-  }
-  return stringValue(value.outcome, "zapisany");
-}
-
 function formatChannelCounts(value: Record<string, unknown>) {
   const entries = Object.entries(value).filter(([, count]) => typeof count === "number");
   if (entries.length === 0) {
@@ -688,29 +614,6 @@ function formatNumber(value: unknown) {
     return "brak";
   }
   return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 3 }).format(value);
-}
-
-function formatPercent(value: unknown) {
-  if (typeof value !== "number") {
-    return "brak";
-  }
-  return new Intl.NumberFormat("pl-PL", {
-    maximumFractionDigits: 2,
-    style: "percent"
-  }).format(value);
-}
-
-function formatMetricValue(value: unknown) {
-  if (typeof value === "number") {
-    return formatNumber(value);
-  }
-  if (typeof value === "boolean") {
-    return value ? "tak" : "nie";
-  }
-  if (typeof value === "string" && value.length > 0) {
-    return value;
-  }
-  return "brak";
 }
 
 function stringValue(value: unknown, fallback: string) {

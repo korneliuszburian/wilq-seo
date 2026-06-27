@@ -166,6 +166,9 @@ Wilku can inspect it without reading technical internals.
   n-gram-to-negative-keyword contract keys in primary card copy. Live browser
   proof passed, but this route remains slow enough to need a separate
   performance slice.
+- Google Ads target-guardrail and strategy-review action details now render
+  API-owned preview cards without raw action types, validation keys or `.env`
+  field names in primary card copy.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made

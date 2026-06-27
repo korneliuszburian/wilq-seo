@@ -2946,6 +2946,29 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     ]
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
+    assert action["preview_cards"]
+    target_preview_card = action["preview_cards"][0]
+    assert target_preview_card["kind"] == "google_ads_target_guardrail_review"
+    assert target_preview_card["title_label"] == "Cel Ads do potwierdzenia"
+    target_preview_rows = {
+        row["label"]: row["value"] for row in target_preview_card["rows"]
+    }
+    assert target_preview_rows["Marża"] == "35%"
+    assert target_preview_rows["Cel biznesowy"] == "lead quality review"
+    assert target_preview_rows["Cel budżetu"] == "protect current monthly budget"
+    assert target_preview_rows["Docelowy zwrot z reklam"] == "brak"
+    assert target_preview_rows["Docelowy koszt pozyskania celu"] == "brak"
+    assert target_preview_rows["Ustawione pola"] == "3 pola ustawione lokalnie"
+    target_marketer_card_text = str(
+        {
+            key: target_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "confirm_ads_target_guardrails" not in target_marketer_card_text
+    assert "target_roas_or_cpa" not in target_marketer_card_text
+    assert "WILQ_ADS_TARGET_ROAS" not in target_marketer_card_text
+    assert "WILQ_ADS_TARGET_CPA_MICROS" not in target_marketer_card_text
 
     validate_response = client.post(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/validate")
     assert validate_response.status_code == 200
@@ -2957,6 +2980,26 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert strategy_action["payload"]["action_type"] == "record_ads_strategy_review"
     assert strategy_action["payload"]["apply_allowed"] is False
     assert strategy_action["payload"]["destructive"] is False
+    assert strategy_action["preview_cards"]
+    strategy_preview_card = strategy_action["preview_cards"][0]
+    assert strategy_preview_card["kind"] == "google_ads_strategy_review"
+    assert strategy_preview_card["title_label"] == "Ocena strategii Ads do zapisania"
+    strategy_preview_rows = {
+        row["label"]: row["value"] for row in strategy_preview_card["rows"]
+    }
+    assert strategy_preview_rows["Marża"] == "35%"
+    assert strategy_preview_rows["Ostatni przegląd strategii"] == (
+        "brak zapisanego przeglądu"
+    )
+    strategy_marketer_card_text = str(
+        {
+            key: strategy_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "record_ads_strategy_review" not in strategy_marketer_card_text
+    assert "human_strategy_review" not in strategy_marketer_card_text
+    assert "WILQ_ADS_PROFIT_MARGIN" not in strategy_marketer_card_text
     strategy_validate_response = client.post(
         f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}/validate"
     )

@@ -1038,7 +1038,51 @@ const keywordPlannerAccessActionFixture: ActionObject = {
 
 const adsTargetGuardrailActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ads_target_guardrail_review",
+      kind: "google_ads_target_guardrail_review",
+      title_label: "Cel Ads do potwierdzenia",
+      subtitle_label: "ocena celu biznesowego bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Marża", value: "30%" },
+        {
+          label: "Cel biznesowy",
+          value: "wstępny review jakości leadów i kosztu pozyskania dla Ekologus"
+        },
+        {
+          label: "Cel budżetu",
+          value: "wstępnie chronić obecny budżet; eskalować tylko po review"
+        },
+        { label: "Docelowy zwrot z reklam", value: "brak" },
+        { label: "Docelowy koszt pozyskania celu", value: "brak" },
+        { label: "Ustawione pola", value: "3 pola ustawione lokalnie" },
+        {
+          label: "Opcje celu",
+          value: "docelowy zwrot z reklam, docelowy koszt pozyskania celu"
+        },
+        {
+          label: "Braki",
+          value: "docelowy zwrot z reklam albo koszt pozyskania celu, człowiek sprawdza strategię"
+        },
+        {
+          label: "Po potwierdzeniu",
+          value: "przegląd wskaźników względem celu, kontekst przeglądu kampanii, kontekst przeglądu budżetu"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value: "sprawdź model marży, sprawdź cel biznesowy, sprawdź cel budżetu od człowieka, potwierdź docelowy zwrot albo koszt pozyskania celu, człowiek sprawdza strategię"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "ocena KPI względem celu przed potwierdzeniem, ocena opłacalności, skalowanie budżetu, zmiana budżetu"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ads_target_guardrails",
   title: "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads",
   domain: "google_ads",
@@ -1115,7 +1159,44 @@ const adsTargetGuardrailActionFixture: ActionObject = {
 
 const adsStrategyReviewActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ads_strategy_review",
+      kind: "google_ads_strategy_review",
+      title_label: "Ocena strategii Ads do zapisania",
+      subtitle_label: "decyzja człowieka bez zapisu zmian w Google Ads",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Marża", value: "30%" },
+        {
+          label: "Cel biznesowy",
+          value: "wstępny review jakości leadów i kosztu pozyskania dla Ekologus"
+        },
+        {
+          label: "Cel budżetu",
+          value: "wstępnie chronić obecny budżet; eskalować tylko po review"
+        },
+        { label: "Docelowy zwrot z reklam", value: "brak" },
+        { label: "Docelowy koszt pozyskania celu", value: "brak" },
+        { label: "Ustawione pola", value: "3 pola ustawione lokalnie" },
+        { label: "Ostatni przegląd strategii", value: "brak zapisanego przeglądu" },
+        {
+          label: "Warunki przeglądu",
+          value: "człowiek sprawdza strategię, sprawdź model marży, sprawdź cel biznesowy, sprawdź cel budżetu od człowieka, sprawdź dopasowanie do celu"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value: "sprawdź model marży, sprawdź cel biznesowy, sprawdź cel budżetu od człowieka, sprawdź dopasowanie do celu, zapisz wynik sprawdzenia strategii przez człowieka"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "ocena opłacalności, skalowanie budżetu, zmiana budżetu, zapis rekomendacji"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ads_strategy_review",
   title: "Zapisz ocenę strategii Ads przez człowieka",
   domain: "google_ads",
@@ -1762,12 +1843,13 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Zasady bezpieczeństwa Ads do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Cel Ads do potwierdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
     expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
     expect(screen.getByText(/Docelowy zwrot z reklam: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Docelowy koszt pozyskania celu: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Ustawione pola: 3 pola ustawione lokalnie/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: docelowy zwrot z reklam albo koszt pozyskania celu/)).toBeInTheDocument();
     expect(screen.getByText(/Opcje celu: docelowy zwrot z reklam, docelowy koszt pozyskania celu/)).toBeInTheDocument();
     expect(screen.getByText(/Po potwierdzeniu: przegląd wskaźników względem celu/)).toBeInTheDocument();
@@ -1785,9 +1867,9 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Zasady bezpieczeństwa Ads do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Ocena strategii Ads do zapisania")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
-    expect(screen.getByText(/Ostatni przegląd strategii: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Ostatni przegląd strategii: brak zapisanego przeglądu/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki przeglądu: człowiek sprawdza strategię/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: ocena opłacalności/)).toBeInTheDocument();
@@ -1834,7 +1916,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("searchTermNgram");
     expect(source).not.toContain("ga4TrackingQuality");
     expect(source).not.toContain("localVisibility");
+    expect(source).not.toContain("adsBusinessGuardrail");
     expect(source).toContain("action.preview_cards");
-    expect(source).toContain("target_roas_or_cpa_labels");
   });
 });

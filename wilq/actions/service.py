@@ -2599,6 +2599,10 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _wordpress_draft_handoff_preview_cards(action.payload)
     if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
         return _keyword_planner_access_preview_cards(action.payload)
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return _ads_target_guardrail_preview_cards(action.payload)
+    if action.payload.get("action_type") == "record_ads_strategy_review":
+        return _ads_strategy_review_preview_cards(action.payload)
     if action.payload.get("action_type") in {
         "linkedin_post_candidate",
         "facebook_post_candidate",
@@ -3420,6 +3424,149 @@ def _keyword_planner_access_preview_cards(
             system_readiness_label="wymaga zmiany po stronie Google Ads",
         )
     ]
+
+
+def _ads_target_guardrail_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    rows = _ads_business_context_preview_rows(payload)
+    target_options = _string_list(
+        _as_dict(payload.get("target_env_options")).get("target_roas_or_cpa_labels")
+    )
+    if target_options:
+        rows.append(_preview_row("Opcje celu", ", ".join(target_options[:4])))
+    missing_labels = _string_list(payload.get("missing_read_contract_labels"))
+    if missing_labels:
+        rows.append(_preview_row("Braki", ", ".join(missing_labels[:4])))
+    allowed_labels = _string_list(payload.get("allowed_uses_after_confirmation_labels"))
+    if allowed_labels:
+        rows.append(_preview_row("Po potwierdzeniu", ", ".join(allowed_labels[:4])))
+    requirement_labels = _string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
+    blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            _preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="ads_target_guardrail_review",
+            kind="google_ads_target_guardrail_review",
+            title_label="Cel Ads do potwierdzenia",
+            subtitle_label="ocena celu biznesowego bez zapisu zmian",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=_apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label=_system_readiness_label(
+                payload.get("api_mutation_ready")
+            ),
+        )
+    ]
+
+
+def _ads_strategy_review_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    rows = _ads_business_context_preview_rows(payload)
+    rows.append(
+        _preview_row(
+            "Ostatni przegląd strategii",
+            _ads_strategy_review_summary(payload.get("latest_strategy_review")),
+        )
+    )
+    gate_labels = _string_list(payload.get("operator_review_gate_labels"))
+    if gate_labels:
+        rows.append(_preview_row("Warunki przeglądu", ", ".join(gate_labels[:5])))
+    requirement_labels = _string_list(payload.get("required_validation_labels"))
+    if requirement_labels:
+        rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:5])))
+    blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
+    if blocked_claim_labels:
+        rows.append(
+            _preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(blocked_claim_labels[:4]),
+            )
+        )
+    return [
+        ActionPreviewCardViewModel(
+            id="ads_strategy_review",
+            kind="google_ads_strategy_review",
+            title_label="Ocena strategii Ads do zapisania",
+            subtitle_label="decyzja człowieka bez zapisu zmian w Google Ads",
+            status_label="zapis zmian zablokowany",
+            rows=rows,
+            apply_state_label=_apply_state_label(payload.get("apply_allowed")),
+            system_readiness_label=_system_readiness_label(
+                payload.get("api_mutation_ready")
+            ),
+        )
+    ]
+
+
+def _ads_business_context_preview_rows(
+    payload: dict[str, Any],
+) -> list[ActionPreviewRowViewModel]:
+    context = _as_dict(payload.get("current_context"))
+    configured_sources = _string_list(context.get("configured_sources"))
+    return [
+        _preview_row("Marża", _percentage_label(context.get("profit_margin"))),
+        _preview_row("Cel biznesowy", _plain_metric_value_label(context.get("business_goal"))),
+        _preview_row("Cel budżetu", _plain_metric_value_label(context.get("budget_goal"))),
+        _preview_row(
+            "Docelowy zwrot z reklam",
+            _plain_metric_value_label(context.get("target_roas")),
+        ),
+        _preview_row(
+            "Docelowy koszt pozyskania celu",
+            _micros_money_label(context.get("target_cpa_micros")),
+        ),
+        _preview_row(
+            "Ustawione pola",
+            _configured_source_count_label(configured_sources),
+        ),
+    ]
+
+
+def _ads_strategy_review_summary(value: Any) -> str:
+    if not isinstance(value, dict):
+        return "brak zapisanego przeglądu"
+    outcome = value.get("outcome")
+    labels = {
+        "approved_for_prepare": "zatwierdzone do przygotowania",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    if isinstance(outcome, str):
+        return labels.get(outcome, "przegląd zapisany")
+    return "przegląd zapisany"
+
+
+def _configured_source_count_label(values: list[str]) -> str:
+    count = len(values)
+    if count == 0:
+        return "brak ustawionych pól"
+    if count == 1:
+        return "1 pole ustawione lokalnie"
+    if 2 <= count <= 4:
+        return f"{count} pola ustawione lokalnie"
+    return f"{count} pól ustawionych lokalnie"
+
+
+def _percentage_label(value: Any) -> str:
+    if not isinstance(value, int | float):
+        return "brak"
+    numeric_label = f"{value * 100:.2f}".rstrip("0").rstrip(".")
+    return f"{numeric_label}%"
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:

@@ -46,6 +46,9 @@ Recent commits:
 - `709a4cc fix(dashboard): remove id jargon from proof copy`
 - `551108f fix(ads): source secondary proof labels from api`
 - `f853404 fix(dashboard): clean registry evidence counts`
+- `87798dd fix(actions): add localo visibility preview cards`
+- `f752920 fix(actions): add ga4 tracking preview cards`
+- `62d4941 fix(actions): add search term ngram preview cards`
 
 What changed:
 
@@ -182,6 +185,10 @@ Latest cleanup state:
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.
+- Google Ads target-guardrail and strategy-review action details now receive
+  API-owned preview cards. The marketer-facing cards show clean business-goal,
+  target, blocker and review rows instead of raw action types, validation keys
+  or `.env` field names.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -209,6 +216,16 @@ Proof:
 - Ads secondary label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+- Ads target/strategy action-card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_business_context" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk scripts/local_stack.sh restart`
+  Live API proof: `GET /api/actions/act_confirm_ads_target_guardrails` and
+  `GET /api/actions/act_record_ads_strategy_review` return one typed preview
+  card each, with no raw action type, validation key or `.env` field name in
+  the primary card text.
   `rtk pnpm --dir apps/dashboard typecheck`
   browser proof: `.local-lab/proof/20260627-ads-secondary-label-cleanup/`
 - Registry/actions evidence-count cleanup:

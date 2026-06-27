@@ -705,6 +705,11 @@ WILQ is complete for this long-range goal when:
   cards. `DetailPanels.tsx` no longer renders Localo visibility cards by
   inferring raw payload shape, and the API card is condensed to key
   visibility/review metrics with no raw `localo_*` metric keys in marketer copy.
+- 2026-06-28: Google Ads target-guardrail and strategy-review action details now
+  receive API-owned preview cards. `DetailPanels.tsx` no longer renders Ads
+  business-context cards by inferring raw payload shape, and live API proof shows
+  no raw action types, validation keys or `.env` field names in the primary
+  card copy.
 
 ## Discoveries
 

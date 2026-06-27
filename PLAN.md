@@ -246,6 +246,9 @@ Known cleanup already started:
   cards without raw `SearchTermNgramReview`, preview-contract names or
   n-gram-to-negative-keyword contract keys in primary card copy. The route is
   still slow and needs a separate performance slice.
+- Google Ads target-guardrail and strategy-review action details now have typed
+  API preview cards without raw action types, validation keys or `.env` field
+  names in primary card copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
