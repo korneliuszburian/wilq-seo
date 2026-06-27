@@ -40,3 +40,49 @@ MERCHANT_RESOLUTION_LABELS = {
     "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
     "PENDING_PROCESSING": "czeka na przetworzenie",
 }
+
+MERCHANT_METRIC_LABELS = {
+    "issue_product_count": "zgłoszenia problemów",
+    "max_issue_product_count": "największa liczba zgłoszeń",
+    "reported_issue_occurrences": "wystąpienia problemów",
+    "reporting_contexts": "konteksty raportów",
+}
+
+
+def merchant_display_label(value: object) -> str:
+    text = str(value or "").strip()
+    if text in MERCHANT_ISSUE_LABELS:
+        return MERCHANT_ISSUE_LABELS[text]
+    if text in MERCHANT_ATTRIBUTE_LABELS:
+        return MERCHANT_ATTRIBUTE_LABELS[text]
+    if not text:
+        return "wartość Merchant nieznana"
+    return " ".join(text.replace("_", " ").split())
+
+
+def merchant_reporting_context_label(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "wszystkie konteksty"
+    return MERCHANT_REPORTING_CONTEXT_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_severity_label(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "status nieznany"
+    return MERCHANT_SEVERITY_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_resolution_label(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "brak wymaganej ścieżki rozwiązania"
+    return MERCHANT_RESOLUTION_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_metric_snapshot_labels(metric_snapshot: dict[str, object]) -> dict[str, str]:
+    return {
+        key: MERCHANT_METRIC_LABELS.get(key, "metryka Merchant")
+        for key in metric_snapshot
+    }

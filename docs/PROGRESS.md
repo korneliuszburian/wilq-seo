@@ -113,6 +113,11 @@ Date: 2026-06-27
   now uses Polish metric labels such as `zgłoszenia problemów` instead of raw
   metric keys like `issue_product_count`. Browser proof:
   `.local-lab/proof/20260627-action-evidence-condensation/browser/action-detail-body-final.txt`.
+- Merchant action preview labels now come from the shared Merchant domain label
+  module and WILQ API payload. Action Detail renders issue, attribute, context,
+  severity, resolution and metric labels from API fields; route-local generic
+  fallbacks no longer invent marketer copy. Live API/browser proof:
+  `.local-lab/proof/20260627-merchant-action-preview-labels/browser/action-detail-body-final.txt`.
 - Localo action, skill eval and knowledge sources now use Polish source values
   for blocked local claims: ukończone zadanie lokalne, zapis zmian w profilu
   firmy and poprawa widoczności lokalnej. Old active values such as

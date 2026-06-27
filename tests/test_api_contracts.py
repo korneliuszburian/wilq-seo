@@ -11696,8 +11696,13 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
     assert decision_preview["cluster_id"] == cluster["id"]
     assert decision_preview["issue_type"] == "availability_updated"
+    assert decision_preview["issue_type_label"] == "zmiana dostępności do sprawdzenia"
     assert decision_preview["affected_attribute"] == "n:availability"
+    assert decision_preview["affected_attribute_label"] == "dostępność"
     assert decision_preview["metric_snapshot"] == {"issue_product_count": 23}
+    assert decision_preview["metric_snapshot_labels"] == {
+        "issue_product_count": "zgłoszenia problemów"
+    }
     assert decision_preview["sample_products_available"] is True
     assert decision_preview["sample_product_ids"] == [
         "online~pl~PL~SKU-001",
@@ -11778,8 +11783,13 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert merchant_preview["operation_type"] == "MerchantIssueClusterReview"
     assert merchant_preview["cluster_id"] == cluster["id"]
     assert merchant_preview["issue_type"] == "availability_updated"
+    assert merchant_preview["issue_type_label"] == "zmiana dostępności do sprawdzenia"
     assert merchant_preview["affected_attribute"] == "n:availability"
+    assert merchant_preview["affected_attribute_label"] == "dostępność"
     assert merchant_preview["metric_snapshot"] == {"issue_product_count": 23}
+    assert merchant_preview["metric_snapshot_labels"] == {
+        "issue_product_count": "zgłoszenia problemów"
+    }
     assert merchant_preview["sample_products_available"] is True
     assert merchant_preview["sample_product_ids"] == [
         "online~pl~PL~SKU-001",
@@ -11802,6 +11812,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "online~pl~PL~SKU-001",
         "online~pl~PL~SKU-002",
     ]
+    assert preview_payload["preview_items"][0]["issue_type_label"] == (
+        "zmiana dostępności do sprawdzenia"
+    )
+    assert preview_payload["preview_items"][0]["affected_attribute_label"] == "dostępność"
     assert preview_payload["preview_items"][0]["sample_titles"] == [
         "Sorbent chemiczny 10 kg"
     ]

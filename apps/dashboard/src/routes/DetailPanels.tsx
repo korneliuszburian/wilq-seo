@@ -1015,11 +1015,11 @@ function previewIssueLabel(item: Record<string, unknown>) {
   const issueType =
     typeof item.issue_type_label === "string"
       ? item.issue_type_label
-      : "problem feedu";
+      : "wymaga etykiety problemu z WILQ";
   const attribute =
     typeof item.affected_attribute_label === "string"
       ? item.affected_attribute_label
-      : "atrybut do sprawdzenia";
+      : "wymaga etykiety atrybutu z WILQ";
   return `${issueType} / ${attribute}`;
 }
 

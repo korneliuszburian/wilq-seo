@@ -33,8 +33,11 @@ const actionFixture: ActionObject = {
         preview_contract: "merchant_feed_issue_review_preview_v1",
         operation_type: "MerchantIssueClusterReview",
         issue_type: "landing_page_error",
+        issue_type_label: "błąd strony docelowej",
         affected_attribute: "n:link",
+        affected_attribute_label: "link produktu",
         metric_snapshot: { issue_product_count: 2 },
+        metric_snapshot_labels: { issue_product_count: "zgłoszenia problemów" },
         sample_products_available: false,
         sample_product_ids: [],
         sample_titles: [],
@@ -47,8 +50,11 @@ const actionFixture: ActionObject = {
         preview_contract: "merchant_feed_issue_review_preview_v1",
         operation_type: "MerchantIssueClusterReview",
         issue_type: "availability_updated",
+        issue_type_label: "zmiana dostępności do sprawdzenia",
         affected_attribute: "n:availability",
+        affected_attribute_label: "dostępność",
         metric_snapshot: { issue_product_count: 23 },
+        metric_snapshot_labels: { issue_product_count: "zgłoszenia problemów" },
         sample_products_available: true,
         sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
         sample_titles: ["Sorbent chemiczny 10 kg"],
@@ -1027,7 +1033,9 @@ describe("Action detail route", () => {
     expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_merchant_feed")).not.toBeInTheDocument();
+    expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
     expect(screen.queryByText("availability_updated / n:availability")).not.toBeInTheDocument();
+    expect(screen.queryByText(/wymaga etykiety problemu z WILQ/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);

@@ -79,6 +79,13 @@ from wilq.actions.localo.visibility import (
 )
 from wilq.actions.payloads import validate_action_payload
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
+from wilq.briefing.merchant_labels import (
+    merchant_display_label,
+    merchant_metric_snapshot_labels,
+    merchant_reporting_context_label,
+    merchant_resolution_label,
+    merchant_severity_label,
+)
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
@@ -1576,12 +1583,26 @@ def _merchant_issue_payload_preview(
                 "operation_type": "MerchantIssueClusterReview",
                 "cluster_id": cluster_id,
                 "issue_type": cluster.get("issue_type"),
+                "issue_type_label": merchant_display_label(cluster.get("issue_type")),
                 "affected_attribute": cluster.get("affected_attribute"),
+                "affected_attribute_label": merchant_display_label(
+                    cluster.get("affected_attribute")
+                ),
                 "country": cluster.get("country"),
                 "reporting_context": cluster.get("reporting_context"),
+                "reporting_context_label": merchant_reporting_context_label(
+                    cluster.get("reporting_context")
+                ),
                 "severity": cluster.get("severity"),
+                "severity_label": merchant_severity_label(cluster.get("severity")),
                 "resolution": cluster.get("resolution"),
+                "resolution_label": merchant_resolution_label(
+                    cluster.get("resolution")
+                ),
                 "metric_snapshot": {"issue_product_count": product_count},
+                "metric_snapshot_labels": merchant_metric_snapshot_labels(
+                    {"issue_product_count": product_count}
+                ),
                 "sample_products_available": bool(cluster.get("sample_product_ids")),
                 "sample_product_ids": cluster.get("sample_product_ids", []),
                 "sample_titles": cluster.get("sample_titles", []),

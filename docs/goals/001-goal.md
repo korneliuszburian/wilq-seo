@@ -156,6 +156,12 @@ Latest slice:
   `issue_product_count`; technical IDs remain only as contract fields.
   Verification: focused Merchant/action API tests, Action Detail route test and
   browser proof on `/actions/act_review_merchant_feed_issues`.
+- Merchant action preview now sources issue, attribute, context, severity,
+  resolution and metric labels from the shared Merchant domain label module and
+  API payload. Action Detail no longer invents generic `problem feedu` or
+  `atrybut do sprawdzenia` fallback labels when the action contract is missing
+  copy; focused API tests and browser proof protect against raw Merchant vendor
+  strings on `/actions/act_review_merchant_feed_issues`.
 - GA4 readiness labels now come from the WILQ API/shared schema, not from
   route-local read-contract mapping. `/ga4` renders condensed API metric tiles
   and hides raw GA4 metric fact names from decision cards; browser proof found

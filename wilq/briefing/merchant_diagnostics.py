@@ -7,11 +7,11 @@ from typing import Literal
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.merchant_labels import (
-    MERCHANT_ATTRIBUTE_LABELS,
-    MERCHANT_ISSUE_LABELS,
-    MERCHANT_REPORTING_CONTEXT_LABELS,
-    MERCHANT_RESOLUTION_LABELS,
-    MERCHANT_SEVERITY_LABELS,
+    merchant_display_label,
+    merchant_metric_snapshot_labels,
+    merchant_reporting_context_label,
+    merchant_resolution_label,
+    merchant_severity_label,
 )
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -2595,6 +2595,7 @@ def _merchant_decision_payload_preview(
         "resolution_label": cluster.resolution_label
         or _merchant_resolution_label(cluster.resolution),
         "metric_snapshot": metric_snapshot,
+        "metric_snapshot_labels": _merchant_metric_snapshot_labels(metric_snapshot),
         "sample_products_available": bool(sample_product_ids),
         "sample_product_ids": sample_product_ids,
         "sample_titles": sample_titles,
@@ -2633,6 +2634,10 @@ def _merchant_decision_payload_preview(
         "count_semantics": "reported_issue_occurrences",
         "reported_issue_occurrences": reported_issue_occurrences,
     }
+
+
+def _merchant_metric_snapshot_labels(metric_snapshot: dict[str, int]) -> dict[str, str]:
+    return merchant_metric_snapshot_labels(metric_snapshot)
 
 
 def _merchant_aggregate_feed_status_decision(
@@ -2758,29 +2763,19 @@ def _action_risk_rank(risk: ActionRisk) -> int:
 
 
 def _merchant_display_label(value: str) -> str:
-    if value in MERCHANT_ISSUE_LABELS:
-        return MERCHANT_ISSUE_LABELS[value]
-    if value in MERCHANT_ATTRIBUTE_LABELS:
-        return MERCHANT_ATTRIBUTE_LABELS[value]
-    return " ".join(value.replace("_", " ").split())
+    return merchant_display_label(value)
 
 
 def _merchant_reporting_context_label(value: str | None) -> str:
-    if not value:
-        return "wszystkie konteksty"
-    return MERCHANT_REPORTING_CONTEXT_LABELS.get(value, _merchant_display_label(value))
+    return merchant_reporting_context_label(value)
 
 
 def _merchant_severity_label(value: str | None) -> str:
-    if not value:
-        return "status nieznany"
-    return MERCHANT_SEVERITY_LABELS.get(value, _merchant_display_label(value))
+    return merchant_severity_label(value)
 
 
 def _merchant_resolution_label(value: str | None) -> str:
-    if not value:
-        return "brak wymaganej ścieżki rozwiązania"
-    return MERCHANT_RESOLUTION_LABELS.get(value, _merchant_display_label(value))
+    return merchant_resolution_label(value)
 
 
 def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:
