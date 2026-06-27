@@ -218,8 +218,24 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       {showDetails ? (
         <div className="mt-3 grid gap-2 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
           <div>Źródła: {binding.source_connectors.join(", ") || "brak"}</div>
-          <div>Dowody: {formatCount(binding.evidence_ids.length, "ID")}</div>
-          <div>Akcje: {formatCount(binding.action_ids.length, "ID")}</div>
+          <div>
+            Dowody:{" "}
+            {formatPolishCount(
+              binding.evidence_ids.length,
+              "dowód źródłowy",
+              "dowody źródłowe",
+              "dowodów źródłowych"
+            )}
+          </div>
+          <div>
+            Akcje:{" "}
+            {formatPolishCount(
+              binding.action_ids.length,
+              "akcja do sprawdzenia",
+              "akcje do sprawdzenia",
+              "akcji do sprawdzenia"
+            )}
+          </div>
           <div>Karty wiedzy: {binding.knowledge_card_ids.length}</div>
           <div>Zasady pracy: {binding.playbook_ids.length}</div>
           <div>Reguły decyzji: {binding.expert_rule_ids.length}</div>

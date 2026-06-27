@@ -7097,7 +7097,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Dowody: 1 dowód źródłowy").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
@@ -7128,7 +7128,7 @@ describe("WILQ dashboard", () => {
       />
     );
 
-    expect(screen.getByText("Dowody: 2 ID")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 2 dowody źródłowe")).toBeInTheDocument();
     expect(screen.getByText("Metryki: 3 wartości")).toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_refresh_google_ads_test")).not.toBeInTheDocument();

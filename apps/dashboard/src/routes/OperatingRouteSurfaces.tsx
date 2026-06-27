@@ -250,7 +250,9 @@ function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
 
 function formatEvidenceCount(count: number) {
   if (count === 0) return "brak";
-  return `${count} ID`;
+  if (count === 1) return "1 dowód źródłowy";
+  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
+  return `${count} dowodów źródłowych`;
 }
 
 export function WorkflowsSurface() {

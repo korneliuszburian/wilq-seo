@@ -86,7 +86,7 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           ) : null}
           <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {opportunity.evidence_ids.length} ID</div>
+            <div>Dowody: {formatEvidenceCount(opportunity.evidence_ids.length)}</div>
             <div>
               Źródła danych:{" "}
               {formatPolishCount(opportunity.source_connectors.length, "źródło", "źródła", "źródeł")}
@@ -211,7 +211,7 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
 }
 
 function formatEvidenceCount(count: number) {
-  return count > 0 ? `${count} ID` : "brak";
+  return formatPolishCount(count, "dowód źródłowy", "dowody źródłowe", "dowodów źródłowych");
 }
 
 function formatPolishCount(count: number, singular: string, few: string, many: string) {

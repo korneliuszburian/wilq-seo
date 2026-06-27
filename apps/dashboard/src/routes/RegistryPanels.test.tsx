@@ -95,7 +95,7 @@ describe("RegistryPanels", () => {
     );
 
     expect(screen.getByText("Odczyt źródła danych")).toBeInTheDocument();
-    expect(screen.getByText("Dowody: 2 ID")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 2 dowody źródłowe")).toBeInTheDocument();
     expect(screen.getByText("Metryki: 3 wartości")).toBeInTheDocument();
     expect(screen.queryByText("refresh_google_ads_test")).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
