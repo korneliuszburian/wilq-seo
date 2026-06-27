@@ -17,10 +17,6 @@ import {
   AdsCustomSegmentAudienceForecastPanel,
   AdsCustomSegmentCandidatesPanel
 } from "./CustomSegmentsDiagnosticSurface";
-import {
-  adsBlockedClaimLabel,
-  adsMissingReadContractLabel
-} from "./marketingLabels";
 
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
@@ -438,7 +434,7 @@ function AdsOperatorSummary({
   const decisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
     .filter((decision): decision is AdsDecisionItem => Boolean(decision));
-  const allowedMetrics = summary.allowed_metrics.map(adsAllowedMetricLabel);
+  const allowedMetrics = summary.allowed_metric_labels;
   const missingReadContracts = summary.missing_read_contract_labels;
   const operatorReviewGates = summary.operator_review_gate_labels;
   const blockedClaims = summary.blocked_claim_labels;
@@ -989,7 +985,7 @@ function AdsMetricEvidencePanel({
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
           label="Sekcje źródłowe"
-          values={data.sections.map((section) => adsSectionLabel(section.id))}
+          values={data.sections.map((section) => section.title)}
         />
       </div>
     </section>
@@ -1968,7 +1964,7 @@ function AdsSearchTermReviewSummaryPanel({
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+          values={contract.blocked_claim_labels}
         />
       </div>
     </div>
@@ -2367,7 +2363,7 @@ function AdsBlockedHandoffPanel({
           values={[handoff.action_summary_label]}
           empty="brak"
         />
-        <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claims.map(adsBlockedClaimLabel)} />
+        <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claim_labels} />
       </div>
     </section>
   );
@@ -2439,98 +2435,12 @@ function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
   return "niskie";
 }
 
-function adsSectionLabel(sectionId: string) {
-  if (sectionId === "ads_live_data_status") return "Status odczytu Google Ads";
-  if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
-  if (sectionId === "ads_business_context") return "Kontekst biznesowy";
-  if (sectionId === "ads_derived_kpi") return "Wyliczone wskaźniki";
-  if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
-  if (sectionId === "ads_recommendations") return "Rekomendacje Google Ads";
-  if (sectionId === "ads_impression_share") return "Udział w wyświetleniach";
-  if (sectionId === "ads_change_history") return "Historia zmian";
-  if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
-  if (sectionId === "ads_search_term_ngrams") return "N-gramy zapytań";
-  if (sectionId === "ads_search_term_safety") return "Bezpieczeństwo 90 dni";
-  if (sectionId === "ads_keyword_match_context") return "Kontekst słów kluczowych";
-  if (sectionId === "ads_negative_keyword_safety") return "Ocena wykluczeń";
-  if (sectionId === "ads_custom_segments") return "Segmenty niestandardowe";
-  if (sectionId === "ads_action_safety") return "Bezpieczeństwo akcji Ads";
-  if (sectionId === "ads_oauth_blocker") return "Dostęp Google Ads";
-  return "Sekcja Ads";
-}
-
 function adsBusinessContextStatusValue(
   contract: AdsDiagnosticsResponse["business_context_read_contract"]
 ) {
   if (contract.status === "blocked") return "blokada";
   if (contract.missing_read_contracts.includes("target_roas_or_cpa")) return "wstępny";
   return "gotowe";
-}
-
-function adsAllowedMetricLabel(value: string) {
-  const labels: Record<string, string> = {
-    clicks: "kliknięcia",
-    impressions: "wyświetlenia",
-    cost_micros: "koszt",
-    conversions: "konwersje",
-    conversion_value: "wartość konwersji",
-    account_currency_code: "waluta konta",
-    profit_margin: "marża",
-    business_goal: "cel biznesowy",
-    human_budget_goal: "cel budżetu",
-    target_roas: "docelowy zwrot z reklam",
-    target_cpa_micros: "docelowy koszt pozyskania celu",
-    budget_amount_micros: "budżet",
-    cost_micros_7d: "koszt 7 dni",
-    seven_day_budget_micros: "budżet 7 dni",
-    spend_to_budget_ratio_7d: "wydanie względem budżetu",
-    budget_has_recommended_budget: "sygnał rekomendowanego budżetu",
-    budget_recommended_amount_micros: "rekomendowany budżet",
-    recommendation_available: "rekomendacja dostępna",
-    recommendation_campaign_count: "kampanie w rekomendacji",
-    recommendation_impact_base_clicks: "bazowe kliknięcia rekomendacji",
-    recommendation_impact_potential_clicks: "potencjalne kliknięcia rekomendacji",
-    recommendation_impact_base_impressions: "bazowe wyświetlenia rekomendacji",
-    recommendation_impact_potential_impressions:
-      "potencjalne wyświetlenia rekomendacji",
-    recommendation_impact_base_cost_micros: "bazowy koszt rekomendacji",
-    recommendation_impact_potential_cost_micros: "potencjalny koszt rekomendacji",
-    recommendation_impact_base_conversions: "bazowe konwersje rekomendacji",
-    recommendation_impact_potential_conversions:
-      "potencjalne konwersje rekomendacji",
-    recommendation_impact_base_conversion_value:
-      "bazowa wartość konwersji rekomendacji",
-    recommendation_impact_potential_conversion_value:
-      "potencjalna wartość konwersji rekomendacji",
-    search_impression_share: "udział w wyświetleniach",
-    search_budget_lost_impression_share: "utracony udział przez budżet",
-    search_rank_lost_impression_share: "utracony udział przez ranking",
-    change_event_available: "historia zmian dostępna",
-    change_event_changed_field_count: "liczba zmienionych pól",
-    current_campaign_clicks: "bieżące kliknięcia kampanii",
-    current_campaign_impressions: "bieżące wyświetlenia kampanii",
-    current_campaign_cost_micros: "bieżący koszt kampanii",
-    current_campaign_conversions: "bieżące konwersje kampanii",
-    current_campaign_conversion_value: "bieżąca wartość konwersji kampanii",
-    search_term: "zapytanie",
-    ngram: "temat zapytania",
-    ngram_size: "długość tematu",
-    source_search_term_count: "liczba źródłowych zapytań",
-    sample_search_terms: "przykłady zapytań",
-    search_term_90d_clicks: "kliknięcia 90 dni",
-    search_term_90d_impressions: "wyświetlenia 90 dni",
-    search_term_90d_cost_micros: "koszt 90 dni",
-    search_term_90d_conversions: "konwersje 90 dni",
-    search_term_90d_conversion_value: "wartość konwersji 90 dni",
-    keyword_text: "słowo kluczowe",
-    keyword_match_type: "typ dopasowania słowa",
-    criterion_status: "status słowa",
-    keyword_negative: "wykluczające słowo",
-    campaign: "kampania",
-    ad_group: "grupa reklam",
-    status: "status zapytania"
-  };
-  return labels[value] ?? "metryka Ads";
 }
 
 function adsStrategyContextValue(value: unknown) {

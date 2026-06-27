@@ -484,12 +484,77 @@ class SourceDocument(BaseModel):
     summary: str
 
 
+KNOWLEDGE_DISPLAY_TITLE_LABELS = {
+    "card_goal_001_rules": "Zakaz wymyślania metryk",
+    "google_ads_search_playbook": "Diagnostyka wyszukiwanych haseł Google Ads",
+    "google_ads_budget_review_playbook": "Przegląd budżetów Google Ads",
+    "google_ads_demand_gen_playbook": "Gotowość Demand Gen",
+    "google_ads_pmax_playbook": "Gotowość PMax i sprzedaży produktowej",
+    "google_ads_negative_keywords_playbook": "Przegląd wykluczeń Google Ads",
+    "google_ads_custom_segments_playbook": "Segmenty niestandardowe z wyszukiwanych haseł",
+    "gsc_seo_content_playbook": "Okazje SEO i content z GSC",
+    "ahrefs_content_gap_playbook": "Luki contentowe i konkurencja z Ahrefs",
+    "localo_local_seo_playbook": "Widoczność lokalna Localo",
+    "ga4_behavior_diagnostics_playbook": "Diagnostyka zachowania GA4",
+    "merchant_feed_optimization_playbook": "Diagnostyka feedu Merchant",
+    "linkedin_content_playbook": "Publikacje LinkedIn",
+    "facebook_content_playbook": "Publikacje Facebook",
+    "wordpress_content_refresh_playbook": "Odświeżanie treści WordPress",
+}
+
+KNOWLEDGE_CARD_TYPE_LABELS = {
+    "ads_pattern_card": "wzorzec Ads",
+    "campaign_card": "kampanie",
+    "competitor_card": "konkurencja",
+    "content_card": "treści",
+    "keyword_cluster_card": "klastry słów",
+    "local_visibility_card": "widoczność lokalna",
+    "negative_keyword_pattern_card": "wykluczenia",
+    "service_card": "feed i usługi",
+    "social_pattern_card": "social",
+    "voice_rule": "reguła głosu",
+}
+
+KNOWLEDGE_SOURCE_TYPE_LABELS = {
+    "marketing_playbook": "zasada pracy",
+    "repo_goal": "reguła projektu",
+}
+
+KNOWLEDGE_STATUS_LABELS = {
+    "ready": "gotowe",
+    "blocked": "zablokowane",
+    "planned": "planowane",
+}
+
+KNOWLEDGE_ROUTE_LABELS = {
+    "/command-center": "Plan dnia",
+    "/merchant": "Merchant",
+    "/content-planner": "Treści",
+    "/ads-doctor": "Ads",
+    "/ads-doctor/demand-gen": "Demand Gen",
+    "/ahrefs": "Ahrefs",
+    "/ga4": "GA4",
+    "/localo": "Localo",
+    "/social-publisher": "Social",
+}
+
+KNOWLEDGE_RISK_LABELS = {
+    "low": "niskie ryzyko",
+    "medium": "średnie ryzyko",
+    "high": "wysokie ryzyko",
+    "critical": "krytyczne ryzyko",
+}
+
+
 class KnowledgeCard(BaseModel):
     id: str
     card_type: str
+    card_type_label: str = ""
     title: str
+    display_title: str = ""
     summary: str
     source_type: str
+    source_type_label: str = ""
     source_id: str
     source_url_or_path: str
     extracted_at: datetime = Field(default_factory=utc_now)
@@ -497,12 +562,32 @@ class KnowledgeCard(BaseModel):
     last_seen_at: datetime = Field(default_factory=utc_now)
     source_lineage: list[str] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> KnowledgeCard:
+        if not self.display_title:
+            self.display_title = (
+                KNOWLEDGE_DISPLAY_TITLE_LABELS.get(self.source_id)
+                or KNOWLEDGE_DISPLAY_TITLE_LABELS.get(self.id)
+                or self.title
+            )
+        if not self.card_type_label:
+            self.card_type_label = KNOWLEDGE_CARD_TYPE_LABELS.get(self.card_type, self.card_type)
+        if not self.source_type_label:
+            self.source_type_label = KNOWLEDGE_SOURCE_TYPE_LABELS.get(
+                self.source_type,
+                self.source_type,
+            )
+        return self
+
 
 class MarketingPlaybook(BaseModel):
     id: str
     family: str
     title: str
+    display_title: str = ""
     card_type: str
+    card_type_label: str = ""
+    source_type_label: str = "zasada pracy"
     source_anchors: list[str] = Field(min_length=1)
     required_evidence: list[str] = Field(min_length=1)
     maps_to_opportunity_types: list[str] = Field(min_length=1)
@@ -512,6 +597,16 @@ class MarketingPlaybook(BaseModel):
     refusal_rules: list[str] = Field(default_factory=list)
     output_contract: str = Field(min_length=1)
     source_path: str
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> MarketingPlaybook:
+        if not self.display_title:
+            self.display_title = KNOWLEDGE_DISPLAY_TITLE_LABELS.get(self.id, self.title)
+        if not self.card_type_label:
+            self.card_type_label = KNOWLEDGE_CARD_TYPE_LABELS.get(self.card_type, self.card_type)
+        if not self.source_type_label:
+            self.source_type_label = "zasada pracy"
+        return self
 
 
 class KnowledgeCompilerResult(BaseModel):
@@ -525,7 +620,9 @@ class KnowledgeDecisionBinding(BaseModel):
     id: str
     title: str
     status: Literal["ready", "blocked", "planned"]
+    status_label: str = ""
     route: str
+    route_label: str = ""
     skill_id: str | None = None
     summary: str
     next_step: str
@@ -541,6 +638,18 @@ class KnowledgeDecisionBinding(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> KnowledgeDecisionBinding:
+        if not self.status_label:
+            self.status_label = KNOWLEDGE_STATUS_LABELS.get(self.status, self.status)
+        if not self.route_label:
+            self.route_label = KNOWLEDGE_ROUTE_LABELS.get(self.route, self.route)
+        if not self.risk_label:
+            risk_value = self.risk.value if isinstance(self.risk, ActionRisk) else self.risk
+            self.risk_label = KNOWLEDGE_RISK_LABELS.get(risk_value, risk_value)
+        return self
 
 
 class KnowledgeOperatingMapResponse(BaseModel):
@@ -953,6 +1062,7 @@ class AdsBlockedHandoff(BaseModel):
     repair_steps: list[str] = Field(default_factory=list)
     allowed_demo_claims: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1348,6 +1458,7 @@ class AdsRecommendationsReadContract(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
@@ -1617,6 +1728,7 @@ class AdsSearchTermsReadContract(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
@@ -1661,6 +1773,7 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     total_search_term_count: int = 0
@@ -2173,6 +2286,7 @@ class AdsOperatorSummary(BaseModel):
     ready_area_count: int = 0
     blocked_area_count: int = 0
     allowed_metrics: list[str] = Field(default_factory=list)
+    allowed_metric_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)

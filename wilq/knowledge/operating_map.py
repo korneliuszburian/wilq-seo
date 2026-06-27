@@ -175,7 +175,9 @@ def _binding_from_blueprint(
         id=f"knowledge_{workflow.id}",
         title=workflow.label,
         status=workflow.status,
+        status_label=workflow.status_label or "",
         route=workflow.route or "/knowledge",
+        route_label=workflow.route_label or "",
         skill_id=workflow.skill_id,
         summary=workflow.description,
         next_step=workflow.safe_next_step
@@ -205,6 +207,7 @@ def _binding_from_blueprint(
             ]
         ),
         risk=workflow.risk,
+        risk_label=workflow.risk_label or "",
     )
 
 

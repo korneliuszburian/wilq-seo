@@ -6415,6 +6415,9 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
         response.operator_summary.missing_read_contracts
     )
+    response.operator_summary.allowed_metric_labels = _ads_allowed_metric_labels(
+        response.operator_summary.allowed_metrics
+    )
     response.operator_summary.blocked_claim_labels = _unique(
         response.operator_summary.blocked_claims
     )
@@ -6465,6 +6468,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "action_summary_label": action_count_label(
                     response.blocked_handoff.action_ids
                 ),
+                "blocked_claim_labels": _unique(response.blocked_handoff.blocked_claims),
             }
         )
     _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
@@ -6478,6 +6482,9 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
     _hydrate_change_history_marketer_labels(response.change_history_read_contract)
     _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
+    response.search_term_review_summary_contract.blocked_claim_labels = _unique(
+        response.search_term_review_summary_contract.blocked_claims
+    )
     _hydrate_negative_keywords_marketer_labels(response.negative_keywords_read_contract)
     _hydrate_keyword_match_context_marketer_labels(
         response.keyword_match_context_read_contract

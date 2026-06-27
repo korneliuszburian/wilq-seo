@@ -17218,6 +17218,12 @@ def test_knowledge_playbooks_are_machine_readable_and_evidence_gated() -> None:
     assert all("evidence_ids" in playbook["required_evidence"] for playbook in playbooks)
     assert all(playbook["maps_to_opportunity_types"] for playbook in playbooks)
     assert all(playbook["maps_to_action_types"] for playbook in playbooks)
+    search_playbook = next(
+        playbook for playbook in playbooks if playbook["id"] == "google_ads_search_playbook"
+    )
+    assert search_playbook["display_title"] == "Diagnostyka wyszukiwanych haseł Google Ads"
+    assert search_playbook["card_type_label"] == "wzorzec Ads"
+    assert search_playbook["source_type_label"] == "zasada pracy"
 
 
 def test_knowledge_compiler_produces_lineage_preserving_card_types() -> None:
@@ -17240,6 +17246,10 @@ def test_knowledge_compiler_produces_lineage_preserving_card_types() -> None:
     }.issubset(card_types)
     assert all(card["source_lineage"] for card in result["cards"])
     assert all(card["source_url_or_path"] for card in result["cards"])
+    cards_by_id = {card["id"]: card for card in result["cards"]}
+    assert cards_by_id["card_goal_001_rules"]["display_title"] == "Zakaz wymyślania metryk"
+    assert cards_by_id["card_goal_001_rules"]["card_type_label"] == "reguła głosu"
+    assert cards_by_id["card_goal_001_rules"]["source_type_label"] == "reguła projektu"
 
 
 def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
@@ -17265,6 +17275,9 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
 
     daily = binding_by_id["knowledge_daily_command"]
     assert daily["route"] == "/command-center"
+    assert daily["route_label"] == "Plan dnia"
+    assert daily["status_label"] in {"gotowe", "zablokowane"}
+    assert daily["risk_label"] in {"niskie ryzyko", "średnie ryzyko"}
     assert daily["skill_id"] == "wilq-daily-command"
     assert daily["knowledge_card_ids"] == ["card_goal_001_rules"]
     assert daily["metric_tiles"]["decyzje"] >= 1
@@ -17272,6 +17285,9 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
 
     ads = binding_by_id["knowledge_ads_daily_check"]
     assert ads["route"] == "/ads-doctor"
+    assert ads["route_label"] == "Ads"
+    assert ads["status_label"] == "gotowe"
+    assert ads["risk_label"] in {"niskie ryzyko", "średnie ryzyko", "wysokie ryzyko"}
     assert ads["skill_id"] == "wilq-ads-doctor"
     assert "card_google_ads_search_playbook" in ads["knowledge_card_ids"]
     assert "google_ads_search_playbook" in ads["playbook_ids"]
@@ -17281,6 +17297,8 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
 
     localo = binding_by_id["knowledge_localo_visibility_review"]
     assert localo["status"] == "blocked"
+    assert localo["status_label"] == "zablokowane"
+    assert localo["route_label"] == "Localo"
     assert "local_ranking_rows" in localo["missing_contracts"]
     assert "card_localo_local_seo_playbook" in localo["knowledge_card_ids"]
 
