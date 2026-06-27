@@ -804,6 +804,7 @@ const contentActionFixture: ActionObject = {
         candidate_id: "content_brief_gsc_bdo",
         source_type: "gsc_query_page",
         mode: "inventory_check",
+        mode_label: "sprawdzić spis treści",
         topic: "bdo co to",
         target_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
         wordpress_inventory_match: "missing",
@@ -867,6 +868,7 @@ const contentActionFixture: ActionObject = {
         candidate_id: `content_brief_extra_${index}`,
         source_type: "gsc_query_page",
         mode: "inventory_check",
+        mode_label: "sprawdzić spis treści",
         topic: `temat dodatkowy ${index}`,
         target_url: `https://www.ekologus.pl/extra-${index}/`,
         wordpress_inventory_match: "missing",
@@ -1311,7 +1313,8 @@ describe("Action detail route", () => {
     expect(screen.getAllByText("Plan treści do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("Brief treści do sprawdzenia")).not.toBeInTheDocument();
     expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Tryb: sprawdzić istniejącą treść/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tryb: sprawdzić spis treści/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/wymaga etykiety trybu z WILQ/)).not.toBeInTheDocument();
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
     expect(screen.getAllByText(/Opcje: odśwież istniejącą treść, scal z istniejącą treścią/).length).toBeGreaterThan(0);

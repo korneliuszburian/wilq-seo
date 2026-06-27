@@ -705,7 +705,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Temat: {stringValue(item.topic, "brak")}</div>
-        <div>Tryb: {contentModeLabel(stringValue(item.mode, "brak"))}</div>
+        <div>Tryb: {stringValue(item.mode_label, "wymaga etykiety trybu z WILQ")}</div>
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
         <div>Opcje: {asStringArray(item.decision_option_labels).join(", ") || "brak"}</div>
         <div>Cel planu treści: {stringValue(item.brief_goal, "brak")}</div>
@@ -955,19 +955,6 @@ function technicalDetailCount(value: Record<string, unknown>) {
   if (count === 0) return "brak";
   if (count === 1) return "1 pole techniczne";
   return `${count} pola techniczne`;
-}
-
-function contentModeLabel(value: string) {
-  const labels: Record<string, string> = {
-    preserve: "zachować",
-    refresh: "odświeżyć",
-    merge: "scalić",
-    create: "utworzyć",
-    block: "zablokować",
-    inventory_check: "sprawdzić istniejącą treść",
-    rewrite: "przepisać po sprawdzeniu"
-  };
-  return labels[value] ?? "do sprawdzenia";
 }
 
 function ExecutionStateLine({ item }: { item: Record<string, unknown> }) {

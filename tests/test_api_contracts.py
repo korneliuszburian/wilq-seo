@@ -1419,6 +1419,11 @@ def test_content_action_preview_exposes_review_only_brief_payload(
         item["source_type"] == "gsc_query_page" for item in preview["preview_items"]
     )
     assert any(
+        item["mode_label"] == "odśwież istniejącą treść"
+        for item in preview["preview_items"]
+        if item["source_type"] == "gsc_query_page"
+    )
+    assert any(
         item["source_type"] == "ahrefs_gap_review" for item in preview["preview_items"]
     )
     assert not any(
@@ -1945,9 +1950,24 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert result["audit_event"]["event_type"] == "human_review_approved_for_prepare"
     assert result["review_gate"]["apply_allowed"] is False
     assert result["review_gate"]["last_review_outcome"] == "approved_for_prepare"
-    assert f"candidate:{candidate_id}" in result["audit_event"]["summary"]
-    assert "url_review_outcome:confirm_final_canonical_url" in result["audit_event"]["summary"]
-    assert "reviewed_url:[stored in audit details]" in result["audit_event"]["summary"]
+    assert "wybrano pozycję do sprawdzenia" in result["audit_event"]["summary"]
+    assert "URL finalny: potwierdź finalny URL kanoniczny" in result["audit_event"]["summary"]
+    assert (
+        "sprawdzony URL zapisany w szczegółach audytu"
+        in result["audit_event"]["summary"]
+    )
+    for raw_term in (
+        f"candidate:{candidate_id}",
+        "source_type:gsc_query_page",
+        "mode:refresh",
+        "payload_apply_allowed_false",
+        "wordpress_write_not_requested",
+        "blocked_claim:",
+    ):
+        assert raw_term not in result["audit_event"]["summary"]
+    assert "podgląd zmian nie pozwala na zapis" in result["audit_event"]["summary"]
+    assert "zapis WordPress nie został zlecony" in result["audit_event"]["summary"]
+    assert "nie wolno twierdzić: gwarancja pozycji" in result["audit_event"]["summary"]
     assert result["audit_event"]["details"]["content_url_review"] == {
         "candidate": candidate_id,
         "url_review_outcome": "confirm_final_canonical_url",
@@ -1974,7 +1994,8 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert audit_response.status_code == 200
     persisted_audit = audit_response.json()[0]
     assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
-    assert f"candidate:{candidate_id}" in persisted_audit["summary"]
+    assert "wybrano pozycję do sprawdzenia" in persisted_audit["summary"]
+    assert f"candidate:{candidate_id}" not in persisted_audit["summary"]
     assert persisted_audit["details"]["content_url_review"]["reviewed_url"] == (
         reviewed_url
     )
@@ -2138,7 +2159,9 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
                 "Wynik review: zatwierdzone. Sprawdzone: "
                 "mapping_outcome:confirm_alternative_candidate, "
                 "selected_target_url:[stored in audit details], "
-                "mapping_notes:target wybrany tylko do review staging handoff."
+                "mapping_notes:target wybrany tylko do review staging handoff. "
+                "Blokady: payload_apply_allowed_false, wordpress_write_not_requested, "
+                "blocked_claim:ranking guarantee. Sprawdzone: source_type:gsc_query_page, mode:refresh."
             ),
             evidence_ids=["ev_refresh_wordpress_content_contract_test"],
             details={
@@ -2149,8 +2172,15 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
                     "mapping_outcome:confirm_alternative_candidate",
                     "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
                     "mapping_notes:target wybrany tylko do review staging handoff",
-                    "draft_readiness_outcome:needs_duplicate_resolution",
-                ],
+                "draft_readiness_outcome:needs_duplicate_resolution",
+                "source_type:gsc_query_page",
+                "mode:refresh",
+            ],
+            "blockers": [
+                "payload_apply_allowed_false",
+                "wordpress_write_not_requested",
+                "blocked_claim:ranking guarantee",
+            ],
                 "target_site_mapping_review": {
                     "candidate": "content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
                     "mapping_outcome": "confirm_alternative_candidate",
@@ -2171,7 +2201,7 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
     content_action = next(
         action for action in actions if action["id"] == "act_prepare_content_refresh_queue"
     )
-    serialized = json.dumps(content_action, ensure_ascii=False)
+    serialized = json.dumps(content_action["audit_events"][0], ensure_ascii=False)
     for stale_term in (
         "target_site",
         "mapping_review",
@@ -2179,6 +2209,12 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
         "selected_target_url",
         "staging handoff",
         "ekologus.dev.proudsite.pl",
+        "payload_apply_allowed_false",
+        "wordpress_write_not_requested",
+        "blocked_claim:",
+        "ranking guarantee",
+        "source_type:gsc_query_page",
+        "mode:refresh",
     ):
         assert stale_term not in serialized
     review = content_action["audit_events"][0]["details"]["content_url_review"]
@@ -2244,6 +2280,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         if item["candidate_id"] == candidate_id
     )
     assert brief_preview["intent"]
+    assert brief_preview["mode_label"] == "odśwież istniejącą treść"
     assert brief_preview["content_angle"]
     assert brief_preview["audience"]
     assert brief_preview["h1_direction"]

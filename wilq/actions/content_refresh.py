@@ -127,6 +127,7 @@ CONTENT_CONTRACT_LABELS = {
     "ready_for_review": "gotowe do sprawdzenia",
     "ready_for_claim_review": "gotowe do kontroli obietnic",
     "ready_for_service_review": "gotowe do sprawdzenia dopasowania usługi",
+    "review": "do sprawdzenia",
     "ranking_guarantee": "gwarancja pozycji",
     "refresh": "odśwież istniejącą treść",
     "review_only": "do kontroli",
@@ -307,8 +308,11 @@ def content_payload_with_reviewed_wordpress_draft_previews(
     enriched_payload = dict(payload)
     enriched_payload.pop("wordpress_draft_payload_preview", None)
     summary_list = list(review_event_summaries)
-    reviewed_candidate_ids = _reviewed_candidate_ids(summary_list)
     detail_list = list(review_event_details or [])
+    reviewed_candidate_ids = {
+        *_reviewed_candidate_ids(summary_list),
+        *_reviewed_candidate_ids_from_details(detail_list),
+    }
     url_reviews = {
         **_reviewed_candidate_url_reviews(summary_list),
         **_reviewed_candidate_url_reviews_from_details(detail_list),
@@ -388,6 +392,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "candidate_id": f"content_brief_gsc_{_candidate_slug_for_page(page)}",
                 "source_type": "gsc_query_page",
                 "mode": mode,
+                "mode_label": _content_contract_label(mode),
                 "topic": primary_query,
                 **url_semantics,
                 **content_gate_status,
@@ -442,6 +447,24 @@ def _reviewed_candidate_ids(review_event_summaries: Iterable[str]) -> set[str]:
         for fragment in summary.split("candidate:")[1:]:
             candidate_id = fragment.split(",", 1)[0].split(".", 1)[0].strip()
             if candidate_id:
+                candidate_ids.add(candidate_id)
+    return candidate_ids
+
+
+def _reviewed_candidate_ids_from_details(
+    review_event_details: Iterable[Mapping[str, Any]],
+) -> set[str]:
+    candidate_ids: set[str] = set()
+    for details in review_event_details:
+        for review_key in (
+            "content_url_review",
+            "content_draft_readiness_review",
+        ):
+            review = details.get(review_key)
+            if not isinstance(review, Mapping):
+                continue
+            candidate_id = review.get("candidate")
+            if isinstance(candidate_id, str) and candidate_id:
                 candidate_ids.add(candidate_id)
     return candidate_ids
 
@@ -1244,6 +1267,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "candidate_id": f"content_brief_ahrefs_{_slug(topic)}",
                 "source_type": "ahrefs_gap_review",
                 "mode": "review",
+                "mode_label": _content_contract_label("review"),
                 "topic": topic,
                 "gap_type": fact.dimensions.get("gap_type") or fact.name,
                 "competitor_domain": fact.dimensions.get("competitor_domain") or None,

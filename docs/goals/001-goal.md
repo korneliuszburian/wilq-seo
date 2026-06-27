@@ -156,6 +156,13 @@ Latest slice:
   `issue_product_count`; technical IDs remain only as contract fields.
   Verification: focused Merchant/action API tests, Action Detail route test and
   browser proof on `/actions/act_review_merchant_feed_issues`.
+- Content Action Detail now renders content mode labels and review-audit
+  summaries from WILQ API/domain output. `DetailPanels` no longer owns a
+  content-mode translator, and WordPress draft-preview selection uses
+  structured review details instead of parsing raw `candidate:` text from audit
+  summaries. Verification: focused content action API tests, Action Detail
+  route test, typecheck, language guard, live contract smoke and browser proof
+  on `/actions/act_prepare_content_refresh_queue`.
 - Merchant action preview now sources issue, attribute, context, severity,
   resolution and metric labels from the shared Merchant domain label module and
   API payload. Action Detail no longer invents generic `problem feedu` or

@@ -2507,8 +2507,22 @@ def _audit_event_with_operator_label(event: AuditEvent) -> AuditEvent:
             "event_type_label": event.event_type_label
             or _action_audit_event_label(event.event_type),
             "summary": _action_audit_summary_for_operator(event),
+            "details": _audit_details_for_operator(event.details),
         }
     )
+
+
+def _audit_details_for_operator(details: dict[str, Any]) -> dict[str, Any]:
+    operator_details = dict(details)
+    checked_items = _string_list(operator_details.get("checked_items"))
+    if checked_items:
+        operator_details["checked_items"] = [
+            _review_summary_item(item) for item in checked_items
+        ]
+    blockers = _string_list(operator_details.get("blockers"))
+    if blockers:
+        operator_details["blockers"] = [_review_blocker_label(item) for item in blockers]
+    return operator_details
 
 
 def _without_legacy_content_review_audit_terms(event: AuditEvent) -> AuditEvent:
@@ -2727,15 +2741,60 @@ def _action_review_summary(request: ActionReviewRequest) -> str:
             f"{', '.join(_review_summary_item(item) for item in request.checked_items[:8])}."
         )
     if request.blockers:
-        parts.append(f"Blokady: {', '.join(request.blockers[:8])}.")
+        parts.append(
+            f"Blokady: {', '.join(_review_blocker_label(item) for item in request.blockers[:8])}."
+        )
     parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
     return " ".join(parts)
 
 
 def _review_summary_item(item: str) -> str:
+    if item.startswith("candidate:"):
+        return "wybrano pozycję do sprawdzenia"
+    if item.startswith("source_type:"):
+        return f"źródło: {_review_source_type_label(item.removeprefix('source_type:'))}"
+    if item.startswith("mode:"):
+        return f"tryb: {content_contract_label(item.removeprefix('mode:'))}"
+    if item.startswith("url_review_outcome:"):
+        return (
+            "URL finalny: "
+            f"{content_contract_label(item.removeprefix('url_review_outcome:'))}"
+        )
     if item.startswith("reviewed_url:"):
-        return "reviewed_url:[stored in audit details]"
+        return "sprawdzony URL zapisany w szczegółach audytu"
+    if item.startswith("review_notes:"):
+        return "notatka URL zapisana w szczegółach audytu"
+    if item.startswith("draft_readiness_notes:"):
+        return "notatka gotowości szkicu zapisana w szczegółach audytu"
+    if ":" in item:
+        key, value = item.split(":", 1)
+        label = content_contract_label(key)
+        value_label = content_contract_label(_canonical_contract_key(value))
+        return f"{label}: {value_label}"
     return item
+
+
+def _review_blocker_label(item: str) -> str:
+    if item.startswith("blocked_claim:"):
+        claim = _canonical_contract_key(item.removeprefix("blocked_claim:"))
+        claim_label = content_contract_label(claim)
+        return f"nie wolno twierdzić: {claim_label}"
+    return _action_gate_label(_canonical_contract_key(item)) or content_contract_label(
+        _canonical_contract_key(item)
+    )
+
+
+def _review_source_type_label(value: str) -> str:
+    labels = {
+        "gsc_query_page": "GSC i publiczny URL",
+        "ahrefs_content_gap": "Ahrefs jako sygnał do sprawdzenia",
+        "wordpress_inventory": "spis treści WordPress",
+    }
+    return labels.get(value, content_contract_label(value))
+
+
+def _canonical_contract_key(value: str) -> str:
+    return value.strip().lower().replace(" ", "_")
 
 
 def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
@@ -3176,7 +3235,44 @@ def _action_audit_summary_for_operator(event: AuditEvent) -> str:
         return "Zapis zmian zablokowany przez warunki bezpieczeństwa WILQ."
     if event.event_type == "action_apply_completed":
         return "Zapis zmian wykonany i zapisany w audycie bezpieczeństwa."
-    return event.summary
+    return _operator_audit_summary_text(event.summary)
+
+
+def _operator_audit_summary_text(summary: str) -> str:
+    clean_summary = str(summary or "")
+    legacy_ranking_claim = " ".join(("ranking", "guarantee"))
+    legacy_blocked_ranking_claim = f"blocked_claim:{legacy_ranking_claim}"
+    replacements = {
+        "payload_apply_allowed_false": _review_blocker_label("payload_apply_allowed_false"),
+        "wordpress_write_not_requested": _review_blocker_label("wordpress_write_not_requested"),
+        legacy_blocked_ranking_claim: _review_blocker_label(legacy_blocked_ranking_claim),
+        "blocked_claim:gwarancja pozycji": _review_blocker_label(
+            "blocked_claim:gwarancja pozycji"
+        ),
+        legacy_ranking_claim: content_contract_label("ranking_guarantee"),
+        "source_type:gsc_query_page": "źródło: GSC i publiczny URL",
+        "mode:refresh": f"tryb: {content_contract_label('refresh')}",
+    }
+    for raw, label in replacements.items():
+        clean_summary = clean_summary.replace(raw, label)
+    if "candidate:" in clean_summary:
+        clean_summary = _replace_candidate_fragment(clean_summary)
+    return clean_summary
+
+
+def _replace_candidate_fragment(summary: str) -> str:
+    parts = summary.split("candidate:")
+    clean = parts[0]
+    for part in parts[1:]:
+        suffix = part
+        for delimiter in (",", "."):
+            if delimiter in suffix:
+                suffix = suffix.split(delimiter, 1)[1]
+                clean += f"wybrano pozycję do sprawdzenia{delimiter}{suffix}"
+                break
+        else:
+            clean += "wybrano pozycję do sprawdzenia"
+    return clean
 
 
 def _legacy_or_current_preview_summary(summary: str) -> str:

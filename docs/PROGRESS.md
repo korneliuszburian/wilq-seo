@@ -73,6 +73,11 @@ Date: 2026-06-27
   ranking, lead, revenue, traffic, authority, duplicate and WordPress-publish
   promises. Obsolete dashboard/backend label-map entries for those old values
   were removed instead of kept as compatibility aliases.
+- Content action detail now gets content mode labels and audit-review wording
+  from the WILQ API/domain layer. The route-local content mode translator was
+  removed, WordPress draft-preview selection no longer depends on parsing raw
+  `candidate:` text from summaries, and old content review audit summaries are
+  condensed before reaching the dashboard.
 - Demand Gen readiness blocked-claim contracts now use Polish source values for
   launch, transition, creative quality, asset effectiveness and effectiveness
   promises. Obsolete route/backend label-map entries for old Demand Gen values
