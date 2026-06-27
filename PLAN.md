@@ -224,6 +224,8 @@ Known cleanup already started:
 - `wilq-daily-command` reaches the live WILQ API and the daily context-pack
   smoke passes after capping embedded evidence summaries at 32. Keep watching
   context-pack size as live evidence grows.
+- Merchant, Content Planner and Ahrefs browser proof now passes the targeted
+  stale-term scan for visible `ID` proof-count and product-ID wording.
 
 ## 9. Current Goal
 

@@ -38,6 +38,8 @@ Recent commits:
 - `6e93975 fix(dashboard): hide raw trace ids in detail panels`
 - `e6001a5 fix(dashboard): source proof labels from api`
 - `f74c770 fix(demand-gen): expose clean proof labels`
+- `be6205b fix(brief): use clean action wording`
+- `709a4cc fix(dashboard): remove id jargon from proof copy`
 
 What changed:
 
@@ -51,10 +53,15 @@ What changed:
 - Demand Gen now exposes API-owned source labels and evidence summaries, and
   the route no longer renders raw `google_ads`, `google_analytics_4` or `ID`
   evidence counts as normal proof copy.
+- Marketing brief and action validation no longer expose `akcji WILQ`,
+  `ID dowodu` or English validation wording as operator copy.
+- Merchant, Content Planner and Ahrefs proof rows no longer render `ID`
+  evidence counts or "przykładowe ID produktów" in normal marketer copy.
 - The cleaned surfaces keep traceability through typed contracts, but raw
   internals are moved out of first-screen marketer copy.
 
-Current active slice: remaining secondary dashboard cleanup and browser proof.
+Current active slice: remaining secondary dashboard cleanup outside the latest
+Merchant, Content Planner, Ahrefs, Demand Gen and brief/action validation paths.
 
 Proof:
 
@@ -69,31 +76,35 @@ Proof:
 - Demand Gen focused tests:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen_diagnostics_exposes_honest_readiness_contract or codex_context_pack_scopes_demand_gen_payload" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "demand gen route renders readiness contract instead of generic registry" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
-- Live API/browser proof exists for GA4 cleanup only:
+- Latest proof-copy cleanup:
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or marketing_brief or ahrefs_diagnostics or content_diagnostics or actions" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail|ahrefs route renders authority context and clean gap review language|merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk git diff --check`
+- Browser proof for Merchant, Content Planner and Ahrefs cleanup:
+  `.local-lab/proof/20260627-label-cleanup-browser/`
+- Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
 ## Active Gaps
 
 Next cleanup queue:
 
-1. Browser proof:
-   - run the dashboard route walkthrough for the newly cleaned Merchant,
-     Content, Ahrefs and Brief Workflow surfaces.
-2. Ads Doctor:
+1. Ads Doctor:
    - route-local raw-key fallbacks still exist in secondary helper paths and
      should be retired as API labels cover those paths.
-3. Actions:
+2. Actions:
    - scan remaining detail/impact surfaces for raw source connector fallback
      copy outside the already cleaned first-screen panels.
-4. Recovery docs:
+3. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Capture browser proof for the newly cleaned route set.
-2. Clean Ads secondary fallback copy.
-3. Scan remaining action/registry panels and remove marketer-visible raw IDs
+1. Clean Ads secondary fallback copy.
+2. Scan remaining action/registry panels and remove marketer-visible raw IDs
    only where they are normal UI, not intentional technical drilldown.
 
 ## Guardrails

@@ -604,6 +604,11 @@ WILQ is complete for this long-range goal when:
   source summaries no longer expose `koszt_micros=`, `wartość_konwersji=`,
   `search-term rows` or `wiersze_bez_konwersji` on the marketer surface. Proof:
   `.local-lab/proof/20260627-ads-api-decision-labels/`.
+- 2026-06-27: Browser proof for Merchant, Content Planner and Ahrefs found
+  remaining visible `ID` proof counts and product-ID wording. The producing
+  API/domain/dashboard sources now render plain Polish proof summaries and the
+  proof scan under `.local-lab/proof/20260627-label-cleanup-browser/` is clean
+  for the targeted stale terms.
 
 ## Discoveries
 
@@ -652,6 +657,9 @@ WILQ is complete for this long-range goal when:
 - Completed connector refreshes are not blockers. If a successful read appears
   under `what_blocks_us`, fix marketing-brief source logic instead of changing
   dashboard copy.
+- Browser text proof catches marketer-visible jargon that unit tests can miss.
+  Keep proof scans as part of every route cleanup slice and promote repeated
+  findings into API/domain labels or language guards.
 
 ## Decision Log
 
@@ -681,14 +689,17 @@ WILQ is complete for this long-range goal when:
 - Active Command Center daily-decision labels are API-owned. Do not reintroduce
   route-local dictionaries for decision copy, source labels, metric labels,
   blocked promises, CTA labels or skill labels.
+- Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
+  Technical identifiers stay in schemas/audit/drilldown, not in the primary
+  decision surface.
 
 ## Outcomes & Retrospective
 
 - Current outcome: the active cleanup is materially reducing dashboard/API
   Polglish and raw technical leakage, but it is not complete.
-- Latest accepted proof: Ads negative-keyword labels are API-owned and verified
-  by focused API/dashboard tests plus live browser proof under
-  `.local-lab/proof/20260627-ads-negative-keyword-api-labels/`.
+- Latest accepted proof: Merchant, Content Planner and Ahrefs no longer show
+  targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
+  and the focused API/dashboard checks plus language guard passed.
 - Remaining risk: docs, dashboard routes and skill/context-pack fixtures can
   drift back into append-only history or raw vendor terminology unless every
   repeated issue becomes a focused guardrail.

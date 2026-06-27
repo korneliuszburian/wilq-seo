@@ -58,6 +58,8 @@ Wilku can inspect it without reading technical internals.
   - `6e93975 fix(dashboard): hide raw trace ids in detail panels`
   - `e6001a5 fix(dashboard): source proof labels from api`
   - `f74c770 fix(demand-gen): expose clean proof labels`
+  - `be6205b fix(brief): use clean action wording`
+  - `709a4cc fix(dashboard): remove id jargon from proof copy`
 - The Ads recommendation/keyword-context cleanup removes raw
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
@@ -72,7 +74,12 @@ Wilku can inspect it without reading technical internals.
 - The Demand Gen cleanup is committed. It adds API-owned source labels and
   evidence summaries, then uses them instead of raw source IDs and `ID` proof
   counts.
-- Current active slice: remaining secondary dashboard cleanup and browser proof.
+- The latest proof-copy cleanup is committed. Merchant, Content Planner and
+  Ahrefs no longer show `ID` proof counts or "przykładowe ID produktów" in
+  normal route proof copy; Marketing Brief and action validation no longer
+  expose `akcji WILQ`, `ID dowodu` or English validation messages.
+- Current active slice: remaining secondary dashboard/action cleanup outside
+  the latest cleaned paths.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -81,13 +88,11 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. Browser proof is still needed for the newly cleaned Merchant, Content,
-   Ahrefs and Brief Workflow surfaces.
-2. Ads Doctor still has route-local raw-key fallback debt in secondary helper
+1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
    paths. These should disappear as API labels cover the remaining panels.
-3. Action impact and detail panels still have raw connector/evidence fallback
+2. Action impact and detail panels still have raw connector/evidence fallback
    risk outside the first-screen panels already cleaned.
-4. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
+3. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 
