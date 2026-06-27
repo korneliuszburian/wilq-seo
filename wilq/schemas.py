@@ -620,13 +620,69 @@ class MarketingBriefItem(BaseModel):
     kind: Literal["metric", "blocker", "action", "recommendation"]
     priority: int = Field(ge=1, le=100)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     summary: str
     next_step: str
     risk: ActionRisk = ActionRisk.low
     blocker_reason: str | None = None
+
+    @model_validator(mode="after")
+    def fill_marketer_labels(self) -> MarketingBriefItem:
+        if not self.source_connector_labels:
+            self.source_connector_labels = [
+                _marketing_brief_connector_label(connector_id)
+                for connector_id in self.source_connectors
+            ]
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = _marketing_brief_evidence_count_label(
+                len(self.evidence_ids)
+            )
+        if not self.action_summary_label:
+            self.action_summary_label = _marketing_brief_action_count_label(
+                len(self.action_ids)
+            )
+        return self
+
+
+def _marketing_brief_connector_label(connector_id: str) -> str:
+    return {
+        "google_ads": "Google Ads",
+        "google_search_console": "Google Search Console",
+        "google_analytics_4": "GA4",
+        "google_merchant_center": "Merchant Center",
+        "merchant_center": "Merchant Center",
+        "ahrefs": "Ahrefs",
+        "localo": "Localo",
+        "wordpress_ekologus": "WordPress ekologus.pl",
+        "wordpress_sklep": "WordPress sklep.ekologus.pl",
+        "linkedin": "LinkedIn",
+        "facebook": "Facebook",
+    }.get(connector_id, "źródło danych WILQ")
+
+
+def _marketing_brief_evidence_count_label(count: int) -> str:
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
+
+
+def _marketing_brief_action_count_label(count: int) -> str:
+    if count == 0:
+        return "brak akcji do sprawdzenia"
+    if count == 1:
+        return "1 akcja do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} akcje do sprawdzenia"
+    return f"{count} akcji do sprawdzenia"
 
 
 class MarketingBriefSection(BaseModel):
@@ -2320,6 +2376,8 @@ class MerchantDiagnosticsResponse(BaseModel):
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)
     sections: list[MerchantDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocker_count: int = 0
 
@@ -2517,6 +2575,8 @@ class ContentDiagnosticsResponse(BaseModel):
     decision_queue: list[ContentDecisionItem] = Field(default_factory=list)
     sections: list[ContentDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocker_count: int = 0
 
@@ -2970,6 +3030,8 @@ class AhrefsDiagnosticsResponse(BaseModel):
     decision_queue: list[AhrefsDecisionItem] = Field(default_factory=list)
     sections: list[AhrefsDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocker_count: int = 0
 

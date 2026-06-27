@@ -4229,7 +4229,7 @@ const marketingBrief = {
         },
         {
           id: "brief_blocker_linkedin",
-          title: "LinkedIn: brakuje organizacji i access tokena",
+          title: "LinkedIn: brakuje dostępu do organizacji",
           kind: "blocker",
           priority: 80,
           source_connectors: ["linkedin"],
@@ -4784,6 +4784,8 @@ const merchantDiagnostics = {
     "ev_refresh_merchant_issue_clusters",
     "ev_refresh_merchant_safety"
   ],
+  evidence_summary_label: "3 dowody źródłowe",
+  source_connector_labels: ["Merchant Center"],
   action_ids: ["act_review_merchant_feed_issues"],
   blocker_count: 0
 };
@@ -5100,6 +5102,8 @@ const contentDiagnostics = {
     "ev_refresh_ahrefs_gap_records",
     "ev_refresh_content_safety"
   ],
+  evidence_summary_label: "4 dowody źródłowe",
+  source_connector_labels: ["Google Search Console", "WordPress ekologus.pl", "Ahrefs"],
   action_ids: ["act_prepare_content_refresh_queue"],
   blocker_count: 0
 };
@@ -6106,6 +6110,8 @@ const ahrefsDiagnostics = {
     "ev_refresh_ahrefs_gap_records",
     "ev_refresh_ahrefs_safety"
   ],
+  evidence_summary_label: "3 dowody źródłowe",
+  source_connector_labels: ["Ahrefs"],
   action_ids: [],
   blocker_count: 1
 };
@@ -7555,14 +7561,16 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
     expect(screen.queryByText(/total_products: 10900/)).not.toBeInTheDocument();
     expect(screen.getByText("Produkty w feedzie")).toBeInTheDocument();
-    expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/ev_refresh_merchant_feed/)).not.toBeInTheDocument();
     const merchantProofSection = screen
       .getByText("Dowody i ograniczenia Merchant")
       .closest("section");
     expect(merchantProofSection).not.toBeNull();
     const merchantProof = within(merchantProofSection as HTMLElement);
-    expect(merchantProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
-    expect(screen.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(merchantProof.getByText("3 dowody źródłowe")).toBeInTheDocument();
+    expect(merchantProof.getByText(/Źródła danych: Merchant Center/)).toBeInTheDocument();
+    expect(merchantProof.queryByText(/Przykładowe dowody/)).not.toBeInTheDocument();
+    expect(merchantProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
     expect(merchantProof.queryByText(/ev_refresh_merchant_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(
@@ -7609,9 +7617,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getAllByRole("link", { name: "Sprawdź w WILQ" })[0]
     ).toHaveAttribute("href", "/actions/act_review_merchant_feed_issues");
-    expect(
-      screen.getAllByRole("link", { name: "ev_refresh_merchant_feed" })[0]
-    ).toHaveAttribute("href", "/evidence/ev_refresh_merchant_feed");
+    expect(screen.queryByRole("link", { name: "ev_refresh_merchant_feed" })).not.toBeInTheDocument();
   });
 
   it("ga4 route renders workflow-specific brief focus", async () => {
@@ -7772,8 +7778,12 @@ describe("WILQ dashboard", () => {
       .closest("section");
     expect(contentProofSection).not.toBeNull();
     const contentProof = within(contentProofSection as HTMLElement);
-    expect(contentProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
-    expect(contentProof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(contentProof.getByText("4 dowody źródłowe")).toBeInTheDocument();
+    expect(
+      contentProof.getByText(/Źródła danych: Google Search Console, WordPress ekologus\.pl, Ahrefs/)
+    ).toBeInTheDocument();
+    expect(contentProof.queryByText(/Przykładowe dowody/)).not.toBeInTheDocument();
+    expect(contentProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
     expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
@@ -7867,7 +7877,10 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Publikacje social do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
-    expect(screen.getByText("LinkedIn: brakuje organizacji i access tokena")).toBeInTheDocument();
+    expect(screen.getByText("LinkedIn: brakuje dostępu do organizacji")).toBeInTheDocument();
+    expect(screen.queryByText(/access token/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/act_/)).not.toBeInTheDocument();
   });
 
   it("content route keeps review language clean in expanded workflows", async () => {
@@ -7976,8 +7989,10 @@ describe("WILQ dashboard", () => {
       .closest("section");
     expect(ahrefsProofSection).not.toBeNull();
     const ahrefsProof = within(ahrefsProofSection as HTMLElement);
-    expect(ahrefsProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
-    expect(ahrefsProof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(ahrefsProof.getByText("3 dowody źródłowe")).toBeInTheDocument();
+    expect(ahrefsProof.getByText(/Źródła danych: Ahrefs/)).toBeInTheDocument();
+    expect(ahrefsProof.queryByText(/Przykładowe dowody/)).not.toBeInTheDocument();
+    expect(ahrefsProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
     expect(ahrefsProof.queryByText(/ev_refresh_ahrefs_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();

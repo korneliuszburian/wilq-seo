@@ -30,7 +30,7 @@ import {
 } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 import {
   ActionObjectFocus,
   ActionObjectIdFocus,
@@ -1275,11 +1275,6 @@ function ContentDecisionCard({
 function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
-  const visibleEvidenceIds = data.evidence_ids.slice(0, 3);
-  const sourceConnectors = uniqueValues([
-    ...data.sections.flatMap((section) => section.source_connectors),
-    ...data.decision_queue.flatMap((decision) => decision.source_connectors)
-  ]);
   return (
     <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -1295,14 +1290,13 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Sekcje danych" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
         </div>
       </div>
       {visibleMetricFacts.length > 0 ? <ContentMetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => contentSectionLabel(section.id))} />
-        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, data.connectors)} />
+        <TraceLine label="Źródła danych" values={data.source_connector_labels} />
         <TraceLine label="Akcje" values={[formatContentActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Nie wolno twierdzić"

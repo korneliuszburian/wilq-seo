@@ -325,10 +325,13 @@ export const MarketingBriefItemSchema = z.object({
   kind: z.enum(["metric", "blocker", "action", "recommendation"]),
   priority: z.number(),
   source_connectors: z.array(z.string()),
+  source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   metric_fact_labels: z.record(z.string()).default({}),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   summary: z.string(),
   next_step: z.string(),
   risk: z.string(),
@@ -1933,6 +1936,8 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   decision_queue: z.array(MerchantDecisionItemSchema),
   sections: z.array(MerchantDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
+  source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
   blocker_count: z.number()
 });
@@ -2084,6 +2089,8 @@ export const ContentDiagnosticsResponseSchema = z.object({
   decision_queue: z.array(ContentDecisionItemSchema),
   sections: z.array(ContentDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
+  source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
   blocker_count: z.number()
 });
@@ -2547,6 +2554,8 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   decision_queue: z.array(AhrefsDecisionItemSchema),
   sections: z.array(AhrefsDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
+  source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
   blocker_count: z.number()
 });

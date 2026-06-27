@@ -152,7 +152,7 @@ def build_marketing_brief(
         MarketingBriefSection(
             id="what_blocks_us",
             title="Co blokuje decyzje",
-            description="Braki danych, OAuth, uprawnień albo bezpiecznej ścieżki zapisu.",
+            description="Braki danych, uprawnień albo bezpiecznej ścieżki zapisu.",
             items=blocker_items,
         ),
         MarketingBriefSection(
@@ -716,9 +716,12 @@ def _recommendation_items(
                 metric_facts=gsc_facts[:6],
                 summary=(
                     "GSC ma kliknięcia, impressions, CTR i pozycję. Następny krok to "
-                    "query/page breakdown, nie ogólny content brainstorming."
+                    "rozbicie zapytań i stron, nie ogólna burza tematów."
                 ),
-                next_step="Zbuduj Content Planner queue: refresh/create/merge/block.",
+                next_step=(
+                    "Zbuduj kolejkę Content Planner: odświeżyć, utworzyć, "
+                    "scalić albo zablokować."
+                ),
                 risk=ActionRisk.low,
             )
         )
@@ -730,7 +733,7 @@ def _recommendation_items(
         items.append(
             MarketingBriefItem(
                 id="brief_focus_google_ads_blocker",
-                title="Google Ads: najpierw napraw OAuth, potem diagnozuj wydatki",
+                title="Google Ads: najpierw przywróć dostęp, potem diagnozuj wydatki",
                 kind="recommendation",
                 priority=61,
                 source_connectors=["google_ads"],
@@ -739,7 +742,7 @@ def _recommendation_items(
                     "WILQ nie może uczciwie diagnozować zmarnowanego kosztu bez aktualnych dowodów Ads. "
                     "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
-                next_step="Użyj akcji `act_configure_google_ads_env` i helperów OAuth.",
+                next_step="Użyj sprawdzonej akcji WILQ, żeby przywrócić odczyt Google Ads.",
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,
             )
@@ -763,7 +766,7 @@ def _metric_summary(connector_id: str, facts: list[MetricFact]) -> str:
     sample = ", ".join(_metric_summary_parts(facts[:6])[:4])
     return (
         f"WILQ ma metryki źródłowe z {_connector_label(connector_id)}: "
-        f"{sample}. Każda metryka ma ID dowodu."
+        f"{sample}. Każda metryka ma przypisany dowód źródłowy."
     )
 
 
@@ -812,7 +815,10 @@ def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_merchant_center":
         return "Rozbij problemy Merchant na produkty i przygotuj kolejkę sprawdzenia feedu."
     if connector_id == "google_search_console":
-        return "Pobierz rozbicie query/page i zbuduj kolejkę odświeżenia albo nowej treści."
+        return (
+            "Pobierz rozbicie zapytań i stron, a potem zbuduj kolejkę "
+            "odświeżenia albo nowej treści."
+        )
     if connector_id == "google_analytics_4":
         return "Rozbij GA4 po stronie wejścia i źródle ruchu, zanim ocenimy jakość kampanii."
     if connector_id.startswith("wordpress"):
@@ -827,12 +833,12 @@ def _metric_next_step(connector_id: str) -> str:
             "Otwórz /localo i potraktuj fakty Localo jako ocenę lokalnej "
             "widoczności, nie ścieżkę zapisu zmian."
         )
-    return "Użyj tych faktów w odpowiednim workflow i nie rozszerzaj ich poza evidence."
+    return "Użyj tych faktów w odpowiednim widoku WILQ i nie rozszerzaj ich poza dowody."
 
 
 def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None) -> str:
     if connector.id == "localo" and run and _localo_access_token_blocked(run):
-        return "OAuth MCP wymaga dokończenia autoryzacji access tokenem"
+        return "dostęp Localo wymaga dokończenia połączenia"
     if run and run.errors:
         return run.errors[0]
     if run and run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
@@ -899,33 +905,35 @@ def _blocker_summary(
 ) -> str:
     if connector.id == "localo" and run and _localo_access_token_blocked(run):
         return (
-            f"Ostatni odczyt {run.id} potwierdza, że endpoint Localo odpowiada, "
-            "Organization ID i secret są skonfigurowane, ale dostęp zwraca 401 "
-            "bez wynikowego OAuth access tokenu."
+            "Ostatni odczyt potwierdza, że Localo odpowiada, ale WILQ nie ma "
+            "jeszcze zakończonego dostępu do danych lokalnej widoczności."
         )
     if run:
         return (
-            f"Ostatni refresh {run.id} zakończył się statusem {run.status}. "
+            f"Ostatni odczyt zakończył się statusem {run.status}. "
             f"Powód: {reason}"
         )
-    return f"{_connector_label(connector.id)} nie może dostarczyć evidence. Powód: {reason}"
+    return (
+        f"{_connector_label(connector.id)} nie może dostarczyć dowodów źródłowych. "
+        f"Powód: {reason}"
+    )
 
 
 def _blocker_next_step(connector_id: str, reason: str) -> str:
     if connector_id == "google_ads":
         return (
-            "Odśwież Google Ads OAuth przez akcję walidowaną w WILQ i nie "
+            "Przywróć dostęp Google Ads przez akcję walidowaną w WILQ i nie "
             "pokazuj rekomendacji Ads."
         )
     if connector_id == "localo" and (
-        "LOCALO_ACCESS_TOKEN" in reason or "OAuth MCP" in reason
+        "LOCALO_ACCESS_TOKEN" in reason or "dostęp Localo" in reason
     ):
         return (
-            "Dokończ Localo OAuth authorization_code + PKCE i zapisz wynikowy "
-            "access token lokalnie jako LOCALO_ACCESS_TOKEN."
+            "Dokończ połączenie Localo i wróć do danych lokalnej widoczności "
+            "dopiero po potwierdzonym odczycie."
         )
     if connector_id == "localo":
-        return "Dokończ OAuth Localo i dopiero potem pokazuj dane lokalnej widoczności."
+        return "Dokończ dostęp Localo i dopiero potem pokazuj dane lokalnej widoczności."
     return "Uzupełnij wskazaną blokadę albo zostaw tę rekomendację zablokowaną."
 
 

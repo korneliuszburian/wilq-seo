@@ -3824,6 +3824,9 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert any(item["source_connectors"] == ["ahrefs"] for item in metric_items)
     ahrefs_item = next(item for item in metric_items if item["source_connectors"] == ["ahrefs"])
     assert ahrefs_item["evidence_ids"] == refresh_response.json()["evidence_ids"][-1:]
+    assert ahrefs_item["source_connector_labels"] == ["Ahrefs"]
+    assert ahrefs_item["evidence_summary_label"] == "1 dowód źródłowy"
+    assert ahrefs_item["action_summary_label"] == "brak akcji do sprawdzenia"
     assert ahrefs_item["metric_facts"]
     blocker_items = sections["what_blocks_us"]["items"]
     assert any(item["source_connectors"] == ["google_ads"] for item in blocker_items)
@@ -15363,6 +15366,57 @@ def test_marketing_brief_localo_metric_headline_is_marketer_friendly(
     assert "localo_total_keyword_volume =" not in localo_item.title
     assert "23" in localo_item.summary
     assert "798" in localo_item.summary
+
+
+def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:
+    connector = ConnectorStatus(
+        id="localo",
+        label="Localo",
+        status=ConnectorStatusValue.auth_error,
+        configured=True,
+        missing_credentials=[],
+        freshness=FreshnessState(state="stale"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="auth_error",
+    )
+    refresh_run = ConnectorRefreshRun(
+        id="refresh_localo_access_blocked",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.blocked,
+        completed_at=datetime.now(UTC),
+        evidence_ids=["ev_refresh_localo_access_blocked"],
+        external_call_attempted=True,
+        vendor_data_collected=False,
+        metric_summary={"access_token_present": 0},
+        summary="Localo access blocked.",
+        errors=["LOCALO_ACCESS_TOKEN is missing."],
+    )
+
+    brief = build_marketing_brief(
+        connectors=[connector],
+        refresh_runs=[refresh_run],
+        actions=[],
+    )
+
+    blockers = next(section for section in brief.sections if section.id == "what_blocks_us").items
+    localo_blocker = next(item for item in blockers if item.source_connectors == ["localo"])
+    visible_copy = " ".join(
+        [
+            localo_blocker.title,
+            localo_blocker.summary,
+            localo_blocker.next_step,
+            localo_blocker.blocker_reason or "",
+            localo_blocker.evidence_summary_label,
+            " ".join(localo_blocker.source_connector_labels),
+        ]
+    )
+    assert "Localo" in localo_blocker.source_connector_labels
+    assert "1 dowód źródłowy" == localo_blocker.evidence_summary_label
+    assert "OAuth" not in visible_copy
+    assert "access token" not in visible_copy.lower()
+    assert "LOCALO_ACCESS_TOKEN" not in visible_copy
+    assert "refresh_localo_access_blocked" not in visible_copy
 
 
 def test_codex_context_pack_embeds_marketing_brief_contract(

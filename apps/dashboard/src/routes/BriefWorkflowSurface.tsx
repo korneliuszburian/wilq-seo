@@ -10,7 +10,7 @@ import {
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
 import { priorityLabel } from "./marketingLabels";
 import { TacticalQueuePanel } from "./TacticalQueuePanel";
@@ -50,14 +50,14 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Brak dowodów GA4 w WILQ. Uruchom odczyt GA4, zanim WILQ oceni strony wejścia albo jakość ruchu.",
     safetyTitle: "Brama bezpieczeństwa GA4",
     safetyText:
-      "GA4 służy do diagnozy jakości ruchu i problemów pomiaru. WILQ nie traktuje braku danych jako spadku marketingowego bez evidence.",
+      "GA4 służy do diagnozy jakości ruchu i problemów pomiaru. WILQ nie traktuje braku danych jako spadku marketingowego bez dowodu źródłowego.",
     connectorIds: ["google_analytics_4"],
     textNeedles: []
   },
   "/localo": {
     title: "Localo",
     description:
-      "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo. Dostęp OAuth może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych danych o rankingach i GBP.",
+      "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo. Sam dostęp do źródła może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych danych o rankingach i GBP.",
     focusTitle: "Lokalna widoczność do sprawdzenia",
     emptyMessage:
       "Brak konkretnych faktów Localo o rankingach i GBP w WILQ. WILQ może pokazać status dostępu, ale nie dopowiada lokalnych wyników bez dowodów.",
@@ -136,9 +136,21 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
-        <TraceLine label="Źródła" values={item.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
+        <TraceLine
+          label="Dowody"
+          values={item.evidence_summary_label ? [item.evidence_summary_label] : []}
+          empty="brak etykiety dowodów z WILQ"
+        />
+        <TraceLine
+          label="Źródła"
+          values={item.source_connector_labels}
+          empty="źródła danych WILQ"
+        />
+        <TraceLine
+          label="Akcje"
+          values={item.action_summary_label ? [item.action_summary_label] : []}
+          empty="brak akcji do sprawdzenia"
+        />
       </div>
       {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
     </article>
@@ -243,19 +255,28 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
             </div>
           </div>
           <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <LinkedTraceLine
+            <TraceLine
               label="Dowody"
-              values={uniqueValues(routeItems.flatMap((item) => item.evidence_ids))}
-              kind="evidence"
+              values={uniqueValues(
+                routeItems
+                  .map((item) => item.evidence_summary_label)
+                  .filter((label) => label.length > 0)
+              )}
+              empty="brak etykiety dowodów z WILQ"
             />
             <TraceLine
               label="Źródła"
-              values={uniqueValues(routeItems.flatMap((item) => item.source_connectors))}
+              values={uniqueValues(routeItems.flatMap((item) => item.source_connector_labels))}
+              empty="źródła danych WILQ"
             />
-            <LinkedTraceLine
+            <TraceLine
               label="Akcje"
-              values={uniqueValues(routeItems.flatMap((item) => item.action_ids))}
-              kind="actions"
+              values={uniqueValues(
+                routeItems
+                  .map((item) => item.action_summary_label)
+                  .filter((label) => label.length > 0)
+              )}
+              empty="brak akcji do sprawdzenia"
             />
           </div>
           {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 6)} /> : null}

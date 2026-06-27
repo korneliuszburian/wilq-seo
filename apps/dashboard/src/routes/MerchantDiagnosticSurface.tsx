@@ -10,7 +10,7 @@ import {
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
 import { priorityLabel } from "./marketingLabels";
 import {
@@ -1056,13 +1056,8 @@ function formatPolishCount(count: number, one: string, few: string, many: string
 function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
-  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   const blockedClaims = data.sections.flatMap((section) => section.blocked_claim_labels);
   const sectionTitles = data.sections.map((section) => section.label);
-  const sourceConnectors = uniqueValues([
-    ...data.sections.flatMap((section) => section.source_connectors),
-    ...data.issue_clusters.flatMap((cluster) => cluster.source_connectors)
-  ]);
   return (
     <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -1076,9 +1071,9 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Sekcje API" value={data.sections.length} />
+          <MetricTile label="Obszary danych" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
         </div>
       </div>
       {visibleMetricFacts.length > 0 ? (
@@ -1094,8 +1089,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={sectionTitles} />
-        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={sourceConnectors} />
+        <TraceLine label="Źródła danych" values={data.source_connector_labels} />
         <TraceLine
           label="Akcje"
           values={[formatMerchantIdCount(data.action_ids.length, "akcja", "akcji")]}

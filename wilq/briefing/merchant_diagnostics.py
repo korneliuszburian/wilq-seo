@@ -296,8 +296,33 @@ def _latest_merchant_refresh() -> ConnectorRefreshRun | None:
 def _merchant_response_with_operator_labels(
     response: MerchantDiagnosticsResponse,
 ) -> MerchantDiagnosticsResponse:
+    response_source_connectors = _unique(
+        [
+            *(
+                connector
+                for section in response.sections
+                for connector in section.source_connectors
+            ),
+            *(
+                connector
+                for cluster in response.issue_clusters
+                for connector in cluster.source_connectors
+            ),
+            *(
+                connector
+                for decision in response.decision_queue
+                for connector in decision.source_connectors
+            ),
+        ]
+    )
     return response.model_copy(
         update={
+            "source_connector_labels": _merchant_source_connector_labels(
+                response_source_connectors
+            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(
+                response.evidence_ids
+            ),
             "freshness_assessment": response.freshness_assessment.model_copy(
                 update={
                     "state_label": _merchant_freshness_label(

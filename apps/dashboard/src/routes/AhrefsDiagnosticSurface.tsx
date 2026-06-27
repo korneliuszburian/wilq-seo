@@ -3,7 +3,7 @@ import { ClipboardCheck } from "lucide-react";
 
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
 
@@ -234,7 +234,6 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
 }
 
 function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
-  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3">
@@ -261,9 +260,8 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
         ))}
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
-        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={["ahrefs"]} />
+        <MetricTile label="Dowody" value={data.evidence_summary_label} />
+        <TraceLine label="Źródła danych" values={data.source_connector_labels} />
         <TraceLine
           label="Czego nie wolno obiecać"
           values={uniqueValues(

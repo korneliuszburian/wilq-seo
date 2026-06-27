@@ -14,6 +14,7 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -302,6 +303,32 @@ def build_content_diagnostics(
             action_ids,
         ),
     ]
+    evidence_ids = _unique(
+        [
+            *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+            *(
+                evidence_id
+                for decision in decision_queue
+                for evidence_id in decision.evidence_ids
+            ),
+        ]
+    )
+    action_ids = _unique(
+        [
+            *(action_id for section in sections for action_id in section.action_ids),
+            *(action_id for decision in decision_queue for action_id in decision.action_ids),
+        ]
+    )
+    response_source_connectors = _unique(
+        [
+            *(connector for section in sections for connector in section.source_connectors),
+            *(
+                connector
+                for decision in decision_queue
+                for connector in decision.source_connectors
+            ),
+        ]
+    )
     return ContentDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connectors=connectors,
@@ -313,22 +340,10 @@ def build_content_diagnostics(
         marketer_decision=_content_marketer_decision(decision_queue, sections),
         decision_queue=decision_queue,
         sections=sections,
-        evidence_ids=_unique(
-            [
-                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-                *(
-                    evidence_id
-                    for decision in decision_queue
-                    for evidence_id in decision.evidence_ids
-                ),
-            ]
-        ),
-        action_ids=_unique(
-            [
-                *(action_id for section in sections for action_id in section.action_ids),
-                *(action_id for decision in decision_queue for action_id in decision.action_ids),
-            ]
-        ),
+        evidence_ids=evidence_ids,
+        evidence_summary_label=evidence_count_label(evidence_ids),
+        source_connector_labels=source_connector_labels(response_source_connectors),
+        action_ids=action_ids,
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
 

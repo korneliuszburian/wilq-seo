@@ -9,6 +9,7 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionRisk,
     AhrefsDecisionItem,
@@ -255,6 +256,27 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
     )
     labeled_gap_read_contract = _label_ahrefs_gap_read_contract(gap_read_contract)
 
+    evidence_ids = _unique(
+        [
+            *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+            *(
+                evidence_id
+                for decision in decision_queue
+                for evidence_id in decision.evidence_ids
+            ),
+        ]
+    )
+    response_source_connectors = _unique(
+        [
+            *(connector for section in sections for connector in section.source_connectors),
+            *(
+                connector
+                for decision in decision_queue
+                for connector in decision.source_connectors
+            ),
+            *labeled_gap_read_contract.source_connectors,
+        ]
+    )
     return AhrefsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -276,16 +298,9 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         ),
         decision_queue=decision_queue,
         sections=[_label_ahrefs_section(section) for section in sections],
-        evidence_ids=_unique(
-            [
-                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-                *(
-                    evidence_id
-                    for decision in decision_queue
-                    for evidence_id in decision.evidence_ids
-                ),
-            ]
-        ),
+        evidence_ids=evidence_ids,
+        evidence_summary_label=evidence_count_label(evidence_ids),
+        source_connector_labels=source_connector_labels(response_source_connectors),
         action_ids=[],
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
