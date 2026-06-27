@@ -373,7 +373,7 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
             Sprawdzenie w WILQ
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            WILQ sprawdza dane akcji, źródło, ID dowodów i tryb działania. Ten krok nie zapisuje zmian.
+            WILQ sprawdza dane akcji, źródło, dowody i tryb działania. Ten krok nie zapisuje zmian.
           </p>
         </div>
         <button

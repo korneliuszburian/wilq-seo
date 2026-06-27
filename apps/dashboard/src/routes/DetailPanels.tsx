@@ -12,7 +12,6 @@ import {
 } from "../lib/api";
 import { LoadingBand } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine } from "../components/TraceLine";
 import {
   ActionHumanReviewControls,
   ActionPreviewControls,
@@ -62,7 +61,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <SectionHeading title="Dowody i diagnoza" />
         <p className="text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
         <div className="mt-4 text-xs text-slate-600">
-          <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
+          Dowody: {action.evidence_summary_label}
         </div>
         <ActionReviewGatePanel action={action} />
         <ActionHumanReviewControls action={action} />

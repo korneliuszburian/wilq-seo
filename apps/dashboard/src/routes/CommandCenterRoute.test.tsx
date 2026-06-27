@@ -72,7 +72,7 @@ const commandCenterFixture: CommandCenterResponse = {
       codex_prompt:
         "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
       codex_context_endpoint: "/api/codex/context-pack",
-      expected_codex_output: "Polskie podsumowanie przeglądu problemów feedu z ID dowodów.",
+      expected_codex_output: "Polskie podsumowanie przeglądu problemów feedu z dowodami źródłowymi.",
       risk: "medium"
     },
     {

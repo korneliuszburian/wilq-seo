@@ -18,6 +18,7 @@ const actionFixture: ActionObject = {
   status: "needs_validation",
   status_label: "wymaga sprawdzenia w WILQ",
   evidence_ids: ["ev_refresh_merchant_feed"],
+  evidence_summary_label: "1 dowód źródłowy",
   metrics: [],
   validation_status: "not_validated",
   validation_status_label: "nie sprawdzono w WILQ",
@@ -1024,6 +1025,8 @@ describe("Action detail route", () => {
       expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0)
     );
     expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.queryByText("ev_refresh_merchant_feed")).not.toBeInTheDocument();
     expect(screen.queryByText("availability_updated / n:availability")).not.toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);

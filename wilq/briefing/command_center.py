@@ -1999,7 +1999,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polskie podsumowanie przeglądu problemów feedu z ID dowodów, akcją "
+                "Polskie podsumowanie przeglądu problemów feedu z dowodami źródłowymi, akcją "
                 "i listą twierdzeń, których nie wolno używać."
             ),
             source_connectors=item.source_connectors,
@@ -2029,7 +2029,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polska kolejka decyzji treści z ID dowodów, źródłami danych "
+                "Polska kolejka decyzji treści z dowodami źródłowymi, źródłami danych "
                 "i następnym krokiem."
             ),
             source_connectors=item.source_connectors,
@@ -2110,7 +2110,7 @@ def _action_plan_item(
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
                 "Polskie podsumowanie blokady Ads z brakującymi polami kontekstu biznesowego, "
-                "ID dowodów i listą twierdzeń, których nie wolno dopowiadać."
+                "dowodami źródłowymi i listą twierdzeń, których nie wolno dopowiadać."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2146,14 +2146,14 @@ def _action_plan_item(
                     "Ads dla Ekologus oraz kolejkę oceny: budżety, rekomendacje, "
                     "wskaźniki kampanii, zapytania wyszukiwane, wykluczenia i segmenty "
                     "niestandardowe. "
-                    "Cytuj ID dowodów i "
-                    "ID akcji. Nie twierdź opłacalności, zmarnowanego budżetu "
+                    "Cytuj dowody źródłowe i akcje do sprawdzenia. Nie twierdź "
+                    "opłacalności, zmarnowanego budżetu "
                     "ani zapisu zmian; wskaż bezpieczne decyzje do sprawdzenia "
                     "i brakujące kontrakty."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(
-                    "Polska kolejka oceny Ads z ID dowodów, akcjami do sprawdzenia, "
+                    "Polska kolejka oceny Ads z dowodami źródłowymi, akcjami do sprawdzenia, "
                     "zablokowanymi obietnicami i następnymi krokami bez zapisu zmian."
                 ),
                 source_connectors=item.source_connectors,
@@ -2181,7 +2181,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polskie podsumowanie blokady z ID dowodów i bez zmyślonych metryk Ads."
+                "Polskie podsumowanie blokady z dowodami źródłowymi i bez zmyślonych metryk Ads."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2218,7 +2218,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski przegląd Localo z ID dowodów, agregatami i zablokowanymi obietnicami."
+                "Polski przegląd Localo z dowodami źródłowymi, agregatami i zablokowanymi obietnicami."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2307,7 +2307,7 @@ def _action_plan_item(
             "do decyzji marketera po polsku, używając tylko dowodów w WILQ."
         ),
         codex_context_endpoint="/api/codex/context-pack",
-        expected_codex_output="Polska decyzja operatora z ID dowodów i następnym krokiem.",
+        expected_codex_output="Polska decyzja operatora z dowodami źródłowymi i następnym krokiem.",
         source_connectors=item.source_connectors,
         evidence_ids=item.evidence_ids,
         action_ids=item.action_ids,

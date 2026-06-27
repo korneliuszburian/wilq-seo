@@ -299,6 +299,7 @@ class ActionObject(BaseModel):
     status: ActionStatus
     status_label: str = ""
     evidence_ids: list[str] = Field(min_length=1)
+    evidence_summary_label: str = ""
     metrics: list[MetricFact] = Field(default_factory=list)
     human_diagnosis: str = Field(min_length=1)
     recommended_reason: str

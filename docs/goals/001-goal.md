@@ -150,6 +150,12 @@ Latest slice:
   audit IDs or raw connector IDs. Verification: focused action API tests,
   dashboard action tests, `scripts/live_contract_smoke.py`, and browser proof
   on `/actions/act_review_merchant_feed_issues`.
+- Action Detail now renders API-owned evidence condensation instead of raw
+  evidence IDs on the first screen. The Merchant action diagnosis uses Polish
+  metric labels such as `zgłoszenia problemów` instead of raw metric keys like
+  `issue_product_count`; technical IDs remain only as contract fields.
+  Verification: focused Merchant/action API tests, Action Detail route test and
+  browser proof on `/actions/act_review_merchant_feed_issues`.
 - GA4 readiness labels now come from the WILQ API/shared schema, not from
   route-local read-contract mapping. `/ga4` renders condensed API metric tiles
   and hides raw GA4 metric fact names from decision cards; browser proof found

@@ -179,6 +179,7 @@ export const ActionObjectSchema = z.object({
   status: z.string(),
   status_label: z.string().default(""),
   evidence_ids: z.array(z.string()).min(1),
+  evidence_summary_label: z.string().default(""),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string(),
   recommended_reason: z.string(),

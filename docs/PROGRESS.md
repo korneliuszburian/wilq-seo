@@ -108,6 +108,11 @@ Date: 2026-06-27
   `/api/actions/act_review_merchant_feed_issues`,
   `scripts/live_contract_smoke.py`, and browser route
   `/actions/act_review_merchant_feed_issues`.
+- Action Detail now receives `evidence_summary_label` from the WILQ API and no
+  longer renders raw evidence IDs on the first screen. Merchant action diagnosis
+  now uses Polish metric labels such as `zgłoszenia problemów` instead of raw
+  metric keys like `issue_product_count`. Browser proof:
+  `.local-lab/proof/20260627-action-evidence-condensation/browser/action-detail-body-final.txt`.
 - Localo action, skill eval and knowledge sources now use Polish source values
   for blocked local claims: ukończone zadanie lokalne, zapis zmian w profilu
   firmy and poprawa widoczności lokalnej. Old active values such as

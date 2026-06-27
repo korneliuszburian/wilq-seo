@@ -803,7 +803,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
             metrics=merchant_action_metrics,
             human_diagnosis=(
-                "Merchant Center ma wymiarowe dane problemów w WILQ. "
+                "Merchant Center ma dane o problemach feedu w WILQ. "
                 f"{_metric_sentence(merchant_action_metrics)}. To uzasadnia "
                 "kolejkę przeglądu problemów feedu, ale nie automatyczną zmianę "
                 "danych produktu."
@@ -2012,8 +2012,33 @@ def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:
-    sample = ", ".join(f"{fact.name}={fact.value}" for fact in facts[:4])
-    return f"Najważniejsze fakty: {sample}"
+    if not facts:
+        return "Najważniejsze fakty: brak metryk do pokazania"
+    samples = ", ".join(
+        f"{_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:4]
+    )
+    if len(facts) > 4:
+        return f"Najważniejsze fakty: {samples} i kolejne sygnały w dowodach"
+    return f"Najważniejsze fakty: {samples}"
+
+
+def _metric_fact_label(name: str) -> str:
+    labels = {
+        "issue_product_count": "zgłoszenia problemów",
+        "sample_product_id": "przykładowe produkty",
+        "active_users": "aktywni użytkownicy",
+        "engagement_rate": "zaangażowanie",
+        "ecommerce_purchases": "zakupy e-commerce",
+        "key_events": "zdarzenia kluczowe",
+        "clicks": "kliknięcia",
+        "impressions": "wyświetlenia",
+        "ctr": "CTR",
+        "position": "średnia pozycja",
+        "content_gap_count": "luki treści",
+        "keyword_count": "liczba fraz",
+        "visibility_score": "widoczność",
+    }
+    return labels.get(name, "metryka źródłowa")
 
 
 def _prioritize_action_metrics(
@@ -2265,7 +2290,7 @@ def apply_action(
     if action.mode != ActionMode.apply:
         errors.append("Akcja nie ma trybu zapisu zmian w zewnętrznym systemie.")
     if not action.evidence_ids:
-        errors.append("Akcja nie może zapisać zmian bez ID dowodów.")
+        errors.append("Akcja nie może zapisać zmian bez dowodów źródłowych.")
     if connector is None or not connector.configured:
         errors.append("Brakuje skonfigurowanego źródła danych do zapisu zmian.")
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
@@ -2420,6 +2445,9 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
             "mode_label": _action_mode_label(action.mode),
             "risk_label": _action_risk_label(action.risk),
             "status_label": _action_status_label(action.status),
+            "evidence_summary_label": _action_evidence_summary_label(
+                action.evidence_ids
+            ),
             "validation_status_label": _action_validation_status_label(
                 action.validation_status
             ),
@@ -3026,6 +3054,17 @@ def _action_status_label(value: ActionStatus | str) -> str:
     return labels.get(str(value), "status akcji do sprawdzenia")
 
 
+def _action_evidence_summary_label(evidence_ids: list[str]) -> str:
+    count = len(evidence_ids)
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
+
+
 def _action_validation_status_label(value: str) -> str:
     labels = {
         "not_validated": "nie sprawdzono w WILQ",
@@ -3220,7 +3259,7 @@ def _action_gate_label(value: str) -> str | None:
         "dry_run_preview_required": "wymagany wcześniejszy podgląd zmian",
         "action_confirmation_required": "wymagane potwierdzenie podglądu zmian",
         "metric_facts_required": "wymagane metryki z dowodami",
-        "evidence_ids_required": "wymagane ID dowodów",
+        "evidence_ids_required": "wymagane dowody źródłowe",
         "impact_sanity_check_required": "wymagane sprawdzenie efektu",
         "vendor_mutation_adapter_required": "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie",
         "validate_action_object": "sprawdzenie akcji",

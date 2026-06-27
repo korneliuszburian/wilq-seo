@@ -11760,6 +11760,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         for action in actions_response.json()
         if action["id"] == "act_review_merchant_feed_issues"
     )
+    assert merchant_action["evidence_summary_label"]
+    assert "issue_product_count" not in merchant_action["human_diagnosis"]
+    assert "zgłoszenia problemów" in merchant_action["human_diagnosis"]
+    assert "ev_refresh" not in merchant_action["human_diagnosis"]
     assert merchant_action["payload"]["issue_clusters"][0]["issue_type"] == (
         "availability_updated"
     )
