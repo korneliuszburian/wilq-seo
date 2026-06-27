@@ -393,6 +393,7 @@ export const AdsDiagnosticSectionSchema = z.object({
   knowledge_card_ids: z.array(z.string()).optional().default([]),
   expert_rule_ids: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -1414,15 +1415,18 @@ export const AdsDecisionItemSchema = z.object({
     "fix_ads_access"
   ]),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   decision_type_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   rationale: z.string(),
   next_step: z.string(),
   priority: z.number().default(50),
+  priority_label: z.string().default(""),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
@@ -1467,6 +1471,8 @@ export const AdsDecisionItemSchema = z.object({
   knowledge_card_ids: z.array(z.string()).optional().default([]),
   expert_rule_ids: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
+  risk_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
@@ -1487,12 +1493,14 @@ export const AdsOperatorSummarySchema = z.object({
   blocked_area_count: z.number(),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).default([]),
   operator_review_gates: z.array(z.string()),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const AdsDiagnosticsResponseSchema = z.object({
@@ -1500,7 +1508,10 @@ export const AdsDiagnosticsResponseSchema = z.object({
   language: z.literal("pl-PL"),
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
+  connector_status_label: z.string().default(""),
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  latest_refresh_status_label: z.string().nullable().optional(),
+  live_data_status_label: z.string().default(""),
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
   account_currency_read_contract: AdsAccountCurrencyReadContractSchema,

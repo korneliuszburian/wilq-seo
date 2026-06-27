@@ -698,7 +698,12 @@ def build_ads_diagnostics(
     response = AdsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
+        connector_status_label=_ads_connector_status_label(str(connector.status)),
         latest_refresh=latest_refresh,
+        latest_refresh_status_label=_ads_refresh_status_label(latest_refresh.status)
+        if latest_refresh
+        else None,
+        live_data_status_label=_ads_live_data_status_label(live_data_available),
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
         account_currency_read_contract=account_currency_read_contract,
@@ -735,6 +740,7 @@ def build_ads_diagnostics(
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
     _hydrate_ads_review_gate_labels(response)
+    _hydrate_ads_marketer_labels(response)
     if view == "summary":
         return _compact_ads_diagnostics_summary(response)
     return response
@@ -1290,7 +1296,7 @@ def _campaign_read_contract(
                 f"wyświetlenia={total_impressions}, "
                 f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
-                f"wartość_konwersji={_format_float(total_conversion_value)}."
+                f"wartość konwersji={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "clicks",
@@ -3209,7 +3215,7 @@ def _search_terms_read_contract(
                 f"wyświetlenia={total_impressions}, "
                 f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
-                f"wartość_konwersji={_format_float(total_conversion_value)}."
+                f"wartość konwersji={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -3297,7 +3303,7 @@ def _search_term_review_summary_contract(
             f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
             f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
             f"konwersje={_format_float(total_conversions)}, "
-            f"wiersze_bez_konwersji={zero_conversion_count}."
+            f"wiersze bez konwersji={zero_conversion_count}."
         ),
         allowed_metrics=search_terms_read_contract.allowed_metrics,
         missing_read_contracts=search_terms_read_contract.missing_read_contracts,
@@ -3658,7 +3664,7 @@ def _search_term_safety_read_contract(
                 f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
                 f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
-                f"wartość_konwersji={_format_float(total_conversion_value)}."
+                f"wartość konwersji={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -6376,8 +6382,166 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
         owner.human_review_gate_labels = _ads_review_gate_labels(owner.human_review_gates)
 
 
+def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
+    response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        response.operator_summary.missing_read_contracts
+    )
+    response.operator_summary.blocked_claim_labels = _unique(
+        response.operator_summary.blocked_claims
+    )
+    response.decision_queue = [
+        decision.model_copy(
+            update={
+                "status_label": _ads_status_label(decision.status),
+                "decision_type_label": _ads_decision_type_label(decision.decision_type),
+                "priority_label": _ads_priority_label(decision.priority),
+                "risk_label": _ads_risk_label(decision.risk),
+                "missing_read_contract_labels": _ads_missing_read_contract_labels(
+                    decision.missing_read_contracts
+                ),
+                "blocked_claim_labels": _unique(decision.blocked_claims),
+            }
+        )
+        for decision in response.decision_queue
+    ]
+    response.sections = [
+        section.model_copy(
+            update={
+                "status_label": _ads_status_label(section.status),
+                "blocked_claim_labels": _unique(section.blocked_claims),
+            }
+        )
+        for section in response.sections
+    ]
+
+
 def _ads_review_gate_labels(gates: Iterable[object]) -> list[str]:
     return [ADS_REVIEW_GATE_LABELS.get(str(gate), str(gate)) for gate in gates if str(gate)]
+
+
+def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
+    labels = {
+        "recommendations": "rekomendacje Google Ads",
+        "recommendation_impact_preview": "podgląd wpływu rekomendacji",
+        "recommendation_apply_preview": "podgląd zapisu rekomendacji",
+        "human_strategy_review": "ocena strategii przez człowieka",
+        "approved_human_strategy_review": "zatwierdzona ocena strategii",
+        "change_history": "historia zmian",
+        "budget_pacing": "tempo wydawania budżetu",
+        "campaign_budget": "budżet kampanii",
+        "shared_budget_distribution": "podział wspólnego budżetu",
+        "budget_target_or_seasonality": "cel budżetowy albo sezonowość",
+        "business_goal": "cel biznesowy",
+        "target_roas_or_cpa": "docelowy zwrot z reklam albo koszt pozyskania celu",
+        "profit_margin": "marża albo model rentowności",
+        "human_budget_goal": "cel budżetu od człowieka",
+        "account_currency": "waluta konta",
+        "pre_change_performance_window": "okno wyników przed zmianą",
+        "post_change_performance_window": "okno wyników po zmianie",
+        "human_change_impact_review": "ręczna ocena wpływu zmian",
+        "apply_preview": "podgląd zmian",
+        "change_event_rows": "zdarzenia historii zmian",
+        "current_campaign_snapshot": "bieżący odczyt kampanii",
+        "impression_share": "udział w wyświetleniach",
+        "keyword match context": "kontekst dopasowania słów kluczowych",
+        "keyword_match_context_read": "odczyt słów kluczowych i typów dopasowania",
+        "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
+        "search_term_90d_read": "90-dniowy odczyt zapytań",
+        "human_intent_review": "ręczna ocena intencji",
+        "negative_keyword_change_preview": "podgląd zmian wykluczeń",
+        "ngram_to_negative_keyword_change_preview": (
+            "podgląd zmian wykluczeń z tematów zapytań"
+        ),
+        "review_search_term_context": "sprawdzenie intencji zapytania",
+        "check_existing_keywords_and_match_types": (
+            "sprawdzenie słów i typów dopasowania"
+        ),
+        "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
+        "google_ads_mutation_audit": "sprawdzenie zapisu zmian w Google Ads",
+        "keyword_planner_enrichment": "wzbogacenie przez Keyword Planner",
+        "forecast_or_audience_size": "prognoza albo rozmiar odbiorców",
+        "campaign activity": "aktywność kampanii",
+        "search_term_view": "widok zapytań użytkowników",
+        "zero_conversion_search_terms": "zapytania z zerową konwersją",
+    }
+    return [labels.get(str(contract), str(contract)) for contract in contracts if str(contract)]
+
+
+def _ads_status_label(status: object) -> str:
+    value = str(status)
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+        "missing": "brak danych",
+    }
+    return labels.get(value, value)
+
+
+def _ads_decision_type_label(decision_type: object) -> str:
+    labels = {
+        "review_campaign_activity": "aktywność kampanii",
+        "review_business_context": "kontekst biznesowy",
+        "review_derived_kpi": "wyliczone wskaźniki",
+        "review_budget_context": "kontekst budżetu",
+        "review_recommendations": "rekomendacje",
+        "review_impression_share": "udział w wyświetleniach",
+        "review_change_history": "historia zmian",
+        "review_search_term_safety": "bezpieczeństwo zapytań",
+        "review_search_terms": "wyszukiwane hasła",
+        "review_search_term_ngrams": "tematy zapytań",
+        "review_negative_keyword_safety": "bezpieczeństwo wykluczeń",
+        "prepare_custom_segments": "segmenty odbiorców",
+        "block_write_actions": "blokada zapisu zmian",
+        "fix_ads_access": "naprawa dostępu",
+        "review_campaign_triage": "kolejność kampanii",
+    }
+    value = str(decision_type)
+    return labels.get(value, value)
+
+
+def _ads_priority_label(priority: int) -> str:
+    if priority <= 12:
+        return "najpierw"
+    if priority <= 25:
+        return "wysoki priorytet"
+    if priority <= 45:
+        return "do sprawdzenia"
+    return "niżej w kolejce"
+
+
+def _ads_risk_label(risk: object) -> str:
+    value = str(risk.value if isinstance(risk, ActionRisk) else risk)
+    labels = {
+        "critical": "krytyczne",
+        "high": "wysokie",
+        "medium": "średnie",
+        "low": "niskie",
+    }
+    return labels.get(value, value)
+
+
+def _ads_connector_status_label(status: str) -> str:
+    labels = {
+        "configured": "dostęp skonfigurowany",
+        "missing_credentials": "brakuje dostępu",
+        "disabled": "źródło wyłączone",
+    }
+    return labels.get(status, f"status: {status}")
+
+
+def _ads_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
+    value = status.value if isinstance(status, ConnectorRefreshStatus) else status
+    labels = {
+        "completed": "zakończony",
+        "blocked": "zablokowany",
+        "failed": "błąd",
+        "running": "w toku",
+    }
+    return labels.get(value, value)
+
+
+def _ads_live_data_status_label(live_data_available: bool) -> str:
+    return "metryki Google Ads dostępne" if live_data_available else "brak metryk Google Ads"
 
 
 def _unique(values: Iterable[object]) -> list[str]:

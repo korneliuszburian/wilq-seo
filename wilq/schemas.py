@@ -684,6 +684,7 @@ class AdsDiagnosticSection(BaseModel):
     id: str
     title: str
     status: Literal["ready", "blocked", "missing"]
+    status_label: str = ""
     summary: str
     diagnosis: str
     next_step: str
@@ -694,6 +695,7 @@ class AdsDiagnosticSection(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
 
@@ -1743,11 +1745,14 @@ class AdsDecisionItem(BaseModel):
         "review_campaign_triage",
     ]
     status: Literal["ready", "blocked"]
+    status_label: str = ""
+    decision_type_label: str = ""
     title: str
     summary: str
     rationale: str
     next_step: str
     priority: int = Field(default=50, ge=1, le=100)
+    priority_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
@@ -1794,6 +1799,9 @@ class AdsDecisionItem(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
+    risk_label: str = ""
     risk: ActionRisk = ActionRisk.low
 
 
@@ -1814,12 +1822,14 @@ class AdsOperatorSummary(BaseModel):
     blocked_area_count: int = 0
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsDiagnosticsResponse(BaseModel):
@@ -1827,7 +1837,10 @@ class AdsDiagnosticsResponse(BaseModel):
     language: Literal["pl-PL"] = "pl-PL"
     strict_instruction: str
     connector: ConnectorStatus
+    connector_status_label: str = ""
     latest_refresh: ConnectorRefreshRun | None = None
+    latest_refresh_status_label: str | None = None
+    live_data_status_label: str = ""
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
     account_currency_read_contract: AdsAccountCurrencyReadContract

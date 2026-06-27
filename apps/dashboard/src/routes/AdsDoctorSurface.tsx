@@ -128,16 +128,16 @@ export function AdsDoctorSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.label}: {adsConnectorStatusLabel(data.connector.status)}
+              {data.connector.label}: {data.connector_status_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_available ? "metryki Ads dostępne" : "brak metryk Ads"}
+              {data.live_data_status_label}
               <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {adsRefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt: {data.latest_refresh_status_label}
                 <span className="sr-only">; </span>
               </span>
             ) : null}
@@ -272,11 +272,11 @@ function AdsCondensedDecisionPanel({
       .find((decision): decision is AdsDecisionItem => Boolean(decision)) ??
     data.decision_queue[0];
   const blockedClaims = primaryDecision
-    ? primaryDecision.blocked_claims.map(adsBlockedClaimLabel)
-    : summary.blocked_claims.map(adsBlockedClaimLabel);
+    ? primaryDecision.blocked_claim_labels
+    : summary.blocked_claim_labels;
   const missingInputs = primaryDecision
-    ? primaryDecision.missing_read_contracts.map(adsMissingReadContractLabel)
-    : summary.missing_read_contracts.map(adsMissingReadContractLabel);
+    ? primaryDecision.missing_read_contract_labels
+    : summary.missing_read_contract_labels;
   const evidenceCount = primaryDecision?.evidence_ids.length ?? summary.evidence_ids.length;
   const actionCount = primaryDecision?.action_ids.length ?? summary.action_ids.length;
   const sourceConnectors = connectorLabelsFromStatuses(
@@ -293,12 +293,12 @@ function AdsCondensedDecisionPanel({
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
             {primaryDecision
-              ? `Pierwszy krok: ${adsDecisionTypeLabel(primaryDecision.decision_type)}`
+              ? `Pierwszy krok: ${primaryDecision.decision_type_label}`
               : "Najpierw sprawdź Ads"}
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
             {primaryDecision
-              ? adsDecisionSummary(primaryDecision)
+              ? primaryDecision.summary
               : "WILQ ma odczyt Google Ads i pokazuje, co można sprawdzić bez udawania optymalizatora."}
           </p>
         </div>
@@ -315,7 +315,7 @@ function AdsCondensedDecisionPanel({
           <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             {primaryDecision
-              ? adsDecisionRationale(primaryDecision)
+              ? primaryDecision.rationale
               : "Ads ma aktualne dowody, ale decyzje budżetowe i zapis zmian nadal wymagają celów, sprawdzenia w WILQ i audytu."}
           </p>
         </div>
@@ -323,7 +323,7 @@ function AdsCondensedDecisionPanel({
           <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
           <p className="mt-2 text-sm font-medium leading-6 text-ink">
             {primaryDecision
-              ? adsDecisionNextStep(primaryDecision)
+              ? primaryDecision.next_step
               : "Przejrzyj kolejkę Ads i wybierz jedną akcję do sprawdzenia bez zapisu zmian."}
           </p>
         </div>
@@ -335,9 +335,9 @@ function AdsCondensedDecisionPanel({
             <TraceLine
               label="Stan danych"
               values={[
-                data.live_data_available ? "metryki Ads dostępne" : "brak metryk Ads",
+                data.live_data_status_label,
                 data.latest_refresh
-                  ? `ostatni odczyt: ${adsRefreshStatusLabel(data.latest_refresh.status)}`
+                  ? `ostatni odczyt: ${data.latest_refresh_status_label}`
                   : "brak odczytu"
               ]}
             />
@@ -410,12 +410,12 @@ function AdsMarketSnapshot({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
           label="Brakujące dane"
-          values={summary.missing_read_contracts.map(adsMissingReadContractLabel)}
+          values={summary.missing_read_contract_labels}
           empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={summary.blocked_claims.map(adsBlockedClaimLabel).slice(0, 8)}
+          values={summary.blocked_claim_labels.slice(0, 8)}
           empty="brak"
         />
       </div>
@@ -567,10 +567,10 @@ function AdsStartHerePanel({
               </span>
               <div>
                 <div className="text-sm font-semibold leading-5 text-ink">
-                  Krok {index + 1}: {adsDecisionTitle(decision)}
+                  Krok {index + 1}: {decision.title}
                 </div>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
+                  {decision.decision_type_label} / {decision.status_label}
                 </p>
               </div>
             </div>
@@ -578,7 +578,7 @@ function AdsStartHerePanel({
               {adsStartHereSummary(decision, currencyCode)}
             </p>
             <p className="mt-2 text-xs font-medium leading-5 text-ink">
-              {adsDecisionNextStep(decision)}
+              {decision.next_step}
             </p>
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
@@ -588,7 +588,7 @@ function AdsStartHerePanel({
               />
               <TraceLine
                 label="Nie wolno"
-                values={decision.blocked_claims.map(adsBlockedClaimLabel).slice(0, 3)}
+                values={decision.blocked_claim_labels.slice(0, 3)}
                 empty="brak"
               />
             </div>
@@ -756,23 +756,23 @@ function AdsDecisionCard({
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">{adsDecisionTitle(decision)}</h3>
+          <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
+            {decision.decision_type_label} / {decision.status_label}
           </p>
         </div>
         <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
-          ryzyko: {adsRiskLabel(decision.risk)}
+          ryzyko: {decision.risk_label}
         </span>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">
-        {adsDecisionSummary(decision)}
+        {decision.summary}
       </p>
       <p className="mt-2 text-sm leading-6 text-slate-600">
-        {adsDecisionRationale(decision)}
+        {decision.rationale}
       </p>
       <p className="mt-2 text-sm font-medium text-ink">
-        {adsDecisionNextStep(decision)}
+        {decision.next_step}
       </p>
       {Object.keys(decision.metric_tiles).length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
@@ -827,7 +827,7 @@ function AdsDecisionCard({
             values={decision.operator_review_gate_labels}
           />
         ) : null}
-        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claims.map(adsBlockedClaimLabel)} />
+        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>
     </article>
   );
@@ -2343,37 +2343,6 @@ function AdsBlockedHandoffPanel({
   );
 }
 
-function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
-  if (decisionType === "review_campaign_activity") return "przegląd kampanii";
-  if (decisionType === "review_business_context") return "kontekst biznesowy";
-  if (decisionType === "review_derived_kpi") return "wyliczone wskaźniki";
-  if (decisionType === "review_budget_context") return "kontekst budżetu";
-  if (decisionType === "review_recommendations") return "rekomendacje do oceny";
-  if (decisionType === "review_impression_share") return "udział w wyświetleniach";
-  if (decisionType === "review_change_history") return "historia zmian";
-  if (decisionType === "review_campaign_triage") return "kolejność oceny kampanii";
-  if (decisionType === "review_search_term_safety") return "kontrola 90 dni";
-  if (decisionType === "review_search_terms") return "przegląd zapytań";
-  if (decisionType === "review_search_term_ngrams") return "tematy zapytań";
-  if (decisionType === "review_negative_keyword_safety") return "ocena wykluczeń";
-  if (decisionType === "prepare_custom_segments") return "segmenty do sprawdzenia";
-  if (decisionType === "block_write_actions") return "blokada zmian";
-  return "naprawa dostępu";
-}
-
-function adsDecisionTitle(decision: AdsDecisionItem) {
-  const titles: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
-    review_budget_context: "Sprawdź kontekst budżetu kampanii",
-    review_business_context: "Potwierdź kontekst biznesowy Ads",
-    review_campaign_activity: "Przejrzyj aktywność kampanii Google Ads",
-    review_campaign_triage: "Ustal kolejność oceny kampanii Ads",
-    review_recommendations: "Przejrzyj rekomendacje Google Ads bez zapisu zmian",
-    review_derived_kpi: "Sprawdź wyliczone wskaźniki bez oceny kosztu pozyskania celu ani zwrotu z reklam",
-    review_search_terms: "Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń"
-  };
-  return titles[decision.decision_type] ?? decision.title;
-}
-
 function adsOptimizerModeLabel(mode: string) {
   if (mode === "review_only") return "ocena bez zapisu";
   if (mode === "read_only") return "tylko odczyt";
@@ -2439,24 +2408,6 @@ function adsOptimizerReadinessNextStep(id: string, fallback: string) {
   return steps[id] ?? fallback;
 }
 
-function adsDecisionSummary(decision: AdsDecisionItem) {
-  const summaries: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
-    review_budget_context:
-      "WILQ pokazuje koszt kampanii względem budżetu dziennego i ostatnich 7 dni. To jest kontekst do oceny, nie decyzja o skalowaniu.",
-    review_business_context:
-      "WILQ ma wstępny lokalny kontekst biznesowy: marżę, cel biznesowy i cel budżetu. Docelowy zwrot z reklam albo koszt pozyskania celu wymaga osobnego potwierdzenia.",
-    review_campaign_activity:
-      "WILQ pokazuje aktywność kampanii: kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji.",
-    review_campaign_triage:
-      "WILQ łączy kampanie, wskaźniki, budżety, rekomendacje i udział w wyświetleniach w jedną kolejkę ręcznej oceny.",
-    review_derived_kpi:
-      "WILQ może policzyć wskaźniki z bieżących danych Ads, ale to nadal nie jest ocena opłacalności.",
-    review_search_terms:
-      "WILQ pokazuje wyszukiwane hasła do ręcznej oceny kosztu, intencji i konwersji."
-  };
-  return summaries[decision.decision_type] ?? decision.summary;
-}
-
 function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
   if (decision.decision_type === "review_campaign_triage") {
     const campaignCount = decision.campaign_triage_rows.length || decision.campaign_rows.length;
@@ -2478,47 +2429,11 @@ function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
   if (decision.decision_type === "review_search_terms") {
     return `${decision.search_term_rows.length} haseł do oceny. Zacznij od kosztu i intencji, nie od automatycznego wykluczenia.`;
   }
-  return adsDecisionSummary(decision);
+  return decision.summary;
 }
 
 function sumCampaignCostMicros(rows: AdsCampaignMetricRow[]) {
   return rows.reduce((total, row) => total + (row.cost_micros ?? 0), 0);
-}
-
-function adsDecisionRationale(decision: AdsDecisionItem) {
-  const rationales: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
-    review_budget_context:
-      "Budżet i koszt 7 dni pomagają ustalić, co sprawdzić najpierw. Bez historii zmian, udziału w wyświetleniach i zatwierdzonego celu biznesowego WILQ blokuje decyzje o budżecie.",
-    review_business_context:
-      "Ten kontekst pomaga czytać kampanie w realiach biznesu Ekologus, ale nie odblokowuje automatycznych wniosków o rentowności ani zmarnowanym budżecie.",
-    review_campaign_activity:
-      "To uczciwy pierwszy przegląd kampanii. Wnioski o koszt pozyskania celu, zwrot z reklam, stracie budżetu i wykluczeniach wymagają dodatkowej oceny.",
-    review_campaign_triage:
-      "Kolejka mówi, od których kampanii zacząć. Nie zastępuje decyzji człowieka ani sprawdzenia w WILQ.",
-    review_derived_kpi:
-      "Wskaźniki są wyliczone z kosztu, konwersji i wartości konwersji w bieżących dowodach. Nie uwzględniają jeszcze pełnego modelu marży, celów i historii zmian.",
-    review_search_terms:
-      "Hasła z ruchem lub kosztem są materiałem do oceny, ale WILQ nie nazywa ich automatycznie marnowaniem budżetu."
-  };
-  return rationales[decision.decision_type] ?? decision.rationale;
-}
-
-function adsDecisionNextStep(decision: AdsDecisionItem) {
-  const steps: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
-    review_budget_context:
-      "Użyj tego jako kontekstu przy ocenie kampanii. Nie skaluj budżetu bez sprawdzenia w WILQ.",
-    review_business_context:
-      "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Docelowy zwrot z reklam albo koszt pozyskania celu zapisz dopiero po sprawdzeniu i zatwierdzeniu w WILQ.",
-    review_campaign_activity:
-      "Sprawdź kampanie z największym kosztem i ruchem. Decyzje budżetowe zostają za bramką sprawdzenia.",
-    review_campaign_triage:
-      "Przejrzyj kampanie od góry kolejki: cel, jakość konwersji, budżet, wyszukiwane hasła i rekomendacje.",
-    review_derived_kpi:
-      "Użyj wskaźników jako sygnału do kolejności oceny. Przed decyzją sprawdź marżę, tempo budżetu, historię zmian i rekomendacje.",
-    review_search_terms:
-      "Zacznij od haseł z największym kosztem. Wykluczenia przygotuj tylko po ocenie intencji, historii 90 dni i sprawdzenia w WILQ."
-  };
-  return steps[decision.decision_type] ?? decision.next_step;
 }
 
 function adsCondensedMeasurementPlan(decision: AdsDecisionItem | undefined) {
@@ -2563,21 +2478,6 @@ function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
   if (risk === "high") return "wysokie";
   if (risk === "medium") return "średnie";
   return "niskie";
-}
-
-function adsConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje dostępu";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function adsRefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  if (status === "running") return "w toku";
-  return status;
 }
 
 function adsSectionLabel(sectionId: string) {

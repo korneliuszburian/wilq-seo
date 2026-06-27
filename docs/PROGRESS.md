@@ -126,6 +126,13 @@ Date: 2026-06-27
   such as `subdomains`, `completed`, `domain_rating=` or `content_gap` on the
   marketer surface. Proof:
   `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
+- Ads Doctor primary connector, refresh, live-data, decision, priority, risk,
+  missing-input and blocked-promise labels now come from the WILQ API/shared
+  schema. The route no longer owns helper copy for primary Ads decision titles,
+  summaries, rationale, next step or top status labels. Ads diagnostics source
+  summaries now avoid visible `koszt_micros=`, `wartość_konwersji=`,
+  `search-term rows` and `wiersze_bez_konwersji` wording. Proof:
+  `.local-lab/proof/20260627-ads-api-decision-labels/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays
   such as blocker, checklist, missing-data and validation labels instead of

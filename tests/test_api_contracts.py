@@ -11205,7 +11205,34 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
 
     assert summary_bytes < full_bytes
     assert summary_payload["operator_summary"] == full_payload["operator_summary"]
+    assert summary_payload["connector_status_label"]
+    assert summary_payload["live_data_status_label"]
+    if summary_payload["latest_refresh"]:
+        assert summary_payload["latest_refresh_status_label"]
+    assert summary_payload["operator_summary"]["missing_read_contract_labels"] == (
+        full_payload["operator_summary"]["missing_read_contract_labels"]
+    )
+    assert summary_payload["operator_summary"]["blocked_claim_labels"] == (
+        full_payload["operator_summary"]["blocked_claim_labels"]
+    )
     assert len(summary_payload["decision_queue"]) <= len(full_payload["decision_queue"])
+    assert all(decision["status_label"] for decision in summary_payload["decision_queue"])
+    assert all(decision["decision_type_label"] for decision in summary_payload["decision_queue"])
+    assert all(decision["priority_label"] for decision in summary_payload["decision_queue"])
+    assert all(decision["risk_label"] for decision in summary_payload["decision_queue"])
+    assert all(
+        isinstance(decision["missing_read_contract_labels"], list)
+        for decision in summary_payload["decision_queue"]
+    )
+    assert all(
+        isinstance(decision["blocked_claim_labels"], list)
+        for decision in summary_payload["decision_queue"]
+    )
+    assert all(section["status_label"] for section in summary_payload["sections"])
+    assert all(
+        isinstance(section["blocked_claim_labels"], list)
+        for section in summary_payload["sections"]
+    )
     assert set(summary_payload["operator_summary"]["top_decision_ids"]).issubset(
         {decision["id"] for decision in summary_payload["decision_queue"]}
     )

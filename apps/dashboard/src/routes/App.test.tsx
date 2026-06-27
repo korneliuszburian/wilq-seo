@@ -668,6 +668,8 @@ const adsDiagnostics = {
   language: "pl-PL",
   strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
   connector_status_label: "dostęp skonfigurowany",
+  latest_refresh_status_label: "zakończony",
+  live_data_status_label: "metryki Google Ads dostępne",
   connector: {
     ...connectors[0],
     status: "configured",
@@ -699,7 +701,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: aktywność kampanii",
     summary:
-      "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
+      "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt=164,59 zł, konwersje=2.5, wartość konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
     blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
@@ -1768,7 +1770,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: zapytania użytkowników",
     summary:
-      "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wartość_konwersji=120.",
+      "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wartość konwersji=120.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -1850,7 +1852,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: kolejność review zapytań",
     summary:
-      "WILQ ma 1 search-term rows do ręcznego review: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wiersze_bez_konwersji=0.",
+      "WILQ ma 1 wierszy wyszukiwanych haseł do ręcznej oceny: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wiersze bez konwersji=0.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -1914,7 +1916,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: n-gramy zapytań",
     summary:
-      "WILQ zgrupował 1 n-gramów z 1 wystąpień listy wyszukiwanych haseł: kliknięcia=12, koszt_micros=9000000.",
+      "WILQ zgrupował 1 n-gramów z 1 wystąpień listy wyszukiwanych haseł: kliknięcia=12, koszt=9,00 zł.",
     allowed_metrics: [
       "ngram",
       "ngram_size",
@@ -1969,7 +1971,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: 90-dniowy safety read zapytań",
     summary:
-      "WILQ ma 90-dniowy read safety dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt_micros=8000000, konwersje=0, wartość_konwersji=0.",
+      "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt=8,00 zł, konwersje=0, wartość konwersji=0.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -2500,7 +2502,9 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
-    blocked_claims: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
+    blocked_claims: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
+    missing_read_contract_labels: ["marża albo cel opłacalności", "ocena strategii przez człowieka"],
+    blocked_claim_labels: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
   decision_queue: [
     {
@@ -2509,7 +2513,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj aktywność kampanii Google Ads",
       summary:
-        "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
+        "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt=164,59 zł, konwersje=2.5, wartość konwersji=450.75.",
       rationale:
         "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach.",
       next_step: "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów.",
@@ -2562,13 +2566,19 @@ const adsDiagnostics = {
         "ads_recommendations_v1"
       ],
       blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+      blocked_claim_labels: [
+        "koszt pozyskania celu",
+        "zwrot z reklam",
+        "marnowanie budżetu na zapytaniach",
+        "zmarnowany budżet"
+      ],
       risk: "low"
     },
     {
       id: "ads_review_campaign_triage",
       decision_type: "review_campaign_triage",
       status: "ready",
-      title: "Ustal kolejność review kampanii Ads",
+      title: "Ustal kolejność oceny kampanii Ads",
       summary:
         "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii.",
       rationale:
@@ -2936,6 +2946,13 @@ const adsDiagnostics = {
         "zapis zmian kampanii",
         "obietnica poprawy wyniku"
       ],
+      blocked_claim_labels: [
+        "zapis rekomendacji",
+        "automatyczne przyjęcie rekomendacji",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
+        "obietnica poprawy wyniku"
+      ],
       risk: "medium"
     },
     {
@@ -3069,7 +3086,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj zapytania z reklam bez automatycznych wykluczeń",
       summary:
-        "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wartość_konwersji=120.",
+        "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wartość konwersji=120.",
       rationale:
         "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia i konwersje.",
       next_step: "Przejrzyj zapytania z najwyższym kosztem.",
@@ -3120,7 +3137,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Sprawdź 90-dniową historię zapytań przed wykluczeniami",
       summary:
-        "WILQ ma 90-dniowy read safety dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt_micros=8000000, konwersje=0, wartość_konwersji=0.",
+        "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt=8,00 zł, konwersje=0, wartość konwersji=0.",
       rationale:
         "WILQ ma oddzielny 90-dniowy odczyt listy wyszukiwanych haseł jako hamulec bezpieczeństwa.",
       next_step:
@@ -6710,7 +6727,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/zmiana kampanii/).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeInTheDocument();
     expect(
-      screen.getByText("Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń")
+      screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
     ).toBeInTheDocument();
     expect(
       screen.getByText("Przejrzyj rekomendacje Google Ads bez zapisu zmian")

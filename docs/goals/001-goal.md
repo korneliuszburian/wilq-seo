@@ -192,6 +192,14 @@ Latest slice:
   marketer surface, so browser proof has no `subdomains`, `completed`,
   `domain_rating=`, `ahrefs_rank=` or `content_gap` hits:
   `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
+- Ads Doctor primary labels are API-owned now. The API/shared schema exposes
+  connector, refresh, live-data, decision, priority, risk, missing-input and
+  blocked-promise labels; `/ads-doctor` no longer owns helper copy for primary
+  Ads decision titles, summaries, rationale, next step or top status labels.
+  Ads diagnostics source summaries also avoid visible raw metric wording such
+  as `koszt_micros=`, `wartość_konwersji=`, `search-term rows` and
+  `wiersze_bez_konwersji`. Proof:
+  `.local-lab/proof/20260627-ads-api-decision-labels/`.
 - Localo decision labels now come from the WILQ API/shared schema: connector
   status, refresh status, access proof labels, decision type, priority,
   allowed evidence, missing contracts, read-contract status and blocked claims.

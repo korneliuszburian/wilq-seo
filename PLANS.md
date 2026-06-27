@@ -598,6 +598,12 @@ WILQ is complete for this long-range goal when:
   label helpers and no longer renders raw metric-fact values as first-screen
   marketer copy. Proof:
   `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
+- 2026-06-27: Ads Doctor primary connector/status/decision labels now come
+  from WILQ API/shared-schema fields. The route no longer owns helper copy for
+  primary Ads titles, summaries, rationale, next step or top status labels, and
+  source summaries no longer expose `koszt_micros=`, `wartość_konwersji=`,
+  `search-term rows` or `wiersze_bez_konwersji` on the marketer surface. Proof:
+  `.local-lab/proof/20260627-ads-api-decision-labels/`.
 
 ## Discoveries
 
