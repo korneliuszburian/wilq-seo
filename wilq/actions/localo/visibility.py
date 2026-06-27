@@ -23,11 +23,11 @@ LOCALO_VISIBILITY_REVIEW_STEPS = [
     "require_human_confirm_before_any_write",
 ]
 LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
-    "local_rankings": "local ranking",
-    "gbp_visibility": "GBP performance",
-    "competitor_visibility": "competitor visibility",
-    "reviews": "review velocity",
-    "local_tasks": "local task completed",
+    "local_rankings": "lokalne pozycje",
+    "gbp_visibility": "wyniki profilu firmy w Google",
+    "competitor_visibility": "widoczność konkurencji",
+    "reviews": "tempo opinii",
+    "local_tasks": "ukończone zadanie lokalne",
 }
 
 
@@ -75,7 +75,7 @@ def localo_visibility_review_payload_from_metric_facts(
                 "reason": (
                     "Podgląd agregatów Localo do sprawdzenia. WILQ może "
                     f"sprawdzić wskazane kontrakty, ale blokuje {blocked_scope} "
-                    "bez osobnych read contracts albo effect evidence."
+                    "bez osobnych danych źródłowych albo dowodu efektu."
                 ),
                 "required_validation": review_steps,
                 "blocked_claims": blocked_claims,
@@ -150,7 +150,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         for contract, claim in LOCALO_CLAIMS_BY_MISSING_CONTRACT.items()
         if contract in missing_contracts
     ]
-    claims.extend(["GBP write", "local visibility uplift"])
+    claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
     return _unique(claims)
 
 
@@ -168,14 +168,14 @@ def _blocked_scope_sentence(missing_contracts: list[str]) -> str:
         label
         for contract, label in {
             "local_rankings": "lokalne rankingi",
-            "gbp_visibility": "GBP",
+            "gbp_visibility": "profil firmy w Google",
             "competitor_visibility": "konkurencję",
-            "reviews": "review velocity",
-            "local_tasks": "lokalne taski",
+            "reviews": "tempo opinii",
+            "local_tasks": "lokalne zadania",
         }.items()
         if contract in missing_contracts
     ]
-    labels = [*missing_labels, "write path", "uplift"]
+    labels = [*missing_labels, "zapis zmian w profilu firmy", "poprawę widoczności"]
     if len(labels) == 1:
         return labels[0]
     return f"{', '.join(labels[:-1])} i {labels[-1]}"

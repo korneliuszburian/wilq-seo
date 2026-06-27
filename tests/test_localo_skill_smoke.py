@@ -70,7 +70,7 @@ def localo_context_pack() -> dict[str, Any]:
                         "reviews",
                     ],
                     "missing_read_contracts": ["local_tasks"],
-                    "blocked_claims": ["local visibility uplift"],
+                    "blocked_claims": ["poprawa widoczności lokalnej"],
                     "metric_facts": [{"name": "localo_reviews_count", "value": 798}],
                 },
                 {

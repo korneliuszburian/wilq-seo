@@ -302,6 +302,30 @@ FORBIDDEN_PHRASES = (
         "Use skuteczność kampanii in custom-segments and Keyword Planner blocked claims.",
     ),
     ForbiddenPhrase(
+        "local task completed",
+        "Use ukończone zadanie lokalne in Localo blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "GBP write",
+        "Use zapis zmian w profilu firmy in Localo blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "GBP performance",
+        "Use wyniki profilu firmy w Google in Localo blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "competitor visibility",
+        "Use widoczność konkurencji in Localo blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "local visibility uplift",
+        "Use poprawa widoczności lokalnej in Localo blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "write path",
+        "Use zapis zmian in Localo/domain-facing copy.",
+    ),
+    ForbiddenPhrase(
         "lead uplift",
         "Use wzrost liczby leadów in content blocked claims.",
     ),

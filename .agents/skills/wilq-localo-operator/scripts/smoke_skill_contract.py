@@ -213,11 +213,11 @@ def main() -> int:
             if not unsupported_contracts.issubset(missing_contracts):
                 raise SystemExit("Localo value review must keep unsupported contracts missing")
             blocked_claims = set(review_decision.get("blocked_claims") or [])
-            unsupported_claims = {"local visibility uplift"}
+            unsupported_claims = {"poprawa widoczności lokalnej"}
             if "gbp_visibility" not in allowed_evidence:
-                unsupported_claims.add("GBP performance")
+                unsupported_claims.add("wyniki profilu firmy w Google")
             if "competitor_visibility" not in allowed_evidence:
-                unsupported_claims.add("competitor visibility")
+                unsupported_claims.add("widoczność konkurencji")
             if not unsupported_claims.issubset(blocked_claims):
                 raise SystemExit("Localo value review must block unsupported marketing claims")
             if not localo_metric_facts:

@@ -157,7 +157,7 @@ playbooks:
     expert_rule_ids:
       - ads_custom_segments_v1
       - ads_keyword_planner_v1
-    compact_playbook: Build validation-ready segment proposals from real search terms. Keep rejected low-intent or invented terms visible. Require Keyword Planner enrichment, forecast/audience-size and human approval before any write path.
+    compact_playbook: Buduj propozycje segmentów do sprawdzenia z realnych wyszukiwanych haseł. Pokazuj odrzucone frazy o niskiej intencji albo wymyślone hasła. Wymagaj wzbogacenia Keyword Planner, prognozy albo rozmiaru odbiorców i decyzji człowieka przed zapisem zmian.
     refusal_rules:
       - Refuse invented audience terms.
       - Refuse segment payloads without source search terms.
@@ -243,7 +243,7 @@ playbooks:
       - local_reviews_v1
     compact_playbook: Diagnozuj spadki lokalnych pozycji, luki względem konkurencji i zadania review z dowodów Localo/GBP przed sugerowaniem zmian publicznych.
     refusal_rules:
-      - Refuse GBP write suggestions without review evidence.
+      - Blokuj propozycje zapisu zmian w profilu firmy bez dowodu sprawdzenia.
       - Refuse local ranking diagnosis without location and competitor context.
     output_contract: Local visibility task or review-response candidate with source IDs.
 

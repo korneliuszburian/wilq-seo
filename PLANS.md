@@ -557,6 +557,11 @@ WILQ is complete for this long-range goal when:
   Unknown technical keys are not converted into generic marketer copy; active
   API sources must provide explicit Polish label arrays. Live API/browser proof
   for Ads target guardrails found no generic fallback labels.
+- 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
+  knowledge rules now use Polish operating language. Old active values such as
+  `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
+  `local visibility uplift` are now language-guarded instead of translated in
+  React.
 
 ## Discoveries
 
@@ -572,6 +577,9 @@ WILQ is complete for this long-range goal when:
 - Test fixtures can drift from real action payload keys. When browser/API proof
   finds a real key that fixtures missed, align the fixture with the production
   key instead of adding a React-side translation.
+- Knowledge/playbook text can reintroduce old operator language even when API
+  payloads are clean. Treat active knowledge sources as product sources and
+  clean them with the same guardrails.
 
 ## Decision Log
 

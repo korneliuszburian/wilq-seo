@@ -513,7 +513,11 @@ const localoActionFixture: ActionObject = {
           "sprawdź zbiorcze dane lokalnych pozycji",
           "sprawdź zbiorcze dane opinii"
         ],
-        blocked_claims: ["GBP performance", "competitor visibility", "local visibility uplift"],
+        blocked_claims: [
+          "wyniki profilu firmy w Google",
+          "widoczność konkurencji",
+          "poprawa widoczności lokalnej"
+        ],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -1180,7 +1184,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Odsetek odpowiedzi na opinie: 81,33%/)).toBeInTheDocument();
     expect(screen.getByText(/Dozwolone odczyty: lokalne pozycje/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: widoczność Google Business Profile/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: wynik Google Business Profile/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: wyniki profilu firmy w Google/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

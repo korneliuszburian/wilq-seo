@@ -320,7 +320,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "api_mutation_ready",
                 "ranking",
                 "GBP",
-                "local visibility",
+                "widoczność lokalna",
                 "zablokowane obietnice",
             },
             "action_ids": {"act_review_localo_visibility_facts"},
@@ -509,9 +509,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     ):
         assert term in localo_case["expected_terms_pl"]
     for term in (
-        "local task completed",
-        "GBP write",
-        "local visibility uplift",
+        "ukończone zadanie lokalne",
+        "zapis zmian w profilu firmy",
+        "poprawa widoczności lokalnej",
     ):
         assert term in localo_case["blocked_claim_terms"]
 

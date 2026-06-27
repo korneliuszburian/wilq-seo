@@ -100,6 +100,13 @@ Date: 2026-06-27
   active API/action sources must provide explicit Polish label arrays. Live
   proof for `act_confirm_ads_target_guardrails` shows Polish labels for missing
   target, validation and after-confirmation uses with no generic fallback hits.
+- Localo action, skill eval and knowledge sources now use Polish source values
+  for blocked local claims: ukończone zadanie lokalne, zapis zmian w profilu
+  firmy and poprawa widoczności lokalnej. Old active values such as
+  `GBP performance`, `competitor visibility`, `GBP write`, `write path` and
+  `local visibility uplift` are guarded by `scripts/marketer_language_guard.py`.
+  Live API proof for `act_review_localo_visibility_facts` confirms no old
+  Localo claim strings in the action payload.
 - Custom segments and Keyword Planner blocked-claim contracts now use Polish
   source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete
@@ -229,6 +236,21 @@ Date: 2026-06-27
     generic fallback labels.
   - Browser proof text:
     `.local-lab/proof/20260627-action-detail-source-label-hardening/browser/ads-target-guardrail-body.txt`.
+- Localo source-claim cleanup:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics" --maxfail=1`
+    passed: 4 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+    passed: 14 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_localo_skill_smoke.py -q --maxfail=1`
+    passed: 8 tests.
+  - `rtk uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+    passed against the managed local API.
+  - `rtk pnpm --dir apps/dashboard typecheck`, `rtk uv run python scripts/marketer_language_guard.py`
+    and `rtk git diff --check` passed.
+  - Browser proof text:
+    `.local-lab/proof/20260627-localo-source-claim-cleanup/browser/localo-route-body.txt`
+    and
+    `.local-lab/proof/20260627-localo-source-claim-cleanup/browser/localo-action-detail-body.txt`.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:
