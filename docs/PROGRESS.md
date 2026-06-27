@@ -189,6 +189,9 @@ Latest cleanup state:
   API-owned preview cards. The marketer-facing cards show clean business-goal,
   target, blocker and review rows instead of raw action types, validation keys
   or `.env` field names.
+- Dashboard error and trace rows in touched Ads, Merchant, GA4 and tactical
+  queue paths now avoid endpoint names, route wording, raw evidence/action link
+  labels and `ID` evidence counters in normal marketer copy.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -226,6 +229,11 @@ Proof:
   `GET /api/actions/act_record_ads_strategy_review` return one typed preview
   card each, with no raw action type, validation key or `.env` field name in
   the primary card text.
+- Dashboard P0 trace/error copy cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx -t "renders compact decision groups without raw evidence or action IDs|merchant route renders dedicated feed diagnostics|ads doctor route renders live metric-backed diagnostics|ga4 route renders measurement diagnostics" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
   `rtk pnpm --dir apps/dashboard typecheck`
   browser proof: `.local-lab/proof/20260627-ads-secondary-label-cleanup/`
 - Registry/actions evidence-count cleanup:

@@ -30,7 +30,7 @@ export function TacticalQueuePanel({
 }) {
   if (isError) {
     return (
-      <BlockerNotice message="Nie udało się odczytać /api/marketing/tactical-queue. Dashboard nie może udawać kolejki działań." />
+      <BlockerNotice message="Nie udało się pobrać kolejki działań. Odśwież widok albo sprawdź status WILQ." />
     );
   }
   if (isLoading || !queue) {

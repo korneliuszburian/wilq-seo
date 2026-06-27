@@ -39,11 +39,15 @@ export function LinkedTraceLine({
                 params={kind === "actions" ? { actionId: value } : { evidenceId: value }}
                 className="font-medium text-action underline-offset-2 hover:underline"
               >
-                {value}
+                {traceLinkLabel(kind, index)}
               </Link>
             </span>
           ))
         : empty}
     </div>
   );
+}
+
+function traceLinkLabel(kind: "actions" | "evidence", index: number) {
+  return kind === "actions" ? `akcja ${index + 1}` : `dowód ${index + 1}`;
 }

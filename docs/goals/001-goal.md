@@ -169,6 +169,9 @@ Wilku can inspect it without reading technical internals.
 - Google Ads target-guardrail and strategy-review action details now render
   API-owned preview cards without raw action types, validation keys or `.env`
   field names in primary card copy.
+- Touched Ads, Merchant, GA4 and tactical queue paths now hide raw
+  evidence/action link IDs behind numbered links and use marketer-readable
+  loading/error copy instead of endpoint or route names.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made

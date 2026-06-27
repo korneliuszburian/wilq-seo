@@ -73,14 +73,14 @@ export function Ga4DiagnosticSurface() {
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. GA4 route nie może pokazać sprawdzenia ani podglądu zmian." />
+        <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
   if (connectors.error || !connectors.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/connectors. GA4 nie może pokazać źródeł danych językiem marketera." />
+        <BlockerNotice message="Nie udało się pobrać statusu źródeł danych. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
@@ -661,7 +661,7 @@ function Ga4DiagnosticProof({
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Sekcje API" value={data.sections.length} />
+          <MetricTile label="Obszary danych" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
           <MetricTile label="Dowody" value={formatGa4EvidenceCount(data.evidence_ids.length)} />
         </div>

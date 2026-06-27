@@ -7552,7 +7552,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.queryByText("Dowody i ograniczenia Merchant")).not.toBeInTheDocument();
-    expect(screen.queryByText("Czego nie wiemy z Merchant API")).not.toBeInTheDocument();
+    expect(screen.queryByText("Czego nie wiemy o feedzie Merchant Center")).not.toBeInTheDocument();
     expect(screen.queryByText("Gotowość próbek produktów")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }));
     expect(await screen.findByText("Dowody i ograniczenia Merchant")).toBeInTheDocument();
@@ -7589,7 +7589,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
     expect(screen.getByText("dane świeże")).toBeInTheDocument();
-    expect(screen.getByText("Czego nie wiemy z Merchant API")).toBeInTheDocument();
+    expect(screen.getByText("Czego nie wiemy o feedzie Merchant Center")).toBeInTheDocument();
     expect(
       screen.getByText("Licznik problemów nie jest liczbą unikalnych produktów")
     ).toBeInTheDocument();

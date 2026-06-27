@@ -39,7 +39,7 @@ export function MerchantDiagnosticSurface() {
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. Merchant route nie może pokazać sprawdzenia ani podglądu zmian." />
+        <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
@@ -595,7 +595,7 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Czego nie wiemy z Merchant API
+            Czego nie wiemy o feedzie Merchant Center
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Te ograniczenia blokują zbyt mocne wnioski i automatyczne zmiany feedu.
@@ -708,7 +708,7 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
         <MetricTile label="Fakty Ads" value={readiness.ads_product_fact_count} />
         <MetricTile label="Fakty GA4" value={readiness.ga4_product_fact_count} />
-        <MetricTile label="Próbki ID" value={readiness.sample_product_ids.length} />
+        <MetricTile label="Próbki produktów" value={readiness.sample_product_ids.length} />
         <MetricTile label="Wiersze" value={readiness.performance_rows.length} />
       </div>
       {visibleRows.length > 0 ? (

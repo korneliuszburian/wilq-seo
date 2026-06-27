@@ -73,14 +73,14 @@ export function AdsDoctorSurface() {
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. Ads Doctor nie może pokazać sprawdzenia ani podglądu akcji." />
+        <BlockerNotice message="Nie udało się pobrać akcji do sprawdzenia. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
   if (connectors.error || !connectors.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/connectors. Ads Doctor nie może pokazać źródeł danych językiem marketera." />
+        <BlockerNotice message="Nie udało się pobrać statusu źródeł danych. Odśwież widok albo sprawdź status WILQ." />
       </main>
     );
   }
@@ -1141,7 +1141,9 @@ function AdsCampaignRowsTable({
               <td className="max-w-md py-2 pr-4 text-xs leading-5 text-slate-600">
                 {row.review_reason}
               </td>
-              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {formatAdsEvidenceCount(row.evidence_ids.length)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2011,7 +2013,9 @@ function AdsSearchTermRowsTable({
                 {adsCost(row.cost_micros, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
-              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {formatAdsEvidenceCount(row.evidence_ids.length)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2071,7 +2075,9 @@ function AdsSearchTermNgramRowsTable({
                 {adsCost(row.cost_micros, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
-              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {formatAdsEvidenceCount(row.evidence_ids.length)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2127,7 +2133,9 @@ function AdsSearchTermSafetyRowsTable({
                 {adsCost(row.cost_micros_90d, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions_90d)}</td>
-              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {formatAdsEvidenceCount(row.evidence_ids.length)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2139,7 +2147,7 @@ function AdsSearchTermSafetyRowsTable({
 function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContextRow[] }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak kontekstu istniejących słów kluczowych i typów dopasowania. WILQ nie powinien zdejmować blokady z oceny wykluczeń bez odczytu ad_group_criterion." />
+      <BlockerNotice message="Brak kontekstu istniejących słów kluczowych i typów dopasowania. WILQ nie powinien zdejmować blokady z oceny wykluczeń bez odczytu istniejących słów kluczowych i wykluczeń w grupach reklam." />
     );
   }
   return (
@@ -2176,7 +2184,7 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
                 {row.ad_group_name ?? row.ad_group_id ?? "brak"}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.evidence_ids.length} ID
+                {formatAdsEvidenceCount(row.evidence_ids.length)}
               </td>
             </tr>
           ))}
@@ -2430,6 +2438,10 @@ function adsPercent(value: number | null | undefined) {
   )}%`;
 }
 
+function formatAdsEvidenceCount(count: number) {
+  if (count === 1) return "1 dowód";
+  return `${count} dowodów`;
+}
 
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));

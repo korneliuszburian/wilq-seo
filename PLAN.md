@@ -249,6 +249,9 @@ Known cleanup already started:
 - Google Ads target-guardrail and strategy-review action details now have typed
   API preview cards without raw action types, validation keys or `.env` field
   names in primary card copy.
+- Touched Ads, Merchant, GA4 and tactical queue paths no longer show endpoint
+  names, route wording, raw evidence/action link labels or `ID` evidence
+  counters in normal marketer copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
