@@ -302,6 +302,22 @@ FORBIDDEN_PHRASES = (
         "Use propozycje postów.",
     ),
     ForbiddenPhrase(
+        "social drafts",
+        "Use szkice postów social / materiały social do sprawdzenia.",
+    ),
+    ForbiddenPhrase(
+        "candidate inputs",
+        "Use source_inputs / materiały źródłowe for social draft source signals.",
+    ),
+    ForbiddenPhrase(
+        "candidate_inputs",
+        "Use source_inputs for social draft source signals; do not keep stale candidate fields.",
+    ),
+    ForbiddenPhrase(
+        "Szczegóły źródłowe",
+        "Use condensed source context instead of exposing counts of technical fields.",
+    ),
+    ForbiddenPhrase(
         "post published",
         "Use opublikowanie posta / opublikowany post in social blocked claims.",
     ),

@@ -1,6 +1,6 @@
 ---
 name: wilq-social-publisher
-description: Przygotowuje bezpiecznych do review akcji do sprawdzenia treści LinkedIn/Facebook dla Ekologus przez WILQ API evidence i sprawdzenie w WILQ. Użyj, gdy marketer pyta "przygotuj post z tych danych", "co opublikować na LinkedIn/Facebook?", "zamień insight z GSC/GA4/Merchant/Ads na post", "zrób social queue", albo pyta o adaptację campaign-to-social, social drafts oparte na evidence, content repurposing lub gotowość publikacji. Nie wolno publikować ani draftować niewspartych obietnic bez WILQ evidence.
+description: Przygotowuje bezpieczne akcje do sprawdzenia dla treści LinkedIn/Facebook dla Ekologus przez dowody z WILQ API i sprawdzenie w WILQ. Użyj, gdy marketer pyta "przygotuj post z tych danych", "co opublikować na Facebooku albo LinkedIn?", "zamień insight z GSC/GA4/Merchant/Ads na post", "zrób kolejkę social", albo pyta o adaptację danych na social, szkice postów oparte na dowodach, ponowne użycie treści lub gotowość publikacji. Nie wolno publikować ani szkicować niewspartych obietnic bez dowodów WILQ.
 ---
 
 # WILQ Social Publisher
@@ -20,7 +20,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - "Przygotuj post LinkedIn z tej karty contentowej."
 - "Co opublikować na Facebooku na podstawie GSC/GA4/Merchant?"
 - "Zrób social queue, ale pokaż twierdzenia, których nie wolno użyć."
-- "Czy możemy publikować, czy brakuje permissions?"
+- "Czy możemy publikować, czy brakuje uprawnień?"
 
 </triggers>
 
@@ -88,7 +88,7 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
 <!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
-- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, uprawnień social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
 - Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
 - Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.

@@ -131,6 +131,11 @@ Latest slice:
   action, labels and counts it needs, with raw Merchant vendor enums removed
   from the default skill payload. Live proof:
   `.local-lab/proof/20260627-merchant-context-pack-condensation/`.
+- Social Publisher context and action payloads now expose source evidence as
+  `source_inputs` with condensed `context_summary` values. The old
+  `candidate_inputs` field and publish-permissions wording are removed from
+  active context, tests and skill contracts. Live context and browser proof:
+  `.local-lab/proof/20260627-social-source-inputs/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays for
   blocker, checklist, missing-data and validation wording instead of translating

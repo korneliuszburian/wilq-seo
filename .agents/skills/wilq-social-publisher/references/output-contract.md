@@ -28,9 +28,9 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: `social_draft_context`, candidate inputs, evidence IDs, connector IDs, notatki freshness i metric summaries wyłącznie z WILQ API.
+2. `Dowody`: `social_draft_context`, `source_inputs`, evidence IDs, connector IDs, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
 3. `Diagnoza`: co wspiera evidence, z niepewnością gdy evidence jest zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: użyj `social_draft_context.candidate_inputs`, `draft_action_ids`, `draft_constraints`, `missing_publish_permissions` i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+4. `Akcje do sprawdzenia`: użyj `social_draft_context.source_inputs`, `draft_action_ids`, `draft_constraints`, `missing_publish_access` i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 

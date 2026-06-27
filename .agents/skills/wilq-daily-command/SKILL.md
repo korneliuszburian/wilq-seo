@@ -103,7 +103,7 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 <!-- no-invented-metrics guardrail: do not invent metrics. -->
 <!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
 
-- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie promuj `act_prepare_linkedin_social_drafts` ani `act_prepare_facebook_social_drafts` w daily briefie; to należy do `wilq-social-publisher`.
 - Nie promuj Localo jako zadania dnia poza `command_center.daily_decisions`. Jeśli użytkownik pyta o Localo, użyj dedykowanego `wilq-localo-operator`.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.

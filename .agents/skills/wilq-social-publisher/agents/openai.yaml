@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Social Publisher"
-  short_description: "Przygotowuje social drafts z evidence WILQ"
-  default_prompt: "Użyj $wilq-social-publisher: zamień insight z GSC/GA4/Merchant/Ads na bezpieczny post LinkedIn/Facebook dla Ekologus."
+  short_description: "Przygotowuje szkice postów social z dowodów WILQ"
+  default_prompt: "Użyj $wilq-social-publisher: zamień sygnał z GSC/GA4/Merchant/Ads na bezpieczny post LinkedIn/Facebook dla Ekologus."

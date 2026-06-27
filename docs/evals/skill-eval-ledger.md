@@ -6382,3 +6382,43 @@ Result:
 - Live scans found zero hits for `landing_page_error`, `SHOPPING_ADS`,
   `MERCHANT_ACTION`, `ActionObject`, `target_site` and `mapping_review` in the
   default Merchant skill context.
+
+## 2026-06-27 - Social Publisher source input condensation
+
+Purpose:
+
+- Remove stale `candidate_inputs` and publish-permissions wording from the
+  active Social Publisher API/skill contract.
+- Prevent social skill context from carrying raw Merchant vendor dimensions
+  through source evidence, marketing brief or tactical queue surfaces.
+
+Focused proof:
+
+```bash
+uv run python -m py_compile apps/api/wilq_api/main.py wilq/actions/service.py wilq/briefing/tactical_queue.py wilq/briefing/merchant_diagnostics.py wilq/briefing/merchant_labels.py .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -q -k "social_context_pack_exposes_review_only_draft_context or social_draft_actions_exclude_dev_site_inventory_inputs or tactical_queue or merchant" --maxfail=1
+pnpm --dir apps/dashboard test -- --runInBand ActionDetailRoute.test.tsx
+uv run python scripts/marketer_language_guard.py
+uv run python .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Runtime proof:
+
+```txt
+.local-lab/proof/20260627-social-source-inputs/context-pack-final.json
+.local-lab/proof/20260627-social-source-inputs/browser/action-linkedin-snapshot.txt
+```
+
+Result:
+
+- `social_draft_context.source_inputs` is the active source-evidence contract.
+- `social_draft_context.missing_publish_access` replaces the old publish
+  permissions wording.
+- Live social context-pack scan found zero hits for `candidate_inputs`,
+  `missing_publish_permissions`, `availability_updated`, `FREE_LISTINGS`,
+  `MERCHANT_ACTION`, `n:availability`, `permissions`, `social drafts` and
+  `Szczegóły źródłowe`.
+- Browser proof for `act_prepare_linkedin_social_drafts` shows source material
+  cards with `Kontekst:` and zero hits for raw payload terms, old source field
+  names or raw Merchant enum values.

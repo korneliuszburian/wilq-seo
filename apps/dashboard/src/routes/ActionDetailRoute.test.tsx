@@ -16,7 +16,7 @@ const actionFixture: ActionObject = {
   evidence_ids: ["ev_refresh_merchant_feed"],
   metrics: [],
   validation_status: "not_validated",
-  human_diagnosis: "Merchant Center ma issue facts i próbki produktów do review.",
+  human_diagnosis: "Merchant Center ma fakty o problemach i próbki produktów do sprawdzenia.",
   recommended_reason: "Przejrzyj podgląd bez mutacji feedu.",
   payload: {
     action_type: "merchant_feed_issue",
@@ -541,30 +541,25 @@ const socialDraftActionFixture: ActionObject = {
   connector: "linkedin",
   risk: "medium",
   evidence_ids: ["ev_refresh_gsc", "ev_refresh_merchant"],
-  human_diagnosis: "WILQ ma evidence, z którego można przygotować social draft do review.",
-  recommended_reason: "Przejrzyj źródłowe metryki i blokady zanim powstanie draft.",
+  human_diagnosis: "WILQ ma dowody, z których można przygotować materiał social do sprawdzenia.",
+  recommended_reason: "Przejrzyj źródłowe metryki i blokady zanim powstanie szkic.",
   payload: {
     action_type: "linkedin_post_candidate",
     mode: "prepare_only",
     connector: "linkedin",
-    candidate_inputs: [
+    source_inputs: [
       {
         source_connector: "google_search_console",
         metric_name: "clicks",
         value: 12,
-        dimensions: {},
+        context_summary: "sygnał z Google Search Console",
         evidence_id: "ev_refresh_gsc"
       },
       {
         source_connector: "google_merchant_center",
         metric_name: "issue_product_count",
         value: 14,
-        dimensions: {
-          affected_attribute: "n:availability",
-          country: "PL",
-          issue_type: "availability_updated",
-          reporting_context: "FREE_LISTINGS"
-        },
+        context_summary: "zgłoszenie problemu danych produktowych Merchant Center",
         evidence_id: "ev_refresh_merchant"
       }
     ],
@@ -1195,7 +1190,7 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
-  it("renders social draft evidence inputs without requiring raw JSON", async () => {
+  it("renders social source inputs without requiring raw JSON", async () => {
     renderActionDetail("act_social_draft");
     await waitFor(() =>
       expect(
@@ -1208,10 +1203,12 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Źródło: google_search_console/)).toBeInTheDocument();
     expect(screen.getByText(/Metryka: clicks/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 12/)).toBeInTheDocument();
+    expect(screen.getByText(/Kontekst: sygnał z Google Search Console/)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google_merchant_center/)).toBeInTheDocument();
     expect(screen.getByText(/Metryka: issue_product_count/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Szczegóły źródłowe: 4 pola techniczne/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Kontekst: zgłoszenie problemu danych produktowych Merchant Center/)).toBeInTheDocument();
+    expect(screen.queryByText(/Szczegóły źródłowe/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Ograniczenia: użyj tylko dowodów z WILQ/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Czego nie wolno twierdzić: zwrot z reklam/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);

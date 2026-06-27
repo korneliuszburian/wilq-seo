@@ -99,14 +99,14 @@ def main() -> int:
         raise SystemExit("Social draft context must be review_only")
     if social_draft_context.get("publish_allowed") is not False:
         raise SystemExit("Social draft context must keep publish_allowed=false")
-    candidate_inputs = social_draft_context.get("candidate_inputs") or []
+    source_inputs = social_draft_context.get("source_inputs") or []
     draft_action_ids = set(social_draft_context.get("draft_action_ids") or [])
     pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
     active_social_action_ids = CORE_SOCIAL_ACTION_IDS & pack_action_ids
-    if (draft_action_ids or active_social_action_ids) and not candidate_inputs:
-        raise SystemExit("Social draft context must expose candidate_inputs")
-    if not social_draft_context.get("missing_publish_permissions"):
-        raise SystemExit("Social draft context must expose missing publish permissions")
+    if (draft_action_ids or active_social_action_ids) and not source_inputs:
+        raise SystemExit("Social draft context must expose source_inputs")
+    if not social_draft_context.get("missing_publish_access"):
+        raise SystemExit("Social draft context must expose missing publish access blockers")
 
     action_validations = validate_core_social_actions(args.api_base, pack)
 
@@ -141,13 +141,13 @@ def main() -> int:
                 "social_draft_context": {
                     "mode": social_draft_context.get("mode"),
                     "publish_allowed": social_draft_context.get("publish_allowed"),
-                    "missing_publish_permissions": social_draft_context.get(
-                        "missing_publish_permissions"
+                    "missing_publish_access": social_draft_context.get(
+                        "missing_publish_access"
                     ),
-                    "candidate_input_count": len(
-                        social_draft_context.get("candidate_inputs", [])
+                    "source_input_count": len(
+                        social_draft_context.get("source_inputs", [])
                     ),
-                    "candidate_inputs": social_draft_context.get("candidate_inputs", [])[:4],
+                    "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),
                     "draft_constraints": social_draft_context.get("draft_constraints", []),
                     "blocked_claims": social_draft_context.get("blocked_claims", []),

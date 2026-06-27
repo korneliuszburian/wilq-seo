@@ -573,6 +573,11 @@ WILQ is complete for this long-range goal when:
   alias for `skill`, so accidental skill-scoped calls no longer fall back to
   full context. The default Merchant context is condensed to labels, counts,
   evidence and action IDs, with raw Merchant vendor enum values removed.
+- 2026-06-27: Social Publisher source evidence now uses `source_inputs` and
+  `missing_publish_access` in the active API/skill contract. The old
+  `candidate_inputs` field and social "permissions" wording were removed from
+  active context, smoke tests and eval cases. Social source inputs carry
+  condensed `context_summary` values instead of raw vendor dimensions.
 
 ## Discoveries
 
@@ -603,6 +608,10 @@ WILQ is complete for this long-range goal when:
 - Skill context size is a product surface. A skill-default context must contain
   condensed decisions and labels, not full payloads or raw vendor enums that
   force Codex to parse implementation detail.
+- Source evidence for a skill can leak technical vendor values even when the
+  primary action cards look clean. Context-pack proof must scan nested
+  skill-specific brief and tactical queue surfaces, not only the direct action
+  payload.
 
 ## Decision Log
 
@@ -619,3 +628,9 @@ WILQ is complete for this long-range goal when:
 - Default skill contexts are operator contracts. Full raw context stays behind
   explicit `full_context: true`; default skill calls must remain condensed and
   free of unnecessary raw vendor values.
+- Merchant labels belong in one domain label source. Tactical queue and
+  Merchant diagnostics must share those labels instead of carrying separate
+  local maps or exposing vendor enum strings.
+- `source_inputs` is the active social draft source-evidence contract. Do not
+  restore `candidate_inputs` or publish-permissions wording as compatibility
+  aliases.

@@ -173,8 +173,8 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "wordpressDraft" as const, item }))
     : [];
-  const socialDraftItems = Array.isArray(payload.candidate_inputs)
-    ? payload.candidate_inputs.filter(isRecord).map((item) => ({
+  const socialDraftItems = Array.isArray(payload.source_inputs)
+    ? payload.source_inputs.filter(isRecord).map((item) => ({
         kind: "socialDraftInput" as const,
         item: {
           ...item,
@@ -580,7 +580,6 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
 }
 
 function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const dimensions = isRecord(item.dimensions) ? item.dimensions : {};
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -596,7 +595,7 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
         <div>Źródło: {stringValue(item.source_connector, "brak")}</div>
         <div>Metryka: {stringValue(item.metric_name, "brak")}</div>
         <div>Wartość: {formatMetricValue(item.value)}</div>
-        <div>Szczegóły źródłowe: {technicalDetailCount(dimensions)}</div>
+        <div>Kontekst: {stringValue(item.context_summary, "sygnał źródłowy WILQ")}</div>
         <PreviewValues
           label="Ograniczenia"
           values={operatorRequirementValues(item.draft_constraints, item.draft_constraint_labels)}

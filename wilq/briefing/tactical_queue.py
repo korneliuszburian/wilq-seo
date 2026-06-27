@@ -9,6 +9,12 @@ from typing import Literal
 from urllib.parse import urlparse
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.briefing.merchant_labels import (
+    MERCHANT_ATTRIBUTE_LABELS,
+    MERCHANT_ISSUE_LABELS,
+    MERCHANT_RESOLUTION_LABELS,
+    MERCHANT_SEVERITY_LABELS,
+)
 from wilq.schemas import (
     ActionRisk,
     MetricFact,
@@ -420,15 +426,11 @@ def _tactical_intent_label(intent: TacticalIntent) -> str:
 
 
 def _merchant_dimension_label(value: str) -> str:
-    labels = {
-        "availability_updated": "zmiana dostępności",
-        "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
-        "n:availability": "dostępność",
-        "n:unit_pricing_measure": "miara ceny jednostkowej",
-        "problem feedu": "problem feedu",
-        "atrybut": "atrybut",
-    }
-    return labels.get(value, value.replace("_", " "))
+    return (
+        MERCHANT_ISSUE_LABELS.get(value)
+        or MERCHANT_ATTRIBUTE_LABELS.get(value)
+        or value.replace("_", " ")
+    )
 
 
 def _tactical_metric_facts(
@@ -659,13 +661,16 @@ def _merchant_feed_items(
         product_count = _numeric_fact(group_facts, "issue_product_count")
         issue_title = _dimension_value(group_facts, "issue_title")
         affected_attribute = _dimension_value(group_facts, "affected_attribute")
+        issue_label = MERCHANT_ISSUE_LABELS.get(issue_type, issue_title or issue_type)
+        severity_label = MERCHANT_SEVERITY_LABELS.get(severity, severity)
+        resolution_label = MERCHANT_RESOLUTION_LABELS.get(resolution, resolution)
         items.append(
             TacticalQueueItem(
                 id=(
                     f"tq_merchant_issue_{_stable_slug(country)}_"
                     f"{_stable_slug(severity)}_{_stable_slug(issue_type)}"
                 ),
-                title=f"Merchant: {severity} / {issue_type} / {country}",
+                title=f"Merchant: {severity_label} / {issue_label} / {country}",
                 domain=OpportunityDomain.merchant,
                 intent="merchant_feed_triage",
                 priority=_merchant_issue_priority(severity, product_count, index),
@@ -683,7 +688,7 @@ def _merchant_feed_items(
                 },
                 diagnosis=(
                     f"Merchant Center pokazuje {product_count or 0} produktów w problemie "
-                    f"{severity}/{issue_type}/{resolution} dla kraju {country}."
+                    f"{severity_label}: {issue_label}; {resolution_label}; kraj {country}."
                 ),
                 next_step=(
                     "Przygotuj kolejkę przeglądu problemów feedu i podgląd zmian. "

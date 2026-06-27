@@ -133,6 +133,14 @@ Date: 2026-06-27
   vendor enums such as `landing_page_error`, `SHOPPING_ADS` or
   `MERCHANT_ACTION`; the full endpoint remains available explicitly. Live proof:
   `.local-lab/proof/20260627-merchant-context-pack-condensation/`.
+- Social Publisher action/context contracts now use `source_inputs` and
+  `missing_publish_access` instead of stale `candidate_inputs` and publish
+  permissions wording. The social context-pack no longer includes raw Merchant
+  dimensions such as `availability_updated`, `FREE_LISTINGS`, `MERCHANT_ACTION`
+  or `n:availability`; source inputs carry short `context_summary` strings.
+  Merchant issue labels were moved to a shared domain label module so tactical
+  queue and Merchant diagnostics use the same Polish labels. Browser/API proof:
+  `.local-lab/proof/20260627-social-source-inputs/`.
 - GA4 readiness now sources missing-data labels from the WILQ API/domain
   contract, and GA4 route cards render condensed API metric tiles instead of
   raw metric facts. Browser proof for `/ga4` found no hits for `landing page`,

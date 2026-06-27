@@ -328,13 +328,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-social-publisher": {
             "surface_path": "/social-publisher",
-            "terms": {
-                "social_draft_context",
-                "publish_allowed",
-                "missing_publish_permissions",
-                "candidate_inputs",
-                "do sprawdzenia w WILQ",
-                "LinkedIn",
+                "terms": {
+                    "social_draft_context",
+                    "publish_allowed",
+                    "missing_publish_access",
+                    "source_inputs",
+                    "do sprawdzenia w WILQ",
+                    "LinkedIn",
                 "Facebook",
                 "zablokowane obietnice",
             },

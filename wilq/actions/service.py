@@ -1878,7 +1878,7 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
 def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:
     actions: dict[str, ActionObject] = {}
     social_source_facts = [
-        fact for fact in social_facts if _is_social_candidate_metric(fact)
+        fact for fact in social_facts if _is_social_source_metric(fact)
     ]
     social_metrics = _prioritize_action_metrics(
         social_source_facts,
@@ -1908,7 +1908,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "no_publishing_without_connector_credentials",
             "require_human_review_before_apply",
         ],
-        "candidate_inputs": _social_candidate_inputs(social_metrics),
+        "source_inputs": _social_source_inputs(social_metrics),
         "blocked_claims": ["zwrot z reklam", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
         "destructive": False,
     }
@@ -1937,7 +1937,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             human_diagnosis=(
                 "WILQ ma realne dane GSC/GA4/Merchant/WordPress, które można "
                 "przełożyć na bezpieczne do sprawdzenia kierunki postów. Brak uprawnień social "
-                "blokuje publikację, ale nie blokuje przygotowania briefu do oceny."
+                "blokuje publikację, ale nie blokuje przygotowania materiału do oceny."
             ),
             recommended_reason=(
                 "Na /social-publisher pokaż tylko propozycje szkiców z dowodami. "
@@ -1955,7 +1955,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
     return actions
 
 
-def _is_social_candidate_metric(fact: MetricFact) -> bool:
+def _is_social_source_metric(fact: MetricFact) -> bool:
     if fact.name != "content_object_seen":
         return True
     content_url = fact.dimensions.get("content_url")
@@ -1967,7 +1967,7 @@ def _is_social_candidate_metric(fact: MetricFact) -> bool:
     return "dev.proudsite.pl" not in host
 
 
-def _social_candidate_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:
+def _social_source_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:
     inputs: list[dict[str, object]] = []
     for fact in facts[:8]:
         inputs.append(
@@ -1975,11 +1975,33 @@ def _social_candidate_inputs(facts: list[MetricFact]) -> list[dict[str, object]]
                 "source_connector": fact.source_connector,
                 "metric_name": fact.name,
                 "value": fact.value,
-                "dimensions": fact.dimensions,
+                "context_summary": _social_source_context_summary(fact),
                 "evidence_id": fact.evidence_id,
             }
         )
     return inputs
+
+
+def _social_source_context_summary(fact: MetricFact) -> str:
+    dimensions = fact.dimensions
+    if fact.source_connector == "google_merchant_center":
+        return "zgłoszenie problemu danych produktowych Merchant Center"
+    if fact.source_connector == "wordpress_ekologus":
+        title = dimensions.get("title_or_h1")
+        url = dimensions.get("canonical_url") or dimensions.get("content_url")
+        parts = [str(value) for value in (title, url) if isinstance(value, str) and value]
+        return " | ".join(parts[:2]) or "wpis lub strona z publicznego spisu treści"
+    if fact.source_connector == "google_search_console":
+        query = dimensions.get("query")
+        page = dimensions.get("page")
+        parts = [str(value) for value in (query, page) if isinstance(value, str) and value]
+        return " | ".join(parts[:2]) or "sygnał z Google Search Console"
+    if fact.source_connector == "google_analytics_4":
+        page = dimensions.get("landing_page") or dimensions.get("page_path")
+        source = dimensions.get("session_source_medium") or dimensions.get("source_medium")
+        parts = [str(value) for value in (page, source) if isinstance(value, str) and value]
+        return " | ".join(parts[:2]) or "sygnał z GA4"
+    return "sygnał źródłowy WILQ"
 
 
 def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:

@@ -2,7 +2,7 @@
   {
     "skill": "wilq-daily-command",
     "surface_path": "/command-center",
-    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, evidence IDs, core action IDs i jeden najbezpieczniejszy następny krok. Nie promuj social draftów ani Localo jako głównego daily taska, jeśli nie występują w command_center.daily_decisions.",
+    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, evidence IDs, core action IDs i jeden najbezpieczniejszy następny krok. Nie promuj szkiców social ani Localo jako głównego zadania dnia, jeśli nie występują w command_center.daily_decisions.",
     "expected_terms_pl": [
       "Plan działań",
       "action_plan",
@@ -314,8 +314,8 @@
     "expected_terms_pl": [
       "social_draft_context",
       "publish_allowed",
-      "missing_publish_permissions",
-      "candidate_inputs",
+      "missing_publish_access",
+      "source_inputs",
       "do sprawdzenia w WILQ",
       "LinkedIn",
       "Facebook",

@@ -6,6 +6,13 @@ from typing import Literal
 
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.briefing.merchant_labels import (
+    MERCHANT_ATTRIBUTE_LABELS,
+    MERCHANT_ISSUE_LABELS,
+    MERCHANT_REPORTING_CONTEXT_LABELS,
+    MERCHANT_RESOLUTION_LABELS,
+    MERCHANT_SEVERITY_LABELS,
+)
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -118,43 +125,6 @@ MERCHANT_HEALTH_METRIC_NAMES = {
     "merchant_action_issue_count",
 }
 MERCHANT_STALE_AFTER_HOURS = 48
-MERCHANT_ISSUE_LABELS = {
-    "availability_updated": "zmiana dostępności do sprawdzenia",
-    "image too small for high resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
-    "image_too_small_for_high_resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
-    "landing_page_error": "błąd strony produktu",
-    "missing_image": "brak zdjęcia produktu",
-    "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
-    "problem feedu": "problem feedu",
-}
-MERCHANT_ATTRIBUTE_LABELS = {
-    "n:availability": "dostępność",
-    "availability": "dostępność",
-    "n:link": "link produktu",
-    "link": "link produktu",
-    "image_link": "link zdjęcia",
-    "n:image_link": "link zdjęcia",
-    "n:unit_pricing_measure": "miara ceny jednostkowej",
-    "atrybut": "atrybut",
-    "atrybut nieznany": "atrybut nieznany",
-}
-MERCHANT_REPORTING_CONTEXT_LABELS = {
-    "ALL_CONTEXTS": "wszystkie konteksty",
-    "DEMAND_GEN_ADS": "reklamy Demand Gen",
-    "FREE_LISTINGS": "bezpłatne wyniki produktowe",
-    "SHOPPING_ADS": "reklamy produktowe",
-}
-MERCHANT_SEVERITY_LABELS = {
-    "DISAPPROVED": "odrzucone",
-    "DEMOTED": "ograniczona widoczność",
-    "NOT_IMPACTED": "bez wpływu",
-    "UNKNOWN": "status nieznany",
-}
-MERCHANT_RESOLUTION_LABELS = {
-    "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
-    "PENDING_PROCESSING": "czeka na przetworzenie",
-}
-
 
 def build_merchant_diagnostics(
     *,

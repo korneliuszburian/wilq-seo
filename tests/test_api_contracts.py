@@ -3138,7 +3138,8 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 ]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
             assert action["domain"] == "social"
-            assert action["payload"]["candidate_inputs"]
+            assert action["payload"]["source_inputs"]
+            assert "candidate_inputs" not in action["payload"]
             assert "no_publishing_without_connector_credentials" in action["payload"][
                 "draft_constraints"
             ]
@@ -15408,22 +15409,24 @@ def test_social_context_pack_exposes_review_only_draft_context(
     social_context = context_payload["social_draft_context"]
     assert social_context["mode"] == "review_only"
     assert social_context["publish_allowed"] is False
-    assert social_context["missing_publish_permissions"] == {
+    assert social_context["missing_publish_access"] == {
         "linkedin": ["LINKEDIN_ORGANIZATION_ID", "LINKEDIN_ACCESS_TOKEN"],
         "facebook": ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"],
     }
+    assert "missing_publish_permissions" not in social_context
     assert social_context["draft_action_ids"] == [
         "act_prepare_facebook_social_drafts",
         "act_prepare_linkedin_social_drafts",
     ]
-    assert social_context["candidate_inputs"]
+    assert social_context["source_inputs"]
+    assert "candidate_inputs" not in social_context
     assert {
         "source_connector",
         "metric_name",
         "value",
-        "dimensions",
+        "context_summary",
         "evidence_id",
-    }.issubset(social_context["candidate_inputs"][0])
+    }.issubset(social_context["source_inputs"][0])
     assert "no_publishing_without_connector_credentials" in social_context[
         "draft_constraints"
     ]
@@ -15435,6 +15438,12 @@ def test_social_context_pack_exposes_review_only_draft_context(
     old_social_growth_claim = "social performance " + "up" + "lift"
     assert old_post_publish_claim not in social_context["blocked_claims"]
     assert old_social_growth_claim not in social_context["blocked_claims"]
+    serialized_social_context = json.dumps(social_context, ensure_ascii=False)
+    assert "candidate_inputs" not in serialized_social_context
+    assert "availability_updated" not in serialized_social_context
+    assert "FREE_LISTINGS" not in serialized_social_context
+    assert "MERCHANT_ACTION" not in serialized_social_context
+    assert "n:availability" not in serialized_social_context
     assert context_payload["marketing_brief"]["context_pack_compaction"][
         "sections_compacted"
     ] is True
@@ -15477,10 +15486,11 @@ def test_social_draft_actions_exclude_dev_site_inventory_inputs() -> None:
     )
 
     linkedin_action = actions["act_prepare_linkedin_social_drafts"]
-    candidate_inputs = linkedin_action.payload["candidate_inputs"]
-    serialized_inputs = json.dumps(candidate_inputs, ensure_ascii=False)
+    source_inputs = linkedin_action.payload["source_inputs"]
+    serialized_inputs = json.dumps(source_inputs, ensure_ascii=False)
 
-    assert candidate_inputs
+    assert source_inputs
+    assert "candidate_inputs" not in linkedin_action.payload
     assert "ev_gsc_social_candidate" in linkedin_action.evidence_ids
     assert "ev_wordpress_dev_site_candidate" not in linkedin_action.evidence_ids
     assert "ekologus.dev.proudsite.pl" not in serialized_inputs

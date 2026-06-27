@@ -743,7 +743,11 @@ def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[st
     }
 
 
-def _compact_marketing_brief_for_skill_context(brief: MarketingBrief) -> dict[str, Any]:
+def _compact_marketing_brief_for_skill_context(
+    brief: MarketingBrief,
+    *,
+    include_top_metric_facts: bool = True,
+) -> dict[str, Any]:
     dumped = brief.model_dump(mode="json")
     compact_sections = []
     item_total = 0
@@ -792,7 +796,9 @@ def _compact_marketing_brief_for_skill_context(brief: MarketingBrief) -> dict[st
             _compact_metric_fact_for_context(fact)
             for fact in dumped.get("top_metric_facts", [])[:5]
             if isinstance(fact, dict)
-        ],
+        ]
+        if include_top_metric_facts
+        else [],
         "evidence_ids": (dumped.get("evidence_ids") or [])[:20],
         "action_ids": dumped.get("action_ids") or [],
         "blocker_count": dumped.get("blocker_count"),
@@ -801,7 +807,7 @@ def _compact_marketing_brief_for_skill_context(brief: MarketingBrief) -> dict[st
             "sections_compacted": True,
             "items_total": item_total,
             "items_per_section_limit": 3,
-            "top_metric_facts_limit": 5,
+            "top_metric_facts_limit": 5 if include_top_metric_facts else 0,
             "full_endpoint": "/api/marketing/brief",
         },
     }
@@ -1331,7 +1337,8 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         runtime = build_daily_runtime()
         return {
             "marketing_brief": _compact_marketing_brief_for_skill_context(
-                runtime.marketing_brief
+                runtime.marketing_brief,
+                include_top_metric_facts=False,
             ),
             "tactical_queue": _compact_tactical_queue_for_skill_context(
                 build_tactical_queue()
@@ -1357,13 +1364,13 @@ def _social_draft_context_for_context(
         key=lambda action: action.id,
     )
     connector_status_by_id = {connector.id: connector for connector in connectors}
-    missing_publish_permissions = {
+    missing_publish_access = {
         connector_id: connector_status_by_id[connector_id].missing_credentials
         for connector_id in ("linkedin", "facebook")
         if connector_id in connector_status_by_id
         and connector_status_by_id[connector_id].missing_credentials
     }
-    candidate_inputs: list[dict[str, Any]] = []
+    source_inputs: list[dict[str, Any]] = []
     draft_constraints: list[str] = []
     blocked_claims = ["opublikowanie posta", "wzrost skuteczności social"]
     source_metric_names: list[str] = []
@@ -1372,9 +1379,9 @@ def _social_draft_context_for_context(
     for action in social_actions:
         payload = action.payload
         if isinstance(payload, dict):
-            candidate_inputs.extend(
+            source_inputs.extend(
                 item
-                for item in payload.get("candidate_inputs", [])
+                for item in payload.get("source_inputs", [])
                 if isinstance(item, dict)
             )
             draft_constraints.extend(
@@ -1401,9 +1408,9 @@ def _social_draft_context_for_context(
     return {
         "mode": "review_only",
         "publish_allowed": False,
-        "missing_publish_permissions": missing_publish_permissions,
+        "missing_publish_access": missing_publish_access,
         "draft_action_ids": [action.id for action in social_actions],
-        "candidate_inputs": candidate_inputs[:8],
+        "source_inputs": source_inputs[:8],
         "draft_constraints": sorted(set(draft_constraints)),
         "blocked_claims": sorted(set(blocked_claims)),
         "source_metric_names": sorted(set(source_metric_names)),
@@ -1411,7 +1418,7 @@ def _social_draft_context_for_context(
         "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
         "operator_next_step": (
             "Przygotuj szkice do sprawdzenia z dowodami; publikacja pozostaje "
-            "zablokowana do czasu konfiguracji LinkedIn/Facebook permissions."
+            "zablokowana do czasu konfiguracji uprawnień LinkedIn/Facebook."
         ),
     }
 
