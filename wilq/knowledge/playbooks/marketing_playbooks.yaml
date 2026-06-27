@@ -22,11 +22,11 @@ playbooks:
     expert_rule_ids:
       - ads_search_terms_v1
       - ads_diagnostics_v1
-    compact_playbook: Use real search-term metrics to separate waste, content candidates and audience candidates. Never recommend negatives, content or segment terms without evidence IDs and campaign scope.
+    compact_playbook: Używaj realnych metryk wyszukiwanych haseł do rozdzielenia strat, kandydatów treści i kandydatów odbiorców. Nie rekomenduj wykluczeń, treści ani segmentów bez dowodów i zakresu kampanii.
     refusal_rules:
-      - Refuse to classify search intent without search-term evidence.
-      - Refuse to recommend spend changes from connector status alone.
-    output_contract: Evidence-backed search-term opportunity and optional validated action IDs.
+      - Odmów klasyfikacji intencji bez dowodów z wyszukiwanych haseł.
+      - Odmów rekomendacji zmiany wydatków wyłącznie na podstawie statusu źródła danych.
+    output_contract: Okazja z wyszukiwanych haseł oparta o dowody i opcjonalne zwalidowane akcje.
 
   - id: google_ads_budget_review_playbook
     family: google_ads_budget_review_playbook
@@ -49,12 +49,12 @@ playbooks:
       - ads_scaling_candidates_v1
       - ads_recommendations_v1
       - ads_principles_v1
-    compact_playbook: Use campaign budget fields and recent cost only as validation context. Do not scale, cut or write budgets without impression share, change history, business budget goal, change preview and action validation.
+    compact_playbook: Używaj budżetu kampanii i ostatnich kosztów tylko jako kontekstu walidacji. Nie skaluj, nie tnij i nie zapisuj budżetów bez udziału w wyświetleniach, historii zmian, celu biznesowego, podglądu zmiany i walidacji akcji.
     refusal_rules:
-      - Refuse budget changes without campaign_budget evidence IDs.
+      - Odmów zmian budżetu bez dowodów dla budżetu kampanii.
       - Blokuj oceny opłacalności i zmarnowanego budżetu bez marży, jakości konwersji oraz kontraktów review.
-      - Refuse to apply Google recommendations automatically.
-    output_contract: Budget review decision with evidence, missing read contracts and blocked write claims.
+      - Odmów automatycznego wdrożenia rekomendacji Google.
+    output_contract: Decyzja przeglądu budżetu z dowodami, brakującymi danymi i zablokowanymi twierdzeniami o zapisie zmian.
 
   - id: google_ads_demand_gen_playbook
     family: google_ads_demand_gen_playbook
@@ -77,11 +77,11 @@ playbooks:
       - prepare_demand_gen_campaign
     expert_rule_ids:
       - ads_demand_gen_v1
-    compact_playbook: Check transition candidates, asset readiness, goals and audience state before preparing Demand Gen actions. AI enhancement changes must stay explicit.
+    compact_playbook: Sprawdź kandydatów przejścia, gotowość zasobów, cele i stan odbiorców przed przygotowaniem działań Demand Gen. Zmiany automatycznych ulepszeń AI muszą być jawne.
     refusal_rules:
-      - Refuse to infer transition readiness without campaign and asset evidence.
-      - Refuse to silently enable AI enhancements.
-    output_contract: Demand Gen readiness opportunity with evidence and change preview.
+      - Odmów oceny gotowości przejścia bez dowodów kampanii i zasobów.
+      - Odmów cichego włączenia automatycznych ulepszeń AI.
+    output_contract: Okazja gotowości Demand Gen z dowodami i podglądem zmiany.
 
   - id: google_ads_pmax_playbook
     family: google_ads_pmax_playbook
@@ -104,11 +104,11 @@ playbooks:
     expert_rule_ids:
       - ads_capability_pack_v1
       - merchant_feed_rules_v1
-    compact_playbook: Connect PMax recommendations to Merchant/feed health and asset evidence before suggesting retail campaign changes.
+    compact_playbook: Łącz rekomendacje PMax ze zdrowiem Merchant/feedu i dowodami zasobów przed sugerowaniem zmian kampanii sprzedażowych.
     refusal_rules:
-      - Refuse to optimize products without product/feed diagnostics.
-      - Refuse to treat Google recommendations as automatically business-fit.
-    output_contract: Retail readiness opportunity mapped to feed and campaign action candidates.
+      - Odmów optymalizacji produktów bez diagnostyki produktu i feedu.
+      - Odmów traktowania rekomendacji Google jako automatycznie dopasowanych biznesowo.
+    output_contract: Okazja gotowości sprzedaży produktowej powiązana z feedem i kandydatami akcji kampanii.
 
   - id: google_ads_negative_keywords_playbook
     family: google_ads_negative_keywords_playbook
@@ -131,11 +131,11 @@ playbooks:
     expert_rule_ids:
       - ads_negative_keywords_v1
       - ads_search_terms_v1
-    compact_playbook: Prepare negatives only when real search terms show waste, conversion absence and safe campaign scope. Preserve brand and high-intent terms for sprawdzenie przez człowieka.
+    compact_playbook: Przygotuj wykluczenia tylko wtedy, gdy realne wyszukiwane hasła pokazują stratę, brak konwersji i bezpieczny zakres kampanii. Frazy brandowe i wysokiej intencji zostaw do sprawdzenia przez człowieka.
     refusal_rules:
-      - Refuse negative keyword actions without evidence IDs.
-      - Refuse broad negatives that can block valuable intent without review.
-    output_contract: Validated negative keyword actions with search-term evidence.
+      - Odmów akcji wykluczeń bez dowodów źródłowych.
+      - Odmów szerokich wykluczeń, które mogą zablokować wartościową intencję bez sprawdzenia.
+    output_contract: Zwalidowane akcje wykluczeń z dowodami wyszukiwanych haseł.
 
   - id: google_ads_custom_segments_playbook
     family: google_ads_custom_segments_playbook
@@ -159,9 +159,9 @@ playbooks:
       - ads_keyword_planner_v1
     compact_playbook: Buduj propozycje segmentów do sprawdzenia z realnych wyszukiwanych haseł. Pokazuj odrzucone frazy o niskiej intencji albo wymyślone hasła. Wymagaj wzbogacenia Keyword Planner, prognozy albo rozmiaru odbiorców i decyzji człowieka przed zapisem zmian.
     refusal_rules:
-      - Refuse invented audience terms.
-      - Refuse segment payloads without source search terms.
-    output_contract: Custom segment proposal with evidence, rejected terms, change preview and blocked write claims.
+      - Odmów wymyślonych fraz odbiorców.
+      - Odmów przygotowania segmentu bez źródłowych wyszukiwanych haseł.
+    output_contract: Propozycja segmentu niestandardowego z dowodami, odrzuconymi frazami, podglądem zmiany i zablokowanym zapisem.
 
   - id: gsc_seo_content_playbook
     family: gsc_seo_content_playbook
@@ -188,11 +188,11 @@ playbooks:
     expert_rule_ids:
       - seo_gsc_opportunities_v1
       - seo_query_page_matrix_v1
-    compact_playbook: Use query/page evidence to decide refresh, merge, internal link or no-op. Check existing content before recommending new pages.
+    compact_playbook: "Używaj dowodów zapytanie/strona do decyzji: odświeżenie, scalenie, link wewnętrzny albo brak działania. Sprawdź istniejącą treść przed rekomendacją nowej strony."
     refusal_rules:
-      - Refuse new content if an existing page satisfies the intent.
-      - Refuse CTR or decay diagnosis without GSC evidence.
-    output_contract: SEO opportunity with query/page evidence and content action candidate.
+      - Odmów nowej treści, jeśli istniejąca strona spełnia intencję.
+      - Odmów diagnozy CTR albo spadku bez dowodów z GSC.
+    output_contract: Okazja SEO z dowodami zapytanie/strona i kandydatem akcji treściowej.
 
   - id: ahrefs_content_gap_playbook
     family: ahrefs_content_gap_playbook
@@ -215,11 +215,11 @@ playbooks:
       - internal_link_candidate
     expert_rule_ids:
       - content_brief_rules_v1
-    compact_playbook: Turn competitor and content-gap evidence into briefs only after checking Ekologus content inventory and source lineage.
+    compact_playbook: Zamieniaj dowody konkurencji i luk treści w briefy dopiero po sprawdzeniu spisu treści Ekologus i ścieżki źródłowej.
     refusal_rules:
-      - Refuse generic competitor advice without Ahrefs evidence.
-      - Refuse backlink recommendations without source URLs.
-    output_contract: Content gap opportunity with competitor evidence and brief action.
+      - Odmów ogólnych porad o konkurencji bez dowodów z Ahrefs.
+      - Odmów rekomendacji linków bez źródłowych adresów URL.
+    output_contract: Okazja luki treści z dowodami konkurencji i akcją briefu.
 
   - id: localo_local_seo_playbook
     family: localo_local_seo_playbook
@@ -244,8 +244,8 @@ playbooks:
     compact_playbook: Diagnozuj spadki lokalnych pozycji, luki względem konkurencji i zadania review z dowodów Localo/GBP przed sugerowaniem zmian publicznych.
     refusal_rules:
       - Blokuj propozycje zapisu zmian w profilu firmy bez dowodu sprawdzenia.
-      - Refuse local ranking diagnosis without location and competitor context.
-    output_contract: Local visibility task or review-response candidate with source IDs.
+      - Odmów diagnozy lokalnych pozycji bez kontekstu lokalizacji i konkurencji.
+    output_contract: Zadanie widoczności lokalnej albo kandydat odpowiedzi na opinię z dowodami źródłowymi.
 
   - id: ga4_behavior_diagnostics_playbook
     family: ga4_behavior_diagnostics_playbook
@@ -269,11 +269,11 @@ playbooks:
       - ga4_landing_page_issue
     expert_rule_ids:
       - ga4_diagnostics_v1
-    compact_playbook: Separate measurement gaps from marketing problems by connecting acquisition data to engagement and conversion evidence.
+    compact_playbook: Oddzielaj braki pomiaru od problemów marketingowych przez połączenie danych pozyskania ruchu z zaangażowaniem i dowodami konwersji.
     refusal_rules:
-      - Refuse conversion-quality claims without GA4 evidence.
-      - Refuse to blame campaigns when tracking is missing.
-    output_contract: GA4 diagnostic opportunity with measurement or landing-page action.
+      - Odmów twierdzeń o jakości konwersji bez dowodów z GA4.
+      - Odmów obwiniania kampanii, gdy brakuje pomiaru.
+    output_contract: Okazja diagnostyczna GA4 z akcją pomiaru albo strony wejścia.
 
   - id: merchant_feed_optimization_playbook
     family: merchant_feed_optimization_playbook
@@ -324,11 +324,11 @@ playbooks:
     expert_rule_ids:
       - linkedin_rules_v1
       - content_social_limits_v1
-    compact_playbook: Prepare organization post candidates from source content and permission state. Publishing requires connector permission and sprawdzenie przez człowieka.
+    compact_playbook: Przygotuj kandydatów postów organizacji z treści źródłowej i stanu uprawnień. Publikacja wymaga uprawnień źródła danych i sprawdzenia przez człowieka.
     refusal_rules:
-      - Refuse public post claims without source content.
-      - Refuse publishing without organization permissions.
-    output_contract: LinkedIn post action with evidence and change preview.
+      - Odmów twierdzeń w publicznym poście bez treści źródłowej.
+      - Odmów publikacji bez uprawnień organizacji.
+    output_contract: Akcja posta LinkedIn z dowodami i podglądem zmiany.
 
   - id: facebook_content_playbook
     family: facebook_content_playbook
@@ -349,11 +349,11 @@ playbooks:
     expert_rule_ids:
       - facebook_rules_v1
       - content_social_limits_v1
-    compact_playbook: Prepare Facebook Page post candidates from source-grounded content and page permission state. Keep publishing as a validated action.
+    compact_playbook: Przygotuj kandydatów postów strony Facebook z treści opartej o źródła i stanu uprawnień strony. Publikacja pozostaje zwalidowaną akcją.
     refusal_rules:
-      - Refuse Page posts without source content and Page ID.
-      - Refuse unsupported promotional claims.
-    output_contract: Facebook post action with evidence and change preview.
+      - Odmów postów strony bez treści źródłowej i identyfikatora strony.
+      - Odmów niewspartych obietnic promocyjnych.
+    output_contract: Akcja posta Facebook z dowodami i podglądem zmiany.
 
   - id: wordpress_content_refresh_playbook
     family: wordpress_content_refresh_playbook
@@ -361,7 +361,7 @@ playbooks:
     card_type: content_card
     source_anchors:
       - WordPress REST API
-      - GSC query/page dimensions
+      - "GSC: wymiary zapytanie/strona"
     required_evidence:
       - content_inventory
       - target_page
@@ -379,8 +379,8 @@ playbooks:
       - content_duplication_rules_v1
       - content_brief_rules_v1
       - seo_query_page_matrix_v1
-    compact_playbook: Prefer refreshing or merging existing WordPress content when inventory proves a suitable page exists. New briefs require proof no suitable page exists.
+    compact_playbook: Preferuj odświeżenie albo scalenie istniejącej treści WordPress, gdy spis treści potwierdza pasującą stronę. Nowe briefy wymagają dowodu, że nie ma pasującej strony.
     refusal_rules:
-      - Refuse duplicate content creation without inventory evidence.
-      - Refuse content edits without source lineage.
-    output_contract: WordPress content action candidate with inventory and source evidence.
+      - Odmów tworzenia zduplikowanej treści bez dowodów ze spisu treści.
+      - Odmów edycji treści bez ścieżki źródłowej.
+    output_contract: Kandydat akcji treści WordPress ze spisem treści i dowodami źródłowymi.

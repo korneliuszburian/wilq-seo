@@ -47,7 +47,7 @@ describe("KnowledgePanels", () => {
             title: "Google Ads search terms",
             display_title: "Diagnostyka wyszukiwanych haseł Google Ads",
             expert_rule_ids: ["ads_search_terms_v1"],
-            output_contract: "Evidence-backed search-term review.",
+            output_contract: "Przegląd wyszukiwanych haseł oparty o dowody.",
             card_type: "ads_pattern_card",
             card_type_label: "wzorzec Ads",
             source_type_label: "zasada pracy",
@@ -58,7 +58,7 @@ describe("KnowledgePanels", () => {
             maps_to_action_types: ["negative_keyword_candidate"],
             source_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
             compact_playbook: "Review search terms without claiming kosztu pozyskania celu ani zwrotu z reklam.",
-            refusal_rules: ["No evidence, no recommendation."]
+            refusal_rules: ["Brak dowodów oznacza brak rekomendacji."]
           } satisfies MarketingPlaybook)
         ]}
       />

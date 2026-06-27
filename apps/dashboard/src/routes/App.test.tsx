@@ -6439,7 +6439,7 @@ const knowledgeCards = [
     id: "card_google_ads_search_playbook",
     card_type: "ads_pattern_card",
     title: "Diagnostyka wyszukiwanych haseł Google Ads",
-    summary: "Use real search-term metrics before recommendations.",
+    summary: "Użyj realnych metryk wyszukiwanych haseł przed rekomendacją.",
     source_type: "marketing_playbook",
     source_id: "google_ads_search_playbook",
     source_url_or_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
@@ -6461,9 +6461,9 @@ const playbooks = [
     maps_to_opportunity_types: ["google_ads_waste"],
     maps_to_action_types: ["prepare_negative_keywords"],
     expert_rule_ids: ["ads_search_terms_v1"],
-    compact_playbook: "Use real search-term metrics before recommendations.",
-    refusal_rules: ["Refuse to classify search intent without evidence."],
-    output_contract: "Evidence-backed search-term opportunity.",
+    compact_playbook: "Użyj realnych metryk wyszukiwanych haseł przed rekomendacją.",
+    refusal_rules: ["Odmów klasyfikacji intencji bez dowodów."],
+    output_contract: "Okazja z wyszukiwanych haseł oparta o dowody.",
     source_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml"
   }
 ];
@@ -6481,10 +6481,12 @@ const knowledgeOperatingMap = {
       status: "ready",
       route: "/ads-doctor",
       skill_id: "wilq-ads-doctor",
-      summary: "Google Ads search diagnostics steruje review kampanii i listy wyszukiwanych haseł.",
-      next_step: "Otwórz /ads-doctor i użyj wiedzy tylko z evidence.",
+      summary: "Diagnostyka wyszukiwanych haseł Google Ads steruje przeglądem kampanii i haseł.",
+      next_step: "Otwórz Google Ads i użyj wiedzy tylko z dowodami.",
       source_connectors: ["google_ads"],
+      source_connector_labels: ["Google Ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       action_ids: ["act_prepare_ads_campaign_review_queue"],
       metric_tiles: { kampanie: 18, zapytania: 50 },
       knowledge_card_ids: ["card_google_ads_search_playbook"],
@@ -6492,7 +6494,9 @@ const knowledgeOperatingMap = {
       expert_rule_ids: ["ads_search_terms_v1"],
       required_evidence: ["search_terms", "evidence_ids"],
       missing_contracts: [],
+      missing_contract_labels: [],
       blocked_claims: ["ocena zmarnowanego budżetu"],
+      blocked_claim_labels: ["werdykt przepalonego budżetu"],
       source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
       risk: "low"
     }
@@ -7510,10 +7514,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co ta wiedza zmienia w decyzjach")).toBeInTheDocument();
     expect(screen.getByText("Ocena Ads")).toBeInTheDocument();
     expect(screen.getByText("Co zrobić dalej")).toBeInTheDocument();
-    expect(screen.getByText("Dowody: 1")).toBeInTheDocument();
-    expect(screen.getByText("Źródła danych: 1 źródło")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja")).toBeInTheDocument();
-    expect(screen.getByText("Zakazane obietnice: 1")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: werdykt przepalonego budżetu")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
@@ -7533,7 +7537,7 @@ describe("WILQ dashboard", () => {
     fireEvent.click(playbooksToggle);
     expect(playbooksToggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByText("Wymagane dowody: search_terms, evidence_ids")).not.toBeInTheDocument();
-    expect(screen.queryByText("Evidence-backed search-term opportunity.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Okazja z wyszukiwanych haseł oparta o dowody.")).not.toBeInTheDocument();
     expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
     expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();

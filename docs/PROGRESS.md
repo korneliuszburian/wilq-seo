@@ -52,6 +52,9 @@ Date: 2026-06-28
 - Knowledge operating map now carries API-owned labels for source connectors,
   evidence summaries, missing data and blocked claims, so the Knowledge route
   does not show playbook refusal rules or raw connector IDs on the first screen.
+- Knowledge playbooks now expose Polish source rules and output contracts; live
+  API proof shows no `Refuse`, `Evidence-backed`, `payload`, `connectora` or
+  `query/page` residue in `/api/knowledge/playbooks`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -76,8 +79,11 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics or content_diagnostics or wordpress_draft or tactical_queue or redaction or legacy_raw_audit_summary" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge" --maxfail=1`
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|playbook"`
+- `rtk uv run python - <<'PY' ... /api/knowledge/playbooks language residue scan ... PY`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision|ahrefs route renders authority context"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`

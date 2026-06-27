@@ -80,6 +80,9 @@ use the cleaned language.
 - Knowledge operating map now carries API-owned labels for source connectors,
   evidence summaries, missing data and blocked claims, so the Knowledge route
   does not show playbook refusal rules or raw connector IDs on the first screen.
+- Knowledge playbooks now expose Polish source rules and output contracts. Live
+  `/api/knowledge/playbooks` proof shows no `Refuse`, `Evidence-backed`,
+  `payload`, `connectora` or `query/page` residue in the playbook contract.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
