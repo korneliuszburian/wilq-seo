@@ -5,231 +5,19 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { CommandCenterResponse, getCommandCenter } from "../lib/api";
-import { marketerBlockedClaimLabels, priorityLabel } from "./marketingLabels";
 import type { DailyDecision } from "@wilq/shared-schemas";
-
-function marketerConnectorLabels(values: string[]) {
-  return Array.from(new Set(values.map(marketerConnectorLabel)));
-}
-
-function marketerConnectorLabel(value: string) {
-  const labels: Record<string, string> = {
-    ahrefs: "Ahrefs",
-    facebook: "Facebook",
-    google_ads: "Google Ads",
-    google_analytics_4: "GA4",
-    google_merchant_center: "Merchant Center",
-    google_search_console: "Google Search Console",
-    google_sheets: "Google Sheets",
-    linkedin: "LinkedIn",
-    localo: "Localo",
-    wordpress_ekologus: "WordPress ekologus.pl",
-    wordpress_sklep: "WordPress sklep.ekologus.pl"
-  };
-  return labels[value] ?? "inne źródło danych";
-}
-
-function codexSkillLabel(value: string) {
-  const labels: Record<string, string> = {
-    "wilq-ads-doctor": "diagnostyka Ads",
-    "wilq-ahrefs-gap-finder": "luki SEO Ahrefs",
-    "wilq-campaign-builder": "plan kampanii",
-    "wilq-content-strategist": "strategia treści",
-    "wilq-custom-segments": "segmenty Ads",
-    "wilq-daily-command": "plan dnia",
-    "wilq-demand-gen-operator": "Demand Gen",
-    "wilq-ga4-analyst": "analiza GA4",
-    "wilq-gsc-content-doctor": "GSC i treści",
-    "wilq-localo-operator": "widoczność lokalna",
-    "wilq-merchant-feed-operator": "feed Merchant",
-    "wilq-social-publisher": "treści social"
-  };
-  return labels[value] ?? "workflow WILQ";
-}
-
-function evidenceCountSummary(count: number) {
-  if (count === 0) return "brak potwierdzonych śladów w WILQ";
-  if (count === 1) return "1 potwierdzony ślad w WILQ";
-  return `${count} potwierdzonych śladów w WILQ`;
-}
-
-function actionValidationSummary(count: number) {
-  if (count === 0) return "brak bezpiecznej akcji na pierwszym ekranie";
-  if (count === 1) return "1 bezpieczna akcja do sprawdzenia";
-  return `${count} bezpiecznych akcji do sprawdzenia`;
-}
-
-function marketerMetricLabel(label: string) {
-  const labels: Record<string, string> = {
-    "Ahrefs review": "ocena Ahrefs",
-    "dopasowania WordPress": "dopasowania WordPress",
-    "WP match": "dopasowania WordPress",
-    "brakujące dane": "brakujące dane",
-    "jakość ruchu": "jakość ruchu",
-    "luki linków": "luki linków",
-    "link gaps": "luki linków",
-    "ocena Ahrefs": "ocena Ahrefs",
-    "podgląd budżetu": "budżety do oceny",
-    "rekordy Ahrefs": "rekordy Ahrefs",
-    "typy problemów": "typy problemów",
-    query: "zapytania",
-    "query/page": "zapytania/URL",
-    "zapytania/URL": "zapytania/URL"
-  };
-  return labels[label] ?? label;
-}
-
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("pl-PL", {
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function copyPromptToClipboard(prompt: string) {
   if (!navigator.clipboard) return;
   void navigator.clipboard.writeText(prompt);
 }
 
-type DecisionCopy = {
-  title: string;
-  what: string;
-  why: string;
-  nextStep: string;
-};
-
-function metricValue(item: DailyDecision, ...keys: string[]): string | number | undefined {
-  for (const key of keys) {
-    const value = item.metric_tiles?.[key];
-    if (value !== undefined) return value;
-  }
-  return undefined;
-}
-
-function metricNumber(item: DailyDecision, ...keys: string[]): number {
-  const value = metricValue(item, ...keys);
-  if (typeof value === "number") return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
-}
-
-function metricDisplay(item: DailyDecision, ...keys: string[]) {
-  const value = metricValue(item, ...keys);
-  if (typeof value === "number") return formatNumber(value);
-  if (typeof value === "string" && value.length > 0) return value;
-  return "brak danych";
-}
-
-function sourceList(item: DailyDecision) {
-  return marketerConnectorLabels(item.source_connectors).join(", ");
-}
-
 function decisionFreshnessLabel(item: DailyDecision) {
-  const labels: Record<string, string> = {
-    fresh: "świeże",
-    stale: "do odświeżenia",
-    unknown: "nieznana",
-    missing: "brak danych"
-  };
-  return labels[item.freshness?.state ?? "unknown"] ?? "nieznana";
+  return item.decision_state_label || item.freshness?.state || "nieznana";
 }
 
 function decisionStatusBadgeValue(item: DailyDecision) {
   return item.decision_state;
-}
-
-function routeCtaLabel(route: string) {
-  const labels: Record<string, string> = {
-    "/ads-doctor": "Otwórz Ads Doctor",
-    "/content-planner": "Otwórz Content Planner",
-    "/ga4": "Otwórz GA4",
-    "/merchant": "Otwórz Merchant"
-  };
-  return labels[route] ?? "Otwórz widok";
-}
-
-function decisionCopy(item: DailyDecision): DecisionCopy {
-  if (item.id === "decision_review_merchant_feed_issues") {
-    const products = metricDisplay(item, "produkty");
-    const issueTypes = metricValue(item, "typy problemów");
-    const issueTypePhrase =
-      issueTypes === undefined ? "bez rozbicia na typy problemów" : `w ${issueTypes} typach`;
-    const reports = metricDisplay(item, "zgłoszenia", metricDisplay(item, "issues"));
-    return {
-      title: "Przejrzyj problemy produktów w Merchant Center",
-      what: `WILQ widzi ${products} produktów i ${reports} zgłoszeń problemów feedu ${issueTypePhrase}.`,
-      why:
-        "To może ograniczać widoczność produktów w Shopping i PMax, ale nie oznacza automatycznej naprawy ani odzyskanego przychodu.",
-      nextStep:
-        "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ przed jakąkolwiek zmianą feedu."
-    };
-  }
-
-  if (item.id === "decision_prepare_content_refresh_queue") {
-    const queryPages = metricDisplay(item, "zapytania/URL", "query/page");
-    const clicks = metricDisplay(item, "kliknięcia");
-    const impressions = metricDisplay(item, "wyświetlenia");
-    const wpMatches = metricDisplay(item, "dopasowania WordPress", "WP match");
-    const ahrefsGaps = metricDisplay(item, "luki Ahrefs");
-    const linkGaps = metricDisplay(item, "luki linków", "link gaps");
-    const matchWarning =
-      metricNumber(item, "dopasowania WordPress", "WP match") === 0
-        ? " Najpierw sprawdź dopasowania WordPress, bo dane nie potwierdzają dopasowania części adresów."
-        : "";
-    return {
-      title: "Ułóż kolejkę odświeżenia i scalania treści SEO",
-      what: `WILQ ma ${queryPages} par zapytanie-URL z GSC, ${clicks} kliknięć i ${impressions} wyświetleń. WordPress potwierdza ${wpMatches} dopasowań, a Ahrefs wskazuje ${ahrefsGaps} luki treści i ${linkGaps} luk linków.${matchWarning}`,
-      why:
-        "To jest materiał do decyzji: odświeżyć, scalić, utworzyć albo zablokować. Nie jest to obietnica wzrostu pozycji, leadów ani przychodu.",
-      nextStep:
-        "Otwórz Content Planner, zacznij od stron z największym ruchem z GSC i wybierz jedną decyzję dla każdego klastra."
-    };
-  }
-
-  if (item.id === "decision_review_ga4_landing_quality") {
-    const groups = metricDisplay(item, "grupy ruchu");
-    const measurementIssues = metricDisplay(item, "pomiar");
-    const qualitySignals = metricDisplay(item, "jakość ruchu");
-    const missingData = metricDisplay(item, "brakujące dane");
-    return {
-      title: "Sprawdź pomiar GA4 zanim ocenimy kampanie",
-      what: `GA4 pokazuje ${groups} grup ruchu, ${measurementIssues} problemy pomiaru, ${qualitySignals} sygnały jakości ruchu i ${missingData} brak danych wymaganych do pełnej oceny.`,
-      why:
-        "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o zwrot z reklam, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie ocena skuteczności kampanii.",
-      nextStep:
-        "Otwórz GA4, sprawdź strony wejścia, źródła ruchu i konfigurację zdarzeń. Najpierw naprawiamy pomiar, dopiero potem oceniamy wyniki."
-    };
-  }
-
-  if (item.id === "decision_review_ads_campaign_metrics") {
-    const campaigns = metricDisplay(item, "kampanie");
-    const searchTerms = metricDisplay(item, "zapytania");
-    const clicks = metricDisplay(item, "kliknięcia");
-    const impressions = metricDisplay(item, "wyświetlenia");
-    const cost = metricDisplay(item, "koszt");
-    const conversions = metricDisplay(item, "konwersje");
-    const conversionValue = metricDisplay(item, "wartość konwersji");
-    const negativeTerms = metricDisplay(item, "wykluczenia");
-    const segments = metricDisplay(item, "segmenty");
-    return {
-      title: "Przejrzyj kampanie i wyszukiwane hasła w Google Ads",
-      what: `Google Ads ma świeży odczyt: ${campaigns} kampanii, ${searchTerms} wyszukiwanych haseł, ${clicks} kliknięć, ${impressions} wyświetleń, koszt ${cost}, ${conversions} konwersje i wartość konwersji ${conversionValue}. WILQ przygotowuje też ${negativeTerms} terminów do oceny oraz ${segments} propozycji segmentów.`,
-      why:
-        "To wystarcza do sprawdzenia kampanii i wyszukiwanych haseł, ale nie wystarcza jeszcze do automatycznego wykluczania fraz, zmiany budżetów ani oceny opłacalności.",
-      nextStep:
-        "Otwórz Ads Doctor i przejrzyj metryki kampanii oraz wyszukiwane hasła. Każde wykluczenie, budżet i rekomendacja wymaga sprawdzenia i zatwierdzenia w WILQ."
-    };
-  }
-
-  return {
-    title: item.title,
-    what: `WILQ ma decyzję z obszaru: ${sourceList(item)}.`,
-    why:
-      "Ten element wymaga dedykowanego widoku szczegółowego, żeby nie zgadywać wniosków na pierwszym ekranie.",
-    nextStep: "Otwórz wskazany widok i sprawdź szczegóły wraz z dowodami w WILQ."
-  };
 }
 
 function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
@@ -250,41 +38,40 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
         {data.daily_decisions.map((item) => {
-          const copy = decisionCopy(item);
           return (
           <article key={item.id} className="rounded-md border border-line bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Decyzja / {priorityLabel(item.priority)}
+                  Decyzja / {item.priority_label}
                 </div>
                 <h3 className="mt-1 text-base font-semibold tracking-normal">
-                  {copy.title}
+                  {item.title}
                 </h3>
               </div>
               <StatusBadge value={decisionStatusBadgeValue(item)} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">
-              {copy.what}
+              {item.co_widzimy}
             </p>
             {Object.keys(item.metric_tiles ?? {}).length > 0 ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3">
                 {Object.entries(item.metric_tiles).map(([label, value]) => (
-                  <MetricTile key={label} label={marketerMetricLabel(label)} value={value} />
+                  <MetricTile key={label} label={label} value={value} />
                 ))}
               </div>
             ) : null}
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {copy.why}
+              {item.dlaczego_to_ma_znaczenie}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">
-              {copy.nextStep}
+              {item.bezpieczny_next_step}
             </p>
             {item.skill_id && item.codex_prompt ? (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
                   <Copy aria-hidden="true" size={15} />
-                  Polecenie: {codexSkillLabel(item.skill_id)}
+                  Polecenie: {item.skill_label ?? "workflow WILQ"}
                 </div>
                 <button
                   type="button"
@@ -296,17 +83,17 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine label="Źródła danych" values={marketerConnectorLabels(item.source_connectors)} />
+              <TraceLine label="Źródła danych" values={item.source_connector_labels} />
               <TraceLine label="Świeżość źródeł" values={[decisionFreshnessLabel(item)]} />
-              <TraceLine label="Dowody w WILQ" values={[evidenceCountSummary(item.evidence_ids.length)]} />
-              <TraceLine label="Akcje do sprawdzenia" values={[actionValidationSummary(item.action_ids.length)]} />
-              <TraceLine label="Czego nie twierdzimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />
+              <TraceLine label="Dowody w WILQ" values={[item.evidence_summary]} />
+              <TraceLine label="Akcje do sprawdzenia" values={[item.action_summary]} />
+              <TraceLine label="Czego nie twierdzimy" values={item.blocked_claim_labels} />
             </div>
             <a
               href={item.route}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
             >
-              {routeCtaLabel(item.route)}
+              {item.cta_label || "Otwórz widok"}
             </a>
           </article>
           );

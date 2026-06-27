@@ -2786,9 +2786,13 @@ class DailyDecision(BaseModel):
         default_factory=lambda: FreshnessState(state="unknown")
     )
     decision_state: DecisionState = "unknown"
+    decision_state_label: str = ""
     route: str
+    route_label: str = ""
+    cta_label: str = ""
     status: Literal["ready", "blocked"]
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     co_widzimy: str
@@ -2797,10 +2801,15 @@ class DailyDecision(BaseModel):
     why_it_matters: str
     operator_action: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     skill_id: str | None = None
+    skill_label: str | None = None
     codex_prompt: str | None = None
     codex_context_endpoint: str | None = None
     expected_codex_output: str | None = None

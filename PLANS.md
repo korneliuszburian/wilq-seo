@@ -583,6 +583,11 @@ WILQ is complete for this long-range goal when:
   from WILQ API/domain output. The content route consumes those fields instead
   of owning React-side label helper maps for active content decisions. Proof is
   stored under `.local-lab/proof/20260627-content-api-labels/`.
+- 2026-06-27: Command Center daily decisions now use WILQ API/shared-schema
+  label fields for decision state, priority, route, CTA, source connectors,
+  evidence summary, action summary, skill label and blocked promises. The route
+  no longer owns local business-copy helper maps for those fields. Proof:
+  `.local-lab/proof/20260627-command-center-api-labels/`.
 
 ## Discoveries
 
@@ -621,6 +626,12 @@ WILQ is complete for this long-range goal when:
   Existing API-owned labels should be consumed directly by the route; active
   route-local label helpers are debt unless they are only rendering old action
   payload preview contracts waiting for their own migration slice.
+- Command Center labels are part of the canonical daily view-model. If the first
+  screen needs better wording, fix the command-center API/domain source and
+  schema, not React-side dictionaries.
+- The daily context-pack remains just over its budget cap after this cleanup.
+  Treat context-pack size as a product condensation issue with focused proof,
+  not as a reason to hide useful labels from the dashboard.
 
 ## Decision Log
 
@@ -647,3 +658,6 @@ WILQ is complete for this long-range goal when:
   candidate labels are API-owned. Do not reintroduce React dictionaries for
   those labels; migrate remaining action-preview label helpers only through
   typed API/action source fields.
+- Active Command Center daily-decision labels are API-owned. Do not reintroduce
+  route-local dictionaries for decision copy, source labels, metric labels,
+  blocked promises, CTA labels or skill labels.

@@ -218,6 +218,15 @@ Date: 2026-06-27
   `mode=subdomains`, `content_gap`, `organic_keyword_gap`, `top_page_gap`,
   `backlink_gap`, `competitor_page`, `Ahrefs Rank` or `DR`. Proof:
   `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
+- Command Center daily-decision labels now come from WILQ API/shared schema,
+  not from route-local React copy maps. The API exposes operator labels for
+  decision state, route, CTA, priority, source connectors, evidence summary,
+  action summary, skill label and blocked promises. `CommandCenterRoute` renders
+  those API fields directly and no longer carries local helpers such as
+  `decisionCopy`, `codexSkillLabel`, `marketerConnectorLabel`,
+  `routeCtaLabel`, `marketerMetricLabel`, `marketerBlockedClaimLabels` or
+  `priorityLabel`. Live API/browser proof:
+  `.local-lab/proof/20260627-command-center-api-labels/`.
 - Content Planner decision, preflight and Ahrefs-row labels now come from the
   WILQ API/domain contract. The route consumes API fields such as
   `decision_type_label`, gate labels, preflight labels and Ahrefs candidate
@@ -1117,6 +1126,10 @@ Date: 2026-06-27
 - Some default skill context-packs are still large by operator standards.
   Continue shrinking only where size comes from raw/debug duplication instead of
   useful decision context.
+- `wilq-daily-command` still has a context-pack condensation blocker: the live
+  smoke reached WILQ API successfully but failed the budget check at 180254
+  bytes against a 180000-byte cap. Treat this as the next focused condensation
+  task, not as a proof that API health is broken.
 - Dashboard route vitest/typecheck can exceed current timeout before collecting
   tests on this dirty worktree. Treat that as a test-runtime cleanup task, not a
   product proof.

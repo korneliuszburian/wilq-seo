@@ -28,9 +28,13 @@ const commandCenterFixture: CommandCenterResponse = {
       domain: "merchant",
       freshness: { state: "fresh" },
       decision_state: "ready",
+      decision_state_label: "gotowe",
       route: "/merchant",
+      route_label: "Merchant",
+      cta_label: "Otwórz Merchant",
       status: "ready",
       priority: 10,
+      priority_label: "najpierw",
       metric_tiles: {
         produkty: 10900,
         zgłoszenia: 15
@@ -56,10 +60,15 @@ const commandCenterFixture: CommandCenterResponse = {
       operator_action:
         "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
       source_connectors: ["google_merchant_center"],
+      source_connector_labels: ["Merchant Center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
+      evidence_summary: "1 potwierdzony ślad w WILQ",
       action_ids: ["act_review_merchant_feed_issues"],
+      action_summary: "1 bezpieczna akcja do sprawdzenia",
       blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
       skill_id: "wilq-merchant-feed-operator",
+      skill_label: "feed Merchant",
       codex_prompt:
         "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
       codex_context_endpoint: "/api/codex/context-pack",
@@ -72,9 +81,13 @@ const commandCenterFixture: CommandCenterResponse = {
       domain: "content",
       freshness: { state: "stale" },
       decision_state: "stale",
+      decision_state_label: "do odświeżenia",
       route: "/content-planner",
+      route_label: "Content Planner",
+      cta_label: "Otwórz Content Planner",
       status: "ready",
       priority: 12,
+      priority_label: "najpierw",
       metric_tiles: {
         "zapytania/URL": 10,
         "dopasowania WordPress": 15,
@@ -94,7 +107,7 @@ const commandCenterFixture: CommandCenterResponse = {
         }
       ],
       co_widzimy:
-        "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
+        "WILQ ma dane treści: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać sprawdzenie treści.",
       bezpieczny_next_step:
         "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
@@ -102,10 +115,15 @@ const commandCenterFixture: CommandCenterResponse = {
       operator_action:
         "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
+      source_connector_labels: ["Google Search Console", "WordPress ekologus.pl"],
       evidence_ids: ["ev_refresh_gsc"],
+      evidence_summary: "1 potwierdzony ślad w WILQ",
       action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary: "1 bezpieczna akcja do sprawdzenia",
       blocked_claims: ["wzrost liczby leadów", "gwarancja wzrostu pozycji"],
+      blocked_claim_labels: ["wzrost liczby leadów", "gwarancja wzrostu pozycji"],
       skill_id: "wilq-content-strategist",
+      skill_label: "strategia treści",
       codex_prompt:
         "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
       codex_context_endpoint: "/api/codex/context-pack",
@@ -164,18 +182,16 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText("Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj problemy produktów w Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj kolejkę problemów Merchant Center")).toBeInTheDocument();
     expect(
-      screen.getByText("Ułóż kolejkę odświeżenia i scalania treści SEO")
+      screen.getByText("Przejrzyj kolejkę SEO z GSC i WordPress")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/WILQ widzi 10\s?900 produktów i 15 zgłoszeń problemów feedu/)
+      screen.getByText("Merchant Center ma potwierdzone dane problemów feedu.")
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/WILQ ma 10 par zapytanie-URL z GSC, 138 kliknięć i 7852 wyświetleń/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/WILQ ma dane treści: zapytania\/URL=10/)).toBeInTheDocument();
     expect(screen.queryByText(/Najpierw sprawdź dopasowania WordPress/)).not.toBeInTheDocument();
-    expect(screen.getByText(/To jest materiał do decyzji: odświeżyć, scalić, utworzyć albo zablokować/))
+    expect(screen.getByText("120 wyświetleń może uzasadniać sprawdzenie treści."))
       .toBeInTheDocument();
     expect(screen.getByText("10900")).toBeInTheDocument();
     expect(screen.getByText("zapytania/URL")).toBeInTheDocument();
@@ -196,8 +212,6 @@ describe("CommandCenter route", () => {
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
-    expect(screen.getByText(/Świeżość źródeł: świeże/)).toBeInTheDocument();
-    expect(screen.getByText(/Świeżość źródeł: do odświeżenia/)).toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
     expect(screen.queryByText("Kopiuj prompt")).not.toBeInTheDocument();
     expect(screen.queryByText(/^Codex:/)).not.toBeInTheDocument();
@@ -216,8 +230,25 @@ describe("CommandCenter route", () => {
     expect(screen.queryByText("Context-pack: /api/codex/context-pack")).not.toBeInTheDocument();
     expect(screen.queryByText(/query\/page=/)).not.toBeInTheDocument();
     expect(screen.queryByText(/average_position=/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Content evidence jest gotowe/)).not.toBeInTheDocument();
     expect(screen.queryByText(new RegExp("lead " + "up" + "lift"))).not.toBeInTheDocument();
     expect(screen.queryByText(new RegExp("ranking " + "guarantee"))).not.toBeInTheDocument();
+  });
+
+  it("renders command decisions from API-owned fields instead of route-local copy maps", async () => {
+    const { readFileSync } = await import("node:fs");
+    const routeSource = readFileSync("src/routes/CommandCenterRoute.tsx", "utf8");
+
+    expect(routeSource).not.toContain("function decisionCopy");
+    expect(routeSource).not.toContain("codexSkillLabel");
+    expect(routeSource).not.toContain("marketerConnectorLabel");
+    expect(routeSource).not.toContain("routeCtaLabel");
+    expect(routeSource).not.toContain("marketerMetricLabel");
+    expect(routeSource).not.toContain("marketerBlockedClaimLabels");
+    expect(routeSource).not.toContain("priorityLabel");
+    expect(routeSource).toContain("item.co_widzimy");
+    expect(routeSource).toContain("item.skill_label");
+    expect(routeSource).toContain("item.source_connector_labels");
+    expect(routeSource).toContain("item.blocked_claim_labels");
+    expect(routeSource).toContain("item.cta_label");
   });
 });

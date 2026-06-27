@@ -398,6 +398,7 @@ def build_daily_decisions(
         refresh_runs or [],
     )
     facts_by_connector = facts_by_connector or {}
+    connector_labels = _connector_label_map(connectors or [])
     decisions: list[DailyDecision] = []
     for plan_item in action_plan:
         if plan_item.id not in PRIMARY_DAILY_PLAN_IDS:
@@ -406,16 +407,21 @@ def build_daily_decisions(
             plan_item.source_connectors,
             freshness_by_connector,
         )
+        decision_state = _daily_decision_state(plan_item.status, freshness)
         decisions.append(
             DailyDecision(
                 id=plan_item.id.replace("plan_", "decision_", 1),
                 title=plan_item.title,
                 domain=_daily_decision_domain(plan_item.category),
                 freshness=freshness,
-                decision_state=_daily_decision_state(plan_item.status, freshness),
+                decision_state=decision_state,
+                decision_state_label=_decision_state_label(decision_state),
                 route=plan_item.route,
+                route_label=_route_label(plan_item.route),
+                cta_label=_route_cta_label(plan_item.route),
                 status=plan_item.status,
                 priority=plan_item.priority,
+                priority_label=_priority_label(plan_item.priority),
                 metric_tiles=_decision_metric_tiles(plan_item, brief_by_plan_id),
                 metric_facts=_decision_metric_facts(plan_item, facts_by_connector),
                 co_widzimy=_decision_observation(
@@ -427,10 +433,18 @@ def build_daily_decisions(
                 why_it_matters=plan_item.why_it_matters,
                 operator_action=plan_item.operator_action,
                 source_connectors=plan_item.source_connectors,
+                source_connector_labels=[
+                    _connector_label(connector_id, connector_labels)
+                    for connector_id in plan_item.source_connectors
+                ],
                 evidence_ids=plan_item.evidence_ids,
+                evidence_summary=_evidence_count_summary(len(plan_item.evidence_ids)),
                 action_ids=plan_item.action_ids,
+                action_summary=_action_count_summary(len(plan_item.action_ids)),
                 blocked_claims=plan_item.blocked_claims,
+                blocked_claim_labels=operator_blocked_claims(plan_item.blocked_claims),
                 skill_id=plan_item.skill_id,
+                skill_label=_skill_label(plan_item.skill_id),
                 codex_prompt=plan_item.codex_prompt,
                 codex_context_endpoint=plan_item.codex_context_endpoint,
                 expected_codex_output=plan_item.expected_codex_output,
@@ -449,6 +463,83 @@ def _daily_decision_state(
     if freshness.state == "fresh":
         return "ready"
     return freshness.state
+
+
+def _decision_state_label(state: DecisionState) -> str:
+    return {
+        "ready": "gotowe",
+        "stale": "do odświeżenia",
+        "blocked": "zablokowane",
+        "missing": "brak danych",
+        "unknown": "nieznane",
+    }.get(state, "nieznane")
+
+
+def _priority_label(priority: int) -> str:
+    if priority <= 12:
+        return "najpierw"
+    if priority <= 25:
+        return "wysoki priorytet"
+    if priority <= 45:
+        return "do sprawdzenia"
+    return "niżej w kolejce"
+
+
+def _connector_label_map(connectors: list[ConnectorStatus]) -> dict[str, str]:
+    return {connector.id: connector.label for connector in connectors if connector.label}
+
+
+def _connector_label(connector_id: str, labels: dict[str, str]) -> str:
+    return labels.get(connector_id) or connector_id.replace("_", " ")
+
+
+def _route_label(route: str) -> str:
+    return {
+        "/ads-doctor": "Ads Doctor",
+        "/content-planner": "Content Planner",
+        "/ga4": "GA4",
+        "/merchant": "Merchant",
+        "/localo": "Localo",
+    }.get(route, "widok WILQ")
+
+
+def _route_cta_label(route: str) -> str:
+    return f"Otwórz {_route_label(route)}"
+
+
+def _skill_label(skill_id: str | None) -> str | None:
+    if not skill_id:
+        return None
+    return {
+        "wilq-ads-doctor": "diagnostyka Ads",
+        "wilq-ahrefs-gap-finder": "luki SEO Ahrefs",
+        "wilq-campaign-builder": "plan kampanii",
+        "wilq-content-strategist": "strategia treści",
+        "wilq-custom-segments": "segmenty Ads",
+        "wilq-daily-command": "plan dnia",
+        "wilq-demand-gen-operator": "Demand Gen",
+        "wilq-ga4-analyst": "analiza GA4",
+        "wilq-gsc-content-doctor": "GSC i treści",
+        "wilq-localo-operator": "widoczność lokalna",
+        "wilq-merchant-feed-operator": "feed Merchant",
+        "wilq-social-publisher": "treści social",
+    }.get(skill_id, "workflow WILQ")
+
+
+def _evidence_count_summary(count: int) -> str:
+    if count == 0:
+        return "brak potwierdzonych śladów w WILQ"
+    if count == 1:
+        return "1 potwierdzony ślad w WILQ"
+    return f"{count} potwierdzonych śladów w WILQ"
+
+
+def _action_count_summary(count: int) -> str:
+    if count == 0:
+        return "brak bezpiecznej akcji na pierwszym ekranie"
+    if count == 1:
+        return "1 bezpieczna akcja do sprawdzenia"
+    return f"{count} bezpiecznych akcji do sprawdzenia"
 
 
 def _daily_decision_domain(category: str) -> str:

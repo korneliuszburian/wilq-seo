@@ -241,6 +241,15 @@ Latest slice:
   API tests, dashboard tests, typecheck, language guard, live contract smoke,
   content skill smoke and browser proof pass. Proof:
   `.local-lab/proof/20260627-content-api-labels/`.
+- Command Center daily-decision copy now uses API-owned labels and summaries
+  for decision state, priority, route, CTA, sources, evidence, actions, skill
+  and blocked promises. `CommandCenterRoute` no longer owns route-local business
+  copy helpers such as `decisionCopy`, `codexSkillLabel`,
+  `marketerConnectorLabel`, `routeCtaLabel`, `marketerMetricLabel`,
+  `marketerBlockedClaimLabels` or `priorityLabel`. Focused command-center API
+  tests, dashboard route test, typecheck, marketer language guard and live
+  browser/API proof pass. Proof:
+  `.local-lab/proof/20260627-command-center-api-labels/`.
 
 ### C. Dashboard Condensation
 
@@ -257,6 +266,9 @@ Tasks:
 Done when:
 
 - Wilku can understand the first screen without knowing internal models.
+- Command Center no longer requires React-side dictionaries to understand daily
+  decisions; remaining condensation work should target oversized context-packs
+  and any still-raw domain surfaces.
 
 ### D. Content Product Completion
 

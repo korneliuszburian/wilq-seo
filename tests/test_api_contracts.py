@@ -4504,6 +4504,25 @@ def test_command_center_exposes_polish_operator_brief(
         assert merchant_decision["decision_state"] == "stale"
     assert "Świeżość źródeł decyzji" in merchant_decision["freshness"]["notes"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
+    assert merchant_decision["priority_label"] == "najpierw"
+    assert merchant_decision["decision_state_label"] in {
+        "gotowe",
+        "do odświeżenia",
+        "zablokowane",
+        "brak danych",
+        "nieznane",
+    }
+    assert merchant_decision["route_label"] == "Merchant"
+    assert merchant_decision["cta_label"] == "Otwórz Merchant"
+    assert merchant_decision["source_connector_labels"]
+    assert merchant_decision["evidence_summary"].endswith("śladów w WILQ") or (
+        merchant_decision["evidence_summary"].endswith("ślad w WILQ")
+    )
+    assert merchant_decision["action_summary"].endswith("akcja do sprawdzenia") or (
+        merchant_decision["action_summary"].endswith("akcji do sprawdzenia")
+    )
+    assert merchant_decision["blocked_claim_labels"]
+    assert merchant_decision["skill_label"] == "feed Merchant"
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
     assert merchant_decision["metric_tiles"]["decyzje"] >= 1

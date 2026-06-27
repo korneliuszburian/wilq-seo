@@ -219,6 +219,11 @@ Known cleanup already started:
 - Action/detail summaries are being moved to clean typed/domain copy.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
+- Command Center daily-decision labels and summaries now come from typed WILQ
+  API/shared-schema fields instead of route-local React dictionaries.
+- `wilq-daily-command` reaches the live WILQ API, but the daily context-pack
+  smoke currently exceeds the budget cap by 254 bytes. Treat this as the next
+  focused condensation task.
 
 ## 9. Current Goal
 
@@ -325,6 +330,10 @@ Tasks:
   diagnostics behind technical drawers.
 - Remove UI-level translators and route-local cleanup dictionaries.
 - If a route receives dirty copy, fix the source API/view-model.
+- Source visible daily-decision labels and summaries from typed API/schema/
+  view-model fields. Do not add route-local business dictionaries for decision
+  copy, source labels, metric labels, blocked promises, CTA labels or skill
+  labels.
 - Use `agent-browser` screenshots/snapshots for the touched routes.
 
 Acceptance:

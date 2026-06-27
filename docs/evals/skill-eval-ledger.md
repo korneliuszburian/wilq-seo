@@ -6460,3 +6460,26 @@ Result:
 - Browser proof for `act_prepare_linkedin_social_drafts` shows source material
   cards with `Kontekst:` and zero hits for raw payload terms, old source field
   names or raw Merchant enum values.
+
+## 2026-06-27 - Daily Command context-pack budget blocker
+
+Purpose:
+
+- Check whether the Command Center API-label cleanup kept the daily skill path
+  usable through the live local API.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- The smoke reached WILQ API and validated the live entrypoints before the
+  budget check.
+- The smoke failed on context-pack size: `Daily context-pack exceeds budget:
+  180254 bytes`.
+- This is a focused condensation blocker for `wilq-daily-command`, not an API
+  health failure. Next slice should reduce default daily context-pack size below
+  the 180000-byte cap without restoring route-local dashboard dictionaries.
