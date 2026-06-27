@@ -78,6 +78,11 @@ Date: 2026-06-27
   promises. Obsolete route/backend label-map entries for old Demand Gen values
   were removed instead of kept as compatibility aliases. The language guard now
   blocks the old Demand Gen phrases.
+- Action review-gate labels now come from the WILQ API and shared schema, not
+  from route-local cleanup logic. The dashboard review panel renders API-owned
+  Polish labels for checklist and write blockers; raw blocker keys remain only
+  as internal traceability fields. Proof:
+  `.local-lab/proof/20260627-action-review-gate-api-labels/browser/content-action-review-gate-body.txt`.
 - Custom segments and Keyword Planner blocked-claim contracts now use Polish
   source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete

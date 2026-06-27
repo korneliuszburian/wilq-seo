@@ -1129,6 +1129,9 @@ def test_action_apply_requires_validation(
     assert "Wymagane jest jawne potwierdzenie zapisu zmian" in json.dumps(
         review_gate["last_mutation_blockers"]
     )
+    assert "Wymagane jest jawne potwierdzenie zapisu zmian." in review_gate[
+        "last_mutation_blocker_labels"
+    ]
 
 
 def test_action_apply_requires_explicit_confirmation_actor(
@@ -1257,6 +1260,10 @@ def test_apply_ready_action_blocks_without_mutation_adapter(
     assert result.mutation_audit.mutation_attempted is False
     assert result.mutation_audit.mutation_adapter is None
     assert "vendor_mutation_adapter_required" in action.review_gate.apply_blockers
+    assert (
+        "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"
+        in action.review_gate.apply_blocker_labels
+    )
     assert action.review_gate.apply_allowed is False
     assert "Brakuje bezpiecznej ścieżki zapisu zmian dla tej akcji" in json.dumps(
         result.model_dump(mode="json"),
@@ -2987,6 +2994,12 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         assert action["review_gate"]["apply_allowed"] is False
         assert "action_validation_required" in action["review_gate"]["apply_blockers"]
         assert "payload_apply_allowed_false" in action["review_gate"]["apply_blockers"]
+        assert "wymagane sprawdzenie w WILQ" in action["review_gate"][
+            "apply_blocker_labels"
+        ]
+        assert "podgląd zmian nie pozwala na zapis" in action["review_gate"][
+            "apply_blocker_labels"
+        ]
         assert action["evidence_ids"]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
             assert action["domain"] == "social"
@@ -3229,6 +3242,12 @@ def test_daily_context_pack_preserves_action_review_gates(
     assert merchant_action["review_gate"]["apply_allowed"] is False
     assert "action_validation_required" in merchant_action["review_gate"]["apply_blockers"]
     assert "payload_apply_allowed_false" in merchant_action["review_gate"]["apply_blockers"]
+    assert "wymagane sprawdzenie w WILQ" in merchant_action["review_gate"][
+        "apply_blocker_labels"
+    ]
+    assert "podgląd zmian nie pozwala na zapis" in merchant_action["review_gate"][
+        "apply_blocker_labels"
+    ]
     assert "last_mutation_adapter" not in merchant_action["review_gate"]
 
 

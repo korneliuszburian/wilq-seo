@@ -248,8 +248,11 @@ class ActionReviewGate(BaseModel):
     ] = "pending_validation"
     summary: str = "Wymaga walidacji akcji przed kolejnym krokiem."
     required_checks: list[str] = Field(default_factory=list)
+    required_check_labels: list[str] = Field(default_factory=list)
     operator_checklist: list[str] = Field(default_factory=list)
+    operator_checklist_labels: list[str] = Field(default_factory=list)
     apply_blockers: list[str] = Field(default_factory=list)
+    apply_blocker_labels: list[str] = Field(default_factory=list)
     confirmation_required: bool = True
     apply_allowed: bool = False
     last_review_outcome: ActionReviewOutcome | None = None
@@ -272,6 +275,7 @@ class ActionReviewGate(BaseModel):
     last_mutation_adapter: str | None = None
     last_mutation_audit_event_id: str | None = None
     last_mutation_blockers: list[str] = Field(default_factory=list)
+    last_mutation_blocker_labels: list[str] = Field(default_factory=list)
 
 
 class ActionObject(BaseModel):

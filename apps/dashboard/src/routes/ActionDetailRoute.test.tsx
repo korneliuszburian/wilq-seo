@@ -56,12 +56,20 @@ const actionFixture: ActionObject = {
     status: "pending_validation",
     summary: "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany.",
     required_checks: ["validate_action_object", "human_confirm_before_apply"],
+    required_check_labels: ["sprawdzenie akcji", "potwierdzenie człowieka przed zapisem"],
     operator_checklist: ["validate_action_object", "human_confirm_before_apply"],
+    operator_checklist_labels: ["sprawdzenie akcji", "potwierdzenie człowieka przed zapisem"],
     apply_blockers: [
       "action_mode_prepare_only",
       "action_validation_required",
       "payload_apply_allowed_false",
       "human_confirm_before_apply"
+    ],
+    apply_blocker_labels: [
+      "tryb przygotowania bez zapisu zmian",
+      "wymagane sprawdzenie w WILQ",
+      "podgląd zmian nie pozwala na zapis",
+      "potwierdzenie człowieka przed zapisem"
     ],
     confirmation_required: true,
     apply_allowed: false,
@@ -84,7 +92,8 @@ const actionFixture: ActionObject = {
     last_mutation_attempted: null,
     last_mutation_adapter: null,
     last_mutation_audit_event_id: null,
-    last_mutation_blockers: []
+    last_mutation_blockers: [],
+    last_mutation_blocker_labels: []
   },
   audit_events: []
 };

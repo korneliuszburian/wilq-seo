@@ -316,12 +316,12 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <TraceLine
           label="Warunki"
-          values={gate.operator_checklist.slice(0, 6).map(actionGateLabel)}
+          values={gate.operator_checklist_labels.slice(0, 6)}
           empty="brak"
         />
         <TraceLine
           label="Blokady zapisu zmian"
-          values={gate.apply_blockers.slice(0, 8).map(actionGateLabel)}
+          values={gate.apply_blocker_labels.slice(0, 8)}
           empty="brak"
         />
       </div>
@@ -350,7 +350,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           </div>
           <TraceLine
             label="Co blokuje zapis"
-            values={(gate.last_mutation_blockers ?? []).slice(0, 8).map(actionGateLabel)}
+            values={(gate.last_mutation_blocker_labels ?? []).slice(0, 8)}
             empty="brak"
           />
         </div>

@@ -78,6 +78,7 @@ from wilq.actions.localo.visibility import (
     localo_visibility_review_payload_from_metric_facts,
 )
 from wilq.actions.payloads import validate_action_payload
+from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
@@ -2423,8 +2424,11 @@ def _action_review_gate(
         status=status,
         summary=summary,
         required_checks=required_checks,
+        required_check_labels=_action_gate_labels(required_checks),
         operator_checklist=operator_checklist,
+        operator_checklist_labels=_action_gate_labels(operator_checklist),
         apply_blockers=apply_blockers,
+        apply_blocker_labels=_action_gate_labels(apply_blockers),
         confirmation_required=_action_confirmation_required(required_checks, action.mode),
         apply_allowed=contract_apply_allowed,
         last_review_outcome=_review_outcome_from_event(last_review),
@@ -2473,6 +2477,9 @@ def _action_review_gate(
         if last_mutation_audit is not None
         else None,
         last_mutation_blockers=last_mutation_audit.blockers
+        if last_mutation_audit is not None
+        else [],
+        last_mutation_blocker_labels=_action_gate_labels(last_mutation_audit.blockers)
         if last_mutation_audit is not None
         else [],
     )
@@ -2830,6 +2837,87 @@ def _action_apply_blockers(
     blocked_claims = _string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
     return _unique(blockers)
+
+
+def _action_gate_labels(values: Iterable[str]) -> list[str]:
+    labels: list[str] = []
+    for value in values:
+        label = _action_gate_label(value)
+        if label not in labels:
+            labels.append(label)
+    return labels
+
+
+def _action_gate_label(value: str) -> str:
+    if value.startswith("blocked_claim:"):
+        claim_labels = operator_blocked_claims([value.removeprefix("blocked_claim:")])
+        claim_label = claim_labels[0] if claim_labels else "ryzykowna obietnica"
+        return f"nie wolno twierdzić: {claim_label}"
+    labels = {
+        "action_mode_prepare_only": "tryb przygotowania bez zapisu zmian",
+        "action_validation_required": "wymagane sprawdzenie w WILQ",
+        "payload_apply_allowed_false": "podgląd zmian nie pozwala na zapis",
+        "destructive_actions_blocked": "destrukcyjne zmiany zablokowane",
+        "preview_acknowledgement_required": "wymagane potwierdzenie podglądu",
+        "dry_run_preview_required": "wymagany wcześniejszy podgląd zmian",
+        "action_confirmation_required": "wymagane potwierdzenie podglądu",
+        "metric_facts_required": "wymagane metryki z dowodami",
+        "evidence_ids_required": "wymagane ID dowodów",
+        "impact_sanity_check_required": "wymagane sprawdzenie efektu",
+        "vendor_mutation_adapter_required": "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie",
+        "validate_action_object": "sprawdzenie akcji",
+        "human_review_before_apply": "sprawdzenie przez człowieka przed zapisem",
+        "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
+        "compare_90_day_safety_read": "porównaj z 90-dniową kontrolą bezpieczeństwa",
+        "confirm_developer_token_approval": "potwierdź akceptację tokena deweloperskiego",
+        "review_campaign_activity": "sprawdź aktywność kampanii",
+        "verify_account_currency": "sprawdź walutę konta",
+        "budget_pacing": "sprawdź tempo wydawania budżetu",
+        "impression_share": "sprawdź udział w wyświetleniach",
+        "budget_apply_preview": "sprawdź podgląd zmiany budżetu",
+        "campaign_budget_apply_safety": "sprawdź bezpieczeństwo zmiany budżetu",
+        "campaign_budget_operation_preview": "sprawdź operację budżetu",
+        "human_budget_goal": "potwierdź cel budżetu",
+        "content_url_preflight_review": "potwierdzenie publicznego URL-a",
+        "final_canonical_review": "kontrola URL-a kanonicznego",
+        "canonical_review": "kontrola URL-a kanonicznego",
+        "canonical_review_outcome": "wynik kontroli URL-a kanonicznego",
+        "duplicate_or_cannibalization_check": "kontrola duplikacji i kanibalizacji",
+        "duplicate_review_outcome": "wynik kontroli duplikacji",
+        "legal_factual_review": "kontrola prawna i faktograficzna",
+        "legal_factual_review_outcome": "wynik kontroli prawnej i faktograficznej",
+        "content_draft_readiness_review": "kontrola gotowości szkicu",
+        "wordpress_draft_payload_preview": "podgląd wpisu WordPress",
+        "human_confirm_before_wordpress_write": "potwierdzenie człowieka przed zapisem WordPress",
+        "review_recommendation_type": "sprawdź typ rekomendacji",
+        "review_impact_metrics": "sprawdź metryki wpływu",
+        "review_change_history": "sprawdź historię zmian",
+        "review_business_goal": "sprawdź cel biznesowy",
+        "google_ads_rmf_compliance_review": "sprawdź zgodność Google Ads",
+        "group_issue_reasons": "pogrupuj powody problemów",
+        "identify_disapproved_products": "ustal produkty i zgłoszenia do sprawdzenia",
+        "negative_keyword_action_validation": "sprawdzenie w WILQ dla wykluczeń",
+        "prepare_feed_fix_preview": "przygotuj podgląd zmian feedu",
+        "require_human_confirm_before_apply": "człowiek potwierdza przed zapisem",
+        "reject_brand_or_low_intent_terms": "odrzuć brandowe lub niskointencyjne frazy",
+        "rerun_google_ads_data_read": "uruchom ponowny odczyt Google Ads",
+        "review_campaign_name_dimension": "sprawdź nazwę kampanii",
+        "review_conversion_or_key_event_mapping": "sprawdź mapowanie konwersji lub zdarzenia kluczowego",
+        "review_human_budget_goal": "sprawdź cel budżetu od człowieka",
+        "review_landing_page_dimension": "sprawdź stronę wejścia",
+        "review_ngram_intent": "sprawdź intencję tematu zapytań",
+        "review_profit_margin_model": "sprawdź model marży",
+        "review_source_medium_dimension": "sprawdź źródło i medium ruchu",
+        "review_source_search_terms": "sprawdź źródłowe wyszukiwane hasła",
+        "review_source_terms": "sprawdź źródłowe hasła",
+        "review_target_fit": "sprawdź dopasowanie do celu",
+        "verify_keyword_planner_idea_rows": "sprawdź wiersze Keyword Planner",
+    }
+    if value in labels:
+        return labels[value]
+    if " " in value and "_" not in value:
+        return value
+    return "warunek techniczny do sprawdzenia"
 
 
 def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:

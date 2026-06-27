@@ -17,7 +17,9 @@ describe("ActionObjectPanels", () => {
             review_gate: {
               status: "pending_validation",
               operator_checklist: ["preview_payload_required"],
+              operator_checklist_labels: ["sprawdź podgląd zmian"],
               apply_blockers: ["vendor_mutation_adapter_required"],
+              apply_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"],
               confirmation_required: true,
               apply_allowed: false,
               last_confirmation_summary: null,
@@ -26,7 +28,8 @@ describe("ActionObjectPanels", () => {
               last_mutation_attempted: false,
               last_mutation_adapter: null,
               last_mutation_audit_event_id: "audit_apply_blocked",
-              last_mutation_blockers: ["vendor_mutation_adapter_required"]
+              last_mutation_blockers: ["vendor_mutation_adapter_required"],
+              last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"]
             }
           } as ActionObject
         }

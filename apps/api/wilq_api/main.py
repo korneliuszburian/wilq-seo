@@ -2790,12 +2790,16 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             apply_blockers = review_gate.get("apply_blockers")
             if not isinstance(apply_blockers, list):
                 apply_blockers = []
+            apply_blocker_labels = review_gate.get("apply_blocker_labels")
+            if not isinstance(apply_blocker_labels, list):
+                apply_blocker_labels = []
             compact["review_gate"] = {
                 "status": review_gate.get("status"),
                 "apply_allowed": review_gate.get("apply_allowed"),
                 "confirmation_required": review_gate.get("confirmation_required"),
                 "apply_blockers_total": len(apply_blockers),
                 "apply_blockers": apply_blockers[:4],
+                "apply_blocker_labels": apply_blocker_labels[:4],
                 "apply_blockers_included": min(len(apply_blockers), 4),
             }
     if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
@@ -2990,6 +2994,9 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
     apply_blockers = review_gate.get("apply_blockers")
     if not isinstance(apply_blockers, list):
         apply_blockers = []
+    apply_blocker_labels = review_gate.get("apply_blocker_labels")
+    if not isinstance(apply_blocker_labels, list):
+        apply_blocker_labels = []
     missing_validation = review_gate.get("missing_validation")
     if not isinstance(missing_validation, list):
         missing_validation = []
@@ -3002,6 +3009,9 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
     last_mutation_blockers = review_gate.get("last_mutation_blockers")
     if not isinstance(last_mutation_blockers, list):
         last_mutation_blockers = []
+    last_mutation_blocker_labels = review_gate.get("last_mutation_blocker_labels")
+    if not isinstance(last_mutation_blocker_labels, list):
+        last_mutation_blocker_labels = []
 
     action["review_gate"] = {
         "status": review_gate.get("status"),
@@ -3016,6 +3026,7 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "confirmation_required": review_gate.get("confirmation_required"),
         "apply_blockers_total": len(apply_blockers),
         "apply_blockers": apply_blockers[:3],
+        "apply_blocker_labels": apply_blocker_labels[:3],
         "apply_blockers_included": min(len(apply_blockers), 3),
         "missing_validation_total": len(missing_validation),
         "missing_validation": missing_validation[:4],
@@ -3028,6 +3039,7 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "warnings_included": min(len(warnings), 2),
         "last_mutation_blockers_total": len(last_mutation_blockers),
         "last_mutation_blockers": last_mutation_blockers[:3],
+        "last_mutation_blocker_labels": last_mutation_blocker_labels[:3],
         "last_mutation_blockers_included": min(len(last_mutation_blockers), 3),
     }
 

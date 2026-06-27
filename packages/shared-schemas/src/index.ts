@@ -131,8 +131,11 @@ export const ActionReviewGateSchema = z.object({
     .default("pending_validation"),
   summary: z.string().default("Wymaga sprawdzenia w WILQ przed kolejnym krokiem."),
   required_checks: z.array(z.string()).default([]),
+  required_check_labels: z.array(z.string()).default([]),
   operator_checklist: z.array(z.string()).default([]),
+  operator_checklist_labels: z.array(z.string()).default([]),
   apply_blockers: z.array(z.string()).default([]),
+  apply_blocker_labels: z.array(z.string()).default([]),
   confirmation_required: z.boolean().default(true),
   apply_allowed: z.boolean().default(false),
   last_review_outcome: ActionReviewOutcomeSchema.nullable().optional(),
@@ -154,7 +157,8 @@ export const ActionReviewGateSchema = z.object({
   last_mutation_attempted: z.boolean().nullable().optional(),
   last_mutation_adapter: z.string().nullable().optional(),
   last_mutation_audit_event_id: z.string().nullable().optional(),
-  last_mutation_blockers: z.array(z.string()).default([])
+  last_mutation_blockers: z.array(z.string()).default([]),
+  last_mutation_blocker_labels: z.array(z.string()).default([])
 });
 
 export const ActionObjectSchema = z.object({
