@@ -134,6 +134,9 @@ Latest cleanup state:
 - Command Center daily decisions now render API-owned `freshness_label` values
   for source freshness. The route no longer falls back to raw freshness enum
   states.
+- Google Ads recommendation action details now receive API-owned preview cards.
+  The marketer-facing card shows Polish recommendation type and neutral
+  campaign/budget labels instead of raw recommendation enums or Google Ads IDs.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -258,6 +261,15 @@ Proof:
   `rtk uv run python scripts/marketer_language_guard.py`
   Live proof after `rtk scripts/local_stack.sh restart`: `/api/dashboard/command-center`
   returned 4 daily decisions and zero missing `freshness_label` values.
+- Google Ads recommendation action preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_exposes_live_campaign_metric_facts" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_prepare_google_ads_recommendation_review_queue` returned 4
+  `google_ads_recommendation_review` preview cards with no raw recommendation
+  enum or raw campaign/budget IDs in card text.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`

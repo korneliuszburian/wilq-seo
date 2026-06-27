@@ -187,7 +187,40 @@ const adsActionFixture: ActionObject = {
 
 const adsRecommendationActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "recommendation_apply_preview_display",
+      kind: "google_ads_recommendation_review",
+      title_label: "Rekomendacja Google Ads do sprawdzenia",
+      subtitle_label: "ocena rekomendacji bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Typ rekomendacji",
+          value: "rozszerzenie kampanii na sieć reklamową"
+        },
+        {
+          label: "Kampania",
+          value: "powiązana kampania do sprawdzenia"
+        },
+        {
+          label: "Budżet kampanii",
+          value: "powiązany budżet do sprawdzenia"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value:
+            "sprawdź typ rekomendacji, sprawdź metryki wpływu, sprawdź historię zmian, sprawdź cel biznesowy"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "zapis rekomendacji, automatyczne przyjęcie rekomendacji, obietnica poprawy wyniku"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ads_recommendation",
   title: "Przygotuj ocenę rekomendacji Google Ads",
   domain: "google_ads",
@@ -203,6 +236,7 @@ const adsRecommendationActionFixture: ActionObject = {
       {
         id: "recommendation_apply_preview_display",
         recommendation_type: "DISPLAY_EXPANSION_OPT_IN",
+        recommendation_type_label: "rozszerzenie kampanii na sieć reklamową",
         campaign_id: "23848569273",
         campaign_budget_id: "15587163334",
         operation_type: "ApplyRecommendationOperation",
@@ -1119,11 +1153,18 @@ describe("Action detail route", () => {
       ).toBeInTheDocument()
     );
     expect(screen.getByText("Rekomendacja Google Ads do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Ocena rekomendacji bez zapisu zmian")).toBeInTheDocument();
+    expect(screen.getByText("ocena rekomendacji bez zapisu zmian")).toBeInTheDocument();
     expect(screen.queryByText("ApplyRecommendationOperation")).not.toBeInTheDocument();
-    expect(screen.getByText(/Typ: DISPLAY_EXPANSION_OPT_IN/)).toBeInTheDocument();
-    expect(screen.getByText(/Kampania: 23848569273/)).toBeInTheDocument();
-    expect(screen.getByText(/Budżet kampanii: 15587163334/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Typ rekomendacji: rozszerzenie kampanii na sieć reklamową/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Kampania: powiązana kampania do sprawdzenia/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Budżet kampanii: powiązany budżet do sprawdzenia/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/DISPLAY_EXPANSION_OPT_IN/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/23848569273/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/15587163334/)).not.toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź typ rekomendacji/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: zapis rekomendacji/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);

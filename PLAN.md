@@ -219,6 +219,8 @@ Known cleanup already started:
 - Action/detail summaries are being moved to clean typed/domain copy.
 - Merchant action detail previews now have typed API preview cards; remaining
   action kinds still need direct migration away from payload-shape inference.
+- Google Ads recommendation action details now have typed API preview cards
+  without raw recommendation enums or raw Google Ads IDs in primary card copy.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
   chips now come from API-owned `dimension_labels` and

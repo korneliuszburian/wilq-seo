@@ -11480,6 +11480,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendation_review_action["payload"]["payload_preview"][0][
         "apply_allowed"
     ] is False
+    assert recommendation_review_action["preview_cards"]
+    recommendation_preview_card = recommendation_review_action["preview_cards"][0]
+    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
+    assert recommendation_preview_card["title_label"] == (
+        "Rekomendacja Google Ads do sprawdzenia"
+    )
+    recommendation_preview_rows = {
+        row["label"]: row["value"] for row in recommendation_preview_card["rows"]
+    }
+    assert recommendation_preview_rows["Typ rekomendacji"] == "budżet kampanii"
+    assert recommendation_preview_rows["Kampania"] == "powiązana kampania do sprawdzenia"
+    assert recommendation_preview_rows["Budżet kampanii"] == (
+        "powiązany budżet do sprawdzenia"
+    )
+    assert "CAMPAIGN_BUDGET" not in str(recommendation_preview_card)
+    assert "101" not in str(recommendation_preview_card)
+    assert "701" not in str(recommendation_preview_card)
     assert recommendation_review_action["payload"]["apply_allowed"] is False
     assert recommendation_review_action["payload"]["destructive"] is False
     assert "human_confirm_before_apply" in recommendation_review_action["payload"][

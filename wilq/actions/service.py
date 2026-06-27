@@ -2511,7 +2511,67 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
 def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewModel]:
     if action.payload.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT:
         return _merchant_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "recommendation_apply_preview_v1":
+        return _ads_recommendation_preview_cards(action.payload)
     return []
+
+
+def _ads_recommendation_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("payload_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        rows = [
+            _preview_row(
+                "Typ rekomendacji",
+                str(item.get("recommendation_type_label") or "rekomendacja do sprawdzenia"),
+            ),
+            _preview_row(
+                "Kampania",
+                "powiązana kampania do sprawdzenia"
+                if item.get("campaign_id")
+                else "brak powiązanej kampanii",
+            ),
+            _preview_row(
+                "Budżet kampanii",
+                "powiązany budżet do sprawdzenia"
+                if item.get("campaign_budget_id")
+                else "brak powiązanego budżetu",
+            ),
+        ]
+        requirement_labels = _string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=str(item.get("id") or f"ads_recommendation_preview_{index}"),
+                kind="google_ads_recommendation_review",
+                title_label="Rekomendacja Google Ads do sprawdzenia",
+                subtitle_label=str(
+                    item.get("operation_type_label") or "ocena rekomendacji bez zapisu zmian"
+                ),
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
 
 
 def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
@@ -3474,6 +3534,13 @@ def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
         source_values = _string_list(item.get(source_key))
         if source_values:
             item[label_key] = _action_gate_labels(source_values)
+    if item.get("recommendation_type_label") in (None, "") and isinstance(
+        item.get("recommendation_type"),
+        str,
+    ):
+        item["recommendation_type_label"] = _ads_recommendation_type_label(
+            item["recommendation_type"]
+        )
 
 
 def _operator_state_label(value: str) -> str:
@@ -3488,6 +3555,25 @@ def _operator_state_label(value: str) -> str:
         "blocked_apply": "zapis zmian zablokowany",
     }
     return labels.get(value, "do sprawdzenia")
+
+
+def _ads_recommendation_type_label(value: str) -> str:
+    labels = {
+        "CAMPAIGN_BUDGET": "budżet kampanii",
+        "KEYWORD": "słowa kluczowe",
+        "RESPONSIVE_SEARCH_AD": "elastyczna reklama w wyszukiwarce",
+        "TARGET_CPA_OPT_IN": "strategia kosztu pozyskania celu",
+        "TARGET_ROAS_OPT_IN": "strategia zwrotu z reklam",
+        "MAXIMIZE_CONVERSIONS_OPT_IN": "maksymalizacja konwersji",
+        "MAXIMIZE_CONVERSION_VALUE_OPT_IN": "maksymalizacja wartości konwersji",
+        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "jakość zasobów Performance Max",
+        "DISPLAY_EXPANSION_OPT_IN": "rozszerzenie kampanii na sieć reklamową",
+        "DYNAMIC_IMAGE_EXTENSION_OPT_IN": "dynamiczne rozszerzenia graficzne",
+        "SEARCH_PARTNERS_OPT_IN": "rozszerzenie kampanii na partnerów wyszukiwania",
+        "UNKNOWN": "typ rekomendacji nieznany",
+        "UNSPECIFIED": "typ rekomendacji nieokreślony",
+    }
+    return labels.get(value, value.replace("_", " ").lower())
 
 
 def _wordpress_post_status_label(value: str) -> str:

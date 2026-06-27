@@ -138,6 +138,8 @@ Wilku can inspect it without reading technical internals.
   reporting-context fallback.
 - Command Center daily decisions now carry and render API-owned freshness
   labels; the route no longer falls back to raw freshness enum states.
+- Google Ads recommendation action details now render API-owned preview cards
+  without raw recommendation enums or raw Google Ads IDs in primary card copy.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -149,10 +151,11 @@ are resolved or explicitly deferred.
 1. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
-2. `DetailPanels.tsx` now has the first typed action-detail preview view-model
-   path for Merchant feed issues, but remaining action kinds still infer active
-   preview cards from raw payload shape. Migrate those action kinds one by one;
-   raw payload may remain only in collapsed technical detail.
+2. `DetailPanels.tsx` now has typed action-detail preview view-model paths for
+   Merchant feed issues and Google Ads recommendation reviews, but remaining
+   action kinds still infer active preview cards from raw payload shape.
+   Migrate those action kinds one by one; raw payload may remain only in
+   collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.
