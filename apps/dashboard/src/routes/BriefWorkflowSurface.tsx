@@ -34,7 +34,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok Google Ads oparty o WILQ. Pokazuje dowody, decyzje i twierdzenia, których nie wolno używać; jeśli Ads jest zablokowany, pokazuje blokadę zamiast diagnozy wydatków.",
     focusTitle: "Decyzje Ads",
     emptyMessage:
-      "Brak dowodów Google Ads w /api/marketing/brief. WILQ nie pokaże rekomendacji o spendzie ani kampaniach bez odczytu Ads API.",
+      "Brak dowodów Google Ads w WILQ. WILQ nie pokaże rekomendacji o wydatkach ani kampaniach bez odczytu Google Ads.",
     safetyTitle: "Brama bezpieczeństwa Ads",
     safetyText:
       "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, sprawdzenia w WILQ i audytu. Brak dowodów na zapytania, CPA albo zwrot z reklam oznacza zakres blokad, nie powód do zgadywania.",
@@ -44,10 +44,10 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ga4": {
     title: "GA4",
     description:
-      "Widok analityki zachowania i konwersji oparty o WILQ MarketingBrief. Pokazuje tylko metryki GA4 z dowodami.",
+      "Widok analityki zachowania i konwersji oparty o WILQ. Pokazuje tylko metryki GA4 z dowodami.",
     focusTitle: "Jakość ruchu GA4",
     emptyMessage:
-      "Brak dowodów GA4 w /api/marketing/brief. Uruchom odczyt GA4, zanim WILQ oceni strony wejścia albo jakość ruchu.",
+      "Brak dowodów GA4 w WILQ. Uruchom odczyt GA4, zanim WILQ oceni strony wejścia albo jakość ruchu.",
     safetyTitle: "Brama bezpieczeństwa GA4",
     safetyText:
       "GA4 służy do diagnozy jakości ruchu i problemów pomiaru. WILQ nie traktuje braku danych jako spadku marketingowego bez evidence.",
@@ -60,7 +60,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo. Dostęp OAuth może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych danych o rankingach i GBP.",
     focusTitle: "Lokalna widoczność do sprawdzenia",
     emptyMessage:
-      "Brak konkretnych faktów Localo o rankingach i GBP w /api/marketing/brief. WILQ może pokazać status dostępu, ale nie dopowiada lokalnych wyników bez dowodów.",
+      "Brak konkretnych faktów Localo o rankingach i GBP w WILQ. WILQ może pokazać status dostępu, ale nie dopowiada lokalnych wyników bez dowodów.",
     safetyTitle: "Brama bezpieczeństwa lokalnej widoczności",
     safetyText:
       "Posty GBP i lokalne działania wymagają dowodów, podglądu akcji, sprawdzenia w WILQ i audytu. Sam dostęp do Localo nie zastępuje rankingów, wyniku GBP ani danych konkurencji.",
@@ -74,7 +74,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok publikacji social oparty o dowody WILQ i stan uprawnień. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
     focusTitle: "Publikacje social do sprawdzenia",
     emptyMessage:
-      "Brak dowodów social w /api/marketing/brief. Uzupełnij dostęp LinkedIn/Facebook przed przygotowaniem propozycji postów.",
+      "Brak dowodów social w WILQ. Uzupełnij dostęp LinkedIn/Facebook przed przygotowaniem propozycji postów.",
     safetyTitle: "Brama bezpieczeństwa publikacji",
     safetyText:
       "Posty LinkedIn/Facebook muszą bazować na claimach z dowodami i pozostać tylko do przygotowania, dopóki stan uprawnień, podgląd akcji i audyt nie są gotowe.",
@@ -87,7 +87,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok planowania treści łączy dowody GSC, GA4, Ahrefs, WordPress i Merchant w jedną kolejkę działań dla polskiego marketera.",
     focusTitle: "Priorytety treści do sprawdzenia",
     emptyMessage:
-      "Brak dowodów contentowych w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
+      "Brak dowodów treściowych w WILQ. WILQ potrzebuje danych z GSC, GA4, Ahrefs i WordPress przed planem treści.",
     safetyTitle: "Brama bezpieczeństwa treści",
     safetyText:
       "Plany treści, przepisywanie treści i szkice wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje obietnic bez pokrycia w danych.",
@@ -104,10 +104,10 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/merchant": {
     title: "Merchant Center",
     description:
-      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo zweryfikowanej akcji.",
+      "Widok feedu i produktów oparty o WILQ. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo sprawdzonej akcji.",
     focusTitle: "Feed i produkty do sprawdzenia",
     emptyMessage:
-      "Brak dowodów Merchant w /api/marketing/brief. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
+      "Brak dowodów Merchant w WILQ. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
     safetyTitle: "Brama bezpieczeństwa feedu",
     safetyText:
       "Zmiana feedu wymaga podglądu akcji, sprawdzenia w WILQ i audytu. Ten ekran działa bez zapisu zmian, dopóki WILQ nie przygotuje poprawnej akcji do sprawdzenia.",

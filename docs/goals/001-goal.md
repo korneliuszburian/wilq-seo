@@ -180,6 +180,12 @@ Latest slice:
   `/actions/act_prepare_content_refresh_queue` confirms the new wording with
   no old `Brief treści do sprawdzenia`, `Cel briefu` or `Przygotuj brief` hits:
   `.local-lab/proof/20260627-action-detail-content-plan-language/action-detail-content.txt`.
+- Generic operating route copy now avoids endpoint/type jargon in visible
+  fallback descriptions. `BriefWorkflowSurface` configs no longer expose
+  `/api/marketing/brief`, `MarketingBrief`, `spend` or `inventory`; focused
+  tests cover the config, and browser proof for `/social-publisher` confirms
+  no hits for those terms:
+  `.local-lab/proof/20260627-brief-workflow-copy/social-publisher.txt`.
 
 ### C. Dashboard Condensation
 

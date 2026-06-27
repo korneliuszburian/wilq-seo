@@ -154,6 +154,12 @@ Date: 2026-06-27
   the same slice, and `scripts/marketer_language_guard.py` now blocks those old
   headings in active source. Browser proof:
   `.local-lab/proof/20260627-action-detail-content-plan-language/action-detail-content.txt`.
+- Generic operating route config no longer exposes `/api/marketing/brief`,
+  `MarketingBrief`, `spend` or `inventory` as marketer-facing fallback copy.
+  The fallback surface now says `w WILQ`, `wydatki`, `dane z ...` and
+  `spis treści` language, while endpoint/type names remain internal code only.
+  Browser proof for `/social-publisher`:
+  `.local-lab/proof/20260627-brief-workflow-copy/social-publisher.txt`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for
