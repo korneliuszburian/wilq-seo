@@ -5436,9 +5436,20 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert payload["access_probe"]["status"] == "access_ready"
     assert payload["access_probe"]["status_label"] == "dostęp działa"
     assert payload["access_probe"]["mcp_initialize_status"] == 200
+    assert payload["access_probe"]["access_check_label"] == "połączenie potwierdzone"
     assert payload["access_probe"]["authorization_code_supported_label"] == "tak"
+    assert (
+        payload["access_probe"]["authorization_readiness_label"]
+        == "gotowe do połączenia"
+    )
     assert payload["access_probe"]["pkce_s256_supported_label"] == "tak"
+    assert (
+        payload["access_probe"]["secure_readiness_label"]
+        == "bezpieczne połączenie gotowe"
+    )
     assert payload["access_probe"]["access_token_present_label"] == "obecny"
+    assert payload["access_probe"]["credential_readiness_label"] == "dostęp lokalny gotowy"
+    assert payload["access_probe"]["evidence_summary_label"] == "1 dowód źródłowy"
     assert payload["live_data_available"] is False
     assert payload["visibility_fact_count"] == 0
     assert payload["evidence_ids"] == ["ev_refresh_refresh_localo_access_ready_diag_test"]
@@ -5449,6 +5460,8 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert access_decision["decision_type_label"] == "status źródła"
     assert access_decision["access_status_label"] == "dostęp działa"
     assert access_decision["priority_label"] == "wysoki priorytet"
+    assert access_decision["source_connector_labels"] == ["Localo"]
+    assert access_decision["evidence_summary_label"] == "1 dowód źródłowy"
     assert access_decision["priority"] == 30
     assert access_decision["metric_tiles"] == {
         "dostęp Localo": 1,
@@ -5458,13 +5471,22 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert "local_rankings" in access_decision["missing_read_contracts"]
     assert "rankingi lokalne" in access_decision["missing_read_contract_labels"]
     assert "potwierdzenie dostępu Localo" in access_decision["allowed_evidence_labels"]
+    assert "potwierdzenie autoryzacji" in access_decision["allowed_evidence_labels"]
+    assert "potwierdzenie lokalnego dostępu" in access_decision[
+        "allowed_evidence_labels"
+    ]
+    assert "obecność tokenu" not in access_decision["allowed_evidence_labels"]
     assert "wyniki profilu firmy w Google" in access_decision["blocked_claims"]
     assert "wyniki profilu firmy w Google" in access_decision["blocked_claim_labels"]
     block_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert block_decision["status"] == "blocked"
     assert block_decision["status_label"] == "zablokowane"
+    assert block_decision["source_connector_labels"] == ["Localo"]
+    assert block_decision["evidence_summary_label"] == "1 dowód źródłowy"
+    assert payload["operator_summary"]["source_connector_labels"] == ["Localo"]
+    assert payload["operator_summary"]["evidence_summary_label"] == "1 dowód źródłowy"
     assert block_decision["decision_type_label"] == "blokada obietnic"
-    assert block_decision["priority_label"] == "wysoki priorytet"
+    assert block_decision["priority_label"] == "pilne"
     assert block_decision["priority"] == 10
     assert block_decision["metric_tiles"] == {
         "blokady obietnic": 5,

@@ -33,11 +33,14 @@ Wilku can inspect it without reading technical internals.
 - No audit -> no zapis zmian.
 - No measurement window -> no success/failure claim.
 - No business logic in prompts or skill references.
-- No React string replacement as product cleanup.
-- No route-local translators, stale compatibility aliases or hardcoded cleanup
-  helpers for marketer-facing semantics.
+- No React/UI translator functions for product semantics.
+- No hardcoded label replacement.
+- No compatibility aliases or deprecated active fields when a direct migration
+  is feasible.
 - Dirty marketer-facing copy must be fixed in typed API/schema/view-model/domain
   source.
+- Every repeated issue becomes a typed API/schema/view-model field or a test
+  guard.
 
 ## Current State
 
@@ -46,22 +49,23 @@ Wilku can inspect it without reading technical internals.
 - Current cleanup has already moved many Command Center, Content, Ads, GA4,
   Merchant, Localo, Ahrefs and Action Detail labels from dashboard helpers into
   API/domain/shared-schema labels.
-- The latest committed code slice is:
-  `6497044 fix(ads): source negative keyword labels from api`.
-- That slice added API-owned negative-keyword labels for safety, validation,
-  required checks, match type, exclusion level and keyword context, with focused
-  API/dashboard tests and live browser proof.
-- The current verified Ads recommendation/keyword-context cleanup removes raw
+- Recent committed cleanup slices:
+  - `6497044 fix(ads): source negative keyword labels from api`
+  - `df4c750 fix(ads): clean recommendation and keyword context copy`
+  - `5a805aa fix(merchant): condense source and evidence labels`
+  - `d783636 fix(ga4): clean measurement labels`
+- The Ads recommendation/keyword-context cleanup removes raw
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
   labels.
-- The current verified Merchant cleanup adds API-owned source connector labels
+- The Merchant cleanup adds API-owned source connector labels
   and evidence summaries, then uses them in Merchant panels instead of raw
   connector IDs, evidence IDs and read-contract/debug labels.
-- The current verified GA4 cleanup adds API-owned source connector labels,
+- The GA4 cleanup is committed. It adds API-owned source connector labels,
   evidence summaries and safe reporting-dimension labels, then uses them in GA4
   panels instead of raw `(not set)`, `tracking-gap`, connector IDs, evidence IDs
   and `ID` evidence counts.
+- Current active slice: Localo cleanup.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -70,13 +74,13 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
-   paths. These should disappear as API labels cover the remaining panels.
-2. Localo still exposes protocol/credential language in visible proof panels:
+1. Localo still exposes protocol/credential language in visible proof panels:
    - `OAuth code`
    - `PKCE S256`
    - `Token`
    - raw `localo` connector ID.
+2. Ads Doctor still has route-local raw-key fallback debt in secondary helper
+   paths. These should disappear as API labels cover the remaining panels.
 3. Action impact and detail panels still have raw connector/evidence fallback
    risk:
    - impact result source connectors

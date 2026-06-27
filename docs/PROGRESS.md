@@ -33,7 +33,7 @@ Recent commits:
 - `5b81874 docs: condense active cleanup recovery`
 - `df4c750 fix(ads): clean recommendation and keyword context copy`
 - `5a805aa fix(merchant): condense source and evidence labels`
-- Current GA4 measurement copy cleanup is verified locally and ready to commit.
+- `d783636 fix(ga4): clean measurement labels`
 
 What changed:
 
@@ -44,6 +44,8 @@ What changed:
   campaign, required checks, blocked promises and evidence summaries.
 - GA4 dashboard no longer shows raw `(not set)`, `tracking-gap`, connector IDs,
   evidence IDs or `ID` evidence counts on the cleaned route.
+
+Current active slice: Localo cleanup.
 
 Proof:
 
@@ -60,12 +62,12 @@ Proof:
 
 Next cleanup queue:
 
-1. Ads Doctor:
-   - route-local raw-key fallbacks still exist in secondary helper paths and
-     should be retired as API labels cover those paths.
-2. Localo:
+1. Localo:
    - visible proof panels can expose `OAuth code`, `PKCE S256`, `Token` and raw
      `localo` connector ID.
+2. Ads Doctor:
+   - route-local raw-key fallbacks still exist in secondary helper paths and
+     should be retired as API labels cover those paths.
 3. Actions:
    - impact result can expose raw source connector IDs,
    - missing label fallbacks can become visible copy.
@@ -75,10 +77,19 @@ Next cleanup queue:
 
 ## Next Best Move
 
-1. Commit and push the GA4 measurement copy cleanup slice.
-2. Clean Localo credential/protocol language from API/domain labels, not React
+1. Clean Localo credential/protocol language from API/domain labels, not React
    string replacement.
+2. Clean Ads secondary fallback copy.
 3. Clean Action detail impact/source fallback copy.
+
+## Guardrails
+
+- No React/UI translator functions for product semantics.
+- No hardcoded label replacement.
+- No compatibility aliases or deprecated active fields when a direct migration
+  is feasible.
+- Every repeated issue becomes a typed API/schema/view-model field or a test
+  guard.
 
 ## Blockers
 

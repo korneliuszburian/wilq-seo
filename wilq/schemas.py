@@ -2686,13 +2686,18 @@ class LocaloAccessProbe(BaseModel):
     status_label: str = ""
     source_run_id: str | None = None
     mcp_initialize_status: int | None = None
+    access_check_label: str = ""
     authorization_code_supported: bool | None = None
     authorization_code_supported_label: str = ""
+    authorization_readiness_label: str = ""
     pkce_s256_supported: bool | None = None
     pkce_s256_supported_label: str = ""
+    secure_readiness_label: str = ""
     access_token_present: bool | None = None
     access_token_present_label: str = ""
+    credential_readiness_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     summary: str
 
 
@@ -2705,7 +2710,9 @@ class LocaloDiagnosticSection(BaseModel):
     diagnosis: str
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
@@ -2761,7 +2768,9 @@ class LocaloDecisionItem(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
@@ -2785,7 +2794,9 @@ class LocaloOperatorSummary(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)

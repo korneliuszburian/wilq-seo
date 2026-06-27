@@ -102,10 +102,10 @@ export function LocaloDiagnosticSurface() {
         <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
           <TraceLine
             label="Dowody"
-            values={[formatLocaloEvidenceCount(data.evidence_ids.length)]}
+            values={[data.operator_summary.evidence_summary_label]}
             empty="brak"
           />
-          <TraceLine label="Źródła" values={["localo"]} />
+          <TraceLine label="Źródła" values={data.operator_summary.source_connector_labels} />
           <TraceLine
             label="Czego nie wolno obiecać"
             values={uniqueValues(
@@ -264,7 +264,7 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
         />
         <TraceLine
           label="Dowody"
-          values={[formatLocaloEvidenceCount(decision.evidence_ids.length)]}
+          values={[decision.evidence_summary_label]}
           empty="brak"
         />
       </div>
@@ -301,13 +301,13 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
       {showTechnicalProof ? (
         <>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <MetricTile label="Test dostępu" value={probe.mcp_initialize_status ?? "brak"} />
+            <MetricTile label="Połączenie" value={probe.access_check_label} />
             <MetricTile
-              label="OAuth code"
-              value={probe.authorization_code_supported_label}
+              label="Autoryzacja"
+              value={probe.authorization_readiness_label}
             />
-            <MetricTile label="PKCE S256" value={probe.pkce_s256_supported_label} />
-            <MetricTile label="Token" value={probe.access_token_present_label} />
+            <MetricTile label="Bezpieczeństwo połączenia" value={probe.secure_readiness_label} />
+            <MetricTile label="Dostęp lokalny" value={probe.credential_readiness_label} />
           </div>
           <div className="mt-4 grid gap-3 xl:grid-cols-3">
             {data.sections.map((section) => (
@@ -330,12 +330,6 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
       ) : null}
     </section>
   );
-}
-
-function formatLocaloEvidenceCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 ID";
-  return `${count} ID`;
 }
 
 function uniqueValues(values: string[]) {

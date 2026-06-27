@@ -672,12 +672,36 @@ def _label_localo_access_probe(probe: LocaloAccessProbe) -> LocaloAccessProbe:
     return probe.model_copy(
         update={
             "status_label": _localo_access_status_label(probe.status),
+            "access_check_label": _localo_access_check_label(
+                probe.mcp_initialize_status
+            ),
             "authorization_code_supported_label": _localo_bool_label(
                 probe.authorization_code_supported
             ),
+            "authorization_readiness_label": _localo_readiness_label(
+                probe.authorization_code_supported,
+                ready="gotowe do połączenia",
+                blocked="brak gotowej autoryzacji",
+                unknown="autoryzacja niepotwierdzona",
+            ),
             "pkce_s256_supported_label": _localo_bool_label(probe.pkce_s256_supported),
+            "secure_readiness_label": _localo_readiness_label(
+                probe.pkce_s256_supported,
+                ready="bezpieczne połączenie gotowe",
+                blocked="brak potwierdzenia bezpiecznego połączenia",
+                unknown="bezpieczeństwo połączenia niepotwierdzone",
+            ),
             "access_token_present_label": _localo_token_presence_label(
                 probe.access_token_present
+            ),
+            "credential_readiness_label": _localo_readiness_label(
+                probe.access_token_present,
+                ready="dostęp lokalny gotowy",
+                blocked="brak lokalnego dostępu",
+                unknown="lokalny dostęp niepotwierdzony",
+            ),
+            "evidence_summary_label": _localo_evidence_summary_label(
+                probe.evidence_ids
             ),
         }
     )
@@ -687,6 +711,12 @@ def _label_localo_section(section: LocaloDiagnosticSection) -> LocaloDiagnosticS
     return section.model_copy(
         update={
             "status_label": _localo_section_status_label(section.status),
+            "source_connector_labels": _localo_source_connector_labels(
+                section.source_connectors
+            ),
+            "evidence_summary_label": _localo_evidence_summary_label(
+                section.evidence_ids
+            ),
             "blocked_claim_labels": section.blocked_claims,
         }
     )
@@ -721,6 +751,12 @@ def _label_localo_decision(decision: LocaloDecisionItem) -> LocaloDecisionItem:
             "missing_read_contract_labels": [
                 _localo_contract_label(value) for value in decision.missing_read_contracts
             ],
+            "source_connector_labels": _localo_source_connector_labels(
+                decision.source_connectors
+            ),
+            "evidence_summary_label": _localo_evidence_summary_label(
+                decision.evidence_ids
+            ),
             "metric_fact_labels": {
                 fact.name: _localo_metric_fact_label(fact.name)
                 for fact in decision.metric_facts
@@ -739,6 +775,12 @@ def _label_localo_operator_summary(
             "missing_read_contract_labels": [
                 _localo_contract_label(value) for value in summary.missing_read_contracts
             ],
+            "source_connector_labels": _localo_source_connector_labels(
+                summary.source_connectors
+            ),
+            "evidence_summary_label": _localo_evidence_summary_label(
+                summary.evidence_ids
+            ),
             "blocked_claim_labels": summary.blocked_claims,
         }
     )
@@ -793,6 +835,28 @@ def _localo_access_status_label(status: str) -> str:
     return labels.get(status, "dostęp niepewny")
 
 
+def _localo_access_check_label(status: int | None) -> str:
+    if status == 200:
+        return "połączenie potwierdzone"
+    if status is None:
+        return "połączenie niepotwierdzone"
+    return "połączenie zablokowane"
+
+
+def _localo_readiness_label(
+    value: bool | None,
+    *,
+    ready: str,
+    blocked: str,
+    unknown: str,
+) -> str:
+    if value is True:
+        return ready
+    if value is False:
+        return blocked
+    return unknown
+
+
 def _localo_bool_label(value: bool | None) -> str:
     if value is True:
         return "tak"
@@ -807,6 +871,24 @@ def _localo_token_presence_label(value: bool | None) -> str:
     if value is False:
         return "brak"
     return "brak danych"
+
+
+def _localo_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
+    labels = {
+        LOCALO_CONNECTOR_ID: "Localo",
+    }
+    return _unique(labels.get(connector_id, connector_id) for connector_id in connector_ids)
+
+
+def _localo_evidence_summary_label(evidence_ids: Iterable[str]) -> str:
+    count = len(list(evidence_ids))
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
 
 
 def _localo_priority_label(priority: int) -> str:
@@ -834,9 +916,9 @@ def _localo_contract_label(value: str) -> str:
 
 def _localo_evidence_label(value: str) -> str:
     labels = {
-        "access_token_presence": "obecność tokenu",
+        "access_token_presence": "potwierdzenie lokalnego dostępu",
         "mcp_initialize": "potwierdzenie dostępu Localo",
-        "oauth_metadata": "metadane autoryzacji",
+        "oauth_metadata": "potwierdzenie autoryzacji",
     }
     return labels.get(value, _localo_contract_label(value))
 

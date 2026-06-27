@@ -5393,13 +5393,18 @@ const localoDiagnostics = {
     status_label: "dostęp działa",
     source_run_id: "refresh_localo_access_ready_test",
     mcp_initialize_status: 200,
+    access_check_label: "połączenie potwierdzone",
     authorization_code_supported: true,
     authorization_code_supported_label: "tak",
+    authorization_readiness_label: "gotowe do połączenia",
     pkce_s256_supported: true,
     pkce_s256_supported_label: "tak",
+    secure_readiness_label: "bezpieczne połączenie gotowe",
     access_token_present: true,
     access_token_present_label: "obecny",
+    credential_readiness_label: "dostęp lokalny gotowy",
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     summary:
       "Localo potwierdził dostęp do odczytu danych. To nadal nie jest dowód rankingów, profilu firmy w Google ani konkurencji."
   },
@@ -5434,7 +5439,9 @@ const localoDiagnostics = {
       "zadania lokalne"
     ],
     source_connectors: ["localo"],
+    source_connector_labels: ["Localo"],
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: [],
     blocked_claims: [
       "lokalne rankingi",
@@ -5475,8 +5482,8 @@ const localoDiagnostics = {
       allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
       allowed_evidence_labels: [
         "potwierdzenie dostępu Localo",
-        "metadane autoryzacji",
-        "obecność tokenu"
+        "potwierdzenie autoryzacji",
+        "potwierdzenie lokalnego dostępu"
       ],
       missing_read_contracts: [
         "local_rankings",
@@ -5493,7 +5500,9 @@ const localoDiagnostics = {
         "zadania lokalne"
       ],
       source_connectors: ["localo"],
+      source_connector_labels: ["Localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
@@ -5548,7 +5557,9 @@ const localoDiagnostics = {
         "zadania lokalne"
       ],
       source_connectors: ["localo"],
+      source_connector_labels: ["Localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
@@ -5578,7 +5589,9 @@ const localoDiagnostics = {
       next_step:
         "Nie pokazuj Localo jako zadania dziennego. Użyj tego widoku jako statusu źródła.",
       source_connectors: ["localo"],
+      source_connector_labels: ["Localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       action_ids: [],
       blocked_claims: [],
@@ -5597,7 +5610,9 @@ const localoDiagnostics = {
       next_step:
         "Dodaj odczyt rankingów, profilu firmy w Google, konkurencji i recenzji zanim WILQ zaproponuje lokalne działania.",
       source_connectors: ["localo"],
+      source_connector_labels: ["Localo"],
       evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       action_ids: [],
       blocked_claims: [
@@ -7801,9 +7816,23 @@ describe("WILQ dashboard", () => {
       .closest("section");
     expect(localoSafetyGate).not.toBeNull();
     expect(within(localoSafetyGate as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Test dostępu")).not.toBeInTheDocument();
+    expect(within(localoSafetyGate as HTMLElement).getByText(/1 dowód źródłowy/)).toBeInTheDocument();
+    expect(
+      within(localoSafetyGate as HTMLElement).getByText(
+        (_, element) => element?.textContent === "Źródła: Localo"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Połączenie")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne Localo" }));
-    expect(screen.getByText("Test dostępu")).toBeInTheDocument();
+    expect(screen.getByText("Połączenie")).toBeInTheDocument();
+    expect(screen.getByText("Autoryzacja")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczeństwo połączenia")).toBeInTheDocument();
+    expect(screen.getByText("Dostęp lokalny")).toBeInTheDocument();
+    expect(screen.getByText("połączenie potwierdzone")).toBeInTheDocument();
+    expect(screen.queryByText("OAuth code")).not.toBeInTheDocument();
+    expect(screen.queryByText("PKCE S256")).not.toBeInTheDocument();
+    expect(screen.queryByText("Token")).not.toBeInTheDocument();
+    expect(screen.queryByText("localo")).not.toBeInTheDocument();
     expect(screen.queryByText("Local Visibility Focus")).not.toBeInTheDocument();
     expect(screen.queryByText("Taktyki z WILQ")).not.toBeInTheDocument();
     expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();
