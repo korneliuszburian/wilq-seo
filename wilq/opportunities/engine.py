@@ -6,6 +6,12 @@ from wilq.briefing.daily_runtime import build_daily_runtime
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import (
+    evidence_count_label,
+    opportunity_domain_label,
+    source_connector_label,
+    source_connector_labels,
+)
 from wilq.schemas import (
     ActionRisk,
     CommandCenterActionPlanItem,
@@ -15,18 +21,6 @@ from wilq.schemas import (
     Opportunity,
     OpportunityDomain,
 )
-
-CONNECTOR_LABELS = {
-    "google_ads": "Google Ads",
-    "google_search_console": "Google Search Console",
-    "google_analytics_4": "GA4",
-    "google_merchant_center": "Merchant Center",
-    "ahrefs": "Ahrefs",
-    "localo": "Localo",
-    "wordpress_ekologus": "WordPress ekologus.pl",
-    "linkedin": "LinkedIn",
-    "facebook": "Facebook",
-}
 
 EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS = {
     "decision_ads_business_context_before_budget_decisions",
@@ -207,7 +201,7 @@ def _opportunity_from_action_plan_item(
 ) -> Opportunity:
     metric_tiles = matching_decision.metric_tiles if matching_decision is not None else {}
     metrics = _metric_tiles_to_facts(matching_decision) if matching_decision is not None else []
-    return Opportunity(
+    return _label_opportunity(Opportunity(
         id=f"opp_{plan_item.id.replace('plan_', 'decision_', 1)}",
         type=_route_opportunity_type(plan_item.route),
         title=plan_item.title,
@@ -223,11 +217,11 @@ def _opportunity_from_action_plan_item(
         expert_rule_ids=[],
         playbook_ids=[plan_item.skill_id] if plan_item.skill_id else [],
         is_fixture=False,
-    )
+    ))
 
 
 def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
-    return Opportunity(
+    return _label_opportunity(Opportunity(
         id=f"opp_{decision.id}",
         type=_route_opportunity_type(decision.route),
         title=decision.title,
@@ -245,7 +239,7 @@ def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
         expert_rule_ids=[],
         playbook_ids=[decision.skill_id] if decision.skill_id else [],
         is_fixture=False,
-    )
+    ))
 
 
 def _daily_decision_type(decision: DailyDecision) -> str:
@@ -339,7 +333,7 @@ def _connector_registry_opportunities() -> list[Opportunity]:
         latest_live_run = _latest_live_refresh(connector.id)
         title = _title(blueprint, connector.configured, latest_live_run is not None)
         opportunities.append(
-            Opportunity(
+            _label_opportunity(Opportunity(
                 id=f"opp_connector_{connector.id}",
                 type=blueprint.opportunity_type,
                 title=title,
@@ -366,7 +360,7 @@ def _connector_registry_opportunities() -> list[Opportunity]:
                 expert_rule_ids=list(blueprint.expert_rule_ids),
                 playbook_ids=list(blueprint.playbook_ids),
                 is_fixture=False,
-            )
+            ))
         )
     return opportunities
 
@@ -435,9 +429,21 @@ def _title(
     if not configured:
         return blueprint.blocked_title
     if live_refresh_available:
-        connector_label = CONNECTOR_LABELS.get(blueprint.connector_id, blueprint.connector_id)
+        connector_label = source_connector_label(blueprint.connector_id)
         return f"{connector_label}: rejestr reguł i playbooków"
     return blueprint.ready_title
+
+
+def _label_opportunity(opportunity: Opportunity) -> Opportunity:
+    return opportunity.model_copy(
+        update={
+            "domain_label": opportunity_domain_label(opportunity.domain),
+            "source_connector_labels": source_connector_labels(
+                opportunity.source_connectors
+            ),
+            "evidence_summary_label": evidence_count_label(opportunity.evidence_ids),
+        }
+    )
 
 
 def _opportunity_metrics(

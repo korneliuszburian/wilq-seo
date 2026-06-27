@@ -102,6 +102,11 @@ from wilq.knowledge.compilers.playbook_compiler import (
     list_playbooks,
 )
 from wilq.knowledge.operating_map import build_knowledge_operating_map
+from wilq.operator_labels import (
+    evidence_source_type_label,
+    freshness_state_label,
+    source_connector_label,
+)
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
@@ -4337,7 +4342,7 @@ def actions() -> list[dict[str, Any]]:
 
 @app.get("/api/evidence", response_model=list[Evidence])
 def evidence_items() -> list[Evidence]:
-    return list_evidence()
+    return [_label_evidence_item(item) for item in list_evidence()]
 
 
 @app.get("/api/evidence/{evidence_id}", response_model=Evidence)
@@ -4345,7 +4350,22 @@ def evidence_detail(evidence_id: str) -> Evidence:
     evidence = get_evidence(evidence_id)
     if evidence is None:
         raise HTTPException(status_code=404, detail=f"Unknown evidence: {evidence_id}")
-    return evidence
+    return _label_evidence_item(evidence)
+
+
+def _label_evidence_item(evidence: Evidence) -> Evidence:
+    source_label = source_connector_label(evidence.source_connector)
+    source_type_label = evidence_source_type_label(evidence.source_type)
+    freshness_label = freshness_state_label(evidence.freshness.state)
+    return evidence.model_copy(
+        update={
+            "title_label": f"Dowód z {source_label}",
+            "source_connector_label": source_label,
+            "source_type_label": source_type_label,
+            "freshness_label": freshness_label,
+            "trace_summary_label": f"{source_label}: {source_type_label}, {freshness_label}",
+        }
+    )
 
 
 @app.get("/api/metrics", response_model=list[MetricFact])

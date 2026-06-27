@@ -64,8 +64,11 @@ const opportunities = [
     type: "google_ads_review_queue",
     title: "Przejrzyj kolejki Ads do sprawdzenia bez zapisu zmian",
     domain: "google_ads",
+    domain_label: "Google Ads",
     source_connectors: ["google_ads"],
+    source_connector_labels: ["Google Ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     metric_tiles: {
       kampanie: 18,
       zapytania: 50,
@@ -637,22 +640,32 @@ const actions = [
 const evidence = [
   {
     id: "ev_connector_google_ads_status",
+    title_label: "Dowód z Google Ads",
     source_connector: "google_ads",
+    source_connector_label: "Google Ads",
     source_type: "connector_status",
+    source_type_label: "status źródła danych",
     source_id: "google_ads",
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "missing" },
+    freshness_label: "brak danych",
     summary: "Google Ads ma braki dostępu.",
+    trace_summary_label: "Google Ads: status źródła danych, brak danych",
     raw_ref: null
   },
   {
     id: "ev_refresh_merchant_feed",
+    title_label: "Dowód z Merchant Center",
     source_connector: "google_merchant_center",
+    source_connector_label: "Merchant Center",
     source_type: "connector_refresh",
+    source_type_label: "odczyt źródła danych",
     source_id: "refresh_merchant_feed",
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "fresh" },
+    freshness_label: "świeże dane",
     summary: "Merchant Center feed diagnostics collected sanitized product issue counters.",
+    trace_summary_label: "Merchant Center: odczyt źródła danych, świeże dane",
     raw_ref: null
   }
 ];
@@ -8027,12 +8040,16 @@ describe("WILQ dashboard", () => {
     renderApp("/evidence/ev_refresh_merchant_feed");
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "ev_refresh_merchant_feed" })
+        screen.getByRole("heading", { name: "Dowód z Merchant Center" })
       ).toBeInTheDocument()
     );
     expect(
       screen.getByText("Merchant Center feed diagnostics collected sanitized product issue counters.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Źródło: google_merchant_center")).toBeInTheDocument();
+    expect(screen.getByText("Źródło: Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Typ źródła: odczyt źródła danych")).toBeInTheDocument();
+    expect(screen.getByText("Świeżość: świeże dane")).toBeInTheDocument();
+    expect(screen.queryByText("Źródło: google_merchant_center")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "ev_refresh_merchant_feed" })).not.toBeInTheDocument();
   });
 });

@@ -51,15 +51,20 @@ export const MetricStoreStatusSchema = z.object({
 
 export const EvidenceSchema = z.object({
   id: z.string(),
+  title_label: z.string().default(""),
   source_connector: z.string(),
+  source_connector_label: z.string().default(""),
   source_type: z.string(),
+  source_type_label: z.string().default(""),
   source_id: z.string(),
   collected_at: z.string(),
   freshness: z.object({
     state: z.string(),
     notes: z.string().nullable().optional()
   }),
+  freshness_label: z.string().default(""),
   summary: z.string(),
+  trace_summary_label: z.string().default(""),
   raw_ref: z.string().nullable().optional()
 });
 
@@ -86,8 +91,11 @@ export const OpportunitySchema = z.object({
   type: z.string(),
   title: z.string(),
   domain: z.string(),
+  domain_label: z.string().default(""),
   source_connectors: z.array(z.string()).min(1),
+  source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).min(1),
+  evidence_summary_label: z.string().default(""),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string().min(1),

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -25,7 +26,7 @@ import { ActionPayloadPreviewToggle } from "../components/ActionPayloadPreviewTo
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 
 export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
@@ -65,7 +66,7 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             <ActionPreviewControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <TraceLine label="Akcja" values={["1 akcja do sprawdzenia"]} />
-              <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
+              <ActionEvidenceTrace action={action} />
             </div>
             {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
             <ActionValidationControls action={action} />
@@ -77,6 +78,45 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ActionEvidenceTrace({ action }: { action: ActionObject }) {
+  const summaryLabel = action.evidence_summary_label.trim();
+
+  if (!summaryLabel) {
+    return (
+      <TraceLine
+        label="Dowody"
+        values={[]}
+        empty="brak etykiety dowodów z WILQ"
+      />
+    );
+  }
+
+  return (
+    <div className="break-words">
+      Dowody: <span>{summaryLabel}</span>
+      {action.evidence_ids.length > 0 ? (
+        <span>
+          {" "}
+          (
+          {action.evidence_ids.map((evidenceId, index) => (
+            <span key={evidenceId}>
+              {index > 0 ? ", " : ""}
+              <Link
+                to="/evidence/$evidenceId"
+                params={{ evidenceId }}
+                className="font-medium text-action underline-offset-2 hover:underline"
+              >
+                dowód {index + 1}
+              </Link>
+            </span>
+          ))}
+          )
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -196,7 +236,6 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
-  const lastOutcome = action.review_gate.last_review_outcome;
   const lastReviewLabel = action.review_gate.last_review_outcome_label ?? null;
   const canSave = notes.trim().length > 0 && !reviewMutation.isPending;
 

@@ -40,12 +40,17 @@ describe("RegistryPanels", () => {
         evidenceItems={[
           ({
             id: "ev_connector_google_ads_status",
+            title_label: "Dowód z Google Ads",
             source_connector: "google_ads",
+            source_connector_label: "Google Ads",
             source_type: "connector_refresh",
+            source_type_label: "odczyt źródła danych",
             source_id: "refresh_google_ads_test",
             collected_at: "2026-06-17T10:00:00Z",
             freshness: { state: "fresh" },
+            freshness_label: "świeże dane",
             summary: "Google Ads odczytany z sanitizowanym podsumowaniem.",
+            trace_summary_label: "Google Ads: odczyt źródła danych, świeże dane",
             raw_ref: null
           } satisfies Evidence)
         ]}

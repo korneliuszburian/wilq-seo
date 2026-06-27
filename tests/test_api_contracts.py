@@ -6997,6 +6997,13 @@ def test_evidence_registry_exposes_connector_status_without_secret_values(
     evidence = response.json()
     evidence_ids = {item["id"] for item in evidence}
     assert "ev_connector_google_ads_status" in evidence_ids
+    google_ads_evidence = next(
+        item for item in evidence if item["id"] == "ev_connector_google_ads_status"
+    )
+    assert google_ads_evidence["title_label"] == "Dowód z Google Ads"
+    assert google_ads_evidence["source_connector_label"] == "Google Ads"
+    assert google_ads_evidence["source_type_label"] == "status źródła danych"
+    assert google_ads_evidence["trace_summary_label"]
     serialized = json.dumps(evidence)
     assert "gho_supersecretvalue1234567890" not in serialized
 
@@ -7029,6 +7036,9 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     )
     assert google_ads["type"] == "google_ads_review_queue"
     assert google_ads["domain"] == "google_ads"
+    assert google_ads["domain_label"] == "Google Ads"
+    assert google_ads["source_connector_labels"] == ["Google Ads"]
+    assert "dowod" in google_ads["evidence_summary_label"]
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",

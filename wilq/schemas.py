@@ -111,12 +111,17 @@ class ConnectorStatus(BaseModel):
 
 class Evidence(BaseModel):
     id: str
+    title_label: str = ""
     source_connector: str
+    source_connector_label: str = ""
     source_type: str
+    source_type_label: str = ""
     source_id: str
     collected_at: datetime = Field(default_factory=utc_now)
     freshness: FreshnessState
+    freshness_label: str = ""
     summary: str
+    trace_summary_label: str = ""
     raw_ref: str | None = None
 
 
@@ -167,8 +172,11 @@ class Opportunity(BaseModel):
     type: str
     title: str
     domain: OpportunityDomain
+    domain_label: str = ""
     source_connectors: list[str] = Field(min_length=1)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
+    evidence_summary_label: str = ""
     metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     metrics: list[MetricFact] = Field(default_factory=list)
     human_diagnosis: str = Field(min_length=1)

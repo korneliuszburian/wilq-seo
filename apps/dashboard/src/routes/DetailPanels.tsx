@@ -1077,20 +1077,22 @@ export function EvidenceDetailSurface({ evidenceId }: { evidenceId: string }) {
 function EvidenceDetail({ evidence }: { evidence: Evidence }) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
-      <h1 className="break-words text-2xl font-semibold tracking-normal">{evidence.id}</h1>
+      <h1 className="break-words text-2xl font-semibold tracking-normal">
+        {evidence.title_label}
+      </h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={evidence.source_connector} />
-        <StatusBadge value={evidence.source_type} />
-        <StatusBadge value={evidence.freshness.state} />
+        <StatusBadge value={evidence.source_connector_label} />
+        <StatusBadge value={evidence.source_type_label} />
+        <StatusBadge value={evidence.freshness_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podsumowanie dowodu" />
         <p className="text-sm leading-6 text-slate-700">{evidence.summary}</p>
         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-          <div>Źródło: {evidence.source_connector}</div>
-          <div>Typ źródła: {evidence.source_type}</div>
+          <div>Źródło: {evidence.source_connector_label}</div>
+          <div>Typ źródła: {evidence.source_type_label}</div>
           <div>Zebrano: {evidence.collected_at}</div>
-          <div>Świeżość: {evidence.freshness.state}</div>
+          <div>Świeżość: {evidence.freshness_label}</div>
         </div>
         <TechnicalDetailsPanel
           className="mt-4"
@@ -1098,6 +1100,7 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
           closeLabel="Ukryj szczegóły techniczne dowodu"
         >
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div>ID dowodu: {evidence.id}</div>
             <div>ID źródła: {evidence.source_id}</div>
             <div>Referencja źródłowa: {evidence.raw_ref ?? "brak"}</div>
           </div>
@@ -1112,15 +1115,15 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-normal">{opportunity.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={opportunity.domain} />
+        <StatusBadge value={opportunity.domain_label} />
         <StatusBadge value={opportunity.risk} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Diagnoza" />
         <p className="text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-          <div>Dowody: {opportunity.evidence_ids.join(", ")}</div>
-          <div>Źródła: {opportunity.source_connectors.join(", ")}</div>
+          <div>Dowody: {opportunity.evidence_summary_label}</div>
+          <div>Źródła: {opportunity.source_connector_labels.join(", ")}</div>
         </div>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
