@@ -106,6 +106,10 @@ Wilku can inspect it without reading technical internals.
 - Ads Doctor no longer owns start-here summary, effect-check summary or
   business-context status wording in React. Those fields are now sourced from
   Ads API/shared-schema contracts.
+- Content Planner no longer owns route/local helpers for content brief source,
+  content brief mode, WordPress draft operation, WordPress post status, draft
+  generation status or publication readiness. Content action preview payloads
+  now carry those labels from the backend.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -121,9 +125,9 @@ are resolved or explicitly deferred.
    It no longer owns the old `marketingLabels.ts` translator, but it still
    needs a typed action-detail preview view-model; raw payload may remain only
    in collapsed technical detail.
-3. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
-   content/action preview labels, blocked-claim labels and status labels. These
-   need API/schema ownership.
+3. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own remaining
+   connector refresh/status, section-level blocked-claim and metric labels.
+   These need API/schema ownership.
 4. Repeated metric/dimension naming in dashboard components should become
    API-owned metric labels; pure numeric formatting can stay in UI.
 

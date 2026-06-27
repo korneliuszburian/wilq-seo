@@ -307,7 +307,9 @@ const actions = [
           preview_contract: "content_brief_preview_v1",
           candidate_id: "content_brief_gsc_zielony_lad",
           source_type: "gsc_query_page",
+          source_type_label: "Google Search Console",
           mode: "refresh",
+          mode_label: "odśwież istniejącą treść",
           topic: "zielony ład",
           target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           wordpress_inventory_match: "present",
@@ -336,6 +338,8 @@ const actions = [
           source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
           missing_evidence: ["brak dowodu wzrost liczby leadów"],
           forbidden_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          publication_readiness_status: "blocked_until_review",
+          publication_readiness_status_label: "zablokowane do sprawdzenia",
           publication_blocker_labels: [
             "potwierdzenie publicznego URL-a",
             "kontrola duplikacji i kanibalizacji",
@@ -354,6 +358,7 @@ const actions = [
             "potwierdzenie człowieka przed zapisem WordPress"
           ],
           blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          blocked_claim_labels: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_gsc"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           apply_allowed: false,
@@ -364,7 +369,9 @@ const actions = [
           preview_contract: "content_brief_preview_v1",
           candidate_id: "content_brief_ahrefs_audyt_srodowiskowy",
           source_type: "ahrefs_gap_review",
+          source_type_label: "Ahrefs do sprawdzenia",
           mode: "review",
+          mode_label: "do sprawdzenia",
           topic: "audyt środowiskowy",
           source_url: "https://www.denios.pl/audyt-srodowiskowy/",
           competitor_domain: "denios.pl",
@@ -389,6 +396,7 @@ const actions = [
             "duplicate_or_cannibalization_check"
           ],
           blocked_claims: ["wzrost ruchu", "wzrost autorytetu", "gwarancja pozycji"],
+          blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
           source_connectors: ["ahrefs"],
           apply_allowed: false,
@@ -402,10 +410,14 @@ const actions = [
           source_preview_contract: "content_brief_preview_v1",
           candidate_id: "content_brief_gsc_zielony_lad",
           source_type: "gsc_query_page",
+          source_type_label: "Google Search Console",
           mode: "refresh",
+          mode_label: "odśwież istniejącą treść",
           connector: "wordpress_ekologus",
           operation_type: "prepare_existing_content_draft",
+          operation_type_label: "wersja robocza istniejącej treści",
           post_status: "draft",
+          post_status_label: "szkic",
           topic: "zielony ład",
           target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
           content_gate_status_summary: [
@@ -421,6 +433,8 @@ const actions = [
             "wynik: plan treści do czasu kontroli",
             "warunek: dowody są podpięte"
           ],
+          draft_generation_status: "blocked_until_content_review",
+          draft_generation_status_label: "zablokowany do kontroli treści i URL-a",
           draft_readiness_review_summary: [
             "szkic: trzeba rozstrzygnąć duplikację",
             "człowiek: zapisano ocenę przygotowania"
@@ -443,6 +457,7 @@ const actions = [
           ],
           draft_payload: {
             post_status: "draft",
+            post_status_label: "szkic",
             post_title: "Odświeżenie: zielony ład",
             post_excerpt_direction:
               "Przygotuj plan odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`.",
@@ -468,6 +483,7 @@ const actions = [
             "potwierdzenie człowieka przed zapisem WordPress"
           ],
           blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          blocked_claim_labels: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           evidence_ids: ["ev_refresh_gsc"],
           mutation_allowed: false,

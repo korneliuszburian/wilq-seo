@@ -95,8 +95,12 @@ Latest cleanup state:
 - Ads Doctor no longer owns the start-here summary, effect-check summary or
   business-context status value in React. Those marketer-facing fields now come
   from the Ads API contract.
+- Content Planner no longer owns local label helpers for content brief source,
+  content brief mode, WordPress draft operation, WordPress post status, draft
+  generation status or publication readiness. Content action payload previews
+  now carry those API-owned labels, and the route renders them directly.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
-  detail and Ads Doctor presentation contracts.
+  detail, Ads Doctor and Content Planner presentation contracts.
 
 Proof:
 
@@ -154,6 +158,12 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
+- Content Planner action-preview label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "content_brief_preview or content_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ContentDiagnosticSurface.test.ts --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -165,7 +175,7 @@ Next cleanup queue:
    - replace `DetailPanels.tsx` payload-shape inference with typed API preview
      rows; keep raw payload only in collapsed technical detail.
 2. Content Planner:
-   - move active `contentLabels.ts` semantics for action preview, status,
+   - move remaining connector refresh, connector status, section-level
      blocked-claim and metric labels into content/action API contracts.
 3. Metric labels:
    - move repeated metric/dimension naming into API-owned metric label fields;

@@ -32,64 +32,6 @@ export function formatContentMetricValue(
   return formatNumber(numericValue, 2);
 }
 
-export function contentBriefSourceLabel(value: string) {
-  const labels: Record<string, string> = {
-    gsc_query_page: "Google Search Console",
-    ahrefs_gap_review: "Ahrefs do sprawdzenia"
-  };
-  return labels[value] ?? value;
-}
-
-export function contentBriefModeLabel(value: string) {
-  const labels: Record<string, string> = {
-    refresh: "odświeżenie",
-    inventory_check: "sprawdzenie istniejących treści",
-    review: "sprawdzenie",
-    merge: "scalenie",
-    create: "nowa treść",
-    block: "blokada"
-  };
-  return labels[value] ?? value;
-}
-
-export function contentDraftOperationLabel(value: string) {
-  const labels: Record<string, string> = {
-    prepare_existing_content_draft: "wersja robocza istniejącej treści",
-    prepare_new_content_draft_review: "wersja robocza nowej treści do sprawdzenia"
-  };
-  return labels[value] ?? value;
-}
-
-export function contentWordPressPostStatusLabel(value?: string | null): string {
-  const labels: Record<string, string> = {
-    draft: "szkic",
-    pending: "czeka na sprawdzenie",
-    future: "zaplanowany",
-    private: "prywatny",
-    publish: "opublikowany"
-  };
-  return value ? labels[value] ?? value : "brak";
-}
-
-export function contentDraftGenerationStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    ready_for_review: "gotowy do kontroli",
-    blocked_until_content_review: "zablokowany do kontroli treści i URL-a",
-    blocked_pending_canonical_duplicate_review: "zablokowany do kontroli URL-i i duplikatów",
-    blocked_pending_canonical_duplicate_review_after_url_review:
-      "zablokowany do kontroli URL-i i duplikatów",
-    blocked_missing_public_inventory: "zablokowany bez spisu publicznych treści"
-  };
-  return labels[value] ?? value;
-}
-
-export function contentPublicationReadinessLabel(value: string) {
-  const labels: Record<string, string> = {
-    blocked_until_review: "zablokowane do sprawdzenia"
-  };
-  return labels[value] ?? value;
-}
-
 export function contentNextGateLabel(value: string) {
   const labels: Record<string, string> = {
     content_url_preflight_review: "następnie: potwierdź publiczny URL",

@@ -2277,7 +2277,12 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         if item["candidate_id"] == candidate_id
     )
     assert brief_preview["intent"]
+    assert brief_preview["source_type_label"] == "Google Search Console"
     assert brief_preview["mode_label"] == "odśwież istniejącą treść"
+    assert brief_preview["publication_readiness_status_label"] == (
+        "zablokowane do sprawdzenia"
+    )
+    assert "gwarancja pozycji" in brief_preview["blocked_claim_labels"]
     assert brief_preview["content_angle"]
     assert brief_preview["audience"]
     assert brief_preview["h1_direction"]
@@ -2326,6 +2331,12 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
+    assert draft_preview["operation_type_label"] == (
+        "wersja robocza istniejącej treści"
+    )
+    assert draft_preview["post_status_label"] == "szkic"
+    assert draft_preview["draft_generation_status_label"]
+    assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
     assert draft_preview["draft_payload"]["post_title"].startswith("Odświeżenie:")
     assert any(
         block.get("section_label") == "intencja"

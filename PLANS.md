@@ -628,6 +628,11 @@ WILQ is complete for this long-range goal when:
   dropped from active action output instead of being rewritten at response time.
   The remaining cleanup is historical handoff/audit docs that still read like
   current dev-site migration guidance.
+- 2026-06-27: Content action preview labels for brief source, brief mode,
+  WordPress draft operation, WordPress post status, draft generation status,
+  publication readiness and blocked claims moved into the content action API
+  payload. The Content route now renders those fields directly and the removed
+  local helper functions are guarded against returning.
 
 ## Discoveries
 
@@ -666,6 +671,10 @@ WILQ is complete for this long-range goal when:
   Existing API-owned labels should be consumed directly by the route; active
   route-local label helpers are debt unless they are only rendering old action
   payload preview contracts waiting for their own cleanup slice.
+- Content action preview labels are product semantics too. If a preview is
+  visible to the marketer, the backend/action contract must provide its label;
+  React must not translate source type, mode, operation, draft status or
+  publication readiness enums.
 - Command Center labels are part of the canonical daily view-model. If the first
   screen needs better wording, fix the command-center API/domain source and
   schema, not React-side dictionaries.

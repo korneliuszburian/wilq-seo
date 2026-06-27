@@ -2,11 +2,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
 import {
-  contentBriefModeLabel,
   contentContractValueLabel,
-  contentDraftGenerationStatusLabel,
   contentGateStatusLabel,
-  contentWordPressPostStatusLabel,
   formatContentMetricValue
 } from "../lib/contentLabels";
 
@@ -21,10 +18,22 @@ describe("formatContentMetricValue", () => {
     expect(routeSource).not.toContain("contentAhrefsGapTypeLabel");
     expect(routeSource).not.toContain("contentAhrefsRelevanceLabel");
     expect(routeSource).not.toContain("contentAhrefsReasonLabel");
+    expect(routeSource).not.toContain("contentBriefSourceLabel");
+    expect(routeSource).not.toContain("contentBriefModeLabel");
+    expect(routeSource).not.toContain("contentDraftOperationLabel");
+    expect(routeSource).not.toContain("contentWordPressPostStatusLabel");
+    expect(routeSource).not.toContain("contentDraftGenerationStatusLabel");
+    expect(routeSource).not.toContain("contentPublicationReadinessLabel");
     expect(routeSource).toContain("decision.decision_type_label");
     expect(routeSource).toContain("decision.inventory_gate_status_label");
     expect(routeSource).toContain("candidate.gap_type_label");
     expect(routeSource).toContain("candidate.business_relevance_reason_labels");
+    expect(routeSource).toContain("preview.source_type_label");
+    expect(routeSource).toContain("preview.mode_label");
+    expect(routeSource).toContain("preview.operation_type_label");
+    expect(routeSource).toContain("preview.post_status_label");
+    expect(routeSource).toContain("preview.draft_generation_status_label");
+    expect(routeSource).toContain("preview.publication_readiness_status_label");
   });
 
   it("formats marketer-facing SEO metric values without raw float noise", () => {
@@ -35,13 +44,9 @@ describe("formatContentMetricValue", () => {
     expect(formatContentMetricValue("wordpress_match", true)).toBe("tak");
   });
 
-  it("keeps content domain labels in the shared registry instead of route-local copy", () => {
-    expect(contentBriefModeLabel("refresh")).toBe("odświeżenie");
+  it("keeps remaining content domain labels out of route-local copy", () => {
     expect(contentGateStatusLabel("confirmed_current_inventory")).toBe(
       "potwierdzone na obecnej stronie"
-    );
-    expect(contentDraftGenerationStatusLabel("blocked_until_content_review")).toBe(
-      "zablokowany do kontroli treści i URL-a"
     );
   });
 
@@ -58,9 +63,13 @@ describe("formatContentMetricValue", () => {
     );
   });
 
-  it("translates WordPress post status before it reaches marketer-facing cards", () => {
-    expect(contentWordPressPostStatusLabel("draft")).toBe("szkic");
-    expect(contentWordPressPostStatusLabel("publish")).toBe("opublikowany");
-    expect(contentWordPressPostStatusLabel(null)).toBe("brak");
+  it("keeps removed content preview helpers out of the dashboard label registry", () => {
+    const labelRegistry = readFileSync("src/lib/contentLabels.ts", "utf8");
+    expect(labelRegistry).not.toContain("contentBriefSourceLabel");
+    expect(labelRegistry).not.toContain("contentBriefModeLabel");
+    expect(labelRegistry).not.toContain("contentDraftOperationLabel");
+    expect(labelRegistry).not.toContain("contentWordPressPostStatusLabel");
+    expect(labelRegistry).not.toContain("contentDraftGenerationStatusLabel");
+    expect(labelRegistry).not.toContain("contentPublicationReadinessLabel");
   });
 });

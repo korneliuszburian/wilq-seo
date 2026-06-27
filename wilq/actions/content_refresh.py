@@ -172,12 +172,26 @@ CONTENT_CONTRACT_LABELS = {
     "published_url_confirmed": "opublikowany URL potwierdzony",
     "baseline_window_captured": "punkt odniesienia zapisany",
     "followup_window_captured": "okno pomiaru po publikacji zapisane",
+    "gsc_query_page": "Google Search Console",
+    "ahrefs_gap_review": "Ahrefs do sprawdzenia",
     "same_url_or_redirect_mapping_confirmed": "ten sam URL albo przekierowanie potwierdzone",
     "tracking_quality_review": "kontrola jakości pomiaru",
     "gsc_query_page_clicks_impressions_ctr_position": "kliknięcia, wyświetlenia, CTR i pozycja z GSC",
     "ga4_landing_engagement_and_key_events": "zaangażowanie i zdarzenia GA4",
     "wordpress_publish_metadata": "metadane publikacji WordPress",
     "reviewable_polish_draft_preview": "polska wersja robocza do kontroli",
+    "prepare_existing_content_draft": "wersja robocza istniejącej treści",
+    "prepare_new_content_draft_review": "wersja robocza nowej treści do sprawdzenia",
+    "draft": "szkic",
+    "pending": "czeka na sprawdzenie",
+    "future": "zaplanowany",
+    "private": "prywatny",
+    "publish": "opublikowany",
+    "blocked_until_review": "zablokowane do sprawdzenia",
+    "blocked_until_content_review": "zablokowany do kontroli treści i URL-a",
+    "blocked_pending_canonical_duplicate_review": "zablokowany do kontroli URL-i i duplikatów",
+    "blocked_pending_canonical_duplicate_review_after_url_review": "zablokowany do kontroli URL-i i duplikatów",
+    "blocked_missing_public_inventory": "zablokowany bez spisu publicznych treści",
     "legal_compliance_guarantee": "gwarancja zgodności prawnej",
     "request_duplicate_or_canonical_review": "poproś o kontrolę duplikacji albo URL-a kanonicznego",
     "review_outcome": "wynik sprawdzenia",
@@ -391,6 +405,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
                 "candidate_id": f"content_brief_gsc_{_candidate_slug_for_page(page)}",
                 "source_type": "gsc_query_page",
+                "source_type_label": _content_contract_label("gsc_query_page"),
                 "mode": mode,
                 "mode_label": _content_contract_label(mode),
                 "topic": primary_query,
@@ -420,6 +435,9 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "legal_review_notes": _legal_review_notes(primary_query),
                 "brand_voice_notes": _brand_voice_notes(primary_query),
                 "publication_readiness_status": "blocked_until_review",
+                "publication_readiness_status_label": _content_contract_label(
+                    "blocked_until_review"
+                ),
                 "publication_blockers": publication_blockers,
                 "publication_blocker_labels": _content_contract_labels(publication_blockers),
                 "source_facts": _gsc_source_facts(page, page_facts, wordpress_match),
@@ -429,6 +447,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "required_validation": required_validation,
                 "required_validation_labels": _content_contract_labels(required_validation),
                 "blocked_claims": CONTENT_BLOCKED_CLAIMS,
+                "blocked_claim_labels": _content_contract_labels(CONTENT_BLOCKED_CLAIMS),
                 "source_connectors": _unique(fact.source_connector for fact in page_facts),
                 "evidence_ids": _unique(fact.evidence_id for fact in page_facts),
                 "apply_allowed": False,
@@ -621,15 +640,27 @@ def _wordpress_draft_payload_preview(
         ]
     )
     candidate_id = str(preview["candidate_id"])
+    operation_type = _wordpress_draft_operation(mode)
+    blocked_claims = _unique(
+        [
+            item
+            for item in preview.get("blocked_claims", [])
+            if isinstance(item, str)
+        ]
+    )
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
         "source_preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
         "candidate_id": candidate_id,
         "source_type": source_type,
+        "source_type_label": _content_contract_label(source_type),
         "mode": mode,
+        "mode_label": _content_contract_label(mode),
         "connector": "wordpress_ekologus",
-        "operation_type": _wordpress_draft_operation(mode),
+        "operation_type": operation_type,
+        "operation_type_label": _content_contract_label(operation_type),
         "post_status": "draft",
+        "post_status_label": _content_contract_label("draft"),
         "topic": topic,
         "intent": preview.get("intent") if isinstance(preview.get("intent"), str) else None,
         "source_public_url": source_public_url,
@@ -662,6 +693,7 @@ def _wordpress_draft_payload_preview(
             else None,
         ),
         "draft_generation_status": draft_generation_status,
+        "draft_generation_status_label": _content_contract_label(draft_generation_status),
         "draft_blockers": draft_blockers,
         "draft_blocker_labels": _content_contract_labels(draft_blockers),
         "draft_generation_contract": draft_generation_contract,
@@ -710,19 +742,15 @@ def _wordpress_draft_payload_preview(
         ),
         "draft_payload": {
             "post_status": "draft",
+            "post_status_label": _content_contract_label("draft"),
             "post_title": _draft_title(topic, mode),
             "post_excerpt_direction": _draft_excerpt_direction(preview),
             "content_blocks": _draft_content_blocks(preview),
         },
         "required_validation": required_validation,
         "required_validation_labels": _content_contract_labels(required_validation),
-        "blocked_claims": _unique(
-            [
-                item
-                for item in preview.get("blocked_claims", [])
-                if isinstance(item, str)
-            ]
-        ),
+        "blocked_claims": blocked_claims,
+        "blocked_claim_labels": _content_contract_labels(blocked_claims),
         "source_connectors": _unique(
             [
                 item
@@ -1266,6 +1294,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
                 "candidate_id": f"content_brief_ahrefs_{_slug(topic)}",
                 "source_type": "ahrefs_gap_review",
+                "source_type_label": _content_contract_label("ahrefs_gap_review"),
                 "mode": "review",
                 "mode_label": _content_contract_label("review"),
                 "topic": topic,
@@ -1311,6 +1340,9 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "legal_review_notes": _legal_review_notes(topic),
                 "brand_voice_notes": _brand_voice_notes(topic),
                 "publication_readiness_status": "blocked_until_review",
+                "publication_readiness_status_label": _content_contract_label(
+                    "blocked_until_review"
+                ),
                 "publication_blockers": publication_blockers,
                 "publication_blocker_labels": _content_contract_labels(publication_blockers),
                 "source_facts": _ahrefs_source_facts(fact, topic),
@@ -1324,6 +1356,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "required_validation": required_validation,
                 "required_validation_labels": _content_contract_labels(required_validation),
                 "blocked_claims": CONTENT_BLOCKED_CLAIMS,
+                "blocked_claim_labels": _content_contract_labels(CONTENT_BLOCKED_CLAIMS),
                 "source_connectors": ["ahrefs"],
                 "evidence_ids": [fact.evidence_id],
                 "apply_allowed": False,

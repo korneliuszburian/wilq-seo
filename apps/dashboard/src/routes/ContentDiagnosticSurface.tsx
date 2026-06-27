@@ -16,16 +16,10 @@ import {
 import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import {
   contentBlockedClaimLabels,
-  contentBriefModeLabel,
-  contentBriefSourceLabel,
   contentConnectorStatusLabel,
-  contentDraftGenerationStatusLabel,
-  contentDraftOperationLabel,
   contentMetricFactLabel,
-  contentPublicationReadinessLabel,
   contentRefreshStatusLabel,
   contentSectionLabel,
-  contentWordPressPostStatusLabel,
   formatContentMetricValue
 } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
@@ -391,7 +385,9 @@ type ContentBriefPreviewItem = {
   action_id: string;
   candidate_id: string;
   source_type: string;
+  source_type_label: string;
   mode: string;
+  mode_label: string;
   topic: string;
   source_public_url?: string | null;
   preview_url?: string | null;
@@ -422,6 +418,7 @@ type ContentBriefPreviewItem = {
   legal_review_notes?: string[];
   brand_voice_notes?: string[];
   publication_readiness_status?: string | null;
+  publication_readiness_status_label: string;
   publication_blockers?: string[];
   publication_blocker_labels?: string[];
   source_facts?: string[];
@@ -430,6 +427,7 @@ type ContentBriefPreviewItem = {
   required_validation: string[];
   required_validation_labels?: string[];
   blocked_claims: string[];
+  blocked_claim_labels: string[];
   source_connectors?: string[];
   evidence_ids: string[];
   apply_allowed: boolean;
@@ -518,7 +516,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <div>
           <h3 className="text-sm font-semibold text-ink">{preview.topic}</h3>
           <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-            {contentBriefSourceLabel(preview.source_type)} / {contentBriefModeLabel(preview.mode)}
+            {preview.source_type_label} / {preview.mode_label}
           </p>
         </div>
         <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
@@ -556,11 +554,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         />
         <TraceLine
           label="Status publikacji"
-          values={
-            preview.publication_readiness_status
-              ? [contentPublicationReadinessLabel(preview.publication_readiness_status)]
-              : []
-          }
+          values={preview.publication_readiness_status_label ? [preview.publication_readiness_status_label] : []}
           empty="brak"
         />
         <TraceLine
@@ -587,9 +581,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         />
         <TraceLine
           label="Nie wolno obiecać"
-          values={contentBlockedClaimLabels(
-            (preview.forbidden_claims ?? preview.blocked_claims).slice(0, 4)
-          )}
+          values={(preview.blocked_claim_labels ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Dowody"
@@ -707,6 +699,7 @@ type WordPressDraftPayloadPreviewItem = {
   post_publication_measurement_summary?: string[];
   draft_payload: {
     post_status?: string;
+    post_status_label?: string;
     post_title?: string;
     post_excerpt_direction?: string;
     content_blocks?: Array<{ section: string; section_label?: string; instruction: string }>;
@@ -714,6 +707,10 @@ type WordPressDraftPayloadPreviewItem = {
   required_validation: string[];
   required_validation_labels?: string[];
   blocked_claims: string[];
+  blocked_claim_labels: string[];
+  operation_type_label: string;
+  post_status_label: string;
+  draft_generation_status_label?: string | null;
   evidence_ids: string[];
   mutation_allowed: boolean;
   apply_allowed: boolean;
@@ -733,15 +730,14 @@ function WordPressDraftPayloadPreviewCard({
             {preview.draft_payload.post_title ?? `Szkic: ${preview.topic}`}
           </h4>
           <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-            {contentDraftOperationLabel(preview.operation_type)} /{" "}
-            {contentWordPressPostStatusLabel(preview.post_status)}
+            {preview.operation_type_label} / {preview.post_status_label}
           </p>
         </div>
         <StatusBadge value={preview.mutation_allowed ? "ready" : "blocked"} />
       </div>
       {preview.draft_generation_status ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs font-medium text-ink">
-          Status szkicu: {contentDraftGenerationStatusLabel(preview.draft_generation_status)}
+          Status szkicu: {preview.draft_generation_status_label ?? preview.draft_generation_status}
         </p>
       ) : null}
       <p className="mt-2 text-xs leading-5 text-slate-600">
@@ -811,7 +807,7 @@ function WordPressDraftPayloadPreviewCard({
         />
         <TraceLine
           label="Nie wolno obiecać"
-          values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
+          values={(preview.blocked_claim_labels ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Dowody"
