@@ -1360,6 +1360,8 @@ def test_action_preview_generates_dry_run_audit_without_apply(
     assert preview["preview_items_total"] >= len(preview["preview_items"])
     assert len(preview["preview_items"]) <= 3
     assert preview["review_gate"]["apply_allowed"] is False
+    assert len(preview["blocker_labels"]) == len(preview["blockers"])
+    assert "warunek techniczny do sprawdzenia" not in preview["blocker_labels"]
     assert "zapis zmian=zablokowany" in preview["audit_event"]["summary"]
 
     audit_response = client.get(
@@ -2341,6 +2343,8 @@ def test_action_confirm_requires_prior_preview(
     assert confirmation["confirmed"] is False
     assert confirmation["status"] == "blocked"
     assert "dry_run_preview_required" in confirmation["blockers"]
+    assert "wymagany wcześniejszy podgląd zmian" in confirmation["blocker_labels"]
+    assert "warunek techniczny do sprawdzenia" not in confirmation["blocker_labels"]
     assert confirmation["audit_event"]["event_type"] == "action_confirmation_blocked"
     assert confirmation["review_gate"]["apply_allowed"] is False
 
@@ -2377,6 +2381,7 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     assert confirmation["confirmed"] is True
     assert confirmation["status"] == "confirmed"
     assert confirmation["blockers"] == []
+    assert confirmation["blocker_labels"] == []
     assert confirmation["audit_event"]["event_type"] == "action_apply_confirmed"
     assert confirmation["audit_event"]["actor"] == "operator_test"
     assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
@@ -2417,6 +2422,8 @@ def test_action_impact_check_requires_confirmation(
     result = response.json()
     assert result["status"] == "blocked"
     assert "action_confirmation_required" in result["blockers"]
+    assert "wymagane potwierdzenie podglądu zmian" in result["blocker_labels"]
+    assert "warunek techniczny do sprawdzenia" not in result["blocker_labels"]
     assert result["audit_event"]["event_type"] == "action_impact_check_blocked"
     assert result["review_gate"]["last_impact_check_status"] == "blocked"
     assert result["review_gate"]["apply_allowed"] is False
@@ -2462,6 +2469,7 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["post_window_days"] == 14
     assert result["metric_fact_count"] > 0
     assert "google_merchant_center" in result["source_connectors"]
+    assert result["blocker_labels"] == []
     assert result["audit_event"]["event_type"] == "action_impact_check_completed"
     assert result["review_gate"]["last_impact_check_status"] == "checked"
     assert result["review_gate"]["last_impact_checked_by"] == "operator_test"

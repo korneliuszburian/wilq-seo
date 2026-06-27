@@ -229,6 +229,7 @@ export const ActionPreviewResultSchema = z.object({
   preview_items_total: z.number(),
   omitted_items: z.number(),
   blockers: z.array(z.string()),
+  blocker_labels: z.array(z.string()).default([]),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
 });
@@ -253,6 +254,7 @@ export const ActionConfirmResultSchema = z.object({
   confirmed: z.boolean(),
   status: z.enum(["confirmed", "blocked"]),
   blockers: z.array(z.string()),
+  blocker_labels: z.array(z.string()).default([]),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
 });
@@ -273,6 +275,7 @@ export const ActionImpactCheckResultSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   blockers: z.array(z.string()),
+  blocker_labels: z.array(z.string()).default([]),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
 });

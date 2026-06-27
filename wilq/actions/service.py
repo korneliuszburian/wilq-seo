@@ -2120,6 +2120,7 @@ def preview_action(
         preview_items_total=len(preview_items),
         omitted_items=max(len(preview_items) - len(included_items), 0),
         blockers=blockers,
+        blocker_labels=_action_gate_labels(blockers),
         audit_event=audit,
         review_gate=action.review_gate,
     )
@@ -2148,6 +2149,7 @@ def confirm_action(
         confirmed=confirmed,
         status="confirmed" if confirmed else "blocked",
         blockers=blockers,
+        blocker_labels=_action_gate_labels(blockers),
         audit_event=audit,
         review_gate=action.review_gate,
     )
@@ -2194,6 +2196,7 @@ def impact_check_action(
         source_connectors=source_connectors,
         evidence_ids=evidence_ids,
         blockers=blockers,
+        blocker_labels=_action_gate_labels(blockers),
         audit_event=audit,
         review_gate=action.review_gate,
     )
@@ -2894,9 +2897,9 @@ def _action_gate_label(value: str) -> str:
         "action_validation_required": "wymagane sprawdzenie w WILQ",
         "payload_apply_allowed_false": "podgląd zmian nie pozwala na zapis",
         "destructive_actions_blocked": "destrukcyjne zmiany zablokowane",
-        "preview_acknowledgement_required": "wymagane potwierdzenie podglądu",
+        "preview_acknowledgement_required": "wymagane potwierdzenie podglądu zmian",
         "dry_run_preview_required": "wymagany wcześniejszy podgląd zmian",
-        "action_confirmation_required": "wymagane potwierdzenie podglądu",
+        "action_confirmation_required": "wymagane potwierdzenie podglądu zmian",
         "metric_facts_required": "wymagane metryki z dowodami",
         "evidence_ids_required": "wymagane ID dowodów",
         "impact_sanity_check_required": "wymagane sprawdzenie efektu",

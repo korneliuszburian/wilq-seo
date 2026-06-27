@@ -89,6 +89,11 @@ Date: 2026-06-27
   translating raw keys. A focused API guard fails on generic `warunek techniczny
   do sprawdzenia` labels. Browser proof:
   `.local-lab/proof/20260627-action-preview-api-labels/browser/demand-gen-action-detail-body.txt`.
+- Action preview, confirmation and impact-check result blockers now expose
+  `blocker_labels` from the WILQ API/shared schema. `ActionObjectPanels` renders
+  those API-owned Polish labels instead of mapping raw blocker keys in React.
+  Live proof after managed stack restart: `POST /api/actions/act_review_demand_gen_readiness/impact-check`
+  returned `blocker_labels=["wymagane potwierdzenie podglądu zmian"]`.
 - Custom segments and Keyword Planner blocked-claim contracts now use Polish
   source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete

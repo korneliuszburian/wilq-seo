@@ -341,6 +341,7 @@ class ActionPreviewResult(BaseModel):
     preview_items_total: int = 0
     omitted_items: int = 0
     blockers: list[str] = Field(default_factory=list)
+    blocker_labels: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate
 
@@ -365,6 +366,7 @@ class ActionConfirmResult(BaseModel):
     confirmed: bool
     status: Literal["confirmed", "blocked"]
     blockers: list[str] = Field(default_factory=list)
+    blocker_labels: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate
 
@@ -421,6 +423,7 @@ class ActionImpactCheckResult(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
+    blocker_labels: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate
 

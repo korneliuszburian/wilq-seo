@@ -145,7 +145,7 @@ function ActionPreviewResultPanel({
         Pozycje podglądu: {result.preview_items.length}/{result.preview_items_total}
         {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
       </div>
-      <TraceLine label="Blokady podglądu" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <TraceLine label="Blokady podglądu" values={result.blocker_labels} empty="brak" />
       <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
     </div>
   );
@@ -588,7 +588,7 @@ function ActionConfirmResultPanel({
       <div>
         Potwierdzenie: <span className="font-semibold">{actionResultStatusLabel(result.status)}</span>
       </div>
-      <TraceLine label="Blokady potwierdzenia" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <TraceLine label="Blokady potwierdzenia" values={result.blocker_labels} empty="brak" />
       <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.
@@ -675,7 +675,7 @@ function ActionImpactCheckResultPanel({
       </div>
       <div>Metryki z dowodami: {result.metric_fact_count}</div>
       <TraceLine label="Źródła" values={result.source_connectors} empty="brak" />
-      <TraceLine label="Blokady sprawdzenia efektu" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <TraceLine label="Blokady sprawdzenia efektu" values={result.blocker_labels} empty="brak" />
       <div>Ślad bezpieczeństwa: {actionAuditEventLabel(result.audit_event.event_type)}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.

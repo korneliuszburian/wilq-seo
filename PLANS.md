@@ -549,6 +549,9 @@ WILQ is complete for this long-range goal when:
   from WILQ API/domain output instead of route-local cleanup. `DetailPanels`
   prefers API label arrays for preview requirements and missing-data rows, and
   API tests fail if action label arrays fall back to generic technical wording.
+- 2026-06-27: Action preview, confirmation and impact-check result blockers now
+  carry API-owned `blocker_labels`; dashboard result panels render those labels
+  instead of route-local blocker-key translations.
 
 ## Discoveries
 
@@ -558,6 +561,9 @@ WILQ is complete for this long-range goal when:
 - Generic labels such as "warunek techniczny do sprawdzenia" are not useful
   enough for active action surfaces when the raw source key is known. Add a
   source label and a guardrail instead of preserving the fallback.
+- Action result endpoints need the same label discipline as action detail
+  payloads. If a result returns raw blocker keys for audit, it must also return
+  marketer-facing labels for dashboard rendering.
 
 ## Decision Log
 

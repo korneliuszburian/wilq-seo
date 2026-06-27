@@ -135,16 +135,32 @@ const actions = [
         "group_issue_reasons",
         "require_human_confirm_before_apply"
       ],
+      required_check_labels: [
+        "rozpoznaj produkty odrzucone w Merchant Center",
+        "pogrupuj powody problemów feedu",
+        "potwierdzenie człowieka przed zapisem"
+      ],
       operator_checklist: [
         "identify_disapproved_products",
         "group_issue_reasons",
         "require_human_confirm_before_apply"
+      ],
+      operator_checklist_labels: [
+        "rozpoznaj produkty odrzucone w Merchant Center",
+        "pogrupuj powody problemów feedu",
+        "potwierdzenie człowieka przed zapisem"
       ],
       apply_blockers: [
         "action_mode_prepare_only",
         "action_validation_required",
         "payload_apply_allowed_false",
         "human_confirm_before_apply"
+      ],
+      apply_blocker_labels: [
+        "tryb przygotowania bez zapisu zmian",
+        "wymagane sprawdzenie w WILQ",
+        "podgląd zmian nie pozwala na zapis",
+        "potwierdzenie człowieka przed zapisem"
       ],
       confirmation_required: true,
       apply_allowed: false,
@@ -157,7 +173,8 @@ const actions = [
       last_mutation_attempted: false,
       last_mutation_adapter: null,
       last_mutation_audit_event_id: "audit_act_review_merchant_feed_issues_apply_test",
-      last_mutation_blockers: ["vendor_mutation_adapter_required"]
+      last_mutation_blockers: ["vendor_mutation_adapter_required"],
+      last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"]
     },
     human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ.",
     recommended_reason: "Przygotuj kolejkę problemów feedu z podglądem zmian.",
@@ -6030,6 +6047,7 @@ function mockFetch() {
             preview_items_total: 0,
             omitted_items: 0,
             blockers: ["payload_preview_missing", "action_validation_required"],
+            blocker_labels: ["brak pozycji do pokazania w podglądzie", "wymagane sprawdzenie w WILQ"],
             audit_event: {
               id: `audit_${actionId}_preview_test`,
               action_id: actionId,
@@ -6060,6 +6078,7 @@ function mockFetch() {
             confirmed: true,
             status: "confirmed",
             blockers: [],
+            blocker_labels: [],
             audit_event: {
               id: `audit_${actionId}_confirm_test`,
               action_id: actionId,
@@ -6097,6 +6116,7 @@ function mockFetch() {
             source_connectors: ["google_merchant_center"],
             evidence_ids: ["ev_refresh_merchant_feed"],
             blockers: [],
+            blocker_labels: [],
             audit_event: {
               id: `audit_${actionId}_impact_test`,
               action_id: actionId,
@@ -6799,9 +6819,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
-    expect(screen.getByText(/Konwersje \/ key events/)).toBeInTheDocument();
+    expect(screen.getByText(/Konwersje i zdarzenia kluczowe/)).toBeInTheDocument();
     expect(screen.getByText(/blokuje wnioski o konwersjach/)).toBeInTheDocument();
-    expect(screen.getByText(/mapowanie konwersji \/ key events/)).toBeInTheDocument();
+    expect(screen.getByText(/mapowanie konwersji i zdarzeń kluczowych/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdź mapowanie landing page: /oferta/")).toBeInTheDocument();
     expect(screen.getByText("aktywni")).toBeInTheDocument();
     expect(screen.getByText("sesje")).toBeInTheDocument();
