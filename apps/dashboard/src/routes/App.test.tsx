@@ -4155,12 +4155,22 @@ const metricFacts = [
   },
   {
     name: "active_users",
-    metric_label: "Aktywni użytkownicy",
+    metric_label: "aktywni użytkownicy",
     value: 20,
     period: "connector_refresh",
     source_connector: "google_analytics_4",
     evidence_id: "ev_refresh_ga4",
     dimensions: {
+      landing_page: "/oferta/",
+      source_medium: "google / cpc",
+      campaign_name: "Ekologus Ogólna"
+    },
+    dimension_labels: {
+      landing_page: "strona wejścia",
+      source_medium: "źródło i medium ruchu",
+      campaign_name: "kampania"
+    },
+    dimension_value_labels: {
       landing_page: "/oferta/",
       source_medium: "google / cpc",
       campaign_name: "Ekologus Ogólna"
@@ -7724,7 +7734,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Surowa kolejka akcji/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
-    expect(screen.getAllByText("Aktywni użytkownicy").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("aktywni użytkownicy").length).toBeGreaterThan(0);
     expect(screen.queryByText(/active_users: 20/)).not.toBeInTheDocument();
     const ga4MeasurementSection = screen
       .getByText("Problemy pomiaru GA4")

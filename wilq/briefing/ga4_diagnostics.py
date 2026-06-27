@@ -51,6 +51,24 @@ GA4_READ_CONTRACT_LABELS = {
     "conversion_or_key_event_mapping": "powiązanie konwersji i zdarzeń kluczowych",
     "conversion_or_key_event_metric_facts": "metryki konwersji i zdarzeń kluczowych",
 }
+GA4_METRIC_FACT_LABELS = {
+    "active_users": "aktywni użytkownicy",
+    "conversions": "konwersje",
+    "ecommerce_purchases": "zakupy e-commerce",
+    "engagement_rate": "zaangażowanie",
+    "event_count": "zdarzenia",
+    "key_events": "zdarzenia kluczowe",
+    "purchase_revenue": "przychód z zakupu",
+    "screen_page_views": "odsłony",
+    "sessions": "sesje",
+    "total_revenue": "przychód razem",
+    "transactions": "transakcje",
+}
+GA4_METRIC_DIMENSION_LABELS = {
+    "campaign_name": "kampania",
+    "landing_page": "strona wejścia",
+    "source_medium": "źródło i medium ruchu",
+}
 GA4_DECISION_TYPE_LABELS = {
     "fix_measurement": "problem pomiaru",
     "review_landing_mapping": "sprawdzenie strony wejścia",
@@ -97,6 +115,7 @@ def build_ga4_diagnostics(
             limit=GA4_METRIC_FACT_LIMIT,
         )
     )
+    metric_facts = [_ga4_metric_fact_with_marketer_labels(fact) for fact in metric_facts]
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
         or (
@@ -337,6 +356,10 @@ def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4Decision
                 decision.source_connectors
             ),
             "evidence_summary_label": _ga4_evidence_summary_label(decision.evidence_ids),
+            "metric_facts": [
+                _ga4_metric_fact_with_marketer_labels(fact)
+                for fact in decision.metric_facts
+            ],
             "blocked_claim_labels": _ga4_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _ga4_risk_label(decision.risk),
         }
@@ -350,10 +373,49 @@ def _ga4_section_with_marketer_labels(section: Ga4DiagnosticSection) -> Ga4Diagn
             "status_label": _ga4_section_status_label(section.status),
             "source_connector_labels": _ga4_source_connector_labels(section.source_connectors),
             "evidence_summary_label": _ga4_evidence_summary_label(section.evidence_ids),
+            "metric_facts": [
+                _ga4_metric_fact_with_marketer_labels(fact)
+                for fact in section.metric_facts
+            ],
             "blocked_claim_labels": _ga4_blocked_claim_labels(section.blocked_claims),
             "risk_label": _ga4_risk_label(section.risk),
         }
     )
+
+
+def _ga4_metric_fact_with_marketer_labels(fact: MetricFact) -> MetricFact:
+    return fact.model_copy(
+        update={
+            "metric_label": GA4_METRIC_FACT_LABELS.get(fact.name, "metryka GA4"),
+            "dimension_labels": {
+                key: GA4_METRIC_DIMENSION_LABELS.get(key, "wymiar GA4")
+                for key in fact.dimensions
+            },
+            "dimension_value_labels": {
+                key: _ga4_metric_dimension_value_label(key, value)
+                for key, value in fact.dimensions.items()
+            },
+        }
+    )
+
+
+def _ga4_metric_dimension_value_label(key: str, value: str) -> str:
+    if key == "landing_page":
+        return _ga4_dimension_value_label(
+            value,
+            missing_label="brak strony wejścia w raporcie",
+        )
+    if key == "source_medium":
+        return _ga4_dimension_value_label(
+            value,
+            missing_label="brak źródła i medium ruchu w raporcie",
+        )
+    if key == "campaign_name":
+        return _ga4_dimension_value_label(
+            value,
+            missing_label="brak kampanii w raporcie",
+        )
+    return value
 
 
 def _ga4_optional_label(value: str | None, labels: dict[str, str]) -> str | None:

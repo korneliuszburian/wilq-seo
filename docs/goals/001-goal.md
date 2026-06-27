@@ -126,6 +126,9 @@ Wilku can inspect it without reading technical internals.
 - Merchant diagnostics now label Merchant metric facts and Merchant metric
   dimensions at the API/domain layer; the Merchant route no longer owns a
   local metric-label dictionary for evidence/limitations metric tiles.
+- GA4 diagnostics now label GA4 metric facts and GA4 metric dimensions at the
+  API/domain layer; the GA4 route no longer owns a local metric-label
+  dictionary for proof metric tiles.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -148,8 +151,8 @@ are resolved or explicitly deferred.
    API-owned labels. Metric names in `MetricFactChips` now use `metric_label`;
    dimension key/value labels now use `dimension_labels` and
    `dimension_value_labels`. Keep removing route-local metric dictionaries as
-   they are found; Merchant diagnostic metric tiles are now migrated. Pure
-   numeric formatting can stay in UI.
+   they are found; Merchant and GA4 diagnostic metric tiles are now migrated.
+   Pure numeric formatting can stay in UI.
 
 ## Execution Policy
 

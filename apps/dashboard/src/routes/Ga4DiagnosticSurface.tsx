@@ -682,23 +682,12 @@ function Ga4MetricTiles({ facts }: { facts: Ga4MetricFact[] }) {
       {facts.map((fact, index) => (
         <MetricTile
           key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
-          label={ga4MetricFactLabel(fact.name)}
+          label={fact.metric_label || "metryka GA4 bez etykiety"}
           value={formatGa4MetricValue(fact.value)}
         />
       ))}
     </div>
   );
-}
-
-function ga4MetricFactLabel(metricName: string) {
-  const labels: Record<string, string> = {
-    active_users: "Aktywni użytkownicy",
-    engagement_rate: "Zaangażowanie",
-    event_count: "Zdarzenia",
-    screen_page_views: "Wyświetlenia stron",
-    sessions: "Sesje"
-  };
-  return labels[metricName] ?? metricName;
 }
 
 function formatGa4MetricValue(value: string | number | boolean) {

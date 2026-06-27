@@ -4118,6 +4118,28 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert all(decision["decision_type_label"] for decision in decision_by_id.values())
     assert all(decision["risk_label"] for decision in decision_by_id.values())
     assert all(decision["blocked_claim_labels"] for decision in decision_by_id.values())
+    assert all(
+        fact["metric_label"]
+        for decision in decision_by_id.values()
+        for fact in decision["metric_facts"]
+    )
+    assert all(
+        fact["dimension_labels"].get("source_medium") == "źródło i medium ruchu"
+        for decision in decision_by_id.values()
+        for fact in decision["metric_facts"]
+        if "source_medium" in fact["dimensions"]
+    )
+    measurement_metric_facts = [
+        fact
+        for decision in decision_by_id.values()
+        for fact in decision["metric_facts"]
+        if fact["dimensions"].get("landing_page") == "(not set)"
+    ]
+    assert all(
+        fact["dimension_value_labels"]["landing_page"]
+        == "brak strony wejścia w raporcie"
+        for fact in measurement_metric_facts
+    )
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
     assert all(decision["metric_tiles"] for decision in decision_by_id.values())
     assert any("zaangażowanie" in decision["metric_tiles"] for decision in decision_by_id.values())
@@ -4173,6 +4195,11 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert sections["ga4_landing_behavior"]["status"] == "ready"
     assert sections["ga4_landing_behavior"]["label"] == "Jakość ruchu ze stron wejścia"
     assert sections["ga4_landing_behavior"]["status_label"] == "gotowe"
+    assert all(
+        fact["metric_label"]
+        for section in sections.values()
+        for fact in section["metric_facts"]
+    )
     assert "zwrot z reklam" in sections["ga4_landing_behavior"]["blocked_claim_labels"]
     assert sections["ga4_landing_behavior"]["tactical_items"]
     assert sections["ga4_landing_behavior"]["tactical_items"][0]["dimensions"][

@@ -226,6 +226,9 @@ Known cleanup already started:
 - Merchant diagnostic metric facts now carry API-owned metric and dimension
   labels; `MerchantDiagnosticSurface` no longer owns a local metric-label
   dictionary for Merchant metric tiles.
+- GA4 diagnostic metric facts now carry API-owned metric and dimension labels;
+  `Ga4DiagnosticSurface` no longer owns a local metric-label dictionary for
+  GA4 proof metric tiles.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ

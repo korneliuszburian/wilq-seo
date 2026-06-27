@@ -647,6 +647,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Merchant diagnostic metric facts now receive API/domain
   metric and dimension labels. The Merchant route no longer owns a local
   metric-label dictionary for its evidence/limitations metric tiles.
+- 2026-06-27: GA4 diagnostic metric facts now receive API/domain metric and
+  dimension labels. The GA4 route no longer owns a local metric-label
+  dictionary for its proof metric tiles.
 
 ## Discoveries
 
@@ -762,6 +765,8 @@ WILQ is complete for this long-range goal when:
   for metric semantics.
 - Merchant metric labels belong in `merchant_labels.py` and the Merchant API
   view-model, not in `MerchantDiagnosticSurface`.
+- GA4 metric labels belong in the GA4 diagnostics API/domain view-model, not
+  in `Ga4DiagnosticSurface`.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

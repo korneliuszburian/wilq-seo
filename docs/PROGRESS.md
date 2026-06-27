@@ -119,6 +119,9 @@ Latest cleanup state:
   and `dimension_value_labels` to Merchant metric facts. The Merchant route no
   longer owns a local metric-label dictionary for the evidence/limitations
   metric tiles.
+- GA4 diagnostics now attach API-owned `metric_label`, `dimension_labels` and
+  `dimension_value_labels` to GA4 metric facts. The GA4 route no longer owns a
+  local metric-label dictionary for proof metric tiles.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -229,6 +232,18 @@ Proof:
   `SHOPPING_ADS`, `FREE_LISTINGS`, `MERCHANT_ACTION` or `NOT_IMPACTED` in the
   label fields. `agent-browser read` for `/merchant` confirmed the primary
   Merchant route renders clean Polish decision copy.
+- GA4 metric label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`: `/api/ga4/diagnostics`
+  returned 25 GA4 metric facts with no missing `metric_label`, Polish
+  dimension labels and no raw `(not set)` in `dimension_value_labels`.
+  Browser proof is blocked in this session by local browser tooling:
+  `agent-browser` returns CDP `Connection refused`, and Playwright cannot launch
+  the available Chrome (`SIGTRAP`) or its own browser is not installed.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -250,6 +265,7 @@ Next cleanup queue:
    - metric dimensions in `MetricFactChips` now come from `dimension_labels`
      and `dimension_value_labels`.
    - Merchant diagnostic metric tiles now use API-owned metric labels.
+   - GA4 diagnostic proof metric tiles now use API-owned metric labels.
    - continue removing remaining route-local dictionaries for metric,
      preview-contract or status semantics; keep pure numeric formatting in UI.
 4. Recovery docs:
