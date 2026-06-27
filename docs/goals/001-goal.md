@@ -66,8 +66,8 @@ use the cleaned language.
 - Touched marketer surfaces now avoid raw evidence/action/connector IDs,
   endpoint names, raw enum keys, old dev-site mapping wording and English
   validation copy in normal UI.
-- Multiple action detail kinds now render typed API preview cards before any
-  collapsed technical fallback.
+- Action Detail normal preview renders typed API preview cards only. Raw action
+  payloads remain available only behind the collapsed technical detail panel.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -78,11 +78,9 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Finish migrating remaining action-detail preview paths to typed API preview
-   cards. Raw payload may remain only in collapsed technical detail.
-3. Remove scattered raw fallback paths in Demand Gen, registry/workflow, action
+2. Remove scattered raw fallback paths in Demand Gen, registry/workflow, action
    detail and knowledge routes by adding typed API/schema/view-model labels.
-4. Continue moving repeated metric, dimension, source, blocker and evidence
+3. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
 ## Execution Policy

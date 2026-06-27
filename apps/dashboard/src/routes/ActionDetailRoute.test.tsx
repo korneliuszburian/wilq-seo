@@ -1919,6 +1919,9 @@ describe("Action detail route", () => {
     expect(source).not.toContain("ga4TrackingQuality");
     expect(source).not.toContain("localVisibility");
     expect(source).not.toContain("adsBusinessGuardrail");
+    expect(source).not.toContain("actionPayloadPreviewItems");
+    expect(source).not.toContain("payloadPreviewItemKind");
+    expect(source).not.toContain("PayloadPreviewCard");
     expect(source).toContain("action.preview_cards");
   });
 });

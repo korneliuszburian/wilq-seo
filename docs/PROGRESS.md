@@ -38,9 +38,8 @@ Date: 2026-06-28
 - Touched marketer surfaces avoid raw evidence/action/connector IDs, endpoint
   names, raw enum keys, old dev-site mapping language and English validation
   wording in normal copy.
-- Multiple action detail kinds now render typed API preview cards before any
-  collapsed technical fallback. Remaining action kinds that still infer cards
-  from raw payload shape are active cleanup debt.
+- Action Detail normal preview renders typed API preview cards only. Raw action
+  payloads remain available only behind the collapsed technical detail panel.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -49,11 +48,9 @@ Date: 2026-06-28
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and
    `docs/goals/001-goal.md` short and aligned. History belongs in git and proof
    artifacts.
-2. Finish migrating remaining action-detail preview paths to typed API
-   preview cards; raw payloads may remain only in collapsed technical detail.
-3. Remove scattered raw fallback paths in Demand Gen, registry/workflow, action
+2. Remove scattered raw fallback paths in Demand Gen, registry/workflow, action
    detail and knowledge routes by adding API/schema/view-model labels.
-4. Continue moving repeated metric, dimension, source, blocker and evidence
+3. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
 ## Proof
@@ -63,4 +60,8 @@ Recent focused proof used during the cleanup:
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or marketing_brief or ahrefs_diagnostics or content_diagnostics or actions" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk curl --max-time 10 -sS -i http://127.0.0.1:8000/api/health`
+- `rtk curl --max-time 15 -sS http://127.0.0.1:8000/api/actions/act_prepare_ads_campaign_review_queue`
+- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --compact --depth 6`
 - `rtk git diff --check`
