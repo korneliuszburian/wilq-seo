@@ -2979,17 +2979,17 @@ def _change_impact_readiness_contract(
         )
         summary = (
             f"WILQ ma {len(rows)} zdarzeń zmian do oceny wpływu i "
-            f"{campaign_context_count} powiązanych snapshotów kampanii. To jest "
-            "readiness do ręcznego audytu, nie dowód wpływu zmian."
+            f"{campaign_context_count} powiązanych bieżących odczytów kampanii. To jest "
+            "gotowość do ręcznego audytu, nie dowód wpływu zmian."
         )
     else:
         summary = (
-            "WILQ nie ma wierszy change_event do oceny wpływu, więc nie może zbudować "
+            "WILQ nie ma zdarzeń historii zmian do oceny wpływu, więc nie może zbudować "
             "okien wyników przed/po ani przypisać zmian do kampanii."
         )
     return AdsChangeImpactReadinessContract(
         status="blocked",
-        title="Google Ads: gotowość impact review zmian",
+        title="Google Ads: gotowość oceny wpływu zmian",
         summary=summary,
         allowed_metrics=allowed_metrics,
         missing_read_contracts=missing_read_contracts,
@@ -3006,8 +3006,8 @@ def _change_impact_readiness_contract(
         api_mutation_ready=False,
         apply_allowed=False,
         next_step=(
-            "Użyj tego jako checklisty readiness: sprawdź, czy są change rows, "
-            "aktualny odczyt kampanii i okna wyników przed/po. Nie claimuj "
+            "Użyj tego jako checklisty gotowości: sprawdź, czy są zdarzenia historii zmian, "
+            "aktualny odczyt kampanii i okna wyników przed/po. Nie oceniaj "
             "wpływu zmian bez okien przed/po i sprawdzenia przez człowieka."
         ),
     )
@@ -6432,6 +6432,8 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_budget_pacing_marketer_labels(response.budget_pacing_read_contract)
     _hydrate_recommendations_marketer_labels(response.recommendations_read_contract)
     _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
+    _hydrate_change_history_marketer_labels(response.change_history_read_contract)
+    _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
 
 
 def _hydrate_campaign_triage_marketer_labels(
@@ -6525,6 +6527,44 @@ def _hydrate_impression_share_marketer_labels(
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
         row.advertising_channel_type_label = _ads_channel_type_label(
             row.advertising_channel_type
+        )
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _hydrate_change_history_marketer_labels(
+    contract: AdsChangeHistoryReadContract,
+) -> None:
+    contract.status_label = _ads_status_label(contract.status)
+    contract.allowed_metric_labels = _ads_allowed_metric_labels(contract.allowed_metrics)
+    contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        contract.missing_read_contracts
+    )
+    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    for row in contract.change_history_rows:
+        row.change_resource_type_label = _ads_change_resource_type_label(
+            row.change_resource_type
+        )
+        row.resource_change_operation_label = _ads_resource_change_operation_label(
+            row.resource_change_operation
+        )
+        row.client_type_label = _ads_client_type_label(row.client_type)
+        row.changed_field_labels = _ads_changed_field_labels(row.changed_fields)
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _hydrate_change_impact_marketer_labels(
+    contract: AdsChangeImpactReadinessContract,
+) -> None:
+    contract.status_label = _ads_status_label(contract.status)
+    contract.allowed_metric_labels = _ads_allowed_metric_labels(contract.allowed_metrics)
+    contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        contract.missing_read_contracts
+    )
+    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    for row in contract.readiness_rows:
+        row.changed_field_labels = _ads_changed_field_labels(row.changed_fields)
+        row.missing_read_contract_labels = _ads_missing_read_contract_labels(
+            row.missing_read_contracts
         )
         row.blocked_claim_labels = _unique(row.blocked_claims)
 
@@ -6747,6 +6787,90 @@ def _ads_recommendation_type_label(recommendation_type: object) -> str:
     }
     value = str(recommendation_type)
     return labels.get(value, value.replace("_", " ").lower())
+
+
+def _ads_change_resource_type_label(value: object | None) -> str:
+    if value is None or str(value) == "":
+        return "typ zasobu: brak"
+    labels = {
+        "CAMPAIGN": "kampania",
+        "CAMPAIGN_BUDGET": "budżet kampanii",
+        "AD_GROUP": "grupa reklam",
+        "AD_GROUP_AD": "reklama w grupie reklam",
+        "AD_GROUP_CRITERION": "kryterium grupy reklam",
+        "CAMPAIGN_CRITERION": "kryterium kampanii",
+        "ASSET": "zasób reklamy",
+        "CUSTOMER": "konto Google Ads",
+        "UNKNOWN": "typ zasobu nieznany",
+        "UNSPECIFIED": "typ zasobu nieokreślony",
+    }
+    text = str(value)
+    return labels.get(text, text.replace("_", " ").lower())
+
+
+def _ads_resource_change_operation_label(value: object | None) -> str:
+    if value is None or str(value) == "":
+        return "operacja: brak"
+    labels = {
+        "CREATE": "utworzenie",
+        "UPDATE": "zmiana",
+        "REMOVE": "usunięcie",
+        "UNKNOWN": "operacja nieznana",
+        "UNSPECIFIED": "operacja nieokreślona",
+    }
+    text = str(value)
+    return labels.get(text, text.replace("_", " ").lower())
+
+
+def _ads_client_type_label(value: object | None) -> str:
+    if value is None or str(value) == "":
+        return "źródło zmiany: brak"
+    labels = {
+        "GOOGLE_ADS_WEB_CLIENT": "panel Google Ads",
+        "GOOGLE_ADS_API": "Google Ads API",
+        "GOOGLE_ADS_EDITOR": "Google Ads Editor",
+        "GOOGLE_ADS_MOBILE_APP": "aplikacja Google Ads",
+        "UNKNOWN": "źródło zmiany nieznane",
+        "UNSPECIFIED": "źródło zmiany nieokreślone",
+    }
+    text = str(value)
+    return labels.get(text, text.replace("_", " ").lower())
+
+
+def _ads_changed_field_labels(fields: Iterable[object]) -> list[str]:
+    labels = {
+        "campaign.status": "status kampanii",
+        "campaign.name": "nazwa kampanii",
+        "campaign_budget.amount_micros": "kwota budżetu kampanii",
+        "campaign_budget.delivery_method": "sposób wydawania budżetu",
+        "campaign.target_roas.target_roas": "docelowy zwrot z reklam",
+        "campaign.target_cpa.target_cpa_micros": "docelowy koszt pozyskania celu",
+        "ad_group.status": "status grupy reklam",
+        "ad_group_ad.status": "status reklamy",
+        "ad_group_criterion.status": "status słowa kluczowego",
+        "ad_group_criterion.keyword.match_type": "typ dopasowania słowa kluczowego",
+        "ad_group_criterion.negative": "wykluczenie słowa kluczowego",
+    }
+    result: list[str] = []
+    for field in fields:
+        text = str(field)
+        if not text:
+            continue
+        result.append(labels.get(text, text.replace("_", " ").replace(".", " / ")))
+    return result
+
+
+def _ads_allowed_metric_labels(metrics: Iterable[object]) -> list[str]:
+    labels = {
+        "change_event_available": "historia zmian dostępna",
+        "change_event_changed_field_count": "liczba zmienionych pól",
+        "current_campaign_clicks": "bieżące kliknięcia kampanii",
+        "current_campaign_impressions": "bieżące wyświetlenia kampanii",
+        "current_campaign_cost_micros": "bieżący koszt kampanii",
+        "current_campaign_conversions": "bieżące konwersje kampanii",
+        "current_campaign_conversion_value": "bieżąca wartość konwersji kampanii",
+    }
+    return [labels.get(str(metric), str(metric)) for metric in metrics if str(metric)]
 
 
 def _ads_confidence_label(confidence: object) -> str:

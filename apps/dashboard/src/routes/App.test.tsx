@@ -1856,17 +1856,32 @@ const adsDiagnostics = {
   change_history_read_contract: {
     id: "ads_change_history_read_contract",
     status: "ready",
+    status_label: "gotowe",
     title: "Google Ads: historia zmian",
     summary:
-      "WILQ ma 1 zdarzeń historii zmian Google Ads z ostatnich 14 dni. Typy zasobów: CAMPAIGN; operacje: UPDATE.",
+      "WILQ ma 1 zdarzeń historii zmian Google Ads z ostatnich 14 dni. Typy zasobów: kampania; operacje: zmiana.",
     allowed_metrics: ["change_event_available", "change_event_changed_field_count"],
+    allowed_metric_labels: ["historia zmian dostępna", "liczba zmienionych pól"],
     missing_read_contracts: [
       "pre_change_performance_window",
       "post_change_performance_window",
       "human_change_impact_review",
       "apply_preview"
     ],
+    missing_read_contract_labels: [
+      "okno wyników przed zmianą",
+      "okno wyników po zmianie",
+      "ręczna ocena wpływu zmian",
+      "podgląd zmian"
+    ],
     blocked_claims: [
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "skalowanie budżetu",
+      "zmiana budżetu",
+      "zapis zmian kampanii"
+    ],
+    blocked_claim_labels: [
       "wpływ zmian",
       "obietnica poprawy wyniku",
       "skalowanie budżetu",
@@ -1881,15 +1896,25 @@ const adsDiagnostics = {
         change_date_time: "2026-06-18 12:30:00.000000",
         change_resource_id: "123",
         change_resource_type: "CAMPAIGN",
+        change_resource_type_label: "kampania",
         resource_change_operation: "UPDATE",
+        resource_change_operation_label: "zmiana",
         client_type: "GOOGLE_ADS_WEB_CLIENT",
+        client_type_label: "panel Google Ads",
         campaign_id: "123",
         changed_field_count: 2,
         changed_fields: ["campaign.status", "campaign_budget.amount_micros"],
+        changed_field_labels: ["status kampanii", "kwota budżetu kampanii"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
         blocked_claims: [
+          "wpływ zmian",
+          "obietnica poprawy wyniku",
+          "zmiana budżetu",
+          "zapis zmian kampanii"
+        ],
+        blocked_claim_labels: [
           "wpływ zmian",
           "obietnica poprawy wyniku",
           "zmiana budżetu",
@@ -1903,9 +1928,10 @@ const adsDiagnostics = {
   change_impact_readiness_contract: {
     id: "ads_change_impact_readiness_contract",
     status: "blocked",
-    title: "Google Ads: gotowość impact review zmian",
+    status_label: "zablokowane",
+    title: "Google Ads: gotowość oceny wpływu zmian",
     summary:
-      "WILQ ma 1 zdarzeń zmian do impact review i 1 powiązanych snapshotów kampanii. To jest readiness do ręcznego audytu, nie dowód wpływu zmian.",
+      "WILQ ma 1 zdarzeń zmian do oceny wpływu i 1 powiązanych odczytów kampanii. To jest gotowość do ręcznego audytu, nie dowód wpływu zmian.",
     allowed_metrics: [
       "change_event_available",
       "change_event_changed_field_count",
@@ -1915,13 +1941,35 @@ const adsDiagnostics = {
       "current_campaign_conversions",
       "current_campaign_conversion_value"
     ],
+    allowed_metric_labels: [
+      "historia zmian dostępna",
+      "liczba zmienionych pól",
+      "bieżące kliknięcia kampanii",
+      "bieżące wyświetlenia kampanii",
+      "bieżący koszt kampanii",
+      "bieżące konwersje kampanii",
+      "bieżąca wartość konwersji kampanii"
+    ],
     missing_read_contracts: [
       "pre_change_performance_window",
       "post_change_performance_window",
       "human_change_impact_review",
       "apply_preview"
     ],
+    missing_read_contract_labels: [
+      "okno wyników przed zmianą",
+      "okno wyników po zmianie",
+      "ręczna ocena wpływu zmian",
+      "podgląd zmian"
+    ],
     blocked_claims: [
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "skalowanie budżetu",
+      "zmiana budżetu",
+      "zapis zmian kampanii"
+    ],
+    blocked_claim_labels: [
       "wpływ zmian",
       "obietnica poprawy wyniku",
       "skalowanie budżetu",
@@ -1937,6 +1985,7 @@ const adsDiagnostics = {
         campaign_name: "Ekologus Search",
         change_date_time: "2026-06-18 12:30:00.000000",
         changed_fields: ["campaign.status", "campaign_budget.amount_micros"],
+        changed_field_labels: ["status kampanii", "kwota budżetu kampanii"],
         current_campaign_metrics_available: true,
         pre_window_available: false,
         post_window_available: false,
@@ -1951,8 +2000,21 @@ const adsDiagnostics = {
           "human_change_impact_review",
           "apply_preview"
         ],
+        missing_read_contract_labels: [
+          "okno wyników przed zmianą",
+          "okno wyników po zmianie",
+          "ręczna ocena wpływu zmian",
+          "podgląd zmian"
+        ],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         blocked_claims: [
+          "wpływ zmian",
+          "obietnica poprawy wyniku",
+          "skalowanie budżetu",
+          "zmiana budżetu",
+          "zapis zmian kampanii"
+        ],
+        blocked_claim_labels: [
           "wpływ zmian",
           "obietnica poprawy wyniku",
           "skalowanie budżetu",
@@ -6984,7 +7046,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/okno wyników przed zmianą/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/okno wyników po zmianie/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/wpływ zmian/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/zmiana kampanii/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/kampania/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/zmiana/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/status kampanii/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/kwota budżetu kampanii/).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeInTheDocument();
     expect(
       screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")

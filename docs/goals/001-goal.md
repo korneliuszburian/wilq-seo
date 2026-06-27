@@ -272,6 +272,13 @@ Latest slice:
   they reach marketer copy; expanded browser proof has no raw recommendation or
   impression-share terms from this slice:
   `.local-lab/proof/20260627-ads-recommendations-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor change-history and change-impact panels now consume API-owned
+  labels for status, metrics, missing data, changed fields, client type and
+  blocked promises. Live Ads proof after managed stack restart and expanded
+  browser proof found no raw `change_event`, `GOOGLE_ADS_WEB_CLIENT`,
+  `resource_change_operation`, `changed_fields`, `readiness` or `change rows`
+  text in this slice:
+  `.local-lab/proof/20260627-ads-change-history-api-labels/browser/ads-doctor-expanded.txt`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

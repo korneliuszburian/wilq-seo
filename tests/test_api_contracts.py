@@ -10129,24 +10129,48 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]["missing_read_contracts"]
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
+    assert change_history_contract["status_label"] == "gotowe"
     assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
     assert change_history_contract["allowed_metrics"] == [
         "change_event_available",
         "change_event_changed_field_count",
     ]
+    assert change_history_contract["allowed_metric_labels"] == [
+        "historia zmian dostępna",
+        "liczba zmienionych pól",
+    ]
     assert "change_history" not in change_history_contract["missing_read_contracts"]
+    assert change_history_contract["missing_read_contract_labels"] == [
+        "okno wyników przed zmianą",
+        "okno wyników po zmianie",
+        "ręczna ocena wpływu zmian",
+        "podgląd zmian",
+    ]
     assert "wpływ zmian" in change_history_contract["blocked_claims"]
+    assert change_history_contract["blocked_claim_labels"] == [
+        "wpływ zmian",
+        "obietnica poprawy wyniku",
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
+    ]
+    assert "CAMPAIGN" not in change_history_contract["summary"]
+    assert "UPDATE" not in change_history_contract["summary"]
     assert change_history_contract["change_history_rows"] == [
         {
             "change_event_id": "change-1",
             "change_date_time": "2026-06-18 12:30:00.000000",
             "change_resource_id": "101",
             "change_resource_type": "CAMPAIGN",
+            "change_resource_type_label": "kampania",
             "resource_change_operation": "UPDATE",
+            "resource_change_operation_label": "zmiana",
             "client_type": "GOOGLE_ADS_WEB_CLIENT",
+            "client_type_label": "panel Google Ads",
             "campaign_id": "101",
             "changed_field_count": 2,
             "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
+            "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": change_history_contract["change_history_rows"][0][
                 "metric_facts"
@@ -10158,15 +10182,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmiana budżetu",
                 "zapis zmian kampanii",
             ],
+            "blocked_claim_labels": [
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+            ],
         }
     ]
     change_impact_contract = payload["change_impact_readiness_contract"]
     assert change_impact_contract["id"] == "ads_change_impact_readiness_contract"
     assert change_impact_contract["status"] == "blocked"
+    assert change_impact_contract["status_label"] == "zablokowane"
     assert change_impact_contract["apply_allowed"] is False
     assert "snapshot kampanii" not in change_impact_contract["next_step"]
     assert "aktualny odczyt kampanii" in change_impact_contract["next_step"]
+    assert "change_event" not in change_impact_contract["next_step"]
+    assert "Impact review" not in change_impact_contract["next_step"]
     assert "wpływ zmian" in change_impact_contract["blocked_claims"]
+    assert change_impact_contract["blocked_claim_labels"] == [
+        "wpływ zmian",
+        "obietnica poprawy wyniku",
+        "skalowanie budżetu",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
+    ]
     assert "change_event_rows" not in change_impact_contract["missing_read_contracts"]
     assert "current_campaign_snapshot" not in change_impact_contract[
         "missing_read_contracts"
@@ -10183,6 +10223,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "current_campaign_conversions",
         "current_campaign_conversion_value",
     ]
+    assert change_impact_contract["allowed_metric_labels"] == [
+        "historia zmian dostępna",
+        "liczba zmienionych pól",
+        "bieżące kliknięcia kampanii",
+        "bieżące wyświetlenia kampanii",
+        "bieżący koszt kampanii",
+        "bieżące konwersje kampanii",
+        "bieżąca wartość konwersji kampanii",
+    ]
     assert change_impact_contract["readiness_rows"] == [
         {
             "change_event_id": "change-1",
@@ -10190,6 +10239,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_name": "Brand Search",
             "change_date_time": "2026-06-18 12:30:00.000000",
             "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
+            "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
             "current_campaign_metrics_available": True,
             "pre_window_available": False,
             "post_window_available": False,
@@ -10204,8 +10254,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "human_change_impact_review",
                 "apply_preview",
             ],
+            "missing_read_contract_labels": [
+                "okno wyników przed zmianą",
+                "okno wyników po zmianie",
+                "ręczna ocena wpływu zmian",
+                "podgląd zmian",
+            ],
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "blocked_claims": [
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "zapis zmian kampanii",
+            ],
+            "blocked_claim_labels": [
                 "wpływ zmian",
                 "obietnica poprawy wyniku",
                 "skalowanie budżetu",

@@ -33,12 +33,12 @@ def build_change_history_read_contract(
     ]
     if rows:
         resource_types = _unique(
-            row.change_resource_type
+            _change_resource_type_label(row.change_resource_type)
             for row in rows
             if row.change_resource_type is not None
         )
         operations = _unique(
-            row.resource_change_operation
+            _resource_change_operation_label(row.resource_change_operation)
             for row in rows
             if row.resource_change_operation is not None
         )
@@ -89,8 +89,8 @@ def build_change_history_read_contract(
             change_history_rows=[],
             next_step=(
                 "Nie przypisuj wyników kampanii do zmian, bo w bieżącym oknie "
-                "Google Ads nie zwrócił zdarzeń change_event. Impact review "
-                "pozostaje zablokowany do czasu pojawienia się zmian i okien "
+                "Google Ads nie zwrócił zdarzeń historii zmian. Ocena wpływu zmian "
+                "pozostaje zablokowana do czasu pojawienia się zmian i okien "
                 "wyników przed/po."
             ),
         )
@@ -100,7 +100,7 @@ def build_change_history_read_contract(
         summary="WILQ nie ma jeszcze metryk historii zmian z Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["change_history", *missing_read_contracts],
-        blocked_claims=["change history", *blocked_claims],
+        blocked_claims=["historia zmian", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=fallback_evidence_ids,
         change_history_rows=[],
@@ -171,6 +171,39 @@ def _change_history_row(
 
 def _change_history_row_sort_key(row: AdsChangeHistoryRow) -> tuple[str, str]:
     return (row.change_date_time or "", row.change_event_id or "")
+
+
+def _change_resource_type_label(value: object | None) -> str:
+    if value is None or str(value) == "":
+        return "typ zasobu: brak"
+    labels = {
+        "CAMPAIGN": "kampania",
+        "CAMPAIGN_BUDGET": "budżet kampanii",
+        "AD_GROUP": "grupa reklam",
+        "AD_GROUP_AD": "reklama w grupie reklam",
+        "AD_GROUP_CRITERION": "kryterium grupy reklam",
+        "CAMPAIGN_CRITERION": "kryterium kampanii",
+        "ASSET": "zasób reklamy",
+        "CUSTOMER": "konto Google Ads",
+        "UNKNOWN": "typ zasobu nieznany",
+        "UNSPECIFIED": "typ zasobu nieokreślony",
+    }
+    text = str(value)
+    return labels.get(text, text.replace("_", " ").lower())
+
+
+def _resource_change_operation_label(value: object | None) -> str:
+    if value is None or str(value) == "":
+        return "operacja: brak"
+    labels = {
+        "CREATE": "utworzenie",
+        "UPDATE": "zmiana",
+        "REMOVE": "usunięcie",
+        "UNKNOWN": "operacja nieznana",
+        "UNSPECIFIED": "operacja nieokreślona",
+    }
+    text = str(value)
+    return labels.get(text, text.replace("_", " ").lower())
 
 
 def _int_metric_value(fact: MetricFact | None) -> int | None:

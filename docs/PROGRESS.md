@@ -97,6 +97,13 @@ Date: 2026-06-27
   expanded browser proof has no raw recommendation/impression-share terms from
   this slice. Browser proof:
   `.local-lab/proof/20260627-ads-recommendations-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor change-history and change-impact panels now use API-owned labels
+  for status, metrics, missing data, changed fields, client type and blocked
+  promises. Live Ads proof after managed stack restart and expanded browser
+  proof found no raw `change_event`, `GOOGLE_ADS_WEB_CLIENT`,
+  `resource_change_operation`, `changed_fields`, `readiness` or `change rows`
+  text in this slice. Browser proof:
+  `.local-lab/proof/20260627-ads-change-history-api-labels/browser/ads-doctor-expanded.txt`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

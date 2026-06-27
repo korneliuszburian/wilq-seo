@@ -1273,25 +1273,34 @@ class AdsChangeHistoryRow(BaseModel):
     change_date_time: str | None = None
     change_resource_id: str | None = None
     change_resource_type: str | None = None
+    change_resource_type_label: str = ""
     resource_change_operation: str | None = None
+    resource_change_operation_label: str = ""
     client_type: str | None = None
+    client_type_label: str = ""
     campaign_id: str | None = None
     changed_field_count: int | None = None
     changed_fields: list[str] = Field(default_factory=list)
+    changed_field_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsChangeHistoryReadContract(BaseModel):
     id: str = "ads_change_history_read_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
+    allowed_metric_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
@@ -1305,6 +1314,7 @@ class AdsChangeImpactReadinessRow(BaseModel):
     campaign_name: str | None = None
     change_date_time: str | None = None
     changed_fields: list[str] = Field(default_factory=list)
+    changed_field_labels: list[str] = Field(default_factory=list)
     current_campaign_metrics_available: bool = False
     pre_window_available: bool = False
     post_window_available: bool = False
@@ -1314,18 +1324,24 @@ class AdsChangeImpactReadinessRow(BaseModel):
     current_conversions: float | None = None
     current_conversion_value: float | None = None
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class AdsChangeImpactReadinessContract(BaseModel):
     id: str = "ads_change_impact_readiness_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
+    allowed_metric_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     readiness_rows: list[AdsChangeImpactReadinessRow] = Field(default_factory=list)

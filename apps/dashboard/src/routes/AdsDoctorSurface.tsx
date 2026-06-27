@@ -1681,7 +1681,7 @@ function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }
 function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak wierszy historii zmian. WILQ nie może łączyć skuteczności ze zmianami kampanii bez faktów change_event." />
+      <BlockerNotice message="Brak wierszy historii zmian. WILQ nie może łączyć skuteczności ze zmianami kampanii bez odczytu historii zmian." />
     );
   }
   return (
@@ -1704,16 +1704,19 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
                 {row.change_date_time ?? "brak daty"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.change_resource_type ?? "brak"} / {row.change_resource_id ?? "brak ID"}
+                {row.change_resource_type_label || "typ zasobu: brak"} /{" "}
+                {row.change_resource_id ?? "brak ID"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.resource_change_operation ?? "brak"}
+                {row.resource_change_operation_label || "operacja: brak"}
               </td>
-              <td className="py-2 pr-4 text-slate-700">{row.client_type ?? "brak"}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.client_type_label || "źródło zmiany: brak"}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{row.campaign_id ?? "brak"}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.changed_fields.length > 0
-                  ? row.changed_fields.slice(0, 4).join(", ")
+                {row.changed_field_labels.length > 0
+                  ? row.changed_field_labels.slice(0, 4).join(", ")
                   : `${row.changed_field_count ?? 0} pól`}
               </td>
             </tr>
@@ -1747,7 +1750,7 @@ function AdsChangeImpactReadinessPanel({
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Zmiany" value={rows.length} />
           <MetricTile label="Odczyty" value={currentReadoutCount} />
-          <MetricTile label="Status" value={adsDecisionStatusLabel(contract.status)} />
+          <MetricTile label="Status" value={contract.status_label} />
         </div>
       </div>
 
@@ -1768,17 +1771,17 @@ function AdsChangeImpactReadinessPanel({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Metryki dostępne"
-          values={contract.allowed_metrics.map(adsAllowedMetricLabel)}
+          values={contract.allowed_metric_labels}
           empty="brak"
         />
         <TraceLine
           label="Brakujące dane"
-          values={contract.missing_read_contracts.map(adsMissingReadContractLabel)}
+          values={contract.missing_read_contract_labels}
           empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+          values={contract.blocked_claim_labels}
           empty="brak"
         />
         <LinkedTraceLine
@@ -1807,7 +1810,8 @@ function AdsChangeImpactReadinessCard({
             {row.campaign_name ?? row.campaign_id ?? "kampania bez nazwy"}
           </h4>
           <p className="mt-1 text-xs text-slate-500">
-            {row.change_event_id ?? "brak change ID"} / {row.change_date_time ?? "brak daty"}
+            {row.change_event_id ? `zmiana ${row.change_event_id}` : "brak ID zmiany"} /{" "}
+            {row.change_date_time ?? "brak daty"}
           </p>
         </div>
         <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -1824,17 +1828,17 @@ function AdsChangeImpactReadinessCard({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Zmienione pola"
-          values={row.changed_fields}
+          values={row.changed_field_labels}
           empty="brak pól"
         />
         <TraceLine
           label="Braki"
-          values={row.missing_read_contracts.map(adsMissingReadContractLabel)}
+          values={row.missing_read_contract_labels}
           empty="brak"
         />
         <TraceLine
           label="Blokady"
-          values={row.blocked_claims.map(adsBlockedClaimLabel)}
+          values={row.blocked_claim_labels}
           empty="brak"
         />
         <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" empty="brak" />
