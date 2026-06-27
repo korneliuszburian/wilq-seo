@@ -1209,9 +1209,12 @@ export const AdsSearchTermSafetyReadContractSchema = z.object({
 export const AdsKeywordMatchContextRowSchema = z.object({
   keyword_text: z.string(),
   match_type: z.string(),
+  match_type_label: z.string().optional().default(""),
   criterion_id: z.string().nullable().optional(),
   criterion_status: z.string().nullable().optional(),
+  criterion_status_label: z.string().optional().default(""),
   negative: z.boolean().nullable().optional(),
+  negative_label: z.string().optional().default(""),
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),
   ad_group_id: z.string().nullable().optional(),
@@ -1429,7 +1432,9 @@ export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
   search_term: z.string(),
   negative_keyword_text: z.string(),
   match_type: z.literal("EXACT"),
+  match_type_label: z.string().optional().default(""),
   level: z.enum(["ad_group", "campaign_review_required"]),
+  level_label: z.string().optional().default(""),
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),
   ad_group_id: z.string().nullable().optional(),
@@ -1438,7 +1443,9 @@ export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()
@@ -1476,9 +1483,13 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   keyword_context_rows: z.array(AdsKeywordMatchContextRowSchema).optional().default([]),
   payload_preview: AdsNegativeKeywordPayloadPreviewSchema.nullable().optional(),
   required_checks: z.array(z.string()),
+  required_check_labels: z.array(z.string()).optional().default([]),
   safety_status: z.enum(["needs_90_day_review", "read_ready_needs_human_review", "blocked"]),
+  safety_status_label: z.string().optional().default(""),
   validation_status: z.enum(["pending_validation", "blocked"]),
+  validation_status_label: z.string().optional().default(""),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   next_step: z.string()
 });
 
@@ -1492,7 +1503,9 @@ export const AdsNegativeKeywordsReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   action_ids: z.array(z.string()),
   next_step: z.string()
 });

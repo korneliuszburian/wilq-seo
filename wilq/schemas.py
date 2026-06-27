@@ -1510,9 +1510,12 @@ class AdsSearchTermSafetyReadContract(BaseModel):
 class AdsKeywordMatchContextRow(BaseModel):
     keyword_text: str
     match_type: str
+    match_type_label: str = ""
     criterion_id: str | None = None
     criterion_status: str | None = None
+    criterion_status_label: str = ""
     negative: bool | None = None
+    negative_label: str = ""
     campaign_id: str | None = None
     campaign_name: str | None = None
     ad_group_id: str | None = None
@@ -1753,7 +1756,9 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     search_term: str
     negative_keyword_text: str
     match_type: Literal["EXACT"]
+    match_type_label: str = ""
     level: Literal["ad_group", "campaign_review_required"]
+    level_label: str = ""
     campaign_id: str | None = None
     campaign_name: str | None = None
     ad_group_id: str | None = None
@@ -1762,7 +1767,9 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
@@ -1800,13 +1807,17 @@ class AdsNegativeKeywordCandidate(BaseModel):
     keyword_context_rows: list[AdsKeywordMatchContextRow] = Field(default_factory=list)
     payload_preview: AdsNegativeKeywordPayloadPreview | None = None
     required_checks: list[str] = Field(default_factory=list)
+    required_check_labels: list[str] = Field(default_factory=list)
     safety_status: Literal[
         "needs_90_day_review",
         "read_ready_needs_human_review",
         "blocked",
     ] = "needs_90_day_review"
+    safety_status_label: str = ""
     validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
+    validation_status_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str
 
 
@@ -1820,7 +1831,9 @@ class AdsNegativeKeywordsReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
 

@@ -156,6 +156,11 @@ Latest slice:
   `issue_product_count`; technical IDs remain only as contract fields.
   Verification: focused Merchant/action API tests, Action Detail route test and
   browser proof on `/actions/act_review_merchant_feed_issues`.
+- Ads Doctor negative-keyword review now renders API-owned labels for safety,
+  validation, required checks, match type, exclusion level and keyword context.
+  Focused API/dashboard tests and live browser proof show the marketer-facing
+  panel in Polish without raw `EXACT`, `BROAD`, `ad_group`,
+  `pending_validation` or `read_ready_needs_human_review` in this slice.
 - Content Action Detail now renders content mode labels and review-audit
   summaries from WILQ API/domain output. `DetailPanels` no longer owns a
   content-mode translator, and WordPress draft-preview selection uses

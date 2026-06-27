@@ -2238,15 +2238,10 @@ function AdsNegativeKeywordCandidatesPanel({
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {adsNegativeKeywordReason(candidate, currencyCode)}
+              {candidate.review_reason}
             </p>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Bezpieczeństwo:{" "}
-              {candidate.safety_status === "needs_90_day_review"
-                ? "wymaga 90 dni"
-                : candidate.safety_status === "read_ready_needs_human_review"
-                  ? "90 dni odczytane"
-                  : "zablokowane"}
+              Bezpieczeństwo: {candidate.safety_status_label || "brak statusu"}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <MetricTile label="Kliknięcia" value={adsNumber(candidate.clicks)} />
@@ -2263,7 +2258,7 @@ function AdsNegativeKeywordCandidatesPanel({
               <MetricTile label="Konw. 90d" value={adsNumber(candidate.conversions_90d)} />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {adsNegativeKeywordNextStep(candidate)}
+              {candidate.next_step}
             </p>
             {candidate.payload_preview ? (
               <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
@@ -2272,15 +2267,15 @@ function AdsNegativeKeywordCandidatesPanel({
                 </div>
                 <div>
                   `{candidate.payload_preview.negative_keyword_text}` /{" "}
-                  {candidate.payload_preview.match_type} /{" "}
-                  {adsNegativeKeywordLevelLabel(candidate.payload_preview.level)}
+                  {candidate.payload_preview.match_type_label} /{" "}
+                  {candidate.payload_preview.level_label}
                 </div>
                 <div className="text-slate-600">
                   Zapis zmian:{" "}
                   {candidate.payload_preview.apply_allowed
                     ? "wymaga sprawdzenia"
                     : "zablokowane"}
-                  . {adsNegativeKeywordPayloadReason(candidate.payload_preview.reason)}
+                  . {candidate.payload_preview.reason}
                 </div>
               </div>
             ) : null}
@@ -2291,8 +2286,8 @@ function AdsNegativeKeywordCandidatesPanel({
                 </div>
                 {candidate.keyword_context_rows.slice(0, 4).map((row) => (
                   <div key={`${row.criterion_id ?? row.keyword_text}-${row.match_type}`}>
-                    {row.keyword_text} / {row.match_type}
-                    {row.negative ? " / wykluczające" : ""}
+                    {row.keyword_text} / {row.match_type_label}
+                    {row.negative_label ? ` / ${row.negative_label}` : ""}
                   </div>
                 ))}
               </div>
@@ -2303,7 +2298,7 @@ function AdsNegativeKeywordCandidatesPanel({
                 values={candidate.human_review_gate_labels}
                 empty="brak"
               />
-              <TraceLine label="Wymagane kontrole" values={candidate.required_checks.map(adsMissingReadContractLabel)} />
+              <TraceLine label="Wymagane kontrole" values={candidate.required_check_labels} />
               <LinkedTraceLine
                 label="Dowody"
                 values={uniqueValues([
@@ -2312,7 +2307,7 @@ function AdsNegativeKeywordCandidatesPanel({
                 ]).slice(0, 3)}
                 kind="evidence"
               />
-              <TraceLine label="Nie wolno twierdzić" values={candidate.blocked_claims.map(adsBlockedClaimLabel)} />
+              <TraceLine label="Nie wolno twierdzić" values={candidate.blocked_claim_labels} />
             </div>
           </article>
         ))}
@@ -2436,12 +2431,6 @@ function adsDecisionStatusLabel(status: string) {
   return status;
 }
 
-function adsNegativeKeywordLevelLabel(level: string) {
-  if (level === "ad_group") return "grupa reklam";
-  if (level === "campaign_review_required") return "poziom do decyzji";
-  return level;
-}
-
 function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
   if (risk === "critical") return "krytyczne";
   if (risk === "high") return "wysokie";
@@ -2554,37 +2543,6 @@ function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {
   return `Sprawdź kampanię ręcznie: ${gates.join(
     ", "
   ) || "cel kampanii, konwersje, budżet i wyszukiwane hasła"}. Zapis zmian wymaga sprawdzenia w WILQ i potwierdzenia człowieka.`;
-}
-
-function adsNegativeKeywordReason(
-  candidate: AdsNegativeKeywordCandidate,
-  currencyCode?: string
-) {
-  const facts = [
-    `${adsNumber(candidate.clicks)} kliknięć`,
-    `${adsCost(candidate.cost_micros, currencyCode)} kosztu`,
-    `${adsNumber(candidate.conversions)} konwersji`,
-    `${adsNumber(candidate.clicks_90d)} kliknięć w 90 dni`
-  ];
-  return `Termin do ręcznej oceny jako potencjalne wykluczenie: ${facts.join(
-    ", "
-  )}. To nie jest gotowa lista wykluczeń ani dowód marnowania budżetu.`;
-}
-
-function adsNegativeKeywordNextStep(candidate: AdsNegativeKeywordCandidate) {
-  const gates = candidate.human_review_gate_labels.slice(0, 3);
-  return `Przed zapisem zmian sprawdź: ${gates.join(
-    ", "
-  ) || "intencję, dopasowanie i historię 90 dni"}. Wykluczenie wymaga sprawdzenia w WILQ.`;
-}
-
-function adsNegativeKeywordPayloadReason(reason: string) {
-  if (reason.includes("90-day") || reason.includes("90_day")) {
-    return "wymagana 90-dniowa kontrola bezpieczeństwa i ręczna ocena";
-  }
-  if (reason.includes("human")) return "wymagana ręczna ocena";
-  if (reason.includes("validation")) return "wymagane sprawdzenie w WILQ";
-  return reason;
 }
 
 function adsNumber(value: number | null | undefined) {

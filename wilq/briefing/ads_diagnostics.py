@@ -195,6 +195,12 @@ ADS_REVIEW_GATE_LABELS = {
     "custom_segment_operation_preview": "sprawdzenie zapisu zmian w Google Ads",
     "google_ads_mutation_audit": "audyt zapisu zmian w Google Ads",
     "mutation_audit": "audyt zapisu zmian",
+    "review_search_term_context": "sprawdzenie intencji zapytania",
+    "check_existing_keywords_and_match_types": (
+        "sprawdzenie istniejących słów kluczowych i typów dopasowania"
+    ),
+    "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
+    "negative_keyword_change_preview": "podgląd zmian wykluczeń",
 }
 ADS_NGRAM_STOPWORDS = {
     "a",
@@ -3709,21 +3715,20 @@ def _search_term_safety_read_contract(
     return AdsSearchTermSafetyReadContract(
         status="blocked",
         title="Google Ads: brak 90-dniowego odczytu bezpieczeństwa",
-        summary="WILQ nie ma jeszcze 90-dniowych faktów dla `search_term_view`.",
+        summary="WILQ nie ma jeszcze 90-dniowego odczytu listy wyszukiwanych haseł.",
         allowed_metrics=[],
         missing_read_contracts=[
             "search_term_90d_read",
             "keyword match context",
             "negative_keyword_change_preview",
         ],
-        blocked_claims=["90-day negative keyword safety", *blocked_claims],
+        blocked_claims=["90-dniowa kontrola bezpieczeństwa wykluczeń", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         safety_rows=[],
         next_step=(
-            "Uruchom odczyt danych Google Ads po dodaniu "
-            "metryk search_term_90d_*. Nie twórz wykluczeń bez tego "
-            "kontraktu."
+            "Uruchom 90-dniowy odczyt wyszukiwanych haseł w Google Ads. Nie twórz "
+            "wykluczeń bez tego hamulca bezpieczeństwa."
         ),
     )
 
@@ -3839,13 +3844,17 @@ def _keyword_match_context_read_contract(
         "zwrot z reklam",
     ]
     if rows or read_attempted:
-        match_types = _unique(row.match_type for row in rows if row.match_type)
+        match_type_labels = _unique(
+            _ads_keyword_match_type_label(row.match_type)
+            for row in rows
+            if row.match_type
+        )
         return AdsKeywordMatchContextReadContract(
             status="ready",
-        title="Google Ads: kontekst dopasowań słów kluczowych",
+            title="Google Ads: kontekst dopasowań słów kluczowych",
             summary=(
                 f"WILQ ma kontekst {len(rows)} istniejących słów kluczowych "
-                f"z typami dopasowań: {', '.join(match_types) if match_types else 'brak wierszy'}."
+                f"z typami dopasowania: {', '.join(match_type_labels) if match_type_labels else 'brak wierszy'}."
             ),
             allowed_metrics=[
                 "keyword_text",
@@ -3874,7 +3883,7 @@ def _keyword_match_context_read_contract(
     return AdsKeywordMatchContextReadContract(
         status="blocked",
         title="Google Ads: brak kontekstu dopasowań słów kluczowych",
-        summary="WILQ nie ma jeszcze danych z ad_group_criterion keyword.",
+        summary="WILQ nie ma jeszcze odczytu istniejących słów kluczowych i typów dopasowania.",
         allowed_metrics=[],
         missing_read_contracts=["keyword_match_context_read"],
         blocked_claims=["keyword match context", *blocked_claims],
@@ -3882,9 +3891,9 @@ def _keyword_match_context_read_contract(
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         context_rows=[],
         next_step=(
-            "Uruchom odczyt danych Google Ads po dodaniu "
-            "ad_group_criterion keyword facts. Nie zapisuj wykluczeń bez tego "
-            "kontekstu."
+            "Uruchom odczyt kontekstu słów kluczowych w Google Ads. Nie zapisuj "
+            "wykluczeń bez sprawdzenia, które istniejące słowa i typy dopasowania "
+            "mogły wywołać wyszukiwane hasło."
         ),
     )
 
@@ -4130,7 +4139,7 @@ def _keyword_match_context_section(
     ]
     return AdsDiagnosticSection(
         id="ads_keyword_match_context",
-        title="Kontekst dopasowań keywords",
+        title="Kontekst dopasowań słów kluczowych",
         status=keyword_match_context_read_contract.status,
         summary=keyword_match_context_read_contract.summary,
         diagnosis=(
@@ -5101,7 +5110,7 @@ def _negative_keyword_review_reason(
         f"90 dni: kliknięcia={safety_row.clicks_90d or 0}, koszt={safety_cost or '0'}, "
         f"konwersje={safety_conversions}"
         if safety_row is not None
-        else "brak dopasowanego 90-dniowego safety row"
+        else "brak dopasowanego 90-dniowego odczytu bezpieczeństwa"
     )
     context_part = (
         f"kontekst dopasowań słów kluczowych={len(keyword_context_rows)} wierszy"
@@ -6434,6 +6443,10 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
     _hydrate_change_history_marketer_labels(response.change_history_read_contract)
     _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
+    _hydrate_negative_keywords_marketer_labels(response.negative_keywords_read_contract)
+    _hydrate_keyword_match_context_marketer_labels(
+        response.keyword_match_context_read_contract
+    )
 
 
 def _hydrate_campaign_triage_marketer_labels(
@@ -6567,6 +6580,58 @@ def _hydrate_change_impact_marketer_labels(
             row.missing_read_contracts
         )
         row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _hydrate_negative_keywords_marketer_labels(
+    contract: AdsNegativeKeywordsReadContract,
+) -> None:
+    contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        contract.missing_read_contracts
+    )
+    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    for candidate in contract.candidates:
+        candidate.required_check_labels = _ads_review_gate_labels(
+            candidate.required_checks
+        )
+        candidate.safety_status_label = _ads_negative_keyword_safety_status_label(
+            candidate.safety_status
+        )
+        candidate.validation_status_label = _ads_validation_status_label(
+            candidate.validation_status
+        )
+        candidate.blocked_claim_labels = _unique(candidate.blocked_claims)
+        for row in candidate.keyword_context_rows:
+            _hydrate_keyword_match_context_row_labels(row)
+        if candidate.payload_preview is not None:
+            _hydrate_negative_keyword_payload_preview_labels(candidate.payload_preview)
+    for preview in contract.payload_preview:
+        _hydrate_negative_keyword_payload_preview_labels(preview)
+
+
+def _hydrate_negative_keyword_payload_preview_labels(
+    preview: AdsNegativeKeywordPayloadPreview,
+) -> None:
+    preview.match_type_label = _ads_keyword_match_type_label(preview.match_type)
+    preview.level_label = _ads_negative_keyword_level_label(preview.level)
+    preview.required_validation_labels = _ads_review_gate_labels(
+        preview.required_validation
+    )
+    preview.blocked_claim_labels = _unique(preview.blocked_claims)
+
+
+def _hydrate_keyword_match_context_marketer_labels(
+    contract: AdsKeywordMatchContextReadContract,
+) -> None:
+    for row in contract.context_rows:
+        _hydrate_keyword_match_context_row_labels(row)
+
+
+def _hydrate_keyword_match_context_row_labels(row: AdsKeywordMatchContextRow) -> None:
+    row.match_type_label = _ads_keyword_match_type_label(row.match_type)
+    row.criterion_status_label = _ads_keyword_criterion_status_label(
+        row.criterion_status
+    )
+    row.negative_label = "wykluczające" if row.negative else "aktywne"
 
 
 def _hydrate_business_context_marketer_labels(
@@ -6890,6 +6955,51 @@ def _ads_validation_status_label(status: object) -> str:
     }
     value = str(status)
     return labels.get(value, value)
+
+
+def _ads_negative_keyword_safety_status_label(status: object) -> str:
+    labels = {
+        "needs_90_day_review": "wymaga 90-dniowej kontroli",
+        "read_ready_needs_human_review": "90-dniowy odczyt gotowy",
+        "blocked": "zablokowane",
+    }
+    value = str(status)
+    return labels.get(value, value)
+
+
+def _ads_negative_keyword_level_label(level: object) -> str:
+    labels = {
+        "ad_group": "grupa reklam",
+        "campaign_review_required": "poziom do decyzji człowieka",
+    }
+    value = str(level)
+    return labels.get(value, value)
+
+
+def _ads_keyword_match_type_label(match_type: object) -> str:
+    labels = {
+        "EXACT": "dopasowanie ścisłe",
+        "PHRASE": "dopasowanie do wyrażenia",
+        "BROAD": "dopasowanie przybliżone",
+        "UNKNOWN": "typ dopasowania nieznany",
+        "UNSPECIFIED": "typ dopasowania nieokreślony",
+    }
+    value = str(match_type)
+    return labels.get(value, value.replace("_", " ").lower())
+
+
+def _ads_keyword_criterion_status_label(status: object | None) -> str:
+    labels = {
+        "ENABLED": "aktywne",
+        "PAUSED": "wstrzymane",
+        "REMOVED": "usunięte",
+        "UNKNOWN": "status nieznany",
+        "UNSPECIFIED": "status nieokreślony",
+    }
+    if status is None or str(status) == "":
+        return "status: brak"
+    value = str(status)
+    return labels.get(value, value.replace("_", " ").lower())
 
 
 def _ads_optimizer_mode_label(mode: object) -> str:

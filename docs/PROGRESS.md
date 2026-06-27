@@ -111,6 +111,13 @@ Date: 2026-06-27
   `budget-lost`, `rank-lost` or `impression share facts` in the checked live
   API output. Proof:
   `.local-lab/proof/20260627-ads-budget-impression-empty-state-api-labels/ads-budget-impression.json`.
+- Ads Doctor negative-keyword review now uses API-owned labels for safety
+  status, validation status, required checks, match type, exclusion level,
+  keyword context and blocked promises. The expanded browser proof shows Polish
+  labels such as `dopasowanie ścisłe`, `grupa reklam` and `90-dniowy odczyt
+  gotowy` without raw `EXACT`, `BROAD`, `ad_group`, `pending_validation` or
+  `read_ready_needs_human_review` in this slice. Proof:
+  `.local-lab/proof/20260627-ads-negative-keyword-api-labels/`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

@@ -10744,7 +10744,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "missing_read_contracts"
     ]
     assert negative_keywords_contract["missing_read_contracts"] == []
+    assert negative_keywords_contract["missing_read_contract_labels"] == []
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
+    assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract[
+        "blocked_claim_labels"
+    ]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
     assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
     assert negative_keywords_contract["candidates"][0]["review_score"] == 53
@@ -10766,11 +10770,27 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
         "match_type"
     ] == "BROAD"
+    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
+        "match_type_label"
+    ] == "dopasowanie przybliżone"
     assert negative_keywords_contract["payload_preview"][0] == (
         negative_keywords_contract["candidates"][0]["payload_preview"]
     )
     assert negative_keywords_contract["payload_preview"][0]["match_type"] == "EXACT"
+    assert negative_keywords_contract["payload_preview"][0]["match_type_label"] == (
+        "dopasowanie ścisłe"
+    )
     assert negative_keywords_contract["payload_preview"][0]["level"] == "ad_group"
+    assert negative_keywords_contract["payload_preview"][0]["level_label"] == "grupa reklam"
+    assert negative_keywords_contract["payload_preview"][0]["required_validation_labels"] == [
+        "sprawdzenie intencji zapytania",
+        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+        "90-dniowa kontrola bezpieczeństwa",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert negative_keywords_contract["payload_preview"][0]["blocked_claim_labels"] == (
+        negative_keywords_contract["payload_preview"][0]["blocked_claims"]
+    )
     assert negative_keywords_contract["payload_preview"][0]["api_mutation_ready"] is False
     assert negative_keywords_contract["payload_preview"][0]["apply_allowed"] is False
     assert negative_keywords_contract["payload_preview"][0]["destructive"] is False
@@ -10783,12 +10803,28 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["candidates"][0]["safety_status"] == (
         "read_ready_needs_human_review"
     )
+    assert negative_keywords_contract["candidates"][0]["safety_status_label"] == (
+        "90-dniowy odczyt gotowy"
+    )
     assert negative_keywords_contract["candidates"][0]["validation_status"] == (
         "pending_validation"
+    )
+    assert negative_keywords_contract["candidates"][0]["validation_status_label"] == (
+        "do sprawdzenia"
     )
     assert "90_day_safety_check" in negative_keywords_contract["candidates"][0][
         "required_checks"
     ]
+    assert negative_keywords_contract["candidates"][0]["required_check_labels"] == [
+        "sprawdzenie intencji zapytania",
+        "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+        "90-dniowa kontrola bezpieczeństwa",
+        "podgląd zmian wykluczeń",
+        "potwierdzenie człowieka przed zapisem",
+    ]
+    assert negative_keywords_contract["candidates"][0]["blocked_claim_labels"] == (
+        negative_keywords_contract["candidates"][0]["blocked_claims"]
+    )
     negative_keywords_section = next(
         section for section in payload["sections"] if section["id"] == "ads_negative_keyword_safety"
     )

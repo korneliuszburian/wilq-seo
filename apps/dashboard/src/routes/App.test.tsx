@@ -477,7 +477,7 @@ const actions = [
     metrics: [],
     validation_status: "not_validated",
     human_diagnosis:
-      "Google Ads ma search-term metryki do review, ale apply wymaga 90-day safety check.",
+      "Google Ads ma metryki wyszukiwanych haseł, ale zapis zmian wymaga 90-dniowej kontroli bezpieczeństwa.",
     recommended_reason: "Przygotuj kolejkę do sprawdzenia bez obietnic o marnowaniu budżetu.",
     payload: {
       action_type: "negative_keyword_candidate",
@@ -498,7 +498,7 @@ const actions = [
           campaign_name: "Ekologus Search",
           ad_group_id: "789",
           ad_group_name: "Odpady",
-          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          reason: "Podgląd oceny dokładnego wykluczenia zbudowany z wyszukiwanych haseł i 90-dniowego odczytu bezpieczeństwa.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
           required_validation: [
@@ -2238,7 +2238,7 @@ const adsDiagnostics = {
   search_term_safety_read_contract: {
     id: "ads_search_term_safety_read_contract",
     status: "ready",
-    title: "Google Ads: 90-dniowy safety read zapytań",
+    title: "Google Ads: 90-dniowy odczyt bezpieczeństwa zapytań",
     summary:
       "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt=8,00 zł, konwersje=0, wartość konwersji=0.",
     allowed_metrics: [
@@ -2290,9 +2290,9 @@ const adsDiagnostics = {
   keyword_match_context_read_contract: {
     id: "ads_keyword_match_context_read_contract",
     status: "ready",
-    title: "Google Ads: kontekst dopasowań keywords",
+    title: "Google Ads: kontekst dopasowań słów kluczowych",
     summary:
-      "WILQ ma kontekst 1 istniejących keywordów z match types: BROAD.",
+      "WILQ ma kontekst 1 istniejących słów kluczowych z typami dopasowania: dopasowanie przybliżone.",
     allowed_metrics: [
       "keyword_text",
       "keyword_match_type",
@@ -2316,9 +2316,12 @@ const adsDiagnostics = {
       {
         keyword_text: "odpady",
         match_type: "BROAD",
+        match_type_label: "dopasowanie przybliżone",
         criterion_id: "401",
         criterion_status: "ENABLED",
+        criterion_status_label: "aktywne",
         negative: false,
+        negative_label: "aktywne",
         campaign_id: "123",
         campaign_name: "Ekologus Search",
         ad_group_id: "789",
@@ -2614,9 +2617,9 @@ const adsDiagnostics = {
   negative_keywords_read_contract: {
     id: "ads_negative_keywords_read_contract",
     status: "ready",
-    title: "Review wykluczeń z listy wyszukiwanych haseł",
+    title: "Ocena wykluczeń z wyszukiwanych haseł",
     summary:
-      "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
+      "WILQ ma 1 termin do oceny: ma koszt lub kliknięcia i zero konwersji w bieżących dowodach Google Ads.",
     candidates: [
       {
         id: "ads_negative_keyword_review_123_789_odpady_cena",
@@ -2624,12 +2627,18 @@ const adsDiagnostics = {
         review_priority: "wysokie",
         review_score: 53,
         review_reason:
-          "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie ocena zmarnowanego budżetu.",
+          "Bieżący odczyt: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst dopasowań słów kluczowych=1 wierszy. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
         human_review_gates: [
           "sprawdź intencję zapytania",
-          "porównaj z istniejącymi keywords i match types",
-          "sprawdź 90-dniowy safety read",
-          "zatwierdź poziom wykluczenia przed zapisem"
+          "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+          "sprawdź 90-dniowy odczyt bezpieczeństwa",
+          "zatwierdź poziom wykluczenia przed zapisem zmian"
+        ],
+        human_review_gate_labels: [
+          "sprawdź intencję zapytania",
+          "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+          "sprawdź 90-dniowy odczyt bezpieczeństwa",
+          "zatwierdź poziom wykluczenia przed zapisem zmian"
         ],
         campaign_id: "123",
         campaign_name: "Ekologus Search",
@@ -2654,9 +2663,12 @@ const adsDiagnostics = {
           {
             keyword_text: "odpady",
             match_type: "BROAD",
+            match_type_label: "dopasowanie przybliżone",
             criterion_id: "401",
             criterion_status: "ENABLED",
+            criterion_status_label: "aktywne",
             negative: false,
+            negative_label: "aktywne",
             campaign_id: "123",
             campaign_name: "Ekologus Search",
             ad_group_id: "789",
@@ -2671,12 +2683,14 @@ const adsDiagnostics = {
           search_term: "odpady cena",
           negative_keyword_text: "odpady cena",
           match_type: "EXACT",
+          match_type_label: "dopasowanie ścisłe",
           level: "ad_group",
+          level_label: "grupa reklam",
           campaign_id: "123",
           campaign_name: "Ekologus Search",
           ad_group_id: "789",
           ad_group_name: "Odpady",
-          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          reason: "Podgląd oceny dokładnego wykluczenia zbudowany z wyszukiwanych haseł i 90-dniowego odczytu bezpieczeństwa.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
           required_validation: [
@@ -2685,7 +2699,14 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
+          required_validation_labels: [
+            "sprawdzenie intencji zapytania",
+            "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+            "90-dniowa kontrola bezpieczeństwa",
+            "potwierdzenie człowieka przed zapisem"
+          ],
           blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -2697,9 +2718,19 @@ const adsDiagnostics = {
           "negative_keyword_change_preview",
           "human_confirm_before_apply"
         ],
+        required_check_labels: [
+          "sprawdzenie intencji zapytania",
+          "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+          "90-dniowa kontrola bezpieczeństwa",
+          "podgląd zmian wykluczeń",
+          "potwierdzenie człowieka przed zapisem"
+        ],
         safety_status: "read_ready_needs_human_review",
+        safety_status_label: "90-dniowy odczyt gotowy",
         validation_status: "pending_validation",
+        validation_status_label: "do sprawdzenia",
         blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2709,12 +2740,14 @@ const adsDiagnostics = {
         search_term: "odpady cena",
         negative_keyword_text: "odpady cena",
         match_type: "EXACT",
+        match_type_label: "dopasowanie ścisłe",
         level: "ad_group",
+        level_label: "grupa reklam",
         campaign_id: "123",
         campaign_name: "Ekologus Search",
         ad_group_id: "789",
         ad_group_name: "Odpady",
-        reason: "Exact negative keyword review preview zbudowany z evidence.",
+        reason: "Podgląd oceny dokładnego wykluczenia zbudowany z wyszukiwanych haseł i 90-dniowego odczytu bezpieczeństwa.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
         required_validation: [
@@ -2723,7 +2756,14 @@ const adsDiagnostics = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
+        required_validation_labels: [
+          "sprawdzenie intencji zapytania",
+          "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+          "90-dniowa kontrola bezpieczeństwa",
+          "potwierdzenie człowieka przed zapisem"
+        ],
         blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -2732,7 +2772,15 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     missing_read_contracts: [],
+    missing_read_contract_labels: [],
     blocked_claims: [
+      "dodanie wykluczających słów kluczowych",
+      "marnowanie budżetu na zapytaniach",
+      "utrata konwersji",
+      "koszt pozyskania celu",
+      "zwrot z reklam"
+    ],
+    blocked_claim_labels: [
       "dodanie wykluczających słów kluczowych",
       "marnowanie budżetu na zapytaniach",
       "utrata konwersji",
@@ -3474,11 +3522,11 @@ const adsDiagnostics = {
       id: "ads_review_negative_keyword_safety",
       decision_type: "review_negative_keyword_safety",
       status: "ready",
-      title: "Przejrzyj kandydatów wykluczeń tylko w trybie safety review",
+      title: "Przejrzyj kandydatów wykluczeń tylko po kontroli bezpieczeństwa",
       summary:
-        "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
+        "WILQ ma 1 termin do oceny: ma koszt lub kliknięcia i zero konwersji w bieżących dowodach Google Ads.",
       rationale:
-        "To jest sygnał do review, nie dowód waste ani zgoda na automatyczne wykluczenie.",
+        "To jest sygnał do sprawdzenia, nie dowód zmarnowanego budżetu ani zgoda na automatyczne wykluczenie.",
       next_step: "Przejrzyj propozycje do sprawdzenia przed podglądem zmian.",
       allowed_metrics: [
         "search_term",
@@ -3525,11 +3573,11 @@ const adsDiagnostics = {
           review_priority: "wysokie",
           review_score: 53,
           review_reason:
-            "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie ocena zmarnowanego budżetu.",
+            "Bieżący odczyt: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst dopasowań słów kluczowych=1 wiersz. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
           human_review_gates: [
             "sprawdź intencję zapytania",
-            "porównaj z istniejącymi keywords i match types",
-            "sprawdź 90-dniowy safety read",
+            "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+            "sprawdź 90-dniowy odczyt bezpieczeństwa",
             "zatwierdź poziom wykluczenia przed zapisem"
           ],
           campaign_id: "123",
@@ -3555,12 +3603,14 @@ const adsDiagnostics = {
             search_term: "odpady cena",
             negative_keyword_text: "odpady cena",
             match_type: "EXACT",
+            match_type_label: "dopasowanie ścisłe",
             level: "ad_group",
+            level_label: "grupa reklam",
             campaign_id: "123",
             campaign_name: "Ekologus Search",
             ad_group_id: "789",
             ad_group_name: "Odpady",
-            reason: "Exact negative keyword review preview zbudowany z evidence.",
+            reason: "Podgląd oceny dokładnego wykluczenia zbudowany z wyszukiwanych haseł i 90-dniowego odczytu bezpieczeństwa.",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
             required_validation: [
@@ -3569,7 +3619,14 @@ const adsDiagnostics = {
               "90_day_safety_check",
               "human_confirm_before_apply"
             ],
+            required_validation_labels: [
+              "sprawdzenie intencji zapytania",
+              "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+              "90-dniowa kontrola bezpieczeństwa",
+              "potwierdzenie człowieka przed zapisem"
+            ],
             blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+            blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
@@ -3581,9 +3638,19 @@ const adsDiagnostics = {
             "negative_keyword_change_preview",
             "human_confirm_before_apply"
           ],
+          required_check_labels: [
+            "sprawdzenie intencji zapytania",
+            "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+            "90-dniowa kontrola bezpieczeństwa",
+            "podgląd zmian wykluczeń",
+            "potwierdzenie człowieka przed zapisem"
+          ],
           safety_status: "read_ready_needs_human_review",
+          safety_status_label: "90-dniowy odczyt gotowy",
           validation_status: "pending_validation",
+          validation_status_label: "do sprawdzenia",
           blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3593,12 +3660,14 @@ const adsDiagnostics = {
           search_term: "odpady cena",
           negative_keyword_text: "odpady cena",
           match_type: "EXACT",
+          match_type_label: "dopasowanie ścisłe",
           level: "ad_group",
+          level_label: "grupa reklam",
           campaign_id: "123",
           campaign_name: "Ekologus Search",
           ad_group_id: "789",
           ad_group_name: "Odpady",
-          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          reason: "Podgląd oceny dokładnego wykluczenia zbudowany z wyszukiwanych haseł i 90-dniowego odczytu bezpieczeństwa.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
           required_validation: [
@@ -3607,7 +3676,14 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
+          required_validation_labels: [
+            "sprawdzenie intencji zapytania",
+            "sprawdzenie istniejących słów kluczowych i typów dopasowania",
+            "90-dniowa kontrola bezpieczeństwa",
+            "potwierdzenie człowieka przed zapisem"
+          ],
           blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
