@@ -2834,7 +2834,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "human_strategy_review",
     ]
     assert "wstępny lokalny kontekst" in business_context_contract["summary"]
-    assert "werdykt celu zostaje zablokowany" in business_context_contract["next_step"]
+    assert "ocena celu pozostaje zablokowana" in business_context_contract["next_step"]
 
     business_context_section = next(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
@@ -8396,20 +8396,38 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     optimizer_contract = payload["optimizer_readiness_contract"]
     assert optimizer_contract["id"] == "ads_optimizer_readiness_contract"
     assert optimizer_contract["status"] == "review_ready"
+    assert optimizer_contract["status_label"] == "gotowe do oceny"
     assert optimizer_contract["mode"] == "review_only"
+    assert optimizer_contract["mode_label"] == "ocena bez zapisu"
     assert optimizer_contract["api_mutation_ready"] is False
     assert optimizer_contract["apply_allowed"] is False
     assert optimizer_contract["ready_area_count"] == 2
     assert optimizer_contract["blocked_area_count"] >= 1
     assert "change_event_rows" in optimizer_contract["missing_read_contracts"]
+    assert "zdarzenia historii zmian" in optimizer_contract[
+        "missing_read_contract_labels"
+    ]
     assert "wpływ zmian" in optimizer_contract["blocked_claims"]
+    assert "wpływ zmian" in optimizer_contract["blocked_claim_labels"]
     readiness_items_by_id = {
         item["id"]: item for item in optimizer_contract["readiness_items"]
     }
     assert readiness_items_by_id["change_history_impact_review"]["status"] == "blocked"
+    assert readiness_items_by_id["change_history_impact_review"]["status_label"] == (
+        "zablokowane"
+    )
+    assert readiness_items_by_id["change_history_impact_review"]["risk_label"] == (
+        "wysokie"
+    )
+    assert readiness_items_by_id["change_history_impact_review"]["label"] == (
+        "historia zmian"
+    )
     assert "change_event_rows" in readiness_items_by_id[
         "change_history_impact_review"
     ]["missing_read_contracts"]
+    assert "zdarzenia historii zmian" in readiness_items_by_id[
+        "change_history_impact_review"
+    ]["missing_read_contract_labels"]
     assert "checklisty readiness" in readiness_items_by_id[
         "change_history_impact_review"
     ]["next_step"]

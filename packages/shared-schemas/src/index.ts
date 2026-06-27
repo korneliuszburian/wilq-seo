@@ -881,26 +881,33 @@ export const AdsCampaignTriageReadContractSchema = z.object({
 
 export const AdsOptimizerReadinessItemSchema = z.object({
   id: z.string(),
+  label: z.string().optional().default(""),
   title: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().optional().default(""),
   summary: z.string(),
   next_step: z.string(),
   source_contract_ids: z.array(z.string()),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  risk: z.enum(["low", "medium", "high", "critical"])
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().optional().default("")
 });
 
 export const AdsOptimizerReadinessContractSchema = z.object({
   id: z.string(),
   status: z.enum(["review_ready", "blocked"]),
+  status_label: z.string().optional().default(""),
   mode: z.literal("review_only"),
+  mode_label: z.string().optional().default(""),
   title: z.string(),
   summary: z.string(),
   ready_area_count: z.number().int().nonnegative(),
@@ -908,9 +915,11 @@ export const AdsOptimizerReadinessContractSchema = z.object({
   readiness_items: z.array(AdsOptimizerReadinessItemSchema),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),

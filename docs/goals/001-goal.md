@@ -191,6 +191,12 @@ Latest slice:
   browser proof for `/ads-doctor/custom-segments` hides raw connector, evidence
   and action IDs from the marketer surface:
   `.local-lab/proof/20260627-custom-segments-api-labels/browser/`.
+- Ads Doctor optimizer-readiness wording now uses API-owned Polish labels for
+  mode, status, risk, item names, missing data and blocked promises. The main
+  Ads route no longer owns optimizer-readiness label/title/summary/next-step
+  dictionaries, and expanded browser proof shows the readiness panel without
+  raw optimizer contract keys:
+  `.local-lab/proof/20260627-ads-optimizer-api-labels/browser/`.
 - Demand Gen readiness wording now uses API-owned Polish labels and source
   metrics for channel labels, review gates, missing-data labels and blocked
   promises. The `/ads-doctor/demand-gen` browser proof confirms no raw action

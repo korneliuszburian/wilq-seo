@@ -1182,26 +1182,33 @@ class AdsCampaignTriageReadContract(BaseModel):
 
 class AdsOptimizerReadinessItem(BaseModel):
     id: str
+    label: str = ""
     title: str
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     summary: str
     next_step: str
     source_contract_ids: list[str] = Field(default_factory=list)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.medium
+    risk_label: str = ""
 
 
 class AdsOptimizerReadinessContract(BaseModel):
     id: str = "ads_optimizer_readiness_contract"
     status: Literal["review_ready", "blocked"]
+    status_label: str = ""
     mode: Literal["review_only"] = "review_only"
+    mode_label: str = ""
     title: str
     summary: str
     ready_area_count: int = 0
@@ -1209,9 +1216,11 @@ class AdsOptimizerReadinessContract(BaseModel):
     readiness_items: list[AdsOptimizerReadinessItem] = Field(default_factory=list)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

@@ -66,6 +66,11 @@ Date: 2026-06-27
   instead of mapping raw Ads contract keys in the route. Browser proof for
   `/ads-doctor` shows Polish labels for missing inputs and blocked promises
   without raw `target_roas_or_cpa`, `profit_margin` or `human_strategy_review`.
+- Ads Doctor optimizer-readiness labels now also come from WILQ API/shared
+  schema: mode, status, risk, item labels, missing-data labels and blocked
+  promises. The route-local optimizer readiness dictionaries were removed, and
+  expanded browser proof shows Polish labels such as `kampanie do oceny`,
+  `historia zmian` and `ocena bez zapisu` without raw optimizer contract keys.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

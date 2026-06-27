@@ -1504,8 +1504,7 @@ def _business_context_read_contract(
                 "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
                 "operator potwierdzi docelowy zwrot z reklam albo koszt pozyskania celu "
                 "przez sprawdzoną akcję, WILQ zapisze go w lokalnym stanie; do tego czasu "
-                "ocena celu zostaje "
-                "zablokowany."
+                "ocena celu pozostaje zablokowana."
             )
         else:
             summary = (
@@ -6413,7 +6412,27 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         )
         for section in response.sections
     ]
+    _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
+
+
+def _hydrate_optimizer_readiness_marketer_labels(
+    contract: AdsOptimizerReadinessContract,
+) -> None:
+    contract.status_label = _ads_optimizer_status_label(contract.status)
+    contract.mode_label = _ads_optimizer_mode_label(contract.mode)
+    contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
+        contract.missing_read_contracts
+    )
+    contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    for item in contract.readiness_items:
+        item.label = _ads_optimizer_readiness_item_label(item.id)
+        item.status_label = _ads_status_label(item.status)
+        item.risk_label = _ads_risk_label(item.risk)
+        item.missing_read_contract_labels = _ads_missing_read_contract_labels(
+            item.missing_read_contracts
+        )
+        item.blocked_claim_labels = _unique(item.blocked_claims)
 
 
 def _hydrate_custom_segments_marketer_labels(
@@ -6488,6 +6507,38 @@ def _ads_validation_status_label(status: object) -> str:
         "blocked": "zablokowane",
     }
     value = str(status)
+    return labels.get(value, value)
+
+
+def _ads_optimizer_mode_label(mode: object) -> str:
+    labels = {
+        "review_only": "ocena bez zapisu",
+    }
+    value = str(mode)
+    return labels.get(value, value)
+
+
+def _ads_optimizer_status_label(status: object) -> str:
+    labels = {
+        "review_ready": "gotowe do oceny",
+        "blocked": "zablokowane",
+    }
+    value = str(status)
+    return labels.get(value, value)
+
+
+def _ads_optimizer_readiness_item_label(item_id: object) -> str:
+    labels = {
+        "campaign_review_queue": "kampanie do oceny",
+        "budget_and_recommendation_review": "budżety i rekomendacje",
+        "search_terms_review_queue": "wyszukiwane hasła",
+        "negative_keyword_review_queue": "wykluczenia do oceny",
+        "custom_segments_review_queue": "segmenty niestandardowe",
+        "keyword_planner_enrichment": "Keyword Planner",
+        "change_history_impact_review": "historia zmian",
+        "ads_apply_safety_gate": "bramka zapisu zmian",
+    }
+    value = str(item_id)
     return labels.get(value, value)
 
 

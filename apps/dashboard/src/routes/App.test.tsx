@@ -1512,7 +1512,9 @@ const adsDiagnostics = {
   optimizer_readiness_contract: {
     id: "ads_optimizer_readiness_contract",
     status: "review_ready",
+    status_label: "gotowe do oceny",
     mode: "review_only",
+    mode_label: "ocena bez zapisu",
     title: "Ads Optimizer readiness",
     summary:
       "WILQ może przygotować sprawdzenie kampanii i listy wyszukiwanych haseł, ale zapis zmian oraz ocena wpływu zmian są zablokowane do czasu pełnych kontraktów audytu.",
@@ -1521,8 +1523,10 @@ const adsDiagnostics = {
     readiness_items: [
       {
         id: "campaign_review_queue",
+        label: "kampanie do oceny",
         title: "Kolejność oceny kampanii",
         status: "ready",
+        status_label: "gotowe",
         summary:
           "Campaign activity, KPI, budżet, rekomendacje i impression share są dostępne jako kolejka oceny.",
         next_step:
@@ -1530,17 +1534,22 @@ const adsDiagnostics = {
         source_contract_ids: ["ads_campaign_triage_read_contract"],
         allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
         missing_read_contracts: [],
+        missing_read_contract_labels: [],
         operator_review_gates: ["human_strategy_review"],
         blocked_claims: ["zmarnowany budżet", "opłacalność", "zapis zmian kampanii"],
+        blocked_claim_labels: ["zmarnowany budżet", "opłacalność", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_ads_campaign_review_queue"],
-        risk: "medium"
+        risk: "medium",
+        risk_label: "średnie"
       },
       {
         id: "search_terms_review_queue",
+        label: "wyszukiwane hasła",
         title: "Search terms do review",
         status: "ready",
+        status_label: "gotowe",
         summary:
           "Search-term evidence jest gotowe do ręcznego review, bez automatycznych wykluczeń.",
         next_step:
@@ -1548,17 +1557,22 @@ const adsDiagnostics = {
         source_contract_ids: ["ads_search_term_review_summary_contract"],
         allowed_metrics: ["search_term", "clicks", "impressions", "cost_micros"],
         missing_read_contracts: ["human_confirm_before_apply"],
+        missing_read_contract_labels: ["potwierdzenie człowieka przed zapisem"],
         operator_review_gates: ["review_search_term_context"],
         blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_negative_keyword_review_queue"],
-        risk: "medium"
+        risk: "medium",
+        risk_label: "średnie"
       },
       {
         id: "custom_segments_review_queue",
+        label: "segmenty niestandardowe",
         title: "Segmenty niestandardowe do sprawdzenia",
         status: "ready",
+        status_label: "gotowe",
         summary:
           "Segmenty niestandardowe mogą być przygotowane do sprawdzenia z wyszukiwanych haseł i dowodów Keyword Planner.",
         next_step:
@@ -1566,17 +1580,22 @@ const adsDiagnostics = {
         source_contract_ids: ["ads_custom_segments_read_contract"],
         allowed_metrics: ["source_terms", "avg_monthly_searches"],
         missing_read_contracts: ["forecast_or_audience_size"],
+        missing_read_contract_labels: ["prognoza albo rozmiar odbiorców"],
         operator_review_gates: ["human_confirm_before_apply"],
         blocked_claims: ["rozmiar odbiorców", "zapis kierowania reklam"],
+        blocked_claim_labels: ["rozmiar odbiorców", "zapis kierowania reklam"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_custom_segments_from_search_terms"],
-        risk: "medium"
+        risk: "medium",
+        risk_label: "średnie"
       },
       {
         id: "change_history_impact_review",
+        label: "historia zmian",
         title: "Impact review historii zmian",
         status: "blocked",
+        status_label: "zablokowane",
         summary:
           "Change events są dostępne, ale WILQ nie ma jeszcze pre/post performance windows ani review wpływu zmian.",
         next_step:
@@ -1591,17 +1610,26 @@ const adsDiagnostics = {
           "post_change_performance_window",
           "human_change_impact_review"
         ],
+        missing_read_contract_labels: [
+          "okno wyników przed zmianą",
+          "okno wyników po zmianie",
+          "ręczna ocena wpływu zmian"
+        ],
         operator_review_gates: ["human_change_impact_review"],
         blocked_claims: ["wpływ zmian", "obietnica poprawy wyniku", "zapis zmian kampanii"],
+        blocked_claim_labels: ["wpływ zmian", "obietnica poprawy wyniku", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: [],
-        risk: "high"
+        risk: "high",
+        risk_label: "wysokie"
       },
       {
         id: "ads_apply_safety_gate",
+        label: "bramka zapisu zmian",
         title: "Apply i mutacje Ads",
         status: "blocked",
+        status_label: "zablokowane",
         summary:
           "Każda mutacja Ads wymaga osobnej akcji, preview, confirm i audytu.",
         next_step:
@@ -1609,12 +1637,18 @@ const adsDiagnostics = {
         source_contract_ids: ["ads_action_safety_contract"],
         allowed_metrics: [],
         missing_read_contracts: ["google_ads_mutation_audit", "human_confirm_before_apply"],
+        missing_read_contract_labels: [
+          "sprawdzenie zapisu zmian w Google Ads",
+          "potwierdzenie człowieka przed zapisem"
+        ],
         operator_review_gates: ["human_confirm_before_apply"],
         blocked_claims: ["zmiana budżetu", "zapis rekomendacji", "zapis zmian kampanii"],
+        blocked_claim_labels: ["zmiana budżetu", "zapis rekomendacji", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: [],
-        risk: "critical"
+        risk: "critical",
+        risk_label: "krytyczne"
       }
     ],
     allowed_metrics: [
@@ -1632,8 +1666,23 @@ const adsDiagnostics = {
       "google_ads_mutation_audit",
       "human_confirm_before_apply"
     ],
+    missing_read_contract_labels: [
+      "okno wyników przed zmianą",
+      "okno wyników po zmianie",
+      "ręczna ocena wpływu zmian",
+      "sprawdzenie zapisu zmian w Google Ads",
+      "potwierdzenie człowieka przed zapisem"
+    ],
     operator_review_gates: ["human_strategy_review", "human_confirm_before_apply"],
     blocked_claims: [
+      "zmarnowany budżet",
+      "ocena kosztu pozyskania celu",
+      "ocena zwrotu z reklam",
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "zapis zmian kampanii"
+    ],
+    blocked_claim_labels: [
       "zmarnowany budżet",
       "ocena kosztu pozyskania celu",
       "ocena zwrotu z reklam",
@@ -6846,6 +6895,14 @@ describe("WILQ dashboard", () => {
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
     expect(routeSource).toContain("summary.missing_read_contract_labels");
     expect(routeSource).toContain("summary.blocked_claim_labels");
+    expect(routeSource).toContain("optimizer_readiness_contract");
+    expect(routeSource).toContain("contract.mode_label");
+    expect(routeSource).toContain("item.missing_read_contract_labels");
+    expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
+    expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
+    expect(routeSource).not.toContain("adsOptimizerReadinessNextStep");
+    expect(routeSource).not.toContain("adsOptimizerReadinessItemLabel");
+    expect(routeSource).not.toContain("adsOptimizerModeLabel");
     expect(routeSource).not.toContain(
       "summary.missing_read_contracts.map(adsMissingReadContractLabel)"
     );
