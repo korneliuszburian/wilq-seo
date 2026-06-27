@@ -50,6 +50,10 @@ Wilku can inspect it without reading technical internals.
   Merchant, Localo, Ahrefs and Action Detail labels from dashboard helpers into
   API/domain/shared-schema labels.
 - Recent committed cleanup slices:
+  - `c5ea815 fix(dashboard): source ads and knowledge labels from api`
+  - `66a0a4d fix(dashboard): source tactical labels from api`
+  - `443dad4 fix(actions): drop obsolete content review audits`
+  - `d2f78a6 fix(actions): label impact check result sources`
   - `6497044 fix(ads): source negative keyword labels from api`
   - `df4c750 fix(ads): clean recommendation and keyword context copy`
   - `5a805aa fix(merchant): condense source and evidence labels`
@@ -93,10 +97,9 @@ Wilku can inspect it without reading technical internals.
   migration now carry superseded notes.
 - Current active slice: final stale-term scan and recovery alignment for
   Goal 001.
-- In-progress tactical/brief/Merchant label cleanup moves priority labels,
-  tactical intent/domain labels, source labels, evidence summaries, action
-  summaries, blocker labels and dimension labels into API/shared-schema
-  contracts for the touched surfaces.
+- Tactical Queue, Brief Workflow, Merchant tactical snippets, Ads Doctor and
+  Knowledge panels now consume API/shared-schema labels for the touched
+  priority/source/evidence/action/blocker/dimension/status/display label paths.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -109,17 +112,15 @@ are resolved or explicitly deferred.
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 2. `AdsDoctorSurface.tsx` still contains route-local product semantics for
-   start-here summaries, measurement plans, section labels and metric/readiness
-   fallbacks. Those must move to API/domain view-model fields.
+   start-here summaries, measurement plans and business-readiness fallback
+   composition. Those must move to API/domain view-model fields.
 3. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
    It needs a typed action-detail preview view-model; raw payload may remain
    only in collapsed technical detail.
 4. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
    content/action preview labels, blocked-claim labels and status labels. These
    need API/schema ownership.
-5. `KnowledgePanels.tsx` still owns route/status/risk/card/source display
-   labels. Knowledge API/schema should provide those fields.
-6. Repeated metric/dimension naming in dashboard components should become
+5. Repeated metric/dimension naming in dashboard components should become
    API-owned metric labels; pure numeric formatting can stay in UI.
 
 ## Execution Policy

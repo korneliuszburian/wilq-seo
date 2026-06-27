@@ -29,6 +29,10 @@ Date: 2026-06-27
 
 Recent commits:
 
+- `c5ea815 fix(dashboard): source ads and knowledge labels from api`
+- `66a0a4d fix(dashboard): source tactical labels from api`
+- `443dad4 fix(actions): drop obsolete content review audits`
+- `d2f78a6 fix(actions): label impact check result sources`
 - `6497044 fix(ads): source negative keyword labels from api`
 - `5b81874 docs: condense active cleanup recovery`
 - `df4c750 fix(ads): clean recommendation and keyword context copy`
@@ -73,9 +77,7 @@ What changed:
 - The cleaned surfaces keep traceability through typed contracts, but raw
   internals are moved out of first-screen marketer copy.
 
-Current active slice: final stale-term scan and recovery alignment for Goal 001.
-
-In-progress cleanup slice:
+Latest cleanup state:
 
 - Tactical Queue, Brief Workflow and Merchant tactical snippets now consume
   API-owned priority/source/evidence/action/blocker/dimension labels instead
@@ -83,8 +85,12 @@ In-progress cleanup slice:
   blocker replacement helpers.
 - Shared schemas now expose those label fields for marketing brief items,
   tactical queue items/groups and Merchant decisions.
-- Backend tests now assert those labels exist on the marketing brief and
-  tactical queue contracts.
+- Ads Doctor no longer imports `marketingLabels.ts`; the touched Ads proof,
+  summary and section label paths now use API/shared-schema label fields.
+- Knowledge panels no longer own route/status/risk/card/source display maps;
+  knowledge cards, playbooks and decision bindings now carry API-owned labels.
+- Backend and dashboard tests assert the tactical, Ads and Knowledge label
+  contracts.
 
 Proof:
 
@@ -127,6 +133,11 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
+- Ads/Knowledge label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics or knowledge_playbooks or knowledge_compiler or knowledge_operating_map" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx src/routes/App.test.tsx -t "KnowledgePanels|knowledge route maps source knowledge to decisions" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -136,29 +147,26 @@ Next cleanup queue:
 
 1. Ads Doctor:
    - remove remaining route-local product semantics from
-     `AdsDoctorSurface.tsx`, including start-here summaries, measurement plan
-     summaries, section labels and raw metric/readiness fallbacks.
+     `AdsDoctorSurface.tsx`, especially start-here summaries, measurement plan
+     summaries and business-readiness fallback composition.
 2. Action detail previews:
    - replace `DetailPanels.tsx` payload-shape inference with typed API preview
      rows and labels; keep raw payload only in collapsed technical detail.
 3. Content Planner:
    - move active `contentLabels.ts` semantics for action preview, status,
      blocked-claim and metric labels into content/action API contracts.
-4. Knowledge:
-   - move Knowledge route display labels, status/risk labels, card/source type
-     labels and display titles into the knowledge API/schema.
-5. Metric labels:
+4. Metric labels:
    - move repeated metric/dimension naming into API-owned metric label fields;
      keep pure numeric formatting in UI.
-6. Recovery docs:
+5. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Commit the tactical/brief/Merchant label cleanup slice.
-2. Start the next disjoint cleanup slice from the active queue, preferably
-   Knowledge labels or Ads Doctor labels.
+1. Start the next cleanup slice from the active queue. The highest-impact next
+   target is `DetailPanels.tsx`, because it is now the only active consumer of
+   `marketingLabels.ts`.
 
 ## Guardrails
 
