@@ -742,7 +742,7 @@ def _recommendation_items(
                     "WILQ nie może uczciwie diagnozować zmarnowanego kosztu bez aktualnych dowodów Ads. "
                     "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
-                next_step="Użyj sprawdzonej akcji WILQ, żeby przywrócić odczyt Google Ads.",
+                next_step="Użyj sprawdzonej akcji do sprawdzenia, żeby przywrócić odczyt Google Ads.",
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,
             )
