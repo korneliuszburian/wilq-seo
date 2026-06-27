@@ -104,6 +104,13 @@ Date: 2026-06-27
   `blocker`, `campaign facts` or `evidence IDs`; browser read of
   `/ads-doctor` shows the condensed first-step Ads decision and Polish
   missing-data/measurement wording.
+- Ads Doctor skill and active Codex eval prompts now use Polish operator
+  wording for wyszukiwane hasła, wykluczające słowa kluczowe, koszt pozyskania
+  celu, blokady and optional design preview. `tests/test_codex_skill_eval_cases.py`
+  now prevents reintroducing the old Ads eval prompt phrases `search terms`,
+  `negative keywords`, `CPA`, `optional preview`, `blocked claims`,
+  `read-only rows`, `campaign review queue` and `spend` in active Ads eval/skill
+  prose.
 
 ## Latest Proof Pointers
 
@@ -129,6 +136,15 @@ Date: 2026-06-27
 - Ads Doctor first-screen/API language cleanup: live API scan and browser read
   were run directly after `scripts/local_stack.sh restart` in the 2026-06-27
   cleanup slice; detailed proof was not persisted beyond command output.
+- Ads Doctor skill/eval prompt cleanup:
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1`
+    passed: 6 tests.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+    passed against the managed local API.
+  - Focused scan across active Ads skill prose, active eval cases and static
+    eval tests found no remaining active hits for the old Ads eval prompt
+    phrases outside the new forbidden-list assertions.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

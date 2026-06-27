@@ -91,9 +91,9 @@ def main() -> int:
         if not blocked_handoff.get("action_ids"):
             raise SystemExit("Blocked Ads handoff must include action IDs")
         blocked_claims = set(blocked_handoff.get("blocked_claims", []))
-        if not {"zwrot z reklam", "search terms"} <= blocked_claims:
+        if not {"zwrot z reklam", "wyszukiwane hasła"} <= blocked_claims:
             raise SystemExit(
-                "Blocked Ads handoff must list blocked zwrot z reklam and search terms claims"
+                "Blocked Ads handoff must list blocked zwrot z reklam and wyszukiwane hasła claims"
             )
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     campaign_triage_read_contract = (
@@ -333,7 +333,7 @@ def main() -> int:
     if recommendations_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose recommendations_read_contract")
     if not recommendations_read_contract.get("blocked_claims"):
-        raise SystemExit("Recommendations contract must list blocked claims")
+        raise SystemExit("Recommendations contract must list zablokowane obietnice")
     if recommendations_read_contract.get("status") == "ready":
         pack_recommendations_contract = (
             pack.get("ads_diagnostics", {}).get("recommendations_read_contract") or {}
@@ -430,7 +430,7 @@ def main() -> int:
     if impression_share_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose impression_share_read_contract")
     if not impression_share_read_contract.get("blocked_claims"):
-        raise SystemExit("Impression share contract must list blocked claims")
+        raise SystemExit("Impression share contract must list zablokowane obietnice")
     if impression_share_read_contract.get("status") == "ready":
         pack_impression_share_contract = (
             pack.get("ads_diagnostics", {}).get("impression_share_read_contract") or {}
@@ -449,7 +449,7 @@ def main() -> int:
     if change_history_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose change_history_read_contract")
     if not change_history_read_contract.get("blocked_claims"):
-        raise SystemExit("Change history contract must list blocked claims")
+        raise SystemExit("Change history contract must list zablokowane obietnice")
     if change_history_read_contract.get("status") == "ready":
         pack_change_history_contract = (
             pack.get("ads_diagnostics", {}).get("change_history_read_contract") or {}
@@ -521,7 +521,7 @@ def main() -> int:
     if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
     if not search_term_safety_read_contract.get("blocked_claims"):
-        raise SystemExit("Search-term safety contract must list blocked claims")
+        raise SystemExit("Search-term safety contract must list zablokowane obietnice")
     if search_term_safety_read_contract.get("status") == "ready":
         pack_safety_contract = (
             pack.get("ads_diagnostics", {}).get("search_term_safety_read_contract") or {}
@@ -543,7 +543,7 @@ def main() -> int:
     if keyword_match_context_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose keyword_match_context_read_contract")
     if not keyword_match_context_read_contract.get("blocked_claims"):
-        raise SystemExit("Keyword match context contract must list blocked claims")
+        raise SystemExit("Keyword match context contract must list zablokowane obietnice")
     if keyword_match_context_read_contract.get("status") == "ready":
         pack_keyword_context_contract = (
             pack.get("ads_diagnostics", {}).get("keyword_match_context_read_contract")
@@ -563,7 +563,7 @@ def main() -> int:
     if keyword_planner_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose keyword_planner_read_contract")
     if not keyword_planner_read_contract.get("blocked_claims"):
-        raise SystemExit("Keyword Planner contract must list blocked claims")
+        raise SystemExit("Keyword Planner contract must list zablokowane obietnice")
     pack_keyword_planner_contract = (
         pack.get("ads_diagnostics", {}).get("keyword_planner_read_contract") or {}
     )
@@ -647,7 +647,7 @@ def main() -> int:
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
-        raise SystemExit("Negative keyword contract must list blocked claims")
+        raise SystemExit("Negative keyword contract must list zablokowane obietnice")
     if negative_keywords_read_contract.get("status") == "ready":
         if not negative_keywords_read_contract.get("candidates"):
             raise SystemExit("Ready negative keyword contract must expose candidates")

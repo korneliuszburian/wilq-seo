@@ -33,8 +33,9 @@ Purpose:
   question about what to write for the new Ekologus site without SEO slop.
 - Prove that `messy_task_pl` is injected into the actual `codex exec` eval
   prompt, not only stored in the case JSON.
-- Keep `ekologus.dev.proudsite.pl` as target context and keep staging, publish,
-  ranking, lead and revenue uplift claims blocked.
+- Keep `ekologus.pl` as the public/final content home, treat any dev preview
+  host as optional design context only, and keep staging, publish, ranking,
+  lead and revenue uplift claims blocked.
 
 Change:
 
@@ -64,9 +65,8 @@ Result:
 - The prompt artifact contains `messy_marketer_prompt` with the marketer-style
   question about BDO, Zielony Ład, refresh/merge/new content and draft blockers.
 - The final JSON keeps BDO and Zielony Ład as refresh/merge review work, names
-  `target_site_mapping_review`, `manual_mapping_required`,
-  `review_alternative_candidates`, `inventory_check_before_create`,
-  `merge_create_after_inventory_check`, `freshness` and `stale`.
+  the public/final URL check, inventory review before create,
+  merge/create-after-inventory review, freshness and stale-source handling.
 - The output blocks `wordpress_staging_write`, WordPress publish,
   `ranking_or_lead_uplift_claim`, lead uplift, revenue impact and treating
   `ekologus.dev.proudsite.pl` as source evidence.
@@ -82,8 +82,8 @@ Product finding:
 Purpose:
 
 - Verify that Ads Doctor can answer an imprecise marketer question about
-  "what burns budget" without inventing CPA, ROAS, wasted-budget or apply
-  conclusions.
+  "co przepala budżet" without inventing cost-per-goal, return-on-ad-spend,
+  wasted-budget or write conclusions.
 - Prove the messy prompt path works for the highest-risk Ads demo surface.
 
 Proof:
@@ -112,10 +112,11 @@ Result:
   `act_prepare_custom_segments_from_search_terms` and
   `act_prepare_negative_keyword_review_queue`.
 - The output tells the marketer to start with campaign review, recommendation
-  review and negative keyword safety review, while keeping CPA, ROAS,
-  search-term waste, wasted budget, budget scaling, recommendation apply,
-  targeting/apply and negative keyword apply blocked without human review,
-  confirmation and apply/audit contract.
+  review and safety review for wykluczające słowa kluczowe, while keeping koszt
+  pozyskania celu, zwrot z reklam, marnowanie budżetu na zapytaniach, zmarnowany
+  budżet, budget scaling, recommendation apply, targeting/apply and keyword
+  exclusion writes blocked without human review, confirmation and apply/audit
+  contract.
 
 Product finding:
 
@@ -240,23 +241,23 @@ Product finding:
 - Localo is demo-useful as read-only local visibility review. It is not a local
   SEO task executor, GBP writer or uplift proof.
 
-## 2026-06-24 - wilq-content-strategist target-site boundary eval case
+## 2026-06-24 - wilq-content-strategist public/final URL boundary eval case
 
 Purpose:
 
-- Harden the content strategist eval against a likely demo failure: treating
-  `ekologus.dev.proudsite.pl` as source evidence instead of target context for
-  adaptation.
-- Require the content path to mention source/target URLs, target-site
-  adaptation state, inventory/canonical/duplicate checks and blocked publish/
-  ranking/lead/revenue claims.
+- Harden the content strategist eval against a likely demo failure: treating a
+  dev preview host as source evidence, final canonical URL or a reason to
+  rewrite existing content.
+- Require the content path to mention public/final URL fields, optional design preview
+  context, inventory/canonical/duplicate checks and blocked publish/ranking/
+  lead/revenue claims.
 
 Change:
 
 - `docs/evals/cases/wilq-skill-eval-cases.json` now asks the content skill to
-  treat `ekologus.dev.proudsite.pl` as target context only and adds expected
-  terms for `source_url`, `target_site_url`,
-  `target_site_adaptation_status`, `canonical` and `duplicate`.
+  keep public/final URL semantics and adds expected terms for
+  `source_public_url`, `final_canonical_url`, `intended_final_url`,
+  `preview_url`, `canonical` and `duplicate`.
 - The same case now blocks `ekologus.dev.proudsite.pl source evidence`,
   `WordPress publish`, `duplicate-free guarantee`, `ranking guarantee`,
   `lead uplift` and `revenue impact` as recommendation claims unless they are
@@ -5597,14 +5598,14 @@ Product finding:
   now preserves the fields in compact form, so dashboard and skill share the
   same review-safe content brief contract.
 
-## 2026-06-24 - wilq-content-strategist target-site boundary proof
+## 2026-06-24 - wilq-content-strategist public/final URL boundary proof
 
 Purpose:
 
 - Verify the updated adversarial content eval against the real non-interactive
   Codex harness, not only static eval case definitions.
-- Keep `ekologus.dev.proudsite.pl` as target context/adaptation target, not
-  historical source evidence.
+- Keep `ekologus.pl` as public/final URL context and keep any dev preview host
+  out of source evidence, final canonical and migration logic.
 - Keep WordPress publish, duplicate-free guarantee, ranking guarantee, lead
   uplift and revenue impact blocked without validated write/apply evidence.
 
@@ -5629,9 +5630,8 @@ Result:
 - `api_used=true`
 - `source_connectors` include GSC, GA4, Ahrefs and WordPress inventory.
 - `operator_usefulness_score=4`; this is guardrail proof, not marketer UAT.
-- Recommendations mention `source_url`, `target_site_url`,
-  `target_site_adaptation_status`, `target context`, `canonical` and
-  `duplicate`.
+- Recommendations mention `source_public_url`, `final_canonical_url`,
+  `intended_final_url`, optional `preview_url`, `canonical` and `duplicate`.
 - Blocked terms include `ekologus.dev.proudsite.pl source evidence`,
   WordPress publish, duplicate-free guarantee, ranking guarantee, lead uplift
   and revenue impact.
@@ -5639,7 +5639,7 @@ Result:
 
 Product finding:
 
-- The content skill now passes the real non-interactive target-site boundary
+- The content skill now passes the real non-interactive public/final URL boundary
   case while preserving evidence-backed refresh/merge guidance. The next content
   depth risk is the actual duplicate/canonical gate before draft or staging
   handoff, not this boundary wording.

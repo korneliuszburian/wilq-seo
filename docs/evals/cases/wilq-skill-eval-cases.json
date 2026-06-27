@@ -57,7 +57,7 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj koszt pozyskania celu, zwrot z reklam, marnowanie budżetu na zapytaniach, zmarnowany budżet, skalowanie budżetu, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
+    "task_pl": "Sprawdź aktualne dowody Google Ads dla Ekologus: pokaż co wolno powiedzieć o faktach z kampanii, kolejce przeglądu kampanii, wyszukiwanych hasłach tylko do odczytu, 90-dniowym sprawdzeniu bezpieczeństwa haseł, kontekście dopasowania słów kluczowych, przeglądzie rekomendacji, udziale w wyświetleniach, segmencie niestandardowym, wzbogaceniu Keyword Planner i kolejce sprawdzenia wykluczających słów kluczowych, a jasno zablokuj koszt pozyskania celu, zwrot z reklam, marnowanie budżetu na zapytaniach, zmarnowany budżet, skalowanie budżetu, zapis rekomendacji, kierowanie reklam i zapis zmian oraz dodanie wykluczających słów kluczowych bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
     "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania kosztu pozyskania celu ani zwrotu z reklam, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
@@ -66,12 +66,12 @@
       "ads_diagnostics",
       "live_data_available",
       "campaign",
-      "campaign review",
-      "read-only rows",
-      "search terms",
-      "CPA",
+      "przegląd kampanii",
+      "wiersze tylko do odczytu",
+      "wyszukiwane hasła",
+      "koszt pozyskania celu",
       "zwrot z reklam",
-      "negative keywords",
+      "wykluczające słowa kluczowe",
       "blokady",
       "ads_review_budget_context",
       "budget_pacing_read_contract",
@@ -229,7 +229,7 @@
       "ranking",
       "GBP",
       "local visibility",
-      "blocked claims"
+      "zablokowane obietnice"
     ],
     "blocked_claim_terms": [
       "local task completed",
@@ -280,7 +280,7 @@
       "intended_final_url",
       "preview_url",
       "ekologus.pl",
-      "optional preview",
+      "opcjonalny podgląd",
       "canonical",
       "duplicate",
       "source_facts",
@@ -319,7 +319,7 @@
       "do sprawdzenia w WILQ",
       "LinkedIn",
       "Facebook",
-      "blocked claims"
+      "zablokowane obietnice"
     ],
     "expected_action_ids": [
       "act_prepare_linkedin_social_drafts",
@@ -350,7 +350,7 @@
       "campaign_candidates",
       "podgląd zmian",
       "Sprawdzenie w WILQ",
-      "blocked claims"
+      "zablokowane obietnice"
     ],
     "expected_blocked": false,
     "blocked_claim_terms": [
@@ -414,7 +414,7 @@
       "demand_gen_landing_quality_by_campaign",
       "demand_gen_transition_constraints",
       "demand_gen_readiness_review_action_object",
-      "blocked claims"
+      "zablokowane obietnice"
     ],
     "expected_blocked": true,
     "blocked_claim_terms": [

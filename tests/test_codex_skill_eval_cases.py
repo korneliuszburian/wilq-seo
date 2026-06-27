@@ -5,6 +5,8 @@ from pathlib import Path
 
 CASES_PATH = Path("docs/evals/cases/wilq-skill-eval-cases.json")
 HARNESS_PATH = Path("scripts/codex_skill_eval.sh")
+ADS_SKILL_PATH = Path(".agents/skills/wilq-ads-doctor/SKILL.md")
+ADS_OUTPUT_CONTRACT_PATH = Path(".agents/skills/wilq-ads-doctor/references/output-contract.md")
 
 
 def test_skill_hygiene_blocks_recovery_artifacts_in_skill_prose() -> None:
@@ -20,6 +22,28 @@ def test_skill_hygiene_blocks_recovery_artifacts_in_skill_prose() -> None:
         "prompt-fix",
     ):
         assert phrase in forbidden
+
+
+def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:
+    active_text = "\n".join(
+        [
+            CASES_PATH.read_text(encoding="utf-8"),
+            ADS_SKILL_PATH.read_text(encoding="utf-8"),
+            ADS_OUTPUT_CONTRACT_PATH.read_text(encoding="utf-8"),
+        ]
+    )
+
+    for phrase in (
+        "search terms",
+        "negative keywords",
+        "CPA",
+        "optional preview",
+        "blocked claims",
+        "read-only rows",
+        "campaign review queue",
+        "spend",
+    ):
+        assert phrase not in active_text
 
 
 def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
@@ -60,9 +84,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "forecast_or_audience_size",
                 "negative_keyword_change_preview",
                 "zapis zmian rekomendacji",
-                "search terms",
+                "wyszukiwane hasła",
                 "negative_keywords_read_contract",
-                "CPA",
+                "koszt pozyskania celu",
                 "zwrot z reklam",
                 "blokady",
             },
@@ -196,7 +220,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "intended_final_url",
                 "preview_url",
                 "ekologus.pl",
-                "optional preview",
+                "opcjonalny podgląd",
                 "canonical",
                 "duplicate",
                 "source_facts",
@@ -242,7 +266,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "demand_gen_landing_quality_by_campaign",
                 "demand_gen_transition_constraints",
                 "demand_gen_readiness_review_action_object",
-                "blocked claims",
+                "zablokowane obietnice",
             },
             "action_ids": {"act_review_demand_gen_readiness"},
             "validated_action_ids": {"act_review_demand_gen_readiness"},
@@ -268,7 +292,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ranking",
                 "GBP",
                 "local visibility",
-                "blocked claims",
+                "zablokowane obietnice",
             },
             "action_ids": {"act_review_localo_visibility_facts"},
             "validated_action_ids": {"act_review_localo_visibility_facts"},
@@ -283,7 +307,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "do sprawdzenia w WILQ",
                 "LinkedIn",
                 "Facebook",
-                "blocked claims",
+                "zablokowane obietnice",
             },
             "action_ids": {
                 "act_prepare_linkedin_social_drafts",
@@ -373,7 +397,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "intended_final_url",
         "preview_url",
         "ekologus.pl",
-        "optional preview",
+        "opcjonalny podgląd",
         "canonical",
         "duplicate",
         "source_facts",

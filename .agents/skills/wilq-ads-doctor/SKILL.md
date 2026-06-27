@@ -1,6 +1,6 @@
 ---
 name: wilq-ads-doctor
-description: Diagnozuje Google Ads dla Ekologus przez WILQ API evidence i bezpieczne kontrakty akcji. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź search terms", "czy dodać negative keywords?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, kosztu pozyskania celu ani zwrotu z reklam/spend, campaign review lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
+description: Diagnozuje Google Ads dla Ekologus przez WILQ API evidence i bezpieczne kontrakty akcji. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź wyszukiwane hasła", "czy dodać wykluczające słowa kluczowe?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, koszt pozyskania celu, zwrot z reklam, koszt reklam, przegląd kampanii lub sprawdzenie akcji Ads w WILQ. Nie wolno zmyślać Ads metryk ani omijać sprawdzania w WILQ.
 ---
 
 # WILQ Ads Doctor
@@ -20,7 +20,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - "Pokaż mi przestrzeń do polepszenia adsów w Ekologus."
 - "Znajdź ostatnie kampanie i ich efekty."
 - "Co teraz pali budżet w Google Ads?"
-- "Sprawdź search terms i przygotuj negative keywords, jeśli evidence na to pozwala."
+- "Sprawdź wyszukiwane hasła i przygotuj wykluczające słowa kluczowe, jeśli dowody na to pozwalają."
 - "Czy możemy ocenić koszt pozyskania celu, zwrot z reklam albo zmarnowany koszt na podstawie obecnych danych?"
 
 </triggers>
@@ -31,8 +31,8 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, zmarnowany koszt, search terms, jakości kampanii, rekomendacji lub negative keywords.
-4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`, `budget_pacing_read_contract`, `recommendations_read_contract`, `impression_share_read_contract`, `change_history_read_contract`, `search_terms_read_contract`, `search_term_safety_read_contract`, `keyword_match_context_read_contract`, `keyword_planner_read_contract`, `custom_segments_read_contract`, `negative_keywords_read_contract`, campaign review action IDs i action IDs.
+3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, zmarnowanego kosztu, wyszukiwanych haseł, jakości kampanii, rekomendacji lub wykluczających słów kluczowych.
+4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`, `budget_pacing_read_contract`, `recommendations_read_contract`, `impression_share_read_contract`, `change_history_read_contract`, `search_terms_read_contract`, `search_term_safety_read_contract`, `keyword_match_context_read_contract`, `keyword_planner_read_contract`, `custom_segments_read_contract`, `negative_keywords_read_contract`, ID akcji przeglądu kampanii i action IDs.
 5. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
 6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
 7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
@@ -77,12 +77,13 @@ Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
   `action_ids`, pola podglądu zmian i wiersze decyzji mówią, co wolno opisać.
 - Gdy kontrakt jest `ready`, streszczaj wyłącznie fakty i metryki wskazane przez
   ten kontrakt. Nie dopowiadaj skutku biznesowego bez osobnego pola kontraktu.
-- Gdy kontrakt jest `blocked` albo ma `missing_read_contracts`, pokaż blocker,
-  brakujące kontrakty i blocked claims zamiast tworzyć diagnozę performance.
+- Gdy kontrakt jest `blocked` albo ma `missing_read_contracts`, pokaż blokadę,
+  brakujące dane źródłowe i zablokowane obietnice zamiast tworzyć diagnozę skuteczności.
 - akcje do sprawdzenia traktuj jako przygotowanie do sprawdzenia w WILQ, dopóki API nie zwraca
   sprawdzonej w WILQ ścieżki zapisu zmian, podglądu, potwierdzenia i audytu.
 - Jeśli `live_data_available=false`, zwróć `blocked_handoff` i nie diagnozuj
-  spend, koszt pozyskania celu, zwrot z reklam, search terms, zmarnowany budżet ani negative keywords.
+  kosztu reklam, kosztu pozyskania celu, zwrotu z reklam, wyszukiwanych haseł,
+  zmarnowanego budżetu ani wykluczających słów kluczowych.
 
 </evidence_requirements>
 
@@ -90,7 +91,7 @@ Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
 
 Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
 
