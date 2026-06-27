@@ -209,7 +209,7 @@ const actions = [
     ],
     validation_status: "not_validated",
     human_diagnosis: "GA4 zwraca realne metryki ruchu, ale bez dowodu konwersji.",
-    recommended_reason: "Przygotuj tracking-gap review.",
+    recommended_reason: "Przygotuj sprawdzenie jakości pomiaru.",
     payload: {
       action_type: "ga4_tracking_gap",
       connector: "google_analytics_4",
@@ -221,8 +221,11 @@ const actions = [
           preview_contract: "ga4_tracking_quality_review_v1",
           operation_type: "tracking_quality_review",
           landing_page: "/oferta/",
+          landing_page_label: "/oferta/",
           source_medium: "google / cpc",
+          source_medium_label: "google / cpc",
           campaign_name: "(2026) Ekologus Ogólna",
+          campaign_name_label: "(2026) Ekologus Ogólna",
           tracking_dimension_gaps: [],
           metric_snapshot: {
             active_users: 20,
@@ -241,8 +244,17 @@ const actions = [
             "review_conversion_or_key_event_mapping",
             "human_confirm_before_tracking_change"
           ],
+          required_validation_labels: [
+            "sprawdź stronę wejścia",
+            "sprawdź źródło i medium ruchu",
+            "sprawdź kampanię",
+            "sprawdź konwersje i zdarzenia kluczowe",
+            "potwierdź sprawdzenie przez człowieka"
+          ],
           blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
+          blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
           evidence_ids: ["ev_refresh_ga4"],
+          evidence_summary_label: "1 dowód źródłowy",
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -5222,7 +5234,9 @@ const ga4Diagnostics = {
     dimensioned_behavior_metric_count: 1,
     landing_group_count: 1,
     source_connectors: ["google_analytics_4"],
+    source_connector_labels: ["GA4"],
     evidence_ids: ["ev_refresh_ga4"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
     blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
     blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
@@ -5242,7 +5256,9 @@ const ga4Diagnostics = {
     wordpress_missing_count: 1,
     conversion_readiness_status: "blocked",
     source_connectors: ["google_analytics_4"],
+    source_connector_labels: ["GA4"],
     evidence_ids: ["ev_refresh_ga4"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
     blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
     blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"]
@@ -5258,15 +5274,20 @@ const ga4Diagnostics = {
       priority: 31,
       metric_tiles: { aktywni: 20, sesje: 30, zaangażowanie: "12.5%" },
       landing_page: "/oferta/",
+      landing_page_label: "/oferta/",
       source_medium: "google / cpc",
+      source_medium_label: "google / cpc",
       campaign_name: "Ekologus Ogólna",
+      campaign_name_label: "Ekologus Ogólna",
       wordpress_match: "missing",
       wordpress_match_label: "brak potwierdzenia",
       wordpress_match_confidence: "missing",
       wordpress_match_confidence_label: "brak dopasowania",
       wordpress_content_url: null,
       source_connectors: ["google_analytics_4"],
+      source_connector_labels: ["GA4"],
       evidence_ids: ["ev_refresh_ga4"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
       blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
@@ -5290,7 +5311,9 @@ const ga4Diagnostics = {
       diagnosis: "Fakty zachowania z GA4 pozwalają wskazać strony wejścia do kontroli jakości ruchu.",
       next_step: "Najpierw sprawdź grupy z niskim zaangażowaniem.",
       source_connectors: ["google_analytics_4"],
+      source_connector_labels: ["GA4"],
       evidence_ids: ["ev_refresh_ga4"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
@@ -5309,7 +5332,9 @@ const ga4Diagnostics = {
       diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
       next_step: "Sprawdź propozycję w WILQ i zatrzymaj wnioski o konwersjach bez metryk.",
       source_connectors: ["google_analytics_4"],
+      source_connector_labels: ["GA4"],
       evidence_ids: ["ev_refresh_ga4"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
@@ -7087,6 +7112,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\(not set\)/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tracking-gap/)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).not.toBeInTheDocument();
@@ -7107,6 +7134,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(screen.queryByText(/\(not set\)/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tracking-gap/)).not.toBeInTheDocument();
     const optimizerPanel = screen
       .getByRole("heading", { name: "Co można zrobić teraz w Ads" })
       .closest(".mb-4");
@@ -7635,8 +7664,8 @@ describe("WILQ dashboard", () => {
     expect(ga4ProofSection).not.toBeNull();
     const ga4Proof = within(ga4ProofSection as HTMLElement);
     expect(ga4Proof.queryByText(/active_users: 20/)).not.toBeInTheDocument();
-    expect(ga4Proof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
-    expect(ga4Proof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(ga4Proof.getAllByText(/Dowody/).length).toBeGreaterThan(0);
+    expect(ga4Proof.getAllByText(/dowody źródłowe/).length).toBeGreaterThan(0);
     expect(ga4Proof.queryByText(/ev_refresh_ga4_safety/)).not.toBeInTheDocument();
     expect(
       ga4Proof.queryByRole("link", { name: "act_review_ga4_tracking_quality" })

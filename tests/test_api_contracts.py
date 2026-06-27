@@ -4529,9 +4529,14 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     ]
     titles = [decision.title for decision in decisions]
     assert titles == [
-        "GA4: napraw pomiar - (not set) / (not set)",
-        "GA4: napraw pomiar - (not set) / google / organic",
+        "GA4: napraw pomiar - brak strony wejścia w raporcie / brak źródła i medium w raporcie",
+        "GA4: napraw pomiar - brak strony wejścia w raporcie / google / organic",
     ]
+    assert decisions[0].landing_page_label == "brak strony wejścia w raporcie"
+    assert decisions[0].source_medium_label == "brak źródła i medium w raporcie"
+    assert decisions[0].campaign_name_label == "brak kampanii w raporcie"
+    assert decisions[0].source_connector_labels == ["GA4"]
+    assert decisions[0].evidence_summary_label == "1 dowód źródłowy"
 
 
 def test_command_center_exposes_polish_operator_brief(

@@ -2518,8 +2518,11 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
     preview_contract: Literal["ga4_tracking_quality_review_v1"]
     operation_type: Literal["tracking_quality_review"]
     landing_page: str | None = None
+    landing_page_label: str = ""
     source_medium: str | None = None
+    source_medium_label: str = ""
     campaign_name: str | None = None
+    campaign_name_label: str = ""
     tracking_dimension_gaps: list[
         Literal["landing_page", "source_medium", "campaign_name"]
     ] = Field(default_factory=list)
@@ -2527,8 +2530,11 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
     metric_snapshot_labels: dict[str, str] = Field(default_factory=dict)
     reason: str
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
@@ -2544,7 +2550,9 @@ class Ga4DiagnosticSection(BaseModel):
     diagnosis: str
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -2568,15 +2576,20 @@ class Ga4DecisionItem(BaseModel):
     priority: int = Field(default=50, ge=1, le=100)
     metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     landing_page: str | None = None
+    landing_page_label: str = ""
     source_medium: str | None = None
+    source_medium_label: str = ""
     campaign_name: str | None = None
+    campaign_name_label: str = ""
     wordpress_match: str | None = None
     wordpress_match_label: str | None = None
     wordpress_match_confidence: str | None = None
     wordpress_match_confidence_label: str | None = None
     wordpress_content_url: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
@@ -2604,7 +2617,9 @@ class Ga4ConversionReadinessContract(BaseModel):
     dimensioned_behavior_metric_count: int = 0
     landing_group_count: int = 0
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
@@ -2634,7 +2649,9 @@ class Ga4OperatorSummary(BaseModel):
     wordpress_missing_count: int = 0
     conversion_readiness_status: Literal["ready", "blocked"]
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)

@@ -10,10 +10,9 @@ import {
   getConnectors,
   getGa4Diagnostics
 } from "../lib/api";
-import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
 
 type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
@@ -25,15 +24,21 @@ type Ga4TrackingQualityPreviewItem = {
   preview_contract: string;
   operation_type: string;
   landing_page?: string | null;
+  landing_page_label?: string;
   source_medium?: string | null;
+  source_medium_label?: string;
   campaign_name?: string | null;
+  campaign_name_label?: string;
   tracking_dimension_gaps: string[];
   metric_snapshot: Record<string, string | number>;
   metric_snapshot_labels: Record<string, string>;
   reason: string;
   required_validation: string[];
+  required_validation_labels?: string[];
   blocked_claims: string[];
+  blocked_claim_labels?: string[];
   evidence_ids: string[];
+  evidence_summary_label?: string;
   apply_allowed: boolean;
   api_mutation_ready: boolean;
   destructive: boolean;
@@ -182,7 +187,7 @@ function Ga4ExpandableReviewPanel({
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Pierwszy ekran pokazuje status pomiaru i najważniejszą decyzję. Rozwiń
-            pełny przegląd, gdy chcesz zobaczyć `(not set)`, dowody, podgląd
+            pełny przegląd, gdy chcesz zobaczyć problemy pomiaru, dowody, podgląd
             przeglądu i bramę bezpieczeństwa GA4.
           </p>
         </div>
@@ -204,7 +209,7 @@ function Ga4ExpandableReviewPanel({
       {showReview ? (
         <div className="mt-4 grid gap-6">
           <Ga4MeasurementIssues data={data} connectorStatuses={connectorStatuses} />
-          <Ga4DiagnosticProof data={data} connectorStatuses={connectorStatuses} />
+          <Ga4DiagnosticProof data={data} />
           {trackingPreviewItems.length > 0 ? (
             <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -310,7 +315,7 @@ function Ga4MeasurementIssues({
             Problemy pomiaru GA4
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Wiersze `(not set)` i braki w pomiarze są problemem pomiaru lub
+            Braki w wymiarach raportu są problemem pomiaru lub
             atrybucji. WILQ pokazuje je osobno, żeby nie mieszać ich z oceną
             jakości strony wejścia albo kampanii.
           </p>
@@ -323,12 +328,11 @@ function Ga4MeasurementIssues({
             <Ga4DecisionCard
               key={`measurement-${decision.id}`}
               decision={decision}
-              connectorStatuses={connectorStatuses}
             />
           ))}
         </div>
       ) : (
-        <BlockerNotice message="Brak aktywnych `(not set)`/tracking-gap decyzji w top kolejce GA4. Wnioski o konwersjach, zwrot z reklam i przychody nadal pozostają zablokowane bez właściwych metryk." />
+        <BlockerNotice message="Brak aktywnych problemów pomiaru w top kolejce GA4. Wnioski o konwersjach, zwrot z reklam i przychody nadal pozostają zablokowane bez właściwych metryk." />
       )}
     </section>
   );
@@ -381,7 +385,6 @@ function Ga4OperatorSummary({
               <Ga4DecisionCard
                 key={decision.id}
                 decision={decision}
-                connectorStatuses={connectorStatuses}
               />
             ))
           ) : (
@@ -448,11 +451,9 @@ function Ga4OperatorSummary({
 }
 
 function Ga4DecisionCard({
-  decision,
-  connectorStatuses
+  decision
 }: {
   decision: Ga4DecisionItem;
-  connectorStatuses: ConnectorStatus[];
 }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
@@ -480,17 +481,17 @@ function Ga4DecisionCard({
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
         {decision.landing_page ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Strona wejścia: {decision.landing_page}
+            Strona wejścia: {decision.landing_page_label || decision.landing_page}
           </span>
         ) : null}
         {decision.source_medium ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Źródło: {decision.source_medium}
+            Źródło: {decision.source_medium_label || decision.source_medium}
           </span>
         ) : null}
         {decision.campaign_name ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Kampania: {decision.campaign_name}
+            Kampania: {decision.campaign_name_label || decision.campaign_name}
           </span>
         ) : null}
         {decision.wordpress_match ? (
@@ -507,9 +508,10 @@ function Ga4DecisionCard({
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine
           label="Dowody w WILQ"
-          values={[formatGa4EvidenceCount(decision.evidence_ids.length)]}
+          values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
+          empty="brak"
         />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectorStatuses)} />
+        <TraceLine label="Źródła" values={decision.source_connector_labels} empty="brak" />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[formatGa4ActionCount(decision.action_ids.length)]}
@@ -530,7 +532,7 @@ function Ga4TrackingQualityPreviewCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">
-            {preview.landing_page ? `Strona wejścia ${preview.landing_page}` : "Brak strony wejścia"}
+            Strona wejścia: {preview.landing_page_label || preview.landing_page || "brak strony wejścia w raporcie"}
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {ga4OperationLabel(preview.operation_type)} /{" "}
@@ -541,8 +543,8 @@ function Ga4TrackingQualityPreviewCard({
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{preview.reason}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Źródło" values={[preview.source_medium ?? "brak źródła i medium ruchu"]} />
-        <TraceLine label="Kampania" values={[preview.campaign_name ?? "brak kampanii"]} />
+        <TraceLine label="Źródło" values={[preview.source_medium_label || preview.source_medium || "brak źródła i medium w raporcie"]} />
+        <TraceLine label="Kampania" values={[preview.campaign_name_label || preview.campaign_name || "brak kampanii w raporcie"]} />
         <TraceLine
           label="Braki wymiarów"
           values={preview.tracking_dimension_gaps.map(ga4TrackingDimensionLabel)}
@@ -550,13 +552,17 @@ function Ga4TrackingQualityPreviewCard({
         />
         <TraceLine
           label="Warunki sprawdzenia"
-          values={preview.required_validation.map(ga4ValidationLabel).slice(0, 4)}
+          values={(preview.required_validation_labels ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={ga4BlockedClaimLabels(preview.blocked_claims).slice(0, 5)}
+          values={(preview.blocked_claim_labels ?? []).slice(0, 5)}
         />
-        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={preview.evidence_summary_label ? [preview.evidence_summary_label] : []}
+          empty="brak"
+        />
         <TraceLine label="Akcja" values={["1 akcja do sprawdzenia"]} />
       </div>
       {Object.keys(preview.metric_snapshot).length > 0 ? (
@@ -627,18 +633,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function Ga4DiagnosticProof({
-  data,
-  connectorStatuses
+  data
 }: {
   data: Ga4DiagnosticsResponse;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
-  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
-  const sourceConnectors = uniqueValues([
-    ...data.sections.flatMap((section) => section.source_connectors),
-    ...data.decision_queue.flatMap((decision) => decision.source_connectors)
+  const sourceConnectorLabels = uniqueValues([
+    ...data.sections.flatMap((section) => section.source_connector_labels),
+    ...data.decision_queue.flatMap((decision) => decision.source_connector_labels)
   ]);
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -655,14 +658,14 @@ function Ga4DiagnosticProof({
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Sekcje API" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={formatGa4EvidenceCount(data.evidence_ids.length)} />
         </div>
       </div>
       {visibleMetricFacts.length > 0 ? <Ga4MetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.label)} />
-        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, connectorStatuses)} />
+        <TraceLine label="Dowody" values={[formatGa4EvidenceCount(data.evidence_ids.length)]} />
+        <TraceLine label="Źródła" values={sourceConnectorLabels} empty="brak" />
         <TraceLine label="Akcje" values={[formatGa4ActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -704,9 +707,10 @@ function formatGa4MetricValue(value: string | number | boolean) {
 }
 
 function formatGa4EvidenceCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 ID";
-  return `${count} ID`;
+  if (count === 0) return "brak dowodów źródłowych";
+  if (count === 1) return "1 dowód źródłowy";
+  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
+  return `${count} dowodów źródłowych`;
 }
 
 function formatGa4ActionCount(count: number) {
@@ -729,35 +733,6 @@ function ga4OperationLabel(value: string) {
     tracking_quality_review: "ocena jakości pomiaru"
   };
   return labels[value] ?? value;
-}
-
-function ga4ValidationLabel(value: string) {
-  const labels: Record<string, string> = {
-    review_landing_page_dimension: "sprawdź stronę wejścia",
-    review_source_medium_dimension: "sprawdź źródło i medium ruchu",
-    review_campaign_name_dimension: "sprawdź kampanię",
-    review_conversion_or_key_event_mapping: "sprawdź powiązanie konwersji i zdarzeń kluczowych",
-    human_confirm_before_tracking_change: "potwierdź sprawdzenie przez człowieka"
-  };
-  return labels[value] ?? value;
-}
-
-function ga4BlockedClaimLabels(claims: string[]) {
-  const labels: Record<string, string> = {
-    "ocena atrybucji": "ocena atrybucji",
-    "campaign quality": "jakość kampanii",
-    "spadek konwersji": "spadek konwersji",
-    "współczynnik konwersji": "współczynnik konwersji",
-    "wdrożona konfiguracja konwersji": "wdrożona konfiguracja konwersji",
-    "diagnoza lejka": "diagnoza lejka",
-    "spadek w lejku": "spadek w lejku",
-    "zapis w GA4": "zapis w GA4",
-    "opłacalność": "opłacalność",
-    "przychód": "przychód",
-    "naprawiony pomiar": "pomiar naprawiony",
-    "brak w pomiarze": "problem pomiaru"
-  };
-  return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }
 
 function uniqueValues(values: string[]) {

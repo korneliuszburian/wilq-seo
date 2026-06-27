@@ -272,11 +272,23 @@ def _ga4_response_with_marketer_labels(
                         "status_label": _ga4_conversion_readiness_status_label(
                             response.conversion_readiness_contract.status
                         ),
+                        "source_connector_labels": _ga4_source_connector_labels(
+                            response.conversion_readiness_contract.source_connectors
+                        ),
+                        "evidence_summary_label": _ga4_evidence_summary_label(
+                            response.conversion_readiness_contract.evidence_ids
+                        ),
                     }
                 )
             ),
             "operator_summary": response.operator_summary.model_copy(
                 update={
+                    "source_connector_labels": _ga4_source_connector_labels(
+                        response.operator_summary.source_connectors
+                    ),
+                    "evidence_summary_label": _ga4_evidence_summary_label(
+                        response.operator_summary.evidence_ids
+                    ),
                     "blocked_claim_labels": _ga4_blocked_claim_labels(
                         response.operator_summary.blocked_claims
                     ),
@@ -309,6 +321,22 @@ def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4Decision
                 decision.wordpress_match_confidence,
                 GA4_WORDPRESS_MATCH_CONFIDENCE_LABELS,
             ),
+            "landing_page_label": _ga4_dimension_value_label(
+                decision.landing_page,
+                missing_label="brak strony wejścia w raporcie",
+            ),
+            "source_medium_label": _ga4_dimension_value_label(
+                decision.source_medium,
+                missing_label="brak źródła i medium w raporcie",
+            ),
+            "campaign_name_label": _ga4_dimension_value_label(
+                decision.campaign_name,
+                missing_label="brak kampanii w raporcie",
+            ),
+            "source_connector_labels": _ga4_source_connector_labels(
+                decision.source_connectors
+            ),
+            "evidence_summary_label": _ga4_evidence_summary_label(decision.evidence_ids),
             "blocked_claim_labels": _ga4_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _ga4_risk_label(decision.risk),
         }
@@ -320,6 +348,8 @@ def _ga4_section_with_marketer_labels(section: Ga4DiagnosticSection) -> Ga4Diagn
         update={
             "label": GA4_SECTION_LABELS.get(section.id, section.title),
             "status_label": _ga4_section_status_label(section.status),
+            "source_connector_labels": _ga4_source_connector_labels(section.source_connectors),
+            "evidence_summary_label": _ga4_evidence_summary_label(section.evidence_ids),
             "blocked_claim_labels": _ga4_blocked_claim_labels(section.blocked_claims),
             "risk_label": _ga4_risk_label(section.risk),
         }
@@ -330,6 +360,32 @@ def _ga4_optional_label(value: str | None, labels: dict[str, str]) -> str | None
     if value is None:
         return None
     return labels.get(value, value)
+
+
+def _ga4_dimension_value_label(value: str | None, *, missing_label: str) -> str:
+    if value is None or value == "" or value == "(not set)":
+        return missing_label
+    return value
+
+
+def _ga4_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
+    labels = {
+        GA4_CONNECTOR_ID: "GA4",
+        "wordpress_ekologus": "WordPress ekologus.pl",
+        "google_search_console": "Google Search Console",
+    }
+    return _unique(labels.get(connector_id, connector_id) for connector_id in connector_ids)
+
+
+def _ga4_evidence_summary_label(evidence_ids: Iterable[str]) -> str:
+    count = len(list(evidence_ids))
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
 
 
 def _ga4_connector_status_label(status: object) -> str:
@@ -936,8 +992,14 @@ def _ga4_decisions_from_dimensioned_facts(
 
 
 def _ga4_measurement_title(landing_page: str | None, source_medium: str | None) -> str:
-    landing_label = landing_page or "brak strony wejścia"
-    source_label = source_medium or "brak źródła i medium ruchu"
+    landing_label = _ga4_dimension_value_label(
+        landing_page,
+        missing_label="brak strony wejścia w raporcie",
+    )
+    source_label = _ga4_dimension_value_label(
+        source_medium,
+        missing_label="brak źródła i medium w raporcie",
+    )
     return f"GA4: napraw pomiar - {landing_label} / {source_label}"
 
 

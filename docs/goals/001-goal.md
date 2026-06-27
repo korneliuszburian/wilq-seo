@@ -58,6 +58,10 @@ Wilku can inspect it without reading technical internals.
 - The current verified Merchant cleanup adds API-owned source connector labels
   and evidence summaries, then uses them in Merchant panels instead of raw
   connector IDs, evidence IDs and read-contract/debug labels.
+- The current verified GA4 cleanup adds API-owned source connector labels,
+  evidence summaries and safe reporting-dimension labels, then uses them in GA4
+  panels instead of raw `(not set)`, `tracking-gap`, connector IDs, evidence IDs
+  and `ID` evidence counts.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -68,20 +72,16 @@ are resolved or explicitly deferred.
 
 1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
    paths. These should disappear as API labels cover the remaining panels.
-2. GA4 still exposes some implementation language:
-   - `(not set)`
-   - `tracking-gap`
-   - evidence counts as `ID`.
-3. Localo still exposes protocol/credential language in visible proof panels:
+2. Localo still exposes protocol/credential language in visible proof panels:
    - `OAuth code`
    - `PKCE S256`
    - `Token`
    - raw `localo` connector ID.
-4. Action impact and detail panels still have raw connector/evidence fallback
+3. Action impact and detail panels still have raw connector/evidence fallback
    risk:
    - impact result source connectors
    - missing label fallback copy.
-5. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
+4. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 

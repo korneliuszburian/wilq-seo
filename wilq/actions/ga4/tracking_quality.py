@@ -109,15 +109,36 @@ def _review_rows(facts: list[MetricFact]) -> list[dict[str, Any]]:
                 preview_contract=GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
                 operation_type="tracking_quality_review",
                 landing_page=landing_page or None,
+                landing_page_label=_dimension_value_label(
+                    landing_page,
+                    missing_label="brak strony wejścia w raporcie",
+                ),
                 source_medium=source_medium or None,
+                source_medium_label=_dimension_value_label(
+                    source_medium,
+                    missing_label="brak źródła i medium w raporcie",
+                ),
                 campaign_name=campaign_name or None,
+                campaign_name_label=_dimension_value_label(
+                    campaign_name,
+                    missing_label="brak kampanii w raporcie",
+                ),
                 tracking_dimension_gaps=dimension_gaps,
                 metric_snapshot=_metric_snapshot(group),
                 metric_snapshot_labels=_metric_snapshot_labels(group),
                 reason=_reason(dimension_gaps),
                 required_validation=GA4_TRACKING_REQUIRED_VALIDATION,
+                required_validation_labels=[
+                    _validation_label(value) for value in GA4_TRACKING_REQUIRED_VALIDATION
+                ],
                 blocked_claims=GA4_TRACKING_BLOCKED_CLAIMS,
+                blocked_claim_labels=[
+                    _blocked_claim_label(value) for value in GA4_TRACKING_BLOCKED_CLAIMS
+                ],
                 evidence_ids=_unique(fact.evidence_id for fact in group),
+                evidence_summary_label=_evidence_summary_label(
+                    _unique(fact.evidence_id for fact in group)
+                ),
                 api_mutation_ready=False,
                 apply_allowed=False,
                 destructive=False,
@@ -153,6 +174,42 @@ def _metric_snapshot_labels(facts: list[MetricFact]) -> dict[str, str]:
         fact.name: GA4_TRACKING_METRIC_LABELS.get(fact.name, "metryka GA4")
         for fact in facts
     }
+
+
+def _dimension_value_label(value: str, *, missing_label: str) -> str:
+    if not value or value == "(not set)":
+        return missing_label
+    return value
+
+
+def _validation_label(value: str) -> str:
+    labels = {
+        "review_landing_page_dimension": "sprawdź stronę wejścia",
+        "review_source_medium_dimension": "sprawdź źródło i medium ruchu",
+        "review_campaign_name_dimension": "sprawdź kampanię",
+        "review_conversion_or_key_event_mapping": "sprawdź konwersje i zdarzenia kluczowe",
+        "human_confirm_before_tracking_change": "potwierdź sprawdzenie przez człowieka",
+    }
+    return labels.get(value, value)
+
+
+def _blocked_claim_label(value: str) -> str:
+    labels = {
+        "conversion_rate": "współczynnik konwersji",
+        "roas": "zwrot z reklam",
+    }
+    return labels.get(value, value)
+
+
+def _evidence_summary_label(evidence_ids: Iterable[str]) -> str:
+    count = len(list(evidence_ids))
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
 
 
 def _reason(gaps: Sequence[str]) -> str:

@@ -32,26 +32,29 @@ Recent commits:
 - `6497044 fix(ads): source negative keyword labels from api`
 - `5b81874 docs: condense active cleanup recovery`
 - `df4c750 fix(ads): clean recommendation and keyword context copy`
-- Current Merchant source/evidence condensation is verified locally and ready
-  to commit.
+- `5a805aa fix(merchant): condense source and evidence labels`
+- Current GA4 measurement copy cleanup is verified locally and ready to commit.
 
 What changed:
 
-- Merchant diagnostics now expose API-owned source connector labels and evidence
-  summaries for decision queue, operator summary, product performance readiness,
-  product rows and price-impact readiness.
-- Merchant dashboard no longer shows raw connector IDs, evidence IDs or read
-  contract/debug labels on the cleaned panels. It shows `Merchant Center`,
-  `1 dowód źródłowy`, `Stan danych` and safer write-readiness wording instead.
+- GA4 diagnostics now expose API-owned source connector labels, evidence
+  summaries and safe dimension labels for decision queue, operator summary,
+  sections and conversion readiness.
+- GA4 action preview rows now carry labels for landing page, source/medium,
+  campaign, required checks, blocked promises and evidence summaries.
+- GA4 dashboard no longer shows raw `(not set)`, `tracking-gap`, connector IDs,
+  evidence IDs or `ID` evidence counts on the cleaned route.
 
 Proof:
 
-- Focused Merchant API tests:
-  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_exposes_feed_issue_queue or merchant_product_performance_readiness" --maxfail=1`
+- Focused GA4 API tests:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics_exposes_landing_quality_contract or ga4_measurement_decision_titles_include_reporting_context" --maxfail=1`
 - Dashboard typecheck:
   `rtk pnpm --dir apps/dashboard typecheck`
-- Dashboard Merchant route test:
-  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+- Dashboard GA4 route test:
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+- Live API/browser proof:
+  `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
 ## Active Gaps
 
@@ -60,27 +63,22 @@ Next cleanup queue:
 1. Ads Doctor:
    - route-local raw-key fallbacks still exist in secondary helper paths and
      should be retired as API labels cover those paths.
-2. GA4:
-   - visible copy can expose `(not set)`, `tracking-gap` and evidence counts as
-     `ID`.
-3. Localo:
+2. Localo:
    - visible proof panels can expose `OAuth code`, `PKCE S256`, `Token` and raw
      `localo` connector ID.
-4. Actions:
+3. Actions:
    - impact result can expose raw source connector IDs,
    - missing label fallbacks can become visible copy.
-5. Recovery docs:
+4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Commit and push the Merchant source/evidence condensation slice after live
-   proof.
-2. Continue with GA4 route cleanup from API/domain labels, not React string
-   replacement.
-3. Then clean Localo credential/protocol language.
-4. Then clean Action detail impact/source fallback copy.
+1. Commit and push the GA4 measurement copy cleanup slice.
+2. Clean Localo credential/protocol language from API/domain labels, not React
+   string replacement.
+3. Clean Action detail impact/source fallback copy.
 
 ## Blockers
 
