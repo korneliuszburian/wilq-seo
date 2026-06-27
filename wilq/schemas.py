@@ -1917,8 +1917,10 @@ class DemandGenTransitionConstraintRow(BaseModel):
 
 class MerchantDiagnosticSection(BaseModel):
     id: str
+    label: str = ""
     title: str
     status: Literal["ready", "blocked", "missing"]
+    status_label: str = ""
     summary: str
     diagnosis: str
     next_step: str
@@ -1930,7 +1932,9 @@ class MerchantDiagnosticSection(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
 
 
 class MerchantIssueCluster(BaseModel):
@@ -1968,7 +1972,9 @@ class MerchantDecisionItem(BaseModel):
         "review_price_impact_readiness",
         "block_until_vendor_read",
     ]
+    decision_type_label: str = ""
     status: Literal["ready", "blocked", "missing"]
+    status_label: str = ""
     title: str
     summary: str | None = None
     cluster_id: str | None = None
@@ -2001,11 +2007,13 @@ class MerchantDecisionItem(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     rationale: str
     next_step: str
     why_it_matters: str | None = None
     operator_action: str | None = None
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
 
     @model_validator(mode="after")
     def fill_operator_aliases(self) -> MerchantDecisionItem:
@@ -2036,10 +2044,12 @@ class MerchantOperatorSummary(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantFreshnessAssessment(BaseModel):
     state: Literal["fresh", "stale", "missing", "blocked"]
+    state_label: str = ""
     checked_at: datetime = Field(default_factory=utc_now)
     latest_refresh_id: str | None = None
     latest_refresh_completed_at: datetime | None = None
@@ -2057,10 +2067,12 @@ class MerchantUnknownFact(BaseModel):
     impact: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantProductSampleReadiness(BaseModel):
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     sample_products_available: bool = False
     sample_count: int = 0
     sample_product_ids: list[str] = Field(default_factory=list)
@@ -2073,6 +2085,7 @@ class MerchantProductSampleReadiness(BaseModel):
     summary: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantProductPerformanceRow(BaseModel):
@@ -2106,6 +2119,7 @@ class MerchantProductPerformanceRow(BaseModel):
     ga4_purchase_revenue: float | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantProductPerformanceReadiness(BaseModel):
@@ -2113,6 +2127,7 @@ class MerchantProductPerformanceReadiness(BaseModel):
         "merchant_product_performance_readiness"
     )
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     joined_product_count: int = 0
     merchant_sample_count: int = 0
     ads_product_fact_count: int = 0
@@ -2128,11 +2143,13 @@ class MerchantProductPerformanceReadiness(BaseModel):
     summary: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantPriceImpactReadiness(BaseModel):
     id: Literal["merchant_price_impact_readiness"] = "merchant_price_impact_readiness"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     products_with_current_price: int = 0
     products_with_previous_price: int = 0
     products_with_price_change: int = 0
@@ -2147,6 +2164,7 @@ class MerchantPriceImpactReadiness(BaseModel):
     summary: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class MerchantDiagnosticsResponse(BaseModel):
@@ -2154,8 +2172,11 @@ class MerchantDiagnosticsResponse(BaseModel):
     language: Literal["pl-PL"] = "pl-PL"
     strict_instruction: str
     connector: ConnectorStatus
+    connector_status_label: str = ""
     latest_refresh: ConnectorRefreshRun | None = None
+    latest_refresh_status_label: str | None = None
     live_data_available: bool
+    live_data_status_label: str = ""
     product_count: int | None = None
     issue_count: int | None = None
     freshness_assessment: MerchantFreshnessAssessment

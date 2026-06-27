@@ -87,20 +87,20 @@ export function MerchantDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {merchantConnectorStatusLabel(data.connector.status)}
+              {data.connector_status_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {merchantFreshnessLabel(data.freshness_assessment.state)}
+              {data.freshness_assessment.state_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_available ? "metryki feedu dostępne" : "brak metryk feedu"}
+              {data.live_data_status_label}
               <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {merchantRefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt: {data.latest_refresh_status_label}
                 <span className="sr-only">; </span>
               </span>
             ) : null}
@@ -224,32 +224,10 @@ function MerchantFeedSafetyPanel({ data }: { data: MerchantDiagnosticsResponse }
         </div>
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+          values={data.sections.flatMap((section) => section.blocked_claim_labels)}
         />
       </section>
   );
-}
-
-function merchantConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje dostępu";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function merchantRefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  if (status === "running") return "w toku";
-  return status;
-}
-
-function merchantFreshnessLabel(status: MerchantDiagnosticsResponse["freshness_assessment"]["state"]) {
-  if (status === "fresh") return "dane świeże";
-  if (status === "stale") return "dane do odświeżenia";
-  if (status === "missing") return "brak odczytu";
-  return "odczyt zablokowany";
 }
 
 function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResponse }) {
@@ -379,7 +357,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           {data.latest_refresh ? (
             <TraceLine
               label="Ostatni odczyt"
-              values={[merchantRefreshStatusLabel(data.latest_refresh.status)]}
+              values={data.latest_refresh_status_label ? [data.latest_refresh_status_label] : []}
             />
           ) : null}
         </div>
@@ -392,9 +370,9 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           </p>
           <TraceLine
             label="Nie wolno twierdzić"
-            values={merchantBlockedClaimLabels([
-              ...summary.blocked_claims,
-              ...primaryDecision.blocked_claims
+            values={uniqueValues([
+              ...summary.blocked_claim_labels,
+              ...primaryDecision.blocked_claim_labels
             ])}
           />
           <TraceLine
@@ -596,7 +574,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={merchantBlockedClaimLabels(summary.blocked_claims)}
+              values={summary.blocked_claim_labels}
             />
           </div>
           {actionIds.length > 0 ? (
@@ -640,7 +618,7 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
             <div className="mt-2 text-xs text-slate-600">
               <TraceLine
                 label="Nie wolno twierdzić"
-                values={merchantBlockedClaimLabels(unknown.blocked_claims)}
+                values={unknown.blocked_claim_labels}
               />
             </div>
           </article>
@@ -652,9 +630,6 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
 
 function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
   const readiness = data.product_sample_readiness;
-  const statusLabel = readiness.sample_products_available
-    ? "próbki produktów dostępne"
-    : "próbki produktów zablokowane";
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -670,7 +645,7 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
-          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Status" value={readiness.status_label} />
           <MetricTile label="Próbki" value={readiness.sample_count} />
         </div>
       </div>
@@ -692,7 +667,7 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
         <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+          values={readiness.blocked_claim_labels}
         />
       </div>
     </section>
@@ -701,8 +676,6 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
 
 function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
   const readiness = data.product_performance_readiness;
-  const statusLabel =
-    readiness.status === "ready" ? "dane Ads/GA4 dostępne" : "dane Ads/GA4 zablokowane";
   const visibleRows = readiness.performance_rows.slice(0, 4);
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -719,7 +692,7 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Status" value={readiness.status_label} />
           <MetricTile label="Połączone produkty" value={readiness.joined_product_count} />
           <MetricTile label="Próbki" value={readiness.merchant_sample_count} />
         </div>
@@ -736,7 +709,7 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+          values={readiness.blocked_claim_labels}
         />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
@@ -796,7 +769,7 @@ function MerchantProductPerformanceRowCard({
         <TraceLine label="Brakujące metryki" values={row.missing_metrics} empty="brak" />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(row.blocked_claims)}
+          values={row.blocked_claim_labels}
         />
       </div>
     </article>
@@ -807,8 +780,6 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
   const readiness = data.price_impact_readiness;
   const preview = readiness.payload_preview[0];
   const previewProducts = merchantUnknownArray(preview?.products);
-  const statusLabel =
-    readiness.status === "ready" ? "wpływ ceny gotowy do sprawdzenia" : "wpływ ceny zablokowany";
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -822,7 +793,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
           <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-5">
-          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Status" value={readiness.status_label} />
           <MetricTile label="Ceny teraz" value={readiness.products_with_current_price} />
           <MetricTile label="Historia cen" value={readiness.products_with_previous_price} />
           <MetricTile label="Zmiany ceny" value={readiness.products_with_price_change} />
@@ -842,7 +813,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+          values={readiness.blocked_claim_labels}
         />
       </div>
       {preview ? (
@@ -874,11 +845,11 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <div>
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {merchantDecisionTypeLabel(decision.decision_type)} /{" "}
+            {decision.decision_type_label} /{" "}
             {priorityLabel(decision.priority)}
           </p>
         </div>
-        <StatusBadge value={decision.risk} />
+        <StatusBadge value={decision.risk_label} />
       </div>
       {decision.summary ? (
         <p className="mt-2 text-sm leading-6 text-slate-700">
@@ -952,7 +923,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={merchantBlockedClaimLabels(decision.blocked_claims)}
+          values={decision.blocked_claim_labels}
         />
       </div>
     </article>
@@ -1002,13 +973,6 @@ function MerchantDecisionPreview({
       </div>
     </div>
   );
-}
-
-function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_type"]) {
-  if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
-  if (decisionType === "review_feed_status") return "przegląd statusu feedu";
-  if (decisionType === "review_product_state_mapping") return "powiązanie produktu z Ads";
-  return "blocker odczytu Merchant";
 }
 
 function merchantUnknownArray(value: unknown): unknown[] {
@@ -1089,10 +1053,8 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
   const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
-  const blockedClaims = merchantBlockedClaimLabels(
-    data.sections.flatMap((section) => section.blocked_claims)
-  );
-  const sectionTitles = data.sections.map((section) => merchantSectionLabel(section.id));
+  const blockedClaims = data.sections.flatMap((section) => section.blocked_claim_labels);
+  const sectionTitles = data.sections.map((section) => section.label);
   const sourceConnectors = uniqueValues([
     ...data.sections.flatMap((section) => section.source_connectors),
     ...data.issue_clusters.flatMap((cluster) => cluster.source_connectors)
@@ -1149,22 +1111,6 @@ function merchantMetricFactLabel(metricName: string) {
     total_products: "Produkty w feedzie"
   };
   return labels[metricName] ?? metricName;
-}
-
-function merchantSectionLabel(sectionId: string) {
-  if (sectionId === "merchant_feed_health") return "Metryki produktów";
-  if (sectionId === "merchant_issue_queue") return "Kolejka problemów feedu";
-  if (sectionId === "merchant_action_safety") return "Bezpieczeństwo akcji";
-  return sectionId;
-}
-
-function merchantBlockedClaimLabels(claims: string[]) {
-  const labels: Record<string, string> = {
-    "feed health": "ocena stanu feedu",
-    "product approval": "zatwierdzenie produktu",
-    "Shopping/PMax product scaling": "skalowanie produktu w Shopping/PMax"
-  };
-  return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }
 
 function formatMerchantIdCount(count: number, singular: string, plural: string) {

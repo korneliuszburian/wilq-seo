@@ -1543,8 +1543,10 @@ export const AdsDiagnosticsResponseSchema = z.object({
 
 export const MerchantDiagnosticSectionSchema = z.object({
   id: z.string(),
+  label: z.string().default(""),
   title: z.string(),
   status: z.enum(["ready", "blocked", "missing"]),
+  status_label: z.string().default(""),
   summary: z.string(),
   diagnosis: z.string(),
   next_step: z.string(),
@@ -1555,7 +1557,8 @@ export const MerchantDiagnosticSectionSchema = z.object({
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
-  risk: z.enum(["low", "medium", "high", "critical"])
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default("")
 });
 
 export const MerchantIssueClusterSchema = z.object({
@@ -1593,7 +1596,9 @@ export const MerchantDecisionItemSchema = z.object({
     "review_price_impact_readiness",
     "block_until_vendor_read"
   ]),
+  decision_type_label: z.string().default(""),
   status: z.enum(["ready", "blocked", "missing"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string().nullable().optional(),
   cluster_id: z.string().nullable().optional(),
@@ -1622,11 +1627,13 @@ export const MerchantDecisionItemSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   rationale: z.string(),
   next_step: z.string(),
   why_it_matters: z.string().nullable().optional(),
   operator_action: z.string().nullable().optional(),
-  risk: z.enum(["low", "medium", "high", "critical"])
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default("")
 });
 
 export const MerchantOperatorSummarySchema = z.object({
@@ -1648,11 +1655,13 @@ export const MerchantOperatorSummarySchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantFreshnessAssessmentSchema = z.object({
   state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  state_label: z.string().default(""),
   checked_at: z.string().nullable().optional(),
   latest_refresh_id: z.string().nullable().optional(),
   latest_refresh_completed_at: z.string().nullable().optional(),
@@ -1669,11 +1678,13 @@ export const MerchantUnknownFactSchema = z.object({
   reason: z.string(),
   impact: z.string(),
   next_step: z.string(),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantProductSampleReadinessSchema = z.object({
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   sample_products_available: z.boolean(),
   sample_count: z.number(),
   sample_product_ids: z.array(z.string()),
@@ -1683,7 +1694,8 @@ export const MerchantProductSampleReadinessSchema = z.object({
   source_endpoint: z.string(),
   summary: z.string(),
   next_step: z.string(),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantProductPerformanceRowSchema = z.object({
@@ -1713,12 +1725,14 @@ export const MerchantProductPerformanceRowSchema = z.object({
   ga4_ecommerce_purchases: z.number().nullable().optional(),
   ga4_purchase_revenue: z.number().nullable().optional(),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantProductPerformanceReadinessSchema = z.object({
   id: z.literal("merchant_product_performance_readiness"),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   joined_product_count: z.number(),
   merchant_sample_count: z.number(),
   ads_product_fact_count: z.number(),
@@ -1733,12 +1747,14 @@ export const MerchantProductPerformanceReadinessSchema = z.object({
   evidence_ids: z.array(z.string()),
   summary: z.string(),
   next_step: z.string(),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantPriceImpactReadinessSchema = z.object({
   id: z.literal("merchant_price_impact_readiness"),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   products_with_current_price: z.number(),
   products_with_previous_price: z.number(),
   products_with_price_change: z.number().default(0),
@@ -1752,7 +1768,8 @@ export const MerchantPriceImpactReadinessSchema = z.object({
   evidence_ids: z.array(z.string()),
   summary: z.string(),
   next_step: z.string(),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const MerchantDiagnosticsResponseSchema = z.object({
@@ -1760,8 +1777,11 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   language: z.literal("pl-PL"),
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
+  connector_status_label: z.string().default(""),
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  latest_refresh_status_label: z.string().nullable().optional(),
   live_data_available: z.boolean(),
+  live_data_status_label: z.string().default(""),
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
   freshness_assessment: MerchantFreshnessAssessmentSchema,

@@ -140,6 +140,13 @@ Date: 2026-06-27
   such as `dane do odświeżenia`, `problem pomiaru`, `niskie ryzyko` and
   `dopasowanie ścieżki` with no raw GA4 enum hits in the rendered surface.
   Proof: `.local-lab/proof/20260627-ga4-api-status-labels/`.
+- Merchant primary connector, refresh, live-data, freshness, product-readiness,
+  decision, section, risk and blocked-promise labels now come from the WILQ
+  API/shared schema. `/merchant` no longer owns route-local helpers for those
+  marketer-facing meanings, and the expanded browser scan found no
+  old product-scaling shorthand, raw Merchant vendor enum, queue-key or
+  debug/payload hits in rendered text. Proof:
+  `.local-lab/proof/20260627-merchant-api-status-labels/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays
   such as blocker, checklist, missing-data and validation labels instead of

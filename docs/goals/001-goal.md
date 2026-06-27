@@ -206,6 +206,13 @@ Latest slice:
   no longer owns route-local helper copy for those marketer-facing meanings.
   Live proof after managed stack restart:
   `.local-lab/proof/20260627-ga4-api-status-labels/`.
+- Merchant primary labels are API-owned now. The API/shared schema exposes
+  connector, latest-refresh, live-data, freshness, product-readiness, decision,
+  section, risk and blocked-claim labels; `/merchant` no longer owns
+  route-local helper copy for those marketer-facing meanings. The expanded
+  browser proof has no old product-scaling shorthand, raw Merchant vendor enum,
+  queue-key, `payload`, `debug` or `ActionObject` hits:
+  `.local-lab/proof/20260627-merchant-api-status-labels/`.
 - Localo decision labels now come from the WILQ API/shared schema: connector
   status, refresh status, access proof labels, decision type, priority,
   allowed evidence, missing contracts, read-contract status and blocked claims.

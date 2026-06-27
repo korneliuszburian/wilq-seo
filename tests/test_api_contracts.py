@@ -11519,14 +11519,19 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     payload = response.json()
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
+    assert payload["connector_status_label"] == "dostęp skonfigurowany"
+    assert payload["latest_refresh_status_label"] == "zakończony"
+    assert payload["live_data_status_label"] == "metryki feedu dostępne"
     assert payload["product_count"] == 10900
     assert payload["issue_count"] == 23
     assert payload["latest_refresh"]["status"] == "completed"
     assert payload["freshness_assessment"]["state"] == "fresh"
+    assert payload["freshness_assessment"]["state_label"] == "dane świeże"
     assert payload["freshness_assessment"]["requires_refresh"] is False
     assert payload["freshness_assessment"]["stale_after_hours"] == 48
     sample_readiness = payload["product_sample_readiness"]
     assert sample_readiness["status"] == "ready"
+    assert sample_readiness["status_label"] == "próbki produktów dostępne"
     assert sample_readiness["sample_products_available"] is True
     assert sample_readiness["sample_count"] == 2
     assert sample_readiness["sample_product_ids"] == [
@@ -11542,9 +11547,11 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
     assert "products.list" in sample_readiness["next_step"]
     assert "zapis do feedu" in sample_readiness["blocked_claims"]
+    assert "zapis do feedu" in sample_readiness["blocked_claim_labels"]
     performance_readiness = payload["product_performance_readiness"]
     assert performance_readiness["id"] == "merchant_product_performance_readiness"
     assert performance_readiness["status"] == "blocked"
+    assert performance_readiness["status_label"] == "dane Ads/GA4 zablokowane"
     assert performance_readiness["merchant_sample_count"] == 2
     assert performance_readiness["joined_product_count"] == 0
     assert performance_readiness["ads_product_fact_count"] == 0
@@ -11569,6 +11576,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "zwrot z reklam na poziomie produktu" in performance_readiness["blocked_claims"]
     assert "odzyskany przychód produktu" in performance_readiness["blocked_claims"]
     assert "efekt naprawy produktu" in performance_readiness["blocked_claims"]
+    assert (
+        "zwrot z reklam na poziomie produktu"
+        in performance_readiness["blocked_claim_labels"]
+    )
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
@@ -11622,11 +11633,14 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
     assert "ponowne zatwierdzenie produktu" in operator_summary["blocked_claims"]
+    assert "ponowne zatwierdzenie produktu" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     decision = payload["decision_queue"][0]
     assert decision["decision_type"] == "review_issue_cluster"
+    assert decision["decision_type_label"] == "przegląd problemu feedu"
     assert decision["status"] == "ready"
+    assert decision["status_label"] == "gotowe"
     assert decision["title"] == (
         "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność"
     )
@@ -11665,6 +11679,8 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_preview["api_mutation_ready"] is False
     assert decision_preview["destructive"] is False
     assert decision["count_semantics"] == "reported_issue_occurrences"
+    assert "ponowne zatwierdzenie produktu" in decision["blocked_claim_labels"]
+    assert decision["risk_label"] == "średnie ryzyko"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert "zgłoszeń problemu" in decision["summary"]
     assert "wystąpienia problemu" in decision["rationale"]
@@ -11684,12 +11700,20 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )
     assert feed_section["status"] == "ready"
+    assert feed_section["label"] == "Metryki produktów"
+    assert feed_section["status_label"] == "gotowe"
+    assert "ponowne zatwierdzenie produktu" in feed_section["blocked_claim_labels"]
+    assert feed_section["risk_label"] == "średnie ryzyko"
     assert feed_section["summary"].startswith("Metryki Merchant:")
     assert "total_products=10900" in feed_section["summary"]
     issue_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_issue_queue"
     )
     assert issue_section["status"] == "ready"
+    assert issue_section["label"] == "Kolejka problemów feedu"
+    assert issue_section["status_label"] == "gotowe"
+    assert "automatyczna zmiana feedu" in issue_section["blocked_claim_labels"]
+    assert issue_section["risk_label"] == "średnie ryzyko"
     assert "problemów feedu" in issue_section["summary"]
     assert "wystąpieniami problemu" in issue_section["summary"]
     assert issue_section["tactical_items"]

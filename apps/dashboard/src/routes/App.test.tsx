@@ -4089,6 +4089,7 @@ const merchantDiagnostics = {
     freshness: { state: "fresh" },
     supported_actions: ["merchant_feed_issue"]
   },
+  connector_status_label: "dostęp skonfigurowany",
   latest_refresh: {
     id: "refresh_google_merchant_center_test",
     connector_id: "google_merchant_center",
@@ -4108,7 +4109,7 @@ const merchantDiagnostics = {
   },
   latest_refresh_status_label: "zakończony",
   live_data_available: true,
-  live_data_status_label: "metryki GA4 dostępne",
+  live_data_status_label: "metryki feedu dostępne",
   product_count: 10900,
   issue_count: 23,
   freshness_assessment: {
@@ -4133,7 +4134,8 @@ const merchantDiagnostics = {
         "WILQ może przygotować kolejkę review po klastrach i pokazać próbki, ale nie wolno traktować sum raportowych jako unikalnych produktów.",
       next_step:
         "Użyj próbek do ręcznego review, a pełną listę produktów potwierdź w Merchant Center albo osobnym read contract.",
-      blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
+      blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"],
+      blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
     },
     {
       id: "merchant_product_performance_join_missing",
@@ -4143,12 +4145,14 @@ const merchantDiagnostics = {
       impact:
         "WILQ może prowadzić review feedu, ale nie może wskazać zwrotu z reklam na poziomie produktu ani wpływu naprawy na przychód.",
       next_step:
-        "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 item ecommerce.",
-      blocked_claims: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"]
+        "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max i GA4 ecommerce.",
+      blocked_claims: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"],
+      blocked_claim_labels: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"]
     }
   ],
   product_sample_readiness: {
     status: "ready",
+    status_label: "próbki produktów dostępne",
     sample_products_available: true,
     sample_count: 2,
     sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
@@ -4163,11 +4167,13 @@ const merchantDiagnostics = {
       "Merchant diagnostics ma przykładowe produkty do review, ale nie jest pełną listą SKU do edycji.",
     next_step:
       "Użyj próbek jako punktu startu przeglądu i nie zapisuj zmian feedu bez podglądu zmian.",
-    blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
+    blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"],
+    blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
   },
   product_performance_readiness: {
     id: "merchant_product_performance_readiness",
     status: "blocked",
+    status_label: "dane Ads/GA4 zablokowane",
     joined_product_count: 0,
     merchant_sample_count: 2,
     ads_product_fact_count: 0,
@@ -4191,12 +4197,20 @@ const merchantDiagnostics = {
     summary:
       "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych faktów produktu z Ads/GA4.",
     next_step:
-      "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
+      "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max i GA4 ecommerce ze wspólnym kluczem produktu.",
     blocked_claims: [
       "zwrot z reklam na poziomie produktu",
       "odzyskany przychód produktu",
       "efekt naprawy produktu",
-      "Shopping/PMax product scaling",
+      "skalowanie produktu w reklamach produktowych i Performance Max",
+      "ponowne zatwierdzenie produktu",
+      "zapis do feedu"
+    ],
+    blocked_claim_labels: [
+      "zwrot z reklam na poziomie produktu",
+      "odzyskany przychód produktu",
+      "efekt naprawy produktu",
+      "skalowanie produktu w reklamach produktowych i Performance Max",
       "ponowne zatwierdzenie produktu",
       "zapis do feedu"
     ]
@@ -4204,6 +4218,7 @@ const merchantDiagnostics = {
   price_impact_readiness: {
     id: "merchant_price_impact_readiness",
     status: "blocked",
+    status_label: "wpływ ceny zablokowany",
     products_with_current_price: 0,
     products_with_previous_price: 0,
     products_with_price_change: 0,
@@ -4229,7 +4244,8 @@ const merchantDiagnostics = {
       "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
     next_step:
       "Dodać historię ceny i okno skuteczności produktu przed oceną wpływu zmiany ceny.",
-    blocked_claims: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"]
+    blocked_claims: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"],
+    blocked_claim_labels: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"]
   },
   operator_summary: {
     id: "merchant_operator_summary",
@@ -4255,6 +4271,12 @@ const merchantDiagnostics = {
     evidence_ids: ["ev_refresh_merchant_feed"],
     action_ids: ["act_review_merchant_feed_issues"],
     blocked_claims: [
+      "ponowne zatwierdzenie produktu",
+      "odzyskany przychód",
+      "automatyczna zmiana feedu",
+      "nadpisanie głównego feedu"
+    ],
+    blocked_claim_labels: [
       "ponowne zatwierdzenie produktu",
       "odzyskany przychód",
       "automatyczna zmiana feedu",
@@ -4293,7 +4315,9 @@ const merchantDiagnostics = {
     {
       id: "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability",
       decision_type: "review_issue_cluster",
+      decision_type_label: "przegląd problemu feedu",
       status: "ready",
+      status_label: "gotowe",
       title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
       summary:
         "23 zgłoszeń problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
@@ -4324,18 +4348,22 @@ const merchantDiagnostics = {
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
       blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
       rationale:
         "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
         "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu.",
-      risk: "medium"
+      risk: "medium",
+      risk_label: "średnie ryzyko"
     }
   ],
   sections: [
     {
       id: "merchant_feed_health",
+      label: "Metryki produktów",
       title: "Merchant Center: stan produktów i feedu",
       status: "ready",
+      status_label: "gotowe",
       summary: "Metryki Merchant: total_products=10900, item_level_issue_count=23.",
       diagnosis: "WILQ ma metryki Merchant z odczytu i może ocenić skalę feedu.",
       next_step: "Przejdź do kolejki problemów i grupuj je po typie.",
@@ -4345,12 +4373,16 @@ const merchantDiagnostics = {
       tactical_items: [],
       action_ids: ["act_review_merchant_feed_issues"],
       blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
-      risk: "medium"
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
+      risk: "medium",
+      risk_label: "średnie ryzyko"
     },
     {
       id: "merchant_issue_queue",
+      label: "Kolejka problemów feedu",
       title: "Merchant Center: kolejka problemów feedu",
       status: "ready",
+      status_label: "gotowe",
       summary:
         "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
       diagnosis: "Najbezpieczniejsza praca to przegląd problemów po typie.",
@@ -4361,7 +4393,9 @@ const merchantDiagnostics = {
       tactical_items: [tacticalQueue.items[2]],
       action_ids: ["act_review_merchant_feed_issues"],
       blocked_claims: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
-      risk: "medium"
+      blocked_claim_labels: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
+      risk: "medium",
+      risk_label: "średnie ryzyko"
     }
   ],
   evidence_ids: [

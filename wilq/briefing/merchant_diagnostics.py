@@ -53,7 +53,7 @@ MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
     "zwrot z reklam na poziomie produktu",
     "odzyskany przychód produktu",
     "efekt naprawy produktu",
-    "skalowanie produktu w Shopping/PMax",
+    "skalowanie produktu w reklamach produktowych i Performance Max",
     "ponowne zatwierdzenie produktu",
     "zapis do feedu",
 ]
@@ -99,6 +99,18 @@ MERCHANT_REQUIRED_VALIDATION_LABELS = {
     "review_reporting_context": "sprawdź kontekst raportowania",
     "require_human_confirm_before_apply": "człowiek potwierdza przed zapisem",
     "validate_change_values": "sprawdź wartości przed zapisem",
+}
+MERCHANT_DECISION_TYPE_LABELS = {
+    "review_issue_cluster": "przegląd problemu feedu",
+    "review_feed_status": "przegląd statusu feedu",
+    "review_product_state_mapping": "powiązanie produktu z Ads",
+    "review_price_impact_readiness": "sprawdzenie wpływu ceny",
+    "block_until_vendor_read": "blokada do czasu odczytu Merchant",
+}
+MERCHANT_SECTION_LABELS = {
+    "merchant_feed_health": "Metryki produktów",
+    "merchant_issue_queue": "Kolejka problemów feedu",
+    "merchant_action_safety": "Bezpieczeństwo akcji",
 }
 PRODUCT_JOIN_DIMENSION_KEYS = [
     "product_id",
@@ -218,11 +230,16 @@ def build_merchant_diagnostics(
         action_ids,
     )
     decision_queue = _merchant_decisions_with_lineage(decision_queue)
-    return MerchantDiagnosticsResponse(
+    response = MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
+        connector_status_label=_merchant_connector_status_label(connector.status),
         latest_refresh=latest_refresh,
+        latest_refresh_status_label=_merchant_refresh_status_label(latest_refresh.status)
+        if latest_refresh
+        else None,
         live_data_available=live_data_available,
+        live_data_status_label=_merchant_live_data_status_label(live_data_available),
         product_count=_numeric_metric_or_refresh_summary(
             trusted_facts,
             latest_refresh,
@@ -269,10 +286,217 @@ def build_merchant_diagnostics(
         ),
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
+    return _merchant_response_with_operator_labels(response)
 
 
 def _latest_merchant_refresh() -> ConnectorRefreshRun | None:
     return _latest_connector_refresh(MERCHANT_CONNECTOR_ID)
+
+
+def _merchant_response_with_operator_labels(
+    response: MerchantDiagnosticsResponse,
+) -> MerchantDiagnosticsResponse:
+    return response.model_copy(
+        update={
+            "freshness_assessment": response.freshness_assessment.model_copy(
+                update={
+                    "state_label": _merchant_freshness_label(
+                        response.freshness_assessment.state
+                    ),
+                }
+            ),
+            "operator_summary": response.operator_summary.model_copy(
+                update={
+                    "blocked_claim_labels": _merchant_blocked_claim_labels(
+                        response.operator_summary.blocked_claims
+                    ),
+                }
+            ),
+            "unknowns": [
+                unknown.model_copy(
+                    update={
+                        "blocked_claim_labels": _merchant_blocked_claim_labels(
+                            unknown.blocked_claims
+                        ),
+                    }
+                )
+                for unknown in response.unknowns
+            ],
+            "product_sample_readiness": response.product_sample_readiness.model_copy(
+                update={
+                    "status_label": _merchant_product_sample_status_label(
+                        response.product_sample_readiness
+                    ),
+                    "blocked_claim_labels": _merchant_blocked_claim_labels(
+                        response.product_sample_readiness.blocked_claims
+                    ),
+                }
+            ),
+            "product_performance_readiness": (
+                _merchant_product_performance_readiness_with_operator_labels(
+                    response.product_performance_readiness
+                )
+            ),
+            "price_impact_readiness": response.price_impact_readiness.model_copy(
+                update={
+                    "status_label": _merchant_price_impact_status_label(
+                        response.price_impact_readiness.status
+                    ),
+                    "blocked_claim_labels": _merchant_blocked_claim_labels(
+                        response.price_impact_readiness.blocked_claims
+                    ),
+                }
+            ),
+            "decision_queue": [
+                _merchant_decision_with_operator_labels(decision)
+                for decision in response.decision_queue
+            ],
+            "sections": [
+                _merchant_section_with_operator_labels(section)
+                for section in response.sections
+            ],
+        }
+    )
+
+
+def _merchant_product_performance_readiness_with_operator_labels(
+    readiness: MerchantProductPerformanceReadiness,
+) -> MerchantProductPerformanceReadiness:
+    return readiness.model_copy(
+        update={
+            "status_label": _merchant_product_performance_status_label(readiness.status),
+            "blocked_claim_labels": _merchant_blocked_claim_labels(readiness.blocked_claims),
+            "performance_rows": [
+                row.model_copy(
+                    update={
+                        "blocked_claim_labels": _merchant_blocked_claim_labels(
+                            row.blocked_claims
+                        ),
+                    }
+                )
+                for row in readiness.performance_rows
+            ],
+        }
+    )
+
+
+def _merchant_decision_with_operator_labels(
+    decision: MerchantDecisionItem,
+) -> MerchantDecisionItem:
+    return decision.model_copy(
+        update={
+            "decision_type_label": MERCHANT_DECISION_TYPE_LABELS.get(
+                decision.decision_type,
+                _merchant_display_label(decision.decision_type),
+            ),
+            "status_label": _merchant_status_label(decision.status),
+            "blocked_claim_labels": _merchant_blocked_claim_labels(decision.blocked_claims),
+            "risk_label": _merchant_risk_label(decision.risk),
+        }
+    )
+
+
+def _merchant_section_with_operator_labels(
+    section: MerchantDiagnosticSection,
+) -> MerchantDiagnosticSection:
+    return section.model_copy(
+        update={
+            "label": MERCHANT_SECTION_LABELS.get(section.id, section.title),
+            "status_label": _merchant_status_label(section.status),
+            "blocked_claim_labels": _merchant_blocked_claim_labels(section.blocked_claims),
+            "risk_label": _merchant_risk_label(section.risk),
+        }
+    )
+
+
+def _merchant_connector_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "configured": "dostęp skonfigurowany",
+        "missing_credentials": "brakuje dostępu",
+        "disabled": "źródło wyłączone",
+    }
+    return labels.get(normalized, f"status: {normalized}")
+
+
+def _merchant_refresh_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "completed": "zakończony",
+        "blocked": "zablokowany",
+        "failed": "błąd",
+        "running": "w toku",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _merchant_live_data_status_label(live_data_available: bool) -> str:
+    return "metryki feedu dostępne" if live_data_available else "brak metryk feedu"
+
+
+def _merchant_freshness_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "fresh": "dane świeże",
+        "stale": "dane do odświeżenia",
+        "missing": "brak odczytu",
+        "blocked": "odczyt zablokowany",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _merchant_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+        "missing": "brak danych",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _merchant_product_sample_status_label(readiness: MerchantProductSampleReadiness) -> str:
+    return (
+        "próbki produktów dostępne"
+        if readiness.sample_products_available
+        else "próbki produktów zablokowane"
+    )
+
+
+def _merchant_product_performance_status_label(status: object) -> str:
+    return (
+        "dane Ads/GA4 dostępne"
+        if _enum_value(status) == "ready"
+        else "dane Ads/GA4 zablokowane"
+    )
+
+
+def _merchant_price_impact_status_label(status: object) -> str:
+    return (
+        "wpływ ceny gotowy do sprawdzenia"
+        if _enum_value(status) == "ready"
+        else "wpływ ceny zablokowany"
+    )
+
+
+def _merchant_risk_label(risk: object) -> str:
+    normalized = _enum_value(risk)
+    labels = {
+        "low": "niskie ryzyko",
+        "medium": "średnie ryzyko",
+        "high": "wysokie ryzyko",
+        "critical": "ryzyko krytyczne",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _merchant_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
+    return _unique(_merchant_display_label(claim) for claim in claims)
+
+
+def _enum_value(value: object) -> str:
+    enum_value = getattr(value, "value", value)
+    return str(enum_value)
 
 
 def _latest_connector_refresh(connector_id: str) -> ConnectorRefreshRun | None:
@@ -420,7 +644,8 @@ def _merchant_unknowns(
                 ),
                 next_step=(
                     "Dodać kontrakty odczytu skuteczności produktu dla Google Ads "
-                    "Shopping/PMax i GA4 ecommerce, z jawnie wspólnym kluczem produktu."
+                    "Shopping, Performance Max i GA4 ecommerce, z jawnie wspólnym "
+                    "kluczem produktu."
                 ),
                 blocked_claims=product_performance_readiness.blocked_claims,
             )
@@ -1069,12 +1294,12 @@ def _product_performance_next_step(
         )
     if ga4_product_facts and not ads_product_facts:
         return (
-            "Dodać albo odświeżyć Ads Shopping/PMax product facts oraz utrzymać "
-            "wspólny product_id/item_id jako join key."
+            "Dodać albo odświeżyć dane skuteczności produktów z Google Ads "
+            "Shopping i Performance Max oraz utrzymać wspólny klucz produktu."
         )
     return (
-        "Dodać skuteczność produktu dla Google Ads Shopping/PMax i GA4 "
-        "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
+        "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max "
+        "i GA4 ecommerce oraz utrzymać wspólny klucz produktu."
     )
 
 
@@ -1366,7 +1591,11 @@ def _feed_health_section(
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["feed health", "product approval", "issue count"],
+            blocked_claims=[
+                "ocena stanu feedu",
+                "zatwierdzenie produktu",
+                "liczba zgłoszeń problemów",
+            ],
             risk=ActionRisk.medium,
         )
 
@@ -1734,7 +1963,11 @@ def _merchant_decision_queue(
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
                 action_ids=action_ids,
-                blocked_claims=["feed health", "product approval", "issue count"],
+                blocked_claims=[
+                    "ocena stanu feedu",
+                    "zatwierdzenie produktu",
+                    "liczba zgłoszeń problemów",
+                ],
                 rationale=(
                     "WILQ nie ma aktualnych metryk Merchant, więc nie może "
                     "uczciwie zbudować kolejki problemów feedu ani ocenić stanu produktów."
