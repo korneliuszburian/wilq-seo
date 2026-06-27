@@ -221,9 +221,9 @@ Known cleanup already started:
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ
   API/shared-schema fields instead of route-local React dictionaries.
-- `wilq-daily-command` reaches the live WILQ API, but the daily context-pack
-  smoke currently exceeds the budget cap by 254 bytes. Treat this as the next
-  focused condensation task.
+- `wilq-daily-command` reaches the live WILQ API and the daily context-pack
+  smoke passes after capping embedded evidence summaries at 32. Keep watching
+  context-pack size as live evidence grows.
 
 ## 9. Current Goal
 

@@ -14811,12 +14811,12 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
         context_payload["context_pack_compaction"]["full_marketing_brief_endpoint"]
         == "/api/marketing/brief"
     )
-    assert context_payload["context_pack_compaction"]["evidence_summaries_limit"] == 40
+    assert context_payload["context_pack_compaction"]["evidence_summaries_limit"] == 32
     assert "command_center" in context_payload
     assert "tactical_queue" not in context_payload
     assert "ads_diagnostics" not in context_payload
     assert "merchant_diagnostics" not in context_payload
-    assert len(context_payload["evidence_summaries"]) <= 40
+    assert len(context_payload["evidence_summaries"]) <= 32
     assert context_brief["language"] == "pl-PL"
     assert context_brief["language"] == brief["language"]
     assert context_brief["blocker_count"] == brief["blocker_count"]

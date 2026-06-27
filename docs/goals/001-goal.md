@@ -250,6 +250,10 @@ Latest slice:
   tests, dashboard route test, typecheck, marketer language guard and live
   browser/API proof pass. Proof:
   `.local-lab/proof/20260627-command-center-api-labels/`.
+- `wilq-daily-command` default context-pack now caps embedded evidence
+  summaries at 32 to keep the daily smoke below the 180 KB budget while
+  preserving evidence IDs in decisions and marketing brief items. Live smoke
+  passed with `177573` bytes after managed stack restart.
 
 ### C. Dashboard Condensation
 
@@ -267,8 +271,8 @@ Done when:
 
 - Wilku can understand the first screen without knowing internal models.
 - Command Center no longer requires React-side dictionaries to understand daily
-  decisions; remaining condensation work should target oversized context-packs
-  and any still-raw domain surfaces.
+  decisions; remaining condensation work should target still-raw domain
+  surfaces and any future context-pack growth.
 
 ### D. Content Product Completion
 

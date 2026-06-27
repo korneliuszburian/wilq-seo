@@ -186,6 +186,7 @@ ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
+DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT = 32
 
 
 @dataclass(frozen=True)
@@ -356,7 +357,7 @@ def _daily_command_context_pack(
         "evidence_summaries": [
             _compact_evidence_for_operator_context(evidence)
             for evidence in list_evidence_by_ids(sorted(evidence_ids))
-        ][:40],
+        ][:DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT],
         "knowledge_card_summaries": [
             _compact_knowledge_card_for_operator_context(card)
             for card in compile_playbook_cards()
@@ -388,7 +389,7 @@ def _daily_command_context_pack(
             "expert_capabilities_compacted": True,
             "action_review_gates_compacted": True,
             "raw_history_omitted": True,
-            "evidence_summaries_limit": 40,
+            "evidence_summaries_limit": DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT,
             "full_action_endpoint_template": "/api/actions/{action_id}",
             "full_marketing_brief_endpoint": "/api/marketing/brief",
             "full_command_center_endpoint": "/api/dashboard/command-center",

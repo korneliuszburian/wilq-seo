@@ -1126,10 +1126,10 @@ Date: 2026-06-27
 - Some default skill context-packs are still large by operator standards.
   Continue shrinking only where size comes from raw/debug duplication instead of
   useful decision context.
-- `wilq-daily-command` still has a context-pack condensation blocker: the live
-  smoke reached WILQ API successfully but failed the budget check at 180254
-  bytes against a 180000-byte cap. Treat this as the next focused condensation
-  task, not as a proof that API health is broken.
+- `wilq-daily-command` context-pack budget blocker is cleared for the current
+  live state. Daily default evidence summaries are capped at 32 embedded
+  summaries while decision/brief evidence IDs remain available for drilldown.
+  Live smoke passed and measured `177573` bytes against the `180000` byte cap.
 - Dashboard route vitest/typecheck can exceed current timeout before collecting
   tests on this dirty worktree. Treat that as a test-runtime cleanup task, not a
   product proof.

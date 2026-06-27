@@ -629,9 +629,10 @@ WILQ is complete for this long-range goal when:
 - Command Center labels are part of the canonical daily view-model. If the first
   screen needs better wording, fix the command-center API/domain source and
   schema, not React-side dictionaries.
-- The daily context-pack remains just over its budget cap after this cleanup.
-  Treat context-pack size as a product condensation issue with focused proof,
-  not as a reason to hide useful labels from the dashboard.
+- Daily context-pack size is sensitive to live evidence count. The current
+  default caps embedded evidence summaries at 32 and keeps full evidence IDs in
+  decisions/briefs for drilldown; treat future size growth as a context
+  condensation task, not a reason to hide useful labels from the dashboard.
 
 ## Decision Log
 
