@@ -222,14 +222,14 @@ def refresh_ahrefs_domain_rating(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "Ahrefs vendor read completed through Site Explorer domain-rating. "
+            "Odczyt Ahrefs zakończony przez Site Explorer domain-rating. "
             f"Domain rating: {metric_summary['domain_rating']}. "
-            f"Organic competitor rows: {metric_summary['organic_competitor_rows']}. "
-            f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}. "
-            "Organic keyword rows by top page: "
+            f"Wiersze konkurentów organicznych: {metric_summary['organic_competitor_rows']}. "
+            f"Wiersze top pages: {metric_summary.get('top_pages_by_competitor_rows', 0)}. "
+            "Wiersze organic keywords dla top pages: "
             f"{metric_summary.get('organic_keywords_by_url_rows', 0)}. "
-            f"Content gap rows: {metric_summary.get('content_gap_rows', 0)}. "
-            f"Backlink gap rows: {metric_summary.get('backlink_gap_rows', 0)}."
+            f"Wiersze luk treści: {metric_summary.get('content_gap_rows', 0)}. "
+            f"Wiersze luk linków: {metric_summary.get('backlink_gap_rows', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

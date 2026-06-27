@@ -55,8 +55,8 @@ def refresh_search_console_site_summary(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "Google Search Console vendor read completed through Search Analytics. "
-            f"Rows: {metric_summary['row_count']}."
+            "Odczyt Google Search Console zakończony przez Search Analytics. "
+            f"Wiersze: {metric_summary['row_count']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

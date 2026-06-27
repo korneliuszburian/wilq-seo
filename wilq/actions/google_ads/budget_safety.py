@@ -17,11 +17,11 @@ CAMPAIGN_BUDGET_APPLY_SAFETY_REQUIRED_VALIDATION = [
 ]
 CAMPAIGN_BUDGET_APPLY_SAFETY_BLOCKED_CLAIMS = [
     "zmiana budżetu",
-    "budget scaling",
-    "campaign pause",
-    "profitability",
-    "wasted budget",
-    "automatic budget mutation",
+    "skalowanie budżetu",
+    "wstrzymanie kampanii",
+    "opłacalność",
+    "zmarnowany budżet",
+    "automatic zapis zmian budżetu",
 ]
 
 

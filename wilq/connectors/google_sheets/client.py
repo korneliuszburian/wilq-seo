@@ -54,8 +54,8 @@ def refresh_google_sheets_review_surface(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "Google Sheets vendor read completed through spreadsheets.get metadata. "
-            f"Sheets: {metric_summary['sheet_count']}."
+            "Odczyt Google Sheets zakończony przez metadane spreadsheets.get. "
+            f"Arkusze: {metric_summary['sheet_count']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

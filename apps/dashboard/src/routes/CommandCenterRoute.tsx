@@ -198,7 +198,7 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
       title: "Sprawdź pomiar GA4 zanim ocenimy kampanie",
       what: `GA4 pokazuje ${groups} grup ruchu, ${measurementIssues} problemy pomiaru, ${qualitySignals} sygnały jakości ruchu i ${contractGaps} brak danych wymaganych do pełnej oceny.`,
       why:
-        "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o ROAS, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie werdykt o skuteczności kampanii.",
+        "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o zwrot z reklam, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie werdykt o skuteczności kampanii.",
       nextStep:
         "Otwórz GA4, sprawdź strony wejścia, źródła ruchu i konfigurację zdarzeń. Najpierw naprawiamy pomiar, dopiero potem oceniamy wyniki."
     };

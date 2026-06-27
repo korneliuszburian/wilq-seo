@@ -10,15 +10,15 @@ GA4_TRACKING_QUALITY_PREVIEW_CONTRACT: Literal["ga4_tracking_quality_review_v1"]
     "ga4_tracking_quality_review_v1"
 )
 GA4_TRACKING_BLOCKED_CLAIMS = [
-    "conversion rate",
+    "współczynnik konwersji",
     "zwrot z reklam",
-    "revenue",
-    "profitability",
-    "conversion drop",
-    "funnel diagnosis",
-    "attribution verdict",
-    "tracking fixed",
-    "GA4 write",
+    "przychód",
+    "opłacalność",
+    "spadek konwersji",
+    "diagnoza lejka",
+    "ocena atrybucji",
+    "naprawiony pomiar",
+    "zapis w GA4",
 ]
 GA4_TRACKING_REQUIRED_VALIDATION = [
     "review_landing_page_dimension",

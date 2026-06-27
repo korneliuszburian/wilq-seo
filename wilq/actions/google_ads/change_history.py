@@ -18,11 +18,11 @@ CHANGE_HISTORY_IMPACT_REQUIRED_VALIDATION = [
     "block_apply_until_mutation_audit",
 ]
 CHANGE_HISTORY_IMPACT_BLOCKED_CLAIMS = [
-    "change impact",
-    "performance uplift",
-    "budget scaling",
+    "wpływ zmian",
+    "obietnica poprawy wyniku",
+    "skalowanie budżetu",
     "zmiana budżetu",
-    "campaign mutation",
+    "zapis zmian kampanii",
 ]
 
 

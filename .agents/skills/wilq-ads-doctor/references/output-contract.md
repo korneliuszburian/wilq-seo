@@ -36,9 +36,9 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- `/api/ads/diagnostics` zwraca `live_data_available=false`, a użytkownik pyta o spend, CPA, ROAS, search terms, negative keywords, campaign scaling albo budget changes.
+- `/api/ads/diagnostics` zwraca `live_data_available=false`, a użytkownik pyta o spend, CPA, zwrot z reklam, search terms, negative keywords, campaign scaling albo budget changes.
 - Użytkownik prosi o zmianę budżetów, pauzowanie kampanii albo skalowanie kampanii zanim `act_prepare_ads_campaign_review_queue` istnieje, jest sprawdzony w WILQ i ma wsparcie pozostałych kontraktów odczytu danych: change history, recommendations, impression share, business goal i podgląd zapisu zmian.
-- `negative_keywords_read_contract` jest missing, blocked albo nie ma akcji do sprawdzenia, a użytkownik pyta o negative keyword candidates.
+- `negative_keywords_read_contract` jest missing, blocked albo nie ma akcji do sprawdzenia, a użytkownik pyta o propozycje wykluczeń.
 - Użytkownik prosi o zapis zmian negative keywords zanim `act_prepare_negative_keyword_review_queue` istnieje i jest sprawdzony w WILQ.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
 - Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.

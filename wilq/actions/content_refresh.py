@@ -933,7 +933,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "missing_evidence": [
                     "brak potwierdzenia popytu GSC dla tematu",
                     "brak potwierdzenia dopasowania w spisie treści WordPress",
-                    "brak dowodu wpływu na ruch, leady albo revenue",
+                    "brak dowodu wpływu na ruch, leady albo przychód",
                 ],
                 "forbidden_claims": CONTENT_BLOCKED_CLAIMS,
                 "brief_outline": _brief_outline(topic, False),

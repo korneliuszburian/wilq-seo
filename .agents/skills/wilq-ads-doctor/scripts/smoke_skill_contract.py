@@ -153,8 +153,8 @@ def main() -> int:
         raise SystemExit("Ads optimizer readiness must keep apply_allowed=false")
     if optimizer_readiness_contract.get("api_mutation_ready") is not False:
         raise SystemExit("Ads optimizer readiness must keep api_mutation_ready=false")
-    if "campaign mutation" not in optimizer_readiness_contract.get("blocked_claims", []):
-        raise SystemExit("Ads optimizer readiness must block campaign mutation claims")
+    if "zapis zmian kampanii" not in optimizer_readiness_contract.get("blocked_claims", []):
+        raise SystemExit("Ads optimizer readiness must block zapis zmian kampanii claims")
     readiness_items = optimizer_readiness_contract.get("readiness_items") or []
     if not readiness_items:
         raise SystemExit("Ads optimizer readiness must expose readiness_items")
@@ -163,7 +163,7 @@ def main() -> int:
         "change_history_impact_review",
     )
     if change_impact_item.get("status") != "blocked":
-        raise SystemExit("Ads optimizer readiness must block change impact review")
+        raise SystemExit("Ads optimizer readiness must block wpływ zmian review")
     if "ads_change_history_read_contract" not in (
         change_impact_item.get("source_contract_ids") or []
     ):
@@ -172,8 +172,8 @@ def main() -> int:
         change_impact_item.get("source_contract_ids") or []
     ):
         raise SystemExit("Change impact readiness item must cite readiness contract")
-    if "change impact" not in change_impact_item.get("blocked_claims", []):
-        raise SystemExit("Change impact readiness item must block change impact claim")
+    if "wpływ zmian" not in change_impact_item.get("blocked_claims", []):
+        raise SystemExit("Change impact readiness item must block wpływ zmian claim")
     apply_item = _find_readiness_item(readiness_items, "ads_apply_safety_gate")
     if apply_item.get("status") != "blocked":
         raise SystemExit("Ads optimizer readiness must block apply safety gate")
@@ -202,11 +202,11 @@ def main() -> int:
         triage_rows = campaign_triage_read_contract.get("triage_rows") or []
         if not triage_rows:
             raise SystemExit("Ready campaign triage contract must expose triage rows")
-        if "wasted budget" not in campaign_triage_read_contract.get(
+        if "zmarnowany budżet" not in campaign_triage_read_contract.get(
             "blocked_claims",
             [],
         ):
-            raise SystemExit("Campaign triage contract must keep wasted budget blocked")
+            raise SystemExit("Campaign triage contract must keep zmarnowany budżet blocked")
         pack_triage_contract = (
             pack.get("ads_diagnostics", {}).get("campaign_triage_read_contract") or {}
         )
@@ -255,11 +255,11 @@ def main() -> int:
         raise SystemExit("Business context must expose strategy review readiness contract")
     if strategy_readiness_contract.get("apply_allowed") is not False:
         raise SystemExit("Strategy review readiness must keep apply_allowed=false")
-    if "profitability verdict" not in strategy_readiness_contract.get(
+    if "ocena opłacalności" not in strategy_readiness_contract.get(
         "blocked_claims",
         [],
     ):
-        raise SystemExit("Strategy review readiness must block profitability verdict")
+        raise SystemExit("Strategy review readiness must block ocena opłacalności")
     if pack_strategy_readiness_contract.get("id") != (
         strategy_readiness_contract.get("id")
     ):
@@ -275,11 +275,11 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Context pack strategy review readiness must require review")
-    if "profitability verdict" not in pack_strategy_readiness_contract.get(
+    if "ocena opłacalności" not in pack_strategy_readiness_contract.get(
         "blocked_claims",
         [],
     ):
-        raise SystemExit("Context pack strategy review readiness must block profitability")
+        raise SystemExit("Context pack strategy review readiness must block opłacalność")
     if business_context_read_contract.get("status") == "blocked" and not (
         business_context_read_contract.get("missing_read_contracts") or []
     ):
@@ -458,8 +458,8 @@ def main() -> int:
             "summary"
         ):
             raise SystemExit("Context pack change history contract differs")
-        if "change impact" not in change_history_read_contract.get("blocked_claims", []):
-            raise SystemExit("Change history contract must keep change impact blocked")
+        if "wpływ zmian" not in change_history_read_contract.get("blocked_claims", []):
+            raise SystemExit("Change history contract must keep wpływ zmian blocked")
     else:
         missing_change_history_contracts = set(
             change_history_read_contract.get("missing_read_contracts") or []
@@ -479,15 +479,15 @@ def main() -> int:
         raise SystemExit("Change impact readiness must keep apply_allowed=false")
     if change_impact_readiness_contract.get("api_mutation_ready") is not False:
         raise SystemExit("Change impact readiness must keep api_mutation_ready=false")
-    if "change impact" not in change_impact_readiness_contract.get("blocked_claims", []):
-        raise SystemExit("Change impact readiness must block change impact claim")
+    if "wpływ zmian" not in change_impact_readiness_contract.get("blocked_claims", []):
+        raise SystemExit("Change impact readiness must block wpływ zmian claim")
     pack_change_impact_contract = (
         pack.get("ads_diagnostics", {}).get("change_impact_readiness_contract") or {}
     )
     if pack_change_impact_contract.get("summary") != (
         change_impact_readiness_contract.get("summary")
     ):
-        raise SystemExit("Context pack change impact readiness contract differs")
+        raise SystemExit("Context pack wpływ zmian readiness contract differs")
     change_history_rows = change_history_read_contract.get("change_history_rows") or []
     change_impact_rows = change_impact_readiness_contract.get("readiness_rows") or []
     if change_history_rows and not change_impact_rows:
@@ -513,7 +513,7 @@ def main() -> int:
             raise SystemExit("Context pack search-term review contract differs")
         if not search_term_review_summary_contract.get("campaign_review_rows"):
             raise SystemExit("Ready search-term review contract must expose campaign rows")
-        if "search-term waste" not in search_term_review_summary_contract.get(
+        if "marnowanie budżetu na zapytaniach" not in search_term_review_summary_contract.get(
             "blocked_claims",
             [],
         ):

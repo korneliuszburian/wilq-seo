@@ -82,9 +82,9 @@ def refresh_ga4_behavior_summary(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "GA4 vendor read completed through Analytics Data API runReport. "
-            f"Landing rows: {metric_summary['row_count']}; "
-            f"item rows: {metric_summary['ga4_item_product_row_count']}."
+            "Odczyt GA4 zakończony przez Analytics Data API runReport. "
+            f"Wiersze stron wejścia: {metric_summary['row_count']}; "
+            f"wiersze produktów: {metric_summary['ga4_item_product_row_count']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

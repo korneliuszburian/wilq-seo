@@ -83,10 +83,10 @@ def main() -> int:
             )
         blocked_claims = set(readiness_contract.get("blocked_claims", []))
         required_blocked_claims = {
-            "conversion rate",
+            "współczynnik konwersji",
             "zwrot z reklam",
-            "revenue",
-            "profitability",
+            "przychód",
+            "opłacalność",
         }
         missing_claims = sorted(required_blocked_claims - blocked_claims)
         if missing_claims:

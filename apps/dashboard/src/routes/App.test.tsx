@@ -218,7 +218,7 @@ const actions = [
             "review_conversion_or_key_event_mapping",
             "human_confirm_before_tracking_change"
           ],
-          blocked_claims: ["conversion rate", "zwrot z reklam", "revenue"],
+          blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
           evidence_ids: ["ev_refresh_ga4"],
           api_mutation_ready: false,
           apply_allowed: false,
@@ -424,7 +424,7 @@ const actions = [
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -503,10 +503,10 @@ const actions = [
           ],
           blocked_claims: [
             "zapis rekomendacji",
-            "automatic recommendation accept",
+            "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
-            "campaign mutation",
-            "performance uplift"
+            "zapis zmian kampanii",
+            "obietnica poprawy wyniku"
           ],
           api_mutation_ready: false,
           apply_allowed: false,
@@ -526,10 +526,10 @@ const actions = [
       ],
       blocked_claims: [
         "zapis rekomendacji",
-        "automatic recommendation accept",
+        "automatyczne przyjęcie rekomendacji",
         "zmiana budżetu",
-        "campaign mutation",
-        "performance uplift"
+        "zapis zmian kampanii",
+        "obietnica poprawy wyniku"
       ],
       api_mutation_ready: false,
       apply_allowed: false,
@@ -600,7 +600,7 @@ const adsDiagnostics = {
     status: "completed",
     external_call_attempted: true,
     vendor_data_collected: true,
-    summary: "Google Ads vendor read completed through googleAds:searchStream. Rows: 18.",
+    summary: "Odczyt Google Ads zakończony przez googleAds:searchStream. Wiersze kampanii: 18.",
     errors: [],
     metric_summary: {
       row_count: 18,
@@ -620,7 +620,7 @@ const adsDiagnostics = {
       "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
-    blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
+    blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     campaign_rows: [
@@ -654,7 +654,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
       }
     ],
     next_step: "Użyj wierszy kampanii do sprawdzenia aktywności."
@@ -667,7 +667,7 @@ const adsDiagnostics = {
     currency_code: "PLN",
     allowed_metrics: ["account_currency_code"],
     missing_read_contracts: [],
-    blocked_claims: ["profitability", "margin verdict", "zmiana budżetu"],
+    blocked_claims: ["opłacalność", "ocena marży", "zmiana budżetu"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     next_step:
@@ -763,12 +763,12 @@ const adsDiagnostics = {
         "human_strategy_review"
       ],
       blocked_claims: [
-        "profitability verdict",
-        "target KPI verdict",
-        "budget scaling",
+        "ocena opłacalności",
+        "ocena KPI względem celu",
+        "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
-        "automatic optimization"
+        "automatyczna optymalizacja"
       ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -787,12 +787,12 @@ const adsDiagnostics = {
       "human_strategy_review"
     ],
     blocked_claims: [
-      "profitability",
-      "margin verdict",
-      "budget scaling",
+      "opłacalność",
+      "ocena marży",
+      "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji",
-      "wasted budget"
+      "zmarnowany budżet"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -820,9 +820,9 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: ["profit_margin", "change_history"],
     blocked_claims: [
-      "profitability",
-      "budget scaling",
-      "wasted budget",
+      "opłacalność",
+      "skalowanie budżetu",
+      "zmarnowany budżet",
       "zapis rekomendacji",
       "incrementality"
     ],
@@ -848,9 +848,9 @@ const adsDiagnostics = {
         ],
         missing_metrics: [],
         blocked_claims: [
-          "profitability",
-          "budget scaling",
-          "wasted budget",
+          "opłacalność",
+          "skalowanie budżetu",
+          "zmarnowany budżet",
           "zapis rekomendacji"
         ]
       }
@@ -879,10 +879,10 @@ const adsDiagnostics = {
       "human_budget_goal"
     ],
     blocked_claims: [
-      "budget scaling",
+      "skalowanie budżetu",
       "zmiana budżetu",
-      "profitability",
-      "wasted budget",
+      "opłacalność",
+      "zmarnowany budżet",
       "zapis rekomendacji"
     ],
     source_connectors: ["google_ads"],
@@ -934,12 +934,12 @@ const adsDiagnostics = {
             "human_confirm_before_apply"
           ],
           blocked_claims: [
-            "budget scaling",
+            "skalowanie budżetu",
             "zmiana budżetu",
-            "campaign pause",
-            "wasted budget",
-            "profitability",
-            "CPA verdict",
+            "wstrzymanie kampanii",
+            "zmarnowany budżet",
+            "opłacalność",
+            "ocena kosztu pozyskania celu",
             "werdykt zwrotu z reklam",
             "zapis rekomendacji"
           ],
@@ -974,11 +974,11 @@ const adsDiagnostics = {
             ],
             blocked_claims: [
               "zmiana budżetu",
-              "budget scaling",
-              "campaign pause",
-              "profitability",
-              "wasted budget",
-              "automatic budget mutation"
+              "skalowanie budżetu",
+              "wstrzymanie kampanii",
+              "opłacalność",
+              "zmarnowany budżet",
+              "automatic zapis zmian budżetu"
             ],
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             api_mutation_ready: false,
@@ -991,10 +991,10 @@ const adsDiagnostics = {
         },
         missing_metrics: [],
         blocked_claims: [
-          "budget scaling",
+          "skalowanie budżetu",
           "zmiana budżetu",
-          "profitability",
-          "wasted budget",
+          "opłacalność",
+          "zmarnowany budżet",
           "zapis rekomendacji"
         ]
       }
@@ -1030,12 +1030,12 @@ const adsDiagnostics = {
         ],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         blocked_claims: [
-          "budget scaling",
+          "skalowanie budżetu",
           "zmiana budżetu",
-          "campaign pause",
-          "wasted budget",
-          "profitability",
-          "CPA verdict",
+          "wstrzymanie kampanii",
+          "zmarnowany budżet",
+          "opłacalność",
+          "ocena kosztu pozyskania celu",
           "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ]
@@ -1069,12 +1069,12 @@ const adsDiagnostics = {
           "human_confirm_before_apply"
         ],
         blocked_claims: [
-          "budget scaling",
+          "skalowanie budżetu",
           "zmiana budżetu",
-          "campaign pause",
-          "wasted budget",
-          "profitability",
-          "CPA verdict",
+          "wstrzymanie kampanii",
+          "zmarnowany budżet",
+          "opłacalność",
+          "ocena kosztu pozyskania celu",
           "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ],
@@ -1108,11 +1108,11 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "zmiana budżetu",
-            "budget scaling",
-            "campaign pause",
-            "profitability",
-            "wasted budget",
-            "automatic budget mutation"
+            "skalowanie budżetu",
+            "wstrzymanie kampanii",
+            "opłacalność",
+            "zmarnowany budżet",
+            "automatic zapis zmian budżetu"
           ],
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           api_mutation_ready: false,
@@ -1155,10 +1155,10 @@ const adsDiagnostics = {
     ],
     blocked_claims: [
       "zapis rekomendacji",
-      "automatic recommendation accept",
+      "automatyczne przyjęcie rekomendacji",
       "zmiana budżetu",
-      "campaign mutation",
-      "performance uplift"
+      "zapis zmian kampanii",
+      "obietnica poprawy wyniku"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1226,10 +1226,10 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "zapis rekomendacji",
-            "automatic recommendation accept",
+            "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
-            "campaign mutation",
-            "performance uplift"
+            "zapis zmian kampanii",
+            "obietnica poprawy wyniku"
           ],
           api_mutation_ready: false,
           apply_allowed: false,
@@ -1238,9 +1238,9 @@ const adsDiagnostics = {
         missing_metrics: [],
         blocked_claims: [
           "zapis rekomendacji",
-          "automatic recommendation accept",
+          "automatyczne przyjęcie rekomendacji",
           "zmiana budżetu",
-          "campaign mutation"
+          "zapis zmian kampanii"
         ]
       }
     ],
@@ -1270,10 +1270,10 @@ const adsDiagnostics = {
         ],
         blocked_claims: [
           "zapis rekomendacji",
-          "automatic recommendation accept",
+          "automatyczne przyjęcie rekomendacji",
           "zmiana budżetu",
-          "campaign mutation",
-          "performance uplift"
+          "zapis zmian kampanii",
+          "obietnica poprawy wyniku"
         ],
         api_mutation_ready: false,
         apply_allowed: false,
@@ -1296,11 +1296,11 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: ["change_history", "human_budget_goal", "budget_apply_preview"],
     blocked_claims: [
-      "budget scaling",
+      "skalowanie budżetu",
       "zmiana budżetu",
-      "wasted budget",
-      "performance uplift",
-      "campaign mutation"
+      "zmarnowany budżet",
+      "obietnica poprawy wyniku",
+      "zapis zmian kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1317,10 +1317,10 @@ const adsDiagnostics = {
         metric_facts: [],
         missing_metrics: [],
         blocked_claims: [
-          "budget scaling",
+          "skalowanie budżetu",
           "zmiana budżetu",
-          "wasted budget",
-          "performance uplift"
+          "zmarnowany budżet",
+          "obietnica poprawy wyniku"
         ]
       }
     ],
@@ -1332,7 +1332,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Kolejność oceny kampanii Ads",
     summary:
-      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt wasted budget, profitability, CPA ani zwrot z reklam.",
+      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt zmarnowany budżet, opłacalność, CPA ani zwrot z reklam.",
     allowed_metrics: [
       "clicks",
       "impressions",
@@ -1350,12 +1350,12 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
     blocked_claims: [
-      "wasted budget",
-      "profitability",
-      "budget scaling",
+      "zmarnowany budżet",
+      "opłacalność",
+      "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji",
-      "campaign mutation"
+      "zapis zmian kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1403,12 +1403,12 @@ const adsDiagnostics = {
         ],
         missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
         blocked_claims: [
-          "wasted budget",
-          "profitability",
-          "budget scaling",
+          "zmarnowany budżet",
+          "opłacalność",
+          "skalowanie budżetu",
           "zmiana budżetu",
           "zapis rekomendacji",
-          "campaign mutation"
+          "zapis zmian kampanii"
         ],
         human_review_gates: [
           "review_campaign_goal",
@@ -1440,12 +1440,12 @@ const adsDiagnostics = {
         summary:
           "Campaign activity, KPI, budżet, rekomendacje i impression share są dostępne jako kolejka oceny.",
         next_step:
-          "Przejrzyj kampanie od góry kolejki bez zapisu zmian i bez werdyktu wasted budget.",
+          "Przejrzyj kampanie od góry kolejki bez zapisu zmian i bez werdyktu zmarnowany budżet.",
         source_contract_ids: ["ads_campaign_triage_read_contract"],
         allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
         missing_read_contracts: [],
         operator_review_gates: ["human_strategy_review"],
-        blocked_claims: ["wasted budget", "profitability", "campaign mutation"],
+        blocked_claims: ["zmarnowany budżet", "opłacalność", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_ads_campaign_review_queue"],
@@ -1463,7 +1463,7 @@ const adsDiagnostics = {
         allowed_metrics: ["search_term", "clicks", "impressions", "cost_micros"],
         missing_read_contracts: ["human_confirm_before_apply"],
         operator_review_gates: ["review_search_term_context"],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_negative_keyword_review_queue"],
@@ -1506,7 +1506,7 @@ const adsDiagnostics = {
           "human_change_impact_review"
         ],
         operator_review_gates: ["human_change_impact_review"],
-        blocked_claims: ["change impact", "performance uplift", "campaign mutation"],
+        blocked_claims: ["wpływ zmian", "obietnica poprawy wyniku", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: [],
@@ -1524,7 +1524,7 @@ const adsDiagnostics = {
         allowed_metrics: [],
         missing_read_contracts: ["google_ads_mutation_audit", "human_confirm_before_apply"],
         operator_review_gates: ["human_confirm_before_apply"],
-        blocked_claims: ["zmiana budżetu", "zapis rekomendacji", "campaign mutation"],
+        blocked_claims: ["zmiana budżetu", "zapis rekomendacji", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: [],
@@ -1548,12 +1548,12 @@ const adsDiagnostics = {
     ],
     operator_review_gates: ["human_strategy_review", "human_confirm_before_apply"],
     blocked_claims: [
-      "wasted budget",
-      "CPA verdict",
+      "zmarnowany budżet",
+      "ocena kosztu pozyskania celu",
       "werdykt zwrotu z reklam",
-      "change impact",
-      "performance uplift",
-      "campaign mutation"
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "zapis zmian kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1581,11 +1581,11 @@ const adsDiagnostics = {
       "apply_preview"
     ],
     blocked_claims: [
-      "change impact",
-      "performance uplift",
-      "budget scaling",
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "skalowanie budżetu",
       "zmiana budżetu",
-      "campaign mutation"
+      "zapis zmian kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1604,10 +1604,10 @@ const adsDiagnostics = {
         metric_facts: [],
         missing_metrics: [],
         blocked_claims: [
-          "change impact",
-          "performance uplift",
+          "wpływ zmian",
+          "obietnica poprawy wyniku",
           "zmiana budżetu",
-          "campaign mutation"
+          "zapis zmian kampanii"
         ]
       }
     ],
@@ -1636,11 +1636,11 @@ const adsDiagnostics = {
       "apply_preview"
     ],
     blocked_claims: [
-      "change impact",
-      "performance uplift",
-      "budget scaling",
+      "wpływ zmian",
+      "obietnica poprawy wyniku",
+      "skalowanie budżetu",
       "zmiana budżetu",
-      "campaign mutation"
+      "zapis zmian kampanii"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1667,11 +1667,11 @@ const adsDiagnostics = {
         ],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         blocked_claims: [
-          "change impact",
-          "performance uplift",
-          "budget scaling",
+          "wpływ zmian",
+          "obietnica poprawy wyniku",
+          "skalowanie budżetu",
           "zmiana budżetu",
-          "campaign mutation"
+          "zapis zmian kampanii"
         ]
       }
     ],
@@ -1701,8 +1701,8 @@ const adsDiagnostics = {
     missing_read_contracts: ["90_day_safety_check"],
     operator_review_gates: ["negative_keyword_action_validation"],
     blocked_claims: [
-      "search-term waste",
-      "negative keyword candidates",
+      "marnowanie budżetu na zapytaniach",
+      "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
       "CPA",
       "zwrot z reklam"
@@ -1758,7 +1758,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
       }
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
@@ -1785,7 +1785,7 @@ const adsDiagnostics = {
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
-    blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
+    blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -1807,7 +1807,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
+        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
       }
     ],
     campaign_review_rows: [
@@ -1821,7 +1821,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
+        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"]
       }
     ],
     next_step:
@@ -1853,12 +1853,12 @@ const adsDiagnostics = {
       "negative_keyword_action_validation"
     ],
     blocked_claims: [
-      "search-term waste",
-      "negative keyword candidates",
+      "marnowanie budżetu na zapytaniach",
+      "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
       "CPA",
       "zwrot z reklam",
-      "conversion loss"
+      "utrata konwersji"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1876,7 +1876,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "search-term waste"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"]
       }
     ],
     next_step:
@@ -1905,8 +1905,8 @@ const adsDiagnostics = {
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "search-term waste",
-      "conversion loss",
+      "marnowanie budżetu na zapytaniach",
+      "utrata konwersji",
       "CPA",
       "zwrot z reklam"
     ],
@@ -1928,7 +1928,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+        blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
       }
     ],
     next_step:
@@ -1952,8 +1952,8 @@ const adsDiagnostics = {
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "search-term waste",
-      "conversion loss",
+      "marnowanie budżetu na zapytaniach",
+      "utrata konwersji",
       "CPA",
       "zwrot z reklam"
     ],
@@ -1972,7 +1972,7 @@ const adsDiagnostics = {
         ad_group_name: "Odpady",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "wasted budget"]
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
       }
     ],
     next_step: "Użyj tego jako kontekstu review, nie jako zgody na apply."
@@ -2070,7 +2070,7 @@ const adsDiagnostics = {
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
             missing_metrics: [],
-            blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+            blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
           }
         ],
         keyword_planner_ideas: [
@@ -2310,7 +2310,7 @@ const adsDiagnostics = {
             ad_group_name: "Odpady",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
-            blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "wasted budget"]
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
           }
         ],
         payload_preview: {
@@ -2332,7 +2332,7 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -2346,7 +2346,7 @@ const adsDiagnostics = {
         ],
         safety_status: "read_ready_needs_human_review",
         validation_status: "pending_validation",
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2370,7 +2370,7 @@ const adsDiagnostics = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -2381,8 +2381,8 @@ const adsDiagnostics = {
     missing_read_contracts: [],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "search-term waste",
-      "conversion loss",
+      "marnowanie budżetu na zapytaniach",
+      "utrata konwersji",
       "CPA",
       "zwrot z reklam"
     ],
@@ -2456,7 +2456,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
         }
       ],
       derived_kpi_rows: [],
@@ -2479,7 +2479,7 @@ const adsDiagnostics = {
         "ads_scaling_candidates_v1",
         "ads_recommendations_v1"
       ],
-      blocked_claims: ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
       risk: "low"
     },
     {
@@ -2572,12 +2572,12 @@ const adsDiagnostics = {
           ],
           missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
           blocked_claims: [
-            "wasted budget",
-            "profitability",
-            "budget scaling",
+            "zmarnowany budżet",
+            "opłacalność",
+            "skalowanie budżetu",
             "zmiana budżetu",
             "zapis rekomendacji",
-            "campaign mutation"
+            "zapis zmian kampanii"
           ],
           human_review_gates: [
             "review_campaign_goal",
@@ -2607,12 +2607,12 @@ const adsDiagnostics = {
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_diagnostics_v1", "ads_scaling_candidates_v1"],
       blocked_claims: [
-        "wasted budget",
-        "profitability",
-        "budget scaling",
+        "zmarnowany budżet",
+        "opłacalność",
+        "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
-        "campaign mutation"
+        "zapis zmian kampanii"
       ],
       risk: "medium"
     },
@@ -2666,12 +2666,12 @@ const adsDiagnostics = {
       ],
       expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
       blocked_claims: [
-        "profitability",
-        "margin verdict",
-        "budget scaling",
+        "opłacalność",
+        "ocena marży",
+        "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
-        "wasted budget"
+        "zmarnowany budżet"
       ],
       risk: "medium"
     },
@@ -2783,10 +2783,10 @@ const adsDiagnostics = {
             ],
             blocked_claims: [
               "zapis rekomendacji",
-              "automatic recommendation accept",
+              "automatyczne przyjęcie rekomendacji",
               "zmiana budżetu",
-              "campaign mutation",
-              "performance uplift"
+              "zapis zmian kampanii",
+              "obietnica poprawy wyniku"
             ],
             api_mutation_ready: false,
             apply_allowed: false,
@@ -2795,9 +2795,9 @@ const adsDiagnostics = {
           missing_metrics: [],
           blocked_claims: [
             "zapis rekomendacji",
-            "automatic recommendation accept",
+            "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
-            "campaign mutation"
+            "zapis zmian kampanii"
           ]
         }
       ],
@@ -2827,10 +2827,10 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "zapis rekomendacji",
-            "automatic recommendation accept",
+            "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
-            "campaign mutation",
-            "performance uplift"
+            "zapis zmian kampanii",
+            "obietnica poprawy wyniku"
           ],
           api_mutation_ready: false,
           apply_allowed: false,
@@ -2849,10 +2849,10 @@ const adsDiagnostics = {
       expert_rule_ids: ["ads_recommendations_v1", "ads_principles_v1"],
       blocked_claims: [
         "zapis rekomendacji",
-        "automatic recommendation accept",
+        "automatyczne przyjęcie rekomendacji",
         "zmiana budżetu",
-        "campaign mutation",
-        "performance uplift"
+        "zapis zmian kampanii",
+        "obietnica poprawy wyniku"
       ],
       risk: "medium"
     },
@@ -2892,10 +2892,10 @@ const adsDiagnostics = {
           metric_facts: [],
           missing_metrics: [],
           blocked_claims: [
-            "budget scaling",
+            "skalowanie budżetu",
             "zmiana budżetu",
-            "wasted budget",
-            "performance uplift"
+            "zmarnowany budżet",
+            "obietnica poprawy wyniku"
           ]
         }
       ],
@@ -2909,11 +2909,11 @@ const adsDiagnostics = {
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
       blocked_claims: [
-        "budget scaling",
+        "skalowanie budżetu",
         "zmiana budżetu",
-        "wasted budget",
-        "performance uplift",
-        "campaign mutation"
+        "zmarnowany budżet",
+        "obietnica poprawy wyniku",
+        "zapis zmian kampanii"
       ],
       risk: "medium"
     },
@@ -2958,10 +2958,10 @@ const adsDiagnostics = {
           metric_facts: [],
           missing_metrics: [],
           blocked_claims: [
-            "change impact",
-            "performance uplift",
+            "wpływ zmian",
+            "obietnica poprawy wyniku",
             "zmiana budżetu",
-            "campaign mutation"
+            "zapis zmian kampanii"
           ]
         }
       ],
@@ -2974,10 +2974,10 @@ const adsDiagnostics = {
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_diagnostics_v1", "ads_principles_v1"],
       blocked_claims: [
-        "change impact",
-        "performance uplift",
+        "wpływ zmian",
+        "obietnica poprawy wyniku",
         "zmiana budżetu",
-        "campaign mutation"
+        "zapis zmian kampanii"
       ],
       risk: "medium"
     },
@@ -3021,7 +3021,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3029,7 +3029,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
       risk: "medium"
     },
     {
@@ -3080,7 +3080,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3096,7 +3096,7 @@ const adsDiagnostics = {
         "ads_search_terms_v1",
         "ads_principles_v1"
       ],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
       risk: "medium"
     },
     {
@@ -3143,7 +3143,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       custom_segment_candidates: [],
@@ -3198,7 +3198,7 @@ const adsDiagnostics = {
               "90_day_safety_check",
               "human_confirm_before_apply"
             ],
-            blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
@@ -3212,7 +3212,7 @@ const adsDiagnostics = {
           ],
           safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3236,14 +3236,14 @@ const adsDiagnostics = {
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
       risk: "medium"
     },
     {
@@ -3294,7 +3294,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "wasted budget"]
+          blocked_claims: ["CPA", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
         }
       ],
       search_term_safety_rows: [],
@@ -3523,7 +3523,7 @@ const adsDiagnostics = {
       title: "Google Ads: live data dostępne",
       status: "ready",
       summary: "WILQ ma zapisane metryki z odczytu odczytu danych Google Ads.",
-      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/zwrotu z reklam.",
+      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie kosztu pozyskania celu ani zwrotu z reklam.",
       next_step: "Analizuj tylko widoczne metryki i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
@@ -3539,7 +3539,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "zmarnowany budżet"],
       risk: "medium"
     },
     {
@@ -3547,7 +3547,7 @@ const adsDiagnostics = {
       title: "Aktywność kampanii Google Ads",
       status: "ready",
       summary: "Metryki z dowodami: clicks=107, impressions=2783.",
-      diagnosis: "Są live campaign rows, ale CPA/zwrotu z reklam wymagają osobnego read contract.",
+      diagnosis: "Są live campaign rows, ale kosztu pozyskania celu ani zwrotu z reklam wymagają osobnego read contract.",
       next_step: "Sprawdź kampanie bez obietnic kosztu pozyskania celu ani zwrotu z wydatków reklamowych.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -3563,7 +3563,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["CPA", "zwrot z reklam", "wasted budget"],
+      blocked_claims: ["CPA", "zwrot z reklam", "zmarnowany budżet"],
       risk: "medium"
     }
   ],
@@ -3878,7 +3878,7 @@ const tacticalQueue = {
       },
       diagnosis: "Landing /oferta/ ma active_users=20 i wymaga sprawdzenia jakości ruchu.",
       next_step: "Sprawdź message match, CTA i tracking przed oceną kampanii.",
-      blocked_claims: ["conversion rate", "zwrot z reklam"],
+      blocked_claims: ["współczynnik konwersji", "zwrot z reklam"],
       action_ids: ["act_review_ga4_tracking_quality"]
     },
     {
@@ -3952,7 +3952,7 @@ const tacticalQueue = {
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "zwrot z reklam"]
+      blocked_claims: ["współczynnik konwersji", "zwrot z reklam"]
     },
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
@@ -4003,7 +4003,7 @@ const merchantDiagnostics = {
     external_call_attempted: true,
     vendor_data_collected: true,
     metric_summary: { total_products: 10900, item_level_issue_count: 23 },
-    summary: "Merchant Center vendor read completed.",
+    summary: "Odczyt Merchant Center zakończony.",
     errors: [],
     redacted: true
   },
@@ -4307,7 +4307,7 @@ const contentDiagnostics = {
       external_call_attempted: true,
       vendor_data_collected: true,
       metric_summary: { clicks: 12, impressions: 120 },
-      summary: "GSC vendor read completed.",
+      summary: "Odczyt GSC zakończony.",
       errors: [],
       redacted: true
     },
@@ -4636,7 +4636,7 @@ const ga4Diagnostics = {
     external_call_attempted: true,
     vendor_data_collected: true,
     metric_summary: { active_users: 20, sessions: 30 },
-    summary: "GA4 vendor read completed.",
+    summary: "Odczyt GA4 zakończony.",
     errors: [],
     redacted: true
   },
@@ -4670,7 +4670,7 @@ const ga4Diagnostics = {
     source_connectors: ["google_analytics_4"],
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"],
+    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
     next_step:
       "Sprawdź `act_review_ga4_tracking_quality` w WILQ i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
     risk: "medium"
@@ -4679,7 +4679,7 @@ const ga4Diagnostics = {
     id: "ga4_operator_summary",
     title: "Co marketer ma sprawdzić teraz w jakości ruchu",
     summary:
-      "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, revenue, spadku konwersji ani winie kampanii.",
+      "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o zwrot z reklam, przychód, spadku konwersji ani winie kampanii.",
     next_step:
       "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i sprawdź propozycję w WILQ tylko jako sprawdzenie bez zapisu.",
     top_decision_ids: ["ga4_decision_tq_ga4_landing"],
@@ -4689,7 +4689,7 @@ const ga4Diagnostics = {
     source_connectors: ["google_analytics_4"],
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"]
+    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"]
   },
   decision_queue: [
     {
@@ -4709,7 +4709,7 @@ const ga4Diagnostics = {
       evidence_ids: ["ev_refresh_ga4"],
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "profitability"],
+      blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
       rationale:
         "GA4 widzi ruch na landingu /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
@@ -4730,7 +4730,7 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion rate", "zwrot z reklam", "revenue"],
+      blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
       risk: "low"
     },
     {
@@ -4745,7 +4745,7 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["conversion drop", "funnel diagnosis"],
+      blocked_claims: ["spadek konwersji", "diagnoza lejka"],
       risk: "medium"
     }
   ],
@@ -5569,7 +5569,7 @@ const knowledgeOperatingMap = {
       expert_rule_ids: ["ads_search_terms_v1"],
       required_evidence: ["search_terms", "evidence_ids"],
       missing_contracts: [],
-      blocked_claims: ["wasted budget verdict"],
+      blocked_claims: ["ocena zmarnowanego budżetu"],
       source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
       risk: "low"
     }
@@ -5675,7 +5675,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -5692,7 +5692,7 @@ function mockFetch() {
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
                 metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blockery: 1 },
-                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               },
               {
@@ -5745,7 +5745,7 @@ function mockFetch() {
                 status: "blocked",
                 priority: 14,
                 summary:
-                  "GA4 ma 1 grupę landing page, źródło i kampania i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Status zablokowane oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię źródła danych.",
+                  "GA4 ma 1 grupę landing page, źródło i kampania i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Status zablokowane oznacza brak kontraktu na zwrot z reklam/przychód/spadek konwersji/naprawiony pomiar, nie awarię źródła danych.",
                 next_step:
                   "Otwórz /ga4 i przejdź przez kolejkę decyzji. Sprawdź `act_review_ga4_tracking_quality` w WILQ.",
                 source_connectors: ["google_analytics_4"],
@@ -5758,7 +5758,7 @@ function mockFetch() {
                   "jakość ruchu": 0,
                   "brakujące dane": 1
                 },
-                blocked_claims: ["zwrot z reklam", "revenue", "conversion drop", "tracking fixed"],
+                blocked_claims: ["zwrot z reklam", "przychód", "spadek konwersji", "naprawiony pomiar"],
                 risk: "medium"
               }
             ],
@@ -5848,7 +5848,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "zwrot z reklam", "search-term waste"],
+                blocked_claims: ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -6405,14 +6405,14 @@ describe("WILQ dashboard", () => {
       screen.getByRole("heading", { name: "Gotowość oceny strategii Ads" })
     ).toBeInTheDocument();
     expect(screen.getAllByText("brak oceny").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/target KPI verdict/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ocena KPI względem celu/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Source terms:/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Pokaż pełne tabele diagnostyczne" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
-    expect(screen.queryByText(/wasted spend/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/zmarnowany koszt/)).not.toBeInTheDocument();
     expect(screen.queryByText("Read contract Ads")).not.toBeInTheDocument();
     expect(screen.queryByText("Search terms read-only")).not.toBeInTheDocument();
     expect(screen.queryByText("Campaign activity read contract")).not.toBeInTheDocument();

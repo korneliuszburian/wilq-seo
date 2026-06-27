@@ -136,7 +136,7 @@ def main() -> int:
             "zapis do feedu",
         }.issubset(blocked_claims):
             raise SystemExit(
-                "Blocked product_performance_readiness must block product revenue/zwrot z reklam claims"
+                "Blocked product_performance_readiness must block product przychód/zwrot z reklam claims"
             )
     else:
         raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")

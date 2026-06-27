@@ -239,10 +239,10 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 ],
                 "blocked_claims": [
                     "zapis rekomendacji",
-                    "automatic recommendation accept",
+                    "automatyczne przyjęcie rekomendacji",
                     "zmiana budżetu",
-                    "campaign mutation",
-                    "performance uplift",
+                    "zapis zmian kampanii",
+                    "obietnica poprawy wyniku",
                 ],
                 "apply_allowed": False,
                 "api_mutation_ready": False,
@@ -324,7 +324,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                     "review_conversion_or_key_event_mapping",
                     "human_confirm_before_tracking_change",
                 ],
-                "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                "blocked_claims": ["conversion_rate", "przychód", "roas"],
                 "payload_preview": [
                     {
                         "id": "ga4_tracking_review_connector_status",
@@ -350,7 +350,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "review_conversion_or_key_event_mapping",
                             "human_confirm_before_tracking_change",
                         ],
-                        "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                        "blocked_claims": ["conversion_rate", "przychód", "roas"],
                         "evidence_ids": [connector_evidence_id("google_analytics_4")],
                         "api_mutation_ready": False,
                         "apply_allowed": False,

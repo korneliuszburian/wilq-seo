@@ -1454,7 +1454,7 @@ def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
         f"segmenty={metric_tiles.get('segmenty', 0)}. "
         "To są kolejki oceny z evidence i akcjami do sprawdzenia. KPI są "
         "sygnałem z bieżących metric facts; to nadal nie jest werdykt "
-        "opłacalności, CPA/zwrotu z reklam ani ścieżka zapisu zmian."
+        "opłacalności, kosztu pozyskania celu, zwrotu z reklam ani ścieżka zapisu zmian."
     )
 
 
@@ -1562,7 +1562,7 @@ def _ga4_item_from_tactical(
             "jakość ruchu": traffic_quality_count,
             "braki kontraktu": 1,
         },
-        blocked_claims=["zwrot z reklam", "revenue", "conversion drop", "tracking fixed"],
+        blocked_claims=["zwrot z reklam", "przychód", "spadek konwersji", "naprawiony pomiar"],
         risk=ActionRisk.medium,
     )
 
@@ -1934,7 +1934,7 @@ def _action_plan_item(
                 "Użyj skilla wilq-content-strategist. Zbuduj kolejkę zachowania, "
                 "odświeżenia, scalenia, nowej treści albo blokady dla Ekologus "
                 "na podstawie GSC, spisu treści WordPress, GA4 i Ahrefs evidence. "
-                "Nie obiecuj leadów, revenue ani wzrostów pozycji."
+                "Nie obiecuj leadów, przychód ani wzrostów pozycji."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -2079,14 +2079,14 @@ def _action_plan_item(
             priority=5,
             category="Google Ads",
             why_it_matters=(
-                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, CPA, zwrot z reklam ani search "
+                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, koszt pozyskania celu, zwrot z reklam ani search "
                 "terms bez świeżego Ads evidence."
             ),
             operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzoną akcję.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj Ads blocker dla Ekologus "
-                "i przygotuj repair path bez diagnozowania spendu, CPA, zwrot z reklam ani search terms."
+                "i przygotuj repair path bez diagnozowania spendu, koszt pozyskania celu, zwrot z reklam ani search terms."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -2242,7 +2242,7 @@ def _ga4_tactic_summary(tactical_items: list[Any]) -> str:
             continue
         landings[landing] = landings.get(landing, 0) + 1
     if not landings:
-        return "Brak gotowych taktyk jakości ruchu; tracking gaps sprawdź w widoku GA4."
+        return "Brak gotowych taktyk jakości ruchu; braki w pomiarze sprawdź w widoku GA4."
     summary_parts = [
         f"{_short_landing_label(landing)} ({count} {_polish_group_label(count)})"
         for landing, count in list(landings.items())[:3]
@@ -2311,7 +2311,7 @@ def _decision_observation(
             suffix=(
                 "To są kolejki oceny budżetu, rekomendacji, wykluczeń i "
                 "segmentów oraz KPI kampanii do sprawdzenia. Zapis zmian, ocena "
-                "rentowności i werdykty o CPA/zwrotu z reklam albo przepalonym budżecie "
+                "rentowności, kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu "
                 "pozostają zablokowane."
             ),
         )

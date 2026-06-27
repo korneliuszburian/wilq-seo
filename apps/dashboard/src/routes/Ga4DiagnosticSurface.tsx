@@ -90,8 +90,8 @@ export function Ga4DiagnosticSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">GA4</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok GA4 z WILQ. Pokazuje jakość ruchu ze stron wejścia,
-            dopasowanie WordPress i problemy pomiaru bez udawania konwersji, ROAS
-            albo revenue.
+            dopasowanie WordPress i problemy pomiaru bez udawania konwersji, zwrot z reklam
+            albo przychód.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -305,7 +305,7 @@ function Ga4MeasurementIssues({
             Problemy pomiaru GA4
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Wiersze `(not set)` i tracking gaps są problemem pomiaru lub
+            Wiersze `(not set)` i braki w pomiarze są problemem pomiaru lub
             atrybucji. WILQ pokazuje je osobno, żeby nie mieszać ich z oceną
             jakości landingu albo kampanii.
           </p>
@@ -807,18 +807,18 @@ function ga4FreshnessLabel(status: Ga4DiagnosticsResponse["freshness_assessment"
 
 function ga4BlockedClaimLabels(claims: string[]) {
   const labels: Record<string, string> = {
-    "attribution verdict": "werdykt atrybucji",
+    "ocena atrybucji": "ocena atrybucji",
     "campaign quality": "jakość kampanii",
-    "conversion drop": "spadek konwersji",
-    "conversion rate": "conversion rate",
-    "conversion setup applied": "konfiguracja konwersji zapisana",
-    "funnel diagnosis": "diagnoza lejka",
-    "funnel dropoff": "spadek w lejku",
-    "GA4 write": "zapis do GA4",
-    "profitability": "opłacalność",
-    "revenue": "revenue",
-    "tracking fixed": "pomiar naprawiony",
-    "tracking gap": "problem pomiaru"
+    "spadek konwersji": "spadek konwersji",
+    "współczynnik konwersji": "współczynnik konwersji",
+    "wdrożona konfiguracja konwersji": "wdrożona konfiguracja konwersji",
+    "diagnoza lejka": "diagnoza lejka",
+    "spadek w lejku": "spadek w lejku",
+    "zapis w GA4": "zapis w GA4",
+    "opłacalność": "opłacalność",
+    "przychód": "przychód",
+    "naprawiony pomiar": "pomiar naprawiony",
+    "brak w pomiarze": "problem pomiaru"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

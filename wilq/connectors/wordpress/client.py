@@ -104,8 +104,8 @@ def refresh_wordpress_content_inventory(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "WordPress vendor read completed through REST and sitemap inventory. "
-            f"Objects: {metric_summary['content_object_count']}."
+            "Odczyt WordPress zakończony przez REST i spis z mapy strony. "
+            f"Obiekty treści: {metric_summary['content_object_count']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

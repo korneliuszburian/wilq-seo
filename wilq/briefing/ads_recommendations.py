@@ -45,10 +45,10 @@ def build_recommendations_read_contract(
         )
     blocked_claims = [
         "zapis rekomendacji",
-        "automatic recommendation accept",
+        "automatyczne przyjęcie rekomendacji",
         "zmiana budżetu",
-        "campaign mutation",
-        "performance uplift",
+        "zapis zmian kampanii",
+        "obietnica poprawy wyniku",
     ]
     if rows or read_attempted:
         if rows:
@@ -319,9 +319,9 @@ def _recommendation_row(
         missing_metrics=missing_metrics,
         blocked_claims=[
             "zapis rekomendacji",
-            "automatic recommendation accept",
+            "automatyczne przyjęcie rekomendacji",
             "zmiana budżetu",
-            "campaign mutation",
+            "zapis zmian kampanii",
         ],
     )
 

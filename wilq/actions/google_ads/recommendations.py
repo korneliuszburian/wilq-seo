@@ -8,10 +8,10 @@ from wilq.schemas import MetricFact
 RECOMMENDATION_REVIEW_ACTION_ID = "act_prepare_google_ads_recommendation_review_queue"
 RECOMMENDATION_REVIEW_BLOCKED_CLAIMS = [
     "zapis rekomendacji",
-    "automatic recommendation accept",
+    "automatyczne przyjęcie rekomendacji",
     "zmiana budżetu",
-    "campaign mutation",
-    "performance uplift",
+    "zapis zmian kampanii",
+    "obietnica poprawy wyniku",
 ]
 RECOMMENDATION_REVIEW_REQUIRED_VALIDATION = [
     "review_recommendation_type",

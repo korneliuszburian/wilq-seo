@@ -2587,7 +2587,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "human_strategy_review",
     ]
     assert "human_strategy_review" in strategy_readiness["required_validation"]
-    assert "profitability verdict" in strategy_readiness["blocked_claims"]
+    assert "ocena opłacalności" in strategy_readiness["blocked_claims"]
     assert business_context_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -3744,7 +3744,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         "landing_page"
     ] == "/europejski-zielony-lad-co-to-takiego/"
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
-    assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
+    assert "spadek konwersji" in sections["ga4_tracking_readiness"]["blocked_claims"]
 
     assert sections["ga4_action_safety"]["status"] == "ready"
     assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
@@ -3762,7 +3762,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         "total_revenue",
         "transactions",
     }.issubset(set(readiness_contract["allowed_metrics"]))
-    assert "conversion rate" in readiness_contract["blocked_claims"]
+    assert "współczynnik konwersji" in readiness_contract["blocked_claims"]
     assert "act_review_ga4_tracking_quality" in readiness_contract["action_ids"]
     assert readiness_contract["evidence_ids"]
     assert payload["blocker_count"] >= 1
@@ -4314,7 +4314,9 @@ def test_command_center_exposes_polish_operator_brief(
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
-    assert "grup landing page, źródło i kampania" in ga4_decision["co_widzimy"]
+    assert "grup strona wejścia, źródło ruchu i kampania" in ga4_decision[
+        "co_widzimy"
+    ]
     assert "Status blocked oznacza" in ga4_decision["co_widzimy"]
     assert ga4_decision["co_widzimy"].count("Status blocked oznacza") == 1
     operator_guidance_text = "\n".join(
@@ -4420,9 +4422,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "zwrot z reklam" in ads_item["blocked_claims"]
     assert "opłacalność" in ads_item["blocked_claims"]
     assert "zmarnowany budżet" in ads_item["blocked_claims"]
-    assert "profitability" not in ads_item["blocked_claims"]
-    assert "wasted budget" not in ads_item["blocked_claims"]
-    assert "negative keyword candidates" not in ads_item["blocked_claims"]
+    assert "propozycje wykluczeń" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
     assert "act_review_demand_gen_readiness" not in ads_item["action_ids"]
@@ -4438,8 +4438,6 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
     assert "opłacalność" in ads_business_item["blocked_claims"]
     assert "zmarnowany budżet" in ads_business_item["blocked_claims"]
-    assert "profitability" not in ads_business_item["blocked_claims"]
-    assert "wasted budget" not in ads_business_item["blocked_claims"]
     assert ads_business_item["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
@@ -4480,14 +4478,15 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert "KPI do sprawdzenia=1" in ads_decision["co_widzimy"]
     assert "kolejki oceny" in ads_decision["co_widzimy"]
-    assert "werdykty o CPA/zwrotu z reklam" in ads_decision["co_widzimy"]
+    assert "kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu" in ads_decision[
+        "co_widzimy"
+    ]
     assert ads_decision["action_ids"] == ads_item["action_ids"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "wzrost konwersji" not in serialized
-    assert "wasted budget" not in serialized
-    assert "target CPA verdict" not in serialized
+    assert "target CPA" not in serialized
     assert "werdykt target CPA" not in serialized
     assert "werdykt target zwrotu z reklam" not in serialized
     assert "werdykt zwrotu z reklam" not in serialized
@@ -7705,7 +7704,7 @@ def test_google_ads_vendor_read_endpoint_persists_metric_summary(
         assert request.mode == ConnectorRefreshMode.vendor_read
         return VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Google Ads vendor read completed through test adapter.",
+            summary="Odczyt Google Ads zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={"row_count": 2, "clicks": 3},
@@ -7754,7 +7753,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
             summary=(
-                "Google Ads vendor read completed with campaign rows and without "
+                "Odczyt Google Ads zakończony z wierszami kampanii i bez "
                 "change_event rows."
             ),
             external_call_attempted=True,
@@ -7892,7 +7891,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     assert "pre_change_performance_window" in change_impact_contract[
         "missing_read_contracts"
     ]
-    assert "change impact" in change_impact_contract["blocked_claims"]
+    assert "wpływ zmian" in change_impact_contract["blocked_claims"]
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     change_history_decision = decisions_by_id["ads_review_change_history"]
     assert change_history_decision["status"] == "ready"
@@ -7910,7 +7909,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     assert optimizer_contract["ready_area_count"] == 2
     assert optimizer_contract["blocked_area_count"] >= 1
     assert "change_event_rows" in optimizer_contract["missing_read_contracts"]
-    assert "change impact" in optimizer_contract["blocked_claims"]
+    assert "wpływ zmian" in optimizer_contract["blocked_claims"]
     readiness_items_by_id = {
         item["id"]: item for item in optimizer_contract["readiness_items"]
     }
@@ -7956,7 +7955,7 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Google Ads vendor read completed with shared budget rows.",
+            summary="Odczyt Google Ads zakończony z wierszami wspólnego budżetu.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -8051,12 +8050,12 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
             ],
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "blocked_claims": [
-                "budget scaling",
+                "skalowanie budżetu",
                 "zmiana budżetu",
-                "campaign pause",
-                "wasted budget",
-                "profitability",
-                "CPA verdict",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "ocena kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
@@ -8085,7 +8084,7 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Google Ads vendor read completed through stale test adapter.",
+            summary="Odczyt Google Ads zakończony przez nieświeży test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={"row_count": 1, "clicks": 99},
@@ -8195,7 +8194,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Google Ads vendor read completed through googleAds:searchStream. Rows: 1.",
+            summary="Odczyt Google Ads zakończony przez googleAds:searchStream. Wiersze kampanii: 1.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -8814,7 +8813,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
-            "blocked_claims": ["CPA", "zwrot z reklam", "search-term waste", "wasted budget"],
+            "blocked_claims": ["CPA", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
             "target_status": "no_target",
             "target_status_label": "brak celu",
             "review_priority": "wysokie",
@@ -8955,7 +8954,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         *expected_business_context_actions
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
-    assert "budget scaling" in business_context_contract["blocked_claims"]
+    assert "skalowanie budżetu" in business_context_contract["blocked_claims"]
     assert business_context_contract["metric_tiles"]["marża"] == "brak"
     business_context_section = next(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
@@ -9007,7 +9006,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
     assert "change_history" not in derived_kpi_contract["missing_read_contracts"]
-    assert "profitability" in derived_kpi_contract["blocked_claims"]
+    assert "opłacalność" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
             "campaign_id": "101",
@@ -9035,9 +9034,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "profitability",
-                "budget scaling",
-                "wasted budget",
+                "opłacalność",
+                "skalowanie budżetu",
+                "zmarnowany budżet",
                 "zapis rekomendacji",
             ],
         }
@@ -9067,7 +9066,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "budget_has_recommended_budget",
         "budget_recommended_amount_micros",
     ]
-    assert "budget scaling" in budget_contract["blocked_claims"]
+    assert "skalowanie budżetu" in budget_contract["blocked_claims"]
     assert "budget_pacing" not in budget_contract["missing_read_contracts"]
     assert "recommendations" not in budget_contract["missing_read_contracts"]
     assert "impression_share" not in budget_contract["missing_read_contracts"]
@@ -9103,12 +9102,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "human_confirm_before_apply",
             ],
             "blocked_claims": [
-                "budget scaling",
+                "skalowanie budżetu",
                 "zmiana budżetu",
-                "campaign pause",
-                "wasted budget",
-                "profitability",
-                "CPA verdict",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "ocena kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
@@ -9151,12 +9150,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "payload_preview": budget_contract["payload_preview"][0],
             "missing_metrics": [],
             "blocked_claims": [
-                "budget scaling",
+                "skalowanie budżetu",
                 "zmiana budżetu",
-                "campaign pause",
-                "wasted budget",
-                "profitability",
-                "CPA verdict",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "ocena kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
@@ -9270,9 +9269,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "missing_metrics": [],
             "blocked_claims": [
                 "zapis rekomendacji",
-                "automatic recommendation accept",
+                "automatyczne przyjęcie rekomendacji",
                 "zmiana budżetu",
-                "campaign mutation",
+                "zapis zmian kampanii",
             ],
         }
     ]
@@ -9307,10 +9306,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "blocked_claims": [
                 "zapis rekomendacji",
-                "automatic recommendation accept",
+                "automatyczne przyjęcie rekomendacji",
                 "zmiana budżetu",
-                "campaign mutation",
-                "performance uplift",
+                "zapis zmian kampanii",
+                "obietnica poprawy wyniku",
             ],
             "api_mutation_ready": False,
             "apply_allowed": False,
@@ -9353,10 +9352,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "budget scaling",
+                "skalowanie budżetu",
                 "zmiana budżetu",
-                "wasted budget",
-                "performance uplift",
+                "zmarnowany budżet",
+                "obietnica poprawy wyniku",
             ],
         }
     ]
@@ -9399,7 +9398,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_contract["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "wasted budget" in campaign_triage_contract["blocked_claims"]
+    assert "zmarnowany budżet" in campaign_triage_contract["blocked_claims"]
     assert campaign_triage_contract["triage_rows"] == [
         {
             "campaign_id": "101",
@@ -9443,12 +9442,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "human_strategy_review",
             ],
             "blocked_claims": [
-                "wasted budget",
-                "profitability",
-                "budget scaling",
+                "zmarnowany budżet",
+                "opłacalność",
+                "skalowanie budżetu",
                 "zmiana budżetu",
                 "zapis rekomendacji",
-                "campaign mutation",
+                "zapis zmian kampanii",
             ],
                 "human_review_gates": [
                     "review_campaign_goal",
@@ -9479,12 +9478,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0][
         "review_reason"
     ]
-    assert "nie jest werdykt przepalonego budżetu" in campaign_triage_contract["summary"]
+    assert "nie jest ocena zmarnowanego budżetu" in campaign_triage_contract["summary"]
     optimizer_contract = payload["optimizer_readiness_contract"]
     assert optimizer_contract["status"] == "review_ready"
     assert optimizer_contract["mode"] == "review_only"
     assert optimizer_contract["apply_allowed"] is False
-    assert "campaign mutation" in optimizer_contract["blocked_claims"]
+    assert "zapis zmian kampanii" in optimizer_contract["blocked_claims"]
     assert "change_event_rows" not in optimizer_contract["missing_read_contracts"]
     assert "pre_change_performance_window" in optimizer_contract[
         "missing_read_contracts"
@@ -9505,7 +9504,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "change_event_changed_field_count",
     ]
     assert "change_history" not in change_history_contract["missing_read_contracts"]
-    assert "change impact" in change_history_contract["blocked_claims"]
+    assert "wpływ zmian" in change_history_contract["blocked_claims"]
     assert change_history_contract["change_history_rows"] == [
         {
             "change_event_id": "change-1",
@@ -9523,10 +9522,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "change impact",
-                "performance uplift",
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
                 "zmiana budżetu",
-                "campaign mutation",
+                "zapis zmian kampanii",
             ],
         }
     ]
@@ -9536,7 +9535,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_impact_contract["apply_allowed"] is False
     assert "snapshot kampanii" not in change_impact_contract["next_step"]
     assert "aktualny odczyt kampanii" in change_impact_contract["next_step"]
-    assert "change impact" in change_impact_contract["blocked_claims"]
+    assert "wpływ zmian" in change_impact_contract["blocked_claims"]
     assert "change_event_rows" not in change_impact_contract["missing_read_contracts"]
     assert "current_campaign_snapshot" not in change_impact_contract[
         "missing_read_contracts"
@@ -9576,11 +9575,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "blocked_claims": [
-                "change impact",
-                "performance uplift",
-                "budget scaling",
+                "wpływ zmian",
+                "obietnica poprawy wyniku",
+                "skalowanie budżetu",
                 "zmiana budżetu",
-                "campaign mutation",
+                "zapis zmian kampanii",
             ],
         }
     ]
@@ -9658,7 +9657,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "CPA",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "wasted budget",
+                "zmarnowany budżet",
             ],
         },
         {
@@ -9680,7 +9679,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "CPA",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "wasted budget",
+                "zmarnowany budżet",
             ],
         },
     ]
@@ -9707,14 +9706,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "conversions": 1.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "blocked_claims": [
-                "search-term waste",
+                "marnowanie budżetu na zapytaniach",
                 "dodanie wykluczających słów kluczowych",
                 "CPA",
                 "zwrot z reklam",
             ],
         }
     ]
-    assert "search-term waste" in search_term_review_contract["blocked_claims"]
+    assert "marnowanie budżetu na zapytaniach" in search_term_review_contract["blocked_claims"]
     assert "dodanie wykluczających słów kluczowych" in search_term_review_contract["blocked_claims"]
     search_terms_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_terms"
@@ -9746,7 +9745,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "negative_keyword_action_validation",
     ]
     assert ngram_contract["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    assert "search-term waste" in ngram_contract["blocked_claims"]
+    assert "marnowanie budżetu na zapytaniach" in ngram_contract["blocked_claims"]
     assert "dodanie wykluczających słów kluczowych" in ngram_contract["blocked_claims"]
     assert ngram_contract["ngram_rows"]
     ngrams_by_name = {row["ngram"]: row for row in ngram_contract["ngram_rows"]}
@@ -9755,7 +9754,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngrams_by_name["bdo rejestracja"]["ngram_size"] == 2
     assert ngrams_by_name["odpady cena"]["cost_micros"] == 5000000
     assert all(row["evidence_ids"] for row in ngram_contract["ngram_rows"])
-    assert all("search-term waste" in row["blocked_claims"] for row in ngram_contract["ngram_rows"])
+    assert all("marnowanie budżetu na zapytaniach" in row["blocked_claims"] for row in ngram_contract["ngram_rows"])
     ngram_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_term_ngrams"
     )
@@ -9836,7 +9835,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "CPA",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "wasted budget",
+                "zmarnowany budżet",
             ],
         }
     ]
@@ -10112,7 +10111,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "rekomendacje": 1,
         "podglądy": 2,
     }
-    assert "wasted budget" in campaign_triage_decision["blocked_claims"]
+    assert "zmarnowany budżet" in campaign_triage_decision["blocked_claims"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25
@@ -10125,7 +10124,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
     assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert "profitability" in derived_kpi_decision["blocked_claims"]
+    assert "opłacalność" in derived_kpi_decision["blocked_claims"]
     assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert budget_decision["status"] == "ready"
@@ -10240,7 +10239,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_diagnostics_v1",
         "ads_principles_v1",
     ]
-    assert "change impact" in change_history_decision["blocked_claims"]
+    assert "wpływ zmian" in change_history_decision["blocked_claims"]
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
@@ -10347,7 +10346,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keyword_decision["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
-    assert "search-term waste" in negative_keyword_decision["blocked_claims"]
+    assert "marnowanie budżetu na zapytaniach" in negative_keyword_decision["blocked_claims"]
     custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
     assert custom_segments_decision["status"] == "ready"
     assert custom_segments_decision["priority"] == 55
@@ -10538,7 +10537,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "campaign_budget_apply_safety" in campaign_review_action["payload"][
         "required_validation"
     ]
-    assert "budget scaling" in campaign_review_action["payload"]["blocked_claims"]
+    assert "skalowanie budżetu" in campaign_review_action["payload"]["blocked_claims"]
     campaign_review_validation_response = client.post(
         "/api/actions/act_prepare_ads_campaign_review_queue/validate",
         json={},
@@ -10985,7 +10984,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "wilq.connectors.refresh.refresh_merchant_product_status_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Merchant Center vendor read completed through test adapter.",
+            summary="Odczyt Merchant Center zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -11643,7 +11642,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "wilq.connectors.refresh.refresh_merchant_product_status_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Merchant Center vendor read completed through test adapter.",
+            summary="Odczyt Merchant Center zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -11927,7 +11926,7 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
         "wilq.connectors.refresh.refresh_merchant_product_status_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Merchant Center vendor read completed through test adapter.",
+            summary="Odczyt Merchant Center zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -12074,7 +12073,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "wilq.connectors.refresh.refresh_search_console_site_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="GSC vendor read completed through test adapter.",
+            summary="Odczyt GSC zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={"clicks": 12, "impressions": 120},
@@ -14265,7 +14264,7 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["zwrot z reklam", "revenue"],
+        blocked_claims=["zwrot z reklam", "przychód"],
         risk=ActionRisk.low,
     )
     operator_brief_item = CommandCenterBriefItem(
@@ -14279,7 +14278,7 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["zwrot z reklam", "revenue"],
+        blocked_claims=["zwrot z reklam", "przychód"],
         risk=ActionRisk.low,
     )
     command_center = CommandCenterResponse(
@@ -14322,7 +14321,7 @@ def test_marketing_brief_daily_context_limits_safe_actions_to_daily_decisions() 
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
-        blocked_claims=["zwrot z reklam", "revenue"],
+        blocked_claims=["zwrot z reklam", "przychód"],
         risk=ActionRisk.low,
     )
     command_center = CommandCenterResponse(
@@ -15423,7 +15422,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert triage_contract["triage_rows"][0]["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "wasted budget" in triage_contract["blocked_claims"]
+    assert "zmarnowany budżet" in triage_contract["blocked_claims"]
     assert (
         ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
         == len(triage_contract["triage_rows"])
@@ -15435,9 +15434,9 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert "campaign_review_queue" in [
         item["id"] for item in optimizer_contract["readiness_items"]
     ]
-    assert "campaign mutation" in optimizer_contract["blocked_claims"]
+    assert "zapis zmian kampanii" in optimizer_contract["blocked_claims"]
     assert ads_context["change_impact_readiness_contract"]["status"] == "blocked"
-    assert "change impact" in ads_context["change_impact_readiness_contract"][
+    assert "wpływ zmian" in ads_context["change_impact_readiness_contract"][
         "blocked_claims"
     ]
     if ads_context["change_history_read_contract"]["change_history_rows"]:
@@ -15482,7 +15481,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert strategy_readiness["id"] == "ads_strategy_review_readiness_contract"
     assert strategy_readiness["apply_allowed"] is False
     assert "human_strategy_review" in strategy_readiness["required_validation"]
-    assert "profitability verdict" in strategy_readiness["blocked_claims"]
+    assert "ocena opłacalności" in strategy_readiness["blocked_claims"]
     assert "[REDACTED]" not in json.dumps(target_interpretation, ensure_ascii=False)
     assert len(data["connector_refresh_runs"]) <= 3
     for action in data["active_action_objects"]:

@@ -43,7 +43,7 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 ## Bezpieczeństwo Merchant
 
-Używaj `act_review_merchant_feed_issues` tylko jako przygotowania do sprawdzenia, dopóki WILQ API nie wystawi akcji Merchant ze sprawdzoną ścieżką zapisu zmian. Nie twierdź, że zatwierdzenie zostało przywrócone, produkt naprawiony, revenue odzyskane albo primary feed zmieniony bez audit event.
+Używaj `act_review_merchant_feed_issues` tylko jako przygotowania do sprawdzenia, dopóki WILQ API nie wystawi akcji Merchant ze sprawdzoną ścieżką zapisu zmian. Nie twierdź, że zatwierdzenie zostało przywrócone, produkt naprawiony, przychód odzyskane albo primary feed zmieniony bez audit event.
 
 Jeśli `product_performance_readiness.status=blocked`, nie twierdź, że znasz zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ naprawy produktu ani skalowanie produktu w Shopping/PMax. Jeśli `status=ready`, używaj tylko `performance_rows` z evidence IDs i nadal nie twierdź, że naprawa feedu już dała efekt bez audytu sprzed i po zmianie.
 

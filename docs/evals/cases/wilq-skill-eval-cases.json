@@ -57,8 +57,8 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, zwrot z reklam, search-term waste, wasted budget, budget scaling, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
-    "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania CPA/zwrotu z reklam, jeśli WILQ nie ma targetów albo change history.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj koszt pozyskania celu, zwrot z reklam, marnowanie budżetu na zapytaniach, zmarnowany budżet, skalowanie budżetu, zapis rekomendacji, targeting i zapis zmian oraz dodanie negative keywords bez sprawdzenia przez człowieka, potwierdzenia i kontraktu zapisu/audytu.",
+    "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania kosztu pozyskania celu ani zwrotu z reklam, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",

@@ -422,7 +422,7 @@ def _merchant_unknowns(
                 ),
                 impact=(
                     "Można prowadzić przegląd problemów feedu, ale nie wolno twierdzić, "
-                    "które produkty mają ROAS, przychód, koszt albo efekt naprawy."
+                    "które produkty mają zwrot z reklam, przychód, koszt albo efekt naprawy."
                 ),
                 next_step=(
                     "Dodać kontrakty odczytu skuteczności produktu dla Google Ads "
@@ -1911,7 +1911,7 @@ def _merchant_product_state_review_decision(
             "To jest decyzja mapowania i sprawdzenia, nie decyzja performance. "
             "State-only rows potwierdzają, że Merchant sample ID ma odpowiednik w "
             "Ads shopping_product, ale bez metryk emisji i sprzedaży nie wolno "
-            "wyciągać wniosków o ROAS, odzyskanym revenue ani skutku naprawy."
+            "wyciągać wniosków o zwrot z reklam, odzyskanym przychód ani skutku naprawy."
         ),
         next_step=(
             "Sprawdź zmapowane produkty: status Ads, dostępność, cenę, "

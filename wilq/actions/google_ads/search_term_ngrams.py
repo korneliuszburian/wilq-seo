@@ -18,9 +18,9 @@ SEARCH_TERM_NGRAM_REQUIRED_VALIDATION = [
     "human_confirm_before_apply",
 ]
 SEARCH_TERM_NGRAM_BLOCKED_CLAIMS = [
-    "search-term waste",
+    "marnowanie budżetu na zapytaniach",
     "dodanie wykluczających słów kluczowych",
-    "conversion loss",
+    "utrata konwersji",
     "CPA",
     "zwrot z reklam",
 ]

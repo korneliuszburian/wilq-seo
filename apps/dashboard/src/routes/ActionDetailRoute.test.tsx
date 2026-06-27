@@ -121,7 +121,7 @@ const adsActionFixture: ActionObject = {
           "human_budget_goal",
           "campaign_budget_apply_safety"
         ],
-        blocked_claims: ["budget scaling", "zmiana budżetu", "wasted budget"],
+        blocked_claims: ["skalowanie budżetu", "zmiana budżetu", "zmarnowany budżet"],
         safety_review: {
           safety_contract: "campaign_budget_apply_safety_v1",
           status: "blocked",
@@ -167,8 +167,8 @@ const adsRecommendationActionFixture: ActionObject = {
         ],
         blocked_claims: [
           "zapis rekomendacji",
-          "automatic recommendation accept",
-          "performance uplift"
+          "automatyczne przyjęcie rekomendacji",
+          "obietnica poprawy wyniku"
         ],
         api_mutation_ready: false,
         apply_allowed: false,
@@ -260,7 +260,7 @@ const negativeKeywordActionFixture: ActionObject = {
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "search-term waste", "CPA", "zwrot z reklam"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -306,7 +306,7 @@ const ngramActionFixture: ActionObject = {
           "review_source_search_terms",
           "compare_90_day_safety_read"
         ],
-        blocked_claims: ["search-term waste", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
+        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -403,7 +403,7 @@ const ga4TrackingActionFixture: ActionObject = {
           "review_campaign_name_dimension",
           "review_conversion_or_key_event_mapping"
         ],
-        blocked_claims: ["conversion rate", "zwrot z reklam", "revenue", "tracking fixed"],
+        blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "naprawiony pomiar"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -498,7 +498,7 @@ const socialDraftActionFixture: ActionObject = {
       "no_performance_claims_without_source_metric",
       "require_human_review_before_apply"
     ],
-    blocked_claims: ["zwrot z reklam", "revenue", "wzrost konwersji", "wdrożona poprawka produktu"],
+    blocked_claims: ["zwrot z reklam", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
     destructive: false
   }
 };
@@ -585,9 +585,9 @@ const adsTargetGuardrailActionFixture: ActionObject = {
       "budget_review_context"
     ],
     blocked_claims: [
-      "target KPI verdict before confirmation",
-      "profitability verdict",
-      "budget scaling",
+      "ocena KPI względem celu przed potwierdzeniem",
+      "ocena opłacalności",
+      "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji"
     ],
@@ -638,11 +638,11 @@ const adsStrategyReviewActionFixture: ActionObject = {
       "record_human_strategy_review_outcome"
     ],
     blocked_claims: [
-      "profitability verdict",
-      "budget scaling",
+      "ocena opłacalności",
+      "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji",
-      "automatic optimization"
+      "automatyczna optymalizacja"
     ],
     apply_allowed: false,
     destructive: false
@@ -1046,7 +1046,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
     expect(screen.getAllByText(/Szczegóły źródłowe: 4 pola techniczne/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Ograniczenia: warunek techniczny do sprawdzenia/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Czego nie wolno twierdzić: ROAS/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Czego nie wolno twierdzić: zwrot z reklam/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);
   });
 

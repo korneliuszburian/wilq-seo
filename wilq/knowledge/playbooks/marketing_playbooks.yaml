@@ -52,7 +52,7 @@ playbooks:
     compact_playbook: Use campaign budget fields and recent cost only as validation context. Do not scale, cut or write budgets without impression share, change history, business budget goal, change preview and action validation.
     refusal_rules:
       - Refuse budget changes without campaign_budget evidence IDs.
-      - Refuse profitability or wasted-budget claims without margin, conversion quality and review contracts.
+      - Blokuj oceny opłacalności i zmarnowanego budżetu bez marży, jakości konwersji oraz kontraktów review.
       - Refuse to apply Google recommendations automatically.
     output_contract: Budget review decision with evidence, missing read contracts and blocked write claims.
 

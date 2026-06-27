@@ -24,11 +24,11 @@ def build_impression_share_read_contract(
         "budget_apply_preview",
     ]
     blocked_claims = [
-        "budget scaling",
+        "skalowanie budżetu",
         "zmiana budżetu",
-        "wasted budget",
-        "performance uplift",
-        "campaign mutation",
+        "zmarnowany budżet",
+        "obietnica poprawy wyniku",
+        "zapis zmian kampanii",
     ]
     if rows or read_attempted:
         if rows:
@@ -150,10 +150,10 @@ def _impression_share_row(
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
-            "budget scaling",
+            "skalowanie budżetu",
             "zmiana budżetu",
-            "wasted budget",
-            "performance uplift",
+            "zmarnowany budżet",
+            "obietnica poprawy wyniku",
         ],
     )
 

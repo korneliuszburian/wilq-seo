@@ -51,7 +51,7 @@ describe("KnowledgePanels", () => {
             maps_to_opportunity_types: ["ads_review"],
             maps_to_action_types: ["negative_keyword_candidate"],
             source_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
-            compact_playbook: "Review search terms without claiming CPA/zwrotu z reklam.",
+            compact_playbook: "Review search terms without claiming kosztu pozyskania celu ani zwrotu z reklam.",
             refusal_rules: ["No evidence, no recommendation."]
           } satisfies MarketingPlaybook)
         ]}

@@ -724,7 +724,7 @@ def _recommendation_items(
                 source_connectors=["google_ads"],
                 evidence_ids=google_ads_blocker.evidence_ids,
                 summary=(
-                    "WILQ nie może uczciwie diagnozować wasted spend bez live Ads evidence. "
+                    "WILQ nie może uczciwie diagnozować zmarnowany koszt bez live Ads evidence. "
                     "Obecny stan musi być pokazany jako blocker, nie rekomendacja."
                 ),
                 next_step="Użyj akcji `act_configure_google_ads_env` i helperów OAuth.",
@@ -823,13 +823,59 @@ def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None)
         return "OAuth MCP wymaga dokończenia autoryzacji access tokenem"
     if run and run.errors:
         return run.errors[0]
-    if run and run.summary:
-        return run.summary
+    if run:
+        return _refresh_reason_from_metrics(connector.id, run)
     if connector.missing_credentials:
         return f"brakuje dostępu: {len(connector.missing_credentials)}"
     if not connector.configured:
         return "źródło danych nie jest skonfigurowane"
-    return "ostatni refresh nie zebrał danych vendor"
+    return "ostatni odczyt nie zebrał danych"
+
+
+def _refresh_reason_from_metrics(connector_id: str, run: ConnectorRefreshRun) -> str:
+    metrics = run.metric_summary
+    if run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
+        if connector_id == "google_analytics_4":
+            return (
+                "odczyt GA4 zakończony; "
+                f"strony wejścia: {metrics.get('row_count', 0)}, "
+                f"wiersze produktów: {metrics.get('ga4_item_product_row_count', 0)}"
+            )
+        if connector_id == "google_merchant_center":
+            return (
+                "odczyt Merchant Center zakończony; "
+                f"produkty: {metrics.get('total_products', 0)}"
+            )
+        if connector_id == "google_ads":
+            return (
+                "odczyt Google Ads zakończony; "
+                f"kampanie: {metrics.get('row_count', 0)}, "
+                f"zapytania: {metrics.get('search_term_row_count', 0)}"
+            )
+        if connector_id == "google_search_console":
+            return (
+                "odczyt Google Search Console zakończony; "
+                f"wiersze: {metrics.get('row_count', 0)}"
+            )
+        if connector_id == "wordpress_ekologus":
+            return (
+                "odczyt WordPress zakończony; "
+                f"obiekty treści: {metrics.get('content_object_count', 0)}"
+            )
+        if connector_id == "ahrefs":
+            return (
+                "odczyt Ahrefs zakończony; "
+                f"luki treści: {metrics.get('content_gap_rows', 0)}, "
+                f"luki linków: {metrics.get('backlink_gap_rows', 0)}"
+            )
+        return "odczyt źródła danych zakończony"
+    if run.status == ConnectorRefreshStatus.blocked:
+        return "odczyt źródła danych zablokowany"
+    if run.status == ConnectorRefreshStatus.failed:
+        return "odczyt źródła danych zakończony błędem"
+    if run.status == ConnectorRefreshStatus.running:
+        return "odczyt źródła danych jest w toku"
+    return "ostatni odczyt nie zebrał danych"
 
 
 def _blocker_summary(

@@ -120,7 +120,7 @@ def campaign_review_reason(
     signal_text = ", ".join(signals) or "brak aktywności w bieżącym evidence"
     return (
         f"Kolejność oceny kampanii wynika z faktów: {signal_text}. "
-        "To nie jest werdykt przepalonego budżetu, CPA ani ROAS; przed decyzją potrzebna "
+        "To nie jest werdykt przepalonego budżetu, CPA ani zwrot z reklam; przed decyzją potrzebna "
         "jest ocena celu, jakości konwersji, budżetu i wyszukiwanych haseł."
     )
 

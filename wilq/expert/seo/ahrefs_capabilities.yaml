@@ -6,7 +6,7 @@ when_to_use: Interpret Ahrefs authority, content-gap and backlink-gap evidence w
 required_inputs: [ahrefs_metric_facts, gap_records, evidence_ids]
 diagnostic_logic: [separate_authority_context_from_gap_claims, require_gsc_wordpress_overlap]
 recommended_actions: [content_gap_review, backlink_gap_review, authority_context_review]
-risk_notes: Ahrefs gaps are review inputs, not proof of traffic, ranking, lead or revenue growth.
+risk_notes: Luki z Ahrefs są sygnałami do sprawdzenia, nie dowodem wzrostu ruchu, pozycji, leadów ani przychodu.
 capabilities:
   - ahrefs_authority_context_review
   - ahrefs_content_gap_review

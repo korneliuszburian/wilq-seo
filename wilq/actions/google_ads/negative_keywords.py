@@ -8,8 +8,8 @@ from wilq.schemas import MetricFact
 NEGATIVE_KEYWORD_ACTION_ID = "act_prepare_negative_keyword_review_queue"
 NEGATIVE_KEYWORD_BLOCKED_CLAIMS = [
     "dodanie wykluczających słów kluczowych",
-    "search-term waste",
-    "conversion loss",
+    "marnowanie budżetu na zapytaniach",
+    "utrata konwersji",
     "CPA",
     "zwrot z reklam",
 ]

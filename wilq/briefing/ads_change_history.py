@@ -25,11 +25,11 @@ def build_change_history_read_contract(
         "apply_preview",
     ]
     blocked_claims = [
-        "change impact",
-        "performance uplift",
-        "budget scaling",
+        "wpływ zmian",
+        "obietnica poprawy wyniku",
+        "skalowanie budżetu",
         "zmiana budżetu",
-        "campaign mutation",
+        "zapis zmian kampanii",
     ]
     if rows:
         resource_types = _unique(
@@ -161,10 +161,10 @@ def _change_history_row(
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=[
-            "change impact",
-            "performance uplift",
+            "wpływ zmian",
+            "obietnica poprawy wyniku",
             "zmiana budżetu",
-            "campaign mutation",
+            "zapis zmian kampanii",
         ],
     )
 

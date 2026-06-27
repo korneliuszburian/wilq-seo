@@ -66,7 +66,7 @@ const evidence = [
     source_id: "refresh_google_ads_test",
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "fresh" },
-    summary: "Google Ads vendor read completed with sanitized campaign counters.",
+    summary: "Odczyt Google Ads zakończony z oczyszczonymi licznikami kampanii.",
     raw_ref: null
   }
 ];

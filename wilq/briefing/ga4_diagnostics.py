@@ -39,13 +39,13 @@ GA4_CONVERSION_METRIC_NAMES = {
     "transactions",
 }
 GA4_CONVERSION_BLOCKED_CLAIMS = [
-    "conversion rate",
+    "współczynnik konwersji",
     "zwrot z reklam",
-    "revenue",
-    "profitability",
-    "conversion drop",
-    "funnel diagnosis",
-    "attribution verdict",
+    "przychód",
+    "opłacalność",
+    "spadek konwersji",
+    "diagnoza lejka",
+    "ocena atrybucji",
 ]
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
 GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]
@@ -216,13 +216,13 @@ def _operator_summary(
 def _operator_conversion_note(contract: Ga4ConversionReadinessContract) -> str:
     if contract.status == "ready":
         return (
-            "WILQ ma metryki konwersji i zdarzeń kluczowych w dowodach, ale ROAS, "
-            "profitability, spadek konwersji i wina kampanii nadal wymagają "
+            "WILQ ma metryki konwersji i zdarzeń kluczowych w dowodach, ale zwrot z reklam, "
+            "opłacalność, spadek konwersji i wina kampanii nadal wymagają "
             "osobnych dowodów oraz kontekstu kosztów, historii i atrybucji."
         )
     return (
-        "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, "
-        "revenue, spadku konwersji ani winie kampanii."
+        "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o zwrot z reklam, "
+        "przychód, spadku konwersji ani winie kampanii."
     )
 
 
@@ -392,7 +392,7 @@ def _landing_behavior_section(
             metric_facts=_tactical_metric_facts(tactical_items)[:12],
             tactical_items=tactical_items[:6],
             action_ids=action_ids,
-            blocked_claims=["conversion rate", "zwrot z reklam", "revenue", "profitability"],
+            blocked_claims=["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
             risk=ActionRisk.low,
         )
     return Ga4DiagnosticSection(
@@ -421,7 +421,7 @@ def _landing_behavior_section(
         metric_facts=dimensioned_facts[:12],
         tactical_items=tactical_items[:6],
         action_ids=action_ids,
-        blocked_claims=["conversion rate", "zwrot z reklam", "revenue", "profitability"],
+        blocked_claims=["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
         risk=ActionRisk.low,
     )
 
@@ -448,7 +448,7 @@ def _tracking_readiness_section(
             source_connectors=[GA4_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["tracking gap", "conversion drop", "funnel dropoff"],
+            blocked_claims=["brak w pomiarze", "spadek konwersji", "spadek w lejku"],
             risk=ActionRisk.medium,
         )
     return Ga4DiagnosticSection(
@@ -475,9 +475,9 @@ def _tracking_readiness_section(
         tactical_items=tactical_items[:4],
         action_ids=action_ids,
         blocked_claims=[
-            "conversion drop",
-            "funnel diagnosis",
-            "attribution verdict",
+            "spadek konwersji",
+            "diagnoza lejka",
+            "ocena atrybucji",
         ],
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
     )
@@ -556,7 +556,7 @@ def _ga4_action_safety_section(
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=action_ids,
-        blocked_claims=["GA4 write", "conversion setup applied", "tracking fixed"],
+        blocked_claims=["zapis w GA4", "wdrożona konfiguracja konwersji", "naprawiony pomiar"],
         risk=ActionRisk.medium,
     )
 
@@ -632,10 +632,10 @@ def _ga4_decision_queue(
                 blocked_claims=_unique(
                     [
                         *item.blocked_claims,
-                        "conversion rate",
+                        "współczynnik konwersji",
                         "zwrot z reklam",
-                        "revenue",
-                        "profitability",
+                        "przychód",
+                        "opłacalność",
                     ]
                 ),
                 rationale=rationale,
@@ -727,10 +727,10 @@ def _ga4_decisions_from_dimensioned_facts(
                 metric_facts=group_facts[:8],
                 action_ids=action_ids,
                 blocked_claims=[
-                    "conversion rate",
+                    "współczynnik konwersji",
                     "zwrot z reklam",
-                    "revenue",
-                    "profitability",
+                    "przychód",
+                    "opłacalność",
                 ],
                 rationale=rationale,
                 next_step=next_step,

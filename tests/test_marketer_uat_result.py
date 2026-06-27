@@ -18,7 +18,7 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
             "note": "Nie było jasne, że zgłoszenia nie są unikalnymi SKU.",
         },
         "content": "pass widzę BDO jako odświeżenie albo scalenie",
-        "ads": "pass rozumiem, że CPA/zwrotu z reklam są zablokowane",
+        "ads": "pass rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane",
         "ga4": "fail (not set) wyglądało jak zła kampania",
         "biggest_real_boost": "Content Planner daje gotowy brief do review.",
         "biggest_confusion": "Merchant count semantics",

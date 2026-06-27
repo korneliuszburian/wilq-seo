@@ -72,7 +72,7 @@ WORKFLOW_BLUEPRINTS: tuple[WorkflowBlueprint, ...] = (
             "human_strategy_review",
             "profit_margin_or_business_goal",
         ),
-        blocked_claims=("werdykt ROAS", "optymalizacja budżetu", "zapis zmian"),
+        blocked_claims=("ocena zwrotu z reklam", "optymalizacja budżetu", "zapis zmian"),
         risk=ActionRisk.medium,
     ),
     WorkflowBlueprint(

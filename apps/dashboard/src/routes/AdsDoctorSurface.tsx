@@ -376,7 +376,7 @@ function AdsMarketSnapshot({
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Szybki obraz tego, co WILQ może dziś uczciwie przejrzeć w Ads.
-            Zapis zmian, ocena zmarnowanego budżetu, werdykty CPA/zwrotu z reklam
+            Zapis zmian, ocena zmarnowanego budżetu, koszt pozyskania celu i zwrot z reklam
             i skalowanie budżetu pozostają zablokowane do czasu sprawdzenia w WILQ
             oraz brakujących kontraktów.
           </p>
@@ -1169,7 +1169,7 @@ function AdsCampaignTriageRowsPanel({
           <h3 className="text-sm font-semibold text-ink">Kolejność oceny kampanii</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             {contract?.summary ??
-              "Ranking kampanii do ręcznej oceny. To nie jest werdykt o zmarnowanym budżecie, CPA, zwrot z reklam ani opłacalności."}
+              "Ranking kampanii do ręcznej oceny. To nie jest werdykt o zmarnowanym budżecie, koszt pozyskania celu, zwrot z reklam ani opłacalności."}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -1274,9 +1274,9 @@ function AdsDerivedKpiRowsTable({
             <th className="py-2 pr-4 font-semibold">CPA</th>
             <th className="py-2 pr-4 font-semibold">Docelowy koszt pozyskania celu</th>
             <th className="py-2 pr-4 font-semibold">Różnica CPA</th>
-            <th className="py-2 pr-4 font-semibold">ROAS</th>
+            <th className="py-2 pr-4 font-semibold">zwrot z reklam</th>
             <th className="py-2 pr-4 font-semibold">Docelowy zwrot z reklam</th>
-            <th className="py-2 pr-4 font-semibold">Różnica ROAS</th>
+            <th className="py-2 pr-4 font-semibold">Różnica zwrot z reklam</th>
             <th className="py-2 pr-4 font-semibold">Ocena</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
@@ -2365,7 +2365,7 @@ function adsDecisionTitle(decision: AdsDecisionItem) {
     review_campaign_activity: "Przejrzyj aktywność kampanii Google Ads",
     review_campaign_triage: "Ustal kolejność oceny kampanii Ads",
     review_recommendations: "Przejrzyj rekomendacje Google Ads bez zapisu zmian",
-    review_derived_kpi: "Sprawdź wyliczone KPI bez werdyktu CPA/zwrotu z reklam",
+    review_derived_kpi: "Sprawdź wyliczone KPI bez werdyktu kosztu pozyskania celu ani zwrotu z reklam",
     review_search_terms: "Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń"
   };
   return titles[decision.decision_type] ?? decision.title;
@@ -2399,7 +2399,7 @@ function adsOptimizerReadinessSummary(id: string, fallback: string) {
     budget_and_recommendation_review:
       "WILQ ma kontekst budżetów, rekomendacji albo udziału w wyświetleniach do ręcznej oceny. To nadal nie odblokowuje zmiany budżetu ani automatycznego przyjęcia rekomendacji.",
     campaign_review_queue:
-      "WILQ łączy aktywność kampanii, KPI, budżety, rekomendacje i udział w wyświetleniach w kolejkę sprawdzania. To nie jest werdykt o zmarnowanym budżecie, CPA, zwrot z reklam ani opłacalności.",
+      "WILQ łączy aktywność kampanii, KPI, budżety, rekomendacje i udział w wyświetleniach w kolejkę sprawdzania. To nie jest werdykt o zmarnowanym budżecie, koszt pozyskania celu, zwrot z reklam ani opłacalności.",
     change_history_impact_review:
       "WILQ nie ma wystarczających zdarzeń historii zmian, żeby uczciwie ocenić wpływ zmian na wyniki kampanii.",
     custom_segments_review_queue:
@@ -2467,7 +2467,7 @@ function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
     return "Najpierw potwierdź marżę, cel biznesowy, docelowy koszt pozyskania celu i docelowy zwrot z reklam, zanim ktokolwiek nazwie wynik opłacalnym.";
   }
   if (decision.decision_type === "review_derived_kpi") {
-    return `${decision.derived_kpi_rows.length} wierszy KPI do oceny. To nadal sygnał do sprawdzenia, nie werdykt CPA/zwrotu z reklam.`;
+    return `${decision.derived_kpi_rows.length} wierszy KPI do oceny. To nadal sygnał do sprawdzenia, nie ocena kosztu pozyskania celu ani zwrotu z reklam.`;
   }
   if (decision.decision_type === "review_budget_context") {
     return `${decision.budget_rows.length} budżetów do sprawdzenia. Nie skaluj ani nie tnij budżetu bez sprawdzenia w WILQ.`;
@@ -2489,7 +2489,7 @@ function adsDecisionRationale(decision: AdsDecisionItem) {
     review_business_context:
       "Ten kontekst pomaga czytać kampanie w realiach biznesu Ekologus, ale nie odblokowuje automatycznych wniosków o rentowności ani zmarnowanym budżecie.",
     review_campaign_activity:
-      "To uczciwy pierwszy przegląd kampanii. Wnioski o CPA, zwrot z reklam, stracie budżetu i wykluczeniach wymagają dodatkowej oceny.",
+      "To uczciwy pierwszy przegląd kampanii. Wnioski o koszt pozyskania celu, zwrot z reklam, stracie budżetu i wykluczeniach wymagają dodatkowej oceny.",
     review_campaign_triage:
       "Kolejka mówi, od których kampanii zacząć. Nie zastępuje decyzji człowieka ani sprawdzenia w WILQ.",
     review_derived_kpi:
@@ -2734,7 +2734,7 @@ function adsCampaignReviewReason(row: AdsCampaignMetricRow, currencyCode?: strin
   ];
   return `Kampania do oceny na podstawie bieżącego odczytu: ${parts.join(
     ", "
-  )}. Nie jest to werdykt CPA, zwrot z reklam ani opłacalności.`;
+  )}. Nie jest to ocena kosztu pozyskania celu, zwrotu z reklam ani opłacalności.`;
 }
 
 function adsCampaignTriageReason(row: AdsCampaignTriageRow, currencyCode?: string) {
@@ -2746,7 +2746,7 @@ function adsCampaignTriageReason(row: AdsCampaignTriageRow, currencyCode?: strin
   ].filter(Boolean);
   return `WILQ ustawia tę kampanię w kolejce oceny na podstawie faktów: ${facts.join(
     ", "
-  )}. To nie jest werdykt o zmarnowanym budżecie, CPA, zwrot z reklam ani opłacalności.`;
+  )}. To nie jest werdykt o zmarnowanym budżecie, koszt pozyskania celu, zwrot z reklam ani opłacalności.`;
 }
 
 function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {

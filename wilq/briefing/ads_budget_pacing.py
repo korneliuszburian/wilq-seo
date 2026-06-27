@@ -41,10 +41,10 @@ def build_budget_pacing_read_contract(
         "human_budget_goal",
     ]
     blocked_claims = [
-        "budget scaling",
+        "skalowanie budżetu",
         "zmiana budżetu",
-        "profitability",
-        "wasted budget",
+        "opłacalność",
+        "zmarnowany budżet",
         "zapis rekomendacji",
     ]
     if rows:

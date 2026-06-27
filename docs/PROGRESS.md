@@ -44,11 +44,9 @@ Date: 2026-06-27
   action review-gate condensation, Ads context condensation, secondary route
   condensation, Knowledge, Workflows and Settings have runtime or browser proof
   from the current cleanup goal.
-- The latest live API context in committed proof confirmed WILQ API reachability
-  and connector summary `total=12`, `configured=9`, `missing_credentials=2`.
-  Current session note: WILQ API is unreachable, so the latest language-cleanup
-  slice used static guards and focused tests only; do not claim fresh live API or
-  browser proof for that slice.
+- Current session live proof confirms the local WILQ API and dashboard are
+  reachable after a managed stack restart. API health returns `ok`, and focused
+  Ads, GA4 and Merchant skill smokes pass against the live local API.
 - The current cleanup slice focuses on marketer-facing language, action safety
   wording, stale dev-preview strategy removal and full condensation of active
   operator surfaces.
@@ -69,8 +67,8 @@ Date: 2026-06-27
   as old feed/write and approval-recovery values.
 - Social publisher context-pack and draft actions now use Polish blocked-claim
   source values for publishing and social-performance promises. The language
-  guard now blocks the old social phrases `post published` and
-  `social performance uplift` in active skill/eval contracts.
+  guard now blocks the previous English social-publishing phrases in active
+  skill/eval contracts.
 - Content and Ahrefs blocked-claim contracts now use Polish source values for
   ranking, lead, revenue, traffic, authority, duplicate and WordPress-publish
   promises. Obsolete dashboard/backend label-map entries for those old values
@@ -85,6 +83,13 @@ Date: 2026-06-27
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete
   backend/dashboard label aliases for old values were removed instead of kept
   as compatibility aliases. Ads target status defaults now use `brak celu`.
+- Ads, GA4 and Merchant blocked-claim contracts now also use Polish source
+  values for budget-loss checks, query review, profitability boundaries, margin
+  checks, campaign write paths, change assessment, GA4 write/fix states,
+  attribution, funnel/conversion caveats and product/feed outcome promises. Connector
+  success summaries now use Polish operator wording instead of `vendor read
+  completed` status text. Remaining `profitability_verdict` hits are internal
+  policy IDs, not marketer-facing labels.
 
 ## Latest Proof Pointers
 
@@ -167,9 +172,9 @@ Date: 2026-06-27
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Social publisher blocked-claim language cleanup without live API/browser proof
   in current session:
-  - Focused stale-term scan for `post published` and
-    `social performance uplift` across active API, dashboard, tests, evals and
-    the social skill found no active hits outside the guard rule definitions.
+  - Focused stale-term scan for the previous English publishing/outcome phrases
+    across active API, dashboard, tests, evals and the social skill found no
+    active hits outside the guard rule definitions.
   - `rtk uv run python scripts/marketer_language_guard.py` passed.
   - `rtk uv run python -m py_compile apps/api/wilq_api/main.py wilq/actions/service.py wilq/briefing/blocked_claim_labels.py scripts/marketer_language_guard.py .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py` passed.
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "social_context_pack or social_draft_actions" --maxfail=1` passed: 3 tests.
@@ -233,6 +238,29 @@ Date: 2026-06-27
   `.local-lab/proof/20260626-marketer-language-guard-self-improvement/summary.json`.
 - Ahrefs capability and Polglish cleanup:
   `.local-lab/proof/20260626-ahrefs-capability-and-polglish-cleanup/summary.json`.
+- Ads/GA4/Merchant blocked-claim and connector-summary cleanup with live local
+  API proof in current session:
+  - `rtk scripts/local_stack.sh restart` brought the local WILQ API and
+    dashboard back to ready state.
+  - `rtk scripts/local_stack.sh status` confirmed managed API and dashboard are
+    ready.
+  - `rtk curl -fsS http://127.0.0.1:8000/api/health` returned `ok`.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads or ga4 or merchant or command_center" --maxfail=1`
+    passed: 66 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q --maxfail=1`
+    passed: 10 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx src/routes/CommandCenterRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "Ads|GA4|merchant|action detail|Command Center" --testTimeout=20000`
+    passed: 7 tests.
+  - `rtk uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`
+    passed against live local API.
+  - `rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py`
+    passed against live local API.
+  - `rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py`
+    passed against live local API.
+  - `agent-browser` scans for `/ads-doctor`, `/ga4` and `/merchant` found no
+    visible hits for the cleaned stale Ads/GA4/Merchant phrases.
 
 ## Latest Verification
 
@@ -799,14 +827,10 @@ Date: 2026-06-27
 - Some internal contract names are still technical. If they reach the marketer
   surface, migrate the contract or view-model in a focused slice rather than
   adding UI-only masking.
-- The next language cleanup slice should target active Ads/GA4/Merchant terms
-  still returned by live smokes or visible in dashboard/test fixtures:
-  `wasted budget`, `search-term waste`, `profitability`, `margin verdict`,
-  `campaign mutation`, `performance uplift`, `automatic recommendation accept`,
-  `change impact`, `tracking fixed`, `revenue`, remaining table labels `ROAS`,
-  and leftover Polish/English mixes such as `werdykty CPA/zwrotu z reklam`.
-  Replace them at API/domain/schema sources and tests; do not add route-local
-  translators or deprecated aliases.
+- The next language cleanup slice should use live smokes and browser scans to
+  find the next real operator-facing issue. Do not keep old English phrases in
+  fixtures as a compatibility layer; if a fixture uses old language, migrate it
+  to the current API/domain wording or delete the obsolete fixture.
 - Explicit debug context can expose more detail than default skill context. It
   must remain operator-only and must not become the normal skill prompt surface.
 - Some default skill context-packs are still large by operator standards.

@@ -21,12 +21,12 @@ from wilq.schemas import MetricFact
 
 CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
-    "budget scaling",
+    "skalowanie budżetu",
     "zmiana budżetu",
-    "campaign pause",
-    "wasted budget",
-    "profitability",
-    "CPA verdict",
+    "wstrzymanie kampanii",
+    "zmarnowany budżet",
+    "opłacalność",
+    "ocena kosztu pozyskania celu",
     "werdykt zwrotu z reklam",
     "zapis rekomendacji",
 ]

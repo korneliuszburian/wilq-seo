@@ -59,8 +59,8 @@ def refresh_merchant_product_status_summary(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "Merchant Center vendor read completed through aggregateProductStatuses. "
-            f"Products: {metric_summary['total_products']}."
+            "Odczyt Merchant Center zakończony przez aggregateProductStatuses. "
+            f"Produkty: {metric_summary['total_products']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,

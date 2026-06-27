@@ -1345,7 +1345,7 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
             id="content_decision_ga4_tracking_gap_block",
             decision_type="block_as_tracking_not_content",
             status="blocked",
-            title="Zablokuj GA4 tracking gaps jako zadania contentowe",
+            title="Zablokuj braki w pomiarze GA4 jako zadania contentowe",
             priority=12,
             metric_tiles={
                 "blokady": len(tracking_gaps),

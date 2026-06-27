@@ -74,7 +74,7 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
                     "status": "review",
                 }
             ],
-            "blocked_claims": ["CPA verdict", "werdykt zwrotu z reklam"],
+            "blocked_claims": ["ocena kosztu pozyskania celu", "werdykt zwrotu z reklam"],
             "action_ids": ["act_prepare_ads_campaign_review_queue"],
         },
         "ga4": {
@@ -82,11 +82,11 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
             "decision_queue": [
                 {
                     "id": "ga4_not_set",
-                    "title": "Review tracking gaps",
+                    "title": "Review braków w pomiarze",
                     "decision_type": "fix_measurement",
                 }
             ],
-            "blocked_claims": ["tracking fixed", "revenue verdict"],
+            "blocked_claims": ["naprawiony pomiar", "ocena przychodu"],
             "action_ids": ["act_review_ga4_tracking_quality"],
         },
     }
