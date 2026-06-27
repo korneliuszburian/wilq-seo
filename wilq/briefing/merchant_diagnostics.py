@@ -307,6 +307,12 @@ def _merchant_response_with_operator_labels(
             ),
             "operator_summary": response.operator_summary.model_copy(
                 update={
+                    "source_connector_labels": _merchant_source_connector_labels(
+                        response.operator_summary.source_connectors
+                    ),
+                    "evidence_summary_label": _merchant_evidence_summary_label(
+                        response.operator_summary.evidence_ids
+                    ),
                     "blocked_claim_labels": _merchant_blocked_claim_labels(
                         response.operator_summary.blocked_claims
                     ),
@@ -342,6 +348,12 @@ def _merchant_response_with_operator_labels(
                     "status_label": _merchant_price_impact_status_label(
                         response.price_impact_readiness.status
                     ),
+                    "source_connector_labels": _merchant_source_connector_labels(
+                        response.price_impact_readiness.source_connectors
+                    ),
+                    "evidence_summary_label": _merchant_evidence_summary_label(
+                        response.price_impact_readiness.evidence_ids
+                    ),
                     "blocked_claim_labels": _merchant_blocked_claim_labels(
                         response.price_impact_readiness.blocked_claims
                     ),
@@ -365,10 +377,22 @@ def _merchant_product_performance_readiness_with_operator_labels(
     return readiness.model_copy(
         update={
             "status_label": _merchant_product_performance_status_label(readiness.status),
+            "source_connector_labels": _merchant_source_connector_labels(
+                readiness.source_connectors
+            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(
+                readiness.evidence_ids
+            ),
             "blocked_claim_labels": _merchant_blocked_claim_labels(readiness.blocked_claims),
             "performance_rows": [
                 row.model_copy(
                     update={
+                        "source_connector_labels": _merchant_source_connector_labels(
+                            row.source_connectors
+                        ),
+                        "evidence_summary_label": _merchant_evidence_summary_label(
+                            row.evidence_ids
+                        ),
                         "blocked_claim_labels": _merchant_blocked_claim_labels(
                             row.blocked_claims
                         ),
@@ -390,6 +414,12 @@ def _merchant_decision_with_operator_labels(
                 _merchant_display_label(decision.decision_type),
             ),
             "status_label": _merchant_status_label(decision.status),
+            "source_connector_labels": _merchant_source_connector_labels(
+                decision.source_connectors
+            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(
+                decision.evidence_ids
+            ),
             "blocked_claim_labels": _merchant_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _merchant_risk_label(decision.risk),
         }
@@ -492,6 +522,29 @@ def _merchant_risk_label(risk: object) -> str:
 
 def _merchant_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
     return _unique(_merchant_display_label(claim) for claim in claims)
+
+
+def _merchant_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
+    labels = {
+        MERCHANT_CONNECTOR_ID: "Merchant Center",
+        GOOGLE_ADS_CONNECTOR_ID: "Google Ads",
+        GA4_CONNECTOR_ID: "GA4",
+    }
+    return _unique(
+        labels.get(str(connector_id), _merchant_display_label(str(connector_id)))
+        for connector_id in connector_ids
+    )
+
+
+def _merchant_evidence_summary_label(evidence_ids: list[str]) -> str:
+    count = len(evidence_ids)
+    if count == 0:
+        return "brak dowodów źródłowych"
+    if count == 1:
+        return "1 dowód źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} dowody źródłowe"
+    return f"{count} dowodów źródłowych"
 
 
 def _enum_value(value: object) -> str:

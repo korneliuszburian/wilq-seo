@@ -55,6 +55,9 @@ Wilku can inspect it without reading technical internals.
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
   labels.
+- The current verified Merchant cleanup adds API-owned source connector labels
+  and evidence summaries, then uses them in Merchant panels instead of raw
+  connector IDs, evidence IDs and read-contract/debug labels.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -65,26 +68,20 @@ are resolved or explicitly deferred.
 
 1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
    paths. These should disappear as API labels cover the remaining panels.
-2. Merchant first-screen and expanded panels still expose raw connector/evidence
-   and contract language:
-   - source connector IDs
-   - evidence IDs on the primary decision screen
-   - `Obecne kontrakty`, `Potrzebne kontrakty`, `Klucze połączenia danych`
-   - `API gotowe do zapisu`.
-3. GA4 still exposes some implementation language:
+2. GA4 still exposes some implementation language:
    - `(not set)`
    - `tracking-gap`
    - evidence counts as `ID`.
-4. Localo still exposes protocol/credential language in visible proof panels:
+3. Localo still exposes protocol/credential language in visible proof panels:
    - `OAuth code`
    - `PKCE S256`
    - `Token`
    - raw `localo` connector ID.
-5. Action impact and detail panels still have raw connector/evidence fallback
+4. Action impact and detail panels still have raw connector/evidence fallback
    risk:
    - impact result source connectors
    - missing label fallback copy.
-6. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
+5. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 

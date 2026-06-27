@@ -4541,7 +4541,9 @@ const merchantDiagnostics = {
     sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
     performance_rows: [],
     source_connectors: ["google_merchant_center"],
+    source_connector_labels: ["Merchant Center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
+    evidence_summary_label: "1 dowód źródłowy",
     summary:
       "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych faktów produktu z Ads/GA4.",
     next_step:
@@ -4587,7 +4589,9 @@ const merchantDiagnostics = {
     ],
     payload_preview: [],
     source_connectors: ["google_merchant_center"],
+    source_connector_labels: ["Merchant Center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
+    evidence_summary_label: "1 dowód źródłowy",
     summary:
       "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
     next_step:
@@ -4616,7 +4620,9 @@ const merchantDiagnostics = {
     count_semantics_label: "wystąpienia problemów w raportach",
     issue_types: ["zmiana dostępności do sprawdzenia"],
     source_connectors: ["google_merchant_center"],
+    source_connector_labels: ["Merchant Center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_merchant_feed_issues"],
     blocked_claims: [
       "ponowne zatwierdzenie produktu",
@@ -4692,7 +4698,9 @@ const merchantDiagnostics = {
       sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
       sample_titles: ["Sorbent chemiczny 10 kg"],
       source_connectors: ["google_merchant_center"],
+      source_connector_labels: ["Merchant Center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
       blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
@@ -6687,6 +6695,7 @@ function mockFetch() {
             action_id: actionId,
             valid: true,
             status: "valid",
+            status_label: "poprawna",
             errors: [],
             warnings: [],
             checked_at: "2026-06-17T10:00:00Z"
@@ -6703,6 +6712,7 @@ function mockFetch() {
               id: `audit_${actionId}_human_review_test`,
               action_id: actionId,
               event_type: "human_review_approved_for_prepare",
+              event_type_label: "Przegląd operatora zapisany",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:00:00Z",
               summary: "Wynik review: zatwierdzone do dalszego przygotowania.",
@@ -6743,6 +6753,7 @@ function mockFetch() {
               id: `audit_${actionId}_preview_test`,
               action_id: actionId,
               event_type: "action_preview_generated",
+              event_type_label: "Podgląd zmian wygenerowany",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:00:00Z",
               summary: "Podgląd zmian wygenerowany bez zmian w zewnętrznych systemach.",
@@ -6774,9 +6785,10 @@ function mockFetch() {
               id: `audit_${actionId}_confirm_test`,
               action_id: actionId,
               event_type: "action_apply_confirmed",
+              event_type_label: "Podgląd potwierdzony",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:01:00Z",
-              summary: "Potwierdzenie preview zapisane bez vendor mutations.",
+              summary: "Potwierdzenie podglądu zapisane bez zmian w zewnętrznych systemach.",
               evidence_ids: ["ev_refresh_merchant_feed"],
               redacted: true
             },
@@ -6790,7 +6802,7 @@ function mockFetch() {
               apply_allowed: false,
               last_confirmation_by: "operator_local_dashboard",
               last_confirmation_at: "2026-06-17T10:01:00Z",
-              last_confirmation_summary: "Potwierdzenie preview zapisane bez vendor mutations."
+              last_confirmation_summary: "Potwierdzenie podglądu zapisane bez zmian w zewnętrznych systemach."
             }
           })
         );
@@ -6812,9 +6824,10 @@ function mockFetch() {
               id: `audit_${actionId}_impact_test`,
               action_id: actionId,
               event_type: "action_impact_check_completed",
+              event_type_label: "Sprawdzenie efektu zapisane",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:02:00Z",
-              summary: "Sprawdzenie efektu completed without vendor mutations.",
+              summary: "Sprawdzenie efektu zapisane bez zmian w zewnętrznych systemach.",
               evidence_ids: ["ev_refresh_merchant_feed"],
               redacted: true
             },
@@ -6829,7 +6842,7 @@ function mockFetch() {
               last_impact_check_status: "checked",
               last_impact_checked_by: "operator_local_dashboard",
               last_impact_checked_at: "2026-06-17T10:02:00Z",
-              last_impact_check_summary: "Sprawdzenie efektu completed without vendor mutations."
+              last_impact_check_summary: "Sprawdzenie efektu zapisane bez zmian w zewnętrznych systemach."
             }
           })
         );
@@ -7458,17 +7471,17 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Przykładowe tytuły:/)).toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
-    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Stan danych:/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/merchant_aggregate_product_statuses/)).not.toBeInTheDocument();
     expect(screen.getByText("Produkty połączone z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("dane Ads/GA4 zablokowane")).toBeInTheDocument();
-    expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
+    expect(screen.queryByText(/google_ads_shopping_product_performance/)).not.toBeInTheDocument();
     expect(screen.getByText("Wpływ ceny produktu")).toBeInTheDocument();
     expect(screen.getByText("wpływ ceny zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Zmiany ceny")).toBeInTheDocument();
     expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
-    expect(screen.getAllByText(/google_ads_shopping_product_price_history/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/google_ads_shopping_product_price_history/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/1 dowód źródłowy/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zwrot z reklam na poziomie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak połączenia produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
@@ -7504,7 +7517,7 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Zapis zmian:/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
-    expect(screen.getByText("czeka na sprawdzenie")).toBeInTheDocument();
+    expect(screen.getByText(/wymagane sprawdzenie w WILQ/)).toBeInTheDocument();
     expect(screen.getByText(/podgląd zmian nie pozwala na zapis/)).toBeInTheDocument();
     expect(screen.getByText("Ostatni zapis bezpieczeństwa")).toBeInTheDocument();
     expect(screen.getByText("Zapisano kontrolę bezpieczeństwa bez zmian w zewnętrznych systemach.")).toBeInTheDocument();
@@ -7524,15 +7537,13 @@ describe("WILQ dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));
     await waitFor(() => expect(screen.getByText("Ślad bezpieczeństwa: Podgląd potwierdzony")).toBeInTheDocument());
     expect(screen.getByText("Potwierdzenie:")).toBeInTheDocument();
-    expect(screen.getByText("potwierdzony")).toBeInTheDocument();
+    expect(screen.getByText(/potwierdzony/)).toBeInTheDocument();
     expect(screen.getByText(/Zapis zmian nadal: zablokowany/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdzenie efektu")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź efekt" }));
     await waitFor(() =>
       expect(screen.getByText("Ślad bezpieczeństwa: Sprawdzenie efektu zapisane")).toBeInTheDocument()
     );
-    expect(screen.getByText("Sprawdzenie efektu:")).toBeInTheDocument();
-    expect(screen.getByText("zapisane")).toBeInTheDocument();
     expect(screen.getByText("Metryki z dowodami: 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());

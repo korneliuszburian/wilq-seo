@@ -348,11 +348,15 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
             Decyzja pochodzi z aktualnych danych WILQ i jest oparta o dowody Merchant,
             nie o ręczny opis ani screenshot.
           </p>
-          <TraceLine label="Źródła" values={primaryDecision.source_connectors} empty="brak" />
-          <LinkedTraceLine
+          <TraceLine
+            label="Źródła"
+            values={primaryDecision.source_connector_labels}
+            empty="brak"
+          />
+          <TraceLine
             label="Dowody"
-            values={primaryDecision.evidence_ids.slice(0, 4)}
-            kind="evidence"
+            values={primaryDecision.evidence_summary_label ? [primaryDecision.evidence_summary_label] : []}
+            empty="brak"
           />
           {data.latest_refresh ? (
             <TraceLine
@@ -564,7 +568,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             <TraceLine label="Typy problemów" values={summary.issue_types} empty="brak" />
             <TraceLine
               label="Dowody"
-              values={[formatMerchantIdCount(summary.evidence_ids.length, "ID", "ID")]}
+              values={summary.evidence_summary_label ? [summary.evidence_summary_label] : []}
               empty="brak"
             />
             <TraceLine
@@ -650,8 +654,7 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
         </div>
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Obecny odczyt" values={[readiness.current_read_contract]} />
-        <TraceLine label="Endpoint źródłowy" values={[readiness.source_endpoint]} />
+        <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
         <TraceLine
           label="Przykładowe produkty"
           values={readiness.sample_product_ids.length ? readiness.sample_product_ids : ["brak próbek"]}
@@ -664,7 +667,6 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
               : ["brak tytułów"]
           }
         />
-        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
         <TraceLine
           label="Nie wolno twierdzić"
           values={readiness.blocked_claim_labels}
@@ -698,14 +700,12 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
         </div>
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Obecne kontrakty" values={readiness.current_read_contracts} />
-        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
-        <TraceLine label="Klucze połączenia danych" values={readiness.join_key_candidates} />
-        <TraceLine label="Źródła" values={readiness.source_connectors} empty="brak" />
-        <LinkedTraceLine
+        <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
+        <TraceLine label="Źródła" values={readiness.source_connector_labels} empty="brak" />
+        <TraceLine
           label="Dowody"
-          values={readiness.evidence_ids.slice(0, 4)}
-          kind="evidence"
+          values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
+          empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -764,8 +764,12 @@ function MerchantProductPerformanceRowCard({
           ].filter((value): value is string => Boolean(value))}
           empty="brak kontekstu problemu"
         />
-        <TraceLine label="Źródła" values={row.source_connectors} />
-        <LinkedTraceLine label="Dowody" values={row.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Źródła" values={row.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Dowody"
+          values={row.evidence_summary_label ? [row.evidence_summary_label] : []}
+          empty="brak"
+        />
         <TraceLine label="Brakujące metryki" values={row.missing_metrics} empty="brak" />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -804,11 +808,11 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
         </div>
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Obecne kontrakty" values={readiness.current_read_contracts} />
-        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
+        <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
+        <TraceLine label="Źródła" values={readiness.source_connector_labels} empty="brak" />
         <TraceLine
-          label="Brakujące kontrakty"
-          values={readiness.missing_read_contracts}
+          label="Dowody"
+          values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
           empty="brak"
         />
         <TraceLine
@@ -911,7 +915,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <MerchantDecisionPreview previews={decision.payload_preview} />
         <TraceLine
           label="Dowody"
-          values={[formatMerchantIdCount(decision.evidence_ids.length, "ID", "ID")]}
+          values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
           empty="brak"
         />
         <TraceLine
@@ -1014,8 +1018,8 @@ function merchantWriteReadinessValues(preview: Record<string, unknown>) {
   );
   values.push(
     preview.api_mutation_ready === true
-      ? "API gotowe do zapisu"
-      : "API nie jest gotowe do zapisu"
+      ? "system gotowy do przygotowania zapisu"
+      : "system nie jest gotowy do przygotowania zapisu"
   );
   return values;
 }

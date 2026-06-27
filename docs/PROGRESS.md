@@ -30,42 +30,28 @@ Date: 2026-06-27
 Recent commits:
 
 - `6497044 fix(ads): source negative keyword labels from api`
-- Current Ads recommendation/keyword-context cleanup is verified locally and
-  ready to commit.
+- `5b81874 docs: condense active cleanup recovery`
+- `df4c750 fix(ads): clean recommendation and keyword context copy`
+- Current Merchant source/evidence condensation is verified locally and ready
+  to commit.
 
 What changed:
 
-- Ads Doctor negative-keyword review now uses API-owned labels for:
-  - safety status,
-  - validation status,
-  - required checks,
-  - match type,
-  - exclusion level,
-  - keyword context,
-  - blocked promises.
-- The dashboard consumes those labels instead of rendering raw Google Ads enum
-  values or route-local translations.
-- Ads recommendation summaries now use Polish recommendation type labels instead
-  of raw Google Ads enum values. Recommendation rationale no longer says
-  mixed English/Polish recommendation-review wording.
-- Ads keyword-context tables now consume API-owned match/status labels, and
-  fixed dashboard labels use `Bezpieczeństwo 90 dni`, `Słowa kluczowe` and
-  `Źródłowe zapytania`.
+- Merchant diagnostics now expose API-owned source connector labels and evidence
+  summaries for decision queue, operator summary, product performance readiness,
+  product rows and price-impact readiness.
+- Merchant dashboard no longer shows raw connector IDs, evidence IDs or read
+  contract/debug labels on the cleaned panels. It shows `Merchant Center`,
+  `1 dowód źródłowy`, `Stan danych` and safer write-readiness wording instead.
 
 Proof:
 
-- Focused API test:
-  `rtk uv run pytest tests/test_api_contracts.py -k "ads_diagnostics_exposes_live_campaign_metric_facts" --maxfail=1`
+- Focused Merchant API tests:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_exposes_feed_issue_queue or merchant_product_performance_readiness" --maxfail=1`
 - Dashboard typecheck:
   `rtk pnpm --dir apps/dashboard typecheck`
-- Dashboard route test:
-  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
-- Marketer language guard:
-  `rtk uv run python scripts/marketer_language_guard.py`
-- Live API/browser proof:
-  `.local-lab/proof/20260627-ads-negative-keyword-api-labels/`
-- Live API/browser proof:
-  `.local-lab/proof/20260627-ads-recommendation-keyword-context-cleanup/`
+- Dashboard Merchant route test:
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
 
 ## Active Gaps
 
@@ -74,32 +60,27 @@ Next cleanup queue:
 1. Ads Doctor:
    - route-local raw-key fallbacks still exist in secondary helper paths and
      should be retired as API labels cover those paths.
-2. Merchant:
-   - primary decision screen can expose raw source connector IDs and evidence
-     IDs,
-   - expanded review uses contract/debug wording,
-   - write-readiness preview says `API gotowe do zapisu`.
-3. GA4:
+2. GA4:
    - visible copy can expose `(not set)`, `tracking-gap` and evidence counts as
      `ID`.
-4. Localo:
+3. Localo:
    - visible proof panels can expose `OAuth code`, `PKCE S256`, `Token` and raw
      `localo` connector ID.
-5. Actions:
+4. Actions:
    - impact result can expose raw source connector IDs,
    - missing label fallbacks can become visible copy.
-6. Recovery docs:
+5. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Finish the docs-only condensation slice and push it.
-2. Start the Ads Doctor recommendation/keyword-context cleanup slice from API
-   source, not from dashboard string replacement.
-3. Run focused Ads API/dashboard checks and browser proof.
-4. Commit and push.
-5. Continue with Merchant first-screen source/evidence condensation.
+1. Commit and push the Merchant source/evidence condensation slice after live
+   proof.
+2. Continue with GA4 route cleanup from API/domain labels, not React string
+   replacement.
+3. Then clean Localo credential/protocol language.
+4. Then clean Action detail impact/source fallback copy.
 
 ## Blockers
 

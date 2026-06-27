@@ -2114,7 +2114,9 @@ class MerchantDecisionItem(BaseModel):
     sample_titles: list[str] = Field(default_factory=list)
     payload_preview: list[dict[str, Any]] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
@@ -2154,7 +2156,9 @@ class MerchantOperatorSummary(BaseModel):
     count_semantics_label: str = "wystąpienia problemów w raportach"
     issue_types: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
@@ -2212,7 +2216,9 @@ class MerchantProductPerformanceRow(BaseModel):
     reporting_context: str | None = None
     reporting_context_label: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     ads_product_title: str | None = None
     ads_product_status: str | None = None
     ads_product_availability: str | None = None
@@ -2252,7 +2258,9 @@ class MerchantProductPerformanceReadiness(BaseModel):
     sample_product_ids: list[str] = Field(default_factory=list)
     performance_rows: list[MerchantProductPerformanceRow] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     summary: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2273,7 +2281,9 @@ class MerchantPriceImpactReadiness(BaseModel):
     missing_read_contracts: list[str] = Field(default_factory=list)
     payload_preview: list[dict[str, Any]] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     summary: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
