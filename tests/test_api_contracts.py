@@ -4402,21 +4402,21 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["metric_tiles"]["koszt"] == "12 PLN"
     assert "koszt_micros" not in ads_item["metric_tiles"]
     assert ads_item["metric_tiles"]["konwersje"] == 1
-    assert ads_item["metric_tiles"]["wartość konw."] == "150 PLN"
+    assert ads_item["metric_tiles"]["wartość konwersji"] == "150 PLN"
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_item["metric_tiles"]["rekomendacje"] == 1
-    assert ads_item["metric_tiles"]["KPI do sprawdzenia"] == 1
-    assert ads_item["metric_tiles"]["wiersze CPA"] == 1
+    assert ads_item["metric_tiles"]["wskaźniki do sprawdzenia"] == 1
+    assert ads_item["metric_tiles"]["wiersze kosztu pozyskania celu"] == 1
     assert ads_item["metric_tiles"]["wiersze zwrotu z reklam"] == 1
     assert "kolejki oceny" in ads_item["summary"]
     assert "kliknięcia=12" in ads_item["summary"]
     assert "koszt=12 PLN" in ads_item["summary"]
     assert "konwersje=1" in ads_item["summary"]
-    assert "KPI do sprawdzenia=1" in ads_item["summary"]
-    assert "KPI są sygnałem" in ads_item["summary"]
+    assert "wskaźniki do sprawdzenia=1" in ads_item["summary"]
+    assert "Wskaźniki są sygnałem" in ads_item["summary"]
     assert "Zapis zmian wymaga sprawdzenia" in ads_item["next_step"]
     assert "apply" not in ads_item["next_step"]
-    assert "KPI kampanii" in ads_item["next_step"]
+    assert "wskaźniki kampanii" in ads_item["next_step"]
     assert "zmiana budżetu" in ads_item["blocked_claims"]
     assert "koszt pozyskania celu" in ads_item["blocked_claims"]
     assert "zwrot z reklam" in ads_item["blocked_claims"]
@@ -4447,12 +4447,12 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "kliknięcia=12" in ads_plan["why_it_matters"]
     assert "koszt=12 PLN" in ads_plan["why_it_matters"]
     assert "konwersje=1" in ads_plan["why_it_matters"]
-    assert "wartość konw.=150 PLN" in ads_plan["why_it_matters"]
-    assert "KPI do sprawdzenia=1" in ads_plan["why_it_matters"]
-    assert "werdykt opłacalności" in ads_plan["why_it_matters"]
+    assert "wartość konwersji=150 PLN" in ads_plan["why_it_matters"]
+    assert "wskaźniki do sprawdzenia=1" in ads_plan["why_it_matters"]
+    assert "ocena opłacalności" in ads_plan["why_it_matters"]
     assert "aktualny odczyt" in ads_plan["operator_action"]
     assert "podgląd budżetów" in ads_plan["operator_action"]
-    assert "KPI kampanii" in ads_plan["operator_action"]
+    assert "wskaźniki kampanii" in ads_plan["operator_action"]
     assert "nie zapisuj zmian" in ads_plan["operator_action"]
     assert "Użyj skilla wilq-ads-doctor" in ads_plan["codex_prompt"]
     assert "zablokowanymi obietnicami" in ads_plan["expected_codex_output"]
@@ -4472,11 +4472,11 @@ def test_command_center_ads_plan_uses_live_review_queues(
     ads_decision = decisions_by_id["decision_review_ads_campaign_metrics"]
     assert ads_decision["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
-    assert ads_decision["metric_tiles"]["KPI do sprawdzenia"] == 1
-    assert ads_decision["metric_tiles"]["wiersze CPA"] == 1
+    assert ads_decision["metric_tiles"]["wskaźniki do sprawdzenia"] == 1
+    assert ads_decision["metric_tiles"]["wiersze kosztu pozyskania celu"] == 1
     assert ads_decision["metric_tiles"]["wiersze zwrotu z reklam"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
-    assert "KPI do sprawdzenia=1" in ads_decision["co_widzimy"]
+    assert "wskaźniki do sprawdzenia=1" in ads_decision["co_widzimy"]
     assert "kolejki oceny" in ads_decision["co_widzimy"]
     assert "kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu" in ads_decision[
         "co_widzimy"
@@ -4615,7 +4615,7 @@ def test_command_center_ads_totals_use_latest_refresh_summary(
     assert ads_item["metric_tiles"]["wyświetlenia"] == 2968
     assert ads_item["metric_tiles"]["koszt"] == "154.05 PLN"
     assert ads_item["metric_tiles"]["konwersje"] == 2
-    assert ads_item["metric_tiles"]["wartość konw."] == "2 PLN"
+    assert ads_item["metric_tiles"]["wartość konwersji"] == "2 PLN"
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 18
     assert ads_item["metric_tiles"]["rekomendacje"] == 4
     assert "kampanie=18" in ads_item["summary"]
@@ -10117,7 +10117,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["priority"] == 25
     assert derived_kpi_decision["metric_tiles"] == {
         "kampanie": 1,
-        "wiersze CPA": 1,
+        "wiersze kosztu pozyskania celu": 1,
         "wiersze zwrotu z reklam": 1,
     }
     assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
@@ -14869,11 +14869,11 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
         seen["actions"] = actions
         return CommandCenterBriefItem(
             id="daily_ads_status",
-            title="Ads: live campaign metrics dostępne",
+            title="Ads: aktualne metryki kampanii dostępne",
             route="/ads-doctor",
             status="ready",
             priority=30,
-            summary="Google Ads ma live metric facts.",
+            summary="Google Ads ma aktualne metryki źródłowe.",
             next_step="Otwórz /ads-doctor.",
             source_connectors=["google_ads"],
             evidence_ids=["ev_ads"],

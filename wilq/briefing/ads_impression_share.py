@@ -78,7 +78,7 @@ def build_impression_share_read_contract(
     return AdsImpressionShareReadContract(
         status="blocked",
         title="Google Ads: brak udziału w wyświetleniach",
-        summary="WILQ nie ma jeszcze impression share metric facts z Google Ads.",
+        summary="WILQ nie ma jeszcze metryk udziału w wyświetleniach z Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["impression_share", *missing_read_contracts],
         blocked_claims=["impression share", *blocked_claims],

@@ -246,6 +246,10 @@ FORBIDDEN_PHRASES = (
         "Use Fakty z danych / metryki źródłowe in marketer-facing labels.",
     ),
     ForbiddenPhrase(
+        "metric facts",
+        "Use fakty z danych / metryki źródłowe in marketer-facing labels.",
+    ),
+    ForbiddenPhrase(
         "GSC clicks",
         "Use kliknięcia z GSC.",
     ),

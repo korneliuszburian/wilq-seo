@@ -1101,7 +1101,7 @@ def _oauth_or_live_section(
             summary="WILQ ma zapisane metryki z odczytu danych Google Ads.",
             diagnosis=(
                 "Można przejść do diagnozy kampanii, ale nadal każda rekomendacja musi "
-                "wskazać evidence ID, metric facts i bezpieczną akcję."
+                "wskazać ID dowodu, metryki źródłowe i bezpieczną akcję."
             ),
             next_step=(
                 "Użyj wierszy kampanii i zapytań do sprawdzenia. Następnie dodaj "
@@ -1184,7 +1184,7 @@ def _campaign_overview_section(
         id="ads_campaign_overview",
         title="Aktywność kampanii Google Ads",
         status="blocked",
-        summary="Brak campaign metric facts z Google Ads.",
+        summary="Brak metryk kampanii z Google Ads.",
         diagnosis=(
             "Nie ma live campaign rows, więc dashboard nie pokazuje spendu ani trendów "
             "kampanii. To jest blocker, nie puste miejsce na estymację."
@@ -2101,9 +2101,9 @@ def _derived_kpi_read_contract(
             status="ready",
             title="Google Ads: wyliczone KPI kampanii",
             summary=(
-                f"WILQ może policzyć KPI dla {len(kpi_rows)} kampanii: "
+                f"WILQ może policzyć wskaźniki dla {len(kpi_rows)} kampanii: "
                 f"CPA dostępne dla {rows_with_cpa}, zwrot z reklam dostępny dla {rows_with_roas}. "
-                "To są obliczenia z bieżących metric facts, nie werdykt opłacalności."
+                "To są obliczenia z bieżących danych źródłowych, nie ocena opłacalności."
                 f"{target_summary}"
             ),
             allowed_metrics=_unique(allowed_metrics),
@@ -3236,7 +3236,7 @@ def _search_terms_read_contract(
         search_term_rows=[],
         next_step=(
             "Uruchom odczyt danych Google Ads po dodaniu odczytu `search_term_view` "
-            "i zapisz search_term_* metric facts."
+            "i zapisz metryki search_term_*."
         ),
         )
 
@@ -3690,7 +3690,7 @@ def _search_term_safety_read_contract(
         safety_rows=[],
         next_step=(
             "Uruchom odczyt danych Google Ads po dodaniu "
-            "search_term_90d_* metric facts. Nie twórz wykluczeń bez tego "
+            "metryk search_term_90d_*. Nie twórz wykluczeń bez tego "
             "kontraktu."
         ),
     )
@@ -4189,7 +4189,7 @@ def _keyword_planner_read_contract(
     return AdsKeywordPlannerReadContract(
         status="blocked",
         title="Keyword Planner: brak wzbogacenia",
-        summary="WILQ nie ma jeszcze keyword_planner_* metric facts.",
+        summary="WILQ nie ma jeszcze metryk keyword_planner_*.",
         missing_read_contracts=["keyword_planner_enrichment"],
         blocked_claims=blocked_claims,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -6084,7 +6084,7 @@ def _ads_decision_metric_tiles(
         )
         tiles: dict[str, int | float | str | None] = {
             "kampanie": len(decision.derived_kpi_rows),
-            "wiersze CPA": rows_with_cpa,
+            "wiersze kosztu pozyskania celu": rows_with_cpa,
             "wiersze zwrotu z reklam": rows_with_roas,
         }
         if rows_with_target_context:

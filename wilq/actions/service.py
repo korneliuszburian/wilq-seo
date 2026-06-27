@@ -977,8 +977,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=campaign_review_payload["evidence_ids"],
             metrics=campaign_review_metrics,
             human_diagnosis=(
-                "Google Ads ma realne campaign metric facts. WILQ może przygotować "
-                "kolejkę przeglądu kampanii z KPI policzonymi z evidence, ale nadal "
+                "Google Ads ma aktualne metryki kampanii. WILQ może przygotować "
+                "kolejkę przeglądu kampanii ze wskaźnikami policzonymi z dowodów, ale nadal "
                 "blokuje decyzje budżetowe bez pacingu, historii zmian, rekomendacji "
                 "i modelu wartości."
             ),

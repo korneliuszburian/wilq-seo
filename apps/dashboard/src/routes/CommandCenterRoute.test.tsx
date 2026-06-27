@@ -17,7 +17,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 const commandCenterFixture: CommandCenterResponse = {
   generated_at: "2026-06-22T18:56:00Z",
   strict_instruction:
-    "WILQ pokazuje tylko metryki z danych źródłowych. Brak danych oznacza blocker, nie domysł marketingowy.",
+    "WILQ pokazuje tylko metryki z danych źródłowych. Brak danych oznacza blokadę, nie domysł marketingowy.",
   primary_next_step: "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu.",
   blocker_count: 0,
   tactical_item_count: 4,
@@ -48,11 +48,11 @@ const commandCenterFixture: CommandCenterResponse = {
       co_widzimy:
         "Merchant Center ma potwierdzone dane problemów feedu.",
       dlaczego_to_ma_znaczenie:
-        "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
+        "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego sprawdzenia.",
       bezpieczny_next_step:
         "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
       why_it_matters:
-        "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
+        "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego sprawdzenia.",
       operator_action:
         "Otwórz widok Merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
       source_connectors: ["google_merchant_center"],
@@ -63,7 +63,7 @@ const commandCenterFixture: CommandCenterResponse = {
       codex_prompt:
         "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
       codex_context_endpoint: "/api/codex/context-pack",
-      expected_codex_output: "Polski brief przeglądu problemów feedu z evidence IDs.",
+      expected_codex_output: "Polskie podsumowanie przeglądu problemów feedu z ID dowodów.",
       risk: "medium"
     },
     {
@@ -95,10 +95,10 @@ const commandCenterFixture: CommandCenterResponse = {
       ],
       co_widzimy:
         "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
-      dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
+      dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać sprawdzenie treści.",
       bezpieczny_next_step:
         "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
-      why_it_matters: "120 wyświetleń może uzasadniać review treści.",
+      why_it_matters: "120 wyświetleń może uzasadniać sprawdzenie treści.",
       operator_action:
         "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],

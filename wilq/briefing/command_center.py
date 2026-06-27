@@ -50,7 +50,7 @@ from wilq.storage.metric_store import metric_store
 
 STRICT_DAILY_INSTRUCTION = (
     "WILQ pokazuje tylko metryki i dowody z danych źródłowych. Brak danych "
-    "oznacza blocker, nie domysł marketingowy."
+    "oznacza blokadę, nie domysł marketingowy."
 )
 GA4_CONNECTOR_ID = "google_analytics_4"
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
@@ -695,7 +695,7 @@ def _ads_item_from_facts(
             "conversions",
             _sum_numeric_facts(facts, "conversions"),
         ),
-        "wartość konw.": _ads_currency_tile_from_summary(
+        "wartość konwersji": _ads_currency_tile_from_summary(
             latest_summary,
             facts,
             "conversion_value",
@@ -719,7 +719,7 @@ def _ads_item_from_facts(
         title=(
             "Ads: kolejki budżetu, rekomendacji i zapytań"
             if live_data_available
-            else "Ads: blocker OAuth przed analizą spendu"
+            else "Ads: blokada OAuth przed oceną kosztów"
         ),
         route="/ads-doctor",
         status="ready" if live_data_available else "blocked",
@@ -727,7 +727,7 @@ def _ads_item_from_facts(
         summary=(
             _ads_ready_summary(metric_tiles)
             if live_data_available
-            else "Google Ads nie ma live danych do Command Center."
+            else "Google Ads nie ma aktualnych danych do Command Center."
         ),
         next_step=(
             _ads_ready_next_step(metric_tiles)
@@ -748,7 +748,7 @@ def _ads_item_from_facts(
             )
         ),
         action_ids=action_ids,
-        metric_tiles=metric_tiles if live_data_available else {"blockery": 1},
+        metric_tiles=metric_tiles if live_data_available else {"blokady": 1},
         blocked_claims=(
             [
                 "CPA",
@@ -832,9 +832,9 @@ def _ads_derived_kpi_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
         if _ratio_or_none(row.get("conversion_value"), _micros_to_units(row.get("cost_micros")))
         is not None
     )
-    tiles = {"KPI do sprawdzenia": len(campaign_rows)}
+    tiles = {"wskaźniki do sprawdzenia": len(campaign_rows)}
     if cpa_rows:
-        tiles["wiersze CPA"] = cpa_rows
+        tiles["wiersze kosztu pozyskania celu"] = cpa_rows
     if roas_rows:
         tiles["wiersze zwrotu z reklam"] = roas_rows
     return tiles
@@ -983,11 +983,11 @@ def _ads_business_context_item_from_facts(
         status="blocked",
         priority=18,
         summary=(
-            "Ads ma live evidence, ale WILQ nie ma kompletnego kontekstu "
+            "Ads ma aktualne dowody, ale WILQ nie ma kompletnego kontekstu "
             "biznesowego do decyzji budżetowych: marży, celu, docelowego kosztu "
             "pozyskania celu i docelowego zwrotu z reklam "
-            "i potwierdzonej oceny strategii. Bez tego KPI są tylko wstępnym przeglądem, "
-            "nie werdyktem opłacalności."
+            "i potwierdzonej oceny strategii. Bez tego wskaźniki są tylko wstępnym przeglądem, "
+            "nie oceną opłacalności."
         ),
         next_step=(
             "Otwórz widok Ads i uzupełnij marżę, cel biznesowy, cel budżetu "
@@ -1015,8 +1015,8 @@ def _ads_business_context_item_from_facts(
             "opłacalność",
             "zmarnowany budżet",
             "skalowanie budżetu",
-            "werdykt docelowego kosztu pozyskania celu",
-            "werdykt docelowego zwrotu z reklam",
+            "ocena docelowego kosztu pozyskania celu",
+            "ocena docelowego zwrotu z reklam",
         ],
         risk=ActionRisk.medium,
     )
@@ -1077,7 +1077,7 @@ def _merchant_item_from_tactical(
             f"Produkty={product_count}, typy problemów={issue_type_count}, "
             f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}."
             if live_data_available
-            else "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
+            else "Merchant nie ma gotowej kolejki decyzji z aktualnych danych źródłowych."
         )
     )
     return CommandCenterBriefItem(
@@ -1112,7 +1112,7 @@ def _merchant_item_from_tactical(
             "typy problemów": issue_type_count,
             "zgłoszenia": issue_occurrence_count,
             "decyzje": decision_count,
-            "blockery": 0 if live_data_available else 1,
+            "blokady": 0 if live_data_available else 1,
         },
         blocked_claims=operator_blocked_claims(
             _unique(claim for item in merchant_items for claim in item.blocked_claims)
@@ -1351,7 +1351,7 @@ def _content_item_from_tactical(
             "wyświetlenia": total_impressions,
             "kliknięcia": total_clicks,
             **ahrefs_metric_tiles,
-            "blockery": 0 if live_data_available else 1,
+            "blokady": 0 if live_data_available else 1,
         },
         blocked_claims=_unique(
             claim for item in content_items for claim in item.blocked_claims
@@ -1444,16 +1444,16 @@ def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
         f"kliknięcia={metric_tiles.get('kliknięcia', 0)}, "
         f"koszt={metric_tiles.get('koszt', 'brak')}, "
         f"konwersje={metric_tiles.get('konwersje', 0)}, "
-        f"wartość konw.={metric_tiles.get('wartość konw.', 'brak')}, "
+        f"wartość konwersji={metric_tiles.get('wartość konwersji', 'brak')}, "
         f"podgląd budżetu={metric_tiles.get('podgląd budżetu', 0)}, "
         f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
-        f"KPI do sprawdzenia={metric_tiles.get('KPI do sprawdzenia', 0)}, "
-        f"wiersze CPA={metric_tiles.get('wiersze CPA', 0)}, "
+        f"wskaźniki do sprawdzenia={metric_tiles.get('wskaźniki do sprawdzenia', 0)}, "
+        f"wiersze kosztu pozyskania celu={metric_tiles.get('wiersze kosztu pozyskania celu', 0)}, "
         f"wiersze zwrotu z reklam={metric_tiles.get('wiersze zwrotu z reklam', 0)}, "
         f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "
         f"segmenty={metric_tiles.get('segmenty', 0)}. "
-        "To są kolejki oceny z evidence i akcjami do sprawdzenia. KPI są "
-        "sygnałem z bieżących metric facts; to nadal nie jest werdykt "
+        "To są kolejki oceny z dowodami i akcjami do sprawdzenia. Wskaźniki są "
+        "sygnałem z bieżących danych źródłowych; to nadal nie jest ocena "
         "opłacalności, kosztu pozyskania celu, zwrotu z reklam ani ścieżka zapisu zmian."
     )
 
@@ -1464,8 +1464,8 @@ def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
         review_parts.append("budżety")
     if _numeric_tile(metric_tiles, "rekomendacje") > 0:
         review_parts.append("rekomendacje")
-    if _numeric_tile(metric_tiles, "KPI do sprawdzenia") > 0:
-        review_parts.append("KPI kampanii")
+    if _numeric_tile(metric_tiles, "wskaźniki do sprawdzenia") > 0:
+        review_parts.append("wskaźniki kampanii")
     if _numeric_tile(metric_tiles, "wykluczenia") > 0:
         review_parts.append("wykluczenia")
     if _numeric_tile(metric_tiles, "segmenty") > 0:
@@ -1872,7 +1872,7 @@ def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     for item in items:
         if item.status == "ready":
             return item.next_step
-    return "Najpierw usuń blocker dostępu z najwyższym priorytetem."
+    return "Najpierw usuń blokadę dostępu z najwyższym priorytetem."
 
 
 
@@ -1908,7 +1908,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski brief przeglądu problemów feedu z evidence IDs, akcją "
+                "Polskie podsumowanie przeglądu problemów feedu z ID dowodów, akcją "
                 "i listą twierdzeń, których nie wolno używać."
             ),
             source_connectors=item.source_connectors,
@@ -1933,12 +1933,12 @@ def _action_plan_item(
             codex_prompt=(
                 "Użyj skilla wilq-content-strategist. Zbuduj kolejkę zachowania, "
                 "odświeżenia, scalenia, nowej treści albo blokady dla Ekologus "
-                "na podstawie GSC, spisu treści WordPress, GA4 i Ahrefs evidence. "
+                "na podstawie GSC, spisu treści WordPress, GA4 i dowodów Ahrefs. "
                 "Nie obiecuj leadów, przychód ani wzrostów pozycji."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polska kolejka content decyzji z evidence IDs, source connectors "
+                "Polska kolejka decyzji treści z ID dowodów, źródłami danych "
                 "i następnym krokiem."
             ),
             source_connectors=item.source_connectors,
@@ -1963,7 +1963,7 @@ def _action_plan_item(
                 f"WILQ ma {landing_groups} grup strona wejścia, źródło ruchu i kampania i "
                 f"{decision_count} decyzji GA4 do sprawdzenia: pomiar={measurement_count}, "
                 f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
-                "nie werdykt skuteczności, bo zwrot z reklam, przychód, spadek konwersji "
+                "nie ocenę skuteczności, bo zwrot z reklam, przychód, spadek konwersji "
                 "i naprawiony pomiar pozostają zablokowane bez osobnych kontraktów."
             ),
             operator_action=(
@@ -1998,7 +1998,7 @@ def _action_plan_item(
             priority=18,
             category="Google Ads",
             why_it_matters=(
-                "Ads ma live metryki i kolejki review, ale bez marży, celu biznesowego, "
+                "Ads ma aktualne metryki i kolejki do sprawdzenia, ale bez marży, celu biznesowego, "
                 "celu budżetu oraz docelowego zwrotu z reklam albo kosztu pozyskania "
                 "celu WILQ nie może uczciwie mówić o rentowności, zmarnowanym budżecie "
                 "ani skalowaniu."
@@ -2012,14 +2012,14 @@ def _action_plan_item(
             ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
-                "Użyj skilla wilq-ads-doctor. Wyjaśnij blocker kontekstu biznesowego "
+                "Użyj skilla wilq-ads-doctor. Wyjaśnij blokadę kontekstu biznesowego "
                 "Ads dla Ekologus, wskaż brakujące pola .env i nie twierdź "
                 "rentowności, zmarnowanego budżetu ani skalowania budżetu bez tych danych."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski blocker handoff Ads z brakującymi polami kontekstu biznesowego, "
-                "evidence IDs i listą twierdzeń, których nie wolno dopowiadać."
+                "Polskie podsumowanie blokady Ads z brakującymi polami kontekstu biznesowego, "
+                "ID dowodów i listą twierdzeń, których nie wolno dopowiadać."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2039,30 +2039,30 @@ def _action_plan_item(
                 why_it_matters=(
                     f"{item.summary} To jest aktualny odczyt Ads i zestaw decyzji do "
                     "sprawdzenia, a nie lista źródeł danych ani ścieżka zapisu zmian: budżet, "
-                    "rekomendacje, wykluczenia i segmenty mają evidence oraz "
+                    "rekomendacje, wykluczenia i segmenty mają dowody oraz "
                     "akcje do sprawdzenia, ale zapis pozostaje zablokowany."
                 ),
                 operator_action=(
                     "Otwórz widok Ads: aktualny odczyt wartości Ads jest na górze, "
                     "a potem przejrzyj: podgląd budżetów, podgląd rekomendacji, "
-                    "KPI kampanii, przegląd wykluczeń i podgląd segmentów. "
-                    "Sprawdź propozycje w WILQ, ale nie traktuj KPI jako werdyktu "
+                    "wskaźniki kampanii, przegląd wykluczeń i podgląd segmentów. "
+                    "Sprawdź propozycje w WILQ, ale nie traktuj wskaźników jako oceny "
                     "opłacalności i nie zapisuj zmian."
                 ),
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
                     "Użyj skilla wilq-ads-doctor. Przejrzyj aktualny odczyt Google "
                     "Ads dla Ekologus oraz kolejkę oceny: budżety, rekomendacje, "
-                    "KPI kampanii, zapytania wyszukiwane, wykluczenia i segmenty "
+                    "wskaźniki kampanii, zapytania wyszukiwane, wykluczenia i segmenty "
                     "niestandardowe. "
-                    "Cytuj evidence IDs i "
-                    "action IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
+                    "Cytuj ID dowodów i "
+                    "ID akcji. Nie twierdź opłacalności, zmarnowanego budżetu "
                     "ani zapisu zmian; wskaż bezpieczne decyzje do sprawdzenia "
                     "i brakujące kontrakty."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(
-                    "Polska kolejka oceny Ads z evidence IDs, akcjami do sprawdzenia, "
+                    "Polska kolejka oceny Ads z ID dowodów, akcjami do sprawdzenia, "
                     "zablokowanymi obietnicami i następnymi krokami bez zapisu zmian."
                 ),
                 source_connectors=item.source_connectors,
@@ -2073,24 +2073,24 @@ def _action_plan_item(
             )
         return CommandCenterActionPlanItem(
             id="plan_fix_ads_oauth_before_spend_analysis",
-            title="Napraw Google Ads OAuth zanim padną wnioski o spendzie",
+            title="Napraw Google Ads OAuth zanim padną wnioski o kosztach",
             route=item.route,
             status="blocked",
             priority=5,
             category="Google Ads",
             why_it_matters=(
-                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, koszt pozyskania celu, zwrot z reklam ani search "
-                "terms bez świeżego Ads evidence."
+                "Ads Doctor ma blokadę OAuth. WILQ nie pokaże kosztu, kosztu pozyskania celu, zwrotu z reklam ani "
+                "wyszukiwanych haseł bez świeżych dowodów Ads."
             ),
             operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzoną akcję.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
-                "Użyj skilla wilq-ads-doctor. Zweryfikuj Ads blocker dla Ekologus "
-                "i przygotuj repair path bez diagnozowania spendu, koszt pozyskania celu, zwrot z reklam ani search terms."
+                "Użyj skilla wilq-ads-doctor. Zweryfikuj blokadę Ads dla Ekologus "
+                "i przygotuj ścieżkę naprawy bez diagnozowania kosztu, kosztu pozyskania celu, zwrotu z reklam ani wyszukiwanych haseł."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski blocker handoff z evidence IDs i bez zmyślonych metryk Ads."
+                "Polskie podsumowanie blokady z ID dowodów i bez zmyślonych metryk Ads."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2127,7 +2127,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski przegląd Localo z evidence IDs, agregatami i zablokowanymi obietnicami."
+                "Polski przegląd Localo z ID dowodów, agregatami i zablokowanymi obietnicami."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2184,7 +2184,7 @@ def _action_plan_item(
                 "Localo nie ma świeżych dowodów lokalnej widoczności, więc WILQ blokuje "
                 "obietnice o rankingach i wynikach profilu firmy w Google."
             ),
-            operator_action="Otwórz widok Localo i pokaż blocker dostępu zamiast metryk lokalnych.",
+            operator_action="Otwórz widok Localo i pokaż blokadę dostępu zamiast metryk lokalnych.",
             skill_id="wilq-localo-operator",
             codex_prompt=(
                 "Użyj skilla wilq-localo-operator. Sprawdź stan Localo dla Ekologus "
@@ -2193,7 +2193,7 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski Localo readiness report z blockerami i bez obietnic o rankingach."
+                "Polskie podsumowanie gotowości Localo z blokadami i bez obietnic o rankingach."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2216,7 +2216,7 @@ def _action_plan_item(
             "do decyzji marketera po polsku, używając tylko dowodów w WILQ."
         ),
         codex_context_endpoint="/api/codex/context-pack",
-        expected_codex_output="Polska decyzja operatora z evidence IDs i następnym krokiem.",
+        expected_codex_output="Polska decyzja operatora z ID dowodów i następnym krokiem.",
         source_connectors=item.source_connectors,
         evidence_ids=item.evidence_ids,
         action_ids=item.action_ids,
@@ -2302,7 +2302,7 @@ def _decision_observation(
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
             f"{brief_item.summary} To blokada decyzji zależnych od celu, nie awaria "
-            "Google Ads ani brak live campaign facts."
+                "Google Ads ani brak aktualnych danych kampanii."
         )
     if item.id == "plan_review_ads_campaign_metrics" and brief_item is not None:
         return _decision_metric_observation(
@@ -2310,7 +2310,7 @@ def _decision_observation(
             metric_tiles=brief_item.metric_tiles,
             suffix=(
                 "To są kolejki oceny budżetu, rekomendacji, wykluczeń i "
-                "segmentów oraz KPI kampanii do sprawdzenia. Zapis zmian, ocena "
+                "segmentów oraz wskaźników kampanii do sprawdzenia. Zapis zmian, ocena "
                 "rentowności, kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu "
                 "pozostają zablokowane."
             ),

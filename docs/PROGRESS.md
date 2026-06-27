@@ -90,6 +90,12 @@ Date: 2026-06-27
   success summaries now use Polish operator wording instead of `vendor read
   completed` status text. Remaining `profitability_verdict` hits are internal
   policy IDs, not marketer-facing labels.
+- Command Center API and route copy now use Polish source wording for Ads
+  metrics and status language: `wartość konwersji`, `wskaźniki do sprawdzenia`,
+  `wiersze kosztu pozyskania celu`, `blokada` and `blokady`. The live
+  `/api/dashboard/command-center` scan found no marketer-payload hits for the
+  previous English/technical phrases after the managed stack restart; the
+  browser read of `/command-center` matched the cleaned wording.
 
 ## Latest Proof Pointers
 
@@ -138,6 +144,8 @@ Date: 2026-06-27
   `.local-lab/proof/20260626-connector-access-language-cleanup/summary.json`.
 - Domain status language cleanup:
   `.local-lab/proof/20260626-domain-status-language-cleanup/summary.json`.
+- Command Center API/status language cleanup:
+  `.local-lab/proof/20260627-command-center-api-language-cleanup/summary.json`.
 - Action detail draft-label cleanup:
   `.local-lab/proof/20260626-action-detail-draft-label-cleanup/summary.json`.
 - Tactical queue metric-language cleanup:

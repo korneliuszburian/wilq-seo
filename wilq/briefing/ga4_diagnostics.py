@@ -251,7 +251,7 @@ def _ga4_freshness_assessment(
                     stale_after_hours=GA4_STALE_AFTER_HOURS,
                     requires_refresh=True,
                     summary=(
-                        f"Najnowsze GA4 metric facts mają około {age_hours:.1f}h "
+                        f"Najnowsze metryki GA4 mają około {age_hours:.1f}h "
                         "i są do odświeżenia."
                     ),
                     next_step=(
@@ -267,7 +267,7 @@ def _ga4_freshness_assessment(
                 stale_after_hours=GA4_STALE_AFTER_HOURS,
                 requires_refresh=False,
                 summary=(
-                    f"Najnowsze GA4 metric facts mają około {age_hours:.1f}h i mieszczą się "
+                    f"Najnowsze metryki GA4 mają około {age_hours:.1f}h i mieszczą się "
                     f"w progu {GA4_STALE_AFTER_HOURS}h."
                 ),
                 next_step="Można użyć danych GA4 do sprawdzenia bez dodatkowego odświeżenia.",
@@ -443,7 +443,7 @@ def _tracking_readiness_section(
             title="GA4: brak metryk zachowania",
             status="blocked",
             summary=_ga4_blocker_reason(latest_refresh),
-            diagnosis="Brak GA4 metric facts oznacza blocker, nie spadek jakości ruchu.",
+            diagnosis="Brak metryk GA4 oznacza blokadę pomiaru, nie spadek jakości ruchu.",
             next_step="Odśwież odczyt GA4 i dopiero potem sprawdzaj problemy pomiaru.",
             source_connectors=[GA4_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),

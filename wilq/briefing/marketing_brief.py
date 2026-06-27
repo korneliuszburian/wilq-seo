@@ -724,7 +724,7 @@ def _recommendation_items(
                 source_connectors=["google_ads"],
                 evidence_ids=google_ads_blocker.evidence_ids,
                 summary=(
-                    "WILQ nie może uczciwie diagnozować zmarnowany koszt bez live Ads evidence. "
+                    "WILQ nie może uczciwie diagnozować zmarnowanego kosztu bez aktualnych dowodów Ads. "
                     "Obecny stan musi być pokazany jako blocker, nie rekomendacja."
                 ),
                 next_step="Użyj akcji `act_configure_google_ads_env` i helperów OAuth.",
@@ -740,7 +740,7 @@ def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
         return "Localo: widoczność lokalna i opinie do sprawdzenia"
     interesting = [fact for fact in facts if fact.name not in {"api", "connector_id"}]
     if not interesting:
-        return f"{_connector_label(connector_id)}: zapisano metric facts"
+        return f"{_connector_label(connector_id)}: zapisano metryki źródłowe"
     first = interesting[0]
     return f"{_connector_label(connector_id)}: {first.name} = {_format_value(first)}"
 
@@ -750,8 +750,8 @@ def _metric_summary(connector_id: str, facts: list[MetricFact]) -> str:
         return _localo_metric_summary(facts)
     sample = ", ".join(_metric_summary_parts(facts[:6])[:4])
     return (
-        f"WILQ ma realne metric facts z connectora {_connector_label(connector_id)}: "
-        f"{sample}. Każda metryka ma evidence ID."
+        f"WILQ ma metryki źródłowe z {_connector_label(connector_id)}: "
+        f"{sample}. Każda metryka ma ID dowodu."
     )
 
 

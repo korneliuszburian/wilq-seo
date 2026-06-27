@@ -72,7 +72,6 @@ function marketerMetricLabel(label: string) {
     "podgląd budżetu": "budżety do oceny",
     "rekordy Ahrefs": "rekordy Ahrefs",
     "typy problemów": "typy problemów",
-    "wartość konw.": "wartość konwersji",
     query: "zapytania",
     "query/page": "zapytania/URL",
     "zapytania/URL": "zapytania/URL"
@@ -198,7 +197,7 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
       title: "Sprawdź pomiar GA4 zanim ocenimy kampanie",
       what: `GA4 pokazuje ${groups} grup ruchu, ${measurementIssues} problemy pomiaru, ${qualitySignals} sygnały jakości ruchu i ${contractGaps} brak danych wymaganych do pełnej oceny.`,
       why:
-        "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o zwrot z reklam, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie werdykt o skuteczności kampanii.",
+        "Dopóki pomiar jest niepełny, WILQ blokuje wnioski o zwrot z reklam, przychodzie i spadkach konwersji. To jest kontrola jakości danych, nie ocena skuteczności kampanii.",
       nextStep:
         "Otwórz GA4, sprawdź strony wejścia, źródła ruchu i konfigurację zdarzeń. Najpierw naprawiamy pomiar, dopiero potem oceniamy wyniki."
     };
@@ -211,14 +210,14 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
     const impressions = metricDisplay(item, "wyświetlenia");
     const cost = metricDisplay(item, "koszt");
     const conversions = metricDisplay(item, "konwersje");
-    const conversionValue = metricDisplay(item, "wartość konw.");
+    const conversionValue = metricDisplay(item, "wartość konwersji");
     const negativeTerms = metricDisplay(item, "wykluczenia");
     const segments = metricDisplay(item, "segmenty");
     return {
       title: "Przejrzyj kampanie i wyszukiwane hasła w Google Ads",
       what: `Google Ads ma świeży odczyt: ${campaigns} kampanii, ${searchTerms} wyszukiwanych haseł, ${clicks} kliknięć, ${impressions} wyświetleń, koszt ${cost}, ${conversions} konwersje i wartość konwersji ${conversionValue}. WILQ przygotowuje też ${negativeTerms} terminów do oceny oraz ${segments} propozycji segmentów.`,
       why:
-        "To wystarcza do sprawdzenia kampanii i wyszukiwanych haseł, ale nie wystarcza jeszcze do automatycznego wykluczania fraz, zmiany budżetów ani werdyktu o opłacalności.",
+        "To wystarcza do sprawdzenia kampanii i wyszukiwanych haseł, ale nie wystarcza jeszcze do automatycznego wykluczania fraz, zmiany budżetów ani oceny opłacalności.",
       nextStep:
         "Otwórz Ads Doctor i przejrzyj metryki kampanii oraz wyszukiwane hasła. Każde wykluczenie, budżet i rekomendacja wymaga sprawdzenia i zatwierdzenia w WILQ."
     };

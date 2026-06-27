@@ -1349,8 +1349,8 @@ def _feed_health_section(
             status="blocked",
             summary=_merchant_blocker_reason(latest_refresh),
             diagnosis=(
-                "WILQ nie ma aktualnych Merchant metric facts, więc nie może ocenić "
-                "liczby produktów, issue count ani stanu feedu."
+                "WILQ nie ma aktualnych metryk Merchant, więc nie może ocenić "
+                "liczby produktów, liczby zgłoszeń problemów ani stanu feedu."
             ),
             next_step=(
                 "Uruchom odczyt Merchant w trybie vendor_read i dopiero potem "
@@ -1717,7 +1717,7 @@ def _merchant_decision_queue(
                 action_ids=action_ids,
                 blocked_claims=["feed health", "product approval", "issue count"],
                 rationale=(
-                    "WILQ nie ma aktualnych Merchant metric facts, więc nie może "
+                    "WILQ nie ma aktualnych metryk Merchant, więc nie może "
                     "uczciwie zbudować kolejki problemów feedu ani ocenić stanu produktów."
                 ),
                 next_step="Uruchom odczyt danych Merchant, potem wróć do /merchant.",
