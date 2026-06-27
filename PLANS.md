@@ -569,10 +569,10 @@ WILQ is complete for this long-range goal when:
   `ActionObjectPanels`; action panels now rely on API-owned label arrays instead
   of route-local raw-key translation. A stale dashboard expectation for raw
   Merchant vendor text was inverted into a guard against showing that text.
-- 2026-06-27: Merchant skill context-pack now treats `skill_id` as a first-class
-  alias for `skill`, so accidental skill-scoped calls no longer fall back to
-  full context. The default Merchant context is condensed to labels, counts,
-  evidence and action IDs, with raw Merchant vendor enum values removed.
+- 2026-06-27: Merchant skill context-pack accepts the current runtime request
+  shape without falling back to full context. The API must validate supported
+  request fields explicitly and keep default skill contexts scoped and
+  condensed.
 - 2026-06-27: Social Publisher source evidence now uses `source_inputs` and
   `missing_publish_access` in the active API/skill contract. The old
   `candidate_inputs` field and social "permissions" wording were removed from
@@ -628,9 +628,9 @@ WILQ is complete for this long-range goal when:
 - Dead route-local dictionaries are still product risk even when unused. Remove
   them when API-owned labels already exist, and turn stale raw-string fixtures
   into guards instead of preserving them.
-- Request shape drift is product risk. If an operator/runtime naturally sends
-  `skill_id`, the API must route it to the same scoped context as `skill`
-  instead of silently returning the full cross-system context.
+- Request shape drift is product risk. The API must define supported request
+  fields explicitly and must not silently return full cross-system context when
+  a skill-scoped request is intended.
 - Skill context size is a product surface. A skill-default context must contain
   condensed decisions and labels, not full payloads or raw vendor enums that
   force Codex to parse implementation detail.
@@ -641,7 +641,7 @@ WILQ is complete for this long-range goal when:
 - Content decision labels are product semantics, not presentation cleanup.
   Existing API-owned labels should be consumed directly by the route; active
   route-local label helpers are debt unless they are only rendering old action
-  payload preview contracts waiting for their own migration slice.
+  payload preview contracts waiting for their own cleanup slice.
 - Command Center labels are part of the canonical daily view-model. If the first
   screen needs better wording, fix the command-center API/domain source and
   schema, not React-side dictionaries.
@@ -681,3 +681,17 @@ WILQ is complete for this long-range goal when:
 - Active Command Center daily-decision labels are API-owned. Do not reintroduce
   route-local dictionaries for decision copy, source labels, metric labels,
   blocked promises, CTA labels or skill labels.
+
+## Outcomes & Retrospective
+
+- Current outcome: the active cleanup is materially reducing dashboard/API
+  Polglish and raw technical leakage, but it is not complete.
+- Latest accepted proof: Ads negative-keyword labels are API-owned and verified
+  by focused API/dashboard tests plus live browser proof under
+  `.local-lab/proof/20260627-ads-negative-keyword-api-labels/`.
+- Remaining risk: docs, dashboard routes and skill/context-pack fixtures can
+  drift back into append-only history or raw vendor terminology unless every
+  repeated issue becomes a focused guardrail.
+- Next improvement: keep `docs/PROGRESS.md` and `docs/goals/001-goal.md`
+  concise; move detailed history to git/proof artifacts and keep only active
+  gaps plus the next executable slice in recovery docs.

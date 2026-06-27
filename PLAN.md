@@ -347,156 +347,29 @@ Verification:
 - `rtk pnpm --dir apps/dashboard typecheck`.
 - `agent-browser` snapshots for touched routes.
 
-## 13. Workstream D - Content Product Completion
+## 13. Deferred Product Layers
 
-Objective:
+The active `PLAN.md` is a cleanup and condensation plan. It must not become a
+second long-range roadmap.
 
-Turn Content Planner from strong review cockpit into a real content operating
-loop.
+The following layers remain real product work, but they are deferred to
+`PLANS.md` until this cleanup goal is green:
 
-Tasks:
+- Content operating loop: ContentPreflight, preserve-first mode, richer content
+  inventory, duplicate/canonical/cannibalization checks, sales brief, claim
+  ledger, sprawdzenie przez człowieka, WordPress draft handoff and measurement.
+- Workspace-ready core: ClientWorkspace, SiteProfile, BrandProfile, ServiceMap,
+  ClaimPolicy, ConnectorProfile, MeasurementProfile and KnowledgeNamespace.
+- Knowledge and memory lifecycle: source registry, freshness, confidence,
+  feedback memory, outcome cards and rule-to-decision lineage.
+- Skills, hooks and self-improving runtime beyond guardrails needed for this
+  cleanup goal.
+- Safe write expansion beyond the existing validated prepare/review paths.
 
-- Implement first-class `ContentPreflight`:
-  preserve, refresh, merge, create or block.
-- Make preserve-first the default when existing content exists and no
-  evidence-backed refresh reason is present.
-- Build Content Inventory v2 over real public content:
-  title, H1/H2, meta, FAQ, CTA, links, canonical, body extract, freshness,
-  evidence IDs.
-- Build duplicate/canonical/cannibalization checks before creation.
-- Build `ContentSalesBrief` from preflight, GSC, WP inventory, Ahrefs review
-  rows and Ekologus service knowledge.
-- Build Claim Ledger for risky legal/environmental/performance claims.
-- Require Human Review before WordPress draft handoff.
-- Add draft-only WordPress handoff with preview, confirmation and audit.
-- Add post-publication measurement windows before claiming success/failure.
+Do not start these layers from this plan. Finish the active cleanup first, then
+promote the next product layer from `PLANS.md` into a new narrow goal.
 
-Acceptance:
-
-- WILQ can answer: czy pisać, co pisać, co zachować, czego nie wolno obiecać,
-  gdzie ma trafić finalny URL i kto musi to zatwierdzić.
-- No generated draft bypasses preflight, sales brief, claim review and human
-  review.
-
-Verification:
-
-- Content API contract tests.
-- Skill evals for messy marketer prompts.
-- Browser proof of content first screen.
-
-## 14. Workstream E - Workspace-Ready Core
-
-Objective:
-
-Keep Ekologus depth-first while preventing hardcoded core.
-
-Tasks:
-
-- Add formal typed contracts:
-  - `ClientWorkspace`
-  - `SiteProfile`
-  - `BrandProfile`
-  - `ServiceMap`
-  - `ClaimPolicy`
-  - `ConnectorProfile`
-  - `MeasurementProfile`
-  - `KnowledgeNamespace`
-- Move Ekologus service/claim/tone rules into workspace/profile/card layers.
-- Do not build account switchers, agency UI, billing or permissions yet.
-- Add a second fake workspace fixture only when it helps prove isolation.
-
-Acceptance:
-
-- Ekologus behavior is preserved.
-- Core no longer depends on global Ekologus-only service vocabulary.
-- Future client support is a clean extension point, not prompt copy.
-
-Verification:
-
-- Workspace/profile load tests.
-- Regression tests for Ekologus decisions.
-
-## 15. Workstream F - Knowledge And Memory Layer
-
-Objective:
-
-Turn source material and decisions into compact reusable knowledge.
-
-Tasks:
-
-- Add source registry with owner, freshness, confidence and source type.
-- Convert sources into typed knowledge cards, expert rules, validators,
-  playbooks and eval cases.
-- Store feedback from sprawdzenie przez człowieka and rejected/approved reasoning as knowledge.
-- Store content outcomes after measurement windows.
-- Keep broad vector/RAG deferred until typed cards prove useful.
-
-Acceptance:
-
-- WILQ remembers what worked, what was rejected and why.
-- Stale knowledge lowers confidence or blocks claims.
-- Skills consume compact knowledge via API/context packs, not long prompt dumps.
-
-Verification:
-
-- Knowledge compiler tests.
-- Rule-to-decision lineage tests.
-- Skill evals that prove stale/unsupported knowledge is blocked.
-
-## 16. Workstream G - Skills, Hooks And Self-Improving Runtime
-
-Objective:
-
-Make Codex runtime a disciplined operator layer over WILQ API.
-
-Tasks:
-
-- Keep skills small and procedural.
-- Update skills only after API/schema/view-model contracts exist.
-- Add messy prompt evals that check behavior, not just output shape.
-- Add hooks or checks that block common regressions:
-  stale URL fields, forbidden visible jargon, missing evidence, unsafe write
-  paths, non-Polish operator output.
-- Record skill eval findings in `docs/evals/skill-eval-ledger.md`.
-
-Acceptance:
-
-- Skills do not decide from prompt prose.
-- Every skill answer is backed by WILQ API evidence, source connectors and
-  blocked-claim handling.
-
-Verification:
-
-- Skill smoke scripts.
-- `scripts/codex_skill_eval.sh` when behavior/output changes.
-- Hygiene checks.
-
-## 17. Workstream H - Safe Execution Expansion
-
-Objective:
-
-Expand zapis zmian only after review-first contracts are clean.
-
-Tasks:
-
-- Keep destructive and high-risk execution blocked until explicitly supported.
-- Every write path needs typed payload, preview, confirmation, audit and failure
-  handling.
-- Add one low-risk adapter at a time.
-- Preserve rollback/partial failure story before enabling broader writes.
-
-Acceptance:
-
-- No external mutation happens without explicit validated path.
-- Blocked write paths remain honest in dashboard and skills.
-
-Verification:
-
-- blocked zapis zmian tests.
-- Mutation audit tests.
-- Secret redaction tests.
-
-## 18. Verification Plan
+## 14. Verification Plan
 
 Use focused checks first:
 
@@ -510,7 +383,7 @@ Use focused checks first:
 Do not claim completion from a screenshot, shape smoke or internal eval alone.
 Real marketer UAT or explicit owner deferral is required for usefulness claims.
 
-## 19. Current Completion Definition
+## 15. Current Completion Definition
 
 This cleanup goal is complete when:
 
@@ -529,7 +402,7 @@ The final WILQ product is not complete until ContentPreflight, sales brief,
 claim ledger, sprawdzenie przez człowieka, WordPress draft handoff, measurement loop,
 workspace contracts, knowledge lifecycle and safe execution gates are done.
 
-## 20. Current `/goal` Prompt
+## 16. Current `/goal` Prompt
 
 ```text
 /goal

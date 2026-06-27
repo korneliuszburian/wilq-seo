@@ -56,9 +56,10 @@ Python/API commands must use `uv run ...`.
 
 ## Current High-Level Status
 
-Strong Ekologus demo is partially built, not done.
+The active cleanup goal is still in progress. Do not infer full product
+readiness from route/API availability.
 
-Ready or mostly ready surfaces include:
+Available evidence surfaces for current cleanup proof include:
 
 - Google Ads OAuth/customer selection and live campaign/search-term reads.
 - GA4 landing/behavior plus key-event/ecommerce/revenue metric reads.
@@ -68,15 +69,12 @@ Ready or mostly ready surfaces include:
   and reviews as read-only evidence.
 - 12 WILQ skills with baseline non-interactive eval coverage.
 
-Active gaps live in `docs/goals/001-goal.md`, grouped by:
+Active gaps live in:
 
-1. source contracts and data acquisition,
-2. decision API/view-model quality,
-3. ActionObject safety and apply path,
-4. Codex skills/prompts/eval quality,
-5. knowledge compiler and source condensation,
-6. dashboard usefulness/performance/code quality,
-7. release/live-test strategy.
+- `docs/goals/001-goal.md` - current goal contract and next cleanup queue.
+- `docs/PROGRESS.md` - short current readout, latest proof and active gaps.
+- `PLAN.md` - canonical cleanup plan.
+- `PLANS.md` - deferred long-range product path.
 
 ## Current Important Boundaries
 
