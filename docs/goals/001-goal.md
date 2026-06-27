@@ -54,6 +54,9 @@ Wilku can inspect it without reading technical internals.
   - `df4c750 fix(ads): clean recommendation and keyword context copy`
   - `5a805aa fix(merchant): condense source and evidence labels`
   - `d783636 fix(ga4): clean measurement labels`
+  - `0a7414e fix(localo): clean access proof labels`
+  - `6e93975 fix(dashboard): hide raw trace ids in detail panels`
+  - `e6001a5 fix(dashboard): source proof labels from api`
 - The Ads recommendation/keyword-context cleanup removes raw
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
@@ -65,7 +68,7 @@ Wilku can inspect it without reading technical internals.
   evidence summaries and safe reporting-dimension labels, then uses them in GA4
   panels instead of raw `(not set)`, `tracking-gap`, connector IDs, evidence IDs
   and `ID` evidence counts.
-- Current active slice: Localo cleanup.
+- Current active slice: remaining secondary dashboard cleanup and browser proof.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -74,17 +77,12 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. Localo still exposes protocol/credential language in visible proof panels:
-   - `OAuth code`
-   - `PKCE S256`
-   - `Token`
-   - raw `localo` connector ID.
+1. Browser proof is still needed for the newly cleaned Merchant, Content,
+   Ahrefs and Brief Workflow surfaces.
 2. Ads Doctor still has route-local raw-key fallback debt in secondary helper
    paths. These should disappear as API labels cover the remaining panels.
 3. Action impact and detail panels still have raw connector/evidence fallback
-   risk:
-   - impact result source connectors
-   - missing label fallback copy.
+   risk outside the first-screen panels already cleaned.
 4. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
