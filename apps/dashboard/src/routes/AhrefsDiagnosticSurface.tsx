@@ -37,7 +37,7 @@ export function AhrefsDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od
             konkretnych luk treści, backlinków i konkurencji, żeby marketer nie
-            dostał generycznej rekomendacji SEO z samego DR.
+            dostał generycznej rekomendacji SEO z samej oceny domeny.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -126,7 +126,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Ahrefs / {ahrefsDecisionTypeLabel(decision.decision_type)} /{" "}
+            Ahrefs / {decision.decision_type_label || "decyzja"} /{" "}
             {priorityLabel(decision.priority)}
           </p>
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
@@ -148,11 +148,11 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
           label="Dozwolone evidence"
-          values={decision.allowed_evidence.map(ahrefsAllowedEvidenceLabel)}
+          values={decision.allowed_evidence_labels}
         />
         <TraceLine
           label="Brakujące dane"
-          values={decision.missing_read_contracts.map(ahrefsMissingContractLabel)}
+          values={decision.missing_read_contract_labels}
         />
         <TraceLine
           label="Czego nie wolno obiecać"
@@ -165,7 +165,10 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         />
       </div>
       {decision.metric_facts.length > 0 ? (
-        <AhrefsMetricTiles facts={decision.metric_facts.slice(0, 6)} />
+        <AhrefsMetricTiles
+          facts={decision.metric_facts.slice(0, 6)}
+          labels={decision.metric_fact_labels}
+        />
       ) : null}
     </article>
   );
@@ -196,11 +199,11 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
           label="Brakujące dane"
-          values={contract.missing_read_contracts.map(ahrefsMissingContractLabel)}
+          values={contract.missing_read_contract_labels}
         />
         <TraceLine
           label="Co trzeba sprawdzić"
-          values={contract.operator_review_gates.map(ahrefsReviewGateLabel)}
+          values={contract.operator_review_gate_labels}
         />
         <TraceLine
           label="Czego nie wolno obiecać"
@@ -223,7 +226,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
             {visibleGapRecords.map((record) => (
               <article key={record.id} className="rounded-md border border-line p-3">
                 <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  {record.gap_type}
+                  {record.gap_type_label || "rekord Ahrefs"}
                 </p>
                 <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-700">{record.summary}</p>
@@ -268,7 +271,12 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
           </article>
         ))}
       </div>
-      {visibleMetricFacts.length > 0 ? <AhrefsMetricTiles facts={visibleMetricFacts} /> : null}
+      {visibleMetricFacts.length > 0 ? (
+        <AhrefsMetricTiles
+          facts={visibleMetricFacts}
+          labels={Object.assign({}, ...data.sections.map((section) => section.metric_fact_labels))}
+        />
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
@@ -286,28 +294,24 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
   );
 }
 
-function AhrefsMetricTiles({ facts }: { facts: AhrefsMetricFact[] }) {
+function AhrefsMetricTiles({
+  facts,
+  labels
+}: {
+  facts: AhrefsMetricFact[];
+  labels: Record<string, string>;
+}) {
   return (
     <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
       {facts.map((fact, index) => (
         <MetricTile
           key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
-          label={ahrefsMetricFactLabel(fact.name)}
+          label={labels[fact.name] || "metryka Ahrefs"}
           value={formatAhrefsMetricValue(fact.value)}
         />
       ))}
     </div>
   );
-}
-
-function ahrefsMetricFactLabel(metricName: string) {
-  const labels: Record<string, string> = {
-    ahrefs_content_gap_count: "Luki treści",
-    ahrefs_rank: "Ahrefs Rank",
-    ahrefs_referring_domain_gap_count: "Luki domen linkujących",
-    domain_rating: "Domain Rating"
-  };
-  return labels[metricName] ?? metricName;
 }
 
 function formatAhrefsMetricValue(value: string | number | boolean) {
@@ -334,25 +338,6 @@ function ahrefsSectionStatusLabel(status: string) {
   return status;
 }
 
-function ahrefsDecisionTypeLabel(value: string) {
-  const labels: Record<string, string> = {
-    block_gap_claims: "blokada luk",
-    review_authority_context: "kontekst autorytetu",
-    review_gap_records: "sprawdzenie luk",
-    run_authority_read: "odczyt autorytetu"
-  };
-  return labels[value] ?? value;
-}
-
-function ahrefsReviewGateLabel(value: string) {
-  const labels: Record<string, string> = {
-    ahrefs_gap_records_required: "wymagane konkretne luki Ahrefs",
-    content_planner_review_required: "sprawdzenie w Content Planner",
-    human_strategy_review: "sprawdzenie strategii przez człowieka"
-  };
-  return labels[value] ?? value;
-}
-
 function ahrefsConnectorStatusLabel(status: string) {
   if (status === "configured") return "dostęp skonfigurowany";
   if (status === "missing_credentials") return "brakuje dostępu";
@@ -365,27 +350,6 @@ function ahrefsRefreshStatusLabel(status: string) {
   if (status === "blocked") return "zablokowany";
   if (status === "failed") return "błąd";
   return status;
-}
-
-function ahrefsAllowedEvidenceLabel(value: string) {
-  const labels: Record<string, string> = {
-    ahrefs_rank: "Ahrefs Rank",
-    authority_summary: "kontekst autorytetu",
-    domain_rating: "Domain Rating"
-  };
-  return labels[value] ?? value;
-}
-
-function ahrefsMissingContractLabel(value: string) {
-  const labels: Record<string, string> = {
-    ahrefs_backlink_gap_records: "luki backlinków",
-    ahrefs_competitor_pages: "strony konkurencji",
-    ahrefs_content_gap_records: "luki treści",
-    ahrefs_organic_keywords_by_url: "organiczne słowa per URL",
-    ahrefs_top_pages_by_competitor: "najlepsze strony konkurencji",
-    domain_rating: "Domain Rating"
-  };
-  return labels[value] ?? value;
 }
 
 function ahrefsBlockedClaimLabel(value: string) {

@@ -2589,6 +2589,7 @@ class AhrefsDiagnosticSection(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
@@ -2605,6 +2606,7 @@ class AhrefsDecisionItem(BaseModel):
         "block_gap_claims",
     ]
     status: Literal["ready", "blocked"]
+    decision_type_label: str = ""
     title: str
     summary: str
     rationale: str
@@ -2612,10 +2614,13 @@ class AhrefsDecisionItem(BaseModel):
     priority: int = Field(ge=1, le=100)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_evidence: list[str] = Field(default_factory=list)
+    allowed_evidence_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
@@ -2632,6 +2637,7 @@ class AhrefsGapRecord(BaseModel):
         "organic_keyword_gap",
         "top_page_gap",
     ]
+    gap_type_label: str = ""
     title: str
     summary: str
     source_url: str | None = None
@@ -2639,6 +2645,7 @@ class AhrefsGapRecord(BaseModel):
     competitor_domain: str | None = None
     keyword: str | None = None
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
@@ -2651,10 +2658,14 @@ class AhrefsGapReadContract(BaseModel):
     title: str
     summary: str
     available_read_contracts: list[str] = Field(default_factory=list)
+    available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     allowed_evidence: list[str] = Field(default_factory=list)
+    allowed_evidence_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
@@ -2673,7 +2684,9 @@ class AhrefsOperatorSummary(BaseModel):
     authority_fact_count: int = 0
     gap_fact_count: int = 0
     available_read_contracts: list[str] = Field(default_factory=list)
+    available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

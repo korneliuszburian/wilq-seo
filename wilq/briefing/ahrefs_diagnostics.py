@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Literal, cast
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -75,6 +75,49 @@ AHREFS_GAP_TYPES = {
     "backlink_gap",
     "organic_keyword_gap",
     "top_page_gap",
+}
+AHREFS_DECISION_TYPE_LABELS = {
+    "review_authority_context": "kontekst autorytetu",
+    "review_gap_records": "sprawdzenie luk",
+    "run_authority_read": "odczyt autorytetu",
+    "block_gap_claims": "blokada luk",
+}
+AHREFS_GAP_TYPE_LABELS = {
+    "competitor_page": "strona konkurencji",
+    "content_gap": "luka treści",
+    "backlink_gap": "luka linków",
+    "organic_keyword_gap": "luka słów organicznych",
+    "top_page_gap": "luka najlepszych stron konkurencji",
+}
+AHREFS_METRIC_FACT_LABELS = {
+    "domain_rating": "ocena domeny Ahrefs",
+    "ahrefs_rank": "pozycja w rankingu Ahrefs",
+    "organic_competitor_read_status": "status odczytu konkurencji",
+    "organic_competitor_rows": "konkurenci organiczni",
+    "organic_competitor_country": "kraj odczytu konkurencji",
+    "organic_competitor_mode": "zakres odczytu konkurencji",
+    "ahrefs_competitor_page_count": "strony konkurencji",
+    "ahrefs_content_gap_count": "luki treści",
+    "ahrefs_backlink_gap_count": "luki linków",
+    "ahrefs_referring_domain_gap_count": "luki domen linkujących",
+    "ahrefs_organic_keyword_gap_count": "luki słów organicznych",
+    "ahrefs_top_page_gap_count": "luki najlepszych stron konkurencji",
+    "authority_summary": "podsumowanie autorytetu domeny",
+}
+AHREFS_READ_CONTRACT_LABELS = {
+    "ahrefs_authority_summary": "podsumowanie autorytetu domeny",
+    "ahrefs_gap_metric_facts": "metryki luk z Ahrefs",
+    "ahrefs_competitor_pages": "strony konkurencji",
+    "ahrefs_content_gap_records": "rekordy luk treści",
+    "ahrefs_backlink_gap_records": "rekordy luk linków",
+    "ahrefs_organic_keywords_by_url": "organiczne słowa per URL",
+    "ahrefs_top_pages_by_competitor": "najlepsze strony konkurencji",
+    "domain_rating": "ocena domeny Ahrefs",
+}
+AHREFS_REVIEW_GATE_LABELS = {
+    "ahrefs_gap_records_required": "wymagane konkretne rekordy luk Ahrefs",
+    "content_planner_review_required": "sprawdzenie w planowaniu treści",
+    "human_strategy_review": "sprawdzenie strategii przez człowieka",
 }
 AHREFS_REVIEWABLE_GAP_RECORD_LIMIT = 8
 AHREFS_EKOLOGUS_RELEVANCE_TERMS = (
@@ -249,6 +292,8 @@ def _operator_summary(
     gap_fact_count: int,
 ) -> AhrefsOperatorSummary:
     top_decisions = decisions[:4]
+    available_contracts = gap_read_contract.available_read_contracts
+    missing_contracts = gap_read_contract.missing_read_contracts
     return AhrefsOperatorSummary(
         title="Co marketer ma wiedzieć o Ahrefs",
         summary=(
@@ -261,8 +306,16 @@ def _operator_summary(
         gap_read_status=gap_read_contract.status,
         authority_fact_count=authority_fact_count,
         gap_fact_count=gap_fact_count,
-        available_read_contracts=gap_read_contract.available_read_contracts,
-        missing_read_contracts=gap_read_contract.missing_read_contracts,
+        available_read_contracts=available_contracts,
+        available_read_contract_labels=_labels_for_values(
+            available_contracts,
+            _ahrefs_read_contract_label,
+        ),
+        missing_read_contracts=missing_contracts,
+        missing_read_contract_labels=_labels_for_values(
+            missing_contracts,
+            _missing_gap_contract_label,
+        ),
         source_connectors=_unique(
             [
                 *(
@@ -342,6 +395,7 @@ def _ahrefs_gap_read_contract(
     if gap_facts:
         available_contracts.append("ahrefs_gap_metric_facts")
         available_contracts.extend(_available_gap_contracts(missing_contracts))
+    allowed_evidence = _allowed_gap_evidence(authority_facts, gap_facts)
     return AhrefsGapReadContract(
         status="ready" if gap_records and not missing_contracts else "blocked",
         title="Luki SEO z Ahrefs",
@@ -350,14 +404,34 @@ def _ahrefs_gap_read_contract(
             f"Brakujące dane: {_missing_gap_contracts_summary(missing_contracts)}."
         ),
         available_read_contracts=available_contracts,
+        available_read_contract_labels=_labels_for_values(
+            available_contracts,
+            _ahrefs_read_contract_label,
+        ),
         missing_read_contracts=missing_contracts,
-        allowed_evidence=_allowed_gap_evidence(authority_facts, gap_facts),
+        missing_read_contract_labels=_labels_for_values(
+            missing_contracts,
+            _missing_gap_contract_label,
+        ),
+        allowed_evidence=allowed_evidence,
+        allowed_evidence_labels=_labels_for_values(
+            allowed_evidence,
+            _ahrefs_metric_fact_label,
+        ),
         blocked_claims=blocked_claims,
         operator_review_gates=[
             "ahrefs_gap_records_required",
             "content_planner_review_required",
             "human_strategy_review",
         ],
+        operator_review_gate_labels=_labels_for_values(
+            [
+                "ahrefs_gap_records_required",
+                "content_planner_review_required",
+                "human_strategy_review",
+            ],
+            _ahrefs_review_gate_label,
+        ),
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=evidence_ids,
         gap_records=gap_records,
@@ -496,6 +570,7 @@ def _ahrefs_gap_record(
     return AhrefsGapRecord(
         id=_gap_record_id(gap_type, source_url, target_url, competitor_domain, keyword),
         gap_type=gap_type,
+        gap_type_label=_gap_type_label(gap_type),
         title=title,
         summary=(
             f"{title}. Dane Ahrefs: {_gap_fact_summary(facts)}. "
@@ -506,6 +581,7 @@ def _ahrefs_gap_record(
         competitor_domain=competitor_domain,
         keyword=keyword,
         metric_facts=sorted(facts, key=lambda fact: fact.name),
+        metric_fact_labels=_metric_fact_labels_for_facts(facts),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         blocked_claims=AHREFS_GAP_IMPACT_BLOCKED_CLAIMS,
         next_step=_gap_record_next_step(gap_type),
@@ -590,15 +666,7 @@ def _gap_fact_summary(facts: list[MetricFact]) -> str:
 
 
 def _gap_fact_label(name: str) -> str:
-    labels = {
-        "ahrefs_competitor_page_count": "strony konkurencji",
-        "ahrefs_content_gap_count": "luki treści",
-        "ahrefs_backlink_gap_count": "luki backlinków",
-        "ahrefs_referring_domain_gap_count": "luki domen linkujących",
-        "ahrefs_organic_keyword_gap_count": "luki słów organicznych",
-        "ahrefs_top_page_gap_count": "luki najlepszych stron konkurencji",
-    }
-    return labels.get(name, name)
+    return _ahrefs_metric_fact_label(name)
 
 
 def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
@@ -608,14 +676,70 @@ def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
 
 
 def _missing_gap_contract_label(contract: str) -> str:
-    labels = {
-        "ahrefs_competitor_pages": "strony konkurencji",
-        "ahrefs_content_gap_records": "luki treści",
-        "ahrefs_backlink_gap_records": "luki backlinków",
-        "ahrefs_organic_keywords_by_url": "organiczne słowa per URL",
-        "ahrefs_top_pages_by_competitor": "najlepsze strony konkurencji",
-    }
-    return labels.get(contract, contract)
+    return _ahrefs_read_contract_label(contract)
+
+
+def _gap_type_label(gap_type: AhrefsGapType) -> str:
+    return AHREFS_GAP_TYPE_LABELS[gap_type]
+
+
+def _ahrefs_decision_type_label(value: str) -> str:
+    return AHREFS_DECISION_TYPE_LABELS.get(value, "decyzja Ahrefs")
+
+
+def _ahrefs_metric_fact_label(name: str) -> str:
+    return AHREFS_METRIC_FACT_LABELS.get(name, "metryka Ahrefs")
+
+
+def _ahrefs_read_contract_label(contract: str) -> str:
+    return AHREFS_READ_CONTRACT_LABELS.get(contract, "dane Ahrefs")
+
+
+def _ahrefs_review_gate_label(gate: str) -> str:
+    return AHREFS_REVIEW_GATE_LABELS.get(gate, "sprawdzenie przez operatora")
+
+
+def _metric_fact_labels_for_facts(facts: list[MetricFact]) -> dict[str, str]:
+    return {fact.name: _ahrefs_metric_fact_label(fact.name) for fact in facts}
+
+
+def _labels_for_values(
+    values: Iterable[str],
+    labeler: Callable[[str], str],
+) -> list[str]:
+    return _unique(labeler(value) for value in values)
+
+
+def _ahrefs_read_status_label(status: int | float | str | None) -> str:
+    if status == "completed":
+        return "zakończony"
+    if status == "failed":
+        return "błąd odczytu"
+    if status == "blocked":
+        return "zablokowany"
+    if status:
+        return "status wymaga sprawdzenia"
+    return "brak statusu"
+
+
+def _ahrefs_read_mode_label(mode: int | float | str | None) -> str:
+    if mode == "subdomains":
+        return "subdomeny"
+    if mode == "exact":
+        return "dokładna domena"
+    if mode == "prefix":
+        return "prefiks URL"
+    if mode:
+        return "zakres wymaga sprawdzenia"
+    return "brak zakresu"
+
+
+def _ahrefs_country_label(country: int | float | str | None) -> str:
+    if country == "pl":
+        return "Polska"
+    if country:
+        return str(country).upper()
+    return "brak kraju"
 
 
 def _gap_record_next_step(gap_type: AhrefsGapType) -> str:
@@ -758,7 +882,7 @@ def _ahrefs_sections(
             else _missing_authority_summary(connector_missing, latest_refresh)
         ),
         diagnosis=(
-            "DR i Ahrefs Rank mogą wspierać priorytety SEO jako kontekst autorytetu, "
+            "Metryki autorytetu Ahrefs mogą wspierać priorytety SEO jako kontekst, "
             "ale nie są samodzielnym dowodem luki treści, luki backlinków ani wzrostu ruchu."
             if authority_facts
             else (
@@ -770,7 +894,7 @@ def _ahrefs_sections(
             "Użyj tych danych jako pomocniczego kontekstu przy sprawdzeniu treści i GSC. "
             "Nie zamieniaj ich w obietnicę przewagi nad konkurencją."
             if authority_facts
-            else "Uruchom odczyt danych Ahrefs dla domain-rating, potem wróć do /ahrefs."
+            else "Uruchom odczyt danych autorytetu Ahrefs, potem wróć do /ahrefs."
         ),
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=_evidence_ids_for_facts_or_refresh(
@@ -778,6 +902,9 @@ def _ahrefs_sections(
             latest_refresh,
         ),
         metric_facts=[*authority_facts, *competitor_read_facts],
+        metric_fact_labels=_metric_fact_labels_for_facts(
+            [*authority_facts, *competitor_read_facts]
+        ),
         blocked_claims=[] if authority_facts else AHREFS_GAP_BLOCKED_CLAIMS,
         risk=ActionRisk.low if authority_facts else ActionRisk.medium,
     )
@@ -813,6 +940,7 @@ def _ahrefs_sections(
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=_evidence_ids_for_facts_or_refresh(gap_facts, latest_refresh),
         metric_facts=gap_facts[:12],
+        metric_fact_labels=_metric_fact_labels_for_facts(gap_facts),
         blocked_claims=_blocked_claims_for_missing_contracts(missing_gap_contracts),
         risk=ActionRisk.low if gap_facts else ActionRisk.medium,
     )
@@ -836,6 +964,7 @@ def _ahrefs_sections(
             [*authority_facts, *gap_facts],
             latest_refresh,
         ),
+        metric_fact_labels=_metric_fact_labels_for_facts([*authority_facts, *gap_facts]),
         blocked_claims=AHREFS_GAP_BLOCKED_CLAIMS,
         risk=ActionRisk.medium,
     )
@@ -858,13 +987,14 @@ def _ahrefs_decision_queue(
                 id="ahrefs_review_authority_context",
                 decision_type="review_authority_context",
                 status="ready",
+                decision_type_label=_ahrefs_decision_type_label("review_authority_context"),
                 title="Użyj Ahrefs tylko jako kontekstu autorytetu",
                 summary=(
                     f"{_authority_summary(authority_facts)} "
                     f"{_competitor_read_summary(competitor_read_facts)}"
                 ),
                 rationale=(
-                    "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst "
+                    "WILQ ma metryki autorytetu Ahrefs z dowodami, więc może dodać kontekst "
                     "autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk."
                 ),
                 next_step=(
@@ -889,13 +1019,29 @@ def _ahrefs_decision_queue(
                     "authority_summary",
                     *(fact.name for fact in competitor_read_facts),
                 ],
+                allowed_evidence_labels=_labels_for_values(
+                    [
+                        "domain_rating",
+                        "ahrefs_rank",
+                        "authority_summary",
+                        *(fact.name for fact in competitor_read_facts),
+                    ],
+                    _ahrefs_metric_fact_label,
+                ),
                 missing_read_contracts=_missing_gap_contracts(gap_facts),
+                missing_read_contract_labels=_labels_for_values(
+                    _missing_gap_contracts(gap_facts),
+                    _missing_gap_contract_label,
+                ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
                 evidence_ids=_evidence_ids_for_facts_or_refresh(
                     [*authority_facts, *competitor_read_facts],
                     latest_refresh,
                 ),
                 metric_facts=[*authority_facts, *competitor_read_facts],
+                metric_fact_labels=_metric_fact_labels_for_facts(
+                    [*authority_facts, *competitor_read_facts]
+                ),
                 action_ids=[],
                 blocked_claims=_blocked_claims_for_missing_contracts(
                     _missing_gap_contracts(gap_facts)
@@ -909,6 +1055,7 @@ def _ahrefs_decision_queue(
                 id="ahrefs_run_authority_read_before_gap_review",
                 decision_type="run_authority_read",
                 status="blocked",
+                decision_type_label=_ahrefs_decision_type_label("run_authority_read"),
                 title="Uruchom odczyt autorytetu Ahrefs przed sprawdzeniem luk SEO",
                 summary=_missing_authority_summary(connector_missing, latest_refresh),
                 rationale=(
@@ -924,6 +1071,10 @@ def _ahrefs_decision_queue(
                 metric_tiles={"dane Ahrefs": 0, "brakujące dane": len(AHREFS_GAP_READ_CONTRACTS)},
                 allowed_evidence=[],
                 missing_read_contracts=["domain_rating", *AHREFS_GAP_READ_CONTRACTS],
+                missing_read_contract_labels=_labels_for_values(
+                    ["domain_rating", *AHREFS_GAP_READ_CONTRACTS],
+                    _missing_gap_contract_label,
+                ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
                 evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
                 action_ids=[],
@@ -934,11 +1085,13 @@ def _ahrefs_decision_queue(
 
     missing_gap_contracts = _missing_gap_contracts(gap_facts)
     if gap_records:
+        allowed_evidence = _allowed_gap_evidence(authority_facts, gap_facts)
         decisions.append(
             AhrefsDecisionItem(
                 id="ahrefs_review_gap_records",
                 decision_type="review_gap_records",
                 status="ready",
+                decision_type_label=_ahrefs_decision_type_label("review_gap_records"),
                 title="Przejrzyj rekordy luk Ahrefs",
                 summary=(
                     f"WILQ ma {len(gap_records)} rekordów luk z Ahrefs. "
@@ -956,8 +1109,16 @@ def _ahrefs_decision_queue(
                 ),
                 priority=18,
                 metric_tiles=_gap_record_tiles(gap_records, missing_gap_contracts),
-                allowed_evidence=_allowed_gap_evidence(authority_facts, gap_facts),
+                allowed_evidence=allowed_evidence,
+                allowed_evidence_labels=_labels_for_values(
+                    allowed_evidence,
+                    _ahrefs_metric_fact_label,
+                ),
                 missing_read_contracts=missing_gap_contracts,
+                missing_read_contract_labels=_labels_for_values(
+                    missing_gap_contracts,
+                    _missing_gap_contract_label,
+                ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
                 evidence_ids=_unique(
                     evidence_id
@@ -965,6 +1126,9 @@ def _ahrefs_decision_queue(
                     for evidence_id in record.evidence_ids
                 ),
                 metric_facts=[fact for record in gap_records for fact in record.metric_facts][:12],
+                metric_fact_labels=_metric_fact_labels_for_facts(
+                    [fact for record in gap_records for fact in record.metric_facts]
+                ),
                 action_ids=[],
                 blocked_claims=_blocked_claims_for_missing_contracts(missing_gap_contracts),
                 risk=ActionRisk.medium if missing_gap_contracts else ActionRisk.low,
@@ -976,6 +1140,7 @@ def _ahrefs_decision_queue(
                 id="ahrefs_block_gap_claims_without_records",
                 decision_type="block_gap_claims",
                 status="blocked",
+                decision_type_label=_ahrefs_decision_type_label("block_gap_claims"),
                 title="Nie wskazuj luk konkurencji bez rekordów Ahrefs",
                 summary=(
                     "Brakuje danych Ahrefs dla luk treści, luk backlinków, "
@@ -998,7 +1163,15 @@ def _ahrefs_decision_queue(
                     ),
                 },
                 allowed_evidence=["domain_rating", "ahrefs_rank"] if authority_facts else [],
+                allowed_evidence_labels=_labels_for_values(
+                    ["domain_rating", "ahrefs_rank"] if authority_facts else [],
+                    _ahrefs_metric_fact_label,
+                ),
                 missing_read_contracts=missing_gap_contracts,
+                missing_read_contract_labels=_labels_for_values(
+                    missing_gap_contracts,
+                    _missing_gap_contract_label,
+                ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
                 evidence_ids=_evidence_ids_for_facts_or_refresh(authority_facts, latest_refresh),
                 action_ids=[],
@@ -1032,9 +1205,9 @@ def _authority_summary(authority_facts: list[MetricFact]) -> str:
     ahrefs_rank = _fact_value(authority_facts, "ahrefs_rank")
     parts = []
     if domain_rating is not None:
-        parts.append(f"domain_rating={domain_rating}")
+        parts.append(f"ocena domeny Ahrefs: {domain_rating}")
     if ahrefs_rank is not None:
-        parts.append(f"ahrefs_rank={ahrefs_rank}")
+        parts.append(f"pozycja w rankingu Ahrefs: {ahrefs_rank}")
     return ", ".join(parts) if parts else "brak faktów autorytetu"
 
 
@@ -1047,8 +1220,10 @@ def _competitor_read_summary(competitor_read_facts: list[MetricFact]) -> str:
     mode = _fact_value(competitor_read_facts, "organic_competitor_mode")
     return (
         "Odczyt konkurencji organicznej: "
-        f"status={status or 'unknown'}, rows={rows if rows is not None else 0}, "
-        f"country={country or 'unknown'}, mode={mode or 'unknown'}."
+        f"{_ahrefs_read_status_label(status)}, "
+        f"liczba konkurentów: {rows if rows is not None else 0}, "
+        f"kraj: {_ahrefs_country_label(country)}, "
+        f"zakres: {_ahrefs_read_mode_label(mode)}."
     )
 
 
@@ -1073,20 +1248,22 @@ def _authority_tiles(
 ) -> dict[str, int | float | str]:
     return _clean_metric_tiles(
         {
-            "DR": _fact_value(authority_facts, "domain_rating"),
-            "Ahrefs Rank": _fact_value(authority_facts, "ahrefs_rank"),
+            "ocena domeny Ahrefs": _fact_value(authority_facts, "domain_rating"),
+            "pozycja w rankingu Ahrefs": _fact_value(authority_facts, "ahrefs_rank"),
             "konkurenci organiczni": _fact_value(
                 competitor_read_facts,
                 "organic_competitor_rows",
             ),
-            "odczyt konkurencji": _fact_value(
-                competitor_read_facts,
-                "organic_competitor_read_status",
-            ),
-            "tryb konkurencji": _fact_value(
-                competitor_read_facts,
-                "organic_competitor_mode",
-            ),
+            "odczyt konkurencji": _ahrefs_read_status_label(
+                _fact_value(competitor_read_facts, "organic_competitor_read_status")
+            )
+            if competitor_read_facts
+            else None,
+            "zakres konkurencji": _ahrefs_read_mode_label(
+                _fact_value(competitor_read_facts, "organic_competitor_mode")
+            )
+            if competitor_read_facts
+            else None,
             "luki Ahrefs": len(gap_facts),
             "brakujące dane": len(_missing_gap_contracts(gap_facts)),
         }

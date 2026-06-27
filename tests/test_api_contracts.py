@@ -5723,15 +5723,24 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     authority_decision = decision_by_id["ahrefs_review_authority_context"]
     assert authority_decision["status"] == "ready"
-    assert authority_decision["metric_tiles"]["DR"] == 90
-    assert authority_decision["metric_tiles"]["Ahrefs Rank"] == 1450
+    assert authority_decision["decision_type_label"] == "kontekst autorytetu"
+    assert authority_decision["metric_tiles"]["ocena domeny Ahrefs"] == 90
+    assert authority_decision["metric_tiles"]["pozycja w rankingu Ahrefs"] == 1450
     assert authority_decision["metric_tiles"]["konkurenci organiczni"] == 0
-    assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "completed"
-    assert authority_decision["metric_tiles"]["tryb konkurencji"] == "subdomains"
+    assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "zakończony"
+    assert authority_decision["metric_tiles"]["zakres konkurencji"] == "subdomeny"
     assert authority_decision["metric_tiles"]["luki Ahrefs"] == 0
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
+    assert "konkurenci organiczni" in authority_decision["allowed_evidence_labels"]
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
-    assert "rows=0" in authority_decision["summary"]
+    assert "zakres odczytu konkurencji" in authority_decision["allowed_evidence_labels"]
+    assert "rekordy luk treści" in authority_decision["missing_read_contract_labels"]
+    assert "liczba konkurentów: 0" in authority_decision["summary"]
+    assert "rows=0" not in authority_decision["summary"]
+    assert "status=completed" not in authority_decision["summary"]
+    assert "subdomains" not in authority_decision["summary"]
+    assert "domain_rating=" not in authority_decision["summary"]
+    assert "ahrefs_rank=" not in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "luka treści" in authority_decision["blocked_claims"]
     assert authority_decision["knowledge_card_ids"] == [
@@ -5752,7 +5761,9 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert operator_summary["authority_fact_count"] == 2
     assert operator_summary["gap_fact_count"] == 0
     assert "ahrefs_authority_summary" in operator_summary["available_read_contracts"]
+    assert "podsumowanie autorytetu domeny" in operator_summary["available_read_contract_labels"]
     assert "ahrefs_content_gap_records" in operator_summary["missing_read_contracts"]
+    assert "rekordy luk treści" in operator_summary["missing_read_contract_labels"]
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
     assert "luka treści" in operator_summary["blocked_claims"]
@@ -6001,6 +6012,15 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "ahrefs_organic_keywords_by_url",
         "ahrefs_top_pages_by_competitor",
     ]
+    assert gap_contract["available_read_contract_labels"] == [
+        "podsumowanie autorytetu domeny",
+        "metryki luk z Ahrefs",
+        "strony konkurencji",
+        "rekordy luk treści",
+        "rekordy luk linków",
+        "organiczne słowa per URL",
+        "najlepsze strony konkurencji",
+    ]
     assert set(gap_contract["allowed_evidence"]) == {
         "domain_rating",
         "ahrefs_rank",
@@ -6017,6 +6037,13 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "organic_keyword_gap",
         "top_page_gap",
     }
+    assert {record["gap_type_label"] for record in gap_contract["gap_records"]} == {
+        "strona konkurencji",
+        "luka treści",
+        "luka linków",
+        "luka słów organicznych",
+        "luka najlepszych stron konkurencji",
+    }
     content_record = next(
         record
         for record in gap_contract["gap_records"]
@@ -6025,11 +6052,13 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert content_record["keyword"] == "bdo szkolenie"
     assert content_record["competitor_domain"] == "example.pl"
     assert "luki treści=2" in content_record["summary"]
+    assert content_record["metric_fact_labels"]["ahrefs_content_gap_count"] == "luki treści"
     assert "wzrost ruchu" in content_record["blocked_claims"]
 
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     gap_decision = decision_by_id["ahrefs_review_gap_records"]
     assert gap_decision["status"] == "ready"
+    assert gap_decision["decision_type_label"] == "sprawdzenie luk"
     assert gap_decision["metric_tiles"] == {
         "rekordy luk": 5,
         "luki treści": 1,
@@ -6040,6 +6069,9 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "brakujące dane": 0,
     }
     assert gap_decision["missing_read_contracts"] == []
+    assert gap_decision["missing_read_contract_labels"] == []
+    assert "ocena domeny Ahrefs" in gap_decision["allowed_evidence_labels"]
+    assert "luki treści" in gap_decision["allowed_evidence_labels"]
     assert "wzrost ruchu" in gap_decision["blocked_claims"]
     assert "ahrefs_block_gap_claims_without_records" not in decision_by_id
     operator_summary = payload["operator_summary"]

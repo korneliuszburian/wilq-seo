@@ -6024,3 +6024,42 @@ Product finding:
   not merely OAuth/access proof. This does not unlock local tasks, GBP write,
   write/apply automation, review response execution or local visibility uplift
   claims.
+
+## 2026-06-27 - Ahrefs API-owned marketer labels
+
+Purpose:
+
+- Verify that Ahrefs no longer relies on dashboard-side enum translators for
+  marketer-facing language.
+- Keep raw Ahrefs field names available only as internal metric/contract IDs,
+  while active UI and skill context consume API-owned Polish labels.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'ahrefs' --maxfail=1
+pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t 'ahrefs route renders authority context and clean gap review language'
+pnpm --dir apps/dashboard typecheck
+uv run python scripts/marketer_language_guard.py
+uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt
+```
+
+Result:
+
+- Ahrefs API now exposes Polish labels for decision type, allowed evidence,
+  missing data, review gates, metric facts and gap record type.
+- `/ahrefs` renders those API labels and no longer maps active Ahrefs enum
+  values in React.
+- Browser scan found no rendered hits for `domain_rating=`, `ahrefs_rank=`,
+  `status=completed`, `rows=`, `mode=subdomains`, `content_gap`,
+  `organic_keyword_gap`, `top_page_gap`, `backlink_gap`, `competitor_page`,
+  `Ahrefs Rank` or `DR`.
+- Ahrefs skill smoke still passes against the live local WILQ API with Ahrefs,
+  GSC and WordPress evidence boundaries.

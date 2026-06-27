@@ -159,6 +159,14 @@ Latest slice:
   `n:link`, `SHOPPING_ADS`, `MERCHANT_ACTION`, `decision_queue`,
   `issue_clusters` or `reported_issue_occurrences`. Proof:
   `.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt`.
+- Ahrefs decision type labels, allowed evidence labels, missing-data labels,
+  review-gate labels, metric labels and gap-record labels now come from the
+  WILQ API/shared schema. `/ahrefs` no longer uses React label dictionaries for
+  active Ahrefs enum values, and browser proof found no `domain_rating=`,
+  `ahrefs_rank=`, `status=completed`, `rows=`, `mode=subdomains`,
+  `content_gap`, `organic_keyword_gap`, `top_page_gap`, `backlink_gap`,
+  `competitor_page`, `Ahrefs Rank` or `DR` hits:
+  `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
 
 ### C. Dashboard Condensation
 

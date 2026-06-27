@@ -5099,18 +5099,35 @@ const ahrefsDiagnostics = {
     summary: "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
     available_read_contracts: [
       "ahrefs_authority_summary",
+      "ahrefs_gap_metric_facts",
       "ahrefs_competitor_pages",
       "ahrefs_content_gap_records",
       "ahrefs_backlink_gap_records",
       "ahrefs_organic_keywords_by_url",
       "ahrefs_top_pages_by_competitor"
     ],
+    available_read_contract_labels: [
+      "podsumowanie autorytetu domeny",
+      "metryki luk z Ahrefs",
+      "strony konkurencji",
+      "rekordy luk treści",
+      "rekordy luk linków",
+      "organiczne słowa per URL",
+      "najlepsze strony konkurencji"
+    ],
     missing_read_contracts: [],
+    missing_read_contract_labels: [],
     allowed_evidence: [
       "domain_rating",
       "ahrefs_rank",
       "ahrefs_content_gap_count",
       "ahrefs_referring_domain_gap_count"
+    ],
+    allowed_evidence_labels: [
+      "ocena domeny Ahrefs",
+      "pozycja w rankingu Ahrefs",
+      "luki treści",
+      "luki domen linkujących"
     ],
     blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
     operator_review_gates: [
@@ -5118,12 +5135,18 @@ const ahrefsDiagnostics = {
       "content_planner_review_required",
       "human_strategy_review"
     ],
+    operator_review_gate_labels: [
+      "wymagane konkretne rekordy luk Ahrefs",
+      "sprawdzenie w planowaniu treści",
+      "sprawdzenie strategii przez człowieka"
+    ],
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     gap_records: [
       {
         id: "ahrefs_gap_content_gap_test",
         gap_type: "content_gap",
+        gap_type_label: "luka treści",
         title: "Luka treści: audyt środowiskowy",
         summary:
           "Luka treści: audyt środowiskowy. Dane Ahrefs: content_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5148,6 +5171,9 @@ const ahrefsDiagnostics = {
             unit: null
           }
         ],
+        metric_fact_labels: {
+          ahrefs_content_gap_count: "luki treści"
+        },
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5157,6 +5183,7 @@ const ahrefsDiagnostics = {
       {
         id: "ahrefs_gap_backlink_gap_test",
         gap_type: "backlink_gap",
+        gap_type_label: "luka linków",
         title: "Luka backlinków: example.org",
         summary:
           "Luka backlinków: example.org. Dane Ahrefs: referring_domain_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5180,6 +5207,9 @@ const ahrefsDiagnostics = {
             unit: null
           }
         ],
+        metric_fact_labels: {
+          ahrefs_referring_domain_gap_count: "luki domen linkujących"
+        },
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5189,6 +5219,7 @@ const ahrefsDiagnostics = {
       {
         id: "ahrefs_gap_competitor_denios",
         gap_type: "competitor_page",
+        gap_type_label: "strona konkurencji",
         title: "Strona konkurencji: denios.pl",
         summary:
           "Strona konkurencji: denios.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5197,6 +5228,7 @@ const ahrefsDiagnostics = {
         competitor_domain: "denios.pl",
         keyword: null,
         metric_facts: [],
+        metric_fact_labels: {},
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5206,6 +5238,7 @@ const ahrefsDiagnostics = {
       {
         id: "ahrefs_gap_competitor_manutan",
         gap_type: "competitor_page",
+        gap_type_label: "strona konkurencji",
         title: "Strona konkurencji: manutan.pl",
         summary:
           "Strona konkurencji: manutan.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5214,6 +5247,7 @@ const ahrefsDiagnostics = {
         competitor_domain: "manutan.pl",
         keyword: null,
         metric_facts: [],
+        metric_fact_labels: {},
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5223,6 +5257,7 @@ const ahrefsDiagnostics = {
       {
         id: "ahrefs_gap_competitor_promag",
         gap_type: "competitor_page",
+        gap_type_label: "strona konkurencji",
         title: "Strona konkurencji: e-promag.pl",
         summary:
           "Strona konkurencji: e-promag.pl. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5231,6 +5266,7 @@ const ahrefsDiagnostics = {
         competitor_domain: "e-promag.pl",
         keyword: null,
         metric_facts: [],
+        metric_fact_labels: {},
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5240,6 +5276,7 @@ const ahrefsDiagnostics = {
       {
         id: "ahrefs_gap_competitor_hidden",
         gap_type: "competitor_page",
+        gap_type_label: "strona konkurencji",
         title: "Strona konkurencji: hidden-noise.example",
         summary:
           "Strona konkurencji: hidden-noise.example. Dane Ahrefs: competitor_pages=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
@@ -5248,6 +5285,7 @@ const ahrefsDiagnostics = {
         competitor_domain: "hidden-noise.example",
         keyword: null,
         metric_facts: [],
+        metric_fact_labels: {},
         evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
         blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
         next_step:
@@ -5275,13 +5313,24 @@ const ahrefsDiagnostics = {
     gap_fact_count: 0,
     available_read_contracts: [
       "ahrefs_authority_summary",
+      "ahrefs_gap_metric_facts",
       "ahrefs_competitor_pages",
       "ahrefs_content_gap_records",
       "ahrefs_backlink_gap_records",
       "ahrefs_organic_keywords_by_url",
       "ahrefs_top_pages_by_competitor"
     ],
+    available_read_contract_labels: [
+      "podsumowanie autorytetu domeny",
+      "metryki luk z Ahrefs",
+      "strony konkurencji",
+      "rekordy luk treści",
+      "rekordy luk linków",
+      "organiczne słowa per URL",
+      "najlepsze strony konkurencji"
+    ],
     missing_read_contracts: [],
+    missing_read_contract_labels: [],
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     action_ids: [],
@@ -5292,21 +5341,28 @@ const ahrefsDiagnostics = {
       id: "ahrefs_review_authority_context",
       decision_type: "review_authority_context",
       status: "ready",
+      decision_type_label: "kontekst autorytetu",
       title: "Użyj Ahrefs tylko jako kontekstu autorytetu",
-      summary: "domain_rating=90, ahrefs_rank=1450",
+      summary: "ocena domeny Ahrefs: 90, pozycja w rankingu Ahrefs: 1450",
       rationale:
-        "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk.",
+        "WILQ ma metryki autorytetu Ahrefs z dowodami, więc może dodać kontekst autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk.",
       next_step:
         "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/backlinków.",
       priority: 25,
       metric_tiles: {
-        DR: 90,
-        "Ahrefs Rank": 1450,
+        "ocena domeny Ahrefs": 90,
+        "pozycja w rankingu Ahrefs": 1450,
         "luki Ahrefs": 2,
         "brakujące dane": 0
       },
       allowed_evidence: ["domain_rating", "ahrefs_rank", "authority_summary"],
+      allowed_evidence_labels: [
+        "ocena domeny Ahrefs",
+        "pozycja w rankingu Ahrefs",
+        "podsumowanie autorytetu domeny"
+      ],
       missing_read_contracts: [],
+      missing_read_contract_labels: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [
@@ -5329,6 +5385,10 @@ const ahrefsDiagnostics = {
           unit: null
         }
       ],
+      metric_fact_labels: {
+        domain_rating: "ocena domeny Ahrefs",
+        ahrefs_rank: "pozycja w rankingu Ahrefs"
+      },
       action_ids: [],
       blocked_claims: [
         "wzrost ruchu",
@@ -5340,6 +5400,7 @@ const ahrefsDiagnostics = {
       id: "ahrefs_review_gap_records",
       decision_type: "review_gap_records",
       status: "ready",
+      decision_type_label: "sprawdzenie luk",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
         "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
@@ -5358,7 +5419,14 @@ const ahrefsDiagnostics = {
         "ahrefs_content_gap_count",
         "ahrefs_referring_domain_gap_count"
       ],
+      allowed_evidence_labels: [
+        "ocena domeny Ahrefs",
+        "pozycja w rankingu Ahrefs",
+        "luki treści",
+        "luki domen linkujących"
+      ],
       missing_read_contracts: [],
+      missing_read_contract_labels: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [
@@ -5376,6 +5444,9 @@ const ahrefsDiagnostics = {
           unit: null
         }
       ],
+      metric_fact_labels: {
+        ahrefs_content_gap_count: "luki treści"
+      },
       action_ids: [],
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -5387,14 +5458,15 @@ const ahrefsDiagnostics = {
       title: "Ahrefs: kontekst autorytetu",
       status: "ready",
       summary:
-        "WILQ ma 2 świeże dane autorytetu z Ahrefs: domain_rating=90, ahrefs_rank=1450.",
+        "WILQ ma 2 świeże dane autorytetu z Ahrefs: ocena domeny Ahrefs: 90, pozycja w rankingu Ahrefs: 1450.",
       diagnosis:
-        "DR i Ahrefs Rank mogą wspierać priorytety SEO jako kontekst autorytetu.",
+        "Metryki autorytetu Ahrefs mogą wspierać priorytety SEO jako kontekst.",
       next_step:
         "Użyj tych danych jako pomocniczego kontekstu przy sprawdzeniu treści i GSC.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
+      metric_fact_labels: {},
       action_ids: [],
       blocked_claims: [],
       risk: "low"
@@ -5409,6 +5481,7 @@ const ahrefsDiagnostics = {
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
+      metric_fact_labels: {},
       action_ids: [],
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -7189,13 +7262,18 @@ describe("WILQ dashboard", () => {
     const ahrefsGapContract = screen.getByText("Luki SEO z Ahrefs").closest("section");
     expect(ahrefsGapContract).not.toBeNull();
     expect(within(ahrefsGapContract as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
-    expect(screen.getByText("DR")).toBeInTheDocument();
-    expect(screen.getAllByText("Ahrefs Rank").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ocena domeny Ahrefs").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("pozycja w rankingu Ahrefs").length).toBeGreaterThan(0);
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/gap read contract/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Gap records")).not.toBeInTheDocument();
     expect(screen.queryByText(/domain_rating: 90/)).not.toBeInTheDocument();
+    expect(screen.queryByText("DR")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ahrefs Rank")).not.toBeInTheDocument();
+    expect(screen.queryByText(/domain_rating=/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ahrefs_rank=/)).not.toBeInTheDocument();
+    expect(screen.queryByText("content_gap")).not.toBeInTheDocument();
     const ahrefsProofSection = screen
       .getByText("Dowody i ograniczenia Ahrefs")
       .closest("section");
@@ -7206,7 +7284,7 @@ describe("WILQ dashboard", () => {
     expect(ahrefsProof.queryByText(/ev_refresh_ahrefs_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
-    expect(screen.getByText(/wymagane konkretne luki Ahrefs/)).toBeInTheDocument();
+    expect(screen.getByText(/wymagane konkretne rekordy luk Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText(/wzrost autorytetu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Pokazuję top 6 z 6 rekordów.")).toBeInTheDocument();
     expect(screen.getByText("Strona konkurencji: hidden-noise.example")).toBeInTheDocument();

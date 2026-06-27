@@ -138,6 +138,13 @@ Date: 2026-06-27
   `MERCHANT_ACTION`, `decision_queue`, `issue_clusters` or
   `reported_issue_occurrences`. Proof:
   `.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt`.
+- Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
+  from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
+  enum names in React and the browser proof found no visible hits for
+  `domain_rating=`, `ahrefs_rank=`, `status=completed`, `rows=`,
+  `mode=subdomains`, `content_gap`, `organic_keyword_gap`, `top_page_gap`,
+  `backlink_gap`, `competitor_page`, `Ahrefs Rank` or `DR`. Proof:
+  `.local-lab/proof/20260627-ahrefs-api-labels/ahrefs-rendered-final.txt`.
 - Dashboard status chips now include text-reader separators, so compact header
   status rows no longer collapse into unreadable strings such as `brakuje
   dostępudane do odświeżenia`. Browser proof across Command Center, Merchant,
