@@ -119,16 +119,20 @@ export function Ga4DiagnosticSurface() {
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.connector.label}: {ga4ConnectorStatusLabel(data.connector.status)}
+              <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {ga4FreshnessLabel(data.freshness_assessment.state)}
+              <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki GA4 dostępne" : "brak metryk GA4"}
+              <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
                 ostatni odczyt: {ga4RefreshStatusLabel(latestRefresh.status)}
+                <span className="sr-only">; </span>
               </span>
             ) : null}
           </div>

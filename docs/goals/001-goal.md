@@ -131,6 +131,10 @@ Latest slice:
   no `landing page`, `Landing:`, `message match`, `key events`,
   `ecommerce_purchases`, `engagement`, raw action ID, `payload` or
   `ActionObject` hits in the rendered GA4 text.
+- Dashboard status chips now expose readable separators in text/browser output.
+  Browser proof across Command Center, Merchant, Content Planner, Ads Doctor,
+  GA4, Localo and Ahrefs found no collapsed status strings like `brakuje
+  dostępudane` or `gotoweniskie`.
 - Custom Segments and Keyword Planner wording now uses API-owned Polish labels
   and source summaries for preview member type, review gates, blocked promises
   and blocked Keyword Planner access. Browser proof for

@@ -57,13 +57,16 @@ export function LocaloDiagnosticSurface() {
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               Źródło Localo: {localoConnectorStatusLabel(data.connector.status)}
+              <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {localoAccessStatusLabel(data.access_probe.status)}
+              <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
                 ostatni odczyt: {localoRefreshStatusLabel(latestRefresh.status)}
+                <span className="sr-only">; </span>
               </span>
             ) : null}
           </div>

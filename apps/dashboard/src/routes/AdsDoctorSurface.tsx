@@ -129,13 +129,16 @@ export function AdsDoctorSurface() {
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.connector.label}: {adsConnectorStatusLabel(data.connector.status)}
+              <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki Ads dostępne" : "brak metryk Ads"}
+              <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
                 ostatni odczyt: {adsRefreshStatusLabel(latestRefresh.status)}
+                <span className="sr-only">; </span>
               </span>
             ) : null}
           </div>

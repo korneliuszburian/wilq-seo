@@ -125,6 +125,11 @@ Date: 2026-06-27
   `Landing:`, `message match`, `key events`, `ecommerce_purchases`,
   `engagement`, raw action IDs, `payload` or `ActionObject`:
   `.local-lab/proof/20260627-ga4-api-labels/ga4.txt`.
+- Dashboard status chips now include text-reader separators, so compact header
+  status rows no longer collapse into unreadable strings such as `brakuje
+  dostępudane do odświeżenia`. Browser proof across Command Center, Merchant,
+  Content Planner, Ads Doctor, GA4, Localo and Ahrefs:
+  `.local-lab/proof/20260627-status-chip-separators/`.
 - Ads, GA4 and Merchant blocked-claim contracts now also use Polish source
   values for budget-loss checks, query review, profitability boundaries, margin
   checks, campaign write paths, change assessment, GA4 write/fix states,

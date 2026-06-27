@@ -110,6 +110,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki treści dostępne" : "brak metryk treści"}
+              <span className="sr-only">; </span>
             </span>
             {data.connectors.map((connector) => (
               <span
@@ -117,6 +118,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
                 className="rounded-md border border-line px-2 py-1 text-slate-600"
               >
                 {connector.label}: {contentConnectorStatusLabel(connector.status)}
+                <span className="sr-only">; </span>
               </span>
             ))}
           </div>
