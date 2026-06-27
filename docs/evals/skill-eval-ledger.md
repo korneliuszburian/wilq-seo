@@ -6311,3 +6311,39 @@ Result:
   `zmapowane produkty`, `shopping_product state` or `Ads product state`.
 - `scripts/marketer_language_guard.py` now blocks the old visible phrases in
   active source.
+
+## 2026-06-27 - Action panel route-local label dictionary removal
+
+Purpose:
+
+- Remove unused React-side action gate wording that could become a hidden
+  compatibility layer for raw action keys.
+- Keep action safety wording sourced from WILQ API/domain labels.
+
+Focused proof:
+
+```bash
+pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000
+pnpm --dir apps/dashboard typecheck
+uv run python scripts/marketer_language_guard.py
+```
+
+Runtime proof:
+
+```txt
+.local-lab/proof/20260627-remove-action-gate-ui-map/actions.txt
+.local-lab/proof/20260627-remove-action-gate-ui-map/demand-gen-action.txt
+```
+
+Result:
+
+- `ActionObjectPanels` no longer contains the route-local `actionGateLabel`
+  dictionary.
+- Browser scans found zero hits for raw gate keys such as
+  `preview_acknowledgement_required`, `dry_run_preview_required`,
+  `impact_sanity_check_required`, `payload_apply_allowed_false` and
+  `action_validation_required`.
+- Browser scans also found zero hits for `payload`, `ActionObject` and the raw
+  Merchant fixture string `availability_updated / n:availability`.
+- `ActionDetailRoute` now asserts that the raw Merchant string is absent instead
+  of preserving it as expected output.

@@ -1020,7 +1020,7 @@ describe("Action detail route", () => {
       expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0)
     );
     expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0);
-    expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
+    expect(screen.queryByText("availability_updated / n:availability")).not.toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);

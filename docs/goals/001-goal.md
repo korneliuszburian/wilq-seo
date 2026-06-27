@@ -125,6 +125,13 @@ Done when:
 
 Latest slice:
 
+- Action panels no longer carry the unused route-local action gate label
+  dictionary. Existing action detail panels rely on API-owned label arrays for
+  blocker, checklist, missing-data and validation wording instead of translating
+  raw gate keys in React. The dashboard test for raw Merchant vendor text now
+  protects against showing `availability_updated / n:availability` to the
+  marketer. Browser proof:
+  `.local-lab/proof/20260627-remove-action-gate-ui-map/`.
 - GA4 readiness labels now come from the WILQ API/shared schema, not from
   route-local read-contract mapping. `/ga4` renders condensed API metric tiles
   and hides raw GA4 metric fact names from decision cards; browser proof found

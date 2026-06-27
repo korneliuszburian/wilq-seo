@@ -565,6 +565,10 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Legacy content-review audit events are normalized at the action
   service boundary, so old dev-preview review terms stored in local state no
   longer leak through `/api/actions`.
+- 2026-06-27: Removed the unused action gate label dictionary from
+  `ActionObjectPanels`; action panels now rely on API-owned label arrays instead
+  of route-local raw-key translation. A stale dashboard expectation for raw
+  Merchant vendor text was inverted into a guard against showing that text.
 
 ## Discoveries
 
@@ -586,6 +590,9 @@ WILQ is complete for this long-range goal when:
 - Persisted local-state records can reintroduce old product semantics even
   after current action payloads are clean. Treat API-visible history as part of
   the active contract and normalize or migrate it at the service boundary.
+- Dead route-local dictionaries are still product risk even when unused. Remove
+  them when API-owned labels already exist, and turn stale raw-string fixtures
+  into guards instead of preserving them.
 
 ## Decision Log
 
@@ -596,3 +603,6 @@ WILQ is complete for this long-range goal when:
 - Full condensation is product behavior, not a presentation layer only.
 - Historical audit data may keep storage lineage, but API-visible action output
   must not expose obsolete dev-preview or review-language fields.
+- Route-local action gate translations are not a compatibility layer. The WILQ
+  API/domain contract must provide marketer-facing labels for active action
+  gates and blockers.

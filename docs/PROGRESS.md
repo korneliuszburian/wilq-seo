@@ -119,6 +119,15 @@ Date: 2026-06-27
   local React label dictionaries on the `/ads-doctor/demand-gen` marketer
   surface. Browser proof:
   `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
+- Action panels no longer carry the unused route-local action gate label
+  dictionary. Existing action detail panels rely on API-owned label arrays
+  such as blocker, checklist, missing-data and validation labels instead of
+  translating raw gate keys in React. The stale dashboard test expectation for
+  raw Merchant vendor text (`availability_updated / n:availability`) was
+  inverted so the test now protects the marketer surface from that raw string.
+  Browser proof:
+  `.local-lab/proof/20260627-remove-action-gate-ui-map/`.
+  `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
 - GA4 readiness now sources missing-data labels from the WILQ API/domain
   contract, and GA4 route cards render condensed API metric tiles instead of
   raw metric facts. Browser proof for `/ga4` found no hits for `landing page`,
