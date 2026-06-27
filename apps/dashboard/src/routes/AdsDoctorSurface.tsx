@@ -151,7 +151,7 @@ export function AdsDoctorSurface() {
       </section>
 
       {data.blocked_handoff ? (
-        <AdsBlockedHandoffPanel handoff={data.blocked_handoff} connectorStatuses={connectorStatuses} />
+        <AdsBlockedHandoffPanel handoff={data.blocked_handoff} />
       ) : null}
 
       <AdsCondensedDecisionPanel data={data} currencyCode={currencyCode} connectorStatuses={connectorStatuses} />
@@ -277,12 +277,13 @@ function AdsCondensedDecisionPanel({
   const missingInputs = primaryDecision
     ? primaryDecision.missing_read_contract_labels
     : summary.missing_read_contract_labels;
-  const evidenceCount = primaryDecision?.evidence_ids.length ?? summary.evidence_ids.length;
+  const evidenceSummary = primaryDecision
+    ? primaryDecision.evidence_summary_label
+    : summary.evidence_summary_label;
   const actionCount = primaryDecision?.action_ids.length ?? summary.action_ids.length;
-  const sourceConnectors = connectorLabelsFromStatuses(
-    primaryDecision?.source_connectors ?? summary.source_connectors,
-    connectorStatuses
-  );
+  const sourceConnectors = primaryDecision
+    ? primaryDecision.source_connector_labels
+    : summary.source_connector_labels;
 
   return (
     <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
@@ -330,7 +331,7 @@ function AdsCondensedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Dowody" values={[formatTraceIdCount(evidenceCount)]} />
+            <TraceLine label="Dowody" values={[evidenceSummary]} />
             <TraceLine label="Źródła" values={sourceConnectors} />
             <TraceLine
               label="Stan danych"
@@ -517,12 +518,12 @@ function AdsOperatorSummary({
             <TraceLine label="Wymagana ocena" values={operatorReviewGates} empty="brak" />
             <TraceLine
               label="Dowody"
-              values={[formatTraceIdCount(summary.evidence_ids.length)]}
+              values={[summary.evidence_summary_label]}
               empty="brak"
             />
             <TraceLine
-              label="Akcje WILQ"
-              values={[formatActionObjectCount(summary.action_ids.length)]}
+              label="Akcje do sprawdzenia"
+              values={[summary.action_summary_label]}
               empty="brak"
             />
             <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
@@ -653,12 +654,12 @@ function AdsOptimizerReadinessPanel({
         />
         <TraceLine
           label="Dowody"
-          values={[formatTraceIdCount(contract.evidence_ids.length)]}
+          values={[contract.evidence_summary_label]}
           empty="brak"
         />
         <TraceLine
-          label="Akcje WILQ"
-          values={[formatActionObjectCount(contract.action_ids.length)]}
+          label="Akcje do sprawdzenia"
+          values={[contract.action_summary_label]}
           empty="brak"
         />
       </div>
@@ -820,13 +821,13 @@ function AdsDecisionCard({
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine
           label="Dowody"
-          values={[formatTraceIdCount(decision.evidence_ids.length)]}
+          values={[decision.evidence_summary_label]}
           empty="brak"
         />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectorStatuses)} />
+        <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine
-          label="Akcje WILQ"
-          values={[formatActionObjectCount(decision.action_ids.length)]}
+          label="Akcje do sprawdzenia"
+          values={[decision.action_summary_label]}
           empty="brak"
         />
         {decision.operator_review_gate_labels.length > 0 ? (
@@ -1035,7 +1036,7 @@ function AdsBusinessTargetInterpretationPanel({
           empty="brak"
         />
         <TraceLine
-          label="Akcje WILQ"
+          label="Akcje do sprawdzenia"
           values={[formatActionObjectCount(interpretation.action_ids.length)]}
           empty="brak"
         />
@@ -1088,7 +1089,7 @@ function AdsBusinessTargetInterpretationPanel({
             empty="brak"
           />
           <TraceLine
-            label="Akcje WILQ"
+            label="Akcje do sprawdzenia"
             values={[formatActionObjectCount(strategyReadiness.action_ids.length)]}
             empty="brak"
           />
@@ -1255,7 +1256,7 @@ function AdsCampaignTriageRowsPanel({
                 empty="brak"
               />
               <TraceLine
-                label="Akcje WILQ"
+                label="Akcje do sprawdzenia"
                 values={[formatActionObjectCount(row.action_ids.length)]}
                 empty="brak"
               />
@@ -2319,11 +2320,9 @@ function AdsNegativeKeywordCandidatesPanel({
 }
 
 function AdsBlockedHandoffPanel({
-  handoff,
-  connectorStatuses
+  handoff
 }: {
   handoff: AdsBlockedHandoff;
-  connectorStatuses: ConnectorStatus[];
 }) {
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -2335,7 +2334,7 @@ function AdsBlockedHandoffPanel({
           <h2 className="mt-1 text-base font-semibold tracking-normal">{handoff.title}</h2>
         </div>
         <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
-          {adsDecisionStatusLabel(handoff.status)}
+          {handoff.status_label}
         </span>
       </div>
       <p className="text-sm leading-6 text-slate-700">{handoff.summary}</p>
@@ -2361,11 +2360,11 @@ function AdsBlockedHandoffPanel({
       </div>
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Dowody" values={handoff.evidence_ids} kind="evidence" />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(handoff.source_connectors, connectorStatuses)} />
+        <TraceLine label="Dowody" values={[handoff.evidence_summary_label]} />
+        <TraceLine label="Źródła" values={handoff.source_connector_labels} />
         <TraceLine
-          label="Akcje WILQ"
-          values={[formatActionObjectCount(handoff.action_ids.length)]}
+          label="Akcje do sprawdzenia"
+          values={[handoff.action_summary_label]}
           empty="brak"
         />
         <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claims.map(adsBlockedClaimLabel)} />

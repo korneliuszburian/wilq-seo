@@ -40,6 +40,17 @@ def evidence_count_label(evidence_ids: Iterable[str]) -> str:
     return f"{count} dowodów źródłowych"
 
 
+def action_count_label(action_ids: Iterable[str]) -> str:
+    count = len(list(action_ids))
+    if count == 0:
+        return "brak akcji do sprawdzenia"
+    if count == 1:
+        return "1 akcja do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} akcje do sprawdzenia"
+    return f"{count} akcji do sprawdzenia"
+
+
 def freshness_state_label(state: str | None) -> str:
     labels = {
         "fresh": "świeże dane",

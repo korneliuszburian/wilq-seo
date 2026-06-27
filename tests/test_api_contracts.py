@@ -9448,8 +9448,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "clicks" in operator_summary["allowed_metrics"]
     assert "google_ads" in operator_summary["source_connectors"]
+    assert operator_summary["source_connector_labels"] == ["Google Ads"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
+    assert "dowód" in operator_summary["evidence_summary_label"]
     assert "act_prepare_ads_campaign_review_queue" in operator_summary["action_ids"]
+    assert "akcj" in operator_summary["action_summary_label"]
     assert "zwrot z reklam" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
@@ -10904,6 +10907,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_decision["campaign_rows"][0]["review_score"] == 50
     assert campaign_decision["search_term_rows"] == []
     assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert campaign_decision["source_connector_labels"] == ["Google Ads"]
+    assert "dowód" in campaign_decision["evidence_summary_label"]
+    assert "akcj" in campaign_decision["action_summary_label"]
     assert campaign_decision["operator_review_gates"] == [
         "review_campaign_goal",
         "review_conversion_quality",
@@ -11627,6 +11633,12 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert all(decision["priority_label"] for decision in summary_payload["decision_queue"])
     assert all(decision["risk_label"] for decision in summary_payload["decision_queue"])
     assert all(
+        isinstance(decision["source_connector_labels"], list)
+        for decision in summary_payload["decision_queue"]
+    )
+    assert all(decision["evidence_summary_label"] for decision in summary_payload["decision_queue"])
+    assert all(decision["action_summary_label"] for decision in summary_payload["decision_queue"])
+    assert all(
         isinstance(decision["missing_read_contract_labels"], list)
         for decision in summary_payload["decision_queue"]
     )
@@ -11635,6 +11647,12 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
         for decision in summary_payload["decision_queue"]
     )
     assert all(section["status_label"] for section in summary_payload["sections"])
+    assert all(
+        isinstance(section["source_connector_labels"], list)
+        for section in summary_payload["sections"]
+    )
+    assert all(section["evidence_summary_label"] for section in summary_payload["sections"])
+    assert all(section["action_summary_label"] for section in summary_payload["sections"])
     assert all(
         isinstance(section["blocked_claim_labels"], list)
         for section in summary_payload["sections"]

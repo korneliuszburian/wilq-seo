@@ -51,6 +51,7 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import action_count_label, evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -6402,6 +6403,15 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
 
 
 def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
+    response.operator_summary.source_connector_labels = source_connector_labels(
+        response.operator_summary.source_connectors
+    )
+    response.operator_summary.evidence_summary_label = evidence_count_label(
+        response.operator_summary.evidence_ids
+    )
+    response.operator_summary.action_summary_label = action_count_label(
+        response.operator_summary.action_ids
+    )
     response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
         response.operator_summary.missing_read_contracts
     )
@@ -6415,6 +6425,11 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "decision_type_label": _ads_decision_type_label(decision.decision_type),
                 "priority_label": _ads_priority_label(decision.priority),
                 "risk_label": _ads_risk_label(decision.risk),
+                "source_connector_labels": source_connector_labels(
+                    decision.source_connectors
+                ),
+                "evidence_summary_label": evidence_count_label(decision.evidence_ids),
+                "action_summary_label": action_count_label(decision.action_ids),
                 "missing_read_contract_labels": _ads_missing_read_contract_labels(
                     decision.missing_read_contracts
                 ),
@@ -6427,11 +6442,31 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         section.model_copy(
             update={
                 "status_label": _ads_status_label(section.status),
+                "source_connector_labels": source_connector_labels(
+                    section.source_connectors
+                ),
+                "evidence_summary_label": evidence_count_label(section.evidence_ids),
+                "action_summary_label": action_count_label(section.action_ids),
                 "blocked_claim_labels": _unique(section.blocked_claims),
             }
         )
         for section in response.sections
     ]
+    if response.blocked_handoff is not None:
+        response.blocked_handoff = response.blocked_handoff.model_copy(
+            update={
+                "status_label": _ads_status_label(response.blocked_handoff.status),
+                "source_connector_labels": source_connector_labels(
+                    response.blocked_handoff.source_connectors
+                ),
+                "evidence_summary_label": evidence_count_label(
+                    response.blocked_handoff.evidence_ids
+                ),
+                "action_summary_label": action_count_label(
+                    response.blocked_handoff.action_ids
+                ),
+            }
+        )
     _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
@@ -6671,6 +6706,9 @@ def _hydrate_optimizer_readiness_marketer_labels(
 ) -> None:
     contract.status_label = _ads_optimizer_status_label(contract.status)
     contract.mode_label = _ads_optimizer_mode_label(contract.mode)
+    contract.source_connector_labels = source_connector_labels(contract.source_connectors)
+    contract.evidence_summary_label = evidence_count_label(contract.evidence_ids)
+    contract.action_summary_label = action_count_label(contract.action_ids)
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
@@ -6679,6 +6717,9 @@ def _hydrate_optimizer_readiness_marketer_labels(
         item.label = _ads_optimizer_readiness_item_label(item.id)
         item.status_label = _ads_status_label(item.status)
         item.risk_label = _ads_risk_label(item.risk)
+        item.source_connector_labels = source_connector_labels(item.source_connectors)
+        item.evidence_summary_label = evidence_count_label(item.evidence_ids)
+        item.action_summary_label = action_count_label(item.action_ids)
         item.missing_read_contract_labels = _ads_missing_read_contract_labels(
             item.missing_read_contracts
         )

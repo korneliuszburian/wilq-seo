@@ -771,9 +771,12 @@ class AdsDiagnosticSection(BaseModel):
     diagnosis: str
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -784,6 +787,7 @@ class AdsDiagnosticSection(BaseModel):
 class AdsBlockedHandoff(BaseModel):
     id: str = "ads_oauth_blocked_handoff"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     marketer_message: str
@@ -791,8 +795,11 @@ class AdsBlockedHandoff(BaseModel):
     allowed_demo_claims: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
 
 
 class AdsCampaignMetricRow(BaseModel):
@@ -1302,8 +1309,11 @@ class AdsOptimizerReadinessItem(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     risk: ActionRisk = ActionRisk.medium
     risk_label: str = ""
 
@@ -1327,8 +1337,11 @@ class AdsOptimizerReadinessContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     next_step: str
@@ -1936,7 +1949,9 @@ class AdsDecisionItem(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     campaign_triage_rows: list[AdsCampaignTriageRow] = Field(default_factory=list)
@@ -1973,6 +1988,7 @@ class AdsDecisionItem(BaseModel):
         default_factory=list
     )
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2003,8 +2019,11 @@ class AdsOperatorSummary(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
