@@ -12,7 +12,6 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
-import { priorityLabel } from "./marketingLabels";
 import { TacticalQueuePanel } from "./TacticalQueuePanel";
 
 export type BriefSurfaceConfig = {
@@ -123,7 +122,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {item.kind} / {priorityLabel(item.priority)}
+            {item.kind} / {item.priority_label}
           </p>
         </div>
         <StatusBadge value={item.risk} />

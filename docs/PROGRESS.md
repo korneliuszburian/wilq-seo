@@ -75,6 +75,17 @@ What changed:
 
 Current active slice: final stale-term scan and recovery alignment for Goal 001.
 
+In-progress cleanup slice:
+
+- Tactical Queue, Brief Workflow and Merchant tactical snippets now consume
+  API-owned priority/source/evidence/action/blocker/dimension labels instead
+  of dashboard-owned `priorityLabel`, tactical intent maps, dimension maps and
+  blocker replacement helpers.
+- Shared schemas now expose those label fields for marketing brief items,
+  tactical queue items/groups and Merchant decisions.
+- Backend tests now assert those labels exist on the marketing brief and
+  tactical queue contracts.
+
 Proof:
 
 - Focused API tests:
@@ -111,6 +122,11 @@ Proof:
   `rtk pnpm --dir apps/dashboard typecheck`
 - Legacy content-review audit cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_content_review or action_impact_check" --maxfail=1`
+- Tactical/brief/Merchant label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_tactical_queue_uses_dimensioned_metric_facts or marketing_brief_aggregates_metric_facts_and_blockers or merchant_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -118,14 +134,31 @@ Proof:
 
 Next cleanup queue:
 
-1. Recovery docs:
+1. Ads Doctor:
+   - remove remaining route-local product semantics from
+     `AdsDoctorSurface.tsx`, including start-here summaries, measurement plan
+     summaries, section labels and raw metric/readiness fallbacks.
+2. Action detail previews:
+   - replace `DetailPanels.tsx` payload-shape inference with typed API preview
+     rows and labels; keep raw payload only in collapsed technical detail.
+3. Content Planner:
+   - move active `contentLabels.ts` semantics for action preview, status,
+     blocked-claim and metric labels into content/action API contracts.
+4. Knowledge:
+   - move Knowledge route display labels, status/risk labels, card/source type
+     labels and display titles into the knowledge API/schema.
+5. Metric labels:
+   - move repeated metric/dimension naming into API-owned metric label fields;
+     keep pure numeric formatting in UI.
+6. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Run the final stale-term scan for Goal 001 and classify any remaining hits as
-   internal contract, negative test fixture, superseded history or active debt.
+1. Commit the tactical/brief/Merchant label cleanup slice.
+2. Start the next disjoint cleanup slice from the active queue, preferably
+   Knowledge labels or Ads Doctor labels.
 
 ## Guardrails
 

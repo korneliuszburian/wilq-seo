@@ -93,6 +93,10 @@ Wilku can inspect it without reading technical internals.
   migration now carry superseded notes.
 - Current active slice: final stale-term scan and recovery alignment for
   Goal 001.
+- In-progress tactical/brief/Merchant label cleanup moves priority labels,
+  tactical intent/domain labels, source labels, evidence summaries, action
+  summaries, blocker labels and dimension labels into API/shared-schema
+  contracts for the touched surfaces.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -104,6 +108,19 @@ are resolved or explicitly deferred.
 1. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
+2. `AdsDoctorSurface.tsx` still contains route-local product semantics for
+   start-here summaries, measurement plans, section labels and metric/readiness
+   fallbacks. Those must move to API/domain view-model fields.
+3. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
+   It needs a typed action-detail preview view-model; raw payload may remain
+   only in collapsed technical detail.
+4. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
+   content/action preview labels, blocked-claim labels and status labels. These
+   need API/schema ownership.
+5. `KnowledgePanels.tsx` still owns route/status/risk/card/source display
+   labels. Knowledge API/schema should provide those fields.
+6. Repeated metric/dimension naming in dashboard components should become
+   API-owned metric labels; pure numeric formatting can stay in UI.
 
 ## Execution Policy
 

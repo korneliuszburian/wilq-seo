@@ -621,6 +621,7 @@ class MarketingBriefItem(BaseModel):
     title: str
     kind: Literal["metric", "blocker", "action", "recommendation"]
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -635,6 +636,8 @@ class MarketingBriefItem(BaseModel):
 
     @model_validator(mode="after")
     def fill_marketer_labels(self) -> MarketingBriefItem:
+        if not self.priority_label:
+            self.priority_label = _marketing_priority_label(self.priority)
         if not self.source_connector_labels:
             self.source_connector_labels = [
                 _marketing_brief_connector_label(connector_id)
@@ -687,6 +690,93 @@ def _marketing_brief_action_count_label(count: int) -> str:
     return f"{count} akcji do sprawdzenia"
 
 
+def _marketing_priority_label(priority: int) -> str:
+    if priority <= 15:
+        return "najpierw"
+    if priority <= 25:
+        return "wysoki priorytet"
+    if priority <= 45:
+        return "do sprawdzenia"
+    return "niżej w kolejce"
+
+
+def _tactical_domain_label(domain: OpportunityDomain) -> str:
+    labels = {
+        OpportunityDomain.gsc_seo: "Content / GSC",
+        OpportunityDomain.ga4: "GA4",
+        OpportunityDomain.merchant: "Merchant",
+        OpportunityDomain.content: "Content",
+    }
+    return labels.get(domain, getattr(domain, "value", "powiązany obszar"))
+
+
+def _tactical_intent_label(intent: str) -> str:
+    labels = {
+        "content_refresh": "odświeżenie treści",
+        "content_create": "nowa treść",
+        "content_merge": "scalenie treści",
+        "content_block": "blokada treści",
+        "landing_page_quality": "jakość strony wejścia",
+        "tracking_gap": "problem pomiaru",
+        "merchant_feed_triage": "kolejność oceny feedu",
+        "traffic_quality_review": "jakość ruchu",
+    }
+    return labels.get(intent, "zadanie do sprawdzenia")
+
+
+def _tactical_dimension_label(value: str) -> str:
+    labels = {
+        "query": "zapytanie",
+        "page": "strona",
+        "landing_page": "strona wejścia",
+        "source_medium": "źródło ruchu",
+        "campaign_name": "kampania",
+        "issue_type": "typ problemu",
+        "affected_attribute": "atrybut",
+        "country": "kraj",
+        "reporting_context": "kontekst",
+        "wordpress_match": "WordPress",
+        "wordpress_match_confidence": "pewność dopasowania",
+        "gsc_page_query_count": "liczba zapytań GSC",
+    }
+    return labels.get(value, value.replace("_", " "))
+
+
+def _blocked_claim_label(value: str) -> str:
+    labels = {
+        "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
+        "automatyczne przyjęcie rekomendacji": "automatyczne przyjęcie rekomendacji",
+        "automatyczna publikacja WordPress": "automatyczna publikacja WordPress",
+        "automatyczna zmiana feedu": "automatyczna zmiana feedu",
+        "campaign creation": "utworzenie kampanii",
+        "feed fix candidate": "propozycja naprawy feedu",
+        "jakość leadów": "jakość leadów",
+        "lead quality": "jakość leadów",
+        "marnowanie budżetu na zapytaniach": "marnowanie budżetu na zapytaniach",
+        "ocena atrybucji": "ocena atrybucji",
+        "ocena kosztu pozyskania celu": "ocena kosztu pozyskania celu",
+        "ocena marży": "ocena marży",
+        "ocena opłacalności": "ocena opłacalności",
+        "opłacalność": "opłacalność",
+        "przychód": "przychód",
+        "propozycje wykluczeń": "propozycje wykluczeń",
+        "spadek konwersji": "spadek konwersji",
+        "utrata konwersji": "utrata konwersji",
+        "werdykt zwrotu z reklam": "ocena zwrotu z reklam",
+        "wpływ na przychód": "wpływ na przychód",
+        "wpływ zmian": "wpływ zmian",
+        "współczynnik konwersji": "współczynnik konwersji",
+        "wzrost konwersji": "wzrost konwersji",
+        "zapis rekomendacji": "zapis rekomendacji",
+        "zapis w GA4": "zapis w GA4",
+        "zapis wykluczeń": "zapis wykluczeń",
+        "zmiana budżetu": "zapis zmiany budżetu",
+        "zapis zmian kampanii": "zmiana kampanii",
+        "wpływ na revenue": "wpływ na przychód",
+    }
+    return labels.get(value, value)
+
+
 class MarketingBriefSection(BaseModel):
     id: str
     title: str
@@ -711,6 +801,7 @@ class TacticalQueueItem(BaseModel):
     id: str
     title: str
     domain: OpportunityDomain
+    domain_label: str = ""
     intent: Literal[
         "content_refresh",
         "content_create",
@@ -721,16 +812,23 @@ class TacticalQueueItem(BaseModel):
         "merchant_feed_triage",
         "traffic_quality_review",
     ]
+    intent_label: str = ""
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     risk: ActionRisk = ActionRisk.low
     source_connectors: list[str] = Field(min_length=1)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     dimensions: dict[str, str] = Field(default_factory=dict)
+    dimension_labels: dict[str, str] = Field(default_factory=dict)
     diagnosis: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
 
     @field_validator("source_connectors", "evidence_ids")
     @classmethod
@@ -738,6 +836,37 @@ class TacticalQueueItem(BaseModel):
         if any(not item.strip() for item in value):
             raise ValueError("Tactical queue trace IDs must not be blank")
         return value
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> TacticalQueueItem:
+        if not self.domain_label:
+            self.domain_label = _tactical_domain_label(self.domain)
+        if not self.intent_label:
+            self.intent_label = _tactical_intent_label(self.intent)
+        if not self.priority_label:
+            self.priority_label = _marketing_priority_label(self.priority)
+        if not self.source_connector_labels:
+            self.source_connector_labels = [
+                _marketing_brief_connector_label(connector_id)
+                for connector_id in self.source_connectors
+            ]
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = _marketing_brief_evidence_count_label(
+                len(self.evidence_ids)
+            )
+        if not self.action_summary_label:
+            self.action_summary_label = _marketing_brief_action_count_label(
+                len(self.action_ids)
+            )
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                _blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.dimension_labels:
+            self.dimension_labels = {
+                key: _tactical_dimension_label(key) for key in self.dimensions
+            }
+        return self
 
 
 class TacticalQueueGroup(BaseModel):
@@ -747,11 +876,39 @@ class TacticalQueueGroup(BaseModel):
     diagnosis: str
     next_step: str
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     risk: ActionRisk = ActionRisk.low
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> TacticalQueueGroup:
+        if not self.priority_label:
+            self.priority_label = _marketing_priority_label(self.priority)
+        if not self.source_connector_labels:
+            self.source_connector_labels = [
+                _marketing_brief_connector_label(connector_id)
+                for connector_id in self.source_connectors
+            ]
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = _marketing_brief_evidence_count_label(
+                len(self.evidence_ids)
+            )
+        if not self.action_summary_label:
+            self.action_summary_label = _marketing_brief_action_count_label(
+                len(self.action_ids)
+            )
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                _blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        return self
 
 
 class TacticalQueueResponse(BaseModel):
@@ -2194,6 +2351,7 @@ class MerchantDecisionItem(BaseModel):
         "reported_issue_occurrences"
     )
     priority: int = Field(ge=1, le=100)
+    priority_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     sample_product_ids: list[str] = Field(default_factory=list)
     sample_titles: list[str] = Field(default_factory=list)
@@ -2217,6 +2375,8 @@ class MerchantDecisionItem(BaseModel):
 
     @model_validator(mode="after")
     def fill_operator_aliases(self) -> MerchantDecisionItem:
+        if not self.priority_label:
+            self.priority_label = _marketing_priority_label(self.priority)
         if self.why_it_matters is None:
             self.why_it_matters = self.rationale
         if self.operator_action is None:

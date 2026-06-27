@@ -14,39 +14,61 @@ const queue: TacticalQueueResponse = {
       id: "tq_gsc_zielony_lad_a",
       title: "GSC: zielony ład co to -> /europejski-zielony-lad-co-to-takiego/",
       domain: "gsc_seo",
+      domain_label: "Content / GSC",
       intent: "content_create",
+      intent_label: "nowa treść",
       priority: 17,
+      priority_label: "wysoki priorytet",
       risk: "low",
       source_connectors: ["google_search_console"],
+      source_connector_labels: ["Google Search Console"],
       evidence_ids: ["ev_refresh_gsc_a"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       dimensions: {
         query: "zielony ład co to",
         page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
+      dimension_labels: {
+        query: "zapytanie",
+        page: "strona"
+      },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
       blocked_claims: ["gwarancja pozycji"],
-      action_ids: ["act_prepare_content_refresh_queue"]
+      blocked_claim_labels: ["gwarancja pozycji"],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia"
     },
     {
       id: "tq_gsc_zielony_lad_b",
       title: "GSC: co to jest zielony ład -> /europejski-zielony-lad-co-to-takiego/",
       domain: "gsc_seo",
+      domain_label: "Content / GSC",
       intent: "content_create",
+      intent_label: "nowa treść",
       priority: 18,
+      priority_label: "wysoki priorytet",
       risk: "low",
       source_connectors: ["google_search_console"],
+      source_connector_labels: ["Google Search Console"],
       evidence_ids: ["ev_refresh_gsc_b"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       dimensions: {
         query: "co to jest zielony ład",
         page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
+      dimension_labels: {
+        query: "zapytanie",
+        page: "strona"
+      },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
       blocked_claims: ["gwarancja pozycji"],
-      action_ids: ["act_prepare_content_refresh_queue"]
+      blocked_claim_labels: ["gwarancja pozycji"],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia"
     }
   ],
   compact_groups: [
@@ -58,11 +80,16 @@ const queue: TacticalQueueResponse = {
         "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: clicks=70, impressions=1666.",
       next_step: "Najpierw sprawdź duplikaty w WordPress.",
       priority: 17,
+      priority_label: "wysoki priorytet",
       risk: "low",
       source_connectors: ["google_search_console"],
+      source_connector_labels: ["Google Search Console"],
       evidence_ids: ["ev_refresh_gsc_a", "ev_refresh_gsc_b"],
+      evidence_summary_label: "2 dowody źródłowe",
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["gwarancja pozycji"]
+      action_summary_label: "1 akcja do sprawdzenia",
+      blocked_claims: ["gwarancja pozycji"],
+      blocked_claim_labels: ["gwarancja pozycji"]
     }
   ],
   evidence_ids: ["ev_refresh_gsc_a", "ev_refresh_gsc_b"],
@@ -92,7 +119,8 @@ describe("TacticalQueuePanel", () => {
     expect(scope.queryByText(/ev_refresh_gsc_/)).not.toBeInTheDocument();
     expect(scope.queryByText(/act_prepare_content_refresh_queue/)).not.toBeInTheDocument();
     expect(scope.getAllByText("Dowody").length).toBeGreaterThan(0);
-    expect(section?.textContent).toContain("2 ID");
+    expect(section?.textContent).toContain("2 dowody źródłowe");
     expect(section?.textContent).toContain("Akcje");
+    expect(section?.textContent).toContain("1 akcja do sprawdzenia");
   });
 });

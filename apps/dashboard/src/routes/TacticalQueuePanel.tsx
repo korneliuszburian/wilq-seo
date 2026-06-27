@@ -5,43 +5,9 @@ import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import { marketerBlockedClaimLabels, priorityLabel } from "./marketingLabels";
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
 type CompactTacticalGroup = TacticalQueueResponse["compact_groups"][number];
-
-export const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
-  content_refresh: "odświeżenie treści",
-  content_create: "nowa treść",
-  content_merge: "scalenie treści",
-  content_block: "blokada treści",
-  landing_page_quality: "jakość strony wejścia",
-  tracking_gap: "problem pomiaru",
-  merchant_feed_triage: "kolejność oceny feedu",
-  traffic_quality_review: "jakość ruchu"
-};
-
-const tacticalDomainLabels: Record<string, string> = {
-  gsc_seo: "Content / GSC",
-  ga4: "GA4",
-  merchant: "Merchant",
-  content: "Content"
-};
-
-export const tacticalDimensionLabels: Record<string, string> = {
-  query: "Query",
-  page: "Strona",
-  landing_page: "Landing",
-  source_medium: "Źródło",
-  campaign_name: "Kampania",
-  issue_type: "Issue",
-  affected_attribute: "Atrybut",
-  country: "Kraj",
-  reporting_context: "Kontekst",
-  wordpress_match: "WordPress",
-  wordpress_match_confidence: "Dopasowanie WP",
-  gsc_page_query_count: "Liczba query"
-};
 
 export function TacticalQueuePanel({
   queue,
@@ -149,14 +115,14 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{group.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <TraceLine label="Dowody" values={[`${group.evidence_ids.length} ID`]} />
-        <TraceLine label="Źródła" values={group.source_connectors} />
+        <TraceLine label="Dowody" values={[group.evidence_summary_label]} />
+        <TraceLine label="Źródła" values={group.source_connector_labels} />
         <TraceLine
           label="Akcje"
-          values={group.action_ids.length > 0 ? [`${group.action_ids.length}`] : []}
+          values={group.action_summary_label ? [group.action_summary_label] : []}
           empty="brak"
         />
-        <TraceLine label="Nie wolno twierdzić" values={marketerBlockedClaimLabels(group.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={group.blocked_claim_labels} />
       </div>
     </article>
   );
@@ -178,8 +144,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {tacticalDomainLabels[item.domain] ?? item.domain} /{" "}
-            {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
+            {item.domain_label} / {item.intent_label} / {item.priority_label}
           </p>
         </div>
         <StatusBadge value={item.risk} />
@@ -188,9 +153,9 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
-        <TraceLine label="Źródła" values={item.source_connectors} />
+        <TraceLine label="Źródła" values={item.source_connector_labels} />
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-        <TraceLine label="Nie wolno twierdzić" values={marketerBlockedClaimLabels(item.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={item.blocked_claim_labels} />
       </div>
       {tacticalContextPairs(item).length > 0 ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
@@ -198,7 +163,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
           <div className="mt-1 flex flex-wrap gap-1.5">
             {tacticalContextPairs(item).map(([key, value]) => (
               <span key={key} className="rounded border border-line bg-white px-2 py-1">
-                {tacticalDimensionLabels[key] ?? key}: {value}
+                {item.dimension_labels[key] ?? key}: {value}
               </span>
             ))}
           </div>

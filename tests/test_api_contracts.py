@@ -3838,6 +3838,12 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
         for section in sections.values()
         for item in section["items"]
     )
+    for section in sections.values():
+        for item in section["items"]:
+            assert item["priority_label"]
+            assert isinstance(item["source_connector_labels"], list)
+            assert item["evidence_summary_label"]
+            assert item["action_summary_label"]
 
 
 def test_marketing_brief_does_not_turn_successful_reads_into_blockers() -> None:
@@ -3963,6 +3969,11 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert any("powiązanych zapytań" in group["diagnosis"] for group in gsc_groups)
     assert all(group["evidence_ids"] for group in queue["compact_groups"])
     assert all(group["blocked_claims"] for group in queue["compact_groups"])
+    assert all(group["priority_label"] for group in queue["compact_groups"])
+    assert all(group["source_connector_labels"] for group in queue["compact_groups"])
+    assert all(group["evidence_summary_label"] for group in queue["compact_groups"])
+    assert all(group["action_summary_label"] for group in queue["compact_groups"])
+    assert all(group["blocked_claim_labels"] for group in queue["compact_groups"])
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
     assert any(
@@ -4016,6 +4027,14 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         for item in ahrefs_items
     )
     for item in queue["items"]:
+        assert item["domain_label"]
+        assert item["intent_label"]
+        assert item["priority_label"]
+        assert item["source_connector_labels"]
+        assert item["evidence_summary_label"]
+        assert item["action_summary_label"]
+        assert item["dimension_labels"]
+        assert item["blocked_claim_labels"]
         assert item["dimensions"]
         assert item["evidence_ids"]
         assert item["source_connectors"]

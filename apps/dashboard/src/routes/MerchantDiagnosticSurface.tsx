@@ -12,12 +12,7 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
-import { priorityLabel } from "./marketingLabels";
-import {
-  tacticalContextPairs,
-  tacticalDimensionLabels,
-  tacticalIntentLabels
-} from "./TacticalQueuePanel";
+import { tacticalContextPairs } from "./TacticalQueuePanel";
 
 type MerchantDecisionItem = MerchantDiagnosticsResponse["decision_queue"][number];
 type MerchantProductPerformanceRow =
@@ -541,7 +536,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   <div>
                     <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
+                      {item.intent_label} / {item.priority_label}
                     </p>
                   </div>
                   <StatusBadge value={item.risk} />
@@ -551,7 +546,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
                   {tacticalContextPairs(item).map(([key, value]) => (
                     <span key={key} className="rounded border border-line bg-white px-2 py-1">
-                      {tacticalDimensionLabels[key] ?? key}: {value}
+                      {item.dimension_labels[key] ?? key}: {value}
                     </span>
                   ))}
                 </div>
@@ -850,7 +845,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {decision.decision_type_label} /{" "}
-            {priorityLabel(decision.priority)}
+            {decision.priority_label}
           </p>
         </div>
         <StatusBadge value={decision.risk_label} />
