@@ -174,7 +174,6 @@ type PayloadPreviewItem = {
     | "demandGenReadiness"
     | "ga4TrackingQuality"
     | "localVisibility"
-    | "socialDraftInput"
     | "keywordPlannerAccess"
     | "adsBusinessGuardrail"
     | "contentBrief"
@@ -210,20 +209,6 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "wordpressDraft" as const, item }))
     : [];
-  const socialDraftItems = Array.isArray(payload.source_inputs)
-    ? payload.source_inputs.filter(isRecord).map((item) => ({
-        kind: "socialDraftInput" as const,
-        item: {
-          ...item,
-          apply_allowed: false,
-          api_mutation_ready: false,
-          blocked_claims: payload.blocked_claims,
-          connector: payload.connector,
-          draft_constraints: payload.draft_constraints,
-          draft_constraint_labels: payload.draft_constraint_labels
-        }
-      }))
-    : [];
   const keywordPlannerAccessItems =
     payload.action_type === "configure_google_ads_keyword_planner_access"
       ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
@@ -237,7 +222,6 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
     ...genericItems,
     ...budgetItems,
     ...ngramItems,
-    ...socialDraftItems,
     ...keywordPlannerAccessItems,
     ...adsBusinessGuardrailItems,
     ...contentBriefItems,
@@ -269,9 +253,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "localVisibility") {
     return <LocalVisibilityPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "socialDraftInput") {
-    return <SocialDraftInputPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "keywordPlannerAccess") {
     return <KeywordPlannerAccessPreviewCard item={previewItem.item} />;
@@ -617,34 +598,6 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
   );
 }
 
-function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }) {
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Materiały do posta social</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {stringValue(item.connector, "social")}
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Źródło: {stringValue(item.source_connector, "brak")}</div>
-        <div>Metryka: {stringValue(item.metric_name, "brak")}</div>
-        <div>Wartość: {formatMetricValue(item.value)}</div>
-        <div>Kontekst: {stringValue(item.context_summary, "sygnał źródłowy WILQ")}</div>
-        <PreviewValues
-          label="Ograniczenia"
-          values={operatorRequirementValues(item.draft_constraints, item.draft_constraint_labels)}
-        />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
-        <PublicationStateLine item={item} />
-      </div>
-    </article>
-  );
-}
-
 function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknown> }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
@@ -872,7 +825,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "demandGenReadiness") return 5;
   if (kind === "ga4TrackingQuality") return 6;
   if (kind === "localVisibility") return 7;
-  if (kind === "socialDraftInput") return 8;
   if (kind === "keywordPlannerAccess") return 9;
   if (kind === "adsBusinessGuardrail") return 10;
   if (kind === "contentBrief") return 11;

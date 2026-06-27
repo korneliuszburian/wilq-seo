@@ -754,7 +754,70 @@ const localoActionFixture: ActionObject = {
 
 const socialDraftActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "social_draft_input_0",
+      kind: "social_draft_input_review",
+      title_label: "Materiał do posta do sprawdzenia",
+      subtitle_label: "LinkedIn: źródło do szkicu bez publikacji",
+      status_label: "publikacja zablokowana",
+      rows: [
+        {
+          label: "Źródło danych",
+          value: "Google Search Console"
+        },
+        {
+          label: "Sygnał",
+          value: "kliknięcia"
+        },
+        {
+          label: "Wartość",
+          value: "12"
+        },
+        {
+          label: "Kontekst",
+          value: "sygnał z Google Search Console"
+        },
+        {
+          label: "Ograniczenia",
+          value: "użyj tylko dowodów z WILQ, pisz po polsku"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "zwrot z reklam, przychód"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "wymaga sprawdzenia przez człowieka"
+    },
+    {
+      id: "social_draft_input_1",
+      kind: "social_draft_input_review",
+      title_label: "Materiał do posta do sprawdzenia",
+      subtitle_label: "LinkedIn: źródło do szkicu bez publikacji",
+      status_label: "publikacja zablokowana",
+      rows: [
+        {
+          label: "Źródło danych",
+          value: "Merchant Center"
+        },
+        {
+          label: "Sygnał",
+          value: "zgłoszenia problemów"
+        },
+        {
+          label: "Wartość",
+          value: "14"
+        },
+        {
+          label: "Kontekst",
+          value: "zgłoszenie problemu danych produktowych Merchant Center"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "wymaga sprawdzenia przez człowieka"
+    }
+  ],
   id: "act_social_draft",
   title: "Przygotuj propozycje postów LinkedIn z dowodów WILQ",
   domain: "social",
@@ -1480,19 +1543,23 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Materiały do posta social").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Źródło: google_search_console/)).toBeInTheDocument();
-    expect(screen.getByText(/Metryka: clicks/)).toBeInTheDocument();
+    expect(screen.getAllByText("Materiał do posta do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Źródło danych: Google Search Console/)).toBeInTheDocument();
+    expect(screen.getByText(/Sygnał: kliknięcia/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 12/)).toBeInTheDocument();
     expect(screen.getByText(/Kontekst: sygnał z Google Search Console/)).toBeInTheDocument();
-    expect(screen.getByText(/Źródło: google_merchant_center/)).toBeInTheDocument();
-    expect(screen.getByText(/Metryka: issue_product_count/)).toBeInTheDocument();
+    expect(screen.getByText(/Źródło danych: Merchant Center/)).toBeInTheDocument();
+    expect(screen.getByText(/Sygnał: zgłoszenia problemów/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
     expect(screen.getByText(/Kontekst: zgłoszenie problemu danych produktowych Merchant Center/)).toBeInTheDocument();
     expect(screen.queryByText(/Szczegóły źródłowe/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/google_search_console/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/google_merchant_center/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/issue_product_count/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Metryka: clicks/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Ograniczenia: użyj tylko dowodów z WILQ/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Czego nie wolno twierdzić: zwrot z reklam/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
   });
 
   it("renders Keyword Planner access blocker without requiring raw JSON", async () => {

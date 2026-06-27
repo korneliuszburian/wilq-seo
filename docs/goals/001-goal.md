@@ -151,6 +151,9 @@ Wilku can inspect it without reading technical internals.
   Google Ads channel enum keys in primary card copy.
 - Keyword Planner access blocker action details now render API-owned preview
   cards without raw Google Ads API error strings in primary card copy.
+- Social draft action details now render API-owned preview cards without raw
+  source connector IDs or metric keys in primary card copy, and the old
+  `source_inputs` payload fallback was removed from Action Detail.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
@@ -166,9 +169,9 @@ are resolved or explicitly deferred.
    recovery docs.
 2. `DetailPanels.tsx` now has typed action-detail preview view-model paths for
    Merchant feed issues, Google Ads budget reviews, Google Ads recommendation
-   reviews, Google Ads negative-keyword reviews and Google Ads custom-segment
-   reviews, Demand Gen readiness reviews and Keyword Planner access blocker
-   reviews, but remaining action kinds still infer active
+   reviews, Google Ads negative-keyword reviews, Google Ads custom-segment
+   reviews, Demand Gen readiness reviews, Keyword Planner access blocker
+   reviews and social draft inputs, but remaining action kinds still infer active
    preview cards from raw payload shape. Migrate those action kinds one by one;
    raw payload may remain only in collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have

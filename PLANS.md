@@ -577,6 +577,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Keyword Planner access blocker action details now use typed API
   preview cards with a clean access reason and next step instead of raw Google
   Ads API error strings in the primary card.
+- 2026-06-27: Social draft action details now use typed API preview cards with
+  clean source and metric labels instead of raw connector IDs or metric keys;
+  the Action Detail `source_inputs` payload fallback was removed.
 - 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
   knowledge rules now use Polish operating language. Old active values such as
   `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
@@ -786,8 +789,8 @@ WILQ is complete for this long-range goal when:
   blocked promises, CTA labels or skill labels.
 - Action detail first-screen preview cards must come from typed
   `ActionObject.preview_cards`. Raw action payload inspection is allowed only
-  as a temporary fallback for unmigrated action kinds or inside technical
-  detail.
+  inside technical detail or as a short-lived blocker for unmigrated action
+  kinds; do not preserve old payload fallbacks once a typed card exists.
 - Metric chip names must come from `MetricFact.metric_label`. Dimension
   key/value labels must come from `MetricFact.dimension_labels` and
   `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries

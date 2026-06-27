@@ -2087,6 +2087,18 @@ def _metric_fact_label(name: str) -> str:
     return labels.get(name, "metryka źródłowa")
 
 
+def _plain_metric_value_label(value: Any) -> str:
+    if isinstance(value, bool):
+        return "tak" if value else "nie"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return f"{value:.2f}".rstrip("0").rstrip(".")
+    if isinstance(value, str) and value:
+        return value
+    return "brak"
+
+
 def _prioritize_action_metrics(
     facts: list[MetricFact],
     *,
@@ -2525,7 +2537,66 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _demand_gen_readiness_preview_cards(action.payload)
     if action.payload.get("action_type") == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
         return _keyword_planner_access_preview_cards(action.payload)
+    if action.payload.get("action_type") in {
+        "linkedin_post_candidate",
+        "facebook_post_candidate",
+    }:
+        return _social_draft_input_preview_cards(action.payload)
     return []
+
+
+def _social_draft_input_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    source_inputs = [
+        item
+        for item in payload.get("source_inputs", [])
+        if isinstance(item, dict)
+    ]
+    connector_label = source_connector_labels([str(payload.get("connector") or "social")])[0]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(source_inputs[:4]):
+        rows = [
+            _preview_row(
+                "Źródło danych",
+                _source_connector_labels([str(item.get("source_connector") or "")])[0],
+            ),
+            _preview_row(
+                "Sygnał",
+                _metric_fact_label(str(item.get("metric_name") or "")),
+            ),
+            _preview_row("Wartość", _plain_metric_value_label(item.get("value"))),
+            _preview_row(
+                "Kontekst",
+                str(item.get("context_summary") or "sygnał źródłowy WILQ"),
+            ),
+        ]
+        draft_constraint_labels = _string_list(payload.get("draft_constraint_labels"))
+        if draft_constraint_labels:
+            rows.append(_preview_row("Ograniczenia", ", ".join(draft_constraint_labels[:4])))
+        blocked_claim_labels = _string_list(payload.get("blocked_claim_labels"))
+        if not blocked_claim_labels:
+            blocked_claim_labels = _string_list(payload.get("blocked_claims"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=f"social_draft_input_{index}",
+                kind="social_draft_input_review",
+                title_label="Materiał do posta do sprawdzenia",
+                subtitle_label=f"{connector_label}: źródło do szkicu bez publikacji",
+                status_label="publikacja zablokowana",
+                rows=rows,
+                apply_state_label=_apply_state_label(False),
+                system_readiness_label="wymaga sprawdzenia przez człowieka",
+            )
+        )
+    return cards
 
 
 def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:

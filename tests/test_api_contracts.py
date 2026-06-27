@@ -3270,6 +3270,31 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert action["domain"] == "social"
             assert action["payload"]["source_inputs"]
             assert "candidate_inputs" not in action["payload"]
+            preview_cards = action["preview_cards"]
+            assert preview_cards
+            assert {card["kind"] for card in preview_cards} == {
+                "social_draft_input_review"
+            }
+            preview_text = json.dumps(
+                [
+                    {
+                        "title_label": card["title_label"],
+                        "subtitle_label": card["subtitle_label"],
+                        "status_label": card["status_label"],
+                        "rows": card["rows"],
+                    }
+                    for card in preview_cards
+                ],
+                ensure_ascii=False,
+            )
+            assert "Google Search Console" in preview_text
+            assert "Merchant Center" in preview_text
+            assert "kliknięcia" in preview_text
+            assert "zgłoszenia problemów" in preview_text
+            assert "google_search_console" not in preview_text
+            assert "google_merchant_center" not in preview_text
+            assert "clicks" not in preview_text
+            assert "issue_product_count" not in preview_text
             assert "no_publishing_without_connector_credentials" in action["payload"][
                 "draft_constraints"
             ]
