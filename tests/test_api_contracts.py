@@ -17342,6 +17342,14 @@ def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:
     assert action["payload"]["destructive"] is False
     assert action["payload"]["payload_preview"][0]["api_mutation_ready"] is False
     assert "rekomendacja uruchomienia Demand Gen" in action["payload"]["blocked_claims"]
+    assert action["preview_cards"]
+    preview_card = action["preview_cards"][0]
+    assert preview_card["kind"] == "google_ads_demand_gen_readiness_review"
+    assert preview_card["title_label"] == "Gotowość Demand Gen do sprawdzenia"
+    preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
+    assert "Kanały kampanii" in preview_rows
+    assert "PERFORMANCE_MAX" not in str(preview_card)
+    assert "UNKNOWN" not in str(preview_card)
 
     validation = client.post(
         "/api/actions/act_review_demand_gen_readiness/validate",

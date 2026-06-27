@@ -540,7 +540,39 @@ const ngramActionFixture: ActionObject = {
 
 const demandGenActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "demand_gen_readiness_preview_0",
+      kind: "google_ads_demand_gen_readiness_review",
+      title_label: "Gotowość Demand Gen do sprawdzenia",
+      subtitle_label: "ocena gotowości bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        {
+          label: "Kampanie ocenione",
+          value: "20"
+        },
+        {
+          label: "Kanały kampanii",
+          value: "PMax: 8, Search: 10, nieznany kanał: 2"
+        },
+        {
+          label: "Kampanie Demand Gen",
+          value: "0"
+        },
+        {
+          label: "Kreacje i zasoby",
+          value: "0"
+        },
+        {
+          label: "Braki",
+          value: "jakość stron wejścia Demand Gen według kampanii, ograniczenia przejścia na Demand Gen"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_demand_gen",
   title: "Przygotuj sprawdzenie gotowości Demand Gen",
   domain: "google_ads",
@@ -1360,12 +1392,12 @@ describe("Action detail route", () => {
     );
     expect(screen.getByText("Gotowość Demand Gen do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Kampanie ocenione: 20/)).toBeInTheDocument();
-    expect(screen.getByText(/Kanały: PERFORMANCE_MAX=8, SEARCH=10, UNKNOWN=2/)).toBeInTheDocument();
+    expect(screen.getByText(/Kanały kampanii: PMax: 8, Search: 10, nieznany kanał: 2/)).toBeInTheDocument();
     expect(screen.getByText(/Kampanie Demand Gen: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/Kreacje i zasoby: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: jakość stron wejścia Demand Gen według kampanii/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: sprawdź kanały kampanii Ads/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
+    expect(screen.queryByText(/PERFORMANCE_MAX/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/UNKNOWN/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 

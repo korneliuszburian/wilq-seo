@@ -228,6 +228,8 @@ Known cleanup already started:
 - Google Ads custom-segment action details now have typed API preview cards
   without raw member types, old English internal segment names or Google Ads IDs
   in primary card copy.
+- Demand Gen action details now have typed API preview cards without raw Google
+  Ads channel enum keys in primary card copy.
 - Ads Doctor no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric

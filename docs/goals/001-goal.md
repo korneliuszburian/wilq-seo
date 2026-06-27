@@ -147,6 +147,8 @@ Wilku can inspect it without reading technical internals.
 - Google Ads custom-segment action details now render API-owned preview cards
   without raw member type, old English internal segment name or Google Ads IDs
   in primary card copy.
+- Demand Gen action details now render API-owned preview cards without raw
+  Google Ads channel enum keys in primary card copy.
 - Ads Doctor dead route-local status/risk label helpers were removed and are
   guarded by route source tests.
 - Recovery docs are being condensed because long append-only progress logs made
@@ -163,7 +165,7 @@ are resolved or explicitly deferred.
 2. `DetailPanels.tsx` now has typed action-detail preview view-model paths for
    Merchant feed issues, Google Ads budget reviews, Google Ads recommendation
    reviews, Google Ads negative-keyword reviews and Google Ads custom-segment
-   reviews, but remaining action kinds still infer active
+   reviews, and Demand Gen readiness reviews, but remaining action kinds still infer active
    preview cards from raw payload shape. Migrate those action kinds one by one;
    raw payload may remain only in collapsed technical detail.
 3. Demand Gen, registry/workflow, action detail and knowledge routes still have

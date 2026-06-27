@@ -146,6 +146,9 @@ Latest cleanup state:
 - Google Ads custom-segment action details now receive API-owned preview cards.
   The marketer-facing card shows Polish audience/source/safety rows instead of
   raw `KEYWORD`, the old English internal segment name or Google Ads IDs.
+- Demand Gen action details now receive API-owned preview cards. The
+  marketer-facing card shows labelled channel counts instead of raw Google Ads
+  channel enum keys such as `PERFORMANCE_MAX` or `UNKNOWN`.
 - Ads Doctor no longer carries unused route-local decision status/risk
   translators or the unused connector label import; tests guard against
   reintroducing those route-local helpers.
@@ -311,6 +314,16 @@ Proof:
   `/api/actions/act_prepare_custom_segments_from_search_terms` returned 1
   `google_ads_custom_segment_review` preview card with no raw member type, old
   English internal segment name or campaign IDs in card text.
+- Demand Gen action preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen_review_action_is_validate_only_and_scoped" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_demand_gen_readiness` returned 1
+  `google_ads_demand_gen_readiness_review` preview card with labelled channel
+  counts and no raw `PERFORMANCE_MAX` or `UNKNOWN` channel keys in card text.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
@@ -354,6 +367,7 @@ Next cleanup queue:
    - Merchant feed issue previews have typed API cards.
    - Google Ads budget, recommendation, negative-keyword and custom-segment
      previews have typed API cards.
+   - Demand Gen readiness previews have typed API cards.
    - migrate remaining action kinds one by one from `DetailPanels.tsx`
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.
