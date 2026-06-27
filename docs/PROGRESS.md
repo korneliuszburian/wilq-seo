@@ -66,12 +66,14 @@ What changed:
 - Action impact-check results now return API-owned source labels and evidence
   summaries, and the dashboard no longer renders raw source connector IDs in
   that result panel.
+- Old content-review audit events based on dev-site mapping are now dropped
+  from active action output instead of being rewritten at response time.
+- Stale 2026-06-24/25 handoff and audit docs that still mentioned dev-site
+  migration now carry superseded notes.
 - The cleaned surfaces keep traceability through typed contracts, but raw
   internals are moved out of first-screen marketer copy.
 
-Current active slice: remove the remaining active runtime compatibility path
-for old content-review audit terms and mark stale handoff/audit docs as
-superseded where they still read like current dev-site migration guidance.
+Current active slice: final stale-term scan and recovery alignment for Goal 001.
 
 Proof:
 
@@ -107,6 +109,8 @@ Proof:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "action_impact_check" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "actions route starts from marketer-facing actions instead of registry dumps" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
+- Legacy content-review audit cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_content_review or action_impact_check" --maxfail=1`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -114,24 +118,14 @@ Proof:
 
 Next cleanup queue:
 
-1. Active runtime cleanup:
-   - remove or migrate the runtime sanitizer for old content-review audit terms
-     in `wilq/actions/service.py` after deciding whether local stored audit rows
-     should be normalized at storage load or dropped from active action output.
-2. Historical docs cleanup:
-   - mark or rewrite stale handoff/audit docs that still describe dev-site
-     target/migration work as current Content Planner guidance.
-3. Recovery docs:
+1. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Remove the remaining active legacy content-review audit sanitizer or replace
-   it with an explicit storage migration/drop policy, then add a regression test
-   proving old dev-site migration terms cannot leak through `/api/actions`.
-2. Mark stale handoff/audit docs as superseded where they still sound like
-   current dev-site migration guidance.
+1. Run the final stale-term scan for Goal 001 and classify any remaining hits as
+   internal contract, negative test fixture, superseded history or active debt.
 
 ## Guardrails
 

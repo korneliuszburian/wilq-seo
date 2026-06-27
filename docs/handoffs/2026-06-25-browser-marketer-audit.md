@@ -1,5 +1,11 @@
 # Browser Marketer Audit - 2026-06-25
 
+Superseded note, 2026-06-27: Content Planner notes in this audit predate the
+product correction that `ekologus.pl` is the public canonical content home and
+dev preview hosts are optional design/staging context only. Treat any
+`target-site`, `migration`, mapping-map or staging-handoff wording below as
+historical audit language, not current implementation guidance.
+
 Scope: objective pass through the core demo route with `agent-browser`:
 
 `/command-center -> /merchant -> /content-planner -> /ads-doctor -> /ga4`
@@ -191,4 +197,3 @@ Recommended cut for demo:
   disclosure.
 - Do not claim Ads optimizer, feed repair, publishing, uplift, CPA/ROAS or
   revenue recovery.
-

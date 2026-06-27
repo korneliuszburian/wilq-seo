@@ -87,9 +87,12 @@ Wilku can inspect it without reading technical internals.
 - Action impact-check results now return API-owned source labels and evidence
   summaries, and the dashboard no longer renders raw source connector IDs in
   that result panel.
-- Current active slice: remove the remaining active runtime compatibility path
-  for old content-review audit terms and mark stale handoff/audit docs as
-  superseded where they still read like current dev-site migration guidance.
+- Old content-review audit events based on dev-site mapping are now dropped
+  from active action output instead of being rewritten at response time.
+- Stale 2026-06-24/25 handoff and audit docs that still mentioned dev-site
+  migration now carry superseded notes.
+- Current active slice: final stale-term scan and recovery alignment for
+  Goal 001.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -98,15 +101,7 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. `wilq/actions/service.py` still contains an active runtime sanitizer for old
-   content-review audit terms such as `target_site_mapping_review`,
-   `selected_target_url`, `mapping_*` and `staging handoff`. Runtime output is
-   cleaned, but the active compatibility path should be removed or replaced by
-   an explicit storage migration/drop policy.
-2. Some 2026-06-25 handoff/audit docs still read like current dev-site
-   migration guidance. Mark them superseded or rewrite those sections so they
-   cannot steer the next goal.
-3. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
+1. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
 

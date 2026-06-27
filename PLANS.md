@@ -616,6 +616,10 @@ WILQ is complete for this long-range goal when:
   compatibility path for old content-review audit terms in
   `wilq/actions/service.py` and stale 2026-06-25 handoff/audit docs that should
   be marked superseded or rewritten before the next product goal.
+- 2026-06-27: Old content-review audit events based on dev-site mapping are now
+  dropped from active action output instead of being rewritten at response time.
+  The remaining cleanup is historical handoff/audit docs that still read like
+  current dev-site migration guidance.
 
 ## Discoveries
 

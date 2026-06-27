@@ -2142,7 +2142,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     )
 
 
-def test_actions_api_normalizes_legacy_content_review_audit_terms(
+def test_actions_api_drops_legacy_content_review_audit_terms(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -2201,7 +2201,7 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
     content_action = next(
         action for action in actions if action["id"] == "act_prepare_content_refresh_queue"
     )
-    serialized = json.dumps(content_action["audit_events"][0], ensure_ascii=False)
+    serialized = json.dumps(content_action["audit_events"], ensure_ascii=False)
     for stale_term in (
         "target_site",
         "mapping_review",
@@ -2209,20 +2209,15 @@ def test_actions_api_normalizes_legacy_content_review_audit_terms(
         "selected_target_url",
         "staging handoff",
         "ekologus.dev.proudsite.pl",
-        "payload_apply_allowed_false",
-        "wordpress_write_not_requested",
-        "blocked_claim:",
-        "ranking guarantee",
         "source_type:gsc_query_page",
         "mode:refresh",
     ):
         assert stale_term not in serialized
-    review = content_action["audit_events"][0]["details"]["content_url_review"]
-    assert review["url_review_outcome"] == "needs_public_final_url_review"
-    assert "publicznego finalnego URL-a ekologus.pl" in review["review_notes"]
-    assert "publicznego finalnego URL-a ekologus.pl" in content_action["audit_events"][0][
-        "summary"
-    ]
+    assert all(
+        event["id"] != "audit_legacy_content_url_review"
+        for event in content_action["audit_events"]
+    )
+    assert content_action["review_gate"]["last_review_outcome"] is None
 
 
 def test_content_strategist_context_pack_preserves_reviewed_draft_preview(

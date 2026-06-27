@@ -271,9 +271,9 @@ Acceptance:
 - Current docs do not claim old dev-site/migration semantics as active product
   strategy.
 - Every active stale hit has either been removed or has a dated removal task.
-- Known remaining active runtime debt: `wilq/actions/service.py` still sanitizes
-  old content-review audit terms at response time. Remove it after a deliberate
-  storage normalization/drop decision.
+- Old content-review audit events based on dev-site mapping must be dropped
+  from active action output instead of being rewritten into current review
+  approval.
 
 Verification:
 

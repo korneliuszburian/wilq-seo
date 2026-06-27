@@ -1,5 +1,11 @@
 # WILQ condensation browser audit - 2026-06-25
 
+Superseded note, 2026-06-27: Content Planner notes in this audit predate the
+product correction that `ekologus.pl` is the public canonical content home and
+dev preview hosts are optional design/staging context only. Treat any
+`target migration`, mapping-state or staging-handoff wording below as
+historical audit language, not current implementation guidance.
+
 Scope:
 
 - Fresh local WILQ API proof after stack start.

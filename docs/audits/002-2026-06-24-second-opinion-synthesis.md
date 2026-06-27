@@ -1,5 +1,11 @@
 # 2026-06-24 Synteza 2nd Opinion
 
+Superseded note, 2026-06-27: URL and content-placement notes in this synthesis
+predate the product correction that `ekologus.pl` is the public canonical
+content home and dev preview hosts are optional design/staging context only.
+Treat any dev-site migration or old-to-new mapping guidance below as
+historical input, not current implementation guidance.
+
 Ten plik kondensuje trzy zewnętrzne raporty 2nd opinion z 2026-06-24. Nie jest
 nowym źródłem prawdy produktowej. Służy do sterowania kolejnymi slice'ami po
 sprawdzeniu aktualnego repo, WILQ API i dashboardu.
@@ -159,4 +165,3 @@ Niebezpieczny claim:
 
 > WILQ jest już pełnym BDOS, Ads optimizerem, feed repair systemem albo
 > publishing engine.
-
