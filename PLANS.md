@@ -552,6 +552,11 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: Action preview, confirmation and impact-check result blockers now
   carry API-owned `blocker_labels`; dashboard result panels render those labels
   instead of route-local blocker-key translations.
+- 2026-06-27: Action detail no longer uses route-local fallback labels for
+  preview requirements, missing-data rows or "after confirmation" rows.
+  Unknown technical keys are not converted into generic marketer copy; active
+  API sources must provide explicit Polish label arrays. Live API/browser proof
+  for Ads target guardrails found no generic fallback labels.
 
 ## Discoveries
 
@@ -564,6 +569,9 @@ WILQ is complete for this long-range goal when:
 - Action result endpoints need the same label discipline as action detail
   payloads. If a result returns raw blocker keys for audit, it must also return
   marketer-facing labels for dashboard rendering.
+- Test fixtures can drift from real action payload keys. When browser/API proof
+  finds a real key that fixtures missed, align the fixture with the production
+  key instead of adding a React-side translation.
 
 ## Decision Log
 

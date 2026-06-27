@@ -174,6 +174,12 @@ const adsRecommendationActionFixture: ActionObject = {
           "review_change_history",
           "review_business_goal"
         ],
+        required_validation_labels: [
+          "sprawdź typ rekomendacji",
+          "sprawdź metryki wpływu",
+          "sprawdź historię zmian",
+          "sprawdź cel biznesowy"
+        ],
         blocked_claims: [
           "zapis rekomendacji",
           "automatyczne przyjęcie rekomendacji",
@@ -216,6 +222,12 @@ const customSegmentActionFixture: ActionObject = {
           "keyword_planner_enrichment",
           "forecast_or_audience_size"
         ],
+        required_validation_labels: [
+          "sprawdź źródłowe hasła",
+          "odrzuć brandowe lub niskointencyjne frazy",
+          "wzbogać dane przez Keyword Planner",
+          "sprawdź prognozę albo wielkość odbiorców"
+        ],
         blocked_claims: ["rozmiar odbiorców", "wzrost konwersji", "zapis kierowania reklam"],
         targeting_preview: [
           {
@@ -229,7 +241,11 @@ const customSegmentActionFixture: ActionObject = {
         safety_review: {
           status: "blocked",
           reason: "Zapis segmentu niestandardowego zablokowany.",
-          missing_requirements: ["forecast_or_audience_size", "keyword_planner_enrichment"]
+          missing_requirements: ["forecast_or_audience_size", "keyword_planner_enrichment"],
+          missing_requirement_labels: [
+            "prognoza albo rozmiar odbiorców",
+            "wzbogacenie danych przez Keyword Planner"
+          ]
         },
         api_mutation_ready: false,
         apply_allowed: false,
@@ -268,6 +284,12 @@ const negativeKeywordActionFixture: ActionObject = {
           "check_existing_keywords_and_match_types",
           "90_day_safety_check",
           "human_confirm_before_apply"
+        ],
+        required_validation_labels: [
+          "sprawdzenie intencji zapytania",
+          "sprawdź istniejące słowa kluczowe i dopasowania",
+          "sprawdź bezpieczeństwo z 90 dni",
+          "potwierdzenie człowieka przed zapisem"
         ],
         blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
@@ -310,10 +332,19 @@ const ngramActionFixture: ActionObject = {
           "human_intent_review",
           "ngram_to_negative_keyword_change_preview"
         ],
+        missing_read_contract_labels: [
+          "ręczna ocena intencji",
+          "podgląd przejścia z tematu zapytań do wykluczenia"
+        ],
         required_validation: [
           "review_ngram_intent",
           "review_source_search_terms",
           "compare_90_day_safety_read"
+        ],
+        required_validation_labels: [
+          "sprawdź intencję tematu zapytań",
+          "sprawdź źródłowe wyszukiwane hasła",
+          "porównaj z 90-dniową kontrolą bezpieczeństwa"
         ],
         blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
         api_mutation_ready: false,
@@ -356,10 +387,19 @@ const demandGenActionFixture: ActionObject = {
           "demand_gen_landing_quality_by_campaign",
           "demand_gen_transition_constraints"
         ],
+        missing_read_contract_labels: [
+          "jakość stron wejścia Demand Gen według kampanii",
+          "ograniczenia przejścia na Demand Gen"
+        ],
         required_validation: [
           "review_ads_campaign_channel_context",
           "review_ga4_landing_source_campaign_context",
           "review_demand_gen_missing_contracts"
+        ],
+        required_validation_labels: [
+          "sprawdź kanały kampanii Ads",
+          "sprawdź stronę wejścia, źródło i kampanię w GA4",
+          "sprawdź braki danych Demand Gen"
         ],
         blocked_claims: [
           "rekomendacja uruchomienia Demand Gen",
@@ -412,6 +452,12 @@ const ga4TrackingActionFixture: ActionObject = {
           "review_campaign_name_dimension",
           "review_conversion_or_key_event_mapping"
         ],
+        required_validation_labels: [
+          "sprawdź stronę wejścia",
+          "sprawdź źródło i medium ruchu",
+          "sprawdź nazwę kampanii",
+          "sprawdź mapowanie konwersji albo zdarzenia kluczowego"
+        ],
         blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "naprawiony pomiar"],
         api_mutation_ready: false,
         apply_allowed: false,
@@ -452,10 +498,20 @@ const localoActionFixture: ActionObject = {
         },
         allowed_contracts: ["local_rankings", "place_inventory", "reviews"],
         missing_read_contracts: ["gbp_visibility", "competitor_visibility", "local_tasks"],
+        missing_read_contract_labels: [
+          "widoczność Google Business Profile",
+          "widoczność konkurencji",
+          "lokalne zadania do wykonania"
+        ],
         required_validation: [
           "review_place_inventory",
           "review_local_rankings_aggregate",
           "review_reviews_aggregate"
+        ],
+        required_validation_labels: [
+          "sprawdź listę lokalizacji",
+          "sprawdź zbiorcze dane lokalnych pozycji",
+          "sprawdź zbiorcze dane opinii"
         ],
         blocked_claims: ["GBP performance", "competitor visibility", "local visibility uplift"],
         api_mutation_ready: false,
@@ -507,6 +563,12 @@ const socialDraftActionFixture: ActionObject = {
       "no_performance_claims_without_source_metric",
       "require_human_review_before_apply"
     ],
+    draft_constraint_labels: [
+      "użyj tylko dowodów z WILQ",
+      "pisz po polsku",
+      "bez obietnic skuteczności bez metryk źródłowych",
+      "człowiek sprawdza przed zapisem"
+    ],
     blocked_claims: ["zwrot z reklam", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
     destructive: false
   }
@@ -533,6 +595,10 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "developer_token_approved_for_keyword_planner",
       "keyword_planner_generate_ideas_allowed"
     ],
+    required_google_ads_state_labels: [
+      "token deweloperski zatwierdzony dla Keyword Plannera",
+      "Keyword Planner może generować propozycje"
+    ],
     helper_steps: [
       "Sprawdź status tokena deweloperskiego Google Ads API w Google Ads API Center.",
       "Po zmianie statusu wykonaj odczyt danych Google Ads."
@@ -542,6 +608,12 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "rerun_google_ads_data_read",
       "verify_keyword_planner_idea_rows",
       "human_confirm_before_apply"
+    ],
+    required_validation_labels: [
+      "potwierdź akceptację tokena deweloperskiego",
+      "uruchom ponowny odczyt Google Ads",
+      "sprawdź wiersze Keyword Planner",
+      "potwierdzenie człowieka przed zapisem"
     ],
     blocked_claims: ["rozmiar odbiorców", "prognoza", "wzrost konwersji", "zwrot z reklam"],
     apply_allowed: false,
@@ -581,6 +653,10 @@ const adsTargetGuardrailActionFixture: ActionObject = {
       target_roas_or_cpa: ["WILQ_ADS_TARGET_ROAS", "WILQ_ADS_TARGET_CPA_MICROS"]
     },
     missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+    missing_read_contract_labels: [
+      "docelowy zwrot z reklam albo koszt pozyskania celu",
+      "człowiek sprawdza strategię"
+    ],
     required_validation: [
       "review_profit_margin_model",
       "review_business_goal",
@@ -588,10 +664,22 @@ const adsTargetGuardrailActionFixture: ActionObject = {
       "confirm_target_roas_or_cpa",
       "human_strategy_review"
     ],
+    required_validation_labels: [
+      "sprawdź model marży",
+      "sprawdź cel biznesowy",
+      "sprawdź cel budżetu od człowieka",
+      "potwierdź docelowy zwrot albo koszt pozyskania celu",
+      "człowiek sprawdza strategię"
+    ],
     allowed_uses_after_confirmation: [
-      "target_kpi_review",
+      "target_metrics_review",
       "campaign_review_context",
       "budget_review_context"
+    ],
+    allowed_uses_after_confirmation_labels: [
+      "przegląd wskaźników względem celu",
+      "kontekst przeglądu kampanii",
+      "kontekst przeglądu budżetu"
     ],
     blocked_claims: [
       "ocena KPI względem celu przed potwierdzeniem",
@@ -639,12 +727,26 @@ const adsStrategyReviewActionFixture: ActionObject = {
       "review_human_budget_goal",
       "review_target_fit"
     ],
+    operator_review_gate_labels: [
+      "człowiek sprawdza strategię",
+      "sprawdź model marży",
+      "sprawdź cel biznesowy",
+      "sprawdź cel budżetu od człowieka",
+      "sprawdź dopasowanie do celu"
+    ],
     required_validation: [
       "review_profit_margin_model",
       "review_business_goal",
       "review_human_budget_goal",
       "review_target_fit",
       "record_human_strategy_review_outcome"
+    ],
+    required_validation_labels: [
+      "sprawdź model marży",
+      "sprawdź cel biznesowy",
+      "sprawdź cel budżetu od człowieka",
+      "sprawdź dopasowanie do celu",
+      "zapisz wynik sprawdzenia strategii przez człowieka"
     ],
     blocked_claims: [
       "ocena opłacalności",
@@ -1030,8 +1132,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kanały: PERFORMANCE_MAX=8, SEARCH=10, UNKNOWN=2/)).toBeInTheDocument();
     expect(screen.getByText(/Kampanie Demand Gen: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
-    expect(screen.getByText(/Braki: brakujący odczyt techniczny/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki sprawdzenia: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: jakość stron wejścia Demand Gen według kampanii/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki sprawdzenia: sprawdź kanały kampanii Ads/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
@@ -1099,7 +1201,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Metryka: issue_product_count/)).toBeInTheDocument();
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
     expect(screen.getAllByText(/Szczegóły źródłowe: 4 pola techniczne/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Ograniczenia: warunek techniczny do sprawdzenia/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ograniczenia: użyj tylko dowodów z WILQ/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Czego nie wolno twierdzić: zwrot z reklam/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);
   });
@@ -1117,7 +1219,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Zablokowany dostęp: Keyword Planner/)).toBeInTheDocument();
     expect(screen.getByText(/Powód: api_code=403/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Wymagany stan: brakujący odczyt techniczny/)
+      screen.getByText(/Wymagany stan: token deweloperski zatwierdzony dla Keyword Plannera/)
     ).toBeInTheDocument();
     expect(screen.getByText(/Kroki: Sprawdź status tokena deweloperskiego Google Ads API/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: potwierdź akceptację tokena deweloperskiego/)).toBeInTheDocument();
@@ -1142,7 +1244,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Docelowy koszt pozyskania celu: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: docelowy zwrot z reklam albo koszt pozyskania celu/)).toBeInTheDocument();
     expect(screen.getByText(/Opcje celu: docelowy zwrot z reklam, docelowy koszt pozyskania celu/)).toBeInTheDocument();
-    expect(screen.getByText(/Po potwierdzeniu: warunek techniczny do sprawdzenia/)).toBeInTheDocument();
+    expect(screen.getByText(/Po potwierdzeniu: przegląd wskaźników względem celu/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: ocena KPI względem celu przed potwierdzeniem/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
@@ -1160,7 +1262,7 @@ describe("Action detail route", () => {
     expect(screen.getByText("Zasady bezpieczeństwa Ads do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Ostatni przegląd strategii: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Warunki przeglądu: ocena strategii przez człowieka/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki przeglądu: człowiek sprawdza strategię/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: ocena opłacalności/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);

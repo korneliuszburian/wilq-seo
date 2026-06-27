@@ -94,6 +94,12 @@ Date: 2026-06-27
   those API-owned Polish labels instead of mapping raw blocker keys in React.
   Live proof after managed stack restart: `POST /api/actions/act_review_demand_gen_readiness/impact-check`
   returned `blocker_labels=["wymagane potwierdzenie podglądu zmian"]`.
+- Action Detail source-label hardening removed the remaining route-local
+  generic fallbacks for missing-data, validation and after-confirmation rows.
+  Unknown technical keys are no longer converted into fake marketer labels;
+  active API/action sources must provide explicit Polish label arrays. Live
+  proof for `act_confirm_ads_target_guardrails` shows Polish labels for missing
+  target, validation and after-confirmation uses with no generic fallback hits.
 - Custom segments and Keyword Planner blocked-claim contracts now use Polish
   source values for rozmiar odbiorców, prognozę, wzrost konwersji, zapis
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete
@@ -211,6 +217,18 @@ Date: 2026-06-27
   - `rtk git diff --check` passed.
   - Live API and browser proof text:
     `.local-lab/proof/20260627-action-detail-content-api-labels/browser/content-action-detail-body.txt`.
+- Action Detail source-label hardening:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "action_operator_labels_are_specific or metric_backed_prepare_actions_are_evidence_grounded" --maxfail=1`
+    passed: 2 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+    passed: 14 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - Live API proof after managed stack restart confirmed Ads target guardrail
+    labels for missing target, validation and after-confirmation uses without
+    generic fallback labels.
+  - Browser proof text:
+    `.local-lab/proof/20260627-action-detail-source-label-hardening/browser/ads-target-guardrail-body.txt`.
 - All-skill default context-pack clean scan:
   `.local-lab/proof/20260625-all-skill-context-clean-final-v2/api-context/summary.json`.
 - Knowledge route condensation:

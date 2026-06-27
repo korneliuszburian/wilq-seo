@@ -2847,7 +2847,7 @@ def _action_gate_labels(values: Iterable[str]) -> list[str]:
     labels: list[str] = []
     for value in values:
         label = _action_gate_label(value)
-        if label not in labels:
+        if label and label not in labels:
             labels.append(label)
     return labels
 
@@ -2877,17 +2877,18 @@ def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
         "missing_read_contracts": "missing_read_contract_labels",
         "missing_requirements": "missing_requirement_labels",
         "required_google_ads_state": "required_google_ads_state_labels",
+        "allowed_uses_after_confirmation": "allowed_uses_after_confirmation_labels",
     }
     for source_key, label_key in label_fields.items():
         existing_labels = _string_list(item.get(label_key))
-        if existing_labels and "warunek techniczny do sprawdzenia" not in existing_labels:
+        if existing_labels:
             continue
         source_values = _string_list(item.get(source_key))
         if source_values:
             item[label_key] = _action_gate_labels(source_values)
 
 
-def _action_gate_label(value: str) -> str:
+def _action_gate_label(value: str) -> str | None:
     if value.startswith("blocked_claim:"):
         claim_labels = operator_blocked_claims([value.removeprefix("blocked_claim:")])
         claim_label = claim_labels[0] if claim_labels else "ryzykowna obietnica"
@@ -3003,10 +3004,13 @@ def _action_gate_label(value: str) -> str:
         "no_performance_claims_without_source_metric": "bez obietnic skuteczności bez metryk źródłowych",
         "no_publishing_without_connector_credentials": "bez publikacji bez danych dostępowych źródła",
         "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
-        "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot albo koszt pozyskania celu",
+        "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot z reklam albo koszt pozyskania celu",
         "record_human_strategy_review_outcome": "zapisz wynik sprawdzenia strategii przez człowieka",
+        "target_metrics_review": "przegląd wskaźników względem celu",
+        "campaign_review_context": "kontekst przeglądu kampanii",
+        "budget_review_context": "kontekst przeglądu budżetu",
         "recommended_budget_missing": "brak proponowanego budżetu",
-        "target_roas_or_cpa": "docelowy zwrot albo koszt pozyskania celu",
+        "target_roas_or_cpa": "docelowy zwrot z reklam albo koszt pozyskania celu",
         "developer_token_approved_for_keyword_planner": "token deweloperski zatwierdzony dla Keyword Plannera",
         "keyword_planner_generate_ideas_allowed": "Keyword Planner może generować propozycje",
         "verify_keyword_planner_idea_rows": "sprawdź wiersze Keyword Planner",
@@ -3015,7 +3019,7 @@ def _action_gate_label(value: str) -> str:
         return labels[value]
     if " " in value and "_" not in value:
         return value
-    return "warunek techniczny do sprawdzenia"
+    return None
 
 
 def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:

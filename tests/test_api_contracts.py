@@ -1283,7 +1283,10 @@ def test_action_operator_labels_are_specific(
             for key, item in value.items():
                 item_path = f"{path}.{key}" if path else str(key)
                 if key.endswith("_labels") and isinstance(item, list):
-                    if "warunek techniczny do sprawdzenia" in item:
+                    if (
+                        "warunek techniczny do sprawdzenia" in item
+                        or "brak opisu w kontrakcie WILQ" in item
+                    ):
                         leaks.append((action_id, item_path))
                 walk(action_id, item, item_path)
         elif isinstance(value, list):
@@ -3059,6 +3062,9 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                     if isinstance(label, str)
                 )
                 assert "warunek techniczny do sprawdzenia" not in preview[
+                    "required_validation_labels"
+                ]
+                assert "brak opisu w kontrakcie WILQ" not in preview[
                     "required_validation_labels"
                 ]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:

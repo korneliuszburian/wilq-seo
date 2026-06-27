@@ -16,7 +16,6 @@ import {
   ActionPreviewControls,
   ActionReviewGatePanel,
   ActionValidationControls,
-  actionGateLabel,
   actionAuditEventLabel,
   actionAuditSummaryLabel
 } from "./ActionObjectPanels";
@@ -181,7 +180,8 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
           api_mutation_ready: false,
           blocked_claims: payload.blocked_claims,
           connector: payload.connector,
-          draft_constraints: payload.draft_constraints
+          draft_constraints: payload.draft_constraints,
+          draft_constraint_labels: payload.draft_constraint_labels
         }
       }))
     : [];
@@ -670,7 +670,10 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
         />
         <PreviewValues
           label="Po potwierdzeniu"
-          values={operatorRequirementValues(item.allowed_uses_after_confirmation)}
+          values={operatorRequirementValues(
+            item.allowed_uses_after_confirmation,
+            item.allowed_uses_after_confirmation_labels
+          )}
         />
         <PreviewValues
           label="Warunki przeglądu"
@@ -905,15 +908,7 @@ function operatorRequirementValues(value: unknown, labelValue?: unknown) {
   if (labelValues.length > 0) {
     return labelValues.filter((item, index, values) => values.indexOf(item) === index);
   }
-  return asStringArray(value)
-    .map((item) => {
-      const gateLabel = actionGateLabel(item);
-      if (gateLabel !== item) return gateLabel;
-      const missingLabel = adsMissingReadContractLabel(item);
-      if (missingLabel !== item) return missingLabel;
-      return "warunek techniczny do sprawdzenia";
-    })
-    .filter((item, index, values) => values.indexOf(item) === index);
+  return asStringArray(value).filter((item) => !looksLikeTechnicalKey(item));
 }
 
 function missingContractValues(value: unknown, labelValue?: unknown) {
@@ -921,12 +916,11 @@ function missingContractValues(value: unknown, labelValue?: unknown) {
   if (labelValues.length > 0) {
     return labelValues.filter((item, index, values) => values.indexOf(item) === index);
   }
-  return asStringArray(value)
-    .map((item) => {
-      const label = adsMissingReadContractLabel(item);
-      return label !== item ? label : "brakujący odczyt techniczny";
-    })
-    .filter((item, index, values) => values.indexOf(item) === index);
+  return asStringArray(value).filter((item) => !looksLikeTechnicalKey(item));
+}
+
+function looksLikeTechnicalKey(value: string) {
+  return /^[a-z0-9]+(?:_[a-z0-9]+)+$/.test(value);
 }
 
 function readContractValues(value: unknown) {
