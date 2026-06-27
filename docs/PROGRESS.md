@@ -61,6 +61,11 @@ Date: 2026-06-27
   Polglish such as `landing page`, `source/medium`, `message match`, `impact
   metrics`, `Target ROAS/CPA`, `developer token` and `target verdict`. The guard
   now blocks those phrases in active source and skill/eval contracts.
+- Ads Doctor primary summary and evidence proof panels now render
+  `missing_read_contract_labels` and `blocked_claim_labels` from WILQ API
+  instead of mapping raw Ads contract keys in the route. Browser proof for
+  `/ads-doctor` shows Polish labels for missing inputs and blocked promises
+  without raw `target_roas_or_cpa`, `profit_margin` or `human_strategy_review`.
 - Merchant product/performance and price-readiness blocked claims now use
   Polish source values from API/action/knowledge contracts. Dashboard fixtures
   and route labels no longer depend on Merchant legacy claim translators such

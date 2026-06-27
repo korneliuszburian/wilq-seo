@@ -231,6 +231,11 @@ Latest slice:
   as `koszt_micros=`, `wartość_konwersji=`, `search-term rows` and
   `wiersze_bez_konwersji`. Proof:
   `.local-lab/proof/20260627-ads-api-decision-labels/`.
+- Ads Doctor primary operator summary and evidence proof panels now consume
+  API-owned `missing_read_contract_labels` and `blocked_claim_labels` instead
+  of mapping raw summary contract keys in React. Focused route test and browser
+  proof confirm `/ads-doctor` shows Polish missing-input and blocked-promise
+  labels without raw Ads contract keys.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

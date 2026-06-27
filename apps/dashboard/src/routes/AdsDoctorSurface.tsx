@@ -438,9 +438,9 @@ function AdsOperatorSummary({
     .map((decisionId) => decisionsById.get(decisionId))
     .filter((decision): decision is AdsDecisionItem => Boolean(decision));
   const allowedMetrics = summary.allowed_metrics.map(adsAllowedMetricLabel);
-  const missingReadContracts = summary.missing_read_contracts.map(adsMissingReadContractLabel);
+  const missingReadContracts = summary.missing_read_contract_labels;
   const operatorReviewGates = summary.operator_review_gate_labels;
-  const blockedClaims = summary.blocked_claims.map(adsBlockedClaimLabel);
+  const blockedClaims = summary.blocked_claim_labels;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -861,9 +861,9 @@ function AdsMetricEvidencePanel({
   const customSegmentForecastRows =
     data.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
-  const missingReadContracts = summary.missing_read_contracts.map(adsMissingReadContractLabel);
+  const missingReadContracts = summary.missing_read_contract_labels;
   const operatorReviewGates = summary.operator_review_gate_labels;
-  const blockedClaims = summary.blocked_claims.map(adsBlockedClaimLabel);
+  const blockedClaims = summary.blocked_claim_labels;
 
   return (
     <section className="rounded-md border border-line bg-white p-4">

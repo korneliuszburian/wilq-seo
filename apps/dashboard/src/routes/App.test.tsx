@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6841,6 +6843,13 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Campaign activity read contract")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    expect(routeSource).toContain("summary.missing_read_contract_labels");
+    expect(routeSource).toContain("summary.blocked_claim_labels");
+    expect(routeSource).not.toContain(
+      "summary.missing_read_contracts.map(adsMissingReadContractLabel)"
+    );
+    expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
   });
 
   it("custom segments route renders dedicated validation contract", async () => {
