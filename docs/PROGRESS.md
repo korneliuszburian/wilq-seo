@@ -125,6 +125,12 @@ Date: 2026-06-27
   `Landing:`, `message match`, `key events`, `ecommerce_purchases`,
   `engagement`, raw action IDs, `payload` or `ActionObject`:
   `.local-lab/proof/20260627-ga4-api-labels/ga4.txt`.
+- GA4 expanded action preview now also sources metric snapshot labels from the
+  action payload/API. The marketer-facing expanded panel shows Polish labels
+  such as `aktywni użytkownicy`, `zakupy e-commerce`, `zaangażowanie` and
+  `zdarzenia kluczowe` instead of raw metric names such as `active_users` or
+  `ecommerce_purchases`. Proof:
+  `.local-lab/proof/20260627-ga4-preview-snapshot-labels/`.
 - Dashboard status chips now include text-reader separators, so compact header
   status rows no longer collapse into unreadable strings such as `brakuje
   dostępudane do odświeżenia`. Browser proof across Command Center, Merchant,

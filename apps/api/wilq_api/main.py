@@ -3109,6 +3109,7 @@ def _compact_ga4_tracking_preview_for_context(preview_items: list[Any]) -> list[
         "campaign_name",
         "tracking_dimension_gaps",
         "metric_snapshot",
+        "metric_snapshot_labels",
         "reason",
         "required_validation",
         "blocked_claims",

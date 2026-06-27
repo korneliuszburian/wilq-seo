@@ -3945,6 +3945,8 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     preview = ga4_action["payload"]["payload_preview"][0]
     assert preview["preview_contract"] == "ga4_tracking_quality_review_v1"
     assert preview["operation_type"] == "tracking_quality_review"
+    assert preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
+    assert preview["metric_snapshot_labels"]["engagement_rate"] == "zaangażowanie"
     assert "review_conversion_or_key_event_mapping" in preview["required_validation"]
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
@@ -3974,6 +3976,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         "payload_preview"
     ][0]
     assert context_preview["preview_contract"] == "ga4_tracking_quality_review_v1"
+    assert context_preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
     assert context_preview["apply_allowed"] is False
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
@@ -4482,7 +4485,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
-    assert "grup strona wejścia, źródło ruchu i kampania" in ga4_decision[
+    assert "grup stron wejścia, źródeł ruchu i kampanii" in ga4_decision[
         "co_widzimy"
     ]
     assert "Blokada oznacza" in ga4_decision["co_widzimy"]

@@ -146,6 +146,12 @@ Latest slice:
   IDs, raw read-contract keys, `DG rows`, `asset`, `payload` or `ActionObject`
   text on the marketer surface:
   `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
+- GA4 expanded action preview now uses API-owned metric snapshot labels from
+  the action payload and context pack. The expanded `/ga4` panel shows Polish
+  metric labels such as `aktywni użytkownicy`, `zakupy e-commerce`,
+  `zaangażowanie` and `zdarzenia kluczowe`, with no raw GA4 metric names in the
+  marketer-facing scan. Proof:
+  `.local-lab/proof/20260627-ga4-preview-snapshot-labels/`.
 
 ### C. Dashboard Condensation
 

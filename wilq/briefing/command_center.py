@@ -1537,7 +1537,7 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"GA4 ma {landing_group_count} grup strona wejścia, źródło ruchu i kampania, "
+            f"GA4 ma {landing_group_count} grup stron wejścia, źródeł ruchu i kampanii, "
             f"{measurement_issue_count} problemów pomiaru, "
             f"{traffic_quality_count} decyzji jakości ruchu i "
             f"{len(matched_items)} dopasowań WordPress. "
@@ -1960,7 +1960,7 @@ def _action_plan_item(
             priority=14,
             category="GA4",
             why_it_matters=(
-                f"WILQ ma {landing_groups} grup strona wejścia, źródło ruchu i kampania i "
+                f"WILQ ma {landing_groups} grup stron wejścia, źródeł ruchu i kampanii i "
                 f"{decision_count} decyzji GA4 do sprawdzenia: pomiar={measurement_count}, "
                 f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
                 "nie ocena skuteczności. Wnioski o zwrocie z reklam, przychodzie, "

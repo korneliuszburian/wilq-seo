@@ -2332,6 +2332,7 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
         Literal["landing_page", "source_medium", "campaign_name"]
     ] = Field(default_factory=list)
     metric_snapshot: dict[str, float | int | str] = Field(default_factory=dict)
+    metric_snapshot_labels: dict[str, str] = Field(default_factory=dict)
     reason: str
     required_validation: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

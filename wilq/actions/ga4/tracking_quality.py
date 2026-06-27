@@ -20,6 +20,19 @@ GA4_TRACKING_BLOCKED_CLAIMS = [
     "naprawiony pomiar",
     "zapis w GA4",
 ]
+GA4_TRACKING_METRIC_LABELS = {
+    "active_users": "aktywni użytkownicy",
+    "sessions": "sesje",
+    "event_count": "zdarzenia",
+    "screen_page_views": "odsłony",
+    "engagement_rate": "zaangażowanie",
+    "ecommerce_purchases": "zakupy e-commerce",
+    "key_events": "zdarzenia kluczowe",
+    "conversions": "konwersje",
+    "purchase_revenue": "przychód z zakupu",
+    "total_revenue": "przychód razem",
+    "transactions": "transakcje",
+}
 GA4_TRACKING_REQUIRED_VALIDATION = [
     "review_landing_page_dimension",
     "review_source_medium_dimension",
@@ -43,6 +56,12 @@ def validate_ga4_tracking_quality_payload(payload: dict[str, Any]) -> list[str]:
             errors.append("GA4 tracking podgląd zmian_contract is invalid.")
         if not isinstance(item.get("tracking_dimension_gaps"), list):
             errors.append("GA4 tracking payload requires tracking_dimension_gaps list.")
+        metric_snapshot = item.get("metric_snapshot")
+        metric_snapshot_labels = item.get("metric_snapshot_labels")
+        if isinstance(metric_snapshot, dict) and metric_snapshot and not isinstance(
+            metric_snapshot_labels, dict
+        ):
+            errors.append("GA4 tracking payload requires metric_snapshot_labels for visible metrics.")
         if item.get("apply_allowed") is not False:
             errors.append("GA4 tracking podgląd zmian must keep apply_allowed=false.")
         if item.get("api_mutation_ready") is not False:
@@ -94,6 +113,7 @@ def _review_rows(facts: list[MetricFact]) -> list[dict[str, Any]]:
                 campaign_name=campaign_name or None,
                 tracking_dimension_gaps=dimension_gaps,
                 metric_snapshot=_metric_snapshot(group),
+                metric_snapshot_labels=_metric_snapshot_labels(group),
                 reason=_reason(dimension_gaps),
                 required_validation=GA4_TRACKING_REQUIRED_VALIDATION,
                 blocked_claims=GA4_TRACKING_BLOCKED_CLAIMS,
@@ -126,6 +146,13 @@ def _metric_snapshot(facts: list[MetricFact]) -> dict[str, float | int | str]:
     for fact in facts:
         snapshot[fact.name] = fact.value
     return snapshot
+
+
+def _metric_snapshot_labels(facts: list[MetricFact]) -> dict[str, str]:
+    return {
+        fact.name: GA4_TRACKING_METRIC_LABELS.get(fact.name, "metryka GA4")
+        for fact in facts
+    }
 
 
 def _reason(gaps: Sequence[str]) -> str:

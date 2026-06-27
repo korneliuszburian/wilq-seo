@@ -226,6 +226,10 @@ const actions = [
             active_users: 20,
             sessions: 30
           },
+          metric_snapshot_labels: {
+            active_users: "aktywni użytkownicy",
+            sessions: "sesje"
+          },
           reason:
             "Lista sprawdzenia strony wejścia, źródła ruchu i kampanii do oceny jakości ruchu. To nie odblokowuje zwrotu z reklam ani przychodów.",
           required_validation: [
@@ -4801,7 +4805,7 @@ const ga4Diagnostics = {
       id: "ga4_landing_behavior",
       title: "GA4: jakość ruchu ze stron wejścia",
       status: "ready",
-      summary: "WILQ ma 1 grupę strona wejścia, źródło ruchu i kampania oraz 1 metrykę GA4.",
+      summary: "WILQ ma 1 grupę stron wejścia, źródeł ruchu i kampanii oraz 1 metrykę GA4.",
       diagnosis: "Fakty zachowania z GA4 pozwalają wskazać strony wejścia do kontroli jakości ruchu.",
       next_step: "Najpierw sprawdź grupy z niskim zaangażowaniem.",
       source_connectors: ["google_analytics_4"],
@@ -5869,7 +5873,7 @@ function mockFetch() {
                 status: "blocked",
                 priority: 14,
                 summary:
-                  "GA4 ma 1 grupę strona wejścia, źródło ruchu i kampania i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Blokada oznacza brak danych do wniosków o zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych.",
+                  "GA4 ma 1 grupę stron wejścia, źródeł ruchu i kampanii i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Blokada oznacza brak danych do wniosków o zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych.",
                 next_step:
                   "Otwórz /ga4 i przejdź przez kolejkę decyzji. Sprawdź jakość pomiaru w WILQ.",
                 source_connectors: ["google_analytics_4"],

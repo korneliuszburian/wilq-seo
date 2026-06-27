@@ -343,6 +343,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "campaign_name",
                         ],
                         "metric_snapshot": {},
+                        "metric_snapshot_labels": {},
                         "reason": (
                             "Brak wymiarowych GA4 facts. Najpierw zbierz "
                             "zestawienie strony wejścia, źródła ruchu i kampanii z GA4."

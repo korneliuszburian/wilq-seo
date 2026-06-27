@@ -444,6 +444,13 @@ const ga4TrackingActionFixture: ActionObject = {
           screen_page_views: 392,
           sessions: 77
         },
+        metric_snapshot_labels: {
+          active_users: "aktywni użytkownicy",
+          engagement_rate: "zaangażowanie",
+          event_count: "zdarzenia",
+          screen_page_views: "odsłony",
+          sessions: "sesje"
+        },
         reason:
           "Lista sprawdzenia strony wejścia, źródła ruchu i kampanii do oceny jakości ruchu. To pozwala sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic zwrotu z reklam ani przychodu.",
         required_validation: [

@@ -29,6 +29,7 @@ type Ga4TrackingQualityPreviewItem = {
   campaign_name?: string | null;
   tracking_dimension_gaps: string[];
   metric_snapshot: Record<string, string | number>;
+  metric_snapshot_labels: Record<string, string>;
   reason: string;
   required_validation: string[];
   blocked_claims: string[];
@@ -212,8 +213,8 @@ function Ga4ExpandableReviewPanel({
                 Podgląd przeglądu GA4
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                Kolejka akcji do sprawdzenia. Pokazuje co sprawdzić w
-                strona wejścia, źródło ruchu i kampania i nie zapisuje zmian w GA4.
+                Kolejka akcji do sprawdzenia. Pokazuje stronę wejścia, źródło
+                ruchu i kampanię do kontroli bez zapisu zmian w GA4.
               </p>
             </div>
             <MetricTile label="Pozycje" value={trackingPreviewItems.length} />
@@ -563,7 +564,11 @@ function Ga4TrackingQualityPreviewCard({
           {Object.entries(preview.metric_snapshot)
             .slice(0, 4)
             .map(([label, value]) => (
-              <MetricTile key={`${preview.id}-${label}`} label={label} value={value} />
+              <MetricTile
+                key={`${preview.id}-${label}`}
+                label={preview.metric_snapshot_labels[label] ?? label}
+                value={value}
+              />
             ))}
         </div>
       ) : null}
@@ -594,6 +599,7 @@ function isGa4TrackingQualityPreviewItem(
     Array.isArray(value.tracking_dimension_gaps) &&
     value.tracking_dimension_gaps.every((item) => typeof item === "string") &&
     isMetricSnapshot(value.metric_snapshot) &&
+    isMetricSnapshotLabels(value.metric_snapshot_labels) &&
     typeof value.reason === "string" &&
     Array.isArray(value.required_validation) &&
     Array.isArray(value.blocked_claims) &&
@@ -602,6 +608,11 @@ function isGa4TrackingQualityPreviewItem(
     typeof value.api_mutation_ready === "boolean" &&
     typeof value.destructive === "boolean"
   );
+}
+
+function isMetricSnapshotLabels(value: unknown): value is Record<string, string> {
+  if (!isPlainObject(value)) return false;
+  return Object.values(value).every((item) => typeof item === "string");
 }
 
 function isMetricSnapshot(value: unknown): value is Record<string, string | number> {

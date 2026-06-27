@@ -25,6 +25,44 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - GA4 expanded preview metric labels
+
+Purpose:
+
+- Verify that the expanded GA4 action preview gets visible metric labels from
+  the WILQ API/action payload and context pack.
+- Prove that `/ga4` no longer exposes raw metric keys such as `active_users`,
+  `ecommerce_purchases`, `engagement_rate`, `event_count`,
+  `screen_page_views` or `key_events` in the expanded marketer panel.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "ga4 or command_center" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "ga4 route renders workflow-specific brief focus"
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "GA4"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-ga4-preview-snapshot-labels/ga4-expanded.txt
+```
+
+Result:
+
+- Focused API, dashboard, typecheck and language checks passed.
+- `wilq-ga4-analyst` smoke passed against the managed local API.
+- Live contract smoke passed for health, Command Center, marketing brief,
+  Ads, Merchant, Content, GA4 and Localo diagnostics.
+- The browser scan confirmed Polish labels such as `aktywni użytkownicy`,
+  `zakupy e-commerce`, `zaangażowanie` and `zdarzenia kluczowe`, with no raw
+  GA4 metric-key hits in the expanded preview.
+
 ## 2026-06-27 - GA4 API-label and dashboard language proof
 
 Purpose:
