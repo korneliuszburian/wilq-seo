@@ -1,8 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ConnectorRefreshRun, ConnectorStatus, Evidence } from "../lib/api";
-import { ConnectorGrid, ConnectorRefreshRunList, EvidenceList } from "./RegistryPanels";
+import type { ConnectorRefreshRun, ConnectorStatus, Evidence, ExpertRule } from "../lib/api";
+import { ConnectorGrid, ConnectorRefreshRunList, EvidenceList, ExpertRuleList } from "./RegistryPanels";
 
 describe("RegistryPanels", () => {
   it("connector cards summarize access without raw ids or credential names", () => {
@@ -103,5 +103,43 @@ describe("RegistryPanels", () => {
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("vendor_read")).not.toBeInTheDocument();
     expect(screen.queryByText(/clicks=12/)).not.toBeInTheDocument();
+  });
+
+  it("expert rule cards hide raw rule internals until technical details are opened", () => {
+    render(
+      <ExpertRuleList
+        rules={[
+          ({
+            id: "ads_search_terms_v1",
+            name: "Sprawdzenie wyszukiwanych haseł",
+            domain: "ads",
+            version: 1,
+            source_anchor: "Google Ads raw search terms",
+            source_path: "wilq/expert/ads/search_terms.yaml",
+            when_to_use: "Gdy trzeba sprawdzić wyszukiwane hasła.",
+            required_inputs: ["search_terms"],
+            diagnostic_logic: ["segment_by_intent"],
+            recommended_actions: ["negative_keyword_candidate", "content_brief_candidate"],
+            risk_notes: "External data.",
+            output_contract: "WILQ używa reguły tylko z dowodami i blokadami claimów.",
+            capabilities: [],
+            required_mapping: [],
+            requires_evidence: true
+          } satisfies ExpertRule)
+        ]}
+      />
+    );
+
+    expect(screen.getByText("Sprawdzenie wyszukiwanych haseł")).toBeInTheDocument();
+    expect(screen.getByText("Reguła decyzji używana tylko z dowodami i źródłami danych.")).toBeInTheDocument();
+    expect(screen.getByText("WILQ używa reguły tylko z dowodami i blokadami claimów.")).toBeInTheDocument();
+    expect(screen.queryByText(/ads \/ v1/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Google Ads raw search terms")).not.toBeInTheDocument();
+    expect(screen.queryByText(/negative_keyword_candidate/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły reguły" }));
+
+    expect(screen.getByText("Źródło reguły: Google Ads raw search terms")).toBeInTheDocument();
+    expect(screen.getByText(/negative_keyword_candidate/)).toBeInTheDocument();
   });
 });

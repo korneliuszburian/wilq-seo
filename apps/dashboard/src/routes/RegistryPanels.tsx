@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 
 import {
   ActionObject,
@@ -238,23 +239,42 @@ export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
   return (
     <div className="grid gap-3 xl:grid-cols-2">
       {rules.map((rule) => (
-        <article key={rule.id} className="rounded-md border border-line bg-white p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold">{rule.name}</h3>
-              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                {rule.domain} / v{rule.version}
-              </p>
-            </div>
-            {rule.requires_evidence ? <StatusBadge value="wymaga dowodów" /> : null}
-          </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">{rule.output_contract}</p>
-          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Źródło reguły: {rule.source_anchor}</div>
-            <div>Akcje: {rule.recommended_actions.slice(0, 3).join(", ") || "brak"}</div>
-          </div>
-        </article>
+        <ExpertRuleCard key={rule.id} rule={rule} />
       ))}
     </div>
+  );
+}
+
+function ExpertRuleCard({ rule }: { rule: ExpertRule }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{rule.name}</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Reguła decyzji używana tylko z dowodami i źródłami danych.
+          </p>
+        </div>
+        {rule.requires_evidence ? <StatusBadge value="wymaga dowodów" /> : null}
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{rule.output_contract}</p>
+      <button
+        type="button"
+        className="mt-3 min-h-8 rounded-md border border-line bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-action hover:text-action"
+        onClick={() => setShowDetails((value) => !value)}
+      >
+        {showDetails ? "Ukryj szczegóły reguły" : "Pokaż szczegóły reguły"}
+      </button>
+      {showDetails ? (
+        <div className="mt-3 grid gap-2 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
+          <div>Domena: {rule.domain}</div>
+          <div>Wersja: {rule.version}</div>
+          <div>Źródło reguły: {rule.source_anchor}</div>
+          <div>Typy akcji: {rule.recommended_actions.slice(0, 3).join(", ") || "brak"}</div>
+        </div>
+      ) : null}
+    </article>
   );
 }
