@@ -295,6 +295,22 @@ class ActionReviewGate(BaseModel):
     last_mutation_blocker_labels: list[str] = Field(default_factory=list)
 
 
+class ActionPreviewRowViewModel(BaseModel):
+    label: str
+    value: str
+
+
+class ActionPreviewCardViewModel(BaseModel):
+    id: str
+    kind: str
+    title_label: str
+    subtitle_label: str = ""
+    status_label: str = ""
+    rows: list[ActionPreviewRowViewModel] = Field(default_factory=list)
+    apply_state_label: str = ""
+    system_readiness_label: str = ""
+
+
 class ActionObject(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -318,6 +334,7 @@ class ActionObject(BaseModel):
     validation_status: Literal["not_validated", "valid", "invalid"]
     validation_status_label: str = ""
     review_gate: ActionReviewGate = Field(default_factory=ActionReviewGate)
+    preview_cards: list[ActionPreviewCardViewModel] = Field(default_factory=list)
     created_by: str
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

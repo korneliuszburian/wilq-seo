@@ -65,6 +65,24 @@ const actionFixture: ActionObject = {
       }
     ]
   },
+  preview_cards: [
+    {
+      id: "merchant_feed_issue_review_1",
+      kind: "merchant_feed_issue_review",
+      title_label: "Problem feedu do sprawdzenia",
+      subtitle_label: "zmiana dostępności do sprawdzenia / dostępność",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Problem", value: "zmiana dostępności do sprawdzenia" },
+        { label: "Atrybut", value: "dostępność" },
+        { label: "Zgłoszenia", value: "23 zgłoszeń problemu" },
+        { label: "Próbki produktów", value: "1 próbka z nazwą produktu" },
+        { label: "Tytuły próbek", value: "Sorbent chemiczny 10 kg" }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   review_gate: {
     status: "pending_validation",
     status_label: "czeka na sprawdzenie",
@@ -117,6 +135,7 @@ const actionFixture: ActionObject = {
 
 const adsActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ads",
   title: "Przygotuj kolejkę przeglądu kampanii Google Ads",
   domain: "google_ads",
@@ -168,6 +187,7 @@ const adsActionFixture: ActionObject = {
 
 const adsRecommendationActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ads_recommendation",
   title: "Przygotuj ocenę rekomendacji Google Ads",
   domain: "google_ads",
@@ -213,6 +233,7 @@ const adsRecommendationActionFixture: ActionObject = {
 
 const customSegmentActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_custom_segments",
   title: "Przygotuj propozycje segmentów z wyszukiwanych haseł",
   domain: "google_ads",
@@ -277,6 +298,7 @@ const customSegmentActionFixture: ActionObject = {
 
 const negativeKeywordActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_negative_keywords",
   title: "Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
   domain: "google_ads",
@@ -322,6 +344,7 @@ const negativeKeywordActionFixture: ActionObject = {
 
 const ngramActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ngrams",
   title: "Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
   domain: "google_ads",
@@ -377,6 +400,7 @@ const ngramActionFixture: ActionObject = {
 
 const demandGenActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_demand_gen",
   title: "Przygotuj sprawdzenie gotowości Demand Gen",
   domain: "google_ads",
@@ -437,6 +461,7 @@ const demandGenActionFixture: ActionObject = {
 
 const ga4TrackingActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ga4_tracking",
   title: "Sprawdź jakość pomiaru GA4 przed oceną kampanii",
   domain: "ga4",
@@ -496,6 +521,7 @@ const ga4TrackingActionFixture: ActionObject = {
 
 const localoActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_localo",
   title: "Przygotuj sprawdzenie widoczności lokalnej Localo",
   domain: "localo",
@@ -556,6 +582,7 @@ const localoActionFixture: ActionObject = {
 
 const socialDraftActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_social_draft",
   title: "Przygotuj propozycje postów LinkedIn z dowodów WILQ",
   domain: "social",
@@ -603,6 +630,7 @@ const socialDraftActionFixture: ActionObject = {
 
 const keywordPlannerAccessActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_keyword_planner_access",
   title: "Odblokuj Keyword Planner dla Google Ads",
   domain: "google_ads",
@@ -650,6 +678,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
 
 const adsTargetGuardrailActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ads_target_guardrails",
   title: "Potwierdź docelowy zwrot z reklam albo koszt pozyskania celu dla Ads",
   domain: "google_ads",
@@ -726,6 +755,7 @@ const adsTargetGuardrailActionFixture: ActionObject = {
 
 const adsStrategyReviewActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_ads_strategy_review",
   title: "Zapisz ocenę strategii Ads przez człowieka",
   domain: "google_ads",
@@ -793,6 +823,7 @@ const adsStrategyReviewActionFixture: ActionObject = {
 
 const contentActionFixture: ActionObject = {
   ...actionFixture,
+  preview_cards: [],
   id: "act_content",
   title: "Przygotuj kolejkę odświeżenia treści ekologus.pl",
   domain: "content",
@@ -1040,17 +1071,23 @@ describe("Action detail route", () => {
   it("renders the selected action detail", async () => {
     renderActionDetail();
     await waitFor(() =>
-      expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0)
+      expect(screen.getByText("Problem feedu do sprawdzenia")).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Podgląd do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
+    expect(screen.getByText("Problem: zmiana dostępności do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Atrybut: dostępność")).toBeInTheDocument();
+    expect(screen.getByText("Zgłoszenia: 23 zgłoszeń problemu")).toBeInTheDocument();
+    expect(screen.getByText("Próbki produktów: 1 próbka z nazwą produktu")).toBeInTheDocument();
+    expect(screen.queryByText("Przykładowe produkty")).not.toBeInTheDocument();
+    expect(screen.queryByText("online~pl~PL~SKU-001")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_merchant_feed")).not.toBeInTheDocument();
     expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
     expect(screen.queryByText("availability_updated / n:availability")).not.toBeInTheDocument();
     expect(screen.queryByText(/wymaga etykiety problemu z WILQ/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
   });
 
   it("renders Google Ads budget change preview without requiring raw JSON", async () => {
@@ -1347,6 +1384,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("adsMissingReadContractLabel");
     expect(source).not.toContain("marketerBlockedClaimLabels");
     expect(source).not.toContain("contentWordPressPostStatusLabel");
+    expect(source).toContain("action.preview_cards");
     expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");
     expect(source).toContain("post_status_label");

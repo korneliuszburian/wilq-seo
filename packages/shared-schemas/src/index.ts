@@ -177,6 +177,22 @@ export const ActionReviewGateSchema = z.object({
   last_mutation_blocker_labels: z.array(z.string()).default([])
 });
 
+export const ActionPreviewRowViewModelSchema = z.object({
+  label: z.string(),
+  value: z.string()
+});
+
+export const ActionPreviewCardViewModelSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  title_label: z.string(),
+  subtitle_label: z.string().default(""),
+  status_label: z.string().default(""),
+  rows: z.array(ActionPreviewRowViewModelSchema).default([]),
+  apply_state_label: z.string().default(""),
+  system_readiness_label: z.string().default("")
+});
+
 export const ActionObjectSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -197,6 +213,7 @@ export const ActionObjectSchema = z.object({
   validation_status: z.string(),
   validation_status_label: z.string().default(""),
   review_gate: ActionReviewGateSchema.optional().default({}),
+  preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   payload: z.record(z.unknown()),
   audit_events: z.array(AuditEventSchema)
 });

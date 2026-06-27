@@ -104,6 +104,7 @@ describe("ActionObjectPanels", () => {
               last_mutation_blockers: [],
               last_mutation_blocker_labels: []
             },
+            preview_cards: [],
             payload: {},
             audit_events: []
           } as ActionObject

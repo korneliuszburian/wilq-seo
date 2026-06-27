@@ -12191,6 +12191,18 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         if action["id"] == "act_review_merchant_feed_issues"
     )
     assert merchant_action["evidence_summary_label"]
+    assert merchant_action["preview_cards"]
+    merchant_preview_card = merchant_action["preview_cards"][0]
+    assert merchant_preview_card["kind"] == "merchant_feed_issue_review"
+    assert merchant_preview_card["title_label"] == "Problem feedu do sprawdzenia"
+    assert merchant_preview_card["subtitle_label"] == (
+        "zmiana dostępności do sprawdzenia / dostępność"
+    )
+    assert merchant_preview_card["status_label"] == "zapis zmian zablokowany"
+    assert {"label": "Próbki produktów", "value": "1 próbka z nazwą produktu"} in (
+        merchant_preview_card["rows"]
+    )
+    assert not any("online~pl~PL~SKU" in row["value"] for row in merchant_preview_card["rows"])
     assert "issue_product_count" not in merchant_action["human_diagnosis"]
     assert "zgłoszenia problemów" in merchant_action["human_diagnosis"]
     assert "ev_refresh" not in merchant_action["human_diagnosis"]

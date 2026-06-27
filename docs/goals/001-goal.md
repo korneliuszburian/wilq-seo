@@ -114,6 +114,9 @@ Wilku can inspect it without reading technical internals.
   blocked-claim, section title or metric-name translators. Content diagnostics
   now return typed API labels for those fields, and the dashboard renders them
   directly.
+- Merchant action detail previews now expose typed API preview cards and the
+  detail route renders them before raw payload fallback. Merchant feed issue
+  cards show Polish problem/sample summaries instead of raw SKU/product IDs.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -125,10 +128,10 @@ are resolved or explicitly deferred.
 1. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
-2. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
-   It no longer owns the old `marketingLabels.ts` translator, but it still
-   needs a typed action-detail preview view-model; raw payload may remain only
-   in collapsed technical detail.
+2. `DetailPanels.tsx` now has the first typed action-detail preview view-model
+   path for Merchant feed issues, but remaining action kinds still infer active
+   preview cards from raw payload shape. Migrate those action kinds one by one;
+   raw payload may remain only in collapsed technical detail.
 3. GA4, Merchant, Demand Gen, registry/workflow and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.

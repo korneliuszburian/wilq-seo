@@ -633,6 +633,10 @@ WILQ is complete for this long-range goal when:
   publication readiness and blocked claims moved into the content action API
   payload. The Content route now renders those fields directly and the removed
   local helper functions are guarded against returning.
+- 2026-06-27: Merchant action detail previews now use API-owned typed
+  `preview_cards`. The detail route prefers those cards before raw payload
+  fallback, and Merchant feed issue cards show Polish problem/sample summaries
+  without raw SKU/product IDs.
 
 ## Discoveries
 
@@ -696,6 +700,9 @@ WILQ is complete for this long-range goal when:
   labels: connector status, refresh status, section blockers and metric names
   are API/domain semantics. React may format numbers, but it must not own the
   meaning of those fields.
+- Browser proof caught a Polish pluralization issue in Merchant preview card
+  copy. Keep browser text proof in every marketer-route cleanup slice because
+  API/unit checks do not catch all readability failures.
 
 ## Decision Log
 
@@ -725,6 +732,10 @@ WILQ is complete for this long-range goal when:
 - Active Command Center daily-decision labels are API-owned. Do not reintroduce
   route-local dictionaries for decision copy, source labels, metric labels,
   blocked promises, CTA labels or skill labels.
+- Action detail first-screen preview cards must come from typed
+  `ActionObject.preview_cards`. Raw action payload inspection is allowed only
+  as a temporary fallback for unmigrated action kinds or inside technical
+  detail.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

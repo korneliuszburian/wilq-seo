@@ -104,6 +104,10 @@ Latest cleanup state:
   diagnostics now return API-owned `status_label`, `metric_label` and
   `blocked_claim_labels`, and the old content label registry was pruned down to
   numeric value formatting only.
+- Merchant action detail previews now use API-owned typed preview cards. The
+  detail route renders `preview_cards` before any raw payload fallback, and
+  Merchant feed issue cards no longer show raw SKU/product IDs as first-screen
+  copy.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -180,6 +184,16 @@ Proof:
   returned all required content `*_label` fields and `agent-browser read`
   confirmed `/content-planner` renders live marketer copy without console
   errors.
+- Merchant action-detail typed preview cards:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or action_preview" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_merchant_feed_issues` returned four
+  `preview_cards`, Polish row labels and no raw SKU in card rows.
+  `agent-browser read` for `/actions/act_review_merchant_feed_issues`
+  confirmed visible Merchant preview cards without console errors.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -188,8 +202,10 @@ Proof:
 Next cleanup queue:
 
 1. Action detail previews:
-   - replace `DetailPanels.tsx` payload-shape inference with typed API preview
-     rows; keep raw payload only in collapsed technical detail.
+   - Merchant feed issue previews have typed API cards.
+   - migrate remaining action kinds one by one from `DetailPanels.tsx`
+     payload-shape inference to typed API preview cards; keep raw payload only
+     in collapsed technical detail.
 2. Primary route raw fallbacks:
    - clean remaining GA4, Merchant, Demand Gen, registry/workflow and knowledge
      route fallbacks that still return raw enum keys or technical values when

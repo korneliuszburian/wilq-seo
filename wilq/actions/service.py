@@ -100,8 +100,10 @@ from wilq.schemas import (
     ActionMode,
     ActionMutationAuditRecord,
     ActionObject,
+    ActionPreviewCardViewModel,
     ActionPreviewRequest,
     ActionPreviewResult,
+    ActionPreviewRowViewModel,
     ActionReviewGate,
     ActionReviewOutcome,
     ActionReviewRequest,
@@ -2494,11 +2496,127 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
                 action.validation_status
             ),
             "review_gate": _review_gate_with_operator_labels(action.review_gate),
+            "preview_cards": _action_preview_cards(action),
             "audit_events": [
                 _audit_event_with_operator_label(event) for event in action.audit_events
             ],
         }
     )
+
+
+def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewModel]:
+    if action.payload.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT:
+        return _merchant_preview_cards(action.payload)
+    return []
+
+
+def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("payload_preview", [])
+        if isinstance(item, dict)
+        and item.get("preview_contract") == MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(_prioritized_merchant_preview_items(preview_items)[:4]):
+        sample_titles = _string_list(item.get("sample_titles"))
+        rows = [
+            _preview_row("Problem", str(item.get("issue_type_label") or "problem do sprawdzenia")),
+            _preview_row(
+                "Atrybut",
+                str(item.get("affected_attribute_label") or "atrybut do sprawdzenia"),
+            ),
+            _preview_row(
+                "Zgłoszenia",
+                _merchant_issue_count_label(item.get("metric_snapshot")),
+            ),
+            _preview_row(
+                "Próbki produktów",
+                _merchant_sample_summary(item),
+            ),
+        ]
+        if sample_titles:
+            rows.append(_preview_row("Tytuły próbek", ", ".join(sample_titles[:2])))
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=str(item.get("id") or f"merchant_preview_{index}"),
+                kind="merchant_feed_issue_review",
+                title_label="Problem feedu do sprawdzenia",
+                subtitle_label=(
+                    f"{item.get('issue_type_label') or 'problem'} / "
+                    f"{item.get('affected_attribute_label') or 'atrybut'}"
+                ),
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
+            )
+        )
+    return cards
+
+
+def _prioritized_merchant_preview_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        items,
+        key=lambda item: (
+            0 if _string_list(item.get("sample_titles")) or _string_list(item.get("sample_product_ids")) else 1,
+            str(item.get("id") or ""),
+        ),
+    )
+
+
+def _preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
+    return ActionPreviewRowViewModel(label=label, value=value)
+
+
+def _merchant_issue_count_label(value: Any) -> str:
+    if isinstance(value, dict):
+        issue_count = value.get("issue_product_count")
+        if isinstance(issue_count, int | float):
+            count = int(issue_count)
+            if count == 1:
+                return "1 zgłoszenie problemu"
+            if 2 <= count <= 4:
+                return f"{count} zgłoszenia problemu"
+            return f"{count} zgłoszeń problemu"
+    return "brak liczby zgłoszeń"
+
+
+def _merchant_sample_summary(item: dict[str, Any]) -> str:
+    titles = _string_list(item.get("sample_titles"))
+    product_ids = _string_list(item.get("sample_product_ids"))
+    if titles:
+        count = len(titles)
+        if count == 1:
+            return "1 próbka z nazwą produktu"
+        if 2 <= count <= 4:
+            return f"{count} próbki z nazwami produktów"
+        return f"{count} próbek z nazwami produktów"
+    if product_ids:
+        count = len(product_ids)
+        if count == 1:
+            return "1 próbka produktu bez nazwy"
+        if 2 <= count <= 4:
+            return f"{count} próbki produktów bez nazw"
+        return f"{count} próbek produktów bez nazw"
+    reason = item.get("sample_unavailable_reason_label") or item.get("sample_unavailable_reason")
+    if isinstance(reason, str) and reason:
+        return reason
+    return "brak próbek produktów"
+
+
+def _apply_state_label(value: Any) -> str:
+    return "zapis zmian dopuszczony" if value is True else "zapis zmian zablokowany"
+
+
+def _system_readiness_label(value: Any) -> str:
+    return "system gotowy do zapisu" if value is True else "system zablokowany przed zapisem"
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item]
 
 
 def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGate:
