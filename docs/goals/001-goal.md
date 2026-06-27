@@ -57,6 +57,7 @@ Wilku can inspect it without reading technical internals.
   - `0a7414e fix(localo): clean access proof labels`
   - `6e93975 fix(dashboard): hide raw trace ids in detail panels`
   - `e6001a5 fix(dashboard): source proof labels from api`
+  - `f74c770 fix(demand-gen): expose clean proof labels`
 - The Ads recommendation/keyword-context cleanup removes raw
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
@@ -68,6 +69,9 @@ Wilku can inspect it without reading technical internals.
   evidence summaries and safe reporting-dimension labels, then uses them in GA4
   panels instead of raw `(not set)`, `tracking-gap`, connector IDs, evidence IDs
   and `ID` evidence counts.
+- The Demand Gen cleanup is committed. It adds API-owned source labels and
+  evidence summaries, then uses them instead of raw source IDs and `ID` proof
+  counts.
 - Current active slice: remaining secondary dashboard cleanup and browser proof.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.

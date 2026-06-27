@@ -37,6 +37,7 @@ Recent commits:
 - `0a7414e fix(localo): clean access proof labels`
 - `6e93975 fix(dashboard): hide raw trace ids in detail panels`
 - `e6001a5 fix(dashboard): source proof labels from api`
+- `f74c770 fix(demand-gen): expose clean proof labels`
 
 What changed:
 
@@ -47,6 +48,9 @@ What changed:
   `Przykładowe dowody`, `Łącznie dowodów`, `OAuth`, `access token`, PKCE/token
   wording, raw `(not set)` labels or `ID` evidence counts as normal marketer
   copy.
+- Demand Gen now exposes API-owned source labels and evidence summaries, and
+  the route no longer renders raw `google_ads`, `google_analytics_4` or `ID`
+  evidence counts as normal proof copy.
 - The cleaned surfaces keep traceability through typed contracts, but raw
   internals are moved out of first-screen marketer copy.
 
@@ -62,6 +66,9 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics|content route renders condensed selected decision with expandable detail|ahrefs route renders authority context and clean gap review language" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
 - Brief workflow tests:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx src/routes/App.test.tsx -t "BriefWorkflowSurface config|social route renders workflow-specific blockers" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+- Demand Gen focused tests:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen_diagnostics_exposes_honest_readiness_contract or codex_context_pack_scopes_demand_gen_payload" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "demand gen route renders readiness contract instead of generic registry" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
 - Live API/browser proof exists for GA4 cleanup only:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
