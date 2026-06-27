@@ -331,10 +331,10 @@
     ],
     "expected_blocked": false,
     "blocked_claim_terms": [
-      "post published",
-      "social performance uplift",
+      "opublikowanie posta",
+      "wzrost skuteczności social",
       "ROAS",
-      "revenue"
+      "przychód"
     ]
   },
   {

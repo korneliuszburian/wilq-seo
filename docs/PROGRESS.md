@@ -67,6 +67,10 @@ Date: 2026-06-27
   Polish source values from API/action/knowledge contracts. Dashboard fixtures
   and route labels no longer depend on Merchant legacy claim translators such
   as old feed/write and approval-recovery values.
+- Social publisher context-pack and draft actions now use Polish blocked-claim
+  source values for publishing and social-performance promises. The language
+  guard now blocks the old social phrases `post published` and
+  `social performance uplift` in active skill/eval contracts.
 
 ## Latest Proof Pointers
 
@@ -146,6 +150,17 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_exposes_feed_issue_queue or merchant_product_performance_readiness or merchant_diagnostics_promotes_ads_product_state_review_decision or merchant_price_impact_blocks_snapshot_history_without_price_change or codex_context_pack_scopes_merchant_payload_preview" --maxfail=1` passed: 7 tests.
   - `rtk uv run pytest tests/test_codex_skill_eval_cases.py tests/test_marketer_uat_packet.py -q --maxfail=1` passed: 7 tests.
   - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/CommandCenterRoute.test.tsx src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "merchant route renders dedicated feed diagnostics|Command Center|action detail|Zakazane obietnice|connector status renders" --testTimeout=20000` passed: 3 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+- Social publisher blocked-claim language cleanup without live API/browser proof
+  in current session:
+  - Focused stale-term scan for `post published` and
+    `social performance uplift` across active API, dashboard, tests, evals and
+    the social skill found no active hits outside the guard rule definitions.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python -m py_compile apps/api/wilq_api/main.py wilq/actions/service.py wilq/briefing/blocked_claim_labels.py scripts/marketer_language_guard.py .agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "social_context_pack or social_draft_actions" --maxfail=1` passed: 3 tests.
+  - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1` passed: 5 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 -t "social route renders workflow-specific blockers" --testTimeout=20000` passed: 1 test.
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
 - Brief workflow focus-language cleanup:
   `.local-lab/proof/20260626-brief-workflow-focus-language-cleanup/summary.json`.

@@ -258,6 +258,14 @@ FORBIDDEN_PHRASES = (
         "Use propozycje postów.",
     ),
     ForbiddenPhrase(
+        "post published",
+        "Use opublikowanie posta / opublikowany post in social blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "social performance uplift",
+        "Use wzrost skuteczności social in social blocked claims.",
+    ),
+    ForbiddenPhrase(
         "LinkedIn credentials",
         "Use dostęp LinkedIn.",
     ),

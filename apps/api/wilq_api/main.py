@@ -1356,7 +1356,7 @@ def _social_draft_context_for_context(
     }
     candidate_inputs: list[dict[str, Any]] = []
     draft_constraints: list[str] = []
-    blocked_claims = ["post published", "social performance uplift"]
+    blocked_claims = ["opublikowanie posta", "wzrost skuteczności social"]
     source_metric_names: list[str] = []
     source_connectors: list[str] = []
     evidence_ids: list[str] = []

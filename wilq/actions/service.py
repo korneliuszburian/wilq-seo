@@ -1886,7 +1886,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "require_human_review_before_apply",
         ],
         "candidate_inputs": _social_candidate_inputs(social_metrics),
-        "blocked_claims": ["ROAS", "revenue", "conversion uplift", "wdrożona poprawka produktu"],
+        "blocked_claims": ["ROAS", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
         "destructive": False,
     }
     for connector_id, action_type, title in (

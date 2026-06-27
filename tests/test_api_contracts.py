@@ -15132,7 +15132,14 @@ def test_social_context_pack_exposes_review_only_draft_context(
     assert "no_publishing_without_connector_credentials" in social_context[
         "draft_constraints"
     ]
-    assert "post published" in social_context["blocked_claims"]
+    assert "opublikowanie posta" in social_context["blocked_claims"]
+    assert "wzrost skuteczności social" in social_context["blocked_claims"]
+    assert "przychód" in social_context["blocked_claims"]
+    assert "wzrost konwersji" in social_context["blocked_claims"]
+    old_post_publish_claim = "post " + "published"
+    old_social_uplift_claim = "social performance " + "uplift"
+    assert old_post_publish_claim not in social_context["blocked_claims"]
+    assert old_social_uplift_claim not in social_context["blocked_claims"]
     assert context_payload["marketing_brief"]["context_pack_compaction"][
         "sections_compacted"
     ] is True

@@ -717,8 +717,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         "act_prepare_linkedin_social_drafts",
         "act_prepare_facebook_social_drafts",
     }
-    assert "post published" in social_case["blocked_claim_terms"]
-    assert "social performance uplift" in social_case["blocked_claim_terms"]
+    assert "opublikowanie posta" in social_case["blocked_claim_terms"]
+    assert "wzrost skuteczności social" in social_case["blocked_claim_terms"]
+    old_post_publish_claim = "post " + "published"
+    old_social_uplift_claim = "social performance " + "uplift"
+    assert old_post_publish_claim not in social_case["blocked_claim_terms"]
+    assert old_social_uplift_claim not in social_case["blocked_claim_terms"]
     social_smoke_script = Path(
         ".agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
