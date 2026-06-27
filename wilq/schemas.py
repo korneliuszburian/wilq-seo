@@ -3150,7 +3150,9 @@ class DemandGenReadinessContract(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)

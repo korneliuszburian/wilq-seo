@@ -16821,6 +16821,10 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     )
     assert readiness["payload_preview"][0]["api_mutation_ready"] is False
     assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
+    assert readiness["source_connector_labels"] == ["Google Ads", "GA4"]
+    assert "dowód" in readiness["evidence_summary_label"] or "dowod" in readiness[
+        "evidence_summary_label"
+    ]
     assert isinstance(readiness["campaign_rows_evaluated"], int)
     assert isinstance(readiness["campaign_channel_counts"], dict)
     assert isinstance(readiness["demand_gen_campaign_rows"], list)
@@ -16890,6 +16894,10 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert data["metric_tiles"]["kampanie Ads"] == data["campaign_rows_evaluated"]
     assert data["metric_tiles"]["braki"] == len(data["missing_read_contracts"])
     assert data["source_connectors"] == ["google_ads", "google_analytics_4"]
+    assert data["source_connector_labels"] == ["Google Ads", "GA4"]
+    assert "dowód" in data["evidence_summary_label"] or "dowod" in data[
+        "evidence_summary_label"
+    ]
     assert data["action_ids"] == ["act_review_demand_gen_readiness"]
     assert data["payload_preview"][0]["preview_contract"] == (
         "demand_gen_readiness_review_preview_v1"

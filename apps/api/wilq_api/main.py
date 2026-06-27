@@ -103,9 +103,11 @@ from wilq.knowledge.compilers.playbook_compiler import (
 )
 from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.operator_labels import (
+    evidence_count_label,
     evidence_source_type_label,
     freshness_state_label,
     source_connector_label,
+    source_connector_labels,
 )
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
@@ -1667,7 +1669,11 @@ def _demand_gen_readiness_contract(
         missing_read_contract_labels=missing_contract_labels,
         blocked_claims=DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         source_connectors=["google_ads", "google_analytics_4"],
+        source_connector_labels=source_connector_labels(
+            ["google_ads", "google_analytics_4"]
+        ),
         evidence_ids=evidence_ids,
+        evidence_summary_label=evidence_count_label(evidence_ids),
         action_ids=action_ids,
         operator_review_gates=operator_review_gates,
         operator_review_gate_labels=demand_gen_contract_labels(operator_review_gates),

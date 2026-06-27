@@ -6176,7 +6176,9 @@ const demandGenDiagnostics = {
     "wzrost skuteczności"
   ],
   source_connectors: ["google_ads", "google_analytics_4"],
+  source_connector_labels: ["Google Ads", "GA4"],
   evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
+  evidence_summary_label: "2 dowody źródłowe",
   action_ids: ["act_review_demand_gen_readiness"],
   operator_review_gates: [
     "demand_gen_specific_evidence_required",
@@ -8037,6 +8039,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getAllByText(/jakość stron wejścia według kampanii/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ograniczenia przejścia/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Google Ads/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/GA4/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/google_ads/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/google_analytics_4/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\d+ ID/)).not.toBeInTheDocument();
     expect(screen.getByText(/rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
     expect(screen.queryByText(/act_review_demand_gen_readiness/)).not.toBeInTheDocument();
     expect(screen.queryByText(/available_read_contracts/)).not.toBeInTheDocument();

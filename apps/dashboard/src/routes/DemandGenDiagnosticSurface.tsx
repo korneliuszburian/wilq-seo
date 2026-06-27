@@ -119,7 +119,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
                   />
                 </div>
               </article>
@@ -219,7 +219,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
                   />
                 </div>
               </article>
@@ -252,7 +252,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
                   />
                 </div>
               </article>
@@ -285,10 +285,10 @@ export function DemandGenDiagnosticSurface() {
             label="Brakujące dane"
             values={data.missing_read_contract_labels}
           />
-          <TraceLine label="Źródła" values={data.source_connectors} />
+          <TraceLine label="Źródła danych" values={data.source_connector_labels} />
           <TraceLine
             label="Dowody"
-            values={[formatDemandGenIdCount(data.evidence_ids.length, "dowód", "dowodów")]}
+            values={[data.evidence_summary_label]}
           />
           <TraceLine
             label="Akcje"
@@ -312,6 +312,13 @@ export function DemandGenDiagnosticSurface() {
 function formatDemandGenIdCount(count: number, singular: string, plural: string) {
   if (count === 1) return `1 ${singular}`;
   return `${count} ${plural}`;
+}
+
+function formatDemandGenEvidenceCount(count: number) {
+  if (count === 0) return "brak dowodów źródłowych";
+  if (count === 1) return "1 dowód źródłowy";
+  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
+  return `${count} dowodów źródłowych`;
 }
 
 function adsCost(value: number | null | undefined, currencyCode?: string) {
