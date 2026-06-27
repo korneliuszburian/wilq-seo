@@ -609,6 +609,13 @@ WILQ is complete for this long-range goal when:
   API/domain/dashboard sources now render plain Polish proof summaries and the
   proof scan under `.local-lab/proof/20260627-label-cleanup-browser/` is clean
   for the targeted stale terms.
+- 2026-06-27: Ads secondary proof rows, registry/action evidence counts and
+  action impact-check results now use API-owned source/evidence/action labels
+  instead of route-local counts or raw connector IDs in normal UI.
+- 2026-06-27: Read-only parallel audit found one remaining active runtime
+  compatibility path for old content-review audit terms in
+  `wilq/actions/service.py` and stale 2026-06-25 handoff/audit docs that should
+  be marked superseded or rewritten before the next product goal.
 
 ## Discoveries
 
@@ -658,6 +665,10 @@ WILQ is complete for this long-range goal when:
   under `what_blocks_us`, fix marketing-brief source logic instead of changing
   dashboard copy.
 - Browser text proof catches marketer-visible jargon that unit tests can miss.
+- A response-time sanitizer for obsolete product semantics is still product
+  debt even if the current API output looks clean. Prefer one explicit storage
+  migration/drop policy plus a regression guard over keeping compatibility code
+  in the active runtime path.
   Keep proof scans as part of every route cleanup slice and promote repeated
   findings into API/domain labels or language guards.
 

@@ -2614,6 +2614,10 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["post_window_days"] == 14
     assert result["metric_fact_count"] > 0
     assert "google_merchant_center" in result["source_connectors"]
+    assert result["source_connector_labels"] == ["Merchant Center"]
+    assert "dowód" in result["evidence_summary_label"] or "dowody" in result[
+        "evidence_summary_label"
+    ]
     assert result["blocker_labels"] == []
     assert result["audit_event"]["event_type"] == "action_impact_check_completed"
     assert result["review_gate"]["last_impact_check_status"] == "checked"

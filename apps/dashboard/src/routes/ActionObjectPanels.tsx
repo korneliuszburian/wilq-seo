@@ -596,7 +596,8 @@ function ActionImpactCheckResultPanel({
         Okna: {result.pre_window_days} dni przed / {result.post_window_days} dni po.
       </div>
       <div>Metryki z dowodami: {result.metric_fact_count}</div>
-      <TraceLine label="Źródła" values={result.source_connectors} empty="brak" />
+      <TraceLine label="Źródła" values={result.source_connector_labels} empty="brak" />
+      <div>Dowody: {result.evidence_summary_label || "brak dowodów źródłowych"}</div>
       <TraceLine label="Blokady sprawdzenia efektu" values={result.blocker_labels} empty="brak" />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>

@@ -40,6 +40,8 @@ Recent commits:
 - `f74c770 fix(demand-gen): expose clean proof labels`
 - `be6205b fix(brief): use clean action wording`
 - `709a4cc fix(dashboard): remove id jargon from proof copy`
+- `551108f fix(ads): source secondary proof labels from api`
+- `f853404 fix(dashboard): clean registry evidence counts`
 
 What changed:
 
@@ -57,11 +59,19 @@ What changed:
   `ID dowodu` or English validation wording as operator copy.
 - Merchant, Content Planner and Ahrefs proof rows no longer render `ID`
   evidence counts or "przykładowe ID produktów" in normal marketer copy.
+- Ads Doctor secondary proof rows now use API-owned evidence, source and action
+  summaries instead of route-local counts or `Akcje WILQ` labels.
+- Actions, Opportunities, Registry and Knowledge panels no longer render
+  `Dowody: X ID` as normal route copy in the touched paths.
+- Action impact-check results now return API-owned source labels and evidence
+  summaries, and the dashboard no longer renders raw source connector IDs in
+  that result panel.
 - The cleaned surfaces keep traceability through typed contracts, but raw
   internals are moved out of first-screen marketer copy.
 
-Current active slice: remaining secondary dashboard cleanup outside the latest
-Merchant, Content Planner, Ahrefs, Demand Gen and brief/action validation paths.
+Current active slice: remove the remaining active runtime compatibility path
+for old content-review audit terms and mark stale handoff/audit docs as
+superseded where they still read like current dev-site migration guidance.
 
 Proof:
 
@@ -84,6 +94,19 @@ Proof:
   `rtk git diff --check`
 - Browser proof for Merchant, Content Planner and Ahrefs cleanup:
   `.local-lab/proof/20260627-label-cleanup-browser/`
+- Ads secondary label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  browser proof: `.local-lab/proof/20260627-ads-secondary-label-cleanup/`
+- Registry/actions evidence-count cleanup:
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/App.test.tsx -t "connector refresh run cards summarize evidence instead of printing raw IDs|actions route starts from marketer-facing actions instead of registry dumps" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  browser proof: `.local-lab/proof/20260627-actions-registry-id-cleanup/`
+- Action impact-check label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "action_impact_check" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "actions route starts from marketer-facing actions instead of registry dumps" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -91,21 +114,24 @@ Proof:
 
 Next cleanup queue:
 
-1. Ads Doctor:
-   - route-local raw-key fallbacks still exist in secondary helper paths and
-     should be retired as API labels cover those paths.
-2. Actions:
-   - scan remaining detail/impact surfaces for raw source connector fallback
-     copy outside the already cleaned first-screen panels.
+1. Active runtime cleanup:
+   - remove or migrate the runtime sanitizer for old content-review audit terms
+     in `wilq/actions/service.py` after deciding whether local stored audit rows
+     should be normalized at storage load or dropped from active action output.
+2. Historical docs cleanup:
+   - mark or rewrite stale handoff/audit docs that still describe dev-site
+     target/migration work as current Content Planner guidance.
 3. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
-1. Clean Ads secondary fallback copy.
-2. Scan remaining action/registry panels and remove marketer-visible raw IDs
-   only where they are normal UI, not intentional technical drilldown.
+1. Remove the remaining active legacy content-review audit sanitizer or replace
+   it with an explicit storage migration/drop policy, then add a regression test
+   proving old dev-site migration terms cannot leak through `/api/actions`.
+2. Mark stale handoff/audit docs as superseded where they still sound like
+   current dev-site migration guidance.
 
 ## Guardrails
 

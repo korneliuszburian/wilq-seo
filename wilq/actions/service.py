@@ -89,6 +89,7 @@ from wilq.briefing.merchant_labels import (
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,
@@ -2296,7 +2297,9 @@ def impact_check_action(
         post_window_days=request.post_window_days,
         metric_fact_count=len(action.metrics),
         source_connectors=source_connectors,
+        source_connector_labels=source_connector_labels(source_connectors),
         evidence_ids=evidence_ids,
+        evidence_summary_label=evidence_count_label(evidence_ids),
         blockers=blockers,
         blocker_labels=_action_gate_labels(blockers),
         audit_event=_audit_event_with_operator_label(audit),

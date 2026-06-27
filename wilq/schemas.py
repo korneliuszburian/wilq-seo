@@ -447,7 +447,9 @@ class ActionImpactCheckResult(BaseModel):
     post_window_days: int
     metric_fact_count: int = 0
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     blockers: list[str] = Field(default_factory=list)
     blocker_labels: list[str] = Field(default_factory=list)
     audit_event: AuditEvent

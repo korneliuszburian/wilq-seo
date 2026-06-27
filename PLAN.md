@@ -271,6 +271,9 @@ Acceptance:
 - Current docs do not claim old dev-site/migration semantics as active product
   strategy.
 - Every active stale hit has either been removed or has a dated removal task.
+- Known remaining active runtime debt: `wilq/actions/service.py` still sanitizes
+  old content-review audit terms at response time. Remove it after a deliberate
+  storage normalization/drop decision.
 
 Verification:
 
@@ -304,6 +307,8 @@ Acceptance:
 - `/api/content/diagnostics`, `/api/actions/...`, `/api/codex/context-pack`
   and skill smoke do not expose old content fields on active marketer paths.
 - Marketer-facing summaries use plain Polish from API/domain source.
+- Action result endpoints expose marketer-facing labels for sources, evidence
+  summaries and blockers whenever they retain raw keys for audit.
 
 Verification:
 

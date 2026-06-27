@@ -60,6 +60,8 @@ Wilku can inspect it without reading technical internals.
   - `f74c770 fix(demand-gen): expose clean proof labels`
   - `be6205b fix(brief): use clean action wording`
   - `709a4cc fix(dashboard): remove id jargon from proof copy`
+  - `551108f fix(ads): source secondary proof labels from api`
+  - `f853404 fix(dashboard): clean registry evidence counts`
 - The Ads recommendation/keyword-context cleanup removes raw
   recommendation enum summaries, mixed English/Polish recommendation-review
   wording, raw keyword match/status rendering and fixed English shorthand
@@ -78,8 +80,16 @@ Wilku can inspect it without reading technical internals.
   Ahrefs no longer show `ID` proof counts or "przykładowe ID produktów" in
   normal route proof copy; Marketing Brief and action validation no longer
   expose `akcji WILQ`, `ID dowodu` or English validation messages.
-- Current active slice: remaining secondary dashboard/action cleanup outside
-  the latest cleaned paths.
+- Ads Doctor secondary proof rows now use API-owned evidence, source and action
+  summaries instead of route-local counts or `Akcje WILQ` labels.
+- Actions, Opportunities, Registry and Knowledge panels no longer render
+  `Dowody: X ID` as normal route copy in the touched paths.
+- Action impact-check results now return API-owned source labels and evidence
+  summaries, and the dashboard no longer renders raw source connector IDs in
+  that result panel.
+- Current active slice: remove the remaining active runtime compatibility path
+  for old content-review audit terms and mark stale handoff/audit docs as
+  superseded where they still read like current dev-site migration guidance.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -88,10 +98,14 @@ Wilku can inspect it without reading technical internals.
 Use these as the next work queue. Do not start future product layers until these
 are resolved or explicitly deferred.
 
-1. Ads Doctor still has route-local raw-key fallback debt in secondary helper
-   paths. These should disappear as API labels cover the remaining panels.
-2. Action impact and detail panels still have raw connector/evidence fallback
-   risk outside the first-screen panels already cleaned.
+1. `wilq/actions/service.py` still contains an active runtime sanitizer for old
+   content-review audit terms such as `target_site_mapping_review`,
+   `selected_target_url`, `mapping_*` and `staging handoff`. Runtime output is
+   cleaned, but the active compatibility path should be removed or replaced by
+   an explicit storage migration/drop policy.
+2. Some 2026-06-25 handoff/audit docs still read like current dev-site
+   migration guidance. Mark them superseded or rewrite those sections so they
+   cannot steer the next goal.
 3. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
