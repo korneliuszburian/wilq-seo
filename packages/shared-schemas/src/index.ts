@@ -2888,6 +2888,7 @@ export const DemandGenReadinessContractSchema = z.object({
   operator_review_gates: z.array(z.string()),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   payload_preview: z.array(z.record(z.unknown())).default([]),
+  preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   campaign_rows_evaluated: z.number(),
   campaign_channel_counts: z.record(z.number()),
   campaign_channel_labels: z.record(z.string()).optional().default({}),
@@ -2989,6 +2990,7 @@ export type MetricStoreStatus = z.infer<typeof MetricStoreStatusSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
+export type ActionPreviewCardViewModel = z.infer<typeof ActionPreviewCardViewModelSchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;

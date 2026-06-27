@@ -3534,6 +3534,7 @@ class DemandGenReadinessContract(BaseModel):
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     payload_preview: list[dict[str, Any]] = Field(default_factory=list)
+    preview_cards: list[ActionPreviewCardViewModel] = Field(default_factory=list)
     campaign_rows_evaluated: int = 0
     campaign_channel_counts: dict[str, int] = Field(default_factory=dict)
     campaign_channel_labels: dict[str, str] = Field(default_factory=dict)

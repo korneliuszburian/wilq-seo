@@ -43,6 +43,7 @@ from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_
 from wilq.actions.service import (
     apply_action,
     confirm_action,
+    demand_gen_readiness_preview_cards,
     get_action,
     impact_check_action,
     list_actions,
@@ -1639,6 +1640,7 @@ def _demand_gen_readiness_contract(
     )
     action_ids = [DEMAND_GEN_READINESS_REVIEW_ACTION_ID] if payload is not None else []
     payload_preview = payload["payload_preview"] if payload is not None else []
+    preview_cards = demand_gen_readiness_preview_cards(payload) if payload is not None else []
     return DemandGenReadinessContract(
         status="blocked",
         title=title,
@@ -1678,6 +1680,7 @@ def _demand_gen_readiness_contract(
         operator_review_gates=operator_review_gates,
         operator_review_gate_labels=demand_gen_contract_labels(operator_review_gates),
         payload_preview=payload_preview,
+        preview_cards=preview_cards,
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
         campaign_channel_labels=demand_gen_channel_labels(channel_counts),

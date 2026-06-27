@@ -3178,6 +3178,12 @@ def _demand_gen_readiness_preview_cards(
     return cards
 
 
+def demand_gen_readiness_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    return _demand_gen_readiness_preview_cards(payload)
+
+
 def _search_term_ngram_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
 
-import { getDemandGenDiagnostics } from "../lib/api";
+import { type ActionPreviewCardViewModel, getDemandGenDiagnostics } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -27,13 +27,6 @@ export function DemandGenDiagnosticSurface() {
   const landingQualityRows = data.demand_gen_landing_quality_rows;
   const transitionConstraintRows = data.demand_gen_transition_constraint_rows;
   const metricTileEntries = Object.entries(data.metric_tiles);
-  const demandGenPreview = data.payload_preview[0] as Record<string, unknown> | undefined;
-  const previewMissingContractLabels = stringArray(
-    demandGenPreview?.missing_read_contract_labels
-  );
-  const previewRequiredValidationLabels = stringArray(
-    demandGenPreview?.required_validation_labels
-  );
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -129,60 +122,22 @@ export function DemandGenDiagnosticSurface() {
           <BlockerNotice message="W bieżących dowodach Ads nie ma kampanii Demand Gen ani Discovery. WILQ może pokazać kanały konta, ale nie stworzy rekomendacji Demand Gen z kampanii, których nie widzi w danych." />
         )}
 
-        {demandGenPreview ? (
+        {data.preview_cards.length > 0 ? (
           <article className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
             <div className="text-xs font-semibold uppercase tracking-normal text-blue-700">
               Akcja do sprawdzenia
             </div>
-            <h3 className="mt-1 text-sm font-semibold text-ink">
-              Podgląd sprawdzenia gotowości Demand Gen
-            </h3>
+            <h3 className="mt-1 text-sm font-semibold text-ink">Podgląd gotowości Demand Gen</h3>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              Ten podgląd sprawdza kanały i brakujące dane. Nie tworzy kampanii,
-              nie migruje budżetu i nie odblokowuje zapisu zmian.
+              WILQ pokazuje skondensowany podgląd akcji z API. Nie tworzy kampanii,
+              nie przenosi budżetu i nie odblokowuje zapisu zmian.
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <MetricTile
-                label="Kampanie"
-                value={String(demandGenPreview.campaign_rows_evaluated ?? "brak")}
-              />
-              <MetricTile
-                label="Kampanie Demand Gen"
-                value={String(demandGenPreview.demand_gen_campaign_row_count ?? "0")}
-              />
-              <MetricTile
-                label="Reklamy"
-                value={String(demandGenPreview.demand_gen_ad_group_ad_row_count ?? "0")}
-              />
-              <MetricTile
-                label="Kreacje"
-                value={String(demandGenPreview.demand_gen_creative_asset_row_count ?? "0")}
-              />
-              <MetricTile
-                label="Strony wejścia"
-                value={String(demandGenPreview.demand_gen_landing_quality_row_count ?? "0")}
-              />
-              <MetricTile
-                label="Przejścia"
-                value={String(
-                  demandGenPreview.demand_gen_transition_constraint_row_count ?? "0"
-                )}
-              />
-              <MetricTile label="Braki" value={previewMissingContractLabels.length} />
-              <MetricTile
-                label="Zapis zmian"
-                value={demandGenPreview.apply_allowed === true ? "możliwy" : "zablokowany"}
-              />
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              {data.preview_cards.map((card) => (
+                <DemandGenPreviewCard key={card.id} card={card} />
+              ))}
             </div>
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine
-                label="Brakujące dane"
-                values={previewMissingContractLabels}
-              />
-              <TraceLine
-                label="Sprawdzenie w WILQ"
-                values={previewRequiredValidationLabels}
-              />
               <TraceLine
                 label="Akcje"
                 values={[
@@ -343,12 +298,34 @@ function adsPercent(value: number | null | undefined) {
   )}%`;
 }
 
-function uniqueValues(values: string[]) {
-  return Array.from(new Set(values));
-}
-
-function stringArray(value: unknown) {
-  return Array.isArray(value)
-    ? uniqueValues(value.filter((item): item is string => typeof item === "string"))
-    : [];
+function DemandGenPreviewCard({ card }: { card: ActionPreviewCardViewModel }) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-ink">{card.title_label}</h4>
+          {card.subtitle_label ? (
+            <p className="mt-1 text-xs text-slate-500">{card.subtitle_label}</p>
+          ) : null}
+        </div>
+        {card.status_label ? (
+          <span className="rounded-full border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+            {card.status_label}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        {card.rows.map((row) => (
+          <div key={`${card.id}-${row.label}`} className="flex gap-2">
+            <span className="min-w-32 text-slate-500">{row.label}:</span>
+            <span>{row.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+        {card.apply_state_label ? <span>{card.apply_state_label}</span> : null}
+        {card.system_readiness_label ? <span>{card.system_readiness_label}</span> : null}
+      </div>
+    </div>
+  );
 }

@@ -68,6 +68,8 @@ use the cleaned language.
   validation copy in normal UI.
 - Action Detail normal preview renders typed API preview cards only. Raw action
   payloads remain available only behind the collapsed technical detail panel.
+- Demand Gen diagnostics expose typed API preview cards; the route no longer
+  builds its primary preview from raw `payload_preview` shape.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -78,8 +80,8 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Remove scattered raw fallback paths in Demand Gen, registry/workflow, action
-   detail and knowledge routes by adding typed API/schema/view-model labels.
+2. Remove scattered raw fallback paths in registry/workflow and knowledge
+   routes by adding typed API/schema/view-model labels.
 3. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 

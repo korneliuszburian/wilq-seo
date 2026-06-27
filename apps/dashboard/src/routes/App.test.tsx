@@ -6334,6 +6334,34 @@ const demandGenDiagnostics = {
       destructive: false
     }
   ],
+  preview_cards: [
+    {
+      id: "demand_gen_readiness_preview_0",
+      kind: "google_ads_demand_gen_readiness_review",
+      title_label: "Gotowość Demand Gen do sprawdzenia",
+      subtitle_label: "ocena gotowości bez zapisu zmian",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Kampanie ocenione", value: "18" },
+        { label: "Kanały kampanii", value: "PMax: 8, Search: 10" },
+        { label: "Kampanie Demand Gen", value: "0" },
+        { label: "Grupy reklam Demand Gen", value: "1" },
+        { label: "Kreacje i zasoby", value: "1" },
+        { label: "Wiersze jakości stron wejścia", value: "0" },
+        {
+          label: "Braki",
+          value: "jakość stron wejścia według kampanii, ograniczenia przejścia"
+        },
+        {
+          label: "Warunki sprawdzenia",
+          value:
+            "sprawdzenie kanałów kampanii Ads, sprawdzenie GA4: strona wejścia, źródło ruchu i kampania"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   campaign_rows_evaluated: 18,
   campaign_channel_counts: {
     PERFORMANCE_MAX: 8,
@@ -8091,7 +8119,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/wiersze reklam Demand Gen/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/wiersze materiałów kreatywnych/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/akcja do sprawdzenia/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("Podgląd sprawdzenia gotowości Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd gotowości Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Gotowość Demand Gen do sprawdzenia")).toBeInTheDocument();
     const demandGenOperatorSection = screen
       .getByText("Co marketer ma wiedzieć przed planem Demand Gen")
       .closest("section");
@@ -8120,6 +8149,11 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/DemandGenDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("data.preview_cards");
+    expect(routeSource).not.toContain("data.payload_preview[0]");
+    expect(routeSource).not.toContain("Record<string, unknown>");
+    expect(routeSource).not.toContain("stringArray(");
   });
 
   it("evidence detail route renders source trace from linked evidence id", async () => {
