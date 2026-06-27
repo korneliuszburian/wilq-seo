@@ -42,10 +42,25 @@ MERCHANT_RESOLUTION_LABELS = {
 }
 
 MERCHANT_METRIC_LABELS = {
+    "active_products": "produkty aktywne",
+    "disapproved_products": "produkty odrzucone",
+    "expiring_products": "produkty wygasające",
+    "item_level_issue_count": "zgłoszenia problemów",
     "issue_product_count": "zgłoszenia problemów",
+    "merchant_action_issue_count": "problemy wymagające działania",
     "max_issue_product_count": "największa liczba zgłoszeń",
     "reported_issue_occurrences": "wystąpienia problemów",
     "reporting_contexts": "konteksty raportów",
+    "total_products": "produkty w feedzie",
+}
+
+MERCHANT_DIMENSION_LABELS = {
+    "affected_attribute": "atrybut",
+    "country": "kraj",
+    "issue_type": "problem",
+    "reporting_context": "kontekst",
+    "resolution": "rozwiązanie",
+    "severity": "status",
 }
 
 
@@ -86,3 +101,28 @@ def merchant_metric_snapshot_labels(metric_snapshot: dict[str, object]) -> dict[
         key: MERCHANT_METRIC_LABELS.get(key, "metryka Merchant")
         for key in metric_snapshot
     }
+
+
+def merchant_metric_fact_label(value: object) -> str:
+    text = str(value or "").strip()
+    return MERCHANT_METRIC_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_dimension_label(value: object) -> str:
+    text = str(value or "").strip()
+    return MERCHANT_DIMENSION_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_dimension_value_label(key: object, value: object) -> str:
+    key_text = str(key or "").strip()
+    if key_text == "issue_type":
+        return merchant_display_label(value)
+    if key_text == "affected_attribute":
+        return merchant_display_label(value)
+    if key_text == "reporting_context":
+        return merchant_reporting_context_label(value)
+    if key_text == "severity":
+        return merchant_severity_label(value)
+    if key_text == "resolution":
+        return merchant_resolution_label(value)
+    return merchant_display_label(value)

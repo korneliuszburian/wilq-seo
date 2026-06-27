@@ -7,7 +7,10 @@ from typing import Literal
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.merchant_labels import (
+    merchant_dimension_label,
+    merchant_dimension_value_label,
     merchant_display_label,
+    merchant_metric_fact_label,
     merchant_metric_snapshot_labels,
     merchant_reporting_context_label,
     merchant_resolution_label,
@@ -156,6 +159,7 @@ def build_merchant_diagnostics(
             limit=MERCHANT_METRIC_FACT_LIMIT,
         )
     )
+    metric_facts = [_merchant_metric_fact_with_labels(fact) for fact in metric_facts]
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
         or (
@@ -2856,6 +2860,21 @@ def _merchant_resolution_label(value: str | None) -> str:
     return merchant_resolution_label(value)
 
 
+def _merchant_metric_fact_with_labels(fact: MetricFact) -> MetricFact:
+    return fact.model_copy(
+        update={
+            "metric_label": merchant_metric_fact_label(fact.name),
+            "dimension_labels": {
+                key: merchant_dimension_label(key) for key in fact.dimensions
+            },
+            "dimension_value_labels": {
+                key: merchant_dimension_value_label(key, value)
+                for key, value in fact.dimensions.items()
+            },
+        }
+    )
+
+
 def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:
     if severity == "DISAPPROVED":
         return ActionRisk.high
@@ -2973,12 +2992,14 @@ def _metric_facts_from_refresh_summary(
         if value is None:
             continue
         facts.append(
-            MetricFact(
+            _merchant_metric_fact_with_labels(
+                MetricFact(
                 name=name,
                 value=value,
                 period="connector_refresh",
                 source_connector=MERCHANT_CONNECTOR_ID,
                 evidence_id=evidence_id,
+                )
             )
         )
     return sorted(facts, key=lambda fact: fact.name)

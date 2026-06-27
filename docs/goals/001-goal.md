@@ -123,6 +123,9 @@ Wilku can inspect it without reading technical internals.
 - Metric fact dimensions now carry API-owned `dimension_labels` and
   `dimension_value_labels`; `MetricFactChips` no longer owns dimension
   key/value dictionaries.
+- Merchant diagnostics now label Merchant metric facts and Merchant metric
+  dimensions at the API/domain layer; the Merchant route no longer owns a
+  local metric-label dictionary for evidence/limitations metric tiles.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -145,7 +148,8 @@ are resolved or explicitly deferred.
    API-owned labels. Metric names in `MetricFactChips` now use `metric_label`;
    dimension key/value labels now use `dimension_labels` and
    `dimension_value_labels`. Keep removing route-local metric dictionaries as
-   they are found. Pure numeric formatting can stay in UI.
+   they are found; Merchant diagnostic metric tiles are now migrated. Pure
+   numeric formatting can stay in UI.
 
 ## Execution Policy
 

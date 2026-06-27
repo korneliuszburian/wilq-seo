@@ -12152,6 +12152,18 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "ponowne zatwierdzenie produktu" in decision["blocked_claim_labels"]
     assert decision["risk_label"] == "średnie ryzyko"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
+    decision_metric = decision["metric_facts"][0]
+    assert decision_metric["metric_label"] == "zgłoszenia problemów"
+    assert decision_metric["dimension_labels"]["reporting_context"] == "kontekst"
+    assert decision_metric["dimension_labels"]["resolution"] == "rozwiązanie"
+    assert decision_metric["dimension_labels"]["severity"] == "status"
+    assert decision_metric["dimension_value_labels"]["reporting_context"] == (
+        "reklamy produktowe"
+    )
+    assert decision_metric["dimension_value_labels"]["resolution"] == (
+        "wymaga działania po stronie Merchant"
+    )
+    assert decision_metric["dimension_value_labels"]["severity"] == "bez wpływu"
     assert "zgłoszeń problemu" in decision["summary"]
     assert "wystąpienia problemu" in decision["rationale"]
     assert "act_review_merchant_feed_issues" not in decision["next_step"]

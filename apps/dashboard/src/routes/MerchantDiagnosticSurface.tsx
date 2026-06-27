@@ -1076,7 +1076,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
           {visibleMetricFacts.map((fact, index) => (
             <MetricTile
               key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
-              label={merchantMetricFactLabel(fact.name)}
+              label={fact.metric_label || "Metryka bez etykiety"}
               value={fact.value}
             />
           ))}
@@ -1094,16 +1094,6 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
       </div>
     </section>
   );
-}
-
-function merchantMetricFactLabel(metricName: string) {
-  const labels: Record<string, string> = {
-    active_products: "Produkty aktywne",
-    disapproved_products: "Produkty odrzucone",
-    item_level_issue_count: "Zgłoszenia problemów",
-    total_products: "Produkty w feedzie"
-  };
-  return labels[metricName] ?? metricName;
 }
 
 function formatMerchantIdCount(count: number, singular: string, plural: string) {

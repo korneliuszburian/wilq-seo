@@ -644,6 +644,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: `MetricFact` now carries API-owned dimension key/value labels.
   `MetricFactChips` no longer owns dimension dictionaries and renders
   `dimension_labels` plus `dimension_value_labels` directly.
+- 2026-06-27: Merchant diagnostic metric facts now receive API/domain
+  metric and dimension labels. The Merchant route no longer owns a local
+  metric-label dictionary for its evidence/limitations metric tiles.
 
 ## Discoveries
 
@@ -716,6 +719,10 @@ WILQ is complete for this long-range goal when:
 - Dimension labels follow the same rule as metric labels. If a dimension key or
   value is visible to a marketer, the API contract must carry the label; React
   may only display it.
+- Merchant raw enums such as `SHOPPING_ADS`, `MERCHANT_ACTION` and
+  `NOT_IMPACTED` may remain internal/test input values, but marketer-facing
+  payloads must expose Polish label fields and route tests must guard against
+  rendering the raw enum.
 
 ## Decision Log
 
@@ -753,6 +760,8 @@ WILQ is complete for this long-range goal when:
   key/value labels must come from `MetricFact.dimension_labels` and
   `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries
   for metric semantics.
+- Merchant metric labels belong in `merchant_labels.py` and the Merchant API
+  view-model, not in `MerchantDiagnosticSurface`.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

@@ -115,6 +115,10 @@ Latest cleanup state:
 - `MetricFact` now carries `dimension_labels` and `dimension_value_labels`.
   `MetricFactChips` renders those API-owned labels and no longer owns local
   dimension key/value dictionaries.
+- Merchant diagnostics now attach API-owned `metric_label`, `dimension_labels`
+  and `dimension_value_labels` to Merchant metric facts. The Merchant route no
+  longer owns a local metric-label dictionary for the evidence/limitations
+  metric tiles.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -214,6 +218,17 @@ Proof:
   brief and top metric facts, `/api/localo/diagnostics` returned metric
   dimension labels/value labels, and `agent-browser read` confirmed `/localo`
   shows named Localo metrics and dimensions instead of dashboard fallback copy.
+- Merchant metric label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`: `/api/merchant/diagnostics`
+  returned Merchant metric labels and dimension value labels without raw
+  `SHOPPING_ADS`, `FREE_LISTINGS`, `MERCHANT_ACTION` or `NOT_IMPACTED` in the
+  label fields. `agent-browser read` for `/merchant` confirmed the primary
+  Merchant route renders clean Polish decision copy.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -234,8 +249,9 @@ Next cleanup queue:
    - metric names in `MetricFactChips` now come from `metric_label`.
    - metric dimensions in `MetricFactChips` now come from `dimension_labels`
      and `dimension_value_labels`.
-   - continue removing any remaining route-local dictionaries for metric or
-     dimension semantics; keep pure numeric formatting in UI.
+   - Merchant diagnostic metric tiles now use API-owned metric labels.
+   - continue removing remaining route-local dictionaries for metric,
+     preview-contract or status semantics; keep pure numeric formatting in UI.
 4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.

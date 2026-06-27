@@ -4099,11 +4099,14 @@ const metricFacts = [
   },
   {
     name: "total_products",
-    metric_label: "Produkty",
+    metric_label: "produkty w feedzie",
     value: 10900,
     period: "connector_refresh",
     source_connector: "google_merchant_center",
     evidence_id: "ev_refresh_merchant_feed",
+    dimensions: {},
+    dimension_labels: {},
+    dimension_value_labels: {},
     unit: null,
     collected_at: "2026-06-17T10:00:00Z",
     previous_value: 10900,
@@ -4115,14 +4118,31 @@ const metricFacts = [
   },
   {
     name: "issue_product_count",
-    metric_label: "Produkty z problemami",
+    metric_label: "zgłoszenia problemów",
     value: 23,
     period: "connector_refresh",
     source_connector: "google_merchant_center",
     evidence_id: "ev_refresh_merchant_feed",
     dimensions: {
       issue_type: "availability_updated",
-      affected_attribute: "n:availability"
+      affected_attribute: "n:availability",
+      reporting_context: "SHOPPING_ADS",
+      resolution: "MERCHANT_ACTION",
+      severity: "NOT_IMPACTED"
+    },
+    dimension_labels: {
+      affected_attribute: "atrybut",
+      issue_type: "problem",
+      reporting_context: "kontekst",
+      resolution: "rozwiązanie",
+      severity: "status"
+    },
+    dimension_value_labels: {
+      affected_attribute: "dostępność",
+      issue_type: "zmiana dostępności do sprawdzenia",
+      reporting_context: "reklamy produktowe",
+      resolution: "wymaga działania po stronie Merchant",
+      severity: "bez wpływu"
     },
     unit: null,
     collected_at: "2026-06-17T10:00:00Z",
@@ -7590,7 +7610,8 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
     expect(screen.queryByText(/total_products: 10900/)).not.toBeInTheDocument();
-    expect(screen.getByText("Produkty w feedzie")).toBeInTheDocument();
+    expect(screen.getByText("produkty w feedzie")).toBeInTheDocument();
+    expect(screen.queryByText(/FREE_LISTINGS|SHOPPING_ADS|MERCHANT_ACTION|NOT_IMPACTED/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ev_refresh_merchant_feed/)).not.toBeInTheDocument();
     const merchantProofSection = screen
       .getByText("Dowody i ograniczenia Merchant")

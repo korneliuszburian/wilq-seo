@@ -223,6 +223,9 @@ Known cleanup already started:
   marketing brief and shared metric chips; remaining dimension labels in metric
   chips now come from API-owned `dimension_labels` and
   `dimension_value_labels`.
+- Merchant diagnostic metric facts now carry API-owned metric and dimension
+  labels; `MerchantDiagnosticSurface` no longer owns a local metric-label
+  dictionary for Merchant metric tiles.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ
