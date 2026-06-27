@@ -51,6 +51,26 @@ GA4_READ_CONTRACT_LABELS = {
     "conversion_or_key_event_mapping": "powiązanie konwersji i zdarzeń kluczowych",
     "conversion_or_key_event_metric_facts": "metryki konwersji i zdarzeń kluczowych",
 }
+GA4_DECISION_TYPE_LABELS = {
+    "fix_measurement": "problem pomiaru",
+    "review_landing_mapping": "sprawdzenie strony wejścia",
+    "review_traffic_quality": "kontrola jakości ruchu",
+}
+GA4_SECTION_LABELS = {
+    "ga4_landing_behavior": "Jakość ruchu ze stron wejścia",
+    "ga4_tracking_readiness": "Gotowość pomiaru konwersji",
+    "ga4_action_safety": "Bezpieczeństwo akcji GA4",
+}
+GA4_WORDPRESS_MATCH_LABELS = {
+    "found": "potwierdzony",
+    "missing": "brak potwierdzenia",
+}
+GA4_WORDPRESS_MATCH_CONFIDENCE_LABELS = {
+    "exact_url": "dokładny adres URL",
+    "host_alias_sitemap": "alias hosta z mapy strony",
+    "path_fallback": "dopasowanie ścieżki",
+    "missing": "brak dopasowania",
+}
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
 GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]
 Ga4DecisionType = Literal[
@@ -109,11 +129,16 @@ def build_ga4_diagnostics(
         _tracking_readiness_section(latest_refresh, trusted_facts, tactical_items, action_ids),
         _ga4_action_safety_section(latest_refresh, trusted_facts, tactical_items, action_ids),
     ]
-    return Ga4DiagnosticsResponse(
+    response = Ga4DiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
+        connector_status_label=_ga4_connector_status_label(connector.status),
         latest_refresh=latest_refresh,
+        latest_refresh_status_label=_ga4_refresh_status_label(latest_refresh.status)
+        if latest_refresh
+        else "",
         live_data_available=live_data_available,
+        live_data_status_label=_ga4_live_data_status_label(live_data_available),
         landing_group_count=max(
             _landing_group_count(trusted_facts),
             _tactical_landing_group_count(tactical_items),
@@ -150,6 +175,7 @@ def build_ga4_diagnostics(
             1 for decision in decision_queue if decision.status == "blocked"
         ),
     )
+    return _ga4_response_with_marketer_labels(response)
 
 
 def _operator_summary(
@@ -228,6 +254,164 @@ def _operator_conversion_note(contract: Ga4ConversionReadinessContract) -> str:
         "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o zwrot z reklam, "
         "przychód, spadku konwersji ani winie kampanii."
     )
+
+
+def _ga4_response_with_marketer_labels(
+    response: Ga4DiagnosticsResponse,
+) -> Ga4DiagnosticsResponse:
+    return response.model_copy(
+        update={
+            "freshness_assessment": response.freshness_assessment.model_copy(
+                update={
+                    "state_label": _ga4_freshness_label(response.freshness_assessment.state),
+                }
+            ),
+            "conversion_readiness_contract": (
+                response.conversion_readiness_contract.model_copy(
+                    update={
+                        "status_label": _ga4_conversion_readiness_status_label(
+                            response.conversion_readiness_contract.status
+                        ),
+                    }
+                )
+            ),
+            "operator_summary": response.operator_summary.model_copy(
+                update={
+                    "blocked_claim_labels": _ga4_blocked_claim_labels(
+                        response.operator_summary.blocked_claims
+                    ),
+                }
+            ),
+            "decision_queue": [
+                _ga4_decision_with_marketer_labels(decision)
+                for decision in response.decision_queue
+            ],
+            "sections": [
+                _ga4_section_with_marketer_labels(section) for section in response.sections
+            ],
+        }
+    )
+
+
+def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4DecisionItem:
+    return decision.model_copy(
+        update={
+            "decision_type_label": GA4_DECISION_TYPE_LABELS.get(
+                decision.decision_type,
+                decision.decision_type,
+            ),
+            "status_label": _ga4_decision_status_label(decision.status),
+            "wordpress_match_label": _ga4_optional_label(
+                decision.wordpress_match,
+                GA4_WORDPRESS_MATCH_LABELS,
+            ),
+            "wordpress_match_confidence_label": _ga4_optional_label(
+                decision.wordpress_match_confidence,
+                GA4_WORDPRESS_MATCH_CONFIDENCE_LABELS,
+            ),
+            "blocked_claim_labels": _ga4_blocked_claim_labels(decision.blocked_claims),
+            "risk_label": _ga4_risk_label(decision.risk),
+        }
+    )
+
+
+def _ga4_section_with_marketer_labels(section: Ga4DiagnosticSection) -> Ga4DiagnosticSection:
+    return section.model_copy(
+        update={
+            "label": GA4_SECTION_LABELS.get(section.id, section.title),
+            "status_label": _ga4_section_status_label(section.status),
+            "blocked_claim_labels": _ga4_blocked_claim_labels(section.blocked_claims),
+            "risk_label": _ga4_risk_label(section.risk),
+        }
+    )
+
+
+def _ga4_optional_label(value: str | None, labels: dict[str, str]) -> str | None:
+    if value is None:
+        return None
+    return labels.get(value, value)
+
+
+def _ga4_connector_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "configured": "dostęp skonfigurowany",
+        "missing_credentials": "brakuje dostępu",
+        "disabled": "źródło wyłączone",
+    }
+    return labels.get(normalized, f"status: {normalized}")
+
+
+def _ga4_refresh_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "completed": "zakończony",
+        "blocked": "zablokowany",
+        "failed": "błąd",
+        "running": "w toku",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _ga4_live_data_status_label(live_data_available: bool) -> str:
+    return "metryki GA4 dostępne" if live_data_available else "brak metryk GA4"
+
+
+def _ga4_freshness_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "fresh": "dane świeże",
+        "stale": "dane do odświeżenia",
+        "missing": "brak odczytu",
+        "blocked": "odczyt zablokowany",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _ga4_decision_status_label(status: object) -> str:
+    return "zablokowane" if _enum_value(status) == "blocked" else "gotowe"
+
+
+def _ga4_section_status_label(status: object) -> str:
+    normalized = _enum_value(status)
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+        "missing": "brak metryk konwersji",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _ga4_conversion_readiness_status_label(status: object) -> str:
+    return (
+        "blokuje wnioski o konwersjach"
+        if _enum_value(status) == "blocked"
+        else "gotowe"
+    )
+
+
+def _ga4_risk_label(risk: object) -> str:
+    normalized = _enum_value(risk)
+    labels = {
+        "low": "niskie ryzyko",
+        "medium": "średnie ryzyko",
+        "high": "wysokie ryzyko",
+        "critical": "ryzyko krytyczne",
+    }
+    return labels.get(normalized, normalized)
+
+
+def _ga4_blocked_claim_labels(claims: Iterable[str]) -> list[str]:
+    labels = {
+        "naprawiony pomiar": "pomiar naprawiony",
+        "brak w pomiarze": "problem pomiaru",
+    }
+    return _unique(labels.get(claim, claim) for claim in claims)
+
+
+def _enum_value(value: object) -> str:
+    enum_value = getattr(value, "value", value)
+    return str(enum_value)
 
 
 def _latest_ga4_refresh() -> ConnectorRefreshRun | None:

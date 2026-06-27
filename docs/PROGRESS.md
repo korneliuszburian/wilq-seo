@@ -133,6 +133,13 @@ Date: 2026-06-27
   summaries now avoid visible `koszt_micros=`, `wartość_konwersji=`,
   `search-term rows` and `wiersze_bez_konwersji` wording. Proof:
   `.local-lab/proof/20260627-ads-api-decision-labels/`.
+- GA4 primary connector, refresh, live-data, freshness, conversion-readiness,
+  section, decision, risk, WordPress-match and blocked-claim labels now come
+  from the WILQ API/shared schema. `/ga4` no longer owns route-local helpers
+  for those marketer-facing meanings. Live browser proof shows Polish labels
+  such as `dane do odświeżenia`, `problem pomiaru`, `niskie ryzyko` and
+  `dopasowanie ścieżki` with no raw GA4 enum hits in the rendered surface.
+  Proof: `.local-lab/proof/20260627-ga4-api-status-labels/`.
 - Action panels no longer carry the unused route-local action gate label
   dictionary. Existing action detail panels rely on API-owned label arrays
   such as blocker, checklist, missing-data and validation labels instead of

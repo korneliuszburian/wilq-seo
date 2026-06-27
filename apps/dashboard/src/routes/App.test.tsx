@@ -4106,11 +4106,14 @@ const merchantDiagnostics = {
     errors: [],
     redacted: true
   },
+  latest_refresh_status_label: "zakończony",
   live_data_available: true,
+  live_data_status_label: "metryki GA4 dostępne",
   product_count: 10900,
   issue_count: 23,
   freshness_assessment: {
     state: "fresh",
+    state_label: "dane świeże",
     checked_at: "2026-06-17T10:00:02Z",
     latest_refresh_id: "refresh_google_merchant_center_test",
     latest_refresh_completed_at: "2026-06-17T10:00:01Z",
@@ -4767,6 +4770,7 @@ const ga4Diagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
   strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
+  connector_status_label: "dostęp skonfigurowany",
   connector: {
     id: "google_analytics_4",
     label: "Google Analytics 4",
@@ -4794,12 +4798,15 @@ const ga4Diagnostics = {
     errors: [],
     redacted: true
   },
+  latest_refresh_status_label: "zakończony",
   live_data_available: true,
+  live_data_status_label: "metryki GA4 dostępne",
   landing_group_count: 1,
   low_engagement_count: 1,
   wordpress_match_count: 0,
   freshness_assessment: {
     state: "fresh",
+    state_label: "dane świeże",
     checked_at: "2026-06-17T10:00:02Z",
     latest_refresh_id: "refresh_google_analytics_4_test",
     latest_refresh_completed_at: "2026-06-17T10:00:01Z",
@@ -4812,6 +4819,7 @@ const ga4Diagnostics = {
   conversion_readiness_contract: {
     id: "ga4_conversion_readiness_contract",
     status: "blocked",
+    status_label: "blokuje wnioski o konwersjach",
     title: "GA4: gotowość konwersji i zdarzeń kluczowych",
     summary:
       "WILQ może oceniać jakość ruchu z GA4, ale obietnice konwersji, zwrotu z wydatków reklamowych, przychodu i opłacalności wymagają osobnych metryk konwersji albo zdarzeń kluczowych.",
@@ -4827,6 +4835,7 @@ const ga4Diagnostics = {
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
     blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+    blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
     next_step:
       "Sprawdź jakość pomiaru w WILQ i potwierdź powiązanie konwersji i zdarzeń kluczowych przed wnioskami o opłacalności.",
     risk: "medium"
@@ -4845,39 +4854,48 @@ const ga4Diagnostics = {
     source_connectors: ["google_analytics_4"],
     evidence_ids: ["ev_refresh_ga4"],
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"]
+    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+    blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"]
   },
   decision_queue: [
     {
       id: "ga4_decision_tq_ga4_landing",
       decision_type: "review_landing_mapping",
+      decision_type_label: "sprawdzenie strony wejścia",
       title: "Sprawdź stronę wejścia: /oferta/",
       status: "blocked",
+      status_label: "zablokowane",
       priority: 31,
       metric_tiles: { aktywni: 20, sesje: 30, zaangażowanie: "12.5%" },
       landing_page: "/oferta/",
       source_medium: "google / cpc",
       campaign_name: "Ekologus Ogólna",
       wordpress_match: "missing",
+      wordpress_match_label: "brak potwierdzenia",
       wordpress_match_confidence: "missing",
+      wordpress_match_confidence_label: "brak dopasowania",
       wordpress_content_url: null,
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
       blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+      blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
       rationale:
         "GA4 widzi ruch na stronie wejścia /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
         "Sprawdź stronę wejścia i dopiero potem oceniaj dopasowanie komunikatu albo jakość ruchu.",
-      risk: "medium"
+      risk: "medium",
+      risk_label: "średnie ryzyko"
     }
   ],
   sections: [
     {
       id: "ga4_landing_behavior",
+      label: "Jakość ruchu ze stron wejścia",
       title: "GA4: jakość ruchu ze stron wejścia",
       status: "ready",
+      status_label: "gotowe",
       summary: "WILQ ma 1 grupę stron wejścia, źródeł ruchu i kampanii oraz 1 metrykę GA4.",
       diagnosis: "Fakty zachowania z GA4 pozwalają wskazać strony wejścia do kontroli jakości ruchu.",
       next_step: "Najpierw sprawdź grupy z niskim zaangażowaniem.",
@@ -4887,12 +4905,16 @@ const ga4Diagnostics = {
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
       blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
-      risk: "low"
+      blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
+      risk: "low",
+      risk_label: "niskie ryzyko"
     },
     {
       id: "ga4_tracking_readiness",
+      label: "Gotowość pomiaru konwersji",
       title: "GA4: gotowość pomiaru konwersji",
       status: "missing",
+      status_label: "brak metryk konwersji",
       summary: "WILQ ma 1 metrykę zachowania i 0 metryk konwersji albo kluczowych zdarzeń.",
       diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
       next_step: "Sprawdź propozycję w WILQ i zatrzymaj wnioski o konwersjach bez metryk.",
@@ -4902,7 +4924,9 @@ const ga4Diagnostics = {
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
       blocked_claims: ["spadek konwersji", "diagnoza lejka"],
-      risk: "medium"
+      blocked_claim_labels: ["spadek konwersji", "diagnoza lejka"],
+      risk: "medium",
+      risk_label: "średnie ryzyko"
     }
   ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_ga4_tracking_review", "ev_refresh_ga4_safety"],

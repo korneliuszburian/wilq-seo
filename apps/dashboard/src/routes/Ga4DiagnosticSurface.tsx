@@ -119,20 +119,20 @@ export function Ga4DiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.label}: {ga4ConnectorStatusLabel(data.connector.status)}
+              {data.connector.label}: {data.connector_status_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {ga4FreshnessLabel(data.freshness_assessment.state)}
+              {data.freshness_assessment.state_label}
               <span className="sr-only">; </span>
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_available ? "metryki GA4 dostępne" : "brak metryk GA4"}
+              {data.live_data_status_label}
               <span className="sr-only">; </span>
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {ga4RefreshStatusLabel(latestRefresh.status)}
+                ostatni odczyt: {data.latest_refresh_status_label}
                 <span className="sr-only">; </span>
               </span>
             ) : null}
@@ -245,7 +245,7 @@ function Ga4ExpandableReviewPanel({
         </div>
         <TraceLine
           label="Nie wolno twierdzić"
-          values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+          values={data.sections.flatMap((section) => section.blocked_claim_labels)}
         />
           </section>
         </div>
@@ -395,7 +395,7 @@ function Ga4OperatorSummary({
             <TraceLine
               label="Świeżość danych"
               values={[
-                ga4FreshnessLabel(data.freshness_assessment.state),
+                data.freshness_assessment.state_label,
                 data.freshness_assessment.summary
               ]}
             />
@@ -403,7 +403,7 @@ function Ga4OperatorSummary({
               label="Gotowość pomiaru"
               values={
                 trackingSection
-                  ? [ga4SectionStatusLabel(trackingSection.status), trackingSection.summary]
+                  ? [trackingSection.status_label, trackingSection.summary]
                   : []
               }
               empty="brak"
@@ -411,7 +411,7 @@ function Ga4OperatorSummary({
             <TraceLine
               label="Konwersje i zdarzenia kluczowe"
               values={[
-                ga4ConversionReadinessStatusLabel(conversionReadiness.status),
+                conversionReadiness.status_label,
                 conversionReadiness.summary
               ]}
             />
@@ -430,7 +430,7 @@ function Ga4OperatorSummary({
             />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={ga4BlockedClaimLabels(summary.blocked_claims)}
+              values={summary.blocked_claim_labels}
             />
           </div>
           {actionIds.length > 0 ? (
@@ -460,12 +460,12 @@ function Ga4DecisionCard({
         <div>
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {ga4DecisionTypeLabel(decision.decision_type)}
+            {decision.decision_type_label}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <StatusBadge value={ga4DecisionStatusLabel(decision.status)} />
-          <StatusBadge value={decision.risk} />
+          <StatusBadge value={decision.status_label} />
+          <StatusBadge value={decision.risk_label} />
         </div>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
@@ -495,12 +495,12 @@ function Ga4DecisionCard({
         ) : null}
         {decision.wordpress_match ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            WordPress: {wordpressMatchLabel(decision.wordpress_match)}
+            WordPress: {decision.wordpress_match_label}
           </span>
         ) : null}
         {decision.wordpress_match_confidence ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Dopasowanie: {wordpressMatchConfidenceLabel(decision.wordpress_match_confidence)}
+            Dopasowanie: {decision.wordpress_match_confidence_label}
           </span>
         ) : null}
       </div>
@@ -514,7 +514,7 @@ function Ga4DecisionCard({
           label="Akcje do sprawdzenia"
           values={[formatGa4ActionCount(decision.action_ids.length)]}
         />
-        <TraceLine label="Nie wolno twierdzić" values={ga4BlockedClaimLabels(decision.blocked_claims)} />
+        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>
     </article>
   );
@@ -626,20 +626,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function wordpressMatchLabel(value: string) {
-  if (value === "found") return "potwierdzony";
-  if (value === "missing") return "brak potwierdzenia";
-  return value;
-}
-
-function wordpressMatchConfidenceLabel(value: string) {
-  if (value === "exact_url") return "dokładny URL";
-  if (value === "host_alias_sitemap") return "alias hosta z sitemap";
-  if (value === "path_fallback") return "dopasowanie ścieżki";
-  if (value === "missing") return "brak dopasowania";
-  return value;
-}
-
 function Ga4DiagnosticProof({
   data,
   connectorStatuses
@@ -674,13 +660,13 @@ function Ga4DiagnosticProof({
       </div>
       {visibleMetricFacts.length > 0 ? <Ga4MetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => ga4SectionLabel(section.id))} />
+        <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.label)} />
         <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, connectorStatuses)} />
         <TraceLine label="Akcje" values={[formatGa4ActionCount(data.action_ids.length)]} />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+          values={data.sections.flatMap((section) => section.blocked_claim_labels)}
         />
       </div>
     </section>
@@ -729,37 +715,6 @@ function formatGa4ActionCount(count: number) {
   return `${count} akcji`;
 }
 
-function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
-  if (decisionType === "fix_measurement") return "problem pomiaru";
-  if (decisionType === "review_landing_mapping") return "sprawdzenie strony wejścia";
-  return "kontrola jakości ruchu";
-}
-
-function ga4DecisionStatusLabel(status: Ga4DecisionItem["status"]) {
-  if (status === "blocked") return "zablokowane";
-  return "gotowe";
-}
-
-function ga4SectionLabel(sectionId: string) {
-  if (sectionId === "ga4_landing_behavior") return "Jakość ruchu ze stron wejścia";
-  if (sectionId === "ga4_tracking_readiness") return "Gotowość pomiaru konwersji";
-  if (sectionId === "ga4_action_safety") return "Bezpieczeństwo akcji GA4";
-  return sectionId;
-}
-
-function ga4SectionStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "zablokowane";
-  if (status === "missing") return "brak metryk konwersji";
-  return status;
-}
-
-function ga4ConversionReadinessStatusLabel(status: string) {
-  if (status === "ready") return "gotowe";
-  if (status === "blocked") return "blokuje wnioski o konwersjach";
-  return status;
-}
-
 function ga4TrackingDimensionLabel(value: string) {
   const labels: Record<string, string> = {
     landing_page: "strona wejścia",
@@ -785,28 +740,6 @@ function ga4ValidationLabel(value: string) {
     human_confirm_before_tracking_change: "potwierdź sprawdzenie przez człowieka"
   };
   return labels[value] ?? value;
-}
-
-function ga4ConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje dostępu";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function ga4RefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  if (status === "running") return "w toku";
-  return status;
-}
-
-function ga4FreshnessLabel(status: Ga4DiagnosticsResponse["freshness_assessment"]["state"]) {
-  if (status === "fresh") return "dane świeże";
-  if (status === "stale") return "dane do odświeżenia";
-  if (status === "missing") return "brak odczytu";
-  return "odczyt zablokowany";
 }
 
 function ga4BlockedClaimLabels(claims: string[]) {

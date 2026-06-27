@@ -1976,8 +1976,10 @@ export const ContentPreflightResponseSchema = z.object({
 
 export const Ga4DiagnosticSectionSchema = z.object({
   id: z.string(),
+  label: z.string().default(""),
   title: z.string(),
   status: z.enum(["ready", "blocked", "missing"]),
+  status_label: z.string().default(""),
   summary: z.string(),
   diagnosis: z.string(),
   next_step: z.string(),
@@ -1987,7 +1989,9 @@ export const Ga4DiagnosticSectionSchema = z.object({
   tactical_items: z.array(TacticalQueueItemSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  risk: z.enum(["low", "medium", "high", "critical"])
+  blocked_claim_labels: z.array(z.string()).default([]),
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default("")
 });
 
 export const Ga4DecisionItemSchema = z.object({
@@ -1997,29 +2001,36 @@ export const Ga4DecisionItemSchema = z.object({
     "review_traffic_quality",
     "review_landing_mapping"
   ]),
+  decision_type_label: z.string().default(""),
   title: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   priority: z.number(),
   metric_tiles: z.record(z.union([z.string(), z.number()])),
   landing_page: z.string().nullable().optional(),
   source_medium: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),
   wordpress_match: z.string().nullable().optional(),
+  wordpress_match_label: z.string().nullable().optional(),
   wordpress_match_confidence: z.string().nullable().optional(),
+  wordpress_match_confidence_label: z.string().nullable().optional(),
   wordpress_content_url: z.string().nullable().optional(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([]),
   rationale: z.string(),
   next_step: z.string(),
-  risk: z.enum(["low", "medium", "high", "critical"])
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default("")
 });
 
 export const Ga4ConversionReadinessContractSchema = z.object({
   id: z.literal("ga4_conversion_readiness_contract"),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   allowed_metrics: z.array(z.string()),
@@ -2040,6 +2051,7 @@ export const Ga4ConversionReadinessContractSchema = z.object({
 
 export const Ga4FreshnessAssessmentSchema = z.object({
   state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  state_label: z.string().default(""),
   checked_at: z.string().nullable().optional(),
   latest_refresh_id: z.string().nullable().optional(),
   latest_refresh_completed_at: z.string().nullable().optional(),
@@ -2062,7 +2074,8 @@ export const Ga4OperatorSummarySchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).default([])
 });
 
 export const Ga4DiagnosticsResponseSchema = z.object({
@@ -2070,8 +2083,11 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   language: z.literal("pl-PL"),
   strict_instruction: z.string(),
   connector: ConnectorStatusSchema,
+  connector_status_label: z.string().default(""),
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  latest_refresh_status_label: z.string().default(""),
   live_data_available: z.boolean(),
+  live_data_status_label: z.string().default(""),
   landing_group_count: z.number(),
   low_engagement_count: z.number(),
   wordpress_match_count: z.number(),

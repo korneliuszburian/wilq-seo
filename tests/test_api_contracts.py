@@ -3948,10 +3948,15 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     payload = response.json()
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is True
+    assert payload["connector_status_label"] == "dostęp skonfigurowany"
+    assert payload["live_data_status_label"] == "metryki GA4 dostępne"
+    if payload["latest_refresh"] is not None:
+        assert payload["latest_refresh_status_label"] == "zakończony"
     assert payload["landing_group_count"] >= 1
     assert payload["low_engagement_count"] >= 1
     assert payload["wordpress_match_count"] >= 1
     assert payload["freshness_assessment"]["state"] == "fresh"
+    assert payload["freshness_assessment"]["state_label"] == "dane świeże"
     assert payload["freshness_assessment"]["requires_refresh"] is False
     assert payload["freshness_assessment"]["stale_after_hours"] == 48
     assert "GA4" in payload["freshness_assessment"]["summary"]
@@ -3974,6 +3979,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     )
     assert all(decision["next_step"] for decision in decision_by_id.values())
     assert all(decision["status"] in {"ready", "blocked"} for decision in decision_by_id.values())
+    assert all(decision["status_label"] for decision in decision_by_id.values())
+    assert all(decision["decision_type_label"] for decision in decision_by_id.values())
+    assert all(decision["risk_label"] for decision in decision_by_id.values())
+    assert all(decision["blocked_claim_labels"] for decision in decision_by_id.values())
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
     assert all(decision["metric_tiles"] for decision in decision_by_id.values())
     assert any("zaangażowanie" in decision["metric_tiles"] for decision in decision_by_id.values())
@@ -4022,20 +4031,26 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert operator_summary["action_ids"] == payload["action_ids"]
     assert operator_summary["conversion_readiness_status"] == readiness_contract["status"]
     assert "zwrot z reklam" in operator_summary["blocked_claims"]
+    assert "zwrot z reklam" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     sections = {section["id"]: section for section in payload["sections"]}
     assert sections["ga4_landing_behavior"]["status"] == "ready"
+    assert sections["ga4_landing_behavior"]["label"] == "Jakość ruchu ze stron wejścia"
+    assert sections["ga4_landing_behavior"]["status_label"] == "gotowe"
+    assert "zwrot z reklam" in sections["ga4_landing_behavior"]["blocked_claim_labels"]
     assert sections["ga4_landing_behavior"]["tactical_items"]
     assert sections["ga4_landing_behavior"]["tactical_items"][0]["dimensions"][
         "landing_page"
     ] == "/europejski-zielony-lad-co-to-takiego/"
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
+    assert sections["ga4_tracking_readiness"]["status_label"] == "brak metryk konwersji"
     assert "spadek konwersji" in sections["ga4_tracking_readiness"]["blocked_claims"]
 
     assert sections["ga4_action_safety"]["status"] == "ready"
     assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
     assert readiness_contract["status"] == "blocked"
+    assert readiness_contract["status_label"] == "blokuje wnioski o konwersjach"
     assert readiness_contract["conversion_like_metric_count"] == 0
     assert readiness_contract["dimensioned_behavior_metric_count"] >= 1
     assert readiness_contract["landing_group_count"] >= 1

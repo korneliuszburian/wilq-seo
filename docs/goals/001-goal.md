@@ -200,6 +200,12 @@ Latest slice:
   as `koszt_micros=`, `wartość_konwersji=`, `search-term rows` and
   `wiersze_bez_konwersji`. Proof:
   `.local-lab/proof/20260627-ads-api-decision-labels/`.
+- GA4 primary labels are API-owned now. The API/shared schema exposes
+  connector, latest-refresh, live-data, freshness, conversion-readiness,
+  section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`
+  no longer owns route-local helper copy for those marketer-facing meanings.
+  Live proof after managed stack restart:
+  `.local-lab/proof/20260627-ga4-api-status-labels/`.
 - Localo decision labels now come from the WILQ API/shared schema: connector
   status, refresh status, access proof labels, decision type, priority,
   allowed evidence, missing contracts, read-contract status and blocked claims.

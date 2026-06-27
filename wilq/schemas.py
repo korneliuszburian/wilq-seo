@@ -2392,8 +2392,10 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
 
 class Ga4DiagnosticSection(BaseModel):
     id: str
+    label: str = ""
     title: str
     status: Literal["ready", "blocked", "missing"]
+    status_label: str = ""
     summary: str
     diagnosis: str
     next_step: str
@@ -2403,7 +2405,9 @@ class Ga4DiagnosticSection(BaseModel):
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
 
 
 class Ga4DecisionItem(BaseModel):
@@ -2413,15 +2417,19 @@ class Ga4DecisionItem(BaseModel):
         "review_traffic_quality",
         "review_landing_mapping",
     ]
+    decision_type_label: str = ""
     title: str
     status: Literal["ready", "blocked"] = "ready"
+    status_label: str = ""
     priority: int = Field(default=50, ge=1, le=100)
     metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     landing_page: str | None = None
     source_medium: str | None = None
     campaign_name: str | None = None
     wordpress_match: str | None = None
+    wordpress_match_label: str | None = None
     wordpress_match_confidence: str | None = None
+    wordpress_match_confidence_label: str | None = None
     wordpress_content_url: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2430,14 +2438,17 @@ class Ga4DecisionItem(BaseModel):
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     rationale: str
     next_step: str
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
 
 
 class Ga4ConversionReadinessContract(BaseModel):
     id: Literal["ga4_conversion_readiness_contract"] = "ga4_conversion_readiness_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
@@ -2458,6 +2469,7 @@ class Ga4ConversionReadinessContract(BaseModel):
 
 class Ga4FreshnessAssessment(BaseModel):
     state: Literal["fresh", "stale", "missing", "blocked"]
+    state_label: str = ""
     checked_at: datetime = Field(default_factory=utc_now)
     latest_refresh_id: str | None = None
     latest_refresh_completed_at: datetime | None = None
@@ -2481,6 +2493,7 @@ class Ga4OperatorSummary(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
 
 
 class Ga4DiagnosticsResponse(BaseModel):
@@ -2488,8 +2501,11 @@ class Ga4DiagnosticsResponse(BaseModel):
     language: Literal["pl-PL"] = "pl-PL"
     strict_instruction: str
     connector: ConnectorStatus
+    connector_status_label: str = ""
     latest_refresh: ConnectorRefreshRun | None = None
+    latest_refresh_status_label: str = ""
     live_data_available: bool
+    live_data_status_label: str = ""
     landing_group_count: int = 0
     low_engagement_count: int = 0
     wordpress_match_count: int = 0
