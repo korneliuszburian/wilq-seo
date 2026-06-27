@@ -82,6 +82,7 @@ from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.merchant_labels import (
     merchant_display_label,
     merchant_metric_snapshot_labels,
+    merchant_preview_contract_label,
     merchant_reporting_context_label,
     merchant_resolution_label,
     merchant_severity_label,
@@ -1599,6 +1600,9 @@ def _merchant_issue_payload_preview(
             {
                 "id": f"merchant_feed_issue_review_{cluster_id}",
                 "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+                "preview_contract_label": merchant_preview_contract_label(
+                    MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
+                ),
                 "operation_type": "MerchantIssueClusterReview",
                 "cluster_id": cluster_id,
                 "issue_type": cluster.get("issue_type"),

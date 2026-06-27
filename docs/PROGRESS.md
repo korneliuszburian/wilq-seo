@@ -126,6 +126,8 @@ Latest cleanup state:
   `operation_type_label` and `tracking_dimension_gap_labels`. The GA4 route no
   longer owns local translators for GA4 preview operation or missing-dimension
   labels.
+- Merchant action preview payloads now carry API-owned `preview_contract_label`.
+  The Merchant route no longer owns a local preview-contract label dictionary.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -258,6 +260,16 @@ Proof:
   `/api/actions/act_review_ga4_tracking_quality` returned
   `operation_type_label="ocena jakości pomiaru"` and matching
   `tracking_dimension_gap_labels`.
+- Merchant preview-contract label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_merchant_feed_issues` returned 8 preview rows with
+  no missing `preview_contract_label`; first label was
+  `sprawdzenie problemów feedu`.
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -280,6 +292,7 @@ Next cleanup queue:
      and `dimension_value_labels`.
    - Merchant diagnostic metric tiles now use API-owned metric labels.
    - GA4 diagnostic proof metric tiles now use API-owned metric labels.
+   - Merchant preview-contract labels now come from API-owned payload labels.
    - continue removing remaining route-local dictionaries for metric,
      preview-contract or status semantics; keep pure numeric formatting in UI.
 4. Recovery docs:

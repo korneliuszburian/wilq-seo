@@ -820,7 +820,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
           <p className="font-medium text-ink">Podgląd wpływu ceny</p>
           <TraceLine
             label="Typ sprawdzenia"
-            values={[merchantPreviewContractLabel(preview.preview_contract)]}
+            values={[merchantString(preview.preview_contract_label) || "typ sprawdzenia bez etykiety"]}
           />
           <TraceLine
             label="Produkty"
@@ -950,7 +950,7 @@ function MerchantDecisionPreview({
             >
               <TraceLine
                 label="Typ sprawdzenia"
-                values={[merchantPreviewContractLabel(preview.preview_contract)]}
+                values={[merchantString(preview.preview_contract_label) || "typ sprawdzenia bez etykiety"]}
               />
               <TraceLine
                 label="Zakres"
@@ -976,18 +976,6 @@ function MerchantDecisionPreview({
 
 function merchantUnknownArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
-}
-
-function merchantPreviewContractLabel(value: unknown): string {
-  const raw = merchantString(value);
-  const labels: Record<string, string> = {
-    merchant_feed_issue_review_preview_v1: "sprawdzenie problemów feedu",
-    merchant_price_impact_readiness_preview_v1: "sprawdzenie wpływu ceny",
-    merchant_product_state_review_preview_v1: "sprawdzenie danych produktu",
-    merchant_supplemental_feed_review_preview_v1: "sprawdzenie uzupełnienia feedu",
-    merchant_price_impact_review_preview_v1: "sprawdzenie wpływu ceny"
-  };
-  return raw ? labels[raw] ?? raw : "brak";
 }
 
 function merchantString(value: unknown): string | null {

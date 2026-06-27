@@ -653,6 +653,8 @@ WILQ is complete for this long-range goal when:
 - 2026-06-27: GA4 tracking-quality action previews now receive API/domain
   operation and missing-dimension labels. The GA4 route no longer owns those
   preview translators.
+- 2026-06-27: Merchant action preview payloads now receive API/domain
+  preview-contract labels. The Merchant route no longer owns that dictionary.
 
 ## Discoveries
 
@@ -772,6 +774,8 @@ WILQ is complete for this long-range goal when:
   in `Ga4DiagnosticSurface`.
 - GA4 action preview operation and missing-dimension labels belong in the GA4
   action payload contract, not in `Ga4DiagnosticSurface`.
+- Merchant preview-contract labels belong in the Merchant action payload
+  contract, not in `MerchantDiagnosticSurface`.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

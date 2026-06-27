@@ -12161,6 +12161,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_feed_issue_review_preview_v1"
     )
     decision_preview = decision["payload_preview"][0]
+    assert decision_preview["preview_contract_label"] == "sprawdzenie problemów feedu"
     assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
     assert decision_preview["cluster_id"] == cluster["id"]
     assert decision_preview["issue_type"] == "availability_updated"
@@ -12272,6 +12273,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_feed_issue_review_preview_v1"
     )
     merchant_preview = merchant_action["payload"]["payload_preview"][0]
+    assert merchant_preview["preview_contract_label"] == "sprawdzenie problemów feedu"
     assert merchant_preview["operation_type"] == "MerchantIssueClusterReview"
     assert merchant_preview["cluster_id"] == cluster["id"]
     assert merchant_preview["issue_type"] == "availability_updated"
@@ -12835,6 +12837,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     ]
     price_preview = price_readiness["payload_preview"][0]
     assert price_preview["preview_contract"] == "merchant_price_impact_readiness_preview_v1"
+    assert price_preview["preview_contract_label"] == "sprawdzenie wpływu ceny"
     assert price_preview["products"][0]["current_price_micros"] == 123450000
     assert price_preview["products"][0]["current_price_collected_at"] == (
         "2026-06-24T08:00:00+00:00"

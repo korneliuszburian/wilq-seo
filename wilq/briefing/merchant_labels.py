@@ -63,6 +63,14 @@ MERCHANT_DIMENSION_LABELS = {
     "severity": "status",
 }
 
+MERCHANT_PREVIEW_CONTRACT_LABELS = {
+    "merchant_feed_issue_review_preview_v1": "sprawdzenie problemów feedu",
+    "merchant_price_impact_readiness_preview_v1": "sprawdzenie wpływu ceny",
+    "merchant_price_impact_review_preview_v1": "sprawdzenie wpływu ceny",
+    "merchant_product_state_review_preview_v1": "sprawdzenie danych produktu",
+    "merchant_supplemental_feed_review_preview_v1": "sprawdzenie uzupełnienia feedu",
+}
+
 
 def merchant_display_label(value: object) -> str:
     text = str(value or "").strip()
@@ -106,6 +114,13 @@ def merchant_metric_snapshot_labels(metric_snapshot: dict[str, object]) -> dict[
 def merchant_metric_fact_label(value: object) -> str:
     text = str(value or "").strip()
     return MERCHANT_METRIC_LABELS.get(text, merchant_display_label(text))
+
+
+def merchant_preview_contract_label(value: object) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "typ sprawdzenia nieznany"
+    return MERCHANT_PREVIEW_CONTRACT_LABELS.get(text, merchant_display_label(text))
 
 
 def merchant_dimension_label(value: object) -> str:

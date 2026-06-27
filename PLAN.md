@@ -232,6 +232,8 @@ Known cleanup already started:
 - GA4 tracking-quality action previews now carry API-owned operation and
   missing-dimension labels; `Ga4DiagnosticSurface` no longer owns those
   preview translators.
+- Merchant action preview payloads now carry API-owned preview-contract labels;
+  `MerchantDiagnosticSurface` no longer owns that label dictionary.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ

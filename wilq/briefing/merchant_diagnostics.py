@@ -12,6 +12,7 @@ from wilq.briefing.merchant_labels import (
     merchant_display_label,
     merchant_metric_fact_label,
     merchant_metric_snapshot_labels,
+    merchant_preview_contract_label,
     merchant_reporting_context_label,
     merchant_resolution_label,
     merchant_severity_label,
@@ -1248,6 +1249,9 @@ def _merchant_price_impact_payload_preview(
     return {
         "id": "merchant_price_impact_readiness_preview",
         "preview_contract": MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT,
+        "preview_contract_label": merchant_preview_contract_label(
+            MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
+        ),
         "operation_type": "MerchantPriceImpactReadinessReview",
         "products": [
             {
@@ -2144,7 +2148,13 @@ def _merchant_payload_preview_with_operator_labels(
         for check in checks
         if isinstance(check, str)
     ]
-    return {**preview, "required_validation_labels": labels}
+    return {
+        **preview,
+        "preview_contract_label": merchant_preview_contract_label(
+            preview.get("preview_contract")
+        ),
+        "required_validation_labels": labels,
+    }
 
 
 def _merchant_price_impact_review_decision(
@@ -2263,6 +2273,9 @@ def _merchant_product_state_review_payload_preview(
     return {
         "id": "merchant_product_state_review_preview",
         "preview_contract": MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT,
+        "preview_contract_label": merchant_preview_contract_label(
+            MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT
+        ),
         "operation_type": "MerchantProductStateReview",
         "products": [
             {
@@ -2309,6 +2322,9 @@ def _merchant_supplemental_feed_review_payload_preview(
     return {
         "id": "merchant_supplemental_feed_review_preview",
         "preview_contract": MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT,
+        "preview_contract_label": merchant_preview_contract_label(
+            MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT
+        ),
         "operation_type": "MerchantSupplementalFeedCandidateReview",
         "feed_target": "supplemental_feed_check_only",
         "primary_feed_mutation_allowed": False,
@@ -2658,6 +2674,9 @@ def _merchant_decision_payload_preview(
     return {
         "id": f"merchant_feed_issue_review_{cluster.id}",
         "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+        "preview_contract_label": merchant_preview_contract_label(
+            MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT
+        ),
         "operation_type": "MerchantIssueClusterReview",
         "cluster_id": cluster.id,
         "issue_type": cluster.issue_type,

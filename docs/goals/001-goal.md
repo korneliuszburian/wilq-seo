@@ -131,6 +131,8 @@ Wilku can inspect it without reading technical internals.
   dictionary for proof metric tiles.
 - GA4 tracking-quality action previews now carry API-owned operation and
   missing-dimension labels; the GA4 route no longer owns those translators.
+- Merchant action preview payloads now carry API-owned preview-contract labels;
+  the Merchant route no longer owns that dictionary.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -154,7 +156,8 @@ are resolved or explicitly deferred.
    dimension key/value labels now use `dimension_labels` and
    `dimension_value_labels`. Keep removing route-local metric dictionaries as
    they are found; Merchant and GA4 diagnostic metric tiles are now migrated.
-   Pure numeric formatting can stay in UI.
+   Merchant preview-contract labels are now migrated. Pure numeric formatting
+   can stay in UI.
 
 ## Execution Policy
 
