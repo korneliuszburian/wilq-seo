@@ -655,6 +655,9 @@ WILQ is complete for this long-range goal when:
   preview translators.
 - 2026-06-27: Merchant action preview payloads now receive API/domain
   preview-contract labels. The Merchant route no longer owns that dictionary.
+- 2026-06-27: Merchant issue clusters and issue decisions now receive
+  API/domain reporting-context labels. The Merchant route no longer owns a
+  reporting-context fallback.
 
 ## Discoveries
 

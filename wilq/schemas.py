@@ -2491,7 +2491,7 @@ class MerchantIssueCluster(BaseModel):
     affected_attribute_label: str | None = None
     country: str | None = None
     reporting_context: str | None = None
-    reporting_context_label: str | None = None
+    reporting_context_label: str
     product_count: int = 0
     count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     sample_product_ids: list[str] = Field(default_factory=list)

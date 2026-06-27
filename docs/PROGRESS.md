@@ -128,6 +128,9 @@ Latest cleanup state:
   labels.
 - Merchant action preview payloads now carry API-owned `preview_contract_label`.
   The Merchant route no longer owns a local preview-contract label dictionary.
+- Merchant issue clusters and decisions now render API-owned
+  `reporting_context_label` values. The Merchant route no longer owns a local
+  reporting-context fallback, including grouped multi-context decisions.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -238,6 +241,13 @@ Proof:
   `SHOPPING_ADS`, `FREE_LISTINGS`, `MERCHANT_ACTION` or `NOT_IMPACTED` in the
   label fields. `agent-browser read` for `/merchant` confirmed the primary
   Merchant route renders clean Polish decision copy.
+- Merchant reporting-context label cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  Live proof: `/api/merchant/diagnostics` returned 14 issue clusters and 5
+  issue decisions with zero missing `reporting_context_label` values.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`

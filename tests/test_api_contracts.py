@@ -13009,6 +13009,7 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
     assert len(issue_decisions) == 1
     decision = issue_decisions[0]
     assert decision["reporting_context"] is None
+    assert decision["reporting_context_label"] == "wiele kontekstów"
     assert decision["metric_tiles"] == {
         "max zgłoszeń": 892,
         "raporty razem": 1784,

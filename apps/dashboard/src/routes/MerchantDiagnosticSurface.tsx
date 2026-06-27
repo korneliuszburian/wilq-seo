@@ -475,7 +475,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                     <h3 className="text-sm font-semibold text-ink">
                       {cluster.issue_type_label ?? "problem feedu"}
                       {cluster.affected_attribute_label ? ` / ${cluster.affected_attribute_label}` : ""}
-                      {` / ${cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}`}
+                      {` / ${cluster.reporting_context_label}`}
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                       {cluster.severity_label ?? "status nieznany"} /{" "}
@@ -494,9 +494,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   )}{" "}
                   tego problemu
                   {cluster.country ? ` w kraju ${cluster.country}` : ""}
-                  {cluster.reporting_context
-                    ? ` / ${cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}`
-                    : " / wszystkie konteksty"}.
+                  {` / ${cluster.reporting_context_label}`}.
                 </p>
                 {cluster.sample_unavailable_reason ? (
                   <p className="mt-2 text-xs leading-5 text-slate-600">
@@ -514,7 +512,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                     </span>
                   ) : null}
                   <span className="rounded border border-line bg-white px-2 py-1">
-                    kontekst: {cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}
+                    kontekst: {cluster.reporting_context_label}
                   </span>
                   {cluster.resolution ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
@@ -884,9 +882,11 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
             kraj: {decision.country}
           </span>
         ) : null}
-        <span className="rounded border border-line bg-white px-2 py-1">
-          kontekst: {decision.reporting_context_label ?? merchantReportingContextLabel(decision.reporting_context)}
-        </span>
+        {decision.reporting_context_label ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            kontekst: {decision.reporting_context_label}
+          </span>
+        ) : null}
       </div>
       <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
         {decision.sample_product_ids.length || decision.sample_titles.length ? (
@@ -1012,11 +1012,6 @@ function merchantMicrosPrice(value: number | null | undefined, currencyCode?: st
   const amount = value / 1_000_000;
   const currency = currencyCode ?? "PLN";
   return `${amount.toFixed(2)} ${currency}`;
-}
-
-function merchantReportingContextLabel(value: string | null | undefined) {
-  if (!value) return "wszystkie konteksty";
-  return "kontekst raportowania";
 }
 
 function formatPolishCount(count: number, one: string, few: string, many: string) {

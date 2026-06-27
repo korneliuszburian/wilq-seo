@@ -133,6 +133,9 @@ Wilku can inspect it without reading technical internals.
   missing-dimension labels; the GA4 route no longer owns those translators.
 - Merchant action preview payloads now carry API-owned preview-contract labels;
   the Merchant route no longer owns that dictionary.
+- Merchant issue clusters and issue decisions now carry and render API-owned
+  reporting-context labels; the Merchant route no longer owns a local
+  reporting-context fallback.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -148,7 +151,7 @@ are resolved or explicitly deferred.
    path for Merchant feed issues, but remaining action kinds still infer active
    preview cards from raw payload shape. Migrate those action kinds one by one;
    raw payload may remain only in collapsed technical detail.
-3. Merchant, Demand Gen, registry/workflow and knowledge routes still have
+3. Demand Gen, registry/workflow, action detail and knowledge routes still have
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.
 4. Repeated metric/dimension naming in dashboard components should become
@@ -156,8 +159,8 @@ are resolved or explicitly deferred.
    dimension key/value labels now use `dimension_labels` and
    `dimension_value_labels`. Keep removing route-local metric dictionaries as
    they are found; Merchant and GA4 diagnostic metric tiles are now migrated.
-   Merchant preview-contract labels are now migrated. Pure numeric formatting
-   can stay in UI.
+   Merchant preview-contract and reporting-context labels are now migrated.
+   Pure numeric formatting can stay in UI.
 
 ## Execution Policy
 

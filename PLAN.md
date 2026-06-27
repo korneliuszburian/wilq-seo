@@ -234,6 +234,9 @@ Known cleanup already started:
   preview translators.
 - Merchant action preview payloads now carry API-owned preview-contract labels;
   `MerchantDiagnosticSurface` no longer owns that label dictionary.
+- Merchant issue clusters and issue decisions now carry API-owned
+  reporting-context labels; `MerchantDiagnosticSurface` no longer owns that
+  fallback.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ
