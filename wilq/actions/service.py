@@ -3247,6 +3247,8 @@ def _hydrate_operator_labels_recursive(value: Any) -> None:
 
 
 def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
+    if item.get("status_label") in (None, "") and isinstance(item.get("status"), str):
+        item["status_label"] = _operator_state_label(item["status"])
     label_fields = {
         "required_validation": "required_validation_labels",
         "operator_review_gates": "operator_review_gate_labels",
@@ -3264,6 +3266,20 @@ def _hydrate_operator_label_fields(item: dict[str, Any]) -> None:
         source_values = _string_list(item.get(source_key))
         if source_values:
             item[label_key] = _action_gate_labels(source_values)
+
+
+def _operator_state_label(value: str) -> str:
+    labels = {
+        "blocked": "zablokowane",
+        "ready": "gotowe",
+        "allowed": "dopuszczone",
+        "missing": "brak",
+        "pending_validation": "czeka na sprawdzenie",
+        "validated_prepare_only": "sprawdzone w WILQ",
+        "ready_to_apply": "gotowe do potwierdzenia",
+        "blocked_apply": "zapis zmian zablokowany",
+    }
+    return labels.get(value, "do sprawdzenia")
 
 
 def _action_gate_label(value: str) -> str | None:

@@ -47,6 +47,7 @@ def budget_apply_safety_review(
         "budget_preview_id": preview_id,
         "safety_contract": CAMPAIGN_BUDGET_APPLY_SAFETY_CONTRACT,
         "status": "blocked",
+        "status_label": "zablokowane",
         "reason": _safety_reason(proposed_budget_amount_micros, proposed_delta_percent),
         "max_allowed_delta_percent": MAX_BUDGET_APPLY_DELTA_PERCENT,
         "current_budget_amount_micros": current_budget_amount_micros,

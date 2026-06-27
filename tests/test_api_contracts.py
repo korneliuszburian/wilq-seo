@@ -9581,6 +9581,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     budget_safety_review = budget_contract["payload_preview"][0]["safety_review"]
     assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
     assert budget_safety_review["status"] == "blocked"
+    assert budget_safety_review["status_label"] == "zablokowane"
     assert budget_safety_review["max_allowed_delta_percent"] == 0.3
     assert budget_safety_review["proposed_delta_percent"] == 0.4
     assert "budget_delta_within_30_percent" in budget_safety_review[
@@ -11047,6 +11048,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "custom_segment_change_preview_v1"
     )
     assert custom_segment_action["payload"]["payload_preview"][0]["member_type"] == "KEYWORD"
+    assert custom_segment_action["payload"]["payload_preview"][0]["member_type_label"] == (
+        "słowa kluczowe"
+    )
     assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
     custom_segment_safety_review = custom_segment_action["payload"]["payload_preview"][0][
         "safety_review"
@@ -11055,6 +11059,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "custom_segment_apply_safety_v1"
     )
     assert custom_segment_safety_review["status"] == "blocked"
+    assert custom_segment_safety_review["status_label"] == "zablokowane"
     assert custom_segment_safety_review["apply_allowed"] is False
     assert custom_segment_safety_review["api_mutation_ready"] is False
     assert custom_segment_safety_review["destructive"] is False

@@ -118,6 +118,11 @@ Date: 2026-06-27
   severity, resolution and metric labels from API fields; route-local generic
   fallbacks no longer invent marketer copy. Live API/browser proof:
   `.local-lab/proof/20260627-merchant-action-preview-labels/browser/action-detail-body-final.txt`.
+- Budget and Custom Segment action preview safety labels now come from domain/API
+  payloads. `DetailPanels` no longer translates custom segment member type or
+  safety status with route-local dictionaries; it renders `member_type_label`
+  and nested `status_label` from WILQ API. Browser proof:
+  `.local-lab/proof/20260627-action-preview-source-labels/browser/`.
 - Localo action, skill eval and knowledge sources now use Polish source values
   for blocked local claims: ukończone zadanie lokalne, zapis zmian w profilu
   firmy and poprawa widoczności lokalnej. Old active values such as

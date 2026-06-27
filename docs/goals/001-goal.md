@@ -162,6 +162,11 @@ Latest slice:
   `atrybut do sprawdzenia` fallback labels when the action contract is missing
   copy; focused API tests and browser proof protect against raw Merchant vendor
   strings on `/actions/act_review_merchant_feed_issues`.
+- Budget and Custom Segment action preview safety labels now come from
+  domain/API payloads. Action Detail renders `member_type_label` and nested
+  `status_label` from WILQ API instead of route-local custom segment and safety
+  status dictionaries; focused tests and browser proof cover the touched action
+  routes.
 - GA4 readiness labels now come from the WILQ API/shared schema, not from
   route-local read-contract mapping. `/ga4` renders condensed API metric tiles
   and hides raw GA4 metric fact names from decision cards; browser proof found

@@ -385,14 +385,14 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
         <div>
           <h3 className="text-sm font-semibold text-ink">Segment odbiorców do sprawdzenia</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {customSegmentMemberTypeLabel(stringValue(item.member_type, "KEYWORD"))}
+            {stringValue(item.member_type_label, "wymaga etykiety typu odbiorców z WILQ")}
           </p>
         </div>
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Nazwa: {stringValue(item.custom_segment_name, "brak")}</div>
-        <div>Typ odbiorców: {customSegmentMemberTypeLabel(stringValue(item.member_type, "brak"))}</div>
+        <div>Typ odbiorców: {stringValue(item.member_type_label, "wymaga etykiety typu odbiorców z WILQ")}</div>
         <PreviewValues label="Hasła źródłowe" values={asStringArray(item.source_terms)} />
         <div>
           Kampania do sprawdzenia:{" "}
@@ -400,7 +400,7 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
             ? stringValue(targetingPreview.campaign_name, stringValue(targetingPreview.campaign_id, "brak"))
             : "brak"}
         </div>
-        <div>Bezpieczeństwo: {actionStateLabel(stringValue(safetyReview.status, "brak"))}</div>
+        <div>Bezpieczeństwo: {stringValue(safetyReview.status_label, "wymaga etykiety bezpieczeństwa z WILQ")}</div>
         <PreviewValues
           label="Braki"
           values={missingContractValues(
@@ -447,6 +447,7 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
 }
 
 function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const safetyReview = isRecord(item.safety_review) ? item.safety_review : {};
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -462,7 +463,7 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Kampania: {stringValue(item.campaign_name, stringValue(item.campaign_id, "brak"))}</div>
         <div>Obecny budżet: {formatMicrosAsPln(item.current_budget_amount_micros)}</div>
         <div>Propozycja: {formatMicrosAsPln(item.proposed_budget_amount_micros)}</div>
-        <div>Bezpieczeństwo: {actionStateLabel(budgetSafetyStatus(item))}</div>
+        <div>Bezpieczeństwo: {stringValue(safetyReview.status_label, "wymaga etykiety bezpieczeństwa z WILQ")}</div>
         <ExecutionStateLine item={item} />
       </div>
     </article>
@@ -944,26 +945,6 @@ function targetOptionValues(value: unknown) {
   return asStringArray(value).map((item) => labels[item] ?? "opcja celu do ustawienia");
 }
 
-function customSegmentMemberTypeLabel(value: string) {
-  const labels: Record<string, string> = {
-    KEYWORD: "słowa kluczowe",
-    URL: "adresy URL",
-    APP: "aplikacje"
-  };
-  return labels[value] ?? value.toLowerCase();
-}
-
-function actionStateLabel(value: string) {
-  const labels: Record<string, string> = {
-    blocked: "zablokowane",
-    ready: "gotowe",
-    allowed: "dopuszczone",
-    missing: "brak",
-    brak: "brak"
-  };
-  return labels[value] ?? "do sprawdzenia";
-}
-
 function technicalDetailCount(value: Record<string, unknown>) {
   const count = Object.values(value).filter(
     (dimensionValue) =>
@@ -1025,14 +1006,6 @@ function previewIssueLabel(item: Record<string, unknown>) {
 
 function payloadPreviewKey(item: Record<string, unknown>, index: number) {
   return typeof item.id === "string" ? item.id : `payload-preview-${index}`;
-}
-
-function budgetSafetyStatus(item: Record<string, unknown>) {
-  const safetyReview = item.safety_review;
-  if (!isRecord(safetyReview)) {
-    return "brak";
-  }
-  return stringValue(safetyReview.status, "brak");
 }
 
 function strategyReviewSummary(value: unknown) {

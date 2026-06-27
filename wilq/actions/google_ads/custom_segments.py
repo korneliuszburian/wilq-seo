@@ -177,6 +177,7 @@ def custom_segment_apply_safety_review(
         "custom_segment_preview_id": preview_id,
         "safety_contract": CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT,
         "status": "blocked",
+        "status_label": "zablokowane",
         "reason": (
             "Zapis zmian w custom segment zablokowany: podgląd jest "
             "do sprawdzenia. WILQ wymaga danych z Keyword Planner albo forecast, "

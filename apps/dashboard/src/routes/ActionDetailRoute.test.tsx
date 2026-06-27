@@ -150,6 +150,7 @@ const adsActionFixture: ActionObject = {
         safety_review: {
           safety_contract: "campaign_budget_apply_safety_v1",
           status: "blocked",
+          status_label: "zablokowane",
           reason: "Zapis zmiany budżetu zablokowany: brak proponowanej kwoty.",
           missing_requirements: ["human_budget_goal", "recommended_budget_missing"],
           apply_allowed: false,
@@ -227,6 +228,7 @@ const customSegmentActionFixture: ActionObject = {
         id: "custom_segment_preview_google_ads_search_terms",
         custom_segment_name: "WILQ search-term intent review",
         member_type: "KEYWORD",
+        member_type_label: "słowa kluczowe",
         source_terms: [
           "alba czeladź",
           "asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a",
@@ -256,6 +258,7 @@ const customSegmentActionFixture: ActionObject = {
         ],
         safety_review: {
           status: "blocked",
+          status_label: "zablokowane",
           reason: "Zapis segmentu niestandardowego zablokowany.",
           missing_requirements: ["forecast_or_audience_size", "keyword_planner_enrichment"],
           missing_requirement_labels: [
