@@ -1626,7 +1626,7 @@ def _merchant_issue_payload_preview(
                 if cluster.get("sample_product_ids")
                 else (
                     "Obecny kontrakt Merchant zwraca wymiary problemu i liczbę "
-                    "wystąpień, ale nie zwraca przykładowych ID produktów ani tytułów."
+                    "wystąpień, ale nie zwraca przykładowych produktów ani tytułów."
                 ),
                 "reason": (
                     "Podgląd klastra problemów feedu do sprawdzenia. WILQ może "
@@ -2123,14 +2123,16 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
     warnings: list[str] = []
     connector = get_connector_status(action.connector)
     if not action.evidence_ids:
-        errors.append("Akcja wymaga co najmniej jednego ID dowodu.")
+        errors.append("Akcja wymaga co najmniej jednego dowodu źródłowego.")
     if connector is None:
-        errors.append(f"Unknown connector: {action.connector}")
+        errors.append(f"Nieznany łącznik danych: {action.connector}")
     elif action.mode == ActionMode.apply and not connector.configured:
-        errors.append(f"Connector {action.connector} is not configured.")
+        errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
     errors.extend(validate_action_payload(action.connector, action.payload))
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
-        warnings.append("High and critical risk actions require explicit product support.")
+        warnings.append(
+            "Akcje o wysokim i krytycznym ryzyku wymagają osobnego wsparcia produktu."
+        )
     valid = not errors
     action.validation_status = "valid" if valid else "invalid"
     if not valid:

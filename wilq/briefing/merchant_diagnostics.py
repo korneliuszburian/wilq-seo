@@ -712,8 +712,8 @@ def _merchant_unknowns(
                 id="merchant_product_performance_join_missing",
                 title="Brak połączenia produktów Merchant z Ads/GA4",
                 reason=(
-                    "WILQ ma próbki ID produktów Merchant albo kolejkę problemów feedu, "
-                    "ale nie ma dopasowanych faktów Ads/GA4 z ID produktu dla "
+                    "WILQ ma próbki produktów Merchant albo kolejkę problemów feedu, "
+                    "ale nie ma dopasowanych faktów Ads/GA4 z kluczem produktu dla "
                     "tych produktów."
                 ),
                 impact=(
@@ -754,7 +754,7 @@ def _merchant_product_sample_readiness(
             ],
             source_endpoint="aggregateProductStatuses",
             summary=(
-                "Odczyt Merchant zwraca przykładowe ID produktów dla części problemów. "
+                "Odczyt Merchant zwraca przykładowe produkty dla części problemów. "
                 "Tytuły są dostępne tylko wtedy, gdy wzbogacenie products.list je zwróci."
             ),
             next_step=(
@@ -776,7 +776,7 @@ def _merchant_product_sample_readiness(
             source_endpoint="aggregateProductStatuses",
             summary=(
                 "Obecny kontrakt odczytu Merchant daje zagregowaną kolejkę problemów, ale nie "
-                "zwraca ID produktów, SKU ani tytułów do pracy produkt-po-produkcie."
+                "zwraca konkretnych produktów, SKU ani tytułów do pracy produkt-po-produkcie."
             ),
             next_step=(
                 "Dodać osobny kontrakt odczytu przez products.list/productStatus "
@@ -991,7 +991,7 @@ def _merchant_product_performance_readiness(
                 "ale nie ma jeszcze metryk skuteczności Ads/GA4 dla tych produktów."
             )
             next_step = (
-                "Użyj wierszy stanu produktu tylko do potwierdzenia mapowania ID. Zwrot z reklam "
+                "Użyj wierszy stanu produktu tylko do potwierdzenia dopasowania produktów. Zwrot z reklam "
                 "na poziomie produktu, odzyskany przychód i efekt naprawy pozostają zablokowane "
                 "do czasu metryk skuteczności albo audytu sprzed i po zmianie."
             )
@@ -1319,7 +1319,7 @@ def _product_performance_blocked_reason(
 ) -> str:
     if not sample_product_ids:
         return (
-            "Odczyt Merchant nie daje próbek ID produktów, więc WILQ nie ma klucza "
+            "Odczyt Merchant nie daje próbek produktów, więc WILQ nie ma klucza "
             "do połączenia problemów feedu z Ads/GA4."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
@@ -1329,19 +1329,19 @@ def _product_performance_blocked_reason(
             else ""
         )
         return (
-            "Odczyt Merchant zwraca próbki ID produktów, GA4 ma fakty produktu, a Ads "
+            "Odczyt Merchant zwraca próbki produktów, GA4 ma fakty produktu, a Ads "
             f"ma gotowy widok skuteczności zakupowej{lookback_label}, ale bieżący "
             "odczyt Ads zwrócił 0 wierszy skuteczności produktu. WILQ nie ma więc "
             "dopasowanych faktów Ads dla próbek Merchant."
         )
     if ga4_product_facts and not ads_product_facts:
         return (
-            "Odczyt Merchant zwraca próbki ID produktów i GA4 ma fakty produktu, ale WILQ "
-            "nie ma dopasowanych faktów produktu z Ads dla tych ID."
+            "Odczyt Merchant zwraca próbki produktów i GA4 ma fakty produktu, ale WILQ "
+            "nie ma dopasowanych faktów produktu z Ads dla tych próbek."
         )
     return (
-        "Odczyt Merchant zwraca próbki ID produktów, ale WILQ nie ma dopasowanych "
-        "faktów produktu z Ads albo GA4 dla tych ID."
+        "Odczyt Merchant zwraca próbki produktów, ale WILQ nie ma dopasowanych "
+        "faktów produktu z Ads albo GA4 dla tych próbek."
     )
 
 
@@ -1355,14 +1355,14 @@ def _product_performance_next_step(
 ) -> str:
     if not sample_product_ids:
         return (
-            "Dodać próbki produktów Merchant z ID produktu lub SKU, zanim WILQ "
+            "Dodać próbki produktów Merchant z kluczem produktu lub SKU, zanim WILQ "
             "spróbuje łączyć feed ze skutecznością."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
         if ads_shopping_lookback_days is not None and ads_shopping_lookback_days >= 90:
             return (
                 "Dodaj aktualny `shopping_product` state read albo mapowanie Merchant "
-                "offer ID -> Ads product_item_id, zamiast obiecywać skuteczność produktu "
+                "Merchant offer -> produkt Ads, zamiast obiecywać skuteczność produktu "
                 "z pustej historii emisji."
             )
         return (
@@ -1852,7 +1852,7 @@ def _merchant_issue_clusters(
                 if sample_product_ids
                 else (
                     "Obecny kontrakt odczytu Merchant zwraca wymiary problemu i liczbę "
-                    "wystąpień problemu w raportach, ale nie zwraca przykładowych ID "
+                    "wystąpień problemu w raportach, ale nie zwraca przykładowych "
                     "produktów ani tytułów."
                 ),
                 source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -2682,7 +2682,7 @@ def _merchant_decision_payload_preview(
         else cluster.sample_unavailable_reason
         or (
             "Obecny kontrakt Merchant zwraca wymiary problemu i liczbę wystąpień, "
-            "ale nie zwraca przykładowych ID produktów ani tytułów."
+            "ale nie zwraca przykładowych produktów ani tytułów."
         ),
         "reason": (
             "Do sprawdzenia: podgląd konkretnej decyzji Merchant. WILQ może przygotować "

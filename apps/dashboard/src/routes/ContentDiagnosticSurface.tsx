@@ -1322,9 +1322,10 @@ function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
 }
 
 function formatContentEvidenceCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 ID";
-  return `${count} ID`;
+  if (count === 0) return "brak dowodów źródłowych";
+  if (count === 1) return "1 dowód źródłowy";
+  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
+  return `${count} dowodów źródłowych`;
 }
 
 function formatContentActionCount(count: number) {
