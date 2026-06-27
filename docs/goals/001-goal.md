@@ -103,6 +103,9 @@ Wilku can inspect it without reading technical internals.
 - Action detail previews no longer import `marketingLabels.ts`; the old
   route-local Ads/blocked-claim translator file has been deleted. The touched
   action preview labels now come from API-owned payload label fields.
+- Ads Doctor no longer owns start-here summary, effect-check summary or
+  business-context status wording in React. Those fields are now sourced from
+  Ads API/shared-schema contracts.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -114,17 +117,14 @@ are resolved or explicitly deferred.
 1. `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and `docs/CONTEXT.md` must stay
    short and aligned. History belongs in git and proof artifacts, not active
    recovery docs.
-2. `AdsDoctorSurface.tsx` still contains route-local product semantics for
-   start-here summaries, measurement plans and business-readiness fallback
-   composition. Those must move to API/domain view-model fields.
-3. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
+2. `DetailPanels.tsx` still infers active preview cards from raw payload shape.
    It no longer owns the old `marketingLabels.ts` translator, but it still
    needs a typed action-detail preview view-model; raw payload may remain only
    in collapsed technical detail.
-4. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
+3. `ContentDiagnosticSurface.tsx` and `contentLabels.ts` still own active
    content/action preview labels, blocked-claim labels and status labels. These
    need API/schema ownership.
-5. Repeated metric/dimension naming in dashboard components should become
+4. Repeated metric/dimension naming in dashboard components should become
    API-owned metric labels; pure numeric formatting can stay in UI.
 
 ## Execution Policy

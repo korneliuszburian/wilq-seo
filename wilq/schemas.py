@@ -1188,6 +1188,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
 class AdsBusinessContextReadContract(BaseModel):
     id: str = "ads_business_context_read_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     profit_margin: float | None = None
@@ -2211,6 +2212,8 @@ class AdsDecisionItem(BaseModel):
     decision_type_label: str = ""
     title: str
     summary: str
+    start_here_summary: str = ""
+    measurement_plan: str = ""
     rationale: str
     next_step: str
     priority: int = Field(default=50, ge=1, le=100)

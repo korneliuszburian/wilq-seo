@@ -352,7 +352,7 @@ function AdsCondensedDecisionPanel({
       <div className="mt-3 rounded-md border border-line bg-white p-3">
         <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
         <p className="mt-2 text-sm leading-6 text-slate-700">
-          {adsCondensedMeasurementPlan(primaryDecision)}
+          {primaryDecision?.measurement_plan ?? data.operator_summary.next_step}
         </p>
       </div>
     </section>
@@ -483,7 +483,7 @@ function AdsOperatorSummary({
       </div>
 
       <AdsOptimizerReadinessPanel contract={optimizer} />
-      <AdsStartHerePanel decisions={decisions.slice(0, 3)} currencyCode={currencyCode} />
+      <AdsStartHerePanel decisions={decisions.slice(0, 3)} />
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
@@ -530,13 +530,7 @@ function AdsOperatorSummary({
   );
 }
 
-function AdsStartHerePanel({
-  decisions,
-  currencyCode
-}: {
-  decisions: AdsDecisionItem[];
-  currencyCode?: string;
-}) {
+function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
   if (decisions.length === 0) {
     return null;
   }
@@ -572,7 +566,7 @@ function AdsStartHerePanel({
               </div>
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-700">
-              {adsStartHereSummary(decision, currencyCode)}
+              {decision.start_here_summary}
             </p>
             <p className="mt-2 text-xs font-medium leading-5 text-ink">
               {decision.next_step}
@@ -901,7 +895,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
           <MetricTile
             label="Biznes"
-            value={adsBusinessContextStatusValue(data.business_context_read_contract)}
+            value={data.business_context_read_contract.status_label}
           />
         </div>
       </div>
@@ -2369,59 +2363,6 @@ function AdsBlockedHandoffPanel({
   );
 }
 
-function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
-  if (decision.decision_type === "review_campaign_triage") {
-    const campaignCount = decision.campaign_triage_rows.length || decision.campaign_rows.length;
-    return `${campaignCount} kampanii w kolejce oceny. Zacznij od celu, kosztu, konwersji, budżetu i haseł.`;
-  }
-  if (decision.decision_type === "review_campaign_activity") {
-    const cost = adsCost(sumCampaignCostMicros(decision.campaign_rows), currencyCode);
-    return `${decision.campaign_rows.length} kampanii z odczytem aktywności. Koszt w tej karcie: ${cost}.`;
-  }
-  if (decision.decision_type === "review_business_context") {
-    return "Najpierw potwierdź marżę, cel biznesowy, docelowy koszt pozyskania celu i docelowy zwrot z reklam, zanim ktokolwiek nazwie wynik opłacalnym.";
-  }
-  if (decision.decision_type === "review_derived_kpi") {
-    return `${decision.derived_kpi_rows.length} wierszy wskaźników do oceny. To nadal sygnał do sprawdzenia, nie ocena kosztu pozyskania celu ani zwrotu z reklam.`;
-  }
-  if (decision.decision_type === "review_budget_context") {
-    return `${decision.budget_rows.length} budżetów do sprawdzenia. Nie skaluj ani nie tnij budżetu bez sprawdzenia w WILQ.`;
-  }
-  if (decision.decision_type === "review_search_terms") {
-    return `${decision.search_term_rows.length} haseł do oceny. Zacznij od kosztu i intencji, nie od automatycznego wykluczenia.`;
-  }
-  return decision.summary;
-}
-
-function sumCampaignCostMicros(rows: AdsCampaignMetricRow[]) {
-  return rows.reduce((total, row) => total + (row.cost_micros ?? 0), 0);
-}
-
-function adsCondensedMeasurementPlan(decision: AdsDecisionItem | undefined) {
-  if (!decision) {
-    return "Po sprawdzeniu w WILQ zapisz porównanie przed i po. Bez okna pomiarowego WILQ nie ocenia sukcesu ani porażki.";
-  }
-  if (decision.decision_type === "review_campaign_activity") {
-    return "Po sprawdzeniu kampanii zapisz baseline kosztu, kliknięć, konwersji i wartości konwersji. Dopiero osobne okno pre/post oraz historia zmian pozwolą mówić o efekcie.";
-  }
-  if (decision.decision_type === "review_campaign_triage") {
-    return "Po przejściu kolejki kampanii zapisz, które kampanie wymagają ręcznej decyzji. Efekt sprawdzimy dopiero przez porównanie przed i po, historię zmian i ponowny odczyt Ads.";
-  }
-  if (decision.decision_type === "review_search_terms") {
-    return "Po sprawdzeniu wyszukiwanych haseł zapisz akcje do sprawdzenia i blokady. Dopiero po potwierdzonej zmianie oraz porównaniu przed i po można oceniać wpływ na koszt, konwersje lub utratę ruchu.";
-  }
-  if (
-    decision.decision_type === "review_negative_keyword_safety" ||
-    decision.decision_type === "review_search_term_ngrams"
-  ) {
-    return "Po sprawdzeniu wykluczeń sprawdź zapytania, koszt i konwersje przed i po zmianie. Bez sprawdzenia efektu WILQ nie twierdzi, że oszczędzono budżet albo uniknięto utraty konwersji.";
-  }
-  if (decision.decision_type === "review_recommendations") {
-    return "Po sprawdzeniu rekomendacji zapisz, które rekomendacje odrzucono albo skierowano do sprawdzenia. Efekt można ocenić dopiero po audycie zmiany i porównaniu metryk w kolejnym oknie.";
-  }
-  return "Po decyzji zapisz przegląd akcji, punkt odniesienia i sprawdzenie efektu. Brak okna pomiarowego oznacza brak twierdzenia o poprawie wyniku.";
-}
-
 function adsDecisionStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "zablokowane";
@@ -2433,14 +2374,6 @@ function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
   if (risk === "high") return "wysokie";
   if (risk === "medium") return "średnie";
   return "niskie";
-}
-
-function adsBusinessContextStatusValue(
-  contract: AdsDiagnosticsResponse["business_context_read_contract"]
-) {
-  if (contract.status === "blocked") return "blokada";
-  if (contract.missing_read_contracts.includes("target_roas_or_cpa")) return "wstępny";
-  return "gotowe";
 }
 
 function adsStrategyContextValue(value: unknown) {

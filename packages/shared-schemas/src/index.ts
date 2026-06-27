@@ -584,6 +584,7 @@ export const AdsStrategyReviewReadinessContractSchema = z.object({
 export const AdsBusinessContextReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   profit_margin: z.number().nullable().optional(),
@@ -1577,6 +1578,8 @@ export const AdsDecisionItemSchema = z.object({
   decision_type_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
+  start_here_summary: z.string().default(""),
+  measurement_plan: z.string().default(""),
   rationale: z.string(),
   next_step: z.string(),
   priority: z.number().default(50),

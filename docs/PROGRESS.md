@@ -92,8 +92,11 @@ Latest cleanup state:
 - Action detail previews no longer import the deleted `marketingLabels.ts`.
   `DetailPanels.tsx` now reads API-owned payload label fields for blocked
   claims, Localo allowed reads, Ads target options and WordPress post status.
-- Backend and dashboard tests assert the tactical, Ads, Knowledge and action
-  detail label contracts.
+- Ads Doctor no longer owns the start-here summary, effect-check summary or
+  business-context status value in React. Those marketer-facing fields now come
+  from the Ads API contract.
+- Backend and dashboard tests assert the tactical, Ads, Knowledge, action
+  detail and Ads Doctor presentation contracts.
 
 Proof:
 
@@ -146,6 +149,11 @@ Proof:
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
   `rtk pnpm --dir apps/dashboard typecheck`
   `rtk uv run python scripts/marketer_language_guard.py`
+- Ads Doctor presentation cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_business_context_allows_empty_preliminary_targets or ads_diagnostics" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -153,28 +161,24 @@ Proof:
 
 Next cleanup queue:
 
-1. Ads Doctor:
-   - remove remaining route-local product semantics from
-     `AdsDoctorSurface.tsx`, especially start-here summaries, measurement plan
-     summaries and business-readiness fallback composition.
-2. Action detail previews:
+1. Action detail previews:
    - replace `DetailPanels.tsx` payload-shape inference with typed API preview
      rows; keep raw payload only in collapsed technical detail.
-3. Content Planner:
+2. Content Planner:
    - move active `contentLabels.ts` semantics for action preview, status,
      blocked-claim and metric labels into content/action API contracts.
-4. Metric labels:
+3. Metric labels:
    - move repeated metric/dimension naming into API-owned metric label fields;
      keep pure numeric formatting in UI.
-5. Recovery docs:
+4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
 
 ## Next Best Move
 
 1. Start the next cleanup slice from the active queue. The highest-impact next
-   target is either Ads Doctor's remaining route-local product semantics or the
-   larger typed action-detail preview view-model.
+   target is either the Content Planner/contentLabels slice or the larger typed
+   action-detail preview view-model.
 
 ## Guardrails
 

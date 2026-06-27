@@ -7285,6 +7285,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
     expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
     expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
+    expect(routeSource).toContain("decision.start_here_summary");
+    expect(routeSource).toContain("primaryDecision?.measurement_plan");
+    expect(routeSource).toContain("business_context_read_contract.status_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
     expect(routeSource).toContain("row.budget_period_label");
@@ -7300,6 +7303,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("adsOptimizerModeLabel");
     expect(routeSource).not.toContain("adsBusinessUseLabel");
     expect(routeSource).not.toContain("adsStrategyReviewStatusLabel");
+    expect(routeSource).not.toContain("adsStartHereSummary");
+    expect(routeSource).not.toContain("adsCondensedMeasurementPlan");
+    expect(routeSource).not.toContain("adsBusinessContextStatusValue");
     expect(routeSource).not.toContain("adsCampaignReviewReason");
     expect(routeSource).not.toContain("adsCampaignTriageReason");
     expect(routeSource).not.toContain("adsRecommendationReviewReason");

@@ -2766,6 +2766,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     payload = response.json()
     business_context_contract = payload["business_context_read_contract"]
     assert business_context_contract["status"] == "ready"
+    assert business_context_contract["status_label"] == "wstępny"
     assert business_context_contract["profit_margin"] == 0.35
     assert business_context_contract["business_goal"] == "lead quality review"
     assert business_context_contract["budget_goal"] == "protect current monthly budget"
@@ -2878,6 +2879,10 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         if decision["id"] == "ads_review_business_context"
     )
     assert business_context_decision["status"] == "ready"
+    assert business_context_decision["start_here_summary"]
+    assert business_context_decision["measurement_plan"]
+    assert "opłacalnym" in business_context_decision["start_here_summary"]
+    assert "okna pomiarowego" in business_context_decision["measurement_plan"]
     assert business_context_decision["missing_read_contracts"] == [
         "target_roas_or_cpa",
         "human_strategy_review",

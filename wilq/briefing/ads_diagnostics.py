@@ -6403,6 +6403,7 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
 
 
 def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
+    currency_code = response.account_currency_read_contract.currency_code
     response.operator_summary.source_connector_labels = source_connector_labels(
         response.operator_summary.source_connectors
     )
@@ -6427,6 +6428,11 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "status_label": _ads_status_label(decision.status),
                 "decision_type_label": _ads_decision_type_label(decision.decision_type),
                 "priority_label": _ads_priority_label(decision.priority),
+                "start_here_summary": _ads_decision_start_here_summary(
+                    decision,
+                    currency_code,
+                ),
+                "measurement_plan": _ads_decision_measurement_plan(decision),
                 "risk_label": _ads_risk_label(decision.risk),
                 "source_connector_labels": source_connector_labels(
                     decision.source_connectors
@@ -6679,6 +6685,7 @@ def _hydrate_keyword_match_context_row_labels(row: AdsKeywordMatchContextRow) ->
 def _hydrate_business_context_marketer_labels(
     contract: AdsBusinessContextReadContract,
 ) -> None:
+    contract.status_label = _ads_business_context_status_label(contract)
     interpretation = contract.target_interpretation
     interpretation.status_label = _ads_status_label(interpretation.status)
     interpretation.allowed_use_labels = _ads_business_use_labels(
@@ -7162,6 +7169,97 @@ def _ads_decision_type_label(decision_type: object) -> str:
     }
     value = str(decision_type)
     return labels.get(value, value)
+
+
+def _ads_decision_start_here_summary(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> str:
+    if decision.decision_type == "review_campaign_triage":
+        campaign_count = len(decision.campaign_triage_rows) or len(decision.campaign_rows)
+        return (
+            f"{campaign_count} kampanii w kolejce oceny. Zacznij od celu, kosztu, "
+            "konwersji, budżetu i haseł."
+        )
+    if decision.decision_type == "review_campaign_activity":
+        cost = _format_money_micros(
+            sum(row.cost_micros or 0 for row in decision.campaign_rows),
+            currency_code,
+        )
+        return (
+            f"{len(decision.campaign_rows)} kampanii z odczytem aktywności. "
+            f"Koszt w tej karcie: {cost or 'brak'}."
+        )
+    if decision.decision_type == "review_business_context":
+        return (
+            "Najpierw potwierdź marżę, cel biznesowy, docelowy koszt pozyskania "
+            "celu i docelowy zwrot z reklam, zanim ktokolwiek nazwie wynik opłacalnym."
+        )
+    if decision.decision_type == "review_derived_kpi":
+        return (
+            f"{len(decision.derived_kpi_rows)} wierszy wskaźników do oceny. "
+            "To nadal sygnał do sprawdzenia, nie ocena kosztu pozyskania celu "
+            "ani zwrotu z reklam."
+        )
+    if decision.decision_type == "review_budget_context":
+        return (
+            f"{len(decision.budget_rows)} budżetów do sprawdzenia. Nie skaluj "
+            "ani nie tnij budżetu bez sprawdzenia w WILQ."
+        )
+    if decision.decision_type == "review_search_terms":
+        return (
+            f"{len(decision.search_term_rows)} haseł do oceny. Zacznij od kosztu "
+            "i intencji, nie od automatycznego wykluczenia."
+        )
+    return decision.summary
+
+
+def _ads_decision_measurement_plan(decision: AdsDecisionItem) -> str:
+    if decision.decision_type == "review_campaign_activity":
+        return (
+            "Po sprawdzeniu kampanii zapisz baseline kosztu, kliknięć, konwersji "
+            "i wartości konwersji. Dopiero osobne okno pre/post oraz historia zmian "
+            "pozwolą mówić o efekcie."
+        )
+    if decision.decision_type == "review_campaign_triage":
+        return (
+            "Po przejściu kolejki kampanii zapisz, które kampanie wymagają ręcznej "
+            "decyzji. Efekt sprawdzimy dopiero przez porównanie przed i po, historię "
+            "zmian i ponowny odczyt Ads."
+        )
+    if decision.decision_type == "review_search_terms":
+        return (
+            "Po sprawdzeniu wyszukiwanych haseł zapisz akcje do sprawdzenia i blokady. "
+            "Dopiero po potwierdzonej zmianie oraz porównaniu przed i po można oceniać "
+            "wpływ na koszt, konwersje lub utratę ruchu."
+        )
+    if decision.decision_type in {
+        "review_negative_keyword_safety",
+        "review_search_term_ngrams",
+    }:
+        return (
+            "Po sprawdzeniu wykluczeń sprawdź zapytania, koszt i konwersje przed "
+            "i po zmianie. Bez sprawdzenia efektu WILQ nie twierdzi, że oszczędzono "
+            "budżet albo uniknięto utraty konwersji."
+        )
+    if decision.decision_type == "review_recommendations":
+        return (
+            "Po sprawdzeniu rekomendacji zapisz, które rekomendacje odrzucono albo "
+            "skierowano do sprawdzenia. Efekt można ocenić dopiero po audycie zmiany "
+            "i porównaniu metryk w kolejnym oknie."
+        )
+    return (
+        "Po decyzji zapisz przegląd akcji, punkt odniesienia i sprawdzenie efektu. "
+        "Brak okna pomiarowego oznacza brak twierdzenia o poprawie wyniku."
+    )
+
+
+def _ads_business_context_status_label(contract: AdsBusinessContextReadContract) -> str:
+    if contract.status == "blocked":
+        return "blokada"
+    if "target_roas_or_cpa" in contract.missing_read_contracts:
+        return "wstępny"
+    return "gotowe"
 
 
 def _ads_priority_label(priority: int) -> str:
