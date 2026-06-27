@@ -23,11 +23,11 @@ Przeczytaj w tej kolejności:
 
 WILQ to API-first Marketing Operating System dla Ekologus. WILQ API jest
 mózgiem systemu; dashboard, Codex skills, hooks, workflows, expert rules,
-opportunities i ActionObjects mają używać tych samych typed contracts.
+szanse i akcje do sprawdzenia mają używać tych samych typed contracts.
 
-Marketer jest polski. Widzi decyzje, evidence IDs, source connectors, blocked
-claims i bezpieczny następny krok. Nie widzi raw connector dumps jako głównego
-produktu.
+Marketer jest polski. Widzi decyzje, źródła danych, dowody opisane po polsku,
+blokady i bezpieczny następny krok. Techniczne ID, connector IDs, raw trace i
+surowe payloady trafiają tylko do technicznego szczegółu albo audytu.
 
 ## Current Recovery State
 
@@ -63,7 +63,8 @@ Available evidence surfaces for current cleanup proof include:
 
 - Google Ads OAuth/customer selection and live campaign/search-term reads.
 - GA4 landing/behavior plus key-event/ecommerce/revenue metric reads.
-- Merchant aggregate issues and review-only feed queue with payload previews.
+- Merchant aggregate issues and review-only feed queue with marketer-readable
+  change previews.
 - GSC query/page and WordPress inventory matching for current Ekologus URLs.
 - Localo aggregate visibility, rankings, GBP visibility, competitor visibility
   and reviews as read-only evidence.

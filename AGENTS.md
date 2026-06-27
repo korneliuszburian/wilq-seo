@@ -60,7 +60,11 @@ Dashboard and Codex skills must use the same WILQ API. The project must not prod
 
 ## Dashboard rules
 
-The dashboard must call WILQ API through typed frontend boundaries. It must show connector freshness/status, opportunities, actions, evidence, payload previews, validation state, risk, audit state, and missing credentials honestly.
+The dashboard must call WILQ API through typed frontend boundaries. Primary
+surfaces must show marketer-readable decisions, why they matter, the safe next
+step, blockers, source freshness and proof summaries in Polish. Technical
+connector state, payload previews, ActionObject/audit details and raw IDs stay
+behind technical detail unless they directly block action.
 
 ## Codex skills and hooks rules
 
@@ -223,7 +227,10 @@ scripts/verify.sh
 
 ## Stop conditions
 
-Goal 001 is not done until API, dashboard, connector registry, schemas, action model, expert rules, Codex runtime policy, hooks, late-created skills, tests, quality scripts, verification results, and handoff exist and are verified against `docs/goals/001-goal.md`.
+Goal 001 is done only when the completion definition in
+`docs/goals/001-goal.md` is true. Full MOS layers such as ContentPreflight,
+workspace profiles, knowledge lifecycle and safe execution gates remain later
+goals unless explicitly promoted.
 
 ## Forbidden behavior
 
