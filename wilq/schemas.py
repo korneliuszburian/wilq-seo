@@ -1923,11 +1923,16 @@ class MerchantDiagnosticSection(BaseModel):
 class MerchantIssueCluster(BaseModel):
     id: str
     issue_type: str
+    issue_type_label: str | None = None
     severity: str
+    severity_label: str | None = None
     resolution: str | None = None
+    resolution_label: str | None = None
     affected_attribute: str | None = None
+    affected_attribute_label: str | None = None
     country: str | None = None
     reporting_context: str | None = None
+    reporting_context_label: str | None = None
     product_count: int = 0
     count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     sample_product_ids: list[str] = Field(default_factory=list)
@@ -1956,11 +1961,16 @@ class MerchantDecisionItem(BaseModel):
     cluster_id: str | None = None
     issue_cluster_ids: list[str] = Field(default_factory=list)
     issue_type: str | None = None
+    issue_type_label: str | None = None
     severity: str | None = None
+    severity_label: str | None = None
     resolution: str | None = None
+    resolution_label: str | None = None
     affected_attribute: str | None = None
+    affected_attribute_label: str | None = None
     country: str | None = None
     reporting_context: str | None = None
+    reporting_context_label: str | None = None
     product_count: int | None = None
     issue_count: int | None = None
     count_semantics: Literal["reported_issue_occurrences"] = (
@@ -2003,8 +2013,11 @@ class MerchantOperatorSummary(BaseModel):
     top_tactical_item_ids: list[str] = Field(default_factory=list)
     reported_issue_occurrences: int = 0
     decision_source: Literal["decision_queue"] = "decision_queue"
+    decision_source_label: str = "kolejka decyzji Merchant"
     drilldown_source: Literal["issue_clusters"] = "issue_clusters"
+    drilldown_source_label: str = "grupy problemów feedu"
     count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
+    count_semantics_label: str = "wystąpienia problemów w raportach"
     issue_types: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2053,9 +2066,12 @@ class MerchantProductPerformanceRow(BaseModel):
     product_id: str
     sample_title: str | None = None
     issue_type: str | None = None
+    issue_type_label: str | None = None
     affected_attribute: str | None = None
+    affected_attribute_label: str | None = None
     country: str | None = None
     reporting_context: str | None = None
+    reporting_context_label: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     ads_product_title: str | None = None

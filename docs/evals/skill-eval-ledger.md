@@ -25,6 +25,46 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - Merchant API-label and expanded route proof
+
+Purpose:
+
+- Verify that Merchant issue labels, affected-attribute labels, context labels,
+  status labels and operator-summary source labels come from the WILQ API/domain
+  contract.
+- Prove that the expanded `/merchant` surface does not show raw vendor values
+  or internal queue keys such as `landing_page_error`, `n:link`, `SHOPPING_ADS`,
+  `MERCHANT_ACTION`, `decision_queue`, `issue_clusters` or
+  `reported_issue_occurrences`.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "merchant" --maxfail=1
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "merchant route renders dedicated feed diagnostics"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt
+```
+
+Result:
+
+- Focused API, dashboard, typecheck and language checks passed.
+- `wilq-merchant-feed-operator` smoke passed against the managed local API.
+- Live contract smoke passed for health, Command Center, marketing brief,
+  Ads, Merchant, Content, GA4 and Localo diagnostics.
+- The browser scan confirmed Polish labels such as `błąd strony produktu`,
+  `link produktu`, `reklamy produktowe`, `kolejka decyzji Merchant`,
+  `grupy problemów feedu` and `wystąpienia problemów w raportach`, with no raw
+  Merchant vendor-key hits in the expanded review.
+
 ## 2026-06-27 - GA4 expanded preview metric labels
 
 Purpose:

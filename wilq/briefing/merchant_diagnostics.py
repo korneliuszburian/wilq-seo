@@ -120,14 +120,39 @@ MERCHANT_HEALTH_METRIC_NAMES = {
 MERCHANT_STALE_AFTER_HOURS = 48
 MERCHANT_ISSUE_LABELS = {
     "availability_updated": "zmiana dostępności do sprawdzenia",
+    "image too small for high resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
+    "image_too_small_for_high_resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
+    "landing_page_error": "błąd strony produktu",
+    "missing_image": "brak zdjęcia produktu",
     "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
     "problem feedu": "problem feedu",
 }
 MERCHANT_ATTRIBUTE_LABELS = {
     "n:availability": "dostępność",
+    "availability": "dostępność",
+    "n:link": "link produktu",
+    "link": "link produktu",
+    "image_link": "link zdjęcia",
+    "n:image_link": "link zdjęcia",
     "n:unit_pricing_measure": "miara ceny jednostkowej",
     "atrybut": "atrybut",
     "atrybut nieznany": "atrybut nieznany",
+}
+MERCHANT_REPORTING_CONTEXT_LABELS = {
+    "ALL_CONTEXTS": "wszystkie konteksty",
+    "DEMAND_GEN_ADS": "reklamy Demand Gen",
+    "FREE_LISTINGS": "bezpłatne wyniki produktowe",
+    "SHOPPING_ADS": "reklamy produktowe",
+}
+MERCHANT_SEVERITY_LABELS = {
+    "DISAPPROVED": "odrzucone",
+    "DEMOTED": "ograniczona widoczność",
+    "NOT_IMPACTED": "bez wpływu",
+    "UNKNOWN": "status nieznany",
+}
+MERCHANT_RESOLUTION_LABELS = {
+    "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
+    "PENDING_PROCESSING": "czeka na przetworzenie",
 }
 
 
@@ -392,9 +417,8 @@ def _merchant_unknowns(
                 id="merchant_unique_product_count_unknown",
                 title="Zgłoszenia raportowe nie są liczbą unikalnych produktów",
                 reason=(
-                    "Ten sam problem może wystąpić w ALL_CONTEXTS, FREE_LISTINGS i "
-                    "SHOPPING_ADS, więc suma raportów może liczyć ten sam produkt więcej "
-                    "niż raz."
+                    "Ten sam problem może wystąpić w kilku kontekstach raportowania, "
+                    "więc suma raportów może liczyć ten sam produkt więcej niż raz."
                 ),
                 impact=(
                     "Kolejka decyzji musi używać największej liczby zgłoszeń jako skali i traktować "
@@ -564,13 +588,26 @@ def _merchant_product_performance_readiness(
             product_id=product_id,
             sample_title=sample_title_map.get(product_id),
             issue_type=sample_context.issue_type if sample_context is not None else None,
+            issue_type_label=_merchant_display_label(sample_context.issue_type)
+            if sample_context is not None
+            else None,
             affected_attribute=(
                 sample_context.affected_attribute if sample_context is not None else None
             ),
+            affected_attribute_label=_merchant_display_label(
+                sample_context.affected_attribute or "atrybut nieznany"
+            )
+            if sample_context is not None
+            else None,
             country=sample_context.country if sample_context is not None else None,
             reporting_context=(
                 sample_context.reporting_context if sample_context is not None else None
             ),
+            reporting_context_label=_merchant_reporting_context_label(
+                sample_context.reporting_context
+            )
+            if sample_context is not None
+            else None,
             source_connectors=_unique(
                 fact.source_connector for fact in [*ads_facts, *ga4_facts]
             ),
@@ -1517,11 +1554,20 @@ def _merchant_issue_clusters(
                     f"{_stable_slug(resolution or 'resolution_unknown')}"
                 ),
                 issue_type=issue_type,
+                issue_type_label=_merchant_display_label(issue_type),
                 severity=severity,
+                severity_label=_merchant_severity_label(severity),
                 resolution=resolution or None,
+                resolution_label=_merchant_resolution_label(resolution or None),
                 affected_attribute=affected_attribute or None,
+                affected_attribute_label=_merchant_display_label(
+                    affected_attribute or "atrybut nieznany"
+                ),
                 country=country or None,
                 reporting_context=reporting_context or None,
+                reporting_context_label=_merchant_reporting_context_label(
+                    reporting_context or None
+                ),
                 product_count=product_count,
                 sample_product_ids=sample_product_ids,
                 sample_titles=sample_titles,
@@ -1661,9 +1707,12 @@ def _operator_summary(
         reported_issue_occurrences=reported_issue_occurrences,
         issue_types=_unique(
             [
-                *(cluster.issue_type for cluster in issue_clusters),
                 *(
-                    item.dimensions.get("issue_type")
+                    cluster.issue_type_label or _merchant_display_label(cluster.issue_type)
+                    for cluster in issue_clusters
+                ),
+                *(
+                    _merchant_display_label(item.dimensions.get("issue_type") or "problem feedu")
                     for item in issue_items
                     if item.dimensions.get("issue_type")
                 ),
@@ -2082,7 +2131,8 @@ def _merchant_decision_from_cluster_group(
     display_issue_type = _merchant_display_label(issue_type)
     display_attribute = _merchant_display_label(attribute)
     context_labels = [
-        cluster.reporting_context or "ALL_CONTEXTS"
+        cluster.reporting_context_label
+        or _merchant_reporting_context_label(cluster.reporting_context)
         for cluster in sorted(clusters, key=lambda cluster: cluster.reporting_context or "")
     ]
     max_reported_count = max(cluster.product_count for cluster in clusters)
@@ -2107,11 +2157,18 @@ def _merchant_decision_from_cluster_group(
         cluster_id=primary_cluster.id,
         issue_cluster_ids=[cluster.id for cluster in clusters],
         issue_type=issue_type,
+        issue_type_label=display_issue_type,
         severity=primary_cluster.severity,
+        severity_label=primary_cluster.severity_label
+        or _merchant_severity_label(primary_cluster.severity),
         resolution=primary_cluster.resolution,
+        resolution_label=primary_cluster.resolution_label
+        or _merchant_resolution_label(primary_cluster.resolution),
         affected_attribute=primary_cluster.affected_attribute,
+        affected_attribute_label=display_attribute,
         country=primary_cluster.country,
         reporting_context=None,
+        reporting_context_label="wiele kontekstów",
         product_count=max_reported_count,
         issue_count=reported_occurrences,
         priority=_merchant_issue_priority(
@@ -2169,9 +2226,9 @@ def _merchant_decision_from_cluster_group(
         ),
         rationale=(
             "To jest jedna decyzja operatorska, bo typ problemu, atrybut, kraj, "
-            "severity i resolution są takie same. Konteksty raportowania są detalem "
-            "triage. Suma raportów nie jest liczbą unikalnych produktów ani gotową "
-            "zmianą feedu."
+            "status i wymagana ścieżka rozwiązania są takie same. Konteksty "
+            "raportowania są detalem przeglądu. Suma raportów nie jest liczbą "
+            "unikalnych produktów ani gotową zmianą feedu."
         ),
         next_step=(
             "Przejrzyj problem przez akcję do sprawdzenia, sprawdź konteksty "
@@ -2186,7 +2243,9 @@ def _merchant_decision_from_cluster(
     facts: list[MetricFact],
     action_ids: list[str],
 ) -> MerchantDecisionItem:
-    context = cluster.reporting_context or "wszystkie konteksty"
+    context = cluster.reporting_context_label or _merchant_reporting_context_label(
+        cluster.reporting_context
+    )
     attribute = cluster.affected_attribute or "atrybut nieznany"
     issue_type = cluster.issue_type or "unknown_issue"
     display_issue_type = _merchant_display_label(issue_type)
@@ -2198,18 +2257,26 @@ def _merchant_decision_from_cluster(
         status="ready",
         title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
         summary=(
-            f"{cluster.product_count} zgłoszeń problemu {cluster.severity}"
-            f"/{cluster.resolution or 'brak resolution'} dla {cluster.country or 'global'}"
+            f"{cluster.product_count} zgłoszeń problemu "
+            f"{cluster.severity_label or _merchant_severity_label(cluster.severity)}"
+            f" / {cluster.resolution_label or _merchant_resolution_label(cluster.resolution)} "
+            f"dla {cluster.country or 'global'}"
             f" / {context}."
         ),
         cluster_id=cluster.id,
         issue_cluster_ids=[cluster.id],
         issue_type=issue_type,
+        issue_type_label=display_issue_type,
         severity=cluster.severity,
+        severity_label=cluster.severity_label or _merchant_severity_label(cluster.severity),
         resolution=cluster.resolution,
+        resolution_label=cluster.resolution_label
+        or _merchant_resolution_label(cluster.resolution),
         affected_attribute=cluster.affected_attribute,
+        affected_attribute_label=display_attribute,
         country=cluster.country,
         reporting_context=cluster.reporting_context,
+        reporting_context_label=context,
         product_count=cluster.product_count,
         issue_count=cluster.product_count,
         priority=_merchant_issue_priority(
@@ -2265,11 +2332,18 @@ def _merchant_decision_from_tactical_item(
         summary=item.diagnosis,
         issue_cluster_ids=[],
         issue_type=issue_type,
+        issue_type_label=display_issue_type,
         severity=severity,
+        severity_label=_merchant_severity_label(severity),
         resolution=item.dimensions.get("resolution"),
+        resolution_label=_merchant_resolution_label(item.dimensions.get("resolution")),
         affected_attribute=item.dimensions.get("affected_attribute"),
+        affected_attribute_label=display_attribute,
         country=item.dimensions.get("country"),
         reporting_context=item.dimensions.get("reporting_context"),
+        reporting_context_label=_merchant_reporting_context_label(
+            item.dimensions.get("reporting_context")
+        ),
         product_count=product_count,
         issue_count=product_count,
         priority=max(1, min(100, item.priority)),
@@ -2302,11 +2376,21 @@ def _merchant_decision_payload_preview(
         "operation_type": "MerchantIssueClusterReview",
         "cluster_id": cluster.id,
         "issue_type": cluster.issue_type,
+        "issue_type_label": cluster.issue_type_label
+        or _merchant_display_label(cluster.issue_type),
         "affected_attribute": cluster.affected_attribute,
+        "affected_attribute_label": cluster.affected_attribute_label
+        or _merchant_display_label(cluster.affected_attribute or "atrybut nieznany"),
         "country": cluster.country,
         "reporting_context": cluster.reporting_context,
+        "reporting_context_label": cluster.reporting_context_label
+        or _merchant_reporting_context_label(cluster.reporting_context),
         "severity": cluster.severity,
+        "severity_label": cluster.severity_label
+        or _merchant_severity_label(cluster.severity),
         "resolution": cluster.resolution,
+        "resolution_label": cluster.resolution_label
+        or _merchant_resolution_label(cluster.resolution),
         "metric_snapshot": metric_snapshot,
         "sample_products_available": bool(sample_product_ids),
         "sample_product_ids": sample_product_ids,
@@ -2321,7 +2405,7 @@ def _merchant_decision_payload_preview(
         "reason": (
             "Do sprawdzenia: podgląd konkretnej decyzji Merchant. WILQ może przygotować "
             "kolejkę oceny, ale nie może zmienić feedu ani obiecać przywrócenia "
-            "approval bez osobnego kontraktu zapisu i audytu."
+            "zatwierdzenia bez osobnego kontraktu zapisu i audytu."
         ),
         "required_validation": [
             "review_issue_type_and_attribute",
@@ -2476,6 +2560,24 @@ def _merchant_display_label(value: str) -> str:
     if value in MERCHANT_ATTRIBUTE_LABELS:
         return MERCHANT_ATTRIBUTE_LABELS[value]
     return " ".join(value.replace("_", " ").split())
+
+
+def _merchant_reporting_context_label(value: str | None) -> str:
+    if not value:
+        return "wszystkie konteksty"
+    return MERCHANT_REPORTING_CONTEXT_LABELS.get(value, _merchant_display_label(value))
+
+
+def _merchant_severity_label(value: str | None) -> str:
+    if not value:
+        return "status nieznany"
+    return MERCHANT_SEVERITY_LABELS.get(value, _merchant_display_label(value))
+
+
+def _merchant_resolution_label(value: str | None) -> str:
+    if not value:
+        return "brak wymaganej ścieżki rozwiązania"
+    return MERCHANT_RESOLUTION_LABELS.get(value, _merchant_display_label(value))
 
 
 def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:

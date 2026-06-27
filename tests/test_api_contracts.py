@@ -11297,11 +11297,16 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["issue_clusters"]
     cluster = payload["issue_clusters"][0]
     assert cluster["issue_type"] == "availability_updated"
+    assert cluster["issue_type_label"] == "zmiana dostępności do sprawdzenia"
     assert cluster["affected_attribute"] == "n:availability"
+    assert cluster["affected_attribute_label"] == "dostępność"
     assert cluster["country"] == "PL"
     assert cluster["reporting_context"] == "SHOPPING_ADS"
+    assert cluster["reporting_context_label"] == "reklamy produktowe"
     assert cluster["severity"] == "NOT_IMPACTED"
+    assert cluster["severity_label"] == "bez wpływu"
     assert cluster["resolution"] == "MERCHANT_ACTION"
+    assert cluster["resolution_label"] == "wymaga działania po stronie Merchant"
     assert cluster["product_count"] == 23
     assert cluster["count_semantics"] == "reported_issue_occurrences"
     assert cluster["action_id"] == "act_review_merchant_feed_issues"
@@ -11326,9 +11331,12 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         cluster["product_count"] for cluster in payload["issue_clusters"]
     )
     assert operator_summary["decision_source"] == "decision_queue"
+    assert operator_summary["decision_source_label"] == "kolejka decyzji Merchant"
     assert operator_summary["drilldown_source"] == "issue_clusters"
+    assert operator_summary["drilldown_source_label"] == "grupy problemów feedu"
     assert operator_summary["count_semantics"] == "reported_issue_occurrences"
-    assert "availability_updated" in operator_summary["issue_types"]
+    assert operator_summary["count_semantics_label"] == "wystąpienia problemów w raportach"
+    assert "zmiana dostępności do sprawdzenia" in operator_summary["issue_types"]
     assert operator_summary["source_connectors"] == ["google_merchant_center"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
@@ -11342,7 +11350,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność"
     )
     assert decision["issue_type"] == "availability_updated"
+    assert decision["issue_type_label"] == "zmiana dostępności do sprawdzenia"
     assert decision["affected_attribute"] == "n:availability"
+    assert decision["affected_attribute_label"] == "dostępność"
+    assert decision["reporting_context_label"] == "reklamy produktowe"
     assert decision["product_count"] == 23
     assert decision["issue_count"] == 23
     assert decision["priority"] == 23
@@ -12156,7 +12167,9 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
         "raporty razem": 1784,
         "konteksty": 3,
     }
-    assert "ALL_CONTEXTS, FREE_LISTINGS, SHOPPING_ADS" in decision["summary"]
+    assert "wszystkie konteksty, bezpłatne wyniki produktowe, reklamy produktowe" in decision[
+        "summary"
+    ]
     assert "nie jest liczbą unikalnych produktów" in decision["rationale"]
     assert set(decision["issue_cluster_ids"]) == {
         cluster["id"] for cluster in payload["issue_clusters"]

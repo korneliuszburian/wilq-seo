@@ -131,6 +131,13 @@ Date: 2026-06-27
   `zdarzenia kluczowe` instead of raw metric names such as `active_users` or
   `ecommerce_purchases`. Proof:
   `.local-lab/proof/20260627-ga4-preview-snapshot-labels/`.
+- Merchant decision, issue-cluster and product-row surfaces now source Polish
+  issue/context/status labels from the WILQ API/domain contract. The `/merchant`
+  browser proof after expanding the full review found no active hits for raw
+  Merchant vendor terms such as `landing_page_error`, `n:link`, `SHOPPING_ADS`,
+  `MERCHANT_ACTION`, `decision_queue`, `issue_clusters` or
+  `reported_issue_occurrences`. Proof:
+  `.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt`.
 - Dashboard status chips now include text-reader separators, so compact header
   status rows no longer collapse into unreadable strings such as `brakuje
   dostępudane do odświeżenia`. Browser proof across Command Center, Merchant,

@@ -134,7 +134,7 @@ function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResp
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Pierwszy ekran pokazuje status i najważniejszy problem feedu. Rozwiń
             pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, gotowość próbek,
-            join produktów z Ads/GA4, ograniczenia i dowody techniczne.
+            powiązanie produktów z Ads/GA4, ograniczenia i dowody techniczne.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -321,8 +321,8 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Zakres"
             values={[
-              primaryDecision.issue_type,
-              primaryDecision.affected_attribute,
+              primaryDecision.issue_type_label,
+              primaryDecision.affected_attribute_label,
               primaryDecision.country
             ].filter((value): value is string => Boolean(value))}
             empty="brak zakresu"
@@ -358,10 +358,10 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           </p>
           <TraceLine
             label="Źródło decyzji"
-            values={[summary.decision_source, summary.drilldown_source]}
+            values={[summary.decision_source_label, summary.drilldown_source_label]}
             empty="brak"
           />
-          <TraceLine label="Znaczenie liczników" values={[summary.count_semantics]} />
+          <TraceLine label="Znaczenie liczników" values={[summary.count_semantics_label]} />
         </div>
 
         <div className="rounded-md border border-line bg-slate-50 p-3">
@@ -496,12 +496,13 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold text-ink">
-                      {cluster.issue_type}
-                      {cluster.affected_attribute ? ` / ${cluster.affected_attribute}` : ""}
-                      {` / ${merchantReportingContextLabel(cluster.reporting_context)}`}
+                      {cluster.issue_type_label ?? "problem feedu"}
+                      {cluster.affected_attribute_label ? ` / ${cluster.affected_attribute_label}` : ""}
+                      {` / ${cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}`}
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {cluster.severity} / {cluster.resolution ?? "brak resolution"}
+                      {cluster.severity_label ?? "status nieznany"} /{" "}
+                      {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}
                     </p>
                   </div>
                   <StatusBadge value={cluster.risk} />
@@ -517,7 +518,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   tego problemu
                   {cluster.country ? ` w kraju ${cluster.country}` : ""}
                   {cluster.reporting_context
-                    ? ` / ${merchantReportingContextLabel(cluster.reporting_context)}`
+                    ? ` / ${cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}`
                     : " / wszystkie konteksty"}.
                 </p>
                 {cluster.sample_unavailable_reason ? (
@@ -536,16 +537,16 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                     </span>
                   ) : null}
                   <span className="rounded border border-line bg-white px-2 py-1">
-                    kontekst: {merchantReportingContextLabel(cluster.reporting_context)}
+                    kontekst: {cluster.reporting_context_label ?? merchantReportingContextLabel(cluster.reporting_context)}
                   </span>
                   {cluster.resolution ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      rozwiązanie: {cluster.resolution}
+                      rozwiązanie: {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}
                     </span>
                   ) : null}
                   {cluster.action_id ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      Akcja: {cluster.action_id}
+                      akcja do sprawdzenia
                     </span>
                   ) : null}
                 </div>
@@ -623,7 +624,8 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Te ograniczenia blokują zbyt mocne wnioski i automatyczne zmiany feedu.
-            Decision queue jest źródłem decyzji, a issue clusters są drilldownem.
+            Kolejka decyzji jest źródłem decyzji, a grupy problemów są szczegółowym
+            przeglądem.
           </p>
         </div>
         <MetricTile label="Ograniczenia" value={data.unknowns.length} />
@@ -782,10 +784,10 @@ function MerchantProductPerformanceRowCard({
         <TraceLine
           label="Problem Merchant"
           values={[
-            row.issue_type,
-            row.affected_attribute,
+            row.issue_type_label,
+            row.affected_attribute_label,
             row.country,
-            row.reporting_context
+            row.reporting_context_label
           ].filter((value): value is string => Boolean(value))}
           empty="brak kontekstu problemu"
         />
@@ -899,12 +901,12 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
         {decision.issue_type ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            problem: {decision.issue_type}
+            problem: {decision.issue_type_label ?? "problem feedu"}
           </span>
         ) : null}
         {decision.affected_attribute ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            atrybut: {decision.affected_attribute}
+            atrybut: {decision.affected_attribute_label ?? "atrybut"}
           </span>
         ) : null}
         {decision.country ? (
@@ -913,7 +915,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
           </span>
         ) : null}
         <span className="rounded border border-line bg-white px-2 py-1">
-          kontekst: {merchantReportingContextLabel(decision.reporting_context)}
+          kontekst: {decision.reporting_context_label ?? merchantReportingContextLabel(decision.reporting_context)}
         </span>
       </div>
       <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
@@ -1063,7 +1065,7 @@ function merchantMicrosPrice(value: number | null | undefined, currencyCode?: st
 
 function merchantReportingContextLabel(value: string | null | undefined) {
   if (!value) return "wszystkie konteksty";
-  return value;
+  return "kontekst raportowania";
 }
 
 function formatPolishCount(count: number, one: string, few: string, many: string) {

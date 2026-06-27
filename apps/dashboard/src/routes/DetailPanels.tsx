@@ -1014,9 +1014,14 @@ function blockedClaimValues(value: unknown) {
 }
 
 function previewIssueLabel(item: Record<string, unknown>) {
-  const issueType = typeof item.issue_type === "string" ? item.issue_type : "problem";
+  const issueType =
+    typeof item.issue_type_label === "string"
+      ? item.issue_type_label
+      : "problem feedu";
   const attribute =
-    typeof item.affected_attribute === "string" ? item.affected_attribute : "atrybut";
+    typeof item.affected_attribute_label === "string"
+      ? item.affected_attribute_label
+      : "atrybut do sprawdzenia";
   return `${issueType} / ${attribute}`;
 }
 

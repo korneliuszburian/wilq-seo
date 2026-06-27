@@ -152,6 +152,13 @@ Latest slice:
   `zaangażowanie` and `zdarzenia kluczowe`, with no raw GA4 metric names in the
   marketer-facing scan. Proof:
   `.local-lab/proof/20260627-ga4-preview-snapshot-labels/`.
+- Merchant decision labels, issue cluster labels, product-row problem labels
+  and operator-summary source labels now come from the WILQ API/domain
+  contract. The expanded `/merchant` browser scan found no active hits for raw
+  Merchant vendor values or internal queue keys such as `landing_page_error`,
+  `n:link`, `SHOPPING_ADS`, `MERCHANT_ACTION`, `decision_queue`,
+  `issue_clusters` or `reported_issue_occurrences`. Proof:
+  `.local-lab/proof/20260627-merchant-expanded-audit/merchant-expanded-final.txt`.
 
 ### C. Dashboard Condensation
 

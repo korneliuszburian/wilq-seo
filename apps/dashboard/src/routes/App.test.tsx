@@ -4224,9 +4224,12 @@ const merchantDiagnostics = {
     top_tactical_item_ids: ["tq_merchant_issue"],
     reported_issue_occurrences: 23,
     decision_source: "decision_queue",
+    decision_source_label: "kolejka decyzji Merchant",
     drilldown_source: "issue_clusters",
+    drilldown_source_label: "grupy problemów feedu",
     count_semantics: "reported_issue_occurrences",
-    issue_types: ["availability_updated"],
+    count_semantics_label: "wystąpienia problemów w raportach",
+    issue_types: ["zmiana dostępności do sprawdzenia"],
     source_connectors: ["google_merchant_center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
     action_ids: ["act_review_merchant_feed_issues"],
@@ -4241,11 +4244,16 @@ const merchantDiagnostics = {
     {
       id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_type: "availability_updated",
+      issue_type_label: "zmiana dostępności do sprawdzenia",
       severity: "NOT_IMPACTED",
+      severity_label: "bez wpływu",
       resolution: "MERCHANT_ACTION",
+      resolution_label: "wymaga działania po stronie Merchant",
       affected_attribute: "n:availability",
+      affected_attribute_label: "dostępność",
       country: "PL",
       reporting_context: "SHOPPING_ADS",
+      reporting_context_label: "reklamy produktowe",
       product_count: 23,
       count_semantics: "reported_issue_occurrences",
       sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
@@ -4266,15 +4274,21 @@ const merchantDiagnostics = {
       decision_type: "review_issue_cluster",
       status: "ready",
       title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
-      summary: "23 zgłoszeń problemu NOT_IMPACTED/MERCHANT_ACTION dla PL / SHOPPING_ADS.",
+      summary:
+        "23 zgłoszeń problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
       cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
       issue_type: "availability_updated",
+      issue_type_label: "zmiana dostępności do sprawdzenia",
       severity: "NOT_IMPACTED",
+      severity_label: "bez wpływu",
       resolution: "MERCHANT_ACTION",
+      resolution_label: "wymaga działania po stronie Merchant",
       affected_attribute: "n:availability",
+      affected_attribute_label: "dostępność",
       country: "PL",
       reporting_context: "SHOPPING_ADS",
+      reporting_context_label: "reklamy produktowe",
       product_count: 23,
       issue_count: 23,
       count_semantics: "reported_issue_occurrences",
@@ -6733,13 +6747,18 @@ describe("WILQ dashboard", () => {
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/act_/)).not.toBeInTheDocument();
     expect(screen.getByText(/przegląd problemu feedu/)).toBeInTheDocument();
     expect(
-      screen.getByText(/23 zgłoszeń problemu NOT_IMPACTED\/MERCHANT_ACTION dla PL \/ SHOPPING_ADS/)
+      screen.getByText(
+        /23 zgłoszeń problemu bez wpływu \/ wymaga działania po stronie Merchant dla PL \/ reklamy produktowe/
+      )
     ).toBeInTheDocument();
     expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("zgłoszenia: 23")).not.toBeInTheDocument();
-    expect(screen.getByText("problem: availability_updated")).toBeInTheDocument();
-    expect(screen.getByText("atrybut: n:availability")).toBeInTheDocument();
-    expect(screen.getByText("kontekst: SHOPPING_ADS")).toBeInTheDocument();
+    expect(screen.getByText("problem: zmiana dostępności do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("atrybut: dostępność")).toBeInTheDocument();
+    expect(screen.getByText("kontekst: reklamy produktowe")).toBeInTheDocument();
+    expect(screen.queryByText("problem: availability_updated")).not.toBeInTheDocument();
+    expect(screen.queryByText("atrybut: n:availability")).not.toBeInTheDocument();
+    expect(screen.queryByText("kontekst: SHOPPING_ADS")).not.toBeInTheDocument();
     expect(screen.queryByText("Affected")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
