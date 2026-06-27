@@ -140,7 +140,7 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
 
   if (map.bindings.length === 0) {
     return (
-      <BlockerNotice message="Brak mapy wiedzy do decyzji. WILQ nie powinien pokazywać reguł bez powiązania z evidence i workflowem." />
+      <BlockerNotice message="Brak mapy wiedzy do decyzji. WILQ nie powinien pokazywać reguł bez powiązania z dowodami i procesem pracy." />
     );
   }
 

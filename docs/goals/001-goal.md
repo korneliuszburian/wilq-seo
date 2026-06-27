@@ -83,6 +83,13 @@ use the cleaned language.
 - Knowledge playbooks now expose Polish source rules and output contracts. Live
   `/api/knowledge/playbooks` proof shows no `Refuse`, `Evidence-backed`,
   `payload`, `connectora` or `query/page` residue in the playbook contract.
+- UAT packet/result scripts now use marketer-facing Polish route names and
+  markdown labels. Live packet proof shows no `Command Center`,
+  `Content Planner`, `Ads Doctor`, `dev preview`, `Route`, `Pass` or `Fail`
+  residue in the exported UAT packet.
+- Ahrefs visible copy now uses `dowody`, `SEO i treści`, `linki zwrotne`,
+  `widok Treści` and `organiczne słowa dla URL`; live Ahrefs API/browser proof
+  shows no `Ahrefs evidence`, `SEO/content`, `backlinków` or `per URL` residue.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

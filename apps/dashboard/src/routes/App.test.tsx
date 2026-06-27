@@ -5033,7 +5033,7 @@ const contentDiagnostics = {
       status: "ready",
       title: "Ahrefs: zweryfikuj luki SEO przed planem treści",
       summary:
-        "WILQ ma 1 rekord luk Ahrefs: luki treści=1, słowa organiczne=0, najlepsze strony=0, luki backlinków=0. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC/WordPress, nie obietnica wzrostu ruchu.",
+        "WILQ ma 1 rekord luk Ahrefs: luki treści=1, słowa organiczne=0, najlepsze strony=0, luki linków zwrotnych=0. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
       metric_tiles: {
         "rekordy Ahrefs": 1,
@@ -5043,7 +5043,7 @@ const contentDiagnostics = {
         "GSC overlap": 1,
         "WP overlap": 1,
         "luki treści": 1,
-        "luki backlinków": 0
+        "luki linków zwrotnych": 0
       },
       page: null,
       normalized_page_path: null,
@@ -5118,7 +5118,7 @@ const contentDiagnostics = {
       rationale:
         "Ahrefs wskazuje luki względem konkurencji, ale ocena jakości rozdziela rekordy pasujące do zakresu Ekologus od tematów szerokich i poza zakresem.",
       next_step:
-        "Najpierw przejrzyj pasujące rekordy: audyt środowiskowy. Odrzuć 0 rekordów poza zakresem i dopiero potem połącz sensowne tematy z GSC/WordPress.",
+        "Najpierw przejrzyj pasujące rekordy: audyt środowiskowy. Odrzuć 0 rekordów poza zakresem i dopiero potem połącz sensowne tematy z GSC i WordPress.",
       risk: "medium"
     }
   ],
@@ -5772,7 +5772,7 @@ const ahrefsDiagnostics = {
       "strony konkurencji",
       "rekordy luk treści",
       "rekordy luk linków",
-      "organiczne słowa per URL",
+      "organiczne słowa dla URL",
       "najlepsze strony konkurencji"
     ],
     missing_read_contracts: [],
@@ -5845,9 +5845,9 @@ const ahrefsDiagnostics = {
         id: "ahrefs_gap_backlink_gap_test",
         gap_type: "backlink_gap",
         gap_type_label: "luka linków",
-        title: "Luka backlinków: example.org",
+        title: "Luka linków zwrotnych: example.org",
         summary:
-          "Luka backlinków: example.org. Dane Ahrefs: referring_domain_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
+          "Luka linków zwrotnych: example.org. Dane Ahrefs: referring_domain_gaps=1. To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu.",
         source_url: "example.org",
         referenced_public_url: null,
         competitor_domain: "competitor.example",
@@ -5955,16 +5955,16 @@ const ahrefsDiagnostics = {
       }
     ],
     gap_record_count: 6,
-    next_step: "Połącz luki Ahrefs z GSC/WordPress i przygotuj kolejkę sprawdzenia.",
+    next_step: "Połącz luki Ahrefs z GSC i WordPress i przygotuj kolejkę sprawdzenia.",
     risk: "medium"
   },
   operator_summary: {
     id: "ahrefs_operator_summary",
     title: "Co marketer ma wiedzieć o Ahrefs",
     summary:
-      "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. Autorytet domeny może być kontekstem, ale wnioski o lukach treści lub backlinków wymagają konkretnych danych Ahrefs.",
+      "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i treści. Autorytet domeny może być kontekstem, ale wnioski o lukach treści lub lukach linków zwrotnych wymagają konkretnych danych Ahrefs.",
     next_step:
-      "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. Nie twierdź o lukach treści, lukach backlinków ani wzroście widoczności bez konkretnych danych Ahrefs.",
+      "Użyj najważniejszych decyzji Ahrefs jako kontekstu dla widoku Treści. Nie twierdź o lukach treści, lukach linków ani wzroście widoczności bez konkretnych danych Ahrefs.",
     top_decision_ids: [
       "ahrefs_review_authority_context",
       "ahrefs_review_gap_records"
@@ -5988,7 +5988,7 @@ const ahrefsDiagnostics = {
       "strony konkurencji",
       "rekordy luk treści",
       "rekordy luk linków",
-      "organiczne słowa per URL",
+      "organiczne słowa dla URL",
       "najlepsze strony konkurencji"
     ],
     missing_read_contracts: [],
@@ -6009,9 +6009,9 @@ const ahrefsDiagnostics = {
       title: "Użyj Ahrefs tylko jako kontekstu autorytetu",
       summary: "ocena domeny Ahrefs: 90, pozycja w rankingu Ahrefs: 1450",
       rationale:
-        "WILQ ma metryki autorytetu Ahrefs z dowodami, więc może dodać kontekst autorytetu do sprawdzenia SEO/content. To nadal nie jest analiza luk.",
+        "WILQ ma metryki autorytetu Ahrefs z dowodami, więc może dodać kontekst autorytetu do sprawdzenia SEO i treści. To nadal nie jest analiza luk.",
       next_step:
-        "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/backlinków.",
+        "Połącz ten kontekst z widokiem Treści i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/linków.",
       priority: 25,
       priority_label: "wysoki priorytet",
       metric_tiles: {
@@ -6075,9 +6075,9 @@ const ahrefsDiagnostics = {
       summary:
         "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
       rationale:
-        "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do sprawdzenia SEO/content.",
+        "To są konkretne rekordy z dowodami Ahrefs, więc mogą wejść do sprawdzenia SEO i treści.",
       next_step:
-        "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress i przygotuj zachowanie, odświeżenie, scalenie, utworzenie albo blokadę zamiast obiecywać wzrost.",
+        "Połącz rekordy z widokiem Treści, sprawdź duplikaty WordPress i przygotuj zachowanie, odświeżenie, scalenie, utworzenie albo blokadę zamiast obiecywać wzrost.",
       priority: 18,
       priority_label: "wysoki priorytet",
       metric_tiles: {
@@ -6150,7 +6150,7 @@ const ahrefsDiagnostics = {
       title: "Ahrefs: rekordy luk SEO",
       status: "ready",
       status_label: "gotowe",
-      summary: "WILQ ma konkretne luki treści i backlinków z Ahrefs.",
+      summary: "WILQ ma konkretne luki treści i linków zwrotnych z Ahrefs.",
       diagnosis: "To jest materiał do sprawdzenia, nie automatyczna obietnica wzrostu.",
       next_step: "Połącz rekordy z GSC i Spis treści WordPress przed decyzją contentową.",
       source_connectors: ["ahrefs"],
@@ -8097,7 +8097,7 @@ describe("WILQ dashboard", () => {
     expect(ahrefsProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
     expect(ahrefsProof.queryByText(/ev_refresh_ahrefs_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
-    expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
+    expect(screen.getByText("Luka linków zwrotnych: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane konkretne rekordy luk Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText(/wzrost autorytetu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Pokazuję top 6 z 6 rekordów.")).toBeInTheDocument();

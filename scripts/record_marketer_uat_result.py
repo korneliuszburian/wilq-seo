@@ -8,10 +8,10 @@ from typing import Any
 
 ROUTE_KEYS = ["command_center", "merchant", "content", "ads", "ga4"]
 ROUTE_LABELS = {
-    "command_center": "Command Center",
+    "command_center": "Centrum pracy",
     "merchant": "Merchant",
-    "content": "Content Planner",
-    "ads": "Ads Doctor",
+    "content": "Treści",
+    "ads": "Google Ads",
     "ga4": "GA4",
 }
 
@@ -149,8 +149,8 @@ def build_task_candidates(
                     "category": "demo_ux",
                     "source": route["key"],
                     "task": (
-                        f"Fix UAT failure on {route['label']}: "
-                        f"{route['note'] or 'no note provided'}"
+                        f"Popraw niejasność UAT w widoku {route['label']}: "
+                        f"{route['note'] or 'brak notatki'}"
                     ),
                 }
             )
@@ -169,8 +169,8 @@ def build_task_candidates(
                 "category": "demo_readiness",
                 "source": "ready_without_developer",
                 "task": (
-                    "Demo is not ready without developer support; classify and "
-                    "fix the blocking confusion before claiming UAT ready."
+                    "Demo nie jest gotowe bez wsparcia developera; sklasyfikuj "
+                    "i popraw blokującą niejasność przed deklaracją gotowości UAT."
                 ),
             }
         )
@@ -188,17 +188,17 @@ def build_task_candidates(
 
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
-        "# Ekologus Marketer UAT Result",
+        "# Wynik UAT marketera Ekologus",
         "",
-        f"- Type: `{report.get('report_type')}`",
-        f"- Date: `{report.get('date')}`",
-        f"- Person: `{report.get('person')}`",
-        f"- Overall status: `{report.get('overall_status')}`",
-        f"- Ready without developer: `{report.get('ready_without_developer')}`",
+        f"- Typ: `{report.get('report_type')}`",
+        f"- Data: `{report.get('date')}`",
+        f"- Osoba: `{report.get('person')}`",
+        f"- Status: `{report.get('overall_status')}`",
+        f"- Gotowe bez developera: `{report.get('ready_without_developer')}`",
         "",
         report.get("safety_note") or "",
         "",
-        "## Route Results",
+        "## Wyniki widoków",
         "",
     ]
     for route in list_payload(report.get("route_results")):
@@ -210,12 +210,12 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
-            "## Feedback",
+            "## Informacje zwrotne",
             "",
-            f"- Biggest real boost: {report.get('biggest_real_boost') or 'brak'}",
-            f"- Biggest confusion: {report.get('biggest_confusion') or 'brak'}",
+            f"- Największy realny zysk: {report.get('biggest_real_boost') or 'brak'}",
+            f"- Największa niejasność: {report.get('biggest_confusion') or 'brak'}",
             "",
-            "## Task Candidates",
+            "## Zadania z UAT",
             "",
         ]
     )
@@ -224,7 +224,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         for task in task_candidates:
             task = mapping(task)
             lines.append(
-                f"- `{task.get('category')}` from `{task.get('source')}`: "
+                f"- `{task.get('category')}` z `{task.get('source')}`: "
                 f"{task.get('task')}"
             )
     else:

@@ -55,6 +55,13 @@ Date: 2026-06-28
 - Knowledge playbooks now expose Polish source rules and output contracts; live
   API proof shows no `Refuse`, `Evidence-backed`, `payload`, `connectora` or
   `query/page` residue in `/api/knowledge/playbooks`.
+- UAT packet/result scripts now use marketer-facing Polish route names and
+  markdown labels. Live packet proof shows no `Command Center`,
+  `Content Planner`, `Ads Doctor`, `dev preview`, `Route`, `Pass` or `Fail`
+  residue in the exported UAT packet.
+- Ahrefs visible copy now uses `dowody`, `SEO i treści`, `linki zwrotne`,
+  `widok Treści` and `organiczne słowa dla URL`; live Ahrefs API/browser proof
+  shows no `Ahrefs evidence`, `SEO/content`, `backlinków` or `per URL` residue.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -80,10 +87,14 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics or content_diagnostics or wordpress_draft or tactical_queue or redaction or legacy_raw_audit_summary" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics" --maxfail=1`
+- `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q --maxfail=1`
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|playbook"`
 - `rtk uv run python - <<'PY' ... /api/knowledge/playbooks language residue scan ... PY`
+- `rtk uv run python scripts/export_marketer_uat_packet.py --format markdown`
+- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser eval ... on /ahrefs`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision|ahrefs route renders authority context"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`

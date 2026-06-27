@@ -108,9 +108,21 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
         "ads",
         "ga4",
     ]
+    assert [route["label"] for route in packet["route_checks"]] == [
+        "Centrum pracy",
+        "Merchant",
+        "Treści",
+        "Google Ads",
+        "GA4",
+    ]
     assert "nie jest dowodem wykonanego UAT" in packet["safety_note"]
     assert "Nie odblokowuje publikacji ani zapisu zmian" in packet["safety_note"]
     assert packet["result_template"]["ready_without_developer"] == "<yes|no>"
+    serialized = str(packet)
+    assert "Command Center" not in serialized
+    assert "Content Planner" not in serialized
+    assert "Ads Doctor" not in serialized
+    assert "dev preview" not in serialized
 
     content_snapshot = packet["route_checks"][2]["live_snapshot"]
     assert content_snapshot["current_site_match_count"] == 1
@@ -155,8 +167,13 @@ def test_marketer_uat_packet_markdown_has_recording_fields() -> None:
 
     markdown = render_markdown(packet)
 
-    assert "# Ekologus Marketer UAT Packet" in markdown
-    assert "Live snapshot" in markdown
+    assert "# Pakiet UAT dla marketera Ekologus" in markdown
+    assert "Podgląd z WILQ" in markdown
     assert "Do uzupełnienia po sesji" in markdown
     assert "Czy wiesz, co zrobić jako następny krok?" in markdown
     assert "ready_without_developer" in markdown
+    assert "Command Center" not in markdown
+    assert "- Route:" not in markdown
+    assert "- Pass:" not in markdown
+    assert "- Fail:" not in markdown
+    assert "feedbacku marketera" not in markdown

@@ -19,7 +19,7 @@ export function AhrefsDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Ahrefs. Ten widok nie może udawać luk treści, backlinków ani przewagi konkurencji bez WILQ." />
+        <BlockerNotice message="Nie udało się odczytać danych Ahrefs. Ten widok nie może udawać luk treści, linków zwrotnych ani przewagi konkurencji bez WILQ." />
       </main>
     );
   }
@@ -34,7 +34,7 @@ export function AhrefsDiagnosticSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Ahrefs</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od
-            konkretnych luk treści, backlinków i konkurencji, żeby marketer nie
+            konkretnych luk treści, linków zwrotnych i konkurencji, żeby marketer nie
             dostał generycznej rekomendacji SEO z samej oceny domeny.
           </p>
         </div>
@@ -144,7 +144,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
-          label="Dozwolone evidence"
+          label="Dozwolone dowody"
           values={decision.allowed_evidence_labels}
         />
         <TraceLine

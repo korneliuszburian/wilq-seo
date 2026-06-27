@@ -20,7 +20,7 @@ ENDPOINTS = {
 UAT_ROUTE_ORDER = [
     {
         "key": "command_center",
-        "label": "Command Center",
+        "label": "Centrum pracy",
         "route": "/command-center",
         "operator_task": "Wskaż jedną decyzję dnia i powiedz, co sprawdzisz dalej.",
         "pass_condition": "Marketer rozumie następny krok bez tłumaczenia developera.",
@@ -39,21 +39,22 @@ UAT_ROUTE_ORDER = [
     },
     {
         "key": "content",
-        "label": "Content Planner",
+        "label": "Treści",
         "route": "/content-planner",
         "operator_task": "Wybierz jeden istniejący temat do zachowania, odświeżenia albo scalenia.",
         "pass_condition": (
-            "Marketer widzi publiczny URL na ekologus.pl, dowody z GSC/WordPress/Ahrefs, "
+            "Marketer widzi publiczny URL na ekologus.pl, dowody z GSC, WordPress i Ahrefs, "
             "bramki jakości, H1/H2/FAQ/CTA, brakujące dowody i zakazane obietnice."
         ),
         "fail_condition": (
             "Marketer uważa, że WILQ już wygenerował publish-ready artykuł albo "
-            "że dev preview jest źródłem historycznej skuteczności albo finalnym URL-em SEO."
+            "że opcjonalny podgląd projektu jest źródłem historycznej skuteczności "
+            "albo finalnym URL-em SEO."
         ),
     },
     {
         "key": "ads",
-        "label": "Ads Doctor",
+        "label": "Google Ads",
         "route": "/ads-doctor",
         "operator_task": "Wskaż jedną kolejkę Ads review.",
         "pass_condition": (
@@ -83,7 +84,7 @@ FINAL_QUESTIONS = [
     "Który ekran dał Ci największy realny zysk?",
     "Gdzie musiałeś zgadywać znaczenie statusu albo pola?",
     (
-        "Czy Content Planner oszczędza Ci czas przy decyzji, co zachować, "
+        "Czy widok Treści oszczędza Ci czas przy decyzji, co zachować, "
         "odświeżyć albo scalić na ekologus.pl?"
     ),
     "Ile czasu realnie oszczędza ta ścieżka: 0, 15, 30, 60+ minut?",
@@ -182,7 +183,7 @@ def build_marketer_uat_packet(
         },
         "safety_note": (
             "Ten pakiet nie jest dowodem wykonanego UAT. Służy do zebrania "
-            "realnego feedbacku marketera i zamiany niezrozumiałych miejsc na "
+            "realnej informacji zwrotnej marketera i zamiany niezrozumiałych miejsc na "
             "zadania. Nie odblokowuje publikacji ani zapisu zmian, automatycznej "
             "optymalizacji Ads, naprawy feedu, obietnic wzrostu Localo, CPA/ROAS "
             "ani twierdzeń o przychodach."
@@ -271,13 +272,13 @@ def live_snapshot_for(key: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 def render_markdown(packet: dict[str, Any]) -> str:
     lines = [
-        "# Ekologus Marketer UAT Packet",
+        "# Pakiet UAT dla marketera Ekologus",
         "",
-        f"- Type: `{packet.get('packet_type')}`",
-        f"- Generated at: `{packet.get('generated_at') or 'unknown'}`",
+        f"- Typ: `{packet.get('packet_type')}`",
+        f"- Wygenerowano: `{packet.get('generated_at') or 'brak daty'}`",
         f"- API: `{packet.get('api_base')}`",
         f"- Limit: `{packet.get('time_limit_minutes')}` minut",
-        f"- Primary next step: {packet.get('primary_next_step') or 'brak'}",
+        f"- Następny krok: {packet.get('primary_next_step') or 'brak'}",
         "",
         packet.get("safety_note") or "",
         "",
@@ -290,12 +291,12 @@ def render_markdown(packet: dict[str, Any]) -> str:
             [
                 f"### {index}. {route.get('label')}",
                 "",
-                f"- Route: `{route.get('route')}`",
+                f"- Widok: `{route.get('route')}`",
                 f"- Zadanie marketera: {route.get('operator_task')}",
-                f"- Pass: {route.get('pass_condition')}",
-                f"- Fail: {route.get('fail_condition')}",
+                f"- Warunek zaliczenia: {route.get('pass_condition')}",
+                f"- Warunek niezaliczenia: {route.get('fail_condition')}",
                 "",
-                "Live snapshot:",
+                "Podgląd z WILQ:",
                 "",
                 "```json",
                 json.dumps(route.get("live_snapshot") or {}, ensure_ascii=False, indent=2),

@@ -6657,7 +6657,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
         "strony konkurencji",
         "rekordy luk treści",
         "rekordy luk linków",
-        "organiczne słowa per URL",
+        "organiczne słowa dla URL",
         "najlepsze strony konkurencji",
     ]
     assert set(gap_contract["allowed_evidence"]) == {
@@ -6705,7 +6705,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert gap_decision["metric_tiles"] == {
         "rekordy luk": 5,
         "luki treści": 1,
-        "luki backlinków": 1,
+        "luki linków zwrotnych": 1,
         "strony konkurencji": 1,
         "słowa organiczne": 1,
         "najlepsze strony": 1,
@@ -13720,7 +13720,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "GSC overlap": 1,
         "WP overlap": 1,
         "luki treści": 2,
-        "luki backlinków": 1,
+        "luki linków zwrotnych": 1,
     }
     assert {"zielony ład", "audyt środowiskowy", "pozwolenie zintegrowane"}.issubset(
         set(ahrefs_decision["queries"])

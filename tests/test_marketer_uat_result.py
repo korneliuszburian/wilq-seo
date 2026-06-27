@@ -38,12 +38,24 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
         "pass",
         "fail",
     ]
+    assert [item["label"] for item in report["route_results"]] == [
+        "Centrum pracy",
+        "Merchant",
+        "Treści",
+        "Google Ads",
+        "GA4",
+    ]
     tasks = report["task_candidates"]
     assert any(task["source"] == "merchant" for task in tasks)
     assert any(task["source"] == "ga4" for task in tasks)
     assert any(task["source"] == "biggest_confusion" for task in tasks)
     assert any(task["category"] == "marketer_feedback" for task in tasks)
+    assert any("Popraw niejasność UAT w widoku Merchant" in task["task"] for task in tasks)
     assert "Nie odblokowuje publikacji ani zapisu zmian" in report["safety_note"]
+    serialized = str(report)
+    assert "Command Center" not in serialized
+    assert "Content Planner" not in serialized
+    assert "Ads Doctor" not in serialized
 
 
 def test_uat_result_report_rejects_placeholders() -> None:
@@ -88,14 +100,17 @@ def test_uat_result_markdown_lists_task_candidates() -> None:
             {
                 "category": "demo_ux",
                 "source": "merchant",
-                "task": "Fix Merchant count copy.",
+                "task": "Doprecyzować licznik zgłoszeń Merchant.",
             }
         ],
     }
 
     markdown = render_markdown(report)
 
-    assert "# Ekologus Marketer UAT Result" in markdown
+    assert "# Wynik UAT marketera Ekologus" in markdown
     assert "`fail` Merchant" in markdown
-    assert "`demo_ux` from `merchant`" in markdown
-    assert "Fix Merchant count copy." in markdown
+    assert "`demo_ux` z `merchant`" in markdown
+    assert "Doprecyzować licznik zgłoszeń Merchant." in markdown
+    assert "Route Results" not in markdown
+    assert "Task Candidates" not in markdown
+    assert "Feedback" not in markdown
