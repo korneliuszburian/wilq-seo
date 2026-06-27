@@ -12,10 +12,6 @@ function copyPromptToClipboard(prompt: string) {
   void navigator.clipboard.writeText(prompt);
 }
 
-function decisionFreshnessLabel(item: DailyDecision) {
-  return item.decision_state_label || item.freshness?.state || "nieznana";
-}
-
 function decisionStatusBadgeValue(item: DailyDecision) {
   return item.decision_state;
 }
@@ -84,7 +80,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Źródła danych" values={item.source_connector_labels} />
-              <TraceLine label="Świeżość źródeł" values={[decisionFreshnessLabel(item)]} />
+              <TraceLine label="Świeżość źródeł" values={[item.freshness_label]} />
               <TraceLine label="Dowody w WILQ" values={[item.evidence_summary]} />
               <TraceLine label="Akcje do sprawdzenia" values={[item.action_summary]} />
               <TraceLine label="Czego nie twierdzimy" values={item.blocked_claim_labels} />

@@ -27,6 +27,7 @@ const commandCenterFixture: CommandCenterResponse = {
       title: "Przejrzyj kolejkę problemów Merchant Center",
       domain: "merchant",
       freshness: { state: "fresh" },
+      freshness_label: "świeże dane",
       decision_state: "ready",
       decision_state_label: "gotowe",
       route: "/merchant",
@@ -83,6 +84,7 @@ const commandCenterFixture: CommandCenterResponse = {
       title: "Przejrzyj kolejkę SEO z GSC i WordPress",
       domain: "content",
       freshness: { state: "stale" },
+      freshness_label: "dane wymagają odświeżenia",
       decision_state: "stale",
       decision_state_label: "do odświeżenia",
       route: "/content-planner",
@@ -218,6 +220,8 @@ describe("CommandCenter route", () => {
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
+    expect(screen.getByText(/Świeżość źródeł: świeże dane/)).toBeInTheDocument();
+    expect(screen.getByText(/Świeżość źródeł: dane wymagają odświeżenia/)).toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
     expect(screen.queryByText("Kopiuj prompt")).not.toBeInTheDocument();
     expect(screen.queryByText(/^Codex:/)).not.toBeInTheDocument();
@@ -251,7 +255,10 @@ describe("CommandCenter route", () => {
     expect(routeSource).not.toContain("marketerMetricLabel");
     expect(routeSource).not.toContain("marketerBlockedClaimLabels");
     expect(routeSource).not.toContain("priorityLabel");
+    expect(routeSource).not.toContain("decisionFreshnessLabel");
+    expect(routeSource).not.toContain("item.freshness?.state");
     expect(routeSource).toContain("item.co_widzimy");
+    expect(routeSource).toContain("item.freshness_label");
     expect(routeSource).toContain("item.skill_label");
     expect(routeSource).toContain("item.source_connector_labels");
     expect(routeSource).toContain("item.blocked_claim_labels");

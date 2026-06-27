@@ -131,6 +131,9 @@ Latest cleanup state:
 - Merchant issue clusters and decisions now render API-owned
   `reporting_context_label` values. The Merchant route no longer owns a local
   reporting-context fallback, including grouped multi-context decisions.
+- Command Center daily decisions now render API-owned `freshness_label` values
+  for source freshness. The route no longer falls back to raw freshness enum
+  states.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -248,6 +251,13 @@ Proof:
   `rtk uv run python scripts/marketer_language_guard.py`
   Live proof: `/api/merchant/diagnostics` returned 14 issue clusters and 5
   issue decisions with zero missing `reporting_context_label` values.
+- Command Center freshness label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "command_center" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  Live proof after `rtk scripts/local_stack.sh restart`: `/api/dashboard/command-center`
+  returned 4 daily decisions and zero missing `freshness_label` values.
 - GA4 metric label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
   `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "ga4 route renders workflow-specific brief focus" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`

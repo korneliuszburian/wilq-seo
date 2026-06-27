@@ -136,6 +136,8 @@ Wilku can inspect it without reading technical internals.
 - Merchant issue clusters and issue decisions now carry and render API-owned
   reporting-context labels; the Merchant route no longer owns a local
   reporting-context fallback.
+- Command Center daily decisions now carry and render API-owned freshness
+  labels; the route no longer falls back to raw freshness enum states.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 

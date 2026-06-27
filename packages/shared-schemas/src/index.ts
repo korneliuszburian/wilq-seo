@@ -2791,6 +2791,7 @@ export const DailyDecisionSchema = z.object({
   title: z.string(),
   domain: z.string().default("wilq"),
   freshness: FreshnessStateSchema.default({ state: "unknown" }),
+  freshness_label: z.string().default(""),
   decision_state: DecisionStateSchema.default("unknown"),
   decision_state_label: z.string().default(""),
   route: z.string(),

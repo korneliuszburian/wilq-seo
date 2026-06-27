@@ -4725,6 +4725,12 @@ def test_command_center_exposes_polish_operator_brief(
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["domain"] == "merchant"
     assert merchant_decision["freshness"]["state"] in {"fresh", "stale", "unknown", "missing"}
+    assert merchant_decision["freshness_label"] in {
+        "świeże dane",
+        "dane wymagają odświeżenia",
+        "brak danych",
+        "świeżość niepotwierdzona",
+    }
     assert merchant_decision["decision_state"] in {
         "ready",
         "stale",

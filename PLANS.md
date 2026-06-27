@@ -596,6 +596,9 @@ WILQ is complete for this long-range goal when:
   evidence summary, action summary, skill label and blocked promises. The route
   no longer owns local business-copy helper maps for those fields. Proof:
   `.local-lab/proof/20260627-command-center-api-labels/`.
+- 2026-06-27: Command Center daily decisions now use WILQ API/shared-schema
+  freshness labels. The route no longer falls back to raw freshness enum
+  states.
 - 2026-06-27: Marketing brief blockers now exclude successful vendor reads and
   non-marketing runtime adapters. Completed GSC/GA4/Merchant reads stay in
   evidence/metric sections; `what_blocks_us` now contains only real decision

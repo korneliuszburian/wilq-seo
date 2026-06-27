@@ -241,6 +241,8 @@ Known cleanup already started:
   jargon.
 - Command Center daily-decision labels and summaries now come from typed WILQ
   API/shared-schema fields instead of route-local React dictionaries.
+- Command Center source freshness labels now come from typed WILQ
+  API/shared-schema fields instead of route-local enum fallbacks.
 - `wilq-daily-command` reaches the live WILQ API and the daily context-pack
   smoke passes after capping embedded evidence summaries at 32. Keep watching
   context-pack size as live evidence grows.

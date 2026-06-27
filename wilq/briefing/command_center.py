@@ -45,6 +45,7 @@ from wilq.schemas import (
     TacticalQueueResponse,
     utc_now,
 )
+from wilq.operator_labels import freshness_state_label
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -414,6 +415,7 @@ def build_daily_decisions(
                 title=plan_item.title,
                 domain=_daily_decision_domain(plan_item.category),
                 freshness=freshness,
+                freshness_label=freshness_state_label(freshness.state),
                 decision_state=decision_state,
                 decision_state_label=_decision_state_label(decision_state),
                 route=plan_item.route,

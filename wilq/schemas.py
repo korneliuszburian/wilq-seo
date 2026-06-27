@@ -3463,6 +3463,7 @@ class DailyDecision(BaseModel):
     freshness: FreshnessState = Field(
         default_factory=lambda: FreshnessState(state="unknown")
     )
+    freshness_label: str = ""
     decision_state: DecisionState = "unknown"
     decision_state_label: str = ""
     route: str
