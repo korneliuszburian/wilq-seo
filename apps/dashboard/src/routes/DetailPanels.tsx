@@ -171,7 +171,6 @@ type PayloadPreviewItem = {
     | "customSegment"
     | "negativeKeyword"
     | "demandGenReadiness"
-    | "ga4TrackingQuality"
     | "localVisibility"
     | "keywordPlannerAccess"
     | "adsBusinessGuardrail";
@@ -225,9 +224,6 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "demandGenReadiness") {
     return <DemandGenReadinessPreviewCard item={previewItem.item} />;
-  }
-  if (previewItem.kind === "ga4TrackingQuality") {
-    return <Ga4TrackingQualityPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "localVisibility") {
     return <LocalVisibilityPreviewCard item={previewItem.item} />;
@@ -425,40 +421,6 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
   );
 }
 
-function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown> }) {
-  const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">Jakość pomiaru GA4 do sprawdzenia</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            Ocena pomiaru bez zapisu zmian
-          </p>
-        </div>
-        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-      </div>
-      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>Strona wejścia: {stringValue(item.landing_page, "brak")}</div>
-        <div>Źródło: {stringValue(item.source_medium, "brak")}</div>
-        <div>Kampania: {stringValue(item.campaign_name, "brak")}</div>
-        <div>Aktywni użytkownicy: {formatNumber(metricSnapshot.active_users)}</div>
-        <div>Sesje: {formatNumber(metricSnapshot.sessions)}</div>
-        <div>Współczynnik zaangażowania: {formatPercent(metricSnapshot.engagement_rate)}</div>
-        <div>Zdarzenia: {formatNumber(metricSnapshot.event_count)}</div>
-        <div>Wyświetlenia stron: {formatNumber(metricSnapshot.screen_page_views)}</div>
-        <PreviewValues label="Braki wymiarów" values={asStringArray(item.tracking_dimension_gaps)} />
-        <PreviewValues
-          label="Warunki sprawdzenia"
-          values={operatorRequirementValues(item.required_validation, item.required_validation_labels)}
-        />
-        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims, item.blocked_claim_labels).slice(0, 4).join(", ") || "brak"}</div>
-        <ExecutionStateLine item={item} />
-      </div>
-    </article>
-  );
-}
-
 function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> }) {
   const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
   return (
@@ -605,7 +567,6 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "customSegment") return 2;
   if (kind === "negativeKeyword") return 3;
   if (kind === "demandGenReadiness") return 5;
-  if (kind === "ga4TrackingQuality") return 6;
   if (kind === "localVisibility") return 7;
   if (kind === "keywordPlannerAccess") return 9;
   if (kind === "adsBusinessGuardrail") return 10;
@@ -636,12 +597,6 @@ function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewIt
     stringValue(item.preview_contract, "") === "demand_gen_readiness_review_preview_v1"
   ) {
     return "demandGenReadiness";
-  }
-  if (
-    stringValue(item.operation_type, "") === "tracking_quality_review" ||
-    stringValue(item.preview_contract, "") === "ga4_tracking_quality_review_v1"
-  ) {
-    return "ga4TrackingQuality";
   }
   if (
     stringValue(item.operation_type, "") === "local_visibility_review" ||

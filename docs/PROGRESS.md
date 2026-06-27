@@ -126,6 +126,12 @@ Latest cleanup state:
   `operation_type_label` and `tracking_dimension_gap_labels`. The GA4 route no
   longer owns local translators for GA4 preview operation or missing-dimension
   labels.
+- GA4 tracking-quality action details now use API-owned typed preview cards.
+  `DetailPanels.tsx` no longer renders GA4 cards by inferring raw payload
+  shape, and live browser proof shows no raw preview-contract names, operation
+  names, metric keys or source metric keys in the primary preview card. The
+  live action endpoint took about 16 seconds and needs a separate performance
+  slice.
 - Merchant action preview payloads now carry API-owned `preview_contract_label`.
   The Merchant route no longer owns a local preview-contract label dictionary.
 - Merchant issue clusters and decisions now render API-owned
@@ -399,6 +405,19 @@ Proof:
   `/api/actions/act_review_ga4_tracking_quality` returned
   `operation_type_label="ocena jakości pomiaru"` and matching
   `tracking_dimension_gap_labels`.
+- GA4 tracking preview card cleanup:
+  `TMPDIR=$PWD/.local-lab/tmp rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_diagnostics" --maxfail=1`
+  `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/actions/act_review_ga4_tracking_quality` returned one
+  `ga4_tracking_quality_review` preview card with Polish labels and no raw
+  `tracking_quality_review`, `ga4_tracking_quality_review_v1`, `active_users`
+  or `source_metric_names` in the marketer-facing card text. `agent-browser`
+  confirmed the same visible card on
+  `/actions/act_review_ga4_tracking_quality`. Runtime: about 16 seconds.
 - Merchant preview-contract label cleanup:
   `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics" --maxfail=1`
   `TMPDIR=$PWD/.local-lab/tmp rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
@@ -424,6 +443,9 @@ Next cleanup queue:
    - Keyword Planner access blocker previews have typed API cards.
    - Social draft source-input previews have typed API cards.
    - WordPress draft handoff previews have typed API cards.
+   - Content refresh previews have typed API cards.
+   - Google Ads search-term n-gram previews have typed API cards.
+   - GA4 tracking-quality previews have typed API cards.
    - migrate remaining action kinds one by one from `DetailPanels.tsx`
      payload-shape inference to typed API preview cards; keep raw payload only
      in collapsed technical detail.

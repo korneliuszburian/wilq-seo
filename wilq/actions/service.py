@@ -2127,6 +2127,25 @@ def _content_metric_snapshot_label(value: Any) -> str:
     return "; ".join(parts)
 
 
+def _metric_snapshot_preview_rows(
+    metric_snapshot: dict[Any, Any],
+    metric_labels: dict[Any, Any],
+) -> list[ActionPreviewRowViewModel]:
+    rows: list[ActionPreviewRowViewModel] = []
+    for key, value in metric_snapshot.items():
+        label = metric_labels.get(key)
+        if not isinstance(label, str) or not label:
+            continue
+        rows.append(_preview_row(label, _metric_snapshot_value_label(str(key), value)))
+    return rows
+
+
+def _metric_snapshot_value_label(key: str, value: Any) -> str:
+    if key.endswith("rate") and isinstance(value, int | float):
+        return f"{value * 100:.2f}%"
+    return _plain_metric_value_label(value)
+
+
 def _prioritize_action_metrics(
     facts: list[MetricFact],
     *,
@@ -2565,6 +2584,8 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
         return _demand_gen_readiness_preview_cards(action.payload)
     if action.payload.get("preview_contract") == SEARCH_TERM_NGRAM_PREVIEW_CONTRACT:
         return _search_term_ngram_preview_cards(action.payload)
+    if action.payload.get("preview_contract") == "ga4_tracking_quality_review_v1":
+        return _ga4_tracking_quality_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "content_brief_preview_v1":
         return _content_refresh_preview_cards(action.payload)
     if action.payload.get("preview_contract") == "wordpress_draft_handoff_preview_v1":
@@ -3196,6 +3217,68 @@ def _search_term_ngram_preview_cards(
                 kind="google_ads_search_term_ngram_review",
                 title_label="Temat zapytań do sprawdzenia",
                 subtitle_label="ocena intencji zapytań bez zapisu zmian",
+                status_label="zapis zmian zablokowany",
+                rows=rows,
+                apply_state_label=_apply_state_label(item.get("apply_allowed")),
+                system_readiness_label=_system_readiness_label(
+                    item.get("api_mutation_ready")
+                ),
+            )
+        )
+    return cards
+
+
+def _ga4_tracking_quality_preview_cards(
+    payload: dict[str, Any],
+) -> list[ActionPreviewCardViewModel]:
+    preview_items = [
+        item
+        for item in payload.get("payload_preview", [])
+        if isinstance(item, dict)
+    ]
+    cards: list[ActionPreviewCardViewModel] = []
+    for index, item in enumerate(preview_items[:4]):
+        metric_snapshot = item.get("metric_snapshot")
+        metric_snapshot = metric_snapshot if isinstance(metric_snapshot, dict) else {}
+        metric_labels = item.get("metric_snapshot_labels")
+        metric_labels = metric_labels if isinstance(metric_labels, dict) else {}
+        rows = [
+            _preview_row(
+                "Strona wejścia",
+                str(item.get("landing_page_label") or item.get("landing_page") or "brak"),
+            ),
+            _preview_row(
+                "Źródło",
+                str(item.get("source_medium_label") or item.get("source_medium") or "brak"),
+            ),
+            _preview_row(
+                "Kampania",
+                str(item.get("campaign_name_label") or item.get("campaign_name") or "brak"),
+            ),
+        ]
+        rows.extend(_metric_snapshot_preview_rows(metric_snapshot, metric_labels))
+        tracking_gap_labels = _string_list(item.get("tracking_dimension_gap_labels"))
+        if tracking_gap_labels:
+            rows.append(_preview_row("Braki wymiarów", ", ".join(tracking_gap_labels[:4])))
+        requirement_labels = _string_list(item.get("required_validation_labels"))
+        if requirement_labels:
+            rows.append(_preview_row("Warunki sprawdzenia", ", ".join(requirement_labels[:4])))
+        blocked_claim_labels = _string_list(item.get("blocked_claim_labels"))
+        if blocked_claim_labels:
+            rows.append(
+                _preview_row(
+                    "Czego nie wolno twierdzić",
+                    ", ".join(blocked_claim_labels[:4]),
+                )
+            )
+        cards.append(
+            ActionPreviewCardViewModel(
+                id=str(item.get("id") or f"ga4_tracking_quality_preview_{index}"),
+                kind="ga4_tracking_quality_review",
+                title_label="Jakość pomiaru GA4 do sprawdzenia",
+                subtitle_label=str(
+                    item.get("operation_type_label") or "ocena pomiaru bez zapisu zmian"
+                ),
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),

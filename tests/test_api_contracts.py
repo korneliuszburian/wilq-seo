@@ -4345,6 +4345,29 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
     assert preview["destructive"] is False
+    assert ga4_action["preview_cards"]
+    ga4_preview_card = ga4_action["preview_cards"][0]
+    assert ga4_preview_card["kind"] == "ga4_tracking_quality_review"
+    assert (
+        ga4_preview_card["title_label"]
+        == "Jakość pomiaru GA4 do sprawdzenia"
+    )
+    ga4_preview_rows = {
+        row["label"]: row["value"] for row in ga4_preview_card["rows"]
+    }
+    assert ga4_preview_rows["Strona wejścia"]
+    assert ga4_preview_rows["Źródło"]
+    assert ga4_preview_rows["Kampania"]
+    ga4_marketer_card_text = str(
+        {
+            key: ga4_preview_card[key]
+            for key in ("title_label", "subtitle_label", "status_label", "rows")
+        }
+    )
+    assert "tracking_quality_review" not in ga4_marketer_card_text
+    assert "ga4_tracking_quality_review_v1" not in ga4_marketer_card_text
+    assert "active_users" not in ga4_marketer_card_text
+    assert "source_metric_names" not in ga4_marketer_card_text
 
     validation_response = client.post(
         "/api/actions/act_review_ga4_tracking_quality/validate",

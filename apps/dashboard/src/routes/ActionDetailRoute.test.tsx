@@ -661,7 +661,36 @@ const demandGenActionFixture: ActionObject = {
 
 const ga4TrackingActionFixture: ActionObject = {
   ...actionFixture,
-  preview_cards: [],
+  preview_cards: [
+    {
+      id: "ga4_tracking_review_1",
+      kind: "ga4_tracking_quality_review",
+      title_label: "Jakość pomiaru GA4 do sprawdzenia",
+      subtitle_label: "ocena jakości pomiaru",
+      status_label: "zapis zmian zablokowany",
+      rows: [
+        { label: "Strona wejścia", value: "/" },
+        { label: "Źródło", value: "google / cpc" },
+        { label: "Kampania", value: "(2026) Ekologus Ogólna" },
+        { label: "aktywni użytkownicy", value: "49" },
+        { label: "sesje", value: "77" },
+        { label: "zaangażowanie", value: "76.62%" },
+        { label: "zdarzenia", value: "1190" },
+        { label: "odsłony", value: "392" },
+        {
+          label: "Warunki sprawdzenia",
+          value:
+            "sprawdź stronę wejścia, sprawdź źródło i medium ruchu, sprawdź nazwę kampanii, sprawdź powiązanie konwersji albo zdarzenia kluczowego"
+        },
+        {
+          label: "Czego nie wolno twierdzić",
+          value: "współczynnik konwersji, zwrot z reklam, przychód, naprawiony pomiar"
+        }
+      ],
+      apply_state_label: "zapis zmian zablokowany",
+      system_readiness_label: "system zablokowany przed zapisem"
+    }
+  ],
   id: "act_ga4_tracking",
   title: "Sprawdź jakość pomiaru GA4 przed oceną kampanii",
   domain: "ga4",
@@ -1594,10 +1623,10 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Strona wejścia: \//)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
-    expect(screen.getByText(/Aktywni użytkownicy: 49/)).toBeInTheDocument();
-    expect(screen.getByText(/Sesje: 77/)).toBeInTheDocument();
-    expect(screen.getByText(/Współczynnik zaangażowania: 76,62%/)).toBeInTheDocument();
-    expect(screen.getByText(/Zdarzenia: 1190/)).toBeInTheDocument();
+    expect(screen.getByText(/aktywni użytkownicy: 49/)).toBeInTheDocument();
+    expect(screen.getByText(/sesje: 77/)).toBeInTheDocument();
+    expect(screen.getByText(/zaangażowanie: 76.62%/)).toBeInTheDocument();
+    expect(screen.getByText(/zdarzenia: 1190/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź stronę wejścia/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: współczynnik konwersji/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
@@ -1759,6 +1788,7 @@ describe("Action detail route", () => {
     expect(source).not.toContain("wordpressDraft");
     expect(source).not.toContain("wordpressDraftHandoff");
     expect(source).not.toContain("searchTermNgram");
+    expect(source).not.toContain("ga4TrackingQuality");
     expect(source).toContain("action.preview_cards");
     expect(source).toContain("allowed_contract_labels");
     expect(source).toContain("target_roas_or_cpa_labels");

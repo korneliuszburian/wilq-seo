@@ -260,6 +260,10 @@ Known cleanup already started:
 - GA4 tracking-quality action previews now carry API-owned operation and
   missing-dimension labels; `Ga4DiagnosticSurface` no longer owns those
   preview translators.
+- GA4 tracking-quality action details now have typed API preview cards;
+  `DetailPanels.tsx` no longer renders GA4 cards by inferring raw payload
+  shape. Live proof is clean, but the action endpoint is slow enough to need a
+  separate performance slice.
 - Merchant action preview payloads now carry API-owned preview-contract labels;
   `MerchantDiagnosticSurface` no longer owns that label dictionary.
 - Merchant issue clusters and issue decisions now carry API-owned
