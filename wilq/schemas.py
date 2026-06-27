@@ -929,14 +929,18 @@ class AdsBudgetApplySafetyReview(BaseModel):
         "campaign_budget_apply_safety_v1"
     )
     status: Literal["blocked"] = "blocked"
+    status_label: str = ""
     reason: str
     max_allowed_delta_percent: float = 0.3
     current_budget_amount_micros: int | None = None
     proposed_budget_amount_micros: int | None = None
     proposed_delta_percent: float | None = None
     missing_requirements: list[str] = Field(default_factory=list)
+    missing_requirement_labels: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
+    required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     api_mutation_ready: bool = False
     apply_allowed: bool = False
@@ -1135,7 +1139,9 @@ class AdsCampaignTriageRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str | None = None
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str | None = None
     review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
         "niski sygnał"
     )
@@ -1170,7 +1176,9 @@ class AdsCampaignTriageRow(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
 

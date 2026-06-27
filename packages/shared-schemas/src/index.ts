@@ -626,14 +626,18 @@ export const AdsBudgetApplySafetyReviewSchema = z.object({
   budget_preview_id: z.string(),
   safety_contract: z.literal("campaign_budget_apply_safety_v1"),
   status: z.literal("blocked"),
+  status_label: z.string().optional().default(""),
   reason: z.string(),
   max_allowed_delta_percent: z.number(),
   current_budget_amount_micros: z.number().nullable().optional(),
   proposed_budget_amount_micros: z.number().nullable().optional(),
   proposed_delta_percent: z.number().nullable().optional(),
   missing_requirements: z.array(z.string()),
+  missing_requirement_labels: z.array(z.string()).optional().default([]),
   required_validation: z.array(z.string()),
+  required_validation_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   evidence_ids: z.array(z.string()),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
@@ -832,7 +836,9 @@ export const AdsCampaignTriageRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
   campaign_status: z.string().nullable().optional(),
+  campaign_status_label: z.string().nullable().optional(),
   advertising_channel_type: z.string().nullable().optional(),
+  advertising_channel_type_label: z.string().nullable().optional(),
   review_priority: z
     .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
     .default("niski sygnał"),
@@ -869,7 +875,9 @@ export const AdsCampaignTriageRowSchema = z.object({
   action_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  missing_read_contract_labels: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
   human_review_gates: z.array(z.string()).default([]),
   human_review_gate_labels: z.array(z.string()).optional().default([])
 });

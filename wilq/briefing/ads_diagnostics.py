@@ -56,6 +56,7 @@ from wilq.schemas import (
     ActionRisk,
     AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
+    AdsBudgetApplyPreview,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
     AdsBusinessContextReadContract,
@@ -173,6 +174,7 @@ ADS_REVIEW_GATE_LABELS = {
     "verify_account_currency": "sprawdzenie waluty konta",
     "budget_apply_preview": "podgląd zmiany budżetu",
     "campaign_budget_apply_safety": "bezpieczeństwo zmiany budżetu",
+    "campaign_budget_operation_preview": "sprawdzenie zapisu budżetu w Google Ads",
     "review_conversion_tracking": "sprawdzenie trackingu konwersji",
     "review_pmax_asset_feed_context": "sprawdzenie PMax, feedu i assetów",
     "review_draft_campaign_status": "sprawdzenie statusu draftu",
@@ -185,6 +187,9 @@ ADS_REVIEW_GATE_LABELS = {
     "reject_brand_or_low_intent_terms": "odrzucenie brand i niskiej intencji",
     "keyword_planner_enrichment": "wzbogacenie przez Keyword Planner",
     "forecast_or_audience_size": "prognoza albo rozmiar odbiorców",
+    "custom_segment_operation_preview": "sprawdzenie zapisu zmian w Google Ads",
+    "google_ads_mutation_audit": "audyt zapisu zmian w Google Ads",
+    "mutation_audit": "audyt zapisu zmian",
 }
 ADS_NGRAM_STOPWORDS = {
     "a",
@@ -6415,6 +6420,44 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_optimizer_readiness_marketer_labels(response.optimizer_readiness_contract)
     _hydrate_custom_segments_marketer_labels(response.custom_segments_read_contract)
     _hydrate_business_context_marketer_labels(response.business_context_read_contract)
+    _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
+    _hydrate_budget_pacing_marketer_labels(response.budget_pacing_read_contract)
+
+
+def _hydrate_campaign_triage_marketer_labels(
+    contract: AdsCampaignTriageReadContract,
+) -> None:
+    for row in contract.triage_rows:
+        row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
+        row.advertising_channel_type_label = _ads_channel_type_label(
+            row.advertising_channel_type
+        )
+        row.missing_read_contract_labels = _ads_missing_read_contract_labels(
+            row.missing_read_contracts
+        )
+        row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _hydrate_budget_pacing_marketer_labels(
+    contract: AdsBudgetPacingReadContract,
+) -> None:
+    for preview in contract.payload_preview:
+        _hydrate_budget_payload_preview_labels(preview)
+    for row in contract.budget_rows:
+        if row.payload_preview is not None:
+            _hydrate_budget_payload_preview_labels(row.payload_preview)
+
+
+def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> None:
+    safety_review = preview.safety_review
+    safety_review.status_label = _ads_status_label(safety_review.status)
+    safety_review.missing_requirement_labels = _ads_missing_read_contract_labels(
+        safety_review.missing_requirements
+    )
+    safety_review.required_validation_labels = _ads_review_gate_labels(
+        safety_review.required_validation
+    )
+    safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
 
 
 def _hydrate_business_context_marketer_labels(
@@ -6559,6 +6602,39 @@ def _ads_strategy_review_status_label(status: object) -> str:
         "deferred": "odroczone",
     }
     value = str(status)
+    return labels.get(value, value)
+
+
+def _ads_campaign_status_label(status: object | None) -> str:
+    if status is None or str(status) == "":
+        return "status: brak"
+    labels = {
+        "ENABLED": "aktywna",
+        "PAUSED": "wstrzymana",
+        "REMOVED": "usunięta",
+        "UNKNOWN": "status nieznany",
+        "UNSPECIFIED": "status nieokreślony",
+    }
+    value = str(status)
+    return labels.get(value, value)
+
+
+def _ads_channel_type_label(channel_type: object | None) -> str:
+    if channel_type is None or str(channel_type) == "":
+        return "kanał: brak"
+    labels = {
+        "SEARCH": "sieć wyszukiwania",
+        "PERFORMANCE_MAX": "Performance Max",
+        "SHOPPING": "Zakupy Google",
+        "DISPLAY": "sieć reklamowa",
+        "DEMAND_GEN": "Demand Gen",
+        "VIDEO": "wideo",
+        "LOCAL": "lokalna",
+        "SMART": "Smart",
+        "UNKNOWN": "kanał nieznany",
+        "UNSPECIFIED": "kanał nieokreślony",
+    }
+    value = str(channel_type)
     return labels.get(value, value)
 
 

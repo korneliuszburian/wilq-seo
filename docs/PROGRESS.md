@@ -77,6 +77,11 @@ Date: 2026-06-27
   `target_roas_or_cpa`, `human_strategy_review` or business-use enum values in
   the expanded Ads review panel. Browser proof:
   `.local-lab/proof/20260627-ads-business-context-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor campaign-triage rows now use API-owned campaign channel/status,
+  missing-data and blocked-promise labels. Budget safety reviews also expose
+  API-owned status and validation labels, including budget operation and
+  mutation-audit checks. Browser proof:
+  `.local-lab/proof/20260627-ads-triage-api-labels/browser/ads-doctor-expanded.txt`.
 - Custom Segments now render missing-contract, safety, validation, confidence
   and blocked-promise labels from WILQ API/shared schema. The dedicated
   `/ads-doctor/custom-segments` route no longer imports route-local Ads label

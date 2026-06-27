@@ -1205,8 +1205,8 @@ function AdsCampaignTriageRowsPanel({
               <div>
                 <h4 className="text-sm font-semibold text-ink">{row.campaign_name}</h4>
                 <p className="mt-1 text-xs text-slate-500">
-                  {row.advertising_channel_type ?? "kanał: brak"} /{" "}
-                  {row.campaign_status ?? "status: brak"} / {row.target_status_label}
+                  {row.advertising_channel_type_label ?? "kanał: brak"} /{" "}
+                  {row.campaign_status_label ?? "status: brak"} / {row.target_status_label}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -1239,7 +1239,7 @@ function AdsCampaignTriageRowsPanel({
               />
               <TraceLine
                 label="Braki"
-                values={row.missing_read_contracts.map(adsMissingReadContractLabel)}
+                values={row.missing_read_contract_labels}
                 empty="brak"
               />
               <TraceLine

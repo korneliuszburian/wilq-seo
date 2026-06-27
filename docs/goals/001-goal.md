@@ -251,6 +251,12 @@ Latest slice:
   `ads_business_target_interpretation_v1`, `preliminary`,
   `target_roas_or_cpa`, `human_strategy_review` or business-use enum values:
   `.local-lab/proof/20260627-ads-business-context-api-labels/browser/ads-doctor-expanded.txt`.
+- Ads Doctor campaign-triage rows now consume API-owned campaign channel/status,
+  missing-data and blocked-promise labels. Budget safety reviews also expose
+  API-owned status, missing-data, validation and blocked-promise labels, so
+  budget operation and mutation-audit checks are no longer raw keys in live API
+  output. Browser proof:
+  `.local-lab/proof/20260627-ads-triage-api-labels/browser/ads-doctor-expanded.txt`.
 - GA4 primary labels are API-owned now. The API/shared schema exposes
   connector, latest-refresh, live-data, freshness, conversion-readiness,
   section, decision, risk, WordPress-match and blocked-claim labels; `/ga4`

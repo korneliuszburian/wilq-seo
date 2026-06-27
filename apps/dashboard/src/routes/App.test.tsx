@@ -1025,7 +1025,9 @@ const adsDiagnostics = {
         campaign_id: "123",
         campaign_name: "Ekologus Search",
         campaign_status: "ENABLED",
+        campaign_status_label: "aktywna",
         advertising_channel_type: "SEARCH",
+        advertising_channel_type_label: "sieć wyszukiwania",
         budget_id: "777",
         budget_name: "Ekologus Search budget",
         budget_period: "DAILY",
@@ -1442,7 +1444,9 @@ const adsDiagnostics = {
         campaign_id: "123",
         campaign_name: "Ekologus Search",
         campaign_status: "ENABLED",
+        campaign_status_label: "aktywna",
         advertising_channel_type: "SEARCH",
+        advertising_channel_type_label: "sieć wyszukiwania",
         search_impression_share: 0.73,
         search_budget_lost_impression_share: 0.18,
         search_rank_lost_impression_share: 0.09,
@@ -1535,7 +1539,19 @@ const adsDiagnostics = {
           "search_budget_lost_impression_share"
         ],
         missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+        missing_read_contract_labels: [
+          "docelowy zwrot z reklam albo koszt pozyskania celu",
+          "ocena strategii przez człowieka"
+        ],
         blocked_claims: [
+          "zmarnowany budżet",
+          "opłacalność",
+          "skalowanie budżetu",
+          "zmiana budżetu",
+          "zapis rekomendacji",
+          "zapis zmian kampanii"
+        ],
+        blocked_claim_labels: [
           "zmarnowany budżet",
           "opłacalność",
           "skalowanie budżetu",
@@ -6913,6 +6929,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Ekologus Generic Search")).not.toBeInTheDocument();
     expect(screen.queryByText(/72,91%/)).not.toBeInTheDocument();
     expect(screen.queryByText("CAMPAIGN_BUDGET")).not.toBeInTheDocument();
+    expect(screen.queryByText(/SEARCH \/ ENABLED/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/automatyczne przyjęcie rekomendacji/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Karty wiedzy:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/card_google_ads_budget_review_playbook/)).not.toBeInTheDocument();
@@ -6953,6 +6970,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
     expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
     expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
+    expect(routeSource).toContain("row.advertising_channel_type_label");
+    expect(routeSource).toContain("row.campaign_status_label");
+    expect(routeSource).toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
     expect(routeSource).not.toContain("adsOptimizerReadinessNextStep");
