@@ -166,6 +166,10 @@ FORBIDDEN_PHRASES = (
         "Use action IDs only in technical contracts; do not promote ActionObject wording.",
     ),
     ForbiddenPhrase(
+        "debugowaniu",
+        "Use plain audit/sprawdzenie language instead of debug wording in marketer-facing UI.",
+    ),
+    ForbiddenPhrase(
         "ActionObjecty",
         "Use akcje do sprawdzenia in marketer-facing copy.",
     ),

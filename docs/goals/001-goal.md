@@ -192,6 +192,12 @@ Latest slice:
   focused tests and `scripts/marketer_language_guard.py` prevent regression.
   Live API and browser proof:
   `.local-lab/proof/20260627-mapping-language-cleanup/`.
+- Action and opportunity detail views now hide raw technical data until the
+  operator opens a technical panel. The default surface shows readable action
+  previews and API metric tiles; raw payload JSON, metric fact JSON and source
+  references are no longer rendered up front. Focused tests cover opportunity
+  detail metric summaries and action detail raw-JSON avoidance; browser proof:
+  `.local-lab/proof/20260627-technical-details-hidden/`.
 
 ### C. Dashboard Condensation
 

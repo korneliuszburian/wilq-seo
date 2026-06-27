@@ -19,7 +19,7 @@ export function ActionPayloadPreviewToggle({
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             {intro} Szczegóły techniczne są schowane na wejściu; otwieraj je tylko przy
-            debugowaniu albo audycie.
+            sprawdzaniu zgodności albo audycie.
           </p>
         </div>
         <button

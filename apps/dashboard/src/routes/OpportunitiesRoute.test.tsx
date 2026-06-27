@@ -18,7 +18,24 @@ const opportunities = [
       "podgląd budżetu": 18,
       rekomendacje: 4
     },
-    metrics: [],
+    metrics: [
+      {
+        name: "clicks",
+        value: 42,
+        period: "last_28d",
+        source_connector: "google_ads",
+        evidence_id: "ev_refresh_refresh_google_ads_test",
+        dimensions: { campaign_name: "Ekologus Ogólna" },
+        unit: null,
+        collected_at: "2026-06-17T10:00:00Z",
+        previous_value: null,
+        delta: null,
+        delta_percent: null,
+        trend: "unknown",
+        freshness_state: "fresh",
+        freshness_label: "świeże"
+      }
+    ],
     human_diagnosis:
       "Google Ads ma liczniki do oceny i akcje do sprawdzenia. Zapis zmian pozostaje zablokowany.",
     recommended_action:
@@ -159,5 +176,26 @@ describe("Opportunities route", () => {
     expect(screen.getByText("Powiązane akcje")).toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBeGreaterThan(0);
+  });
+
+  it("renders opportunity detail metrics as a summary before technical details", async () => {
+    render(
+      <App
+        appRouter={createWilqRouter({
+          initialPath: "/opportunities/opp_decision_review_ads_campaign_metrics",
+          defaultPendingMinMs: 0
+        })}
+        client={testQueryClient}
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
+    );
+    expect(screen.getByRole("heading", { name: "Metryki z dowodów" })).toBeInTheDocument();
+    expect(screen.getByText(/kampanie: 18/)).toBeInTheDocument();
+    expect(screen.getByText("Pokaż szczegóły techniczne metryk")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Metryki techniczne" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/"name": "clicks"/)).not.toBeInTheDocument();
   });
 });

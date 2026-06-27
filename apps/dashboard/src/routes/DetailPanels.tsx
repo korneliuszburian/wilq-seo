@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { useState } from "react";
 
 import {
   ActionObject,
@@ -19,9 +21,7 @@ import {
   actionAuditEventLabel,
   actionAuditSummaryLabel
 } from "./ActionObjectPanels";
-import {
-  contentWordPressPostStatusLabel
-} from "../lib/contentLabels";
+import { contentWordPressPostStatusLabel } from "../lib/contentLabels";
 import { adsMissingReadContractLabel, marketerBlockedClaimLabels } from "./marketingLabels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
@@ -74,12 +74,14 @@ function ActionDetail({ action }: { action: ActionObject }) {
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd zmian" />
         <ActionPayloadPreviewSummary action={action} />
-        <details className="rounded-md border border-line bg-slate-50 p-3 text-xs text-slate-700">
-          <summary className="cursor-pointer font-medium text-ink">Pokaż dane techniczne akcji</summary>
+        <TechnicalDetailsPanel
+          openLabel="Pokaż dane techniczne akcji"
+          closeLabel="Ukryj dane techniczne akcji"
+        >
           <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(action.payload, null, 2)}
           </pre>
-        </details>
+        </TechnicalDetailsPanel>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Historia audytu" />
@@ -1131,11 +1133,19 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
           <div>Źródło: {evidence.source_connector}</div>
           <div>Typ źródła: {evidence.source_type}</div>
-          <div>ID źródła: {evidence.source_id}</div>
           <div>Zebrano: {evidence.collected_at}</div>
           <div>Świeżość: {evidence.freshness.state}</div>
-          <div>Referencja raw: {evidence.raw_ref ?? "brak"}</div>
         </div>
+        <TechnicalDetailsPanel
+          className="mt-4"
+          openLabel="Pokaż szczegóły techniczne dowodu"
+          closeLabel="Ukryj szczegóły techniczne dowodu"
+        >
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div>ID źródła: {evidence.source_id}</div>
+            <div>Referencja źródłowa: {evidence.raw_ref ?? "brak"}</div>
+          </div>
+        </TechnicalDetailsPanel>
       </section>
     </main>
   );
@@ -1158,16 +1168,70 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
         </div>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Metryki techniczne" />
+        <SectionHeading title="Metryki z dowodów" />
         {opportunity.metrics.length === 0 ? (
           <p className="text-sm text-slate-600">Brak realnych metryk z dowodami.</p>
         ) : (
-          <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
-            {JSON.stringify(opportunity.metrics, null, 2)}
-          </pre>
+          <>
+            <MetricTileSummary tiles={opportunity.metric_tiles} />
+            <TechnicalDetailsPanel
+              className="mt-4"
+              openLabel="Pokaż szczegóły techniczne metryk"
+              closeLabel="Ukryj szczegóły techniczne metryk"
+            >
+              <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
+                {JSON.stringify(opportunity.metrics, null, 2)}
+              </pre>
+            </TechnicalDetailsPanel>
+          </>
         )}
       </section>
     </main>
+  );
+}
+
+function MetricTileSummary({ tiles }: { tiles: Record<string, string | number> }) {
+  const entries = Object.entries(tiles).slice(0, 8);
+  if (entries.length === 0) {
+    return <p className="text-sm text-slate-600">Metryki są dostępne w szczegółach technicznych.</p>;
+  }
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {entries.map(([label, value]) => (
+        <span
+          key={label}
+          className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
+        >
+          {label}: {value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TechnicalDetailsPanel({
+  openLabel,
+  closeLabel,
+  className = "",
+  children
+}: {
+  openLabel: string;
+  closeLabel: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className={`${className} rounded-md border border-line bg-slate-50 p-3 text-xs text-slate-700`}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="font-medium text-ink"
+      >
+        {isOpen ? closeLabel : openLabel}
+      </button>
+      {isOpen ? children : null}
+    </div>
   );
 }
 

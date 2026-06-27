@@ -65,6 +65,40 @@ Result:
   `grupy problemów feedu` and `wystąpienia problemów w raportach`, with no raw
   Merchant vendor-key hits in the expanded review.
 
+## 2026-06-27 - Detail technical panels hidden by default
+
+Purpose:
+
+- Prove that Action Detail and Opportunity Detail do not render raw JSON,
+  source references or debug wording as the default marketer experience.
+- Keep traceability available behind an explicit technical panel.
+
+Proof:
+
+```bash
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/OpportunitiesRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "without requiring raw JSON"
+rtk pnpm --dir apps/dashboard typecheck
+rtk uv run python scripts/marketer_language_guard.py
+rtk git diff --check
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-technical-details-hidden/action-detail.txt
+.local-lab/proof/20260627-technical-details-hidden/opportunity-detail.txt
+```
+
+Result:
+
+- Action Detail proof has no visible `payload`, `debugowaniu`,
+  `ActionObject`, raw action type or raw preview JSON hits before opening the
+  technical panel.
+- Opportunity Detail proof has no visible raw metric JSON, `metryka WILQ`,
+  `wymiar=`, `Metryki techniczne` or debug wording; it shows `Metryki z
+  dowodów` from API metric tiles first.
+
 ## 2026-06-27 - GA4 expanded preview metric labels
 
 Purpose:

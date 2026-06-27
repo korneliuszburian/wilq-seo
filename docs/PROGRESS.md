@@ -166,6 +166,12 @@ Date: 2026-06-27
   produkty`; `scripts/marketer_language_guard.py` blocks the old phrases.
   Live API and browser proof:
   `.local-lab/proof/20260627-mapping-language-cleanup/`.
+- Action and opportunity detail views now keep raw JSON/source identifiers out
+  of the default marketer surface. Action payload data, evidence source IDs and
+  metric fact JSON render only after opening a technical panel; opportunity
+  detail uses API `metric_tiles` for the visible metric summary. The language
+  guard now blocks visible `debugowaniu` wording. Browser proof:
+  `.local-lab/proof/20260627-technical-details-hidden/`.
 - Ahrefs decision, gap-contract, metric-fact and gap-record labels now come
   from the WILQ API/domain contract. The `/ahrefs` route no longer maps Ahrefs
   enum names in React and the browser proof found no visible hits for
