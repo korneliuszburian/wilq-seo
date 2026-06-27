@@ -5407,13 +5407,14 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu oraz Demand Gen ad/asset empty-read proof, ale nadal nie ma landing quality per campaign i transition constraints.",
+    "WILQ ocenił 18 kampanii Ads. Kanały w odczycie: PMax: 8, Search: 10. Kampanie Demand Gen/Discovery: 0. WILQ ma dowody Ads i GA4 do oceny ruchu. Odczyty reklam i kreacji Demand Gen są traktowane jako dostępne tylko wtedy, gdy API zwraca je w dostępnych danych. Nadal brakuje danych: jakość stron wejścia według kampanii, ograniczenia przejścia. To blokuje użyteczną rekomendację; nie jest to problem treści polecenia.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
-    "wiersze DG": 0,
-    "reklamy DG": 1,
-    "assety DG": 1,
+    "kampanie Demand Gen": 0,
+    "reklamy Demand Gen": 1,
+    "kreacje Demand Gen": 1,
+    "strony wejścia Demand Gen": 0,
     braki: 2
   },
   available_read_contracts: [
@@ -5430,11 +5431,34 @@ const demandGenDiagnostics = {
     "demand_gen_landing_quality_by_campaign",
     "demand_gen_transition_constraints"
   ],
+  available_read_contract_labels: [
+    "aktywność kampanii Google Ads",
+    "kontekst budżetu Google Ads",
+    "udział w wyświetleniach Google Ads",
+    "jakość ruchu GA4 dla stron wejścia",
+    "akcja sprawdzenia Demand Gen",
+    "wiersze kampanii Demand Gen/Discovery",
+    "wiersze reklam Demand Gen",
+    "wiersze materiałów kreatywnych"
+  ],
+  missing_read_contract_labels: [
+    "jakość stron wejścia według kampanii",
+    "ograniczenia przejścia"
+  ],
+  operator_review_gate_labels: [
+    "konkretne dowody Demand Gen",
+    "sprawdzenie strategii przez człowieka",
+    "potwierdzenie człowieka przed zapisem"
+  ],
+  campaign_channel_labels: {
+    PERFORMANCE_MAX: "PMax",
+    SEARCH: "Search"
+  },
   blocked_claims: [
     "rekomendacja uruchomienia Demand Gen",
     "gotowość przejścia na Demand Gen",
     "ocena jakości kreacji",
-    "ocena skuteczności assetów",
+    "ocena skuteczności materiałów kreatywnych",
     "zmiana kampanii",
     "wzrost skuteczności"
   ],
@@ -5499,6 +5523,20 @@ const demandGenDiagnostics = {
         "demand_gen_landing_quality_by_campaign",
         "demand_gen_transition_constraints"
       ],
+      available_read_contract_labels: [
+        "aktywność kampanii Google Ads",
+        "kontekst budżetu Google Ads",
+        "udział w wyświetleniach Google Ads",
+        "jakość ruchu GA4 dla stron wejścia",
+        "akcja sprawdzenia Demand Gen",
+        "wiersze kampanii Demand Gen/Discovery",
+        "wiersze reklam Demand Gen",
+        "wiersze materiałów kreatywnych"
+      ],
+      missing_read_contract_labels: [
+        "jakość stron wejścia według kampanii",
+        "ograniczenia przejścia"
+      ],
       required_validation: [
         "review_ads_campaign_channel_context",
         "review_ga4_landing_source_campaign_context",
@@ -5506,11 +5544,18 @@ const demandGenDiagnostics = {
         "human_strategy_review",
         "human_confirm_before_apply"
       ],
+      required_validation_labels: [
+        "sprawdzenie kanałów kampanii Ads",
+        "sprawdzenie GA4: strona wejścia, źródło ruchu i kampania",
+        "sprawdzenie brakujących danych Demand Gen",
+        "sprawdzenie strategii przez człowieka",
+        "potwierdzenie człowieka przed zapisem"
+      ],
       blocked_claims: [
         "rekomendacja uruchomienia Demand Gen",
         "gotowość przejścia na Demand Gen",
         "ocena jakości kreacji",
-        "ocena skuteczności assetów",
+        "ocena skuteczności materiałów kreatywnych",
         "zmiana kampanii",
         "wzrost skuteczności"
       ],
@@ -5552,7 +5597,7 @@ const demandGenDiagnostics = {
     }
   ],
   next_step:
-    "Sprawdź w WILQ act_review_demand_gen_readiness jako akcję do sprawdzenia. Zanim skill pokaże propozycje Demand Gen lub przejścia kampanii, dodaj odczyt kreacji, jakość landingów według kampanii i ograniczenia przejścia.",
+    "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. Zanim WILQ pokaże propozycje uruchomienia albo przejścia kampanii, potwierdź dostępność danych o jakości stron wejścia i ograniczeniach przejścia.",
   risk: "medium"
 };
 
@@ -7160,10 +7205,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("PMax")).toBeInTheDocument();
     expect(screen.getByText("Search")).toBeInTheDocument();
     expect(
-      screen.getByText(/W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery/)
+      screen.getByText(/W bieżących dowodach Ads nie ma kampanii Demand Gen ani Discovery/)
     ).toBeInTheDocument();
     expect(screen.getAllByText(/wiersze reklam Demand Gen/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/wiersze assetów kreacji/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wiersze materiałów kreatywnych/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/akcja do sprawdzenia/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Podgląd sprawdzenia gotowości Demand Gen")).toBeInTheDocument();
     const demandGenOperatorSection = screen
@@ -7175,7 +7220,17 @@ describe("WILQ dashboard", () => {
       within(demandGenOperatorSection as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
     expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
+    expect(screen.getAllByText(/jakość stron wejścia według kampanii/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ograniczenia przejścia/).length).toBeGreaterThan(0);
     expect(screen.getByText(/rekomendacja uruchomienia Demand Gen/)).toBeInTheDocument();
+    expect(screen.queryByText(/act_review_demand_gen_readiness/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/available_read_contracts/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/missing_read_contracts/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/read contracts/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/landing quality/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/transition constraints/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/launchu/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("DG rows")).not.toBeInTheDocument();
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();

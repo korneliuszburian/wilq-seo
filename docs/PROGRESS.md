@@ -112,6 +112,13 @@ Date: 2026-06-27
   kierowania reklam, skuteczność kampanii i zwrot z reklam. Obsolete
   backend/dashboard label aliases for old values were removed instead of kept
   as compatibility aliases. Ads target status defaults now use `brak celu`.
+- Demand Gen readiness now sources campaign-channel labels, missing-data
+  labels, review-gate labels, blocked promises and route metrics from the WILQ
+  API/domain contract. The dashboard no longer renders raw Demand Gen action
+  IDs, raw read-contract keys, `DG rows`, `asset`, `payload`, `ActionObject` or
+  local React label dictionaries on the `/ads-doctor/demand-gen` marketer
+  surface. Browser proof:
+  `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
 - Ads, GA4 and Merchant blocked-claim contracts now also use Polish source
   values for budget-loss checks, query review, profitability boundaries, margin
   checks, campaign write paths, change assessment, GA4 write/fix states,

@@ -130,6 +130,12 @@ Latest slice:
   and blocked Keyword Planner access. Browser proof for
   `/ads-doctor/custom-segments` is stored under
   `.local-lab/proof/20260627-custom-segments-api-labels/browser/`.
+- Demand Gen readiness wording now uses API-owned Polish labels and source
+  metrics for channel labels, review gates, missing-data labels and blocked
+  promises. The `/ads-doctor/demand-gen` browser proof confirms no raw action
+  IDs, raw read-contract keys, `DG rows`, `asset`, `payload` or `ActionObject`
+  text on the marketer surface:
+  `.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt`.
 
 ### C. Dashboard Condensation
 

@@ -29,8 +29,10 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
     DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+    demand_gen_channel_labels,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
+    demand_gen_contract_labels,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
     demand_gen_readiness_review_payload,
@@ -1542,10 +1544,15 @@ def _demand_gen_readiness_contract(
     ]
     if campaign_channel_read_available:
         available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
+        labeled_channel_counts = demand_gen_channel_labels(channel_counts)
+        channel_summary = ", ".join(
+            f"{label}: {channel_counts[channel]}"
+            for channel, label in labeled_channel_counts.items()
+        ) or "brak rozpoznanych kanałów"
         campaign_context = (
-            f"WILQ ocenił {len(campaign_rows)} kampanii Ads z typami kanałów "
-            f"({_format_channel_counts(channel_counts)}); "
-            f"Demand Gen/Discovery rows={len(demand_gen_campaign_rows)}."
+            f"WILQ ocenił {len(campaign_rows)} kampanii Ads. "
+            f"Kanały w odczycie: {channel_summary}. "
+            f"Kampanie Demand Gen/Discovery: {len(demand_gen_campaign_rows)}. "
         )
     else:
         missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
@@ -1572,7 +1579,14 @@ def _demand_gen_readiness_contract(
             DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
         ]
     )
-    missing_contract_summary = ", ".join(missing_read_contracts) or "brak"
+    available_contract_labels = demand_gen_contract_labels(available_read_contracts)
+    missing_contract_labels = demand_gen_contract_labels(missing_read_contracts)
+    operator_review_gates = [
+        "demand_gen_specific_evidence_required",
+        "human_strategy_review",
+        "human_confirm_before_apply",
+    ]
+    missing_contract_summary = ", ".join(missing_contract_labels)
     title = (
         "Demand Gen: sprawdź istniejące kampanie bez uruchamiania zmian"
         if demand_gen_campaign_rows
@@ -1607,45 +1621,49 @@ def _demand_gen_readiness_contract(
         status="blocked",
         title=title,
         summary=(
-            f"{campaign_context} WILQ ma Ads i GA4 evidence do oceny ruchu, "
-            "a Demand Gen ad/creative read contracts są dostępne, jeśli widnieją "
-            "w available_read_contracts. "
-            f"Nadal brakujące kontrakty: {missing_contract_summary}. "
-            "To jest blocker użytecznej rekomendacji, nie brak promptu."
+            f"{campaign_context} WILQ ma dowody Ads i GA4 do oceny ruchu. "
+            "Odczyty reklam i kreacji Demand Gen są traktowane jako dostępne "
+            "tylko wtedy, gdy API zwraca je w dostępnych danych. "
+            + (
+                f"Nadal brakuje danych: {missing_contract_summary}. "
+                if missing_contract_summary
+                else "WILQ nie wykrywa brakujących danych w tym odczycie, ale nadal nie widzi kampanii Demand Gen/Discovery do rekomendacji. "
+            )
+            + "To blokuje użyteczną rekomendację; nie jest to problem treści polecenia."
         ),
         metric_tiles={
             "kampanie Ads": len(campaign_rows),
             "kanały": len(channel_counts),
-            "wiersze DG": len(demand_gen_campaign_rows),
-            "reklamy DG": len(demand_gen_ad_group_ad_rows),
-            "assety DG": len(demand_gen_creative_asset_rows),
-            "landingi DG": len(demand_gen_landing_quality_rows),
+            "kampanie Demand Gen": len(demand_gen_campaign_rows),
+            "reklamy Demand Gen": len(demand_gen_ad_group_ad_rows),
+            "kreacje Demand Gen": len(demand_gen_creative_asset_rows),
+            "strony wejścia Demand Gen": len(demand_gen_landing_quality_rows),
             "ograniczenia": len(demand_gen_transition_constraint_rows),
             "braki": len(missing_read_contracts),
         },
         available_read_contracts=available_read_contracts,
+        available_read_contract_labels=available_contract_labels,
         missing_read_contracts=missing_read_contracts,
+        missing_read_contract_labels=missing_contract_labels,
         blocked_claims=DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         source_connectors=["google_ads", "google_analytics_4"],
         evidence_ids=evidence_ids,
         action_ids=action_ids,
-        operator_review_gates=[
-            "demand_gen_specific_evidence_required",
-            "human_strategy_review",
-            "human_confirm_before_apply",
-        ],
+        operator_review_gates=operator_review_gates,
+        operator_review_gate_labels=demand_gen_contract_labels(operator_review_gates),
         payload_preview=payload_preview,
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
+        campaign_channel_labels=demand_gen_channel_labels(channel_counts),
         demand_gen_campaign_rows=demand_gen_campaign_rows,
         demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
         demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
         demand_gen_landing_quality_rows=demand_gen_landing_quality_rows,
         demand_gen_transition_constraint_rows=demand_gen_transition_constraint_rows,
         next_step=(
-            "Zwaliduj act_review_demand_gen_readiness jako akcję tylko do przeglądu. "
-            "Zanim skill pokaże kandydatów launchu albo przejścia kampanii, sprawdź "
-            "puste/niepuste read contracts landing quality i transition constraints."
+            "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. "
+            "Zanim WILQ pokaże propozycje uruchomienia albo przejścia kampanii, "
+            "potwierdź dostępność danych o jakości stron wejścia i ograniczeniach przejścia."
         ),
     )
 
@@ -1675,12 +1693,6 @@ def _campaign_channel_counts(campaign_rows: list[dict[str, Any]]) -> dict[str, i
 
 def _is_demand_gen_channel(channel: Any) -> bool:
     return str(channel or "").strip().upper() in DEMAND_GEN_CHANNEL_TYPES
-
-
-def _format_channel_counts(channel_counts: dict[str, int]) -> str:
-    if not channel_counts:
-        return "brak kanałów"
-    return ", ".join(f"{channel}={count}" for channel, count in channel_counts.items())
 
 
 def _compact_campaign_row_for_demand_gen(row: dict[str, Any]) -> AdsCampaignMetricRow:

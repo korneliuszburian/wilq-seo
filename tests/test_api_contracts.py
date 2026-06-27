@@ -16258,9 +16258,9 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert "demand_gen_transition_constraints" in data["available_read_contracts"]
     assert "demand_gen_landing_quality_by_campaign" not in data["missing_read_contracts"]
     assert "demand_gen_transition_constraints" not in data["missing_read_contracts"]
-    assert data["metric_tiles"]["reklamy DG"] == 1
-    assert data["metric_tiles"]["assety DG"] == 1
-    assert data["metric_tiles"]["landingi DG"] == 1
+    assert data["metric_tiles"]["reklamy Demand Gen"] == 1
+    assert data["metric_tiles"]["kreacje Demand Gen"] == 1
+    assert data["metric_tiles"]["strony wejścia Demand Gen"] == 1
     assert data["metric_tiles"]["ograniczenia"] == 1
     assert len(data["demand_gen_ad_group_ad_rows"]) == 1
     assert len(data["demand_gen_creative_asset_rows"]) == 1

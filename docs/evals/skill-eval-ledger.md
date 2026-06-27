@@ -25,6 +25,39 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - wilq-demand-gen-operator API-label smoke
+
+Purpose:
+
+- Verify that Demand Gen readiness uses API-owned Polish labels for channel
+  names, missing data, review gates, blocked promises and route metrics.
+- Prove the browser surface no longer shows raw action IDs, raw read-contract
+  keys, `DG rows`, `asset`, `payload`, `ActionObject` or route-local
+  translator output.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "demand gen route renders readiness contract"
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-demand-gen-api-labels/browser/demand-gen-body.txt
+```
+
+Result:
+
+- `wilq-demand-gen-operator` smoke passed against the managed local API.
+- Live contract smoke passed for health, Command Center, marketing brief,
+  Ads, Merchant, Content, GA4 and Localo diagnostics.
+- The route renders marketer-facing Demand Gen readiness with `PMax`, `Search`,
+  `kampanie Demand Gen`, `reklamy Demand Gen`, `kreacje Demand Gen`,
+  `strony wejścia Demand Gen`, Polish missing-data labels and no raw action ID.
+
 ## 2026-06-27 - wilq-custom-segments API-label smoke
 
 Purpose:

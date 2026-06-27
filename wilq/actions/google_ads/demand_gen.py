@@ -36,10 +36,55 @@ DEMAND_GEN_READINESS_BLOCKED_CLAIMS = [
     "rekomendacja uruchomienia Demand Gen",
     "gotowość przejścia na Demand Gen",
     "ocena jakości kreacji",
-    "ocena skuteczności assetów",
+    "ocena skuteczności materiałów kreatywnych",
     "zmiana kampanii",
     "wzrost skuteczności",
 ]
+DEMAND_GEN_CONTRACT_LABELS = {
+    "google_ads_campaign_activity": "aktywność kampanii Google Ads",
+    "google_ads_budget_context": "kontekst budżetu Google Ads",
+    "google_ads_impression_share_context": "udział w wyświetleniach Google Ads",
+    "ga4_landing_source_campaign_quality": "jakość ruchu GA4 dla stron wejścia",
+    DEMAND_GEN_READINESS_AVAILABLE_CONTRACT: "akcja sprawdzenia Demand Gen",
+    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT: "wiersze kampanii Demand Gen/Discovery",
+    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT: "wiersze reklam Demand Gen",
+    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT: "wiersze materiałów kreatywnych",
+    DEMAND_GEN_LANDING_QUALITY_CONTRACT: "jakość stron wejścia według kampanii",
+    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT: "ograniczenia przejścia",
+    "demand_gen_specific_evidence_required": "konkretne dowody Demand Gen",
+    "already_demand_gen_review_only": "już Demand Gen, bez zapisu zmian",
+    "discovery_to_demand_gen_requires_human_review": (
+        "Discovery wymaga ręcznego sprawdzenia"
+    ),
+    "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
+    "human_strategy_review": "sprawdzenie strategii przez człowieka",
+    "review_ads_campaign_channel_context": "sprawdzenie kanałów kampanii Ads",
+    "review_demand_gen_missing_contracts": (
+        "sprawdzenie brakujących danych Demand Gen"
+    ),
+    "review_ga4_landing_source_campaign_context": (
+        "sprawdzenie GA4: strona wejścia, źródło ruchu i kampania"
+    ),
+}
+DEMAND_GEN_CHANNEL_LABELS = {
+    "DEMAND_GEN": "Demand Gen",
+    "DISCOVERY": "Discovery",
+    "PERFORMANCE_MAX": "PMax",
+    "SEARCH": "Search",
+    "UNKNOWN": "nieznany kanał",
+}
+
+
+def demand_gen_contract_labels(values: Iterable[str]) -> list[str]:
+    return [DEMAND_GEN_CONTRACT_LABELS.get(str(value), str(value)) for value in values]
+
+
+def demand_gen_channel_label(value: str) -> str:
+    return DEMAND_GEN_CHANNEL_LABELS.get(value, value)
+
+
+def demand_gen_channel_labels(channel_counts: dict[str, int]) -> dict[str, str]:
+    return {channel: demand_gen_channel_label(channel) for channel in channel_counts}
 
 
 def demand_gen_readiness_review_payload(
@@ -77,15 +122,25 @@ def demand_gen_readiness_review_payload(
         ),
         "demand_gen_transition_constraint_rows": demand_gen_transition_constraint_rows[:4],
         "available_read_contracts": available_read_contracts,
+        "available_read_contract_labels": demand_gen_contract_labels(
+            available_read_contracts
+        ),
         "missing_read_contracts": missing_read_contracts,
+        "missing_read_contract_labels": demand_gen_contract_labels(
+            missing_read_contracts
+        ),
         "reason": (
             "Podgląd gotowości Demand Gen do sprawdzenia w WILQ. WILQ może pokazać "
             "kontekst kanałów kampanii Ads i GA4, ale nadal blokuje uruchomienie, "
             "przejście kampanii, ocenę kreacji i zapis zmian bez osobnych "
-            "odczytów assetów, kreacji, jakości stron wejścia i ograniczeń przejścia."
+            "odczytów kreacji, jakości stron wejścia i ograniczeń przejścia."
         ),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
+        "required_validation_labels": demand_gen_contract_labels(
+            DEMAND_GEN_READINESS_REQUIRED_VALIDATION
+        ),
         "blocked_claims": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
+        "blocked_claim_labels": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         "evidence_ids": evidence_ids,
         "api_mutation_ready": False,
         "apply_allowed": False,
@@ -98,9 +153,19 @@ def demand_gen_readiness_review_payload(
         "source_connectors": source_connectors,
         "evidence_ids": evidence_ids,
         "available_read_contracts": available_read_contracts,
+        "available_read_contract_labels": demand_gen_contract_labels(
+            available_read_contracts
+        ),
         "missing_read_contracts": missing_read_contracts,
+        "missing_read_contract_labels": demand_gen_contract_labels(
+            missing_read_contracts
+        ),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
+        "required_validation_labels": demand_gen_contract_labels(
+            DEMAND_GEN_READINESS_REQUIRED_VALIDATION
+        ),
         "blocked_claims": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
+        "blocked_claim_labels": DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         "preview_contract": DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT,
         "payload_preview": [preview],
         "api_mutation_ready": False,
@@ -301,6 +366,7 @@ def demand_gen_transition_constraint_rows_from_campaigns(
                 advertising_channel_type=campaign.get("advertising_channel_type"),
                 transition_candidate=transition_candidate,
                 reason=reason,
+                reason_label=DEMAND_GEN_CONTRACT_LABELS.get(reason, reason),
                 evidence_ids=unique_items(campaign.get("evidence_ids") or []),
             )
         )

@@ -1898,6 +1898,7 @@ class DemandGenTransitionConstraintRow(BaseModel):
     advertising_channel_type: str | None = None
     transition_candidate: bool = False
     reason: str
+    reason_label: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
 
 
@@ -2778,15 +2779,19 @@ class DemandGenReadinessContract(BaseModel):
     summary: str
     metric_tiles: dict[str, str | int | float] = Field(default_factory=dict)
     available_read_contracts: list[str] = Field(default_factory=list)
+    available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    operator_review_gate_labels: list[str] = Field(default_factory=list)
     payload_preview: list[dict[str, Any]] = Field(default_factory=list)
     campaign_rows_evaluated: int = 0
     campaign_channel_counts: dict[str, int] = Field(default_factory=dict)
+    campaign_channel_labels: dict[str, str] = Field(default_factory=dict)
     demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     demand_gen_ad_group_ad_rows: list[DemandGenAdGroupAdRow] = Field(default_factory=list)
     demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow] = Field(
