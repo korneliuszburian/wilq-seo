@@ -731,7 +731,7 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
             "Porównaj gap z GSC i WordPress; traktuj go jako inspirację "
             "do sprawdzenia, nie gotową decyzję."
         )
-    return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież Content Planner."
+    return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież widok treści."
 
 
 def _content_marketer_missing_inputs(
@@ -1237,7 +1237,7 @@ def _content_vendor_read_blocker_decision(
             "treści WordPress wystarczających do decyzji: odświeżyć, scalić albo utworzyć."
         ),
         priority=5,
-        metric_tiles={"blockery": 2},
+        metric_tiles={"blokady": 2},
         source_connectors=["google_search_console", "wordpress_ekologus"],
         evidence_ids=_unique(
             [

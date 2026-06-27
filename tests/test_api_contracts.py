@@ -4818,7 +4818,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["grupy ruchu"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["decyzje"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["brakujące dane"] == 1
-    assert "zwrot z reklam" in brief_by_id[
+    assert "werdykt zwrotu z reklam" in brief_by_id[
         "daily_ga4_landing_quality"
     ]["blocked_claims"]
     assert (
@@ -5081,10 +5081,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "apply" not in ads_item["next_step"]
     assert "wskaźniki kampanii" in ads_item["next_step"]
     assert "zmiana budżetu" in ads_item["blocked_claims"]
-    assert "koszt pozyskania celu" in ads_item["blocked_claims"]
-    assert "zwrot z reklam" in ads_item["blocked_claims"]
-    assert "opłacalność" in ads_item["blocked_claims"]
-    assert "zmarnowany budżet" in ads_item["blocked_claims"]
+    assert "werdykt kosztu pozyskania celu" in ads_item["blocked_claims"]
+    assert "werdykt zwrotu z reklam" in ads_item["blocked_claims"]
+    assert "werdykt opłacalności" in ads_item["blocked_claims"]
+    assert "werdykt przepalonego budżetu" in ads_item["blocked_claims"]
     assert "propozycje wykluczeń" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
@@ -5099,8 +5099,8 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["metric_tiles"]["braki"] == 5
     assert ads_business_item["metric_tiles"]["marża"] == "brak"
     assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
-    assert "opłacalność" in ads_business_item["blocked_claims"]
-    assert "zmarnowany budżet" in ads_business_item["blocked_claims"]
+    assert "werdykt opłacalności" in ads_business_item["blocked_claims"]
+    assert "werdykt przepalonego budżetu" in ads_business_item["blocked_claims"]
     assert ads_business_item["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
@@ -8903,10 +8903,10 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "ocena kosztu pozyskania celu",
-                "ocena zwrotu z reklam",
+                "werdykt przepalonego budżetu",
+                "werdykt opłacalności",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -9667,7 +9667,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "marnowanie budżetu na zapytaniach",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
             ],
             "target_status": "no_target",
             "target_status_label": "brak celu",
@@ -9864,7 +9864,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
     assert "change_history" not in derived_kpi_contract["missing_read_contracts"]
-    assert "opłacalność" in derived_kpi_contract["blocked_claims"]
+    assert "werdykt opłacalności" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
             "campaign_id": "101",
@@ -9892,15 +9892,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "opłacalność",
+                "werdykt opłacalności",
                 "skalowanie budżetu",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
                 "zapis rekomendacji",
             ],
             "blocked_claim_labels": [
-                "opłacalność",
+                "werdykt opłacalności",
                 "skalowanie budżetu",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
                 "zapis rekomendacji",
             ],
         }
@@ -9987,10 +9987,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "skalowanie budżetu",
         "zmiana budżetu",
         "wstrzymanie kampanii",
-        "zmarnowany budżet",
-        "opłacalność",
-        "ocena kosztu pozyskania celu",
-        "ocena zwrotu z reklam",
+        "werdykt przepalonego budżetu",
+        "werdykt opłacalności",
+        "werdykt kosztu pozyskania celu",
+        "werdykt zwrotu z reklam",
         "zapis rekomendacji",
     ]
     assert budget_preview["blocked_claim_labels"] == budget_preview["blocked_claims"]
@@ -10038,20 +10038,20 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "ocena kosztu pozyskania celu",
-                "ocena zwrotu z reklam",
+                "werdykt przepalonego budżetu",
+                "werdykt opłacalności",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
             "blocked_claim_labels": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "zmarnowany budżet",
-                "opłacalność",
-                "ocena kosztu pozyskania celu",
-                "ocena zwrotu z reklam",
+                "werdykt przepalonego budżetu",
+                "werdykt opłacalności",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
         }
@@ -10296,13 +10296,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
                 "obietnica poprawy wyniku",
             ],
             "blocked_claim_labels": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
                 "obietnica poprawy wyniku",
             ],
         }
@@ -10346,7 +10346,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_contract["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "zmarnowany budżet" in campaign_triage_contract["blocked_claims"]
+    assert "werdykt przepalonego budżetu" in campaign_triage_contract["blocked_claims"]
     assert campaign_triage_contract["triage_rows"] == [
         {
             "campaign_id": "101",
@@ -10399,16 +10399,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "ocena strategii przez człowieka",
             ],
             "blocked_claims": [
-                "zmarnowany budżet",
-                "opłacalność",
+                "werdykt przepalonego budżetu",
+                "werdykt opłacalności",
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "zapis rekomendacji",
                 "zapis zmian kampanii",
             ],
             "blocked_claim_labels": [
-                "zmarnowany budżet",
-                "opłacalność",
+                "werdykt przepalonego budżetu",
+                "werdykt opłacalności",
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "zapis rekomendacji",
@@ -10685,7 +10685,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
             ],
         },
         {
@@ -10707,7 +10707,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
             ],
         },
     ]
@@ -10863,7 +10863,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "zmarnowany budżet",
+                "werdykt przepalonego budżetu",
             ],
         }
     ]
@@ -11209,7 +11209,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "rekomendacje": 1,
         "podglądy": 2,
     }
-    assert "zmarnowany budżet" in campaign_triage_decision["blocked_claims"]
+    assert "werdykt przepalonego budżetu" in campaign_triage_decision["blocked_claims"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25
@@ -11222,7 +11222,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
     assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert "opłacalność" in derived_kpi_decision["blocked_claims"]
+    assert "werdykt opłacalności" in derived_kpi_decision["blocked_claims"]
     assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert budget_decision["status"] == "ready"
@@ -13314,7 +13314,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
         "ev_connector_google_search_console_status",
         "ev_connector_wordpress_ekologus_status",
     ]
-    assert decision.metric_tiles == {"blockery": 2}
+    assert decision.metric_tiles == {"blokady": 2}
     assert "rekomendacja bez danych źródłowych" in decision.blocked_claims
     assert "odczyt danych" in decision.next_step
     assert diagnostics.operator_summary.top_decision_ids == [decision.id]
@@ -16107,7 +16107,7 @@ def test_daily_command_center_does_not_build_marketing_brief(
 
     command = CommandCenterResponse(
         strict_instruction="WILQ pokazuje tylko metryki z danych źródłowych.",
-        primary_next_step="Przejrzyj Command Center.",
+        primary_next_step="Przejrzyj Centrum pracy.",
         connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
         sections={},
         active_actions=[],
@@ -16813,7 +16813,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert triage_contract["triage_rows"][0]["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "zmarnowany budżet" in triage_contract["blocked_claims"]
+    assert "werdykt przepalonego budżetu" in triage_contract["blocked_claims"]
     assert (
         ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
         == len(triage_contract["triage_rows"])
@@ -17654,7 +17654,7 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
 
     ads = binding_by_id["knowledge_ads_daily_check"]
     assert ads["route"] == "/ads-doctor"
-    assert ads["route_label"] == "Ads"
+    assert ads["route_label"] == "Google Ads"
     assert ads["status_label"] == "gotowe"
     assert ads["risk_label"] in {"niskie ryzyko", "średnie ryzyko", "wysokie ryzyko"}
     assert ads["skill_id"] == "wilq-ads-doctor"
@@ -17692,7 +17692,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     ads_daily = workflow_by_id["ads_daily_check"]
     assert ads_daily["label"] == "Ocena Ads"
     assert ads_daily["route"] == "/ads-doctor"
-    assert ads_daily["route_label"] == "Ads"
+    assert ads_daily["route_label"] == "Google Ads"
     assert ads_daily["status_label"] in {"gotowe", "zablokowane"}
     assert ads_daily["skill_id"] == "wilq-ads-doctor"
     assert "kampanie" in ads_daily["metric_tiles"]

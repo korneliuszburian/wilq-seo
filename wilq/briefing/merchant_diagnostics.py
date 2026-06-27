@@ -2045,7 +2045,7 @@ def _merchant_decision_queue(
                 title="Merchant: odczyt feedu wymagany przed decyzją",
                 summary=_merchant_blocker_reason(latest_refresh),
                 priority=5,
-                metric_tiles={"blockery": 1},
+                metric_tiles={"blokady": 1},
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
                 action_ids=action_ids,

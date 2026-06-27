@@ -730,7 +730,7 @@ def _recommendation_items(
                     "rozbicie zapytań i stron, nie ogólna burza tematów."
                 ),
                 next_step=(
-                    "Zbuduj kolejkę Content Planner: odświeżyć, utworzyć, "
+                    "Zbuduj kolejkę treści: odświeżyć, utworzyć, "
                     "scalić albo zablokować."
                 ),
                 risk=ActionRisk.low,

@@ -240,9 +240,9 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
   "/content-inventory": {
     title: "Spis treści",
     description:
-      "Skrót obszaru, który docelowo ma pokazywać realne treści z ekologus.pl i sklepu. Dziś decyzje contentowe są prowadzone w Content Plannerze.",
+      "Skrót obszaru, który docelowo ma pokazywać realne treści z ekologus.pl i sklepu. Dziś decyzje treściowe są prowadzone w widoku treści.",
     status: "w trakcie porządkowania",
-    nextStep: "Przejdź do Content Plannera i sprawdź kolejkę zachowania, odświeżenia, scalenia albo blokady.",
+    nextStep: "Przejdź do widoku treści i sprawdź kolejkę zachowania, odświeżenia, scalenia albo blokady.",
     blockers: [
       "pełny Content Inventory v2 nie jest jeszcze gotowy",
       "brak finalnego preflightu duplikacji i kanonicznych URL-i"

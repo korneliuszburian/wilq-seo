@@ -69,6 +69,9 @@ Forbidden URL semantics:
   business meaning.
 - Technical IDs may exist in schemas, audit logs and technical drawers, but not
   in the marketer's primary decision surface.
+- Do not keep deprecated active fields, compatibility aliases or stale
+  target/dev/migration semantics when touched consumers can be migrated
+  directly.
 - Every changed line must trace to this plan or an explicit owner request.
 - Avoid broad refactors until active inconsistencies are removed and verified.
 
@@ -80,6 +83,9 @@ Preferred visible terms:
 
 - `akcja do sprawdzenia`
 - `sprawdzenie w WILQ`
+- `Centrum pracy`
+- `Treści`
+- `Google Ads`
 - `podgląd zmian`
 - `zapis zmian`
 - `zatwierdzenie zmian`
@@ -95,6 +101,11 @@ Forbidden visible terms:
 - `kandydat zmiany`
 - `payload`
 - legacy English preview wording
+- `Command Center`
+- `Content Planner`
+- `Ads Doctor`
+- `blockery`
+- `evidence IDs`
 - raw technical execution wording
 - `wykonanie zmian`
 - `tylko do sprawdzenia`
@@ -200,11 +211,12 @@ Prompt requirements:
 
 Known current direction:
 
-- Command Center, Merchant, Content Planner, Ads Doctor and GA4 form the core
-  demo path.
-- Content Planner is the deepest product area, but must be cleaned from
+- Centrum pracy, Merchant, Treści, Google Ads and GA4 form the core review
+  path. Existing technical route slugs may remain during this cleanup, but
+  visible active language should use the cleaned names.
+- Treści is the deepest product area, but must be cleaned from
   dev-site/migration assumptions.
-- Ads Doctor, Merchant, GA4 and Localo are useful review surfaces, not full
+- Google Ads, Merchant, GA4 and Localo are useful review surfaces, not full
   optimizer/write systems.
 - Skills must call WILQ API and must not invent product logic.
 - Real marketer UAT is still the human usefulness proof unless explicitly
@@ -283,9 +295,9 @@ Known cleanup already started:
   fallback.
 - Skill smoke is being hardened against old content fields and marketer-facing
   jargon.
-- Command Center daily-decision labels and summaries now come from typed WILQ
+- Centrum pracy daily-decision labels and summaries now come from typed WILQ
   API/shared-schema fields instead of route-local React dictionaries.
-- Command Center source freshness labels now come from typed WILQ
+- Centrum pracy source freshness labels now come from typed WILQ
   API/shared-schema fields instead of route-local enum fallbacks.
 - `wilq-daily-command` reaches the live WILQ API and the daily context-pack
   smoke passes after capping embedded evidence summaries at 32. Keep watching
@@ -390,8 +402,8 @@ Make the dashboard useful to Wilku without narration.
 
 Tasks:
 
-- Keep the core path first:
-  `/command-center -> /merchant -> /content-planner -> /ads-doctor -> /ga4`.
+- Keep the core path first, with cleaned visible labels:
+  `Centrum pracy -> Merchant -> Treści -> Google Ads -> GA4`.
 - For every domain route, add or refine selected-first panels:
   - one primary decision,
   - why it matters,

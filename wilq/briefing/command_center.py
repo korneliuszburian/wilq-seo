@@ -279,7 +279,7 @@ def _command_center_action_stub(
         risk=ActionRisk.low,
         status=ActionStatus.needs_validation,
         evidence_ids=[connector_evidence_id(connector)],
-        human_diagnosis="Command Center lightweight action reference.",
+        human_diagnosis="Skrócona referencja akcji dla Centrum pracy.",
         recommended_reason="Użyj dedykowanego widoku dla pełnego zakresu akcji.",
         payload={},
         validation_status="not_validated",
@@ -497,8 +497,8 @@ def _connector_label(connector_id: str, labels: dict[str, str]) -> str:
 
 def _route_label(route: str) -> str:
     return {
-        "/ads-doctor": "Ads Doctor",
-        "/content-planner": "Content Planner",
+        "/ads-doctor": "Google Ads",
+        "/content-planner": "Treści",
         "/ga4": "GA4",
         "/merchant": "Merchant",
         "/localo": "Localo",
@@ -820,13 +820,13 @@ def _ads_item_from_facts(
         summary=(
             _ads_ready_summary(metric_tiles)
             if live_data_available
-            else "Google Ads nie ma aktualnych danych do Command Center."
+            else "Google Ads nie ma aktualnych danych dla Centrum pracy."
         ),
         next_step=(
             _ads_ready_next_step(metric_tiles)
             if live_data_available
             else (
-                "Otwórz widok Ads i wykonaj bezpieczną ścieżkę naprawy OAuth "
+                "Otwórz widok Google Ads i wykonaj bezpieczną ścieżkę naprawy OAuth "
                 "przez sprawdzenie w WILQ."
             )
         ),
@@ -2172,10 +2172,10 @@ def _action_plan_item(
             priority=5,
             category="Google Ads",
             why_it_matters=(
-                "Ads Doctor ma blokadę OAuth. WILQ nie pokaże kosztu, kosztu pozyskania celu, zwrotu z reklam ani "
+                "Google Ads ma blokadę OAuth. WILQ nie pokaże kosztu, kosztu pozyskania celu, zwrotu z reklam ani "
                 "wyszukiwanych haseł bez świeżych dowodów Ads."
             ),
-            operator_action="Otwórz widok Ads i przejdź ścieżkę naprawy przez sprawdzenie w WILQ.",
+            operator_action="Otwórz widok Google Ads i przejdź ścieżkę naprawy przez sprawdzenie w WILQ.",
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj blokadę Ads dla Ekologus "
@@ -2305,7 +2305,7 @@ def _action_plan_item(
         operator_action=item.next_step,
         skill_id="wilq-daily-command",
         codex_prompt=(
-            "Użyj skilla wilq-daily-command. Skondensuj ten element Command Center "
+            "Użyj skilla wilq-daily-command. Skondensuj ten element Centrum pracy "
             "do decyzji marketera po polsku, używając tylko dowodów w WILQ."
         ),
         codex_context_endpoint="/api/codex/context-pack",

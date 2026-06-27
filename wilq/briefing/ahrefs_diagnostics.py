@@ -1060,8 +1060,8 @@ def _ahrefs_sections(
             "sprawdzenia przez operatora."
         ),
         diagnosis=(
-            "Metryki autorytetu są pomocne, ale zbyt ogólne. Decyzje contentowe muszą przejść "
-            "przez Content Planner, GSC, spis treści WordPress i przegląd akcji."
+            "Metryki autorytetu są pomocne, ale zbyt ogólne. Decyzje treściowe muszą przejść "
+            "przez widok treści, GSC, spis treści WordPress i przegląd akcji."
         ),
         next_step="Zostaw zapis zmian zablokowany. Najpierw dodaj brakujące odczyty danych.",
         source_connectors=[AHREFS_CONNECTOR_ID],

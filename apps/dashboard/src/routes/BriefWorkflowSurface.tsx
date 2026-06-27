@@ -70,7 +70,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/social-publisher": {
     title: "Publikacje social",
     description:
-      "Widok publikacji social oparty o dowody WILQ i stan uprawnień. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
+      "Widok publikacji social oparty o dowody WILQ i stan uprawnień. Przy brakach LinkedIn/Facebook pokazuje blokady, nie gotowe posty.",
     focusTitle: "Publikacje social do sprawdzenia",
     emptyMessage:
       "Brak dowodów social w WILQ. Uzupełnij dostęp LinkedIn/Facebook przed przygotowaniem propozycji postów.",
@@ -81,7 +81,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
     textNeedles: []
   },
   "/content-planner": {
-    title: "Content Planner",
+    title: "Treści",
     description:
       "Widok planowania treści łączy dowody GSC, GA4, Ahrefs, WordPress i Merchant w jedną kolejkę działań dla polskiego marketera.",
     focusTitle: "Priorytety treści do sprawdzenia",
@@ -181,7 +181,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message={`Nie udało się odczytać /api/actions. ${config.title} nie może pokazać podglądu zmian ani sprawdzenia w WILQ.`} />
+        <BlockerNotice message={`Nie udało się pobrać akcji do sprawdzenia. ${config.title} nie może pokazać podglądu zmian ani sprawdzenia w WILQ.`} />
       </main>
     );
   }

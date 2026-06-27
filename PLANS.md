@@ -139,7 +139,12 @@ WILQ is an API-first Marketing Operating System:
   truth, final canonical or blocker.
 - Skills consume API; they do not invent product logic.
 - Dashboard renders typed view-models; it does not rewrite business meaning.
-- No UI string translators or hardcoded cleanup dictionaries.
+- No UI string translators, `replaceAll` masking helpers or hardcoded cleanup
+  dictionaries.
+- No deprecated active fields, compatibility aliases or stale
+  target/dev/migration semantics when direct migration is feasible.
+- Primary marketer language uses `Centrum pracy`, `Treści`, `Google Ads`,
+  `blokady` and WILQ-described evidence instead of working names and raw IDs.
 - Client-specific service, claim, tone and conversion rules live in workspace
   layers, not reusable core.
 
@@ -172,7 +177,8 @@ Required outcome:
 - Active API/content/action/skill contracts are free of stale dev/migration
   semantics.
 - Marketer-facing surfaces use clean Polish operating language.
-- UI translators and string patchers are removed.
+- UI translators, string patchers and compatibility aliases are removed where
+  direct migration is feasible.
 - Focused tests, skill smoke, browser proof and `git diff --check` pass.
 
 Stop condition:

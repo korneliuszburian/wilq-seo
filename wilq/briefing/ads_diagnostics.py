@@ -1151,7 +1151,7 @@ def _oauth_or_live_section(
         summary=reason,
         diagnosis=(
             "WILQ widzi konfigurację Google Ads, ale ostatni odczyt danych nie "
-            "zebrał danych. Ads Doctor nie może uczciwie pokazać wydatków, kosztu pozyskania celu, zwrotu z reklam, "
+            "zebrał danych. WILQ nie może uczciwie pokazać wydatków, kosztu pozyskania celu, zwrotu z reklam, "
             "wyszukiwanych haseł ani rekomendacji Google bez poprawnego OAuth."
         ),
         next_step=(
@@ -1394,7 +1394,7 @@ def _account_currency_read_contract(
             "koszt w walucie konta",
             "opłacalność",
             "ocena kosztu pozyskania celu",
-            "ocena zwrotu z reklam",
+            "werdykt zwrotu z reklam",
         ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
@@ -2499,7 +2499,7 @@ def _campaign_triage_row(
             f"{'dostępny' if impression_share_row is not None else 'niedostępny'}."
         ),
         next_step=(
-            "Otwórz kampanię w Ads Doctor, sprawdź cel, konwersje, budżet, "
+            "Otwórz kampanię w widoku Google Ads, sprawdź cel, konwersje, budżet, "
             "wyszukiwane hasła i rekomendacje. Nie zapisuj zmian bez akcji sprawdzonej w WILQ "
             "i potwierdzenia człowieka."
         ),
@@ -2868,7 +2868,7 @@ def _optimizer_readiness_contract(
             for claim in [
                 *item.blocked_claims,
                 "ocena kosztu pozyskania celu",
-                "ocena zwrotu z reklam",
+                "werdykt zwrotu z reklam",
                 "opłacalność",
             ]
         ),

@@ -24,10 +24,10 @@ CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "skalowanie budżetu",
     "zmiana budżetu",
     "wstrzymanie kampanii",
-    "zmarnowany budżet",
-    "opłacalność",
-    "ocena kosztu pozyskania celu",
-    "ocena zwrotu z reklam",
+    "werdykt przepalonego budżetu",
+    "werdykt opłacalności",
+    "werdykt kosztu pozyskania celu",
+    "werdykt zwrotu z reklam",
     "zapis rekomendacji",
 ]
 CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION = [

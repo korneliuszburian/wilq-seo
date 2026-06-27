@@ -66,7 +66,7 @@ describe("ActionObjectPanels", () => {
     expect(screen.queryByText(/Próba zmiany:/)).not.toBeInTheDocument();
   });
 
-  it("uses the ActionObject evidence summary as visible link context instead of raw evidence IDs", () => {
+  it("uses the ActionObject evidence summary as visible proof context", () => {
     renderWithQueryClient(
       <ActionObjectFocus
         actions={[

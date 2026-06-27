@@ -88,8 +88,8 @@ const commandCenterFixture: CommandCenterResponse = {
       decision_state: "stale",
       decision_state_label: "do odświeżenia",
       route: "/content-planner",
-      route_label: "Content Planner",
-      cta_label: "Otwórz Content Planner",
+      route_label: "Treści",
+      cta_label: "Otwórz Treści",
       status: "ready",
       priority: 12,
       priority_label: "najpierw",
@@ -213,7 +213,7 @@ describe("CommandCenter route", () => {
       "href",
       "/merchant"
     );
-    expect(screen.getByRole("link", { name: "Otwórz Content Planner" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Otwórz Treści" })).toHaveAttribute(
       "href",
       "/content-planner"
     );

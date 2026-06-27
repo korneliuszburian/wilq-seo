@@ -20,7 +20,7 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
         "content": "pass widzę BDO jako odświeżenie albo scalenie",
         "ads": "pass rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane",
         "ga4": "fail (not set) wyglądało jak zła kampania",
-        "biggest_real_boost": "Content Planner daje gotowy brief do review.",
+        "biggest_real_boost": "Widok treści daje gotowy brief do review.",
         "biggest_confusion": "Merchant count semantics",
         "new_tasks": ["Dodać tooltip przy liczbie zgłoszeń Merchant"],
         "ready_without_developer": "no",
@@ -82,7 +82,7 @@ def test_uat_result_markdown_lists_task_candidates() -> None:
                 "note": "Liczba zgłoszeń była niejasna.",
             }
         ],
-        "biggest_real_boost": "Content Planner",
+        "biggest_real_boost": "Widok treści",
         "biggest_confusion": "Merchant count semantics",
         "task_candidates": [
             {

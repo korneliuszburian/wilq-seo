@@ -45,8 +45,8 @@ function customSegmentSafetyReview(previewId: string) {
     ],
     blocked_claims: [
       "rozmiar odbiorców",
-      "wzrost konwersji",
-      "zwrot z reklam",
+      "obietnica wzrostu konwersji",
+      "werdykt zwrotu z reklam",
       "zapis kierowania reklam",
       "skuteczność kampanii"
     ],
@@ -256,8 +256,8 @@ const actions = [
             "sprawdź konwersje i zdarzenia kluczowe",
             "potwierdź sprawdzenie przez człowieka"
           ],
-          blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
-          blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
+          blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
+          blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
           evidence_ids: ["ev_refresh_ga4"],
           evidence_summary_label: "1 dowód źródłowy",
           api_mutation_ready: false,
@@ -339,7 +339,7 @@ const actions = [
           internal_link_direction: ["powiązane treści o regulacjach środowiskowych"],
           source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
           missing_evidence: ["brak dowodu wzrost liczby leadów"],
-          forbidden_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          forbidden_claims: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
           publication_readiness_status: "blocked_until_review",
           publication_readiness_status_label: "zablokowane do sprawdzenia",
           publication_blocker_labels: [
@@ -359,8 +359,8 @@ const actions = [
             "kontrola duplikacji i kanibalizacji",
             "potwierdzenie człowieka przed zapisem WordPress"
           ],
-          blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
-          blocked_claim_labels: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          blocked_claims: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
+          blocked_claim_labels: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
           evidence_ids: ["ev_refresh_gsc"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           apply_allowed: false,
@@ -484,8 +484,8 @@ const actions = [
             "istniejący URL potwierdzony w WordPress",
             "potwierdzenie człowieka przed zapisem WordPress"
           ],
-          blocked_claims: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
-          blocked_claim_labels: ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+          blocked_claims: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
+          blocked_claim_labels: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
           source_connectors: ["google_search_console", "wordpress_ekologus"],
           evidence_ids: ["ev_refresh_gsc"],
           mutation_allowed: false,
@@ -540,7 +540,7 @@ const actions = [
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -750,7 +750,7 @@ const adsDiagnostics = {
       "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt=164,59 zł, konwersje=2.5, wartość konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
-    blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+    blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     campaign_rows: [
@@ -784,7 +784,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+        blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"]
       }
     ],
     next_step: "Użyj wierszy kampanii do sprawdzenia aktywności."
@@ -797,7 +797,7 @@ const adsDiagnostics = {
     currency_code: "PLN",
     allowed_metrics: ["account_currency_code"],
     missing_read_contracts: [],
-    blocked_claims: ["opłacalność", "ocena marży", "zmiana budżetu"],
+    blocked_claims: ["werdykt opłacalności", "ocena marży", "zmiana budżetu"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     next_step:
@@ -964,12 +964,12 @@ const adsDiagnostics = {
       "human_strategy_review"
     ],
     blocked_claims: [
-      "opłacalność",
+      "werdykt opłacalności",
       "ocena marży",
       "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji",
-      "zmarnowany budżet"
+      "werdykt przepalonego budżetu"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -997,9 +997,9 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: ["profit_margin", "change_history"],
     blocked_claims: [
-      "opłacalność",
+      "werdykt opłacalności",
       "skalowanie budżetu",
-      "zmarnowany budżet",
+      "werdykt przepalonego budżetu",
       "zapis rekomendacji",
       "incrementality"
     ],
@@ -1025,15 +1025,15 @@ const adsDiagnostics = {
         ],
         missing_metrics: [],
         blocked_claims: [
-          "opłacalność",
+          "werdykt opłacalności",
           "skalowanie budżetu",
-          "zmarnowany budżet",
+          "werdykt przepalonego budżetu",
           "zapis rekomendacji"
         ],
         blocked_claim_labels: [
-          "opłacalność",
+          "werdykt opłacalności",
           "skalowanie budżetu",
-          "zmarnowany budżet",
+          "werdykt przepalonego budżetu",
           "zapis rekomendacji"
         ]
       }
@@ -1066,8 +1066,8 @@ const adsDiagnostics = {
     blocked_claims: [
       "skalowanie budżetu",
       "zmiana budżetu",
-      "opłacalność",
-      "zmarnowany budżet",
+      "werdykt opłacalności",
+      "werdykt przepalonego budżetu",
       "zapis rekomendacji"
     ],
     source_connectors: ["google_ads"],
@@ -1137,20 +1137,20 @@ const adsDiagnostics = {
             "skalowanie budżetu",
             "zmiana budżetu",
             "wstrzymanie kampanii",
-            "zmarnowany budżet",
-            "opłacalność",
-            "ocena kosztu pozyskania celu",
-            "ocena zwrotu z reklam",
+            "werdykt przepalonego budżetu",
+            "werdykt opłacalności",
+            "werdykt kosztu pozyskania celu",
+            "werdykt zwrotu z reklam",
             "zapis rekomendacji"
           ],
           blocked_claim_labels: [
             "skalowanie budżetu",
             "zmiana budżetu",
             "wstrzymanie kampanii",
-            "zmarnowany budżet",
-            "opłacalność",
-            "ocena kosztu pozyskania celu",
-            "ocena zwrotu z reklam",
+            "werdykt przepalonego budżetu",
+            "werdykt opłacalności",
+            "werdykt kosztu pozyskania celu",
+            "werdykt zwrotu z reklam",
             "zapis rekomendacji"
           ],
           safety_review: {
@@ -1186,8 +1186,8 @@ const adsDiagnostics = {
               "zmiana budżetu",
               "skalowanie budżetu",
               "wstrzymanie kampanii",
-              "opłacalność",
-              "zmarnowany budżet",
+              "werdykt opłacalności",
+              "werdykt przepalonego budżetu",
               "automatic zapis zmian budżetu"
             ],
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1203,8 +1203,8 @@ const adsDiagnostics = {
         blocked_claims: [
           "skalowanie budżetu",
           "zmiana budżetu",
-          "opłacalność",
-          "zmarnowany budżet",
+          "werdykt opłacalności",
+          "werdykt przepalonego budżetu",
           "zapis rekomendacji"
         ]
       }
@@ -1243,20 +1243,20 @@ const adsDiagnostics = {
           "skalowanie budżetu",
           "zmiana budżetu",
           "wstrzymanie kampanii",
-          "zmarnowany budżet",
-          "opłacalność",
-          "ocena kosztu pozyskania celu",
-          "ocena zwrotu z reklam",
+          "werdykt przepalonego budżetu",
+          "werdykt opłacalności",
+          "werdykt kosztu pozyskania celu",
+          "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ],
         blocked_claim_labels: [
           "skalowanie budżetu",
           "zmiana budżetu",
           "wstrzymanie kampanii",
-          "zmarnowany budżet",
-          "opłacalność",
-          "ocena kosztu pozyskania celu",
-          "ocena zwrotu z reklam",
+          "werdykt przepalonego budżetu",
+          "werdykt opłacalności",
+          "werdykt kosztu pozyskania celu",
+          "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ]
       }
@@ -1292,10 +1292,10 @@ const adsDiagnostics = {
           "skalowanie budżetu",
           "zmiana budżetu",
           "wstrzymanie kampanii",
-          "zmarnowany budżet",
-          "opłacalność",
-          "ocena kosztu pozyskania celu",
-          "ocena zwrotu z reklam",
+          "werdykt przepalonego budżetu",
+          "werdykt opłacalności",
+          "werdykt kosztu pozyskania celu",
+          "werdykt zwrotu z reklam",
           "zapis rekomendacji"
         ],
         safety_review: {
@@ -1330,8 +1330,8 @@ const adsDiagnostics = {
             "zmiana budżetu",
             "skalowanie budżetu",
             "wstrzymanie kampanii",
-            "opłacalność",
-            "zmarnowany budżet",
+            "werdykt opłacalności",
+            "werdykt przepalonego budżetu",
             "automatic zapis zmian budżetu"
           ],
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1564,7 +1564,7 @@ const adsDiagnostics = {
     blocked_claims: [
       "skalowanie budżetu",
       "zmiana budżetu",
-      "zmarnowany budżet",
+      "werdykt przepalonego budżetu",
       "obietnica poprawy wyniku",
       "zapis zmian kampanii"
     ],
@@ -1587,13 +1587,13 @@ const adsDiagnostics = {
         blocked_claims: [
           "skalowanie budżetu",
           "zmiana budżetu",
-          "zmarnowany budżet",
+          "werdykt przepalonego budżetu",
           "obietnica poprawy wyniku"
         ],
         blocked_claim_labels: [
           "skalowanie budżetu",
           "zmiana budżetu",
-          "zmarnowany budżet",
+          "werdykt przepalonego budżetu",
           "obietnica poprawy wyniku"
         ]
       }
@@ -1606,7 +1606,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Kolejność oceny kampanii Ads",
     summary:
-      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt zmarnowany budżet, opłacalność, CPA ani zwrot z reklam.",
+      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt przepalonego budżetu, werdykt opłacalności, CPA ani werdykt zwrotu z reklam.",
     allowed_metrics: [
       "clicks",
       "impressions",
@@ -1624,8 +1624,8 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
     blocked_claims: [
-      "zmarnowany budżet",
-      "opłacalność",
+      "werdykt przepalonego budżetu",
+      "werdykt opłacalności",
       "skalowanie budżetu",
       "zmiana budżetu",
       "zapis rekomendacji",
@@ -1681,16 +1681,16 @@ const adsDiagnostics = {
           "ocena strategii przez człowieka"
         ],
         blocked_claims: [
-          "zmarnowany budżet",
-          "opłacalność",
+          "werdykt przepalonego budżetu",
+          "werdykt opłacalności",
           "skalowanie budżetu",
           "zmiana budżetu",
           "zapis rekomendacji",
           "zapis zmian kampanii"
         ],
         blocked_claim_labels: [
-          "zmarnowany budżet",
-          "opłacalność",
+          "werdykt przepalonego budżetu",
+          "werdykt opłacalności",
           "skalowanie budżetu",
           "zmiana budżetu",
           "zapis rekomendacji",
@@ -1730,14 +1730,14 @@ const adsDiagnostics = {
         summary:
           "Campaign activity, KPI, budżet, rekomendacje i impression share są dostępne jako kolejka oceny.",
         next_step:
-          "Przejrzyj kampanie od góry kolejki bez zapisu zmian i bez werdyktu zmarnowany budżet.",
+          "Przejrzyj kampanie od góry kolejki bez zapisu zmian i bez werdyktu przepalonego budżetu.",
         source_contract_ids: ["ads_campaign_triage_read_contract"],
         allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
         missing_read_contracts: [],
         missing_read_contract_labels: [],
         operator_review_gates: ["human_strategy_review"],
-        blocked_claims: ["zmarnowany budżet", "opłacalność", "zapis zmian kampanii"],
-        blocked_claim_labels: ["zmarnowany budżet", "opłacalność", "zapis zmian kampanii"],
+        blocked_claims: ["werdykt przepalonego budżetu", "werdykt opłacalności", "zapis zmian kampanii"],
+        blocked_claim_labels: ["werdykt przepalonego budżetu", "werdykt opłacalności", "zapis zmian kampanii"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_ads_campaign_review_queue"],
@@ -1759,8 +1759,8 @@ const adsDiagnostics = {
         missing_read_contracts: ["human_confirm_before_apply"],
         missing_read_contract_labels: ["potwierdzenie człowieka przed zapisem"],
         operator_review_gates: ["review_search_term_context"],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
-        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_negative_keyword_review_queue"],
@@ -1875,17 +1875,17 @@ const adsDiagnostics = {
     ],
     operator_review_gates: ["human_strategy_review", "human_confirm_before_apply"],
     blocked_claims: [
-      "zmarnowany budżet",
-      "ocena kosztu pozyskania celu",
-      "ocena zwrotu z reklam",
+      "werdykt przepalonego budżetu",
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam",
       "wpływ zmian",
       "obietnica poprawy wyniku",
       "zapis zmian kampanii"
     ],
     blocked_claim_labels: [
-      "zmarnowany budżet",
-      "ocena kosztu pozyskania celu",
-      "ocena zwrotu z reklam",
+      "werdykt przepalonego budżetu",
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam",
       "wpływ zmian",
       "obietnica poprawy wyniku",
       "zapis zmian kampanii"
@@ -2098,11 +2098,11 @@ const adsDiagnostics = {
     missing_read_contracts: ["90_day_safety_check"],
     operator_review_gates: ["negative_keyword_action_validation"],
     blocked_claims: [
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
-      "koszt pozyskania celu",
-      "zwrot z reklam"
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -2155,7 +2155,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+        blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
       }
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
@@ -2182,7 +2182,7 @@ const adsDiagnostics = {
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
-    blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"],
+    blocked_claims: ["werdykt marnowania budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -2204,7 +2204,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"]
+        blocked_claims: ["werdykt marnowania budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"]
       }
     ],
     campaign_review_rows: [
@@ -2218,7 +2218,7 @@ const adsDiagnostics = {
         cost_micros: 9000000,
         conversions: 1,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "koszt pozyskania celu", "zwrot z reklam"]
+        blocked_claims: ["werdykt marnowania budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"]
       }
     ],
     next_step:
@@ -2250,11 +2250,11 @@ const adsDiagnostics = {
       "negative_keyword_action_validation"
     ],
     blocked_claims: [
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "propozycje wykluczeń",
       "dodanie wykluczających słów kluczowych",
-      "koszt pozyskania celu",
-      "zwrot z reklam",
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam",
       "utrata konwersji"
     ],
     source_connectors: ["google_ads"],
@@ -2273,7 +2273,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"]
+        blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"]
       }
     ],
     next_step:
@@ -2302,10 +2302,10 @@ const adsDiagnostics = {
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "utrata konwersji",
-      "koszt pozyskania celu",
-      "zwrot z reklam"
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -2325,7 +2325,7 @@ const adsDiagnostics = {
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         missing_metrics: [],
-        blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+        blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
       }
     ],
     next_step:
@@ -2349,10 +2349,10 @@ const adsDiagnostics = {
     operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "utrata konwersji",
-      "koszt pozyskania celu",
-      "zwrot z reklam"
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam"
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -2372,7 +2372,7 @@ const adsDiagnostics = {
         ad_group_name: "Odpady",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"]
       }
     ],
     next_step: "Użyj tego jako kontekstu review, nie jako zgody na apply."
@@ -2399,8 +2399,8 @@ const adsDiagnostics = {
     blocked_claims: [
       "rozmiar odbiorców",
       "prognoza",
-      "wzrost konwersji",
-      "zwrot z reklam",
+      "obietnica wzrostu konwersji",
+      "werdykt zwrotu z reklam",
       "zapis kierowania reklam",
       "skuteczność kampanii"
     ],
@@ -2421,8 +2421,8 @@ const adsDiagnostics = {
         blocked_claims: [
           "rozmiar odbiorców",
           "prognoza",
-          "wzrost konwersji",
-          "zwrot z reklam",
+          "obietnica wzrostu konwersji",
+          "werdykt zwrotu z reklam",
           "zapis kierowania reklam"
         ]
       }
@@ -2470,7 +2470,7 @@ const adsDiagnostics = {
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
             missing_metrics: [],
-            blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+            blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
           }
         ],
         keyword_planner_ideas: [
@@ -2488,8 +2488,8 @@ const adsDiagnostics = {
             blocked_claims: [
               "rozmiar odbiorców",
               "prognoza",
-              "wzrost konwersji",
-              "zwrot z reklam",
+              "obietnica wzrostu konwersji",
+              "werdykt zwrotu z reklam",
               "zapis kierowania reklam"
             ]
           }
@@ -2518,8 +2518,8 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "rozmiar odbiorców",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam",
             "skuteczność kampanii"
           ],
@@ -2540,8 +2540,8 @@ const adsDiagnostics = {
               ],
               blocked_claims: [
                 "rozmiar odbiorców",
-                "wzrost konwersji",
-                "zwrot z reklam",
+                "obietnica wzrostu konwersji",
+                "werdykt zwrotu z reklam",
                 "zapis kierowania reklam",
                 "skuteczność kampanii"
               ],
@@ -2557,8 +2557,8 @@ const adsDiagnostics = {
         },
         blocked_claims: [
           "rozmiar odbiorców",
-          "wzrost konwersji",
-          "zwrot z reklam",
+          "obietnica wzrostu konwersji",
+          "werdykt zwrotu z reklam",
           "zapis kierowania reklam",
           "skuteczność kampanii"
         ],
@@ -2585,8 +2585,8 @@ const adsDiagnostics = {
         ],
         blocked_claims: [
           "rozmiar odbiorców",
-          "wzrost konwersji",
-          "zwrot z reklam",
+          "obietnica wzrostu konwersji",
+          "werdykt zwrotu z reklam",
           "zapis kierowania reklam",
           "skuteczność kampanii"
         ],
@@ -2618,8 +2618,8 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           blocked_claims: [
             "rozmiar odbiorców",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam",
             "skuteczność kampanii"
           ]
@@ -2629,8 +2629,8 @@ const adsDiagnostics = {
       operator_review_gates: ["forecast_or_audience_size", "human_confirm_before_apply"],
       blocked_claims: [
         "rozmiar odbiorców",
-        "wzrost konwersji",
-        "zwrot z reklam",
+        "obietnica wzrostu konwersji",
+        "werdykt zwrotu z reklam",
         "zapis kierowania reklam",
         "skuteczność kampanii"
       ],
@@ -2650,8 +2650,8 @@ const adsDiagnostics = {
     ],
     blocked_claims: [
       "rozmiar odbiorców",
-      "wzrost konwersji",
-      "zwrot z reklam",
+      "obietnica wzrostu konwersji",
+      "werdykt zwrotu z reklam",
       "zapis kierowania reklam",
       "skuteczność kampanii"
     ],
@@ -2719,7 +2719,7 @@ const adsDiagnostics = {
             ad_group_name: "Odpady",
             evidence_ids: ["ev_refresh_refresh_google_ads_test"],
             metric_facts: [],
-            blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"]
           }
         ],
         payload_preview: {
@@ -2749,8 +2749,8 @@ const adsDiagnostics = {
             "90-dniowa kontrola bezpieczeństwa",
             "potwierdzenie człowieka przed zapisem"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
-          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -2773,8 +2773,8 @@ const adsDiagnostics = {
         safety_status_label: "90-dniowy odczyt gotowy",
         validation_status: "pending_validation",
         validation_status_label: "do sprawdzenia",
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
-        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
@@ -2806,8 +2806,8 @@ const adsDiagnostics = {
           "90-dniowa kontrola bezpieczeństwa",
           "potwierdzenie człowieka przed zapisem"
         ],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
-        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
+        blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -2819,17 +2819,17 @@ const adsDiagnostics = {
     missing_read_contract_labels: [],
     blocked_claims: [
       "dodanie wykluczających słów kluczowych",
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "utrata konwersji",
-      "koszt pozyskania celu",
-      "zwrot z reklam"
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam"
     ],
     blocked_claim_labels: [
       "dodanie wykluczających słów kluczowych",
-      "marnowanie budżetu na zapytaniach",
+      "werdykt marnowania budżetu na zapytaniach",
       "utrata konwersji",
-      "koszt pozyskania celu",
-      "zwrot z reklam"
+      "werdykt kosztu pozyskania celu",
+      "werdykt zwrotu z reklam"
     ],
     action_ids: ["act_prepare_negative_keyword_review_queue"],
     next_step: "Przejrzyj propozycje jako akcje do sprawdzenia i sprawdź podgląd zmian."
@@ -2863,9 +2863,9 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
-    blocked_claims: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
+    blocked_claims: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
     missing_read_contract_labels: ["marża albo cel opłacalności", "ocena strategii przez człowieka"],
-    blocked_claim_labels: ["zwrot z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
+    blocked_claim_labels: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
   decision_queue: [
     {
@@ -2903,7 +2903,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"]
+          blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"]
         }
       ],
       derived_kpi_rows: [],
@@ -2926,12 +2926,12 @@ const adsDiagnostics = {
         "ads_scaling_candidates_v1",
         "ads_recommendations_v1"
       ],
-      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach", "zmarnowany budżet"],
+      blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"],
       blocked_claim_labels: [
-        "koszt pozyskania celu",
-        "zwrot z reklam",
-        "marnowanie budżetu na zapytaniach",
-        "zmarnowany budżet"
+        "werdykt kosztu pozyskania celu",
+        "werdykt zwrotu z reklam",
+        "werdykt marnowania budżetu na zapytaniach",
+        "werdykt przepalonego budżetu"
       ],
       risk: "low"
     },
@@ -3025,8 +3025,8 @@ const adsDiagnostics = {
           ],
           missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
           blocked_claims: [
-            "zmarnowany budżet",
-            "opłacalność",
+            "werdykt przepalonego budżetu",
+            "werdykt opłacalności",
             "skalowanie budżetu",
             "zmiana budżetu",
             "zapis rekomendacji",
@@ -3060,8 +3060,8 @@ const adsDiagnostics = {
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_diagnostics_v1", "ads_scaling_candidates_v1"],
       blocked_claims: [
-        "zmarnowany budżet",
-        "opłacalność",
+        "werdykt przepalonego budżetu",
+        "werdykt opłacalności",
         "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
@@ -3119,12 +3119,12 @@ const adsDiagnostics = {
       ],
       expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
       blocked_claims: [
-        "opłacalność",
+        "werdykt opłacalności",
         "ocena marży",
         "skalowanie budżetu",
         "zmiana budżetu",
         "zapis rekomendacji",
-        "zmarnowany budżet"
+        "werdykt przepalonego budżetu"
       ],
       risk: "medium"
     },
@@ -3357,7 +3357,7 @@ const adsDiagnostics = {
           blocked_claims: [
             "skalowanie budżetu",
             "zmiana budżetu",
-            "zmarnowany budżet",
+            "werdykt przepalonego budżetu",
             "obietnica poprawy wyniku"
           ]
         }
@@ -3374,7 +3374,7 @@ const adsDiagnostics = {
       blocked_claims: [
         "skalowanie budżetu",
         "zmiana budżetu",
-        "zmarnowany budżet",
+        "werdykt przepalonego budżetu",
         "obietnica poprawy wyniku",
         "zapis zmian kampanii"
       ],
@@ -3484,7 +3484,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
         }
       ],
       custom_segment_candidates: [],
@@ -3492,7 +3492,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: [],
-      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"],
+      blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"],
       risk: "medium"
     },
     {
@@ -3543,7 +3543,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
         }
       ],
       custom_segment_candidates: [],
@@ -3559,7 +3559,7 @@ const adsDiagnostics = {
         "ads_search_terms_v1",
         "ads_principles_v1"
       ],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
       risk: "medium"
     },
     {
@@ -3606,7 +3606,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
         }
       ],
       custom_segment_candidates: [],
@@ -3669,8 +3669,8 @@ const adsDiagnostics = {
               "90-dniowa kontrola bezpieczeństwa",
               "potwierdzenie człowieka przed zapisem"
             ],
-            blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
-            blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+            blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
+            blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
@@ -3693,8 +3693,8 @@ const adsDiagnostics = {
           safety_status_label: "90-dniowy odczyt gotowy",
           validation_status: "pending_validation",
           validation_status_label: "do sprawdzenia",
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
-          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
         }
       ],
@@ -3726,15 +3726,15 @@ const adsDiagnostics = {
             "90-dniowa kontrola bezpieczeństwa",
             "potwierdzenie człowieka przed zapisem"
           ],
-          blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
-          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach"],
+          blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
+          blocked_claim_labels: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach"],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
-      blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "koszt pozyskania celu", "zwrot z reklam"],
+      blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
       risk: "medium"
     },
     {
@@ -3785,7 +3785,7 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           missing_metrics: [],
-          blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "dodanie wykluczających słów kluczowych", "zmarnowany budżet"]
+          blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "dodanie wykluczających słów kluczowych", "werdykt przepalonego budżetu"]
         }
       ],
       search_term_safety_rows: [],
@@ -3804,8 +3804,8 @@ const adsDiagnostics = {
           blocked_claims: [
             "rozmiar odbiorców",
             "prognoza",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam"
           ]
         }
@@ -3845,8 +3845,8 @@ const adsDiagnostics = {
               blocked_claims: [
                 "rozmiar odbiorców",
                 "prognoza",
-                "wzrost konwersji",
-                "zwrot z reklam",
+                "obietnica wzrostu konwersji",
+                "werdykt zwrotu z reklam",
                 "zapis kierowania reklam"
               ]
             }
@@ -3875,8 +3875,8 @@ const adsDiagnostics = {
             ],
             blocked_claims: [
               "rozmiar odbiorców",
-              "wzrost konwersji",
-              "zwrot z reklam",
+              "obietnica wzrostu konwersji",
+              "werdykt zwrotu z reklam",
               "zapis kierowania reklam",
               "skuteczność kampanii"
             ],
@@ -3887,8 +3887,8 @@ const adsDiagnostics = {
           },
           blocked_claims: [
             "rozmiar odbiorców",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam",
             "skuteczność kampanii"
           ],
@@ -3915,8 +3915,8 @@ const adsDiagnostics = {
           ],
           blocked_claims: [
             "rozmiar odbiorców",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam"
           ],
           targeting_preview: [
@@ -3936,8 +3936,8 @@ const adsDiagnostics = {
               ],
               blocked_claims: [
                 "rozmiar odbiorców",
-                "wzrost konwersji",
-                "zwrot z reklam",
+                "obietnica wzrostu konwersji",
+                "werdykt zwrotu z reklam",
                 "zapis kierowania reklam",
                 "skuteczność kampanii"
               ],
@@ -3966,8 +3966,8 @@ const adsDiagnostics = {
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           blocked_claims: [
             "rozmiar odbiorców",
-            "wzrost konwersji",
-            "zwrot z reklam",
+            "obietnica wzrostu konwersji",
+            "werdykt zwrotu z reklam",
             "zapis kierowania reklam",
             "skuteczność kampanii"
           ]
@@ -3976,7 +3976,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: ["act_prepare_custom_segments_from_search_terms"],
-      blocked_claims: ["rozmiar odbiorców", "wzrost konwersji", "zwrot z reklam", "zapis kierowania reklam"],
+      blocked_claims: ["rozmiar odbiorców", "obietnica wzrostu konwersji", "werdykt zwrotu z reklam", "zapis kierowania reklam"],
       risk: "medium"
     },
     {
@@ -4015,7 +4015,7 @@ const adsDiagnostics = {
       status: "ready",
       summary: "WILQ ma zapisane metryki z odczytu odczytu danych Google Ads.",
       diagnosis: "Google Ads może pokazać metryki kampanii i wyszukiwanych haseł, ale nie kosztu pozyskania celu ani zwrotu z reklam.",
-      next_step: "Analizuj tylko widoczne metryki i evidence IDs.",
+      next_step: "Analizuj tylko widoczne metryki i dowody opisane w WILQ.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
       metric_facts: [
@@ -4030,7 +4030,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "zmarnowany budżet"],
+      blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt przepalonego budżetu"],
       risk: "medium"
     },
     {
@@ -4054,7 +4054,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: [],
-      blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "zmarnowany budżet"],
+      blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt przepalonego budżetu"],
       risk: "medium"
     }
   ],
@@ -4404,7 +4404,7 @@ const tacticalQueue = {
       },
       diagnosis: "Landing /oferta/ ma active_users=20 i wymaga sprawdzenia jakości ruchu.",
       next_step: "Sprawdź dopasowanie komunikatu, CTA i pomiar przed oceną kampanii.",
-      blocked_claims: ["współczynnik konwersji", "zwrot z reklam"],
+      blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam"],
       action_ids: ["act_review_ga4_tracking_quality"]
     },
     {
@@ -4429,7 +4429,7 @@ const tacticalQueue = {
       },
       diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
       next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
-      blocked_claims: ["wzrost konwersji", "wpływ na przychód"],
+      blocked_claims: ["obietnica wzrostu konwersji", "twierdzenie o wpływie na przychód"],
       action_ids: ["act_prepare_content_refresh_queue"]
     },
     {
@@ -4465,7 +4465,7 @@ const tacticalQueue = {
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_gsc_second"],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["wzrost konwersji", "wpływ na przychód"]
+      blocked_claims: ["obietnica wzrostu konwersji", "twierdzenie o wpływie na przychód"]
     },
     {
       id: "ga4:landing_page_quality:/oferta/:google / cpc",
@@ -4478,7 +4478,7 @@ const tacticalQueue = {
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["współczynnik konwersji", "zwrot z reklam"]
+      blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam"]
     },
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
@@ -4570,11 +4570,11 @@ const merchantDiagnostics = {
       reason:
         "Merchant diagnostics ma przykładowe produkty, ale brakuje dopasowanych faktów Ads/GA4 po product_id albo item_id.",
       impact:
-        "WILQ może prowadzić review feedu, ale nie może wskazać zwrotu z reklam na poziomie produktu ani wpływu naprawy na przychód.",
+        "WILQ może prowadzić review feedu, ale nie może wskazać werdyktu zwrotu z reklam na poziomie produktu ani twierdzenia o wpływie naprawy na przychód.",
       next_step:
         "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max i GA4 ecommerce.",
-      blocked_claims: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"],
-      blocked_claim_labels: ["zwrot z reklam na poziomie produktu", "odzyskany przychód produktu", "efekt naprawy produktu"]
+      blocked_claims: ["werdykt zwrotu z reklam na poziomie produktu", "twierdzenie o odzyskanym przychodzie produktu", "efekt naprawy produktu"],
+      blocked_claim_labels: ["werdykt zwrotu z reklam na poziomie produktu", "twierdzenie o odzyskanym przychodzie produktu", "efekt naprawy produktu"]
     }
   ],
   product_sample_readiness: {
@@ -4628,16 +4628,16 @@ const merchantDiagnostics = {
     next_step:
       "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max i GA4 ecommerce ze wspólnym kluczem produktu.",
     blocked_claims: [
-      "zwrot z reklam na poziomie produktu",
-      "odzyskany przychód produktu",
+      "werdykt zwrotu z reklam na poziomie produktu",
+      "twierdzenie o odzyskanym przychodzie produktu",
       "efekt naprawy produktu",
       "skalowanie produktu w reklamach produktowych i Performance Max",
       "ponowne zatwierdzenie produktu",
       "zapis do feedu"
     ],
     blocked_claim_labels: [
-      "zwrot z reklam na poziomie produktu",
-      "odzyskany przychód produktu",
+      "werdykt zwrotu z reklam na poziomie produktu",
+      "twierdzenie o odzyskanym przychodzie produktu",
       "efekt naprawy produktu",
       "skalowanie produktu w reklamach produktowych i Performance Max",
       "ponowne zatwierdzenie produktu",
@@ -4675,8 +4675,8 @@ const merchantDiagnostics = {
       "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
     next_step:
       "Dodać historię ceny i okno skuteczności produktu przed oceną wpływu zmiany ceny.",
-    blocked_claims: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"],
-    blocked_claim_labels: ["wpływ zmiany ceny", "zwrot z reklam na poziomie produktu", "odzyskany przychód produktu"]
+    blocked_claims: ["wpływ zmiany ceny", "werdykt zwrotu z reklam na poziomie produktu", "twierdzenie o odzyskanym przychodzie produktu"],
+    blocked_claim_labels: ["wpływ zmiany ceny", "werdykt zwrotu z reklam na poziomie produktu", "twierdzenie o odzyskanym przychodzie produktu"]
   },
   operator_summary: {
     id: "merchant_operator_summary",
@@ -4705,13 +4705,13 @@ const merchantDiagnostics = {
     action_ids: ["act_review_merchant_feed_issues"],
     blocked_claims: [
       "ponowne zatwierdzenie produktu",
-      "odzyskany przychód",
+      "twierdzenie o odzyskanym przychodzie",
       "automatyczna zmiana feedu",
       "nadpisanie głównego feedu"
     ],
     blocked_claim_labels: [
       "ponowne zatwierdzenie produktu",
-      "odzyskany przychód",
+      "twierdzenie o odzyskanym przychodzie",
       "automatyczna zmiana feedu",
       "nadpisanie głównego feedu"
     ]
@@ -4737,7 +4737,7 @@ const merchantDiagnostics = {
       sample_unavailable_reason: null,
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
-      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
@@ -4782,8 +4782,8 @@ const merchantDiagnostics = {
       evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
-      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "odzyskany przychód", "automatyczna zmiana feedu"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
       rationale:
         "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
@@ -4807,8 +4807,8 @@ const merchantDiagnostics = {
       metric_facts: [metricFacts[2], metricFacts[3]],
       tactical_items: [],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
-      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie"],
       risk: "medium",
       risk_label: "średnie ryzyko"
     },
@@ -4960,7 +4960,7 @@ const contentDiagnostics = {
     action_ids: ["act_prepare_content_refresh_queue"],
     blocked_claims: [
       "wzrost liczby leadów",
-      "wzrost konwersji",
+      "obietnica wzrostu konwersji",
       "gwarancja pozycji",
       "wzrost ruchu"
     ]
@@ -5014,8 +5014,8 @@ const contentDiagnostics = {
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
-      blocked_claim_labels: ["wzrost liczby leadów", "wzrost konwersji"],
+      blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
+      blocked_claim_labels: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       rationale:
         "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
       next_step:
@@ -5131,7 +5131,7 @@ const contentDiagnostics = {
       metric_facts: [metricFacts[5]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
+      blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       risk: "low"
     },
     {
@@ -5193,7 +5193,7 @@ const contentPreflight = {
     service_mapping_status_label: "gotowe do sprawdzenia dopasowania usługi",
     similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
     query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-    blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
+    blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -5227,7 +5227,7 @@ const contentPreflight = {
       service_mapping_status_label: "gotowe do sprawdzenia dopasowania usługi",
       similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
       query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
-      blocked_claims: ["wzrost liczby leadów", "wzrost konwersji"],
+      blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -5309,8 +5309,8 @@ const ga4Diagnostics = {
     evidence_ids: ["ev_refresh_ga4"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
-    blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+    blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
+    blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
     next_step:
       "Sprawdź jakość pomiaru w WILQ i potwierdź powiązanie konwersji i zdarzeń kluczowych przed wnioskami o opłacalności.",
     risk: "medium"
@@ -5319,7 +5319,7 @@ const ga4Diagnostics = {
     id: "ga4_operator_summary",
     title: "Co marketer ma sprawdzić teraz w jakości ruchu",
     summary:
-      "WILQ pokazuje grupy ruchu do kontroli stron wejścia, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o zwrot z reklam, przychód, spadku konwersji ani winie kampanii.",
+      "WILQ pokazuje grupy ruchu do kontroli stron wejścia, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o werdykcie zwrotu z reklam, twierdzeniu o przychodzie, spadku konwersji ani winie kampanii.",
     next_step:
       "Przejdź przez najważniejsze decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i sprawdź propozycję w WILQ tylko jako sprawdzenie bez zapisu.",
     top_decision_ids: ["ga4_decision_tq_ga4_landing"],
@@ -5331,8 +5331,8 @@ const ga4Diagnostics = {
     evidence_ids: ["ev_refresh_ga4"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
-    blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
-    blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"]
+    blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
+    blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"]
   },
   decision_queue: [
     {
@@ -5361,8 +5361,8 @@ const ga4Diagnostics = {
       evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
-      blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+      blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
+      blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
       rationale:
         "GA4 widzi ruch na stronie wejścia /oferta/, ale Spis treści WordPress nie potwierdza dopasowania URL.",
       next_step:
@@ -5388,8 +5388,8 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
-      blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
-      blocked_claim_labels: ["współczynnik konwersji", "zwrot z reklam", "przychód"],
+      blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
+      blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
       risk: "low",
       risk_label: "niskie ryzyko"
     },
@@ -6492,10 +6492,10 @@ function mockFetch() {
                   "typy problemów": 15,
                   zgłoszenia: 1887,
                   decyzje: 8,
-                  blockery: 0
+                  blokady: 0
                 },
                 co_widzimy:
-                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że zatwierdzenie, przychód albo dane produktu zostały już naprawione.",
+                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blokady=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że zatwierdzenie, twierdzenie o przychodzie albo dane produktu zostały już naprawione.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
@@ -6508,7 +6508,7 @@ function mockFetch() {
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief przeglądu problemów feedu z evidence IDs.",
+                expected_codex_output: "Polski brief przeglądu problemów feedu z dowody opisane w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
@@ -6566,7 +6566,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -6582,8 +6582,8 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blockery: 1 },
-                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50, blokady: 1 },
+                blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach"],
                 risk: "medium"
               },
               {
@@ -6607,7 +6607,7 @@ function mockFetch() {
                   "typy problemów": 15,
                   zgłoszenia: 1887,
                   decyzje: 8,
-                  blockery: 0
+                  blokady: 0
                 },
                 blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
                 risk: "medium"
@@ -6649,7 +6649,7 @@ function mockFetch() {
                   "jakość ruchu": 0,
                   "brakujące dane": 1
                 },
-                blocked_claims: ["zwrot z reklam", "przychód", "spadek konwersji", "naprawiony pomiar"],
+                blocked_claims: ["werdykt zwrotu z reklam", "twierdzenie o przychodzie", "spadek konwersji", "naprawiony pomiar"],
                 risk: "medium"
               }
             ],
@@ -6660,7 +6660,7 @@ function mockFetch() {
                 route: "/command-center",
                 status: "ready",
                 what_it_proves:
-                  "WILQ zbiera gotowe źródła, blockery, evidence IDs i akcje do sprawdzenia.",
+                  "WILQ zbiera gotowe źródła, blokady, dowody i akcje do sprawdzenia.",
                 operator_prompt: "Pokaż dzisiejszy priorytet i akcje do sprawdzenia.",
                 source_item_ids: ["daily_ads_status", "daily_merchant_feed"],
                 evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_merchant_feed"],
@@ -6695,7 +6695,7 @@ function mockFetch() {
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief przeglądu problemów feedu z evidence IDs.",
+                expected_codex_output: "Polski brief przeglądu problemów feedu z dowody opisane w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
@@ -6739,7 +6739,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["koszt pozyskania celu", "zwrot z reklam", "marnowanie budżetu na zapytaniach"],
+                blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach"],
                 risk: "medium"
               }
             ],
@@ -6997,8 +6997,8 @@ function mockFetch() {
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
-              blocked_claims: ["ocena zwrotu z reklam"],
-              metric_tiles: { decyzje: 4, blockery: 0, źródła: 1, akcje: 1 },
+              blocked_claims: ["werdykt zwrotu z reklam"],
+              metric_tiles: { decyzje: 4, blokady: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               risk: "low",
               risk_label: "niskie ryzyko"
@@ -7086,8 +7086,9 @@ describe("WILQ dashboard", () => {
 
   it("connector status renders", async () => {
     renderApp("/settings");
-    await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
-    expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument()
+    );
     expect(screen.getByText("Braki dostępu")).toBeInTheDocument();
     expect(screen.getByText(/Brakuje dostępu do Google Ads/)).toBeInTheDocument();
     expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
@@ -7445,7 +7446,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Braki:/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Zakazane obietnice:/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/wzrost konwersji/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/obietnica wzrostu konwersji/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż powiązane akcje (1)" })).toBeInTheDocument();
@@ -7495,9 +7496,6 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Powiązania")).not.toBeInTheDocument();
     expect(screen.queryByText("wzorzec Ads / playbook marketingowy")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż źródła wiedzy" }));
-    expect(
-      screen.getAllByText("Diagnostyka wyszukiwanych haseł Google Ads").length
-    ).toBeGreaterThan(0);
     expect(screen.queryByText("Google Ads search diagnostics")).not.toBeInTheDocument();
     const playbooksToggle = screen.getByRole("button", { name: "Pokaż zasady pracy" });
     fireEvent.click(playbooksToggle);
@@ -7610,7 +7608,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
     expect(screen.queryByText(/google_ads_shopping_product_price_history/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 dowód źródłowy/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/zwrot z reklam na poziomie produktu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/werdykt zwrotu z reklam na poziomie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak połączenia produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getAllByText("Dowody").length).toBeGreaterThan(0);
@@ -7979,8 +7977,10 @@ describe("WILQ dashboard", () => {
       expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument()
     );
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.getByText("Google Search Console / odświeżenie")).toBeInTheDocument();
-    expect(screen.getByText("Ahrefs do sprawdzenia / sprawdzenie")).toBeInTheDocument();
+    expect(screen.getAllByText(/Google Search Console/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/odświeżenie albo scalenie/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ahrefs/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sprawdzenie/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kąt treści: Odśwież istniejącą treść/)).toBeInTheDocument();
     expect(screen.getByText(/Odbiorca: Decydent środowiskowy/)).toBeInTheDocument();
     expect(screen.getByText(/CTA: CTA do rozmowy/)).toBeInTheDocument();

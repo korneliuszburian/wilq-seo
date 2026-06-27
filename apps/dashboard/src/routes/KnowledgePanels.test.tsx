@@ -125,6 +125,6 @@ describe("KnowledgePanels", () => {
     expect(screen.getByText("Widok: Ads z API")).toBeInTheDocument();
     expect(screen.getByText("gotowe z API")).toBeInTheDocument();
     expect(screen.getByText("ryzyko z API")).toBeInTheDocument();
-    expect(screen.queryByText("Ads Doctor")).not.toBeInTheDocument();
+    expect(screen.queryByText("widok Google Ads")).not.toBeInTheDocument();
   });
 });

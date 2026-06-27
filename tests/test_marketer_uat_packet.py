@@ -39,7 +39,7 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
                     "next_step": "Sprawdź atrybut.",
                 }
             ],
-            "blocked_claims": ["ponowne zatwierdzenie produktu", "odzyskany przychód"],
+            "blocked_claims": ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie"],
             "action_ids": ["act_review_merchant_feed_issues"],
         },
         "content": {
@@ -132,7 +132,7 @@ def test_marketer_uat_packet_markdown_has_recording_fields() -> None:
         "safety_note": "Ten pakiet nie jest dowodem wykonanego UAT.",
         "route_checks": [
             {
-                "label": "Command Center",
+                "label": "Centrum pracy",
                 "route": "/command-center",
                 "operator_task": "Wskaż jedną decyzję.",
                 "pass_condition": "Marketer wie, co zrobić.",

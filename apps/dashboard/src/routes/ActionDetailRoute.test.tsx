@@ -198,7 +198,7 @@ const adsActionFixture: ActionObject = {
           "human_budget_goal",
           "campaign_budget_apply_safety"
         ],
-        blocked_claims: ["skalowanie budżetu", "zmiana budżetu", "zmarnowany budżet"],
+        blocked_claims: ["skalowanie budżetu", "zmiana budżetu", "werdykt przepalonego budżetu"],
         safety_review: {
           safety_contract: "campaign_budget_apply_safety_v1",
           status: "blocked",
@@ -370,7 +370,7 @@ const customSegmentActionFixture: ActionObject = {
           "wzbogać dane przez Keyword Planner",
           "sprawdź prognozę albo wielkość odbiorców"
         ],
-        blocked_claims: ["rozmiar odbiorców", "wzrost konwersji", "zapis kierowania reklam"],
+        blocked_claims: ["rozmiar odbiorców", "obietnica wzrostu konwersji", "zapis kierowania reklam"],
         targeting_preview: [
           {
             campaign_id: "23848569273",
@@ -473,7 +473,7 @@ const negativeKeywordActionFixture: ActionObject = {
           "sprawdź bezpieczeństwo z 90 dni",
           "potwierdzenie człowieka przed zapisem"
         ],
-        blocked_claims: ["dodanie wykluczających słów kluczowych", "marnowanie budżetu na zapytaniach", "CPA", "zwrot z reklam"],
+        blocked_claims: ["dodanie wykluczających słów kluczowych", "werdykt marnowania budżetu na zapytaniach", "CPA", "werdykt zwrotu z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -506,7 +506,8 @@ const ngramActionFixture: ActionObject = {
         { label: "Braki", value: "ręczna ocena intencji" },
         {
           label: "Czego nie wolno twierdzić",
-          value: "marnowanie budżetu na zapytaniach, dodanie wykluczających słów kluczowych, CPA, zwrot z reklam"
+          value:
+            "werdykt marnowania budżetu na zapytaniach, dodanie wykluczających słów kluczowych, CPA, werdykt zwrotu z reklam"
         }
       ],
       apply_state_label: "zapis zmian zablokowany",
@@ -557,7 +558,7 @@ const ngramActionFixture: ActionObject = {
           "sprawdź źródłowe wyszukiwane hasła",
           "porównaj z 90-dniową kontrolą bezpieczeństwa"
         ],
-        blocked_claims: ["marnowanie budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "zwrot z reklam"],
+        blocked_claims: ["werdykt marnowania budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "CPA", "werdykt zwrotu z reklam"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -684,7 +685,8 @@ const ga4TrackingActionFixture: ActionObject = {
         },
         {
           label: "Czego nie wolno twierdzić",
-          value: "współczynnik konwersji, zwrot z reklam, przychód, naprawiony pomiar"
+          value:
+            "współczynnik konwersji, werdykt zwrotu z reklam, twierdzenie o przychodzie, naprawiony pomiar"
         }
       ],
       apply_state_label: "zapis zmian zablokowany",
@@ -739,7 +741,7 @@ const ga4TrackingActionFixture: ActionObject = {
           "sprawdź nazwę kampanii",
           "sprawdź powiązanie konwersji albo zdarzenia kluczowego"
         ],
-        blocked_claims: ["współczynnik konwersji", "zwrot z reklam", "przychód", "naprawiony pomiar"],
+        blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "naprawiony pomiar"],
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -885,7 +887,7 @@ const socialDraftActionFixture: ActionObject = {
         },
         {
           label: "Czego nie wolno twierdzić",
-          value: "zwrot z reklam, przychód"
+          value: "werdykt zwrotu z reklam, twierdzenie o przychodzie"
         }
       ],
       apply_state_label: "zapis zmian zablokowany",
@@ -959,7 +961,7 @@ const socialDraftActionFixture: ActionObject = {
       "bez obietnic skuteczności bez metryk źródłowych",
       "człowiek sprawdza przed zapisem"
     ],
-    blocked_claims: ["zwrot z reklam", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
+    blocked_claims: ["werdykt zwrotu z reklam", "twierdzenie o przychodzie", "obietnica wzrostu konwersji", "wdrożona poprawka produktu"],
     destructive: false
   }
 };
@@ -1030,7 +1032,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "sprawdź wiersze Keyword Planner",
       "potwierdzenie człowieka przed zapisem"
     ],
-    blocked_claims: ["rozmiar odbiorców", "prognoza", "wzrost konwersji", "zwrot z reklam"],
+    blocked_claims: ["rozmiar odbiorców", "prognoza", "obietnica wzrostu konwersji", "werdykt zwrotu z reklam"],
     apply_allowed: false,
     destructive: false
   }
@@ -1397,7 +1399,7 @@ const contentActionFixture: ActionObject = {
         ],
         blocked_claims: [
           "wzrost liczby leadów",
-          "wpływ na przychód",
+          "twierdzenie o wpływie na przychód",
           "automatyczna publikacja WordPress"
         ],
         source_connectors: ["google_search_console"],
@@ -1711,7 +1713,7 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Koszt: 24.17 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: ręczna ocena intencji/)).toBeInTheDocument();
-    expect(screen.getByText(/Czego nie wolno twierdzić: marnowanie budżetu na zapytaniach/)).toBeInTheDocument();
+    expect(screen.getByText(/Czego nie wolno twierdzić: werdykt marnowania budżetu na zapytaniach/)).toBeInTheDocument();
     expect(screen.getAllByText(/Zapis zmian:/).length).toBeGreaterThan(0);
   });
 
@@ -1805,7 +1807,7 @@ describe("Action detail route", () => {
     expect(screen.queryByText(/issue_product_count/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Metryka: clicks/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Ograniczenia: użyj tylko dowodów z WILQ/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Czego nie wolno twierdzić: zwrot z reklam/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Czego nie wolno twierdzić: werdykt zwrotu z reklam/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
   });
 
