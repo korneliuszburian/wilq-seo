@@ -123,6 +123,14 @@ Done when:
 - Active API/skill/dashboard paths no longer expose stale content fields or
   forbidden marketer-facing terms.
 
+Latest slice:
+
+- Custom Segments and Keyword Planner wording now uses API-owned Polish labels
+  and source summaries for preview member type, review gates, blocked promises
+  and blocked Keyword Planner access. Browser proof for
+  `/ads-doctor/custom-segments` is stored under
+  `.local-lab/proof/20260627-custom-segments-api-labels/browser/`.
+
 ### C. Dashboard Condensation
 
 Tasks:

@@ -270,6 +270,10 @@ FORBIDDEN_PHRASES = (
         "Use wzrost skuteczności social in social blocked claims.",
     ),
     ForbiddenPhrase(
+        "uplift",
+        "Use plain Polish outcome wording such as wzrost, and only claim it when evidence allows it.",
+    ),
+    ForbiddenPhrase(
         "Demand Gen launch recommendation",
         "Use rekomendacja uruchomienia Demand Gen in Demand Gen blocked claims.",
     ),

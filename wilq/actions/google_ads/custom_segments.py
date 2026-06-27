@@ -111,6 +111,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                 "id": "custom_segment_preview_google_ads_search_terms",
                 "custom_segment_name": "WILQ search-term intent review",
                 "member_type": "KEYWORD",
+                "member_type_label": "słowa kluczowe",
                 "source_terms": terms[:20],
                 "reason": (
                     "Do sprawdzenia: słowa kluczowe segmentu odbiorców z Google Ads "

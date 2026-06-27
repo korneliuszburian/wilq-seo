@@ -2116,14 +2116,14 @@ const adsDiagnostics = {
       {
         id: "ads_custom_segment_123",
         name: "Zapytania użytkowników: Ekologus Search",
-        intent: "search_term_interest",
+        intent: "zainteresowanie z wyszukiwanych haseł",
         review_priority: "wysokie",
         review_score: 65,
         review_reason:
           "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
         human_review_gates: [
           "sprawdź intencję wyszukiwanych haseł",
-          "odrzuć brand, konkurencję i low-intent frazy",
+          "odrzuć brand, konkurencję i frazy o niskiej intencji",
           "sprawdź Keyword Planner enrichment",
           "sprawdź prognozę albo rozmiar odbiorców",
           "zatwierdź segment przed zapisem"
@@ -3400,14 +3400,14 @@ const adsDiagnostics = {
         {
           id: "ads_custom_segment_123",
           name: "Zapytania użytkowników: Ekologus Search",
-          intent: "search_term_interest",
+          intent: "zainteresowanie z wyszukiwanych haseł",
           review_priority: "wysokie",
           review_score: 65,
           review_reason:
             "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
           human_review_gates: [
             "sprawdź intencję wyszukiwanych haseł",
-            "odrzuć brand, konkurencję i low-intent frazy",
+            "odrzuć brand, konkurencję i frazy o niskiej intencji",
             "sprawdź Keyword Planner enrichment",
             "sprawdź prognozę albo rozmiar odbiorców",
             "zatwierdź segment przed zapisem"
@@ -6198,7 +6198,7 @@ function mockFetch() {
               source_connectors: ["localo"],
               evidence_ids: [],
               action_ids: [],
-              blocked_claims: ["lokalne rankingi uplift"],
+              blocked_claims: ["poprawa lokalnych rankingów"],
               metric_tiles: {},
               missing_contracts: ["local_ranking_rows"],
               risk: "medium",

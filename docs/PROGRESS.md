@@ -159,6 +159,13 @@ Date: 2026-06-27
   preserves those condensed labels for `wilq-content-strategist`, and summary
   ordering keeps duplicate/canonical checks plus "no success verdict yet"
   visible before lower-priority measurement details.
+- Custom Segments and Keyword Planner language now comes from API-owned labels
+  and source summaries instead of route-local cleanup logic. The active
+  `/ads-doctor/custom-segments` browser proof shows Polish segment names,
+  Polish intent, `słowa kluczowe`, `sprawdzenie zapisu zmian w Google Ads` and a
+  plain blocked Keyword Planner explanation; the scan found no hits for old
+  `Search terms:`, raw intent/member type, raw API error details, `uplift`,
+  `KP` shortcut or mutation-audit wording.
 
 ## Latest Proof Pointers
 
@@ -218,6 +225,22 @@ Date: 2026-06-27
   - `rtk uv run pytest tests/test_api_contracts.py -q -k "metric_backed_prepare_actions_are_evidence_grounded or content_strategist_context_pack_preserves_reviewed_draft_preview" --maxfail=1`
     passed: 2 tests.
   - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+    passed.
+- Custom Segments API-label cleanup:
+  - Browser proof:
+    `.local-lab/proof/20260627-custom-segments-api-labels/browser/custom-segments-body.txt`.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "keyword_planner or custom_segments" --maxfail=1`
+    passed: 2 tests.
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000 -t "custom segments route renders dedicated validation contract"`
+    passed: 1 test.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+    passed against the managed local API.
+  - `rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+    passed against the managed local API.
+  - `rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000`
+    passed.
     passed: 14 tests.
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
   - `rtk uv run python scripts/marketer_language_guard.py` passed.

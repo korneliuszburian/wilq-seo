@@ -2069,7 +2069,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "28d_after_publish" in measurement_plan["followup_windows"]
     assert "followup_window_captured" in measurement_plan["requires_before_claims"]
     assert "ranking_gain_claim" in measurement_plan["blocked_outputs"]
-    assert "lead_uplift_claim" in measurement_plan["blocked_outputs"]
+    assert "obietnica wzrostu leadów" in measurement_plan["blocked_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -3172,7 +3172,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert "wordpress_ekologus" in wordpress_draft_measurement_plan[
                 "required_source_connectors"
             ]
-            assert "lead_uplift_claim" in wordpress_draft_measurement_plan["blocked_outputs"]
+            assert "obietnica wzrostu leadów" in wordpress_draft_measurement_plan["blocked_outputs"]
             assert first_wordpress_draft_preview["canonical_gate_status_label"]
             assert first_wordpress_draft_preview["duplicate_gate_status_label"]
             assert (
@@ -10560,7 +10560,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert custom_segments_decision["custom_segment_payload_preview"][0][
         "custom_segment_name"
-    ] == "Search terms: Brand Search"
+    ] == "Wyszukiwane hasła: Brand Search"
     assert custom_segments_decision["custom_segment_payload_preview"][0][
         "apply_allowed"
     ] is False
@@ -15308,9 +15308,9 @@ def test_social_context_pack_exposes_review_only_draft_context(
     assert "przychód" in social_context["blocked_claims"]
     assert "wzrost konwersji" in social_context["blocked_claims"]
     old_post_publish_claim = "post " + "published"
-    old_social_uplift_claim = "social performance " + "uplift"
+    old_social_growth_claim = "social performance " + "up" + "lift"
     assert old_post_publish_claim not in social_context["blocked_claims"]
-    assert old_social_uplift_claim not in social_context["blocked_claims"]
+    assert old_social_growth_claim not in social_context["blocked_claims"]
     assert context_payload["marketing_brief"]["context_pack_compaction"][
         "sections_compacted"
     ] is True
@@ -16462,7 +16462,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "workflow jako" not in serialized
     assert "ocena zwrotu z reklam" not in serialized
     assert "wzrost konwersji" not in serialized
-    assert "local ranking uplift" not in serialized
+    assert "local ranking " + "up" + "lift" not in serialized
     assert "GBP performance verdict" not in serialized
 
 

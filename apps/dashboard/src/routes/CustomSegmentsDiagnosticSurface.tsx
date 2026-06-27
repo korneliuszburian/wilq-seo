@@ -92,7 +92,7 @@ export function AdsCustomSegmentCandidatesPanel({
                 </div>
                 <div>{candidate.payload_preview.custom_segment_name}</div>
                 <div className="text-slate-600">
-                  Typ wejścia: {candidate.payload_preview.member_type}. Zapis zmian:{" "}
+                  Typ wejścia: {candidate.payload_preview.member_type_label}. Zapis zmian:{" "}
                   {candidate.payload_preview.apply_allowed
                     ? "wymaga sprawdzenia"
                     : "zablokowane"}
@@ -146,7 +146,7 @@ export function AdsCustomSegmentCandidatesPanel({
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
               <TraceLine
                 label="Ocena człowieka"
-                values={candidate.human_review_gates}
+                values={candidate.human_review_gate_labels}
                 empty="brak"
               />
               <TraceLine label="Hasła źródłowe" values={candidate.source_terms.slice(0, 8)} />
@@ -266,14 +266,14 @@ export function CustomSegmentsDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok propozycji segmentów z wyszukiwanych haseł Google Ads.
             WILQ pokazuje tylko hasła źródłowe z dowodami i podgląd zmian do
-            oceny; zasięg, uplift, zwrot z reklam i zapis kierowania pozostają zablokowane.
+            oceny; zasięg, wzrost konwersji, zwrot z reklam i zapis kierowania pozostają zablokowane.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
           <MetricTile label="Segmenty" value={contract.candidates.length} />
           <MetricTile label="Hasła źródłowe" value={sourceTermCount} />
           <MetricTile label="Odrzucone" value={rejectedTermCount} />
-          <MetricTile label="Pomysły KP" value={keywordPlanner.idea_rows.length} />
+          <MetricTile label="Pomysły Keyword Planner" value={keywordPlanner.idea_rows.length} />
           <MetricTile label="Prognoza" value={audienceForecast.forecast_row_count} />
         </div>
       </div>
@@ -291,7 +291,9 @@ export function CustomSegmentsDiagnosticSurface() {
           <div className="flex flex-wrap gap-2 text-xs">
             <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
             <StatusBadge value={contract.status === "ready" ? "do oceny" : "zablokowane"} />
-            <StatusBadge value={keywordPlanner.status === "ready" ? "KP gotowe" : "KP zablokowane"} />
+            <StatusBadge
+              value={keywordPlanner.status === "ready" ? "Keyword Planner gotowy" : "Keyword Planner zablokowany"}
+            />
             <StatusBadge
               value={audienceForecast.status === "ready" ? "prognoza gotowa" : "prognoza zablokowana"}
             />
@@ -364,13 +366,13 @@ export function CustomSegmentsDiagnosticSurface() {
               ...audienceForecast.missing_read_contracts
             ]).map(adsMissingReadContractLabel)}
           />
-          <TraceLine
-            label="Wymaga oceny"
-            values={uniqueValues([
-              ...contract.operator_review_gates,
-              ...audienceForecast.operator_review_gates
-            ]).map(adsOperatorReviewGateLabel)}
-          />
+            <TraceLine
+              label="Wymaga oceny"
+              values={uniqueValues([
+                ...contract.operator_review_gate_labels,
+                ...audienceForecast.operator_review_gate_labels
+              ])}
+            />
           <TraceLine
             label="Nie wolno twierdzić"
             values={uniqueValues([
@@ -386,40 +388,6 @@ export function CustomSegmentsDiagnosticSurface() {
       </section>
     </main>
   );
-}
-
-function adsOperatorReviewGateLabel(value: string) {
-  const labels: Record<string, string> = {
-    human_strategy_review: "sprawdzenie strategii przez człowieka",
-    review_recommendation_type: "sprawdzenie typu rekomendacji",
-    review_impact_metrics: "sprawdzenie metryk wpływu",
-    review_change_history: "sprawdzenie historii zmian",
-    review_business_goal: "sprawdzenie celu biznesowego",
-    configure_business_goal: "uzupełnienie celu biznesowego",
-    review_profit_margin_model: "sprawdzenie modelu marży",
-    configure_profit_margin_or_value_model: "uzupełnienie marży albo modelu wartości",
-    review_human_budget_goal: "sprawdzenie celu budżetu",
-    configure_human_budget_goal: "uzupełnienie celu budżetu",
-    confirm_target_roas_or_cpa: "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
-    review_target_fit: "sprawdzenie dopasowania do celu",
-    review_campaign_goal: "sprawdzenie celu kampanii",
-    review_conversion_quality: "sprawdzenie jakości konwersji",
-    review_budget_context: "sprawdzenie kontekstu budżetu",
-    review_search_terms_before_budget_decision: "wyszukiwane hasła przed decyzją budżetową",
-    review_conversion_tracking: "sprawdzenie trackingu konwersji",
-    review_pmax_asset_feed_context: "sprawdzenie PMax/feed/assets",
-    review_draft_campaign_status: "sprawdzenie statusu draftu",
-    recommendation_apply_preview: "podgląd zapisu rekomendacji",
-    google_ads_rmf_compliance_review: "ocena Google Ads RMF/compliance",
-    human_confirm_before_apply: "potwierdzenie człowieka przed zapisem",
-    negative_keyword_action_validation: "sprawdzenie w WILQ dla wykluczeń",
-    human_intent_review: "ręczna ocena intencji",
-    review_source_terms: "sprawdzenie haseł źródłowych",
-    reject_brand_or_low_intent_terms: "odrzucenie fraz brandowych albo niskointencyjnych",
-    keyword_planner_enrichment: "wzbogacenie Keyword Planner",
-    forecast_or_audience_size: "prognoza albo rozmiar odbiorców"
-  };
-  return labels[value] ?? value;
 }
 
 function uniqueValues(values: string[]) {

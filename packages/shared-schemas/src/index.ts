@@ -1182,6 +1182,7 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   id: z.string(),
   custom_segment_name: z.string(),
   member_type: z.literal("KEYWORD"),
+  member_type_label: z.string().optional().default("słowa kluczowe"),
   source_terms: z.array(z.string()),
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),

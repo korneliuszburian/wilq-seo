@@ -25,7 +25,6 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "negative keyword addition": "dodanie wykluczających słów kluczowych",
     "opłacalność": "opłacalność",
     "ocena opłacalności": "werdykt opłacalności",
-    "profit uplift": "wzrost zysku",
     "recommendation applied": "wdrożona rekomendacja",
     "recommendation write": "zapis rekomendacji",
     "przychód": "przychód",

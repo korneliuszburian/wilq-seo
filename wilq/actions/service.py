@@ -1229,8 +1229,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "widoczności, ale nie do twierdzeń o GBP, konkurencji ani poprawie wyniku."
             ),
             recommended_reason=(
-                "Na /localo przygotuj przegląd agregatów i zostaw GBP/write/uplift "
-                "zablokowane do czasu osobnych kontraktów Localo."
+                "Na /localo przygotuj przegląd agregatów i zostaw wyniki profilu firmy, "
+                "zapis zmian i poprawę widoczności zablokowane do czasu osobnych kontraktów Localo."
             ),
             payload=localo_visibility_payload,
             validation_status="not_validated",
@@ -1788,7 +1788,7 @@ def _wordpress_draft_handoff_action(
                 "wordpress_publish",
                 "production_wordpress_write",
                 "publish_ready_claim",
-                "ranking_or_lead_uplift_claim",
+                "obietnica wzrostu pozycji albo leadów",
             ],
             "apply_allowed": False,
             "api_mutation_ready": False,
@@ -1829,7 +1829,7 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         "wordpress_draft_write",
         "wordpress_publish",
         "publish_ready_claim",
-        "ranking_or_lead_uplift_claim",
+        "obietnica wzrostu pozycji albo leadów",
     ]
     measurement_plan = post_publication_measurement_plan(
         final_canonical_url=str(final_canonical_url) if final_canonical_url else None,
@@ -2983,7 +2983,7 @@ def _action_gate_label(value: str) -> str | None:
         "change_history": "sprawdź historię zmian",
         "forecast_or_audience_size": "sprawdź prognozę albo wielkość odbiorców",
         "custom_segment_operation_preview": "sprawdź podgląd segmentu odbiorców",
-        "google_ads_mutation_audit": "ślad bezpieczeństwa Google Ads",
+        "google_ads_mutation_audit": "sprawdzenie zapisu zmian w Google Ads",
         "human_strategy_review": "człowiek sprawdza strategię",
         "human_intent_review": "człowiek sprawdza intencję",
         "human_confirm_before_tracking_change": "człowiek potwierdza przed zmianą pomiaru",

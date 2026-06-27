@@ -1491,6 +1491,7 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     id: str
     custom_segment_name: str
     member_type: Literal["KEYWORD"] = "KEYWORD"
+    member_type_label: str = "słowa kluczowe"
     source_terms: list[str] = Field(default_factory=list)
     campaign_id: str | None = None
     campaign_name: str | None = None

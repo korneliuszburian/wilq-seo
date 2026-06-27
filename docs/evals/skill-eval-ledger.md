@@ -25,6 +25,41 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - wilq-custom-segments API-label smoke
+
+Purpose:
+
+- Verify that Custom Segments uses API-owned Polish labels and summaries for
+  review gates, blocked claims, Keyword Planner readiness and segment previews.
+- Prove the browser surface no longer shows raw values such as `Search terms:`,
+  raw intent/member type, raw API error details, `uplift`, `KP` shortcut or
+  mutation-audit wording.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+Browser proof:
+
+```txt
+.local-lab/proof/20260627-custom-segments-api-labels/browser/custom-segments-body.txt
+```
+
+Result:
+
+- `wilq-custom-segments` smoke passed against the managed local API.
+- `wilq-content-strategist` smoke still passed after the blocked-output label
+  migration.
+- Live contract smoke passed for health, Command Center, marketing brief,
+  Ads, Merchant, Content, GA4 and Localo diagnostics.
+- The route renders `Wyszukiwane hasła`, `zainteresowanie z wyszukiwanych
+  haseł`, `słowa kluczowe`, `sprawdzenie zapisu zmian w Google Ads` and a plain
+  Keyword Planner blocker.
+
 ## 2026-06-24 - wilq-content-strategist messy marketer prompt eval
 
 Purpose:

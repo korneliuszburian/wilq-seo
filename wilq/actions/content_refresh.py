@@ -161,7 +161,6 @@ CONTENT_CONTRACT_LABELS = {
     "google_analytics_4": "GA4",
     "wordpress_ekologus": "WordPress Ekologus",
     "ranking_gain_claim": "obietnica wzrostu pozycji",
-    "lead_uplift_claim": "obietnica wzrostu leadów",
     "revenue_impact_claim": "obietnica wpływu na przychód",
     "content_success_verdict": "werdykt skuteczności treści",
     "automatic_refresh_followup": "automatyczne odświeżenie po publikacji",
@@ -175,8 +174,6 @@ CONTENT_CONTRACT_LABELS = {
     "wordpress_publish_metadata": "metadane publikacji WordPress",
     "reviewable_polish_draft_preview": "polska wersja robocza do kontroli",
     "legal_compliance_guarantee": "gwarancja zgodności prawnej",
-    "lead_or_revenue_uplift_claim": "obietnica wzrostu leadów albo przychodu",
-    "ranking_or_lead_uplift_claim": "obietnica wzrostu pozycji albo leadów",
     "request_duplicate_or_canonical_review": "poproś o kontrolę duplikacji albo URL-a kanonicznego",
     "review_outcome": "wynik sprawdzenia",
     "human_review_outcome": "wynik decyzji człowieka",
@@ -259,7 +256,7 @@ def content_url_review_contract() -> dict[str, Any]:
         "preview_url_as_final_canonical",
         "new_content_without_inventory_check",
         "duplicate_free_claim",
-        "ranking_or_lead_uplift_claim",
+        "obietnica wzrostu pozycji albo leadów",
     ]
     return {
         "contract": CONTENT_URL_REVIEW_CONTRACT,
@@ -837,7 +834,7 @@ def _draft_generation_contract(
             "publish_ready_claim",
             "automatic_wordpress_write",
             "ranking_guarantee",
-            "lead_or_revenue_uplift_claim",
+            "obietnica wzrostu leadów albo przychodu",
             "legal_compliance_guarantee",
         ],
     }
@@ -869,7 +866,7 @@ def _draft_readiness_review_contract() -> dict[str, Any]:
             "publish_ready_claim",
             "duplicate_free_claim_without_review",
             "legal_compliance_guarantee",
-            "ranking_or_lead_uplift_claim",
+            "obietnica wzrostu pozycji albo leadów",
         ],
     }
 
@@ -938,7 +935,7 @@ def _wordpress_draft_handoff_contract(
             "wordpress_publish",
             "production_wordpress_write",
             "publish_ready_claim",
-            "ranking_or_lead_uplift_claim",
+            "obietnica wzrostu pozycji albo leadów",
         ],
     }
 
@@ -973,7 +970,7 @@ def post_publication_measurement_plan(
         ],
         "blocked_outputs": [
             "ranking_gain_claim",
-            "lead_uplift_claim",
+            "obietnica wzrostu leadów",
             "revenue_impact_claim",
             "content_success_verdict",
             "automatic_refresh_followup",
@@ -1084,7 +1081,7 @@ def _post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
         [
             "content_success_verdict",
             "ranking_gain_claim",
-            "lead_uplift_claim",
+            "obietnica wzrostu leadów",
             "revenue_impact_claim",
         ],
     )

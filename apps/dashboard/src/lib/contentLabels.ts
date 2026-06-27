@@ -178,7 +178,6 @@ export function contentContractValueLabel(value: string): string {
     google_analytics_4: "GA4",
     wordpress_ekologus: "WordPress Ekologus",
     ranking_gain_claim: "obietnica wzrostu pozycji",
-    lead_uplift_claim: "obietnica wzrostu leadów",
     revenue_impact_claim: "obietnica wpływu na przychód"
   };
   return labels[value] ?? value;

@@ -3981,8 +3981,8 @@ def _custom_segment_group_sort_key(rows: list[AdsSearchTermMetricRow]) -> tuple[
 
 def _custom_segment_name(campaign_name: str | None, index: int) -> str:
     if campaign_name:
-        return f"Search terms: {campaign_name}"
-    return f"Hasła wyszukiwania: propozycja {index}"
+        return f"Wyszukiwane hasła: {campaign_name}"
+    return f"Segment z wyszukiwanych haseł {index}"
 
 
 def _custom_segment_confidence(
@@ -4188,15 +4188,13 @@ def _keyword_planner_read_contract(
             ),
         )
     if read_attempted or latest_status == "blocked":
-        blocker = (
-            str(latest_refresh.metric_summary.get("keyword_planner_blocker"))
-            if latest_refresh is not None
-            else "unknown"
-        )
         return AdsKeywordPlannerReadContract(
             status="blocked",
-            title="Keyword Planner: enrichment zablokowany",
-            summary=f"Odczyt Keyword Plannera został podjęty, ale nie zwrócił pomysłów ({blocker}).",
+            title="Keyword Planner: wzbogacenie zablokowane",
+            summary=(
+                "Odczyt Keyword Plannera został podjęty, ale dostęp do propozycji "
+                "jest nadal zablokowany po stronie Google Ads."
+            ),
             missing_read_contracts=["keyword_planner_enrichment"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -4210,7 +4208,7 @@ def _keyword_planner_read_contract(
     return AdsKeywordPlannerReadContract(
         status="blocked",
         title="Keyword Planner: brak wzbogacenia",
-        summary="WILQ nie ma jeszcze metryk keyword_planner_*.",
+        summary="WILQ nie ma jeszcze danych wzbogacających z Keyword Plannera.",
         missing_read_contracts=["keyword_planner_enrichment"],
         blocked_claims=blocked_claims,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -4456,7 +4454,7 @@ def _custom_segment_audience_forecast_read_contract(
             source_terms=candidate.source_terms,
             reason=(
                 "Brak dowodów WILQ dla prognozy albo rozmiaru odbiorców tego "
-                "segmentu. Kandydat zostaje tylko do przygotowania i oceny."
+                "segmentu. Propozycja zostaje tylko do przygotowania i oceny."
             ),
             evidence_ids=candidate.evidence_ids,
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -4566,7 +4564,7 @@ def _custom_segment_candidates(
             AdsCustomSegmentCandidate(
                 id=payload_preview.id.removeprefix("preview_"),
                 name=name,
-                intent="search_term_interest",
+                intent="zainteresowanie z wyszukiwanych haseł",
                 review_priority=_custom_segment_review_priority(review_score),
                 review_score=review_score,
                 review_reason=_custom_segment_review_reason(
@@ -4733,6 +4731,7 @@ def _custom_segment_change_preview(
         id=preview_id,
         custom_segment_name=name,
         member_type="KEYWORD",
+        member_type_label="słowa kluczowe",
         source_terms=[term for term in source_terms if term in row_terms],
         campaign_id=campaign_id,
         campaign_name=campaign_name,

@@ -567,9 +567,9 @@ def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None
     ):
         raise SystemExit("Post-publication measurement plan must require GA4 evidence")
     blocked_outputs = set(measurement_plan.get("blocked_outputs") or [])
-    if not {"ranking_gain_claim", "lead_uplift_claim"}.issubset(blocked_outputs):
+    if not {"ranking_gain_claim", "obietnica wzrostu leadów"}.issubset(blocked_outputs):
         raise SystemExit(
-            "Post-publication measurement plan must block uplift/ranking claims"
+            "Post-publication measurement plan must block lead growth and ranking claims"
         )
 
 
