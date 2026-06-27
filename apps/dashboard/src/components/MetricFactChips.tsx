@@ -8,7 +8,7 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
           key={metricFactKey(fact, index)}
           className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
         >
-          {metricFactLabel(fact.name)}: {formatMetricFactValue(fact)}
+          {metricFactLabel(fact)}: {formatMetricFactValue(fact)}
           {Object.keys(fact.dimensions ?? {}).length > 0
             ? ` / ${formatMetricDimensions(fact)}`
             : ""}
@@ -37,52 +37,8 @@ function metricFactKey(fact: MetricFact, index: number) {
   ].join("::");
 }
 
-function metricFactLabel(metricName: string) {
-  const labels: Record<string, string> = {
-    active_products: "Produkty aktywne",
-    active_users: "Aktywni użytkownicy",
-    ahrefs_content_gap_count: "Luki treści Ahrefs",
-    ahrefs_rank: "Ahrefs Rank",
-    ahrefs_referring_domain_gap_count: "Luki domen linkujących",
-    average_position: "Pozycja",
-    clicks: "Kliknięcia",
-    content_object_count: "Obiekty treści",
-    ctr: "CTR",
-    disapproved_products: "Produkty odrzucone",
-    domain_rating: "Domain Rating",
-    engagement_rate: "Zaangażowanie",
-    event_count: "Zdarzenia",
-    impressions: "Wyświetlenia",
-    issue_product_count: "Zgłoszenia problemów",
-    localo_active_place_count: "Miejsca aktywne",
-    localo_avg_latest_grid_position: "Średnia pozycja lokalna",
-    localo_avg_rating: "Średnia ocena",
-    localo_avg_visibility_change: "Zmiana widoczności lokalnej",
-    localo_avg_visibility_current: "Widoczność lokalna",
-    localo_competitor_change_count: "Zmiany konkurencji",
-    localo_competitor_count: "Konkurenci lokalni",
-    localo_favorite_competitor_count: "Wyróżnieni konkurenci",
-    localo_gbp_actions_total: "Akcje w profilu firmy",
-    localo_gbp_impressions_total: "Wyświetlenia profilu firmy",
-    localo_gbp_metric_point_count: "Punkty danych profilu firmy",
-    localo_keyword_volume_count: "Frazy z wolumenem",
-    localo_latest_grid_position_count: "Pomiary pozycji lokalnej",
-    localo_place_detail_count: "Miejsca ze szczegółami",
-    localo_review_reply_rate: "Odpowiedzi na opinie",
-    localo_reviews_count: "Opinie",
-    localo_reviews_removed_count: "Usunięte opinie",
-    localo_reviews_replied_count: "Opinie z odpowiedzią",
-    localo_snapshot_reviews_count: "Opinie w odczycie",
-    localo_total_keyword_volume: "Łączny wolumen fraz",
-    localo_tracked_keyword_count: "Monitorowane frazy",
-    localo_visibility_score_count: "Pomiary widoczności",
-    pages_total: "Strony",
-    posts_total: "Wpisy",
-    screen_page_views: "Wyświetlenia stron",
-    sessions: "Sesje",
-    total_products: "Produkty w feedzie"
-  };
-  return labels[metricName] ?? "metryka WILQ";
+function metricFactLabel(fact: MetricFact) {
+  return fact.metric_label || "Metryka bez etykiety";
 }
 
 function formatMetricFactValue(fact: MetricFact) {

@@ -637,6 +637,10 @@ WILQ is complete for this long-range goal when:
   `preview_cards`. The detail route prefers those cards before raw payload
   fallback, and Merchant feed issue cards show Polish problem/sample summaries
   without raw SKU/product IDs.
+- 2026-06-27: Localo metric labels now live in one domain label source used by
+  Localo diagnostics and marketing brief. `MetricFactChips` no longer owns a
+  metric-name dictionary; it renders API `metric_label` and exposes missing
+  labels instead of guessing them.
 
 ## Discoveries
 
@@ -703,6 +707,9 @@ WILQ is complete for this long-range goal when:
 - Browser proof caught a Polish pluralization issue in Merchant preview card
   copy. Keep browser text proof in every marketer-route cleanup slice because
   API/unit checks do not catch all readability failures.
+- Showing "Metryka bez etykiety" in the dashboard is useful as a failure
+  signal. Do not hide missing API labels with React dictionaries; fix the
+  producing domain contract and add a test.
 
 ## Decision Log
 
@@ -736,6 +743,9 @@ WILQ is complete for this long-range goal when:
   `ActionObject.preview_cards`. Raw action payload inspection is allowed only
   as a temporary fallback for unmigrated action kinds or inside technical
   detail.
+- Metric chip names must come from `MetricFact.metric_label`. Dimension
+  key/value labels are the next cleanup target; do not add new dashboard
+  dictionaries for metric semantics.
 - Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
   Technical identifiers stay in schemas/audit/drilldown, not in the primary
   decision surface.

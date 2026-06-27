@@ -5753,6 +5753,12 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     ]
     assert section_by_id["localo_visibility_contract"]["status_label"] == "gotowe"
     assert all(fact["source_connector"] == "localo" for fact in review_decision["metric_facts"])
+    metric_labels_by_name = {
+        fact["name"]: fact["metric_label"] for fact in review_decision["metric_facts"]
+    }
+    assert metric_labels_by_name["localo_active_place_count"] == "aktywne lokalizacje"
+    assert metric_labels_by_name["localo_avg_visibility_current"] == "średnia widoczność"
+    assert all(fact["metric_label"] for fact in review_decision["metric_facts"])
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized
     assert "localo-token-test" not in serialized
@@ -15451,6 +15457,11 @@ def test_marketing_brief_localo_metric_headline_is_marketer_friendly(
     assert "localo_total_keyword_volume =" not in localo_item.title
     assert "23" in localo_item.summary
     assert "798" in localo_item.summary
+    labels_by_name = {fact.name: fact.metric_label for fact in localo_item.metric_facts}
+    assert labels_by_name["localo_tracked_keyword_count"] == "monitorowane frazy"
+    assert labels_by_name["localo_avg_visibility_current"] == "średnia widoczność"
+    assert labels_by_name["localo_reviews_count"] == "opinie"
+    assert labels_by_name["localo_total_keyword_volume"] == "łączny wolumen fraz"
 
 
 def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:

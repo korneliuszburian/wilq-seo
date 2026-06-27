@@ -37,4 +37,31 @@ describe("MetricFactChips", () => {
     expect(screen.queryByText(/competitor_visibility/)).not.toBeInTheDocument();
     expect(screen.queryByText(/active_places/)).not.toBeInTheDocument();
   });
+
+  it("does not translate metric names in React when API label is missing", () => {
+    render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "localo_total_keyword_volume",
+            metric_label: "",
+            value: 69420,
+            period: "localo_mcp_read",
+            source_connector: "localo",
+            evidence_id: "ev_refresh_localo_test",
+            dimensions: {},
+            unit: null,
+            delta: null,
+            delta_percent: null,
+            trend: "unknown",
+            freshness_label: ""
+          }
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/Metryka bez etykiety/)).toBeInTheDocument();
+    expect(screen.queryByText(/Łączny wolumen fraz/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/localo_total_keyword_volume/)).not.toBeInTheDocument();
+  });
 });

@@ -117,6 +117,9 @@ Wilku can inspect it without reading technical internals.
 - Merchant action detail previews now expose typed API preview cards and the
   detail route renders them before raw payload fallback. Merchant feed issue
   cards show Polish problem/sample summaries instead of raw SKU/product IDs.
+- Localo metric facts now share a domain label source across diagnostics and
+  marketing brief, and `MetricFactChips` reads `metric_label` instead of a
+  React-side metric-name dictionary.
 - Recovery docs are being condensed because long append-only progress logs made
   the active goal harder to resume.
 
@@ -136,7 +139,9 @@ are resolved or explicitly deferred.
    scattered raw fallback paths. Fix them by adding typed API/schema/view-model
    labels; do not add route-local replacement dictionaries.
 4. Repeated metric/dimension naming in dashboard components should become
-   API-owned metric labels; pure numeric formatting can stay in UI.
+   API-owned labels. Metric names in `MetricFactChips` now use `metric_label`;
+   dimension key/value labels still need migration out of the component. Pure
+   numeric formatting can stay in UI.
 
 ## Execution Policy
 

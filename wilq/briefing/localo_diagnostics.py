@@ -3,6 +3,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
+from wilq.briefing.localo_labels import (
+    localo_contract_label,
+    localo_evidence_label,
+    localo_metric_fact_label,
+)
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -265,8 +270,12 @@ def _visibility_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
             continue
         existing = facts_by_name.get(fact.name)
         if existing is None or (not existing.dimensions and fact.dimensions):
-            facts_by_name[fact.name] = fact
+            facts_by_name[fact.name] = _localo_metric_fact_with_label(fact)
     return list(facts_by_name.values())
+
+
+def _localo_metric_fact_with_label(fact: MetricFact) -> MetricFact:
+    return fact.model_copy(update={"metric_label": localo_metric_fact_label(fact.name)})
 
 
 def _metric_facts_for_refresh(run: ConnectorRefreshRun | None) -> list[MetricFact]:
@@ -902,53 +911,15 @@ def _localo_priority_label(priority: int) -> str:
 
 
 def _localo_contract_label(value: str) -> str:
-    labels = {
-        "competitor_visibility": "widoczność konkurencji",
-        "gbp_visibility": "widoczność profilu firmy w Google",
-        "local_rankings": "rankingi lokalne",
-        "local_tasks": "zadania lokalne",
-        "mcp_initialize": "test dostępu",
-        "place_inventory": "lista lokalizacji",
-        "reviews": "opinie",
-    }
-    return labels.get(value, value)
+    return localo_contract_label(value)
 
 
 def _localo_evidence_label(value: str) -> str:
-    labels = {
-        "access_token_presence": "potwierdzenie lokalnego dostępu",
-        "mcp_initialize": "potwierdzenie dostępu Localo",
-        "oauth_metadata": "potwierdzenie autoryzacji",
-    }
-    return labels.get(value, _localo_contract_label(value))
+    return localo_evidence_label(value)
 
 
 def _localo_metric_fact_label(value: str) -> str:
-    labels = {
-        "localo_active_place_count": "aktywne lokalizacje",
-        "localo_avg_latest_grid_position": "średnia pozycja w siatce",
-        "localo_avg_rating": "średnia ocena",
-        "localo_avg_visibility_change": "zmiana widoczności",
-        "localo_avg_visibility_current": "średnia widoczność",
-        "localo_competitor_change_count": "zmiany konkurencji",
-        "localo_competitor_count": "konkurenci",
-        "localo_favorite_competitor_count": "obserwowani konkurenci",
-        "localo_gbp_actions_total": "akcje profilu firmy w Google",
-        "localo_gbp_impressions_total": "wyświetlenia profilu firmy w Google",
-        "localo_gbp_metric_point_count": "punkty danych profilu firmy w Google",
-        "localo_keyword_volume_count": "frazy z wolumenem",
-        "localo_latest_grid_position_count": "pozycje z siatki",
-        "localo_place_detail_count": "szczegóły lokalizacji",
-        "localo_review_reply_rate": "udział odpowiedzi na opinie",
-        "localo_reviews_count": "opinie",
-        "localo_reviews_removed_count": "usunięte opinie",
-        "localo_reviews_replied_count": "opinie z odpowiedzią",
-        "localo_snapshot_reviews_count": "opinie w zrzucie",
-        "localo_total_keyword_volume": "łączny wolumen fraz",
-        "localo_tracked_keyword_count": "monitorowane frazy",
-        "localo_visibility_score_count": "punkty widoczności",
-    }
-    return labels.get(value, value)
+    return localo_metric_fact_label(value)
 
 
 def _present_contracts(visibility_facts: list[MetricFact]) -> list[str]:

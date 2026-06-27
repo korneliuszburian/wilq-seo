@@ -4,6 +4,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from wilq.actions.service import list_actions
+from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
@@ -106,6 +107,7 @@ def build_marketing_brief(
         and _metric_fact_allowed_by_latest_refresh(fact, latest_runs)
     ]
     business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
+    business_metric_facts = _brief_metric_facts_with_labels(business_metric_facts)
     metric_items = _metric_items(business_metric_facts)
     if command_center is not None:
         metric_items = _decision_metric_items(command_center.daily_decisions) + [
@@ -309,6 +311,15 @@ def _decision_metric_items(decisions: list[DailyDecision]) -> list[MarketingBrie
             sorted(decisions, key=lambda item: item.priority),
             start=1,
         )
+    ]
+
+
+def _brief_metric_facts_with_labels(facts: list[MetricFact]) -> list[MetricFact]:
+    return [
+        fact.model_copy(update={"metric_label": localo_metric_fact_label(fact.name)})
+        if fact.source_connector == "localo"
+        else fact
+        for fact in facts
     ]
 
 

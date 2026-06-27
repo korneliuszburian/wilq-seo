@@ -108,6 +108,10 @@ Latest cleanup state:
   detail route renders `preview_cards` before any raw payload fallback, and
   Merchant feed issue cards no longer show raw SKU/product IDs as first-screen
   copy.
+- Localo metric chips now use API-owned `metric_label` values. Localo
+  diagnostics and marketing brief share one domain label source, and the
+  dashboard no longer keeps a local metric-name dictionary for
+  `MetricFactChips`.
 - Backend and dashboard tests assert the tactical, Ads, Knowledge, action
   detail, Ads Doctor and Content Planner presentation contracts.
 
@@ -194,6 +198,18 @@ Proof:
   `preview_cards`, Polish row labels and no raw SKU in card rows.
   `agent-browser read` for `/actions/act_review_merchant_feed_issues`
   confirmed visible Merchant preview cards without console errors.
+- Localo metric label cleanup:
+  `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_brief_localo_metric_headline_is_marketer_friendly or localo_diagnostics_exposes_partial_visibility_contracts" --maxfail=1`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/components/MetricFactChips.test.tsx --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "localo route renders workflow-specific blockers and clean metric labels" --reporter=verbose --pool=forks --minWorkers=1 --maxWorkers=1 --testTimeout=20000`
+  `rtk pnpm --dir apps/dashboard typecheck`
+  `rtk uv run python scripts/marketer_language_guard.py`
+  `rtk git diff --check`
+  Live proof after `rtk scripts/local_stack.sh restart`:
+  `/api/localo/diagnostics` returned Localo decision metric labels with no
+  missing labels, `/api/marketing/brief` returned Localo metric labels in the
+  brief and top metric facts, and `agent-browser read` confirmed `/localo`
+  shows named Localo metrics instead of "Metryka bez etykiety".
 - Earlier GA4 browser proof:
   `.local-lab/proof/20260627-ga4-measurement-copy-cleanup/`
 
@@ -211,8 +227,10 @@ Next cleanup queue:
      route fallbacks that still return raw enum keys or technical values when
      API labels are missing.
 3. Metric labels:
-   - continue moving repeated metric/dimension naming into API-owned metric
-     label fields; keep pure numeric formatting in UI.
+   - metric names in `MetricFactChips` now come from `metric_label`.
+   - migrate remaining metric dimension label/value naming out of
+     `MetricFactChips` into API-owned fields; keep pure numeric formatting in
+     UI.
 4. Recovery docs:
    - keep this file, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md` and the active
      goal aligned and short.
