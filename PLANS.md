@@ -588,6 +588,11 @@ WILQ is complete for this long-range goal when:
   evidence summary, action summary, skill label and blocked promises. The route
   no longer owns local business-copy helper maps for those fields. Proof:
   `.local-lab/proof/20260627-command-center-api-labels/`.
+- 2026-06-27: Marketing brief blockers now exclude successful vendor reads and
+  non-marketing runtime adapters. Completed GSC/GA4/Merchant reads stay in
+  evidence/metric sections; `what_blocks_us` now contains only real decision
+  blockers such as GA4 claim readiness and Ads business context. Proof:
+  `.local-lab/proof/20260627-marketing-brief-blockers/`.
 
 ## Discoveries
 
@@ -633,6 +638,9 @@ WILQ is complete for this long-range goal when:
   default caps embedded evidence summaries at 32 and keeps full evidence IDs in
   decisions/briefs for drilldown; treat future size growth as a context
   condensation task, not a reason to hide useful labels from the dashboard.
+- Completed connector refreshes are not blockers. If a successful read appears
+  under `what_blocks_us`, fix marketing-brief source logic instead of changing
+  dashboard copy.
 
 ## Decision Log
 

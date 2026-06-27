@@ -223,6 +223,12 @@ Date: 2026-06-27
   API/shared schema. `/localo` no longer carries route-local Localo enum
   translators. Live API proof and browser screenshot:
   `.local-lab/proof/20260627-localo-api-labels/`.
+- Marketing brief blocker logic now treats successful vendor reads as evidence,
+  not blockers. `/api/marketing/brief` no longer puts completed
+  GSC/GA4/Merchant reads or the non-marketing `openai_codex` adapter into
+  `what_blocks_us`; live proof shows only real decision blockers for GA4
+  claims and Ads business context:
+  `.local-lab/proof/20260627-marketing-brief-blockers/`.
 - Command Center daily-decision labels now come from WILQ API/shared schema,
   not from route-local React copy maps. The API exposes operator labels for
   decision state, route, CTA, priority, source connectors, evidence summary,

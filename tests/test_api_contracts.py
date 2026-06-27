@@ -3738,11 +3738,56 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert all(item["source_connectors"] != ["google_sheets"] for item in blocker_items)
     assert all(item["source_connectors"] != ["linkedin"] for item in blocker_items)
     assert all(item["source_connectors"] != ["facebook"] for item in blocker_items)
+    assert all(item["source_connectors"] != ["openai_codex"] for item in blocker_items)
     assert all(
         item["kind"] in {"metric", "blocker", "action", "recommendation"}
         for section in sections.values()
         for item in section["items"]
     )
+
+
+def test_marketing_brief_does_not_turn_successful_reads_into_blockers() -> None:
+    connectors = [
+        ConnectorStatus(
+            id=connector_id,
+            label=label,
+            status=ConnectorStatusValue.configured,
+            configured=True,
+            freshness=FreshnessState(state="fresh"),
+            capabilities=ConnectorCapability(read=True),
+            health_check="configured",
+        )
+        for connector_id, label in (
+            ("google_search_console", "Google Search Console"),
+            ("google_analytics_4", "GA4"),
+            ("google_merchant_center", "Merchant Center"),
+        )
+    ]
+    refresh_runs = [
+        ConnectorRefreshRun(
+            id=f"refresh_{connector.id}_success",
+            connector_id=connector.id,
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            completed_at=datetime.now(UTC),
+            evidence_ids=[f"ev_refresh_{connector.id}_success"],
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"row_count": 10, "total_products": 10776},
+            summary=f"{connector.label} read completed.",
+        )
+        for connector in connectors
+    ]
+
+    brief = build_marketing_brief(
+        connectors=connectors,
+        refresh_runs=refresh_runs,
+        actions=[],
+    )
+
+    blockers = next(section for section in brief.sections if section.id == "what_blocks_us").items
+    assert blockers == []
+    assert brief.blocker_count == 0
 
 
 def test_marketing_brief_exposes_metric_backed_prepare_actions(

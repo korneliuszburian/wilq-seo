@@ -25,6 +25,39 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-27 - Marketing brief blocker cleanup proof
+
+Purpose:
+
+- Verify that `/api/marketing/brief` does not classify successful connector
+  reads as blockers.
+- Keep `what_blocks_us` focused on true decision blockers, not completed
+  refresh summaries or non-marketing runtime adapters.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_brief" --maxfail=1
+rtk uv run python scripts/marketer_language_guard.py
+rtk scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000
+```
+
+API proof:
+
+```txt
+.local-lab/proof/20260627-marketing-brief-blockers/
+```
+
+Result:
+
+- Focused marketing brief tests, language guard, marketing brief eval and live
+  contract smoke passed.
+- Live `what_blocks_us` now contains only GA4 claim readiness and Ads business
+  context blockers.
+- Completed GSC/GA4/Merchant reads and `openai_codex` no longer appear as
+  marketing blockers.
+
 ## 2026-06-27 - Localo API-label and route proof
 
 Purpose:

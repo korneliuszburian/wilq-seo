@@ -190,6 +190,11 @@ Latest slice:
   allowed evidence, missing contracts, read-contract status and blocked claims.
   `/localo` no longer owns a route-local Localo enum dictionary. Live proof:
   `.local-lab/proof/20260627-localo-api-labels/`.
+- Marketing brief blockers now come only from real blockers, not successful
+  read status messages. Completed GSC/GA4/Merchant refreshes stay in evidence
+  and metrics, and `openai_codex` is not promoted as a marketing decision
+  blocker. Live proof:
+  `.local-lab/proof/20260627-marketing-brief-blockers/`.
 - Content Planner active copy now says `plan treści` instead of visible
   `brief` wording. The cleanup was made in API/action source strings and the
   route copy, not through a route-local translator. After managed stack restart,

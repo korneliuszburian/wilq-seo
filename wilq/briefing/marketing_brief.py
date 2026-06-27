@@ -43,7 +43,12 @@ CONNECTOR_LABELS = {
     "facebook": "Facebook",
 }
 
-OPTIONAL_BRIEF_BLOCKER_CONNECTORS = {"facebook", "google_sheets", "linkedin"}
+OPTIONAL_BRIEF_BLOCKER_CONNECTORS = {
+    "facebook",
+    "google_sheets",
+    "linkedin",
+    "openai_codex",
+}
 MARKETING_BRIEF_CONNECTOR_FACT_LIMIT = 200
 CORE_BRIEF_ACTION_CONNECTORS = {
     "google_ads",
@@ -523,6 +528,13 @@ def _blocker_items(
         if connector.id in OPTIONAL_BRIEF_BLOCKER_CONNECTORS:
             continue
         latest_run = latest_runs.get(connector.id)
+        has_successful_read = (
+            latest_run is not None
+            and latest_run.status == ConnectorRefreshStatus.completed
+            and latest_run.vendor_data_collected
+        )
+        if has_successful_read:
+            continue
         has_blocked_run = latest_run is not None and latest_run.status in {
             ConnectorRefreshStatus.blocked,
             ConnectorRefreshStatus.failed,
@@ -823,6 +835,8 @@ def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None)
         return "OAuth MCP wymaga dokończenia autoryzacji access tokenem"
     if run and run.errors:
         return run.errors[0]
+    if run and run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
+        return "źródło danych ma zakończony odczyt"
     if run:
         return _refresh_reason_from_metrics(connector.id, run)
     if connector.missing_credentials:
