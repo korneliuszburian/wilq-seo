@@ -2541,24 +2541,28 @@ def _with_review_gate(
     mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionObject:
     if audit_events is not None:
-        action.audit_events = [
-            event for event in audit_events[:10] if not _is_obsolete_content_review_event(event)
-        ]
+        action.audit_events = audit_events[:10]
+    state_audit_events = [
+        event for event in action.audit_events if not _audit_event_has_raw_contract_text(event)
+    ]
     action.payload = content_payload_with_reviewed_wordpress_draft_previews(
         action.payload,
         review_event_summaries=(
             event.summary
-            for event in action.audit_events
+            for event in state_audit_events
             if event.event_type == "human_review_approved_for_prepare"
         ),
         review_event_details=(
             event.details
-            for event in action.audit_events
+            for event in state_audit_events
             if event.event_type == "human_review_approved_for_prepare"
         ),
     )
     action.payload = _payload_with_operator_labels(action.payload)
-    action.review_gate = _action_review_gate(action, mutation_audits)
+    action.review_gate = _action_review_gate(
+        action.model_copy(update={"audit_events": state_audit_events}),
+        mutation_audits,
+    )
     return _action_with_operator_labels(action)
 
 
@@ -3872,7 +3876,13 @@ def _audit_event_with_operator_label(event: AuditEvent) -> AuditEvent:
 
 
 def _audit_details_for_operator(details: dict[str, Any]) -> dict[str, Any]:
-    operator_details = dict(details)
+    operator_details: dict[str, Any] = {}
+    for key, value in details.items():
+        if _contains_raw_audit_contract_text(str(key)):
+            continue
+        clean_value = _audit_detail_value_for_operator(value)
+        if clean_value is not None:
+            operator_details[str(key)] = clean_value
     checked_items = _string_list(operator_details.get("checked_items"))
     if checked_items:
         operator_details["checked_items"] = [
@@ -3884,12 +3894,26 @@ def _audit_details_for_operator(details: dict[str, Any]) -> dict[str, Any]:
     return operator_details
 
 
-def _is_obsolete_content_review_event(event: AuditEvent) -> bool:
-    details = event.details
-    obsolete_review_key = "_".join(("target", "site", "mapping", "review"))
-    return event.event_type == "human_review_approved_for_prepare" and isinstance(
-        details.get(obsolete_review_key), dict
-    )
+def _audit_detail_value_for_operator(value: Any) -> Any:
+    if isinstance(value, dict):
+        clean: dict[str, Any] = {}
+        for key, item in value.items():
+            if _contains_raw_audit_contract_text(str(key)):
+                continue
+            clean_item = _audit_detail_value_for_operator(item)
+            if clean_item is not None:
+                clean[str(key)] = clean_item
+        return clean or None
+    if isinstance(value, list):
+        clean_items = [
+            clean_item
+            for item in value
+            if (clean_item := _audit_detail_value_for_operator(item)) is not None
+        ]
+        return clean_items or None
+    if isinstance(value, str) and _contains_raw_audit_contract_text(value):
+        return None
+    return value
 
 
 def _action_review_gate(
@@ -4577,13 +4601,35 @@ def _operator_audit_summary_text(summary: str) -> str:
     return clean_summary
 
 
+def _audit_event_has_raw_contract_text(event: AuditEvent) -> bool:
+    if _contains_raw_audit_contract_text(event.summary):
+        return True
+    return _audit_detail_contains_raw_contract_text(event.details)
+
+
+def _audit_detail_contains_raw_contract_text(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(
+            _contains_raw_audit_contract_text(str(key))
+            or _audit_detail_contains_raw_contract_text(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_audit_detail_contains_raw_contract_text(item) for item in value)
+    if isinstance(value, str):
+        return _contains_raw_audit_contract_text(value)
+    return False
+
+
 def _contains_raw_audit_contract_text(summary: str) -> bool:
     raw_fragments = (
         "blocked_claim:",
         "candidate:",
+        "ekologus.dev.proudsite.pl",
         "mapping_",
         "payload_",
         "source_type:",
+        "staging handoff",
         "target_",
     )
     return any(fragment in summary for fragment in raw_fragments)

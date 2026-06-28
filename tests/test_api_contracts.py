@@ -2798,11 +2798,21 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
         "mode:refresh",
     ):
         assert stale_term not in serialized
-    assert all(
-        event["id"] != "audit_legacy_content_url_review"
+    legacy_event = next(
+        event
         for event in content_action["audit_events"]
+        if event["id"] == "audit_legacy_content_url_review"
     )
+    assert legacy_event["summary"] == (
+        "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
+    )
+    assert legacy_event["details"]["checked_items"]
+    assert "content_draft_readiness_review" not in legacy_event["details"]
+    assert "blockers" in legacy_event["details"]
     assert content_action["review_gate"]["last_review_outcome"] is None
+    service_source = Path("wilq/actions/service.py").read_text(encoding="utf-8")
+    assert "_is_obsolete_content_review_event" not in service_source
+    assert '"target", "site", "mapping", "review"' not in service_source
 
 
 def test_content_refresh_empty_state_uses_operator_source_language(

@@ -45,6 +45,9 @@ Date: 2026-06-28
 - Impact-check label handling no longer rewrites old window wording with
   string replacement; historical summaries are normalized through typed
   prefix labels.
+- Raw historical audit details are sanitized by a generic raw-contract guard.
+  Legacy raw review events remain visible only as neutral history and do not
+  unlock review gates.
 - Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
   wording such as `dowody techniczne`, `techniczne warunki akcji` and
   `techniczne potwierdzenie`. Technical detail drawers remain allowed.
@@ -180,10 +183,11 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Impact-check copy cleanup: historical before/after comparison summaries now
-  use typed prefix labels instead of string replacement of old wording.
-- Current verification for this API/domain-label slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "impact_comparison_summary_label or action_impact_check" --maxfail=1`
+- Audit cleanup: removed the special obsolete content-review filter and replaced
+  it with a generic raw-contract audit sanitizer. Raw legacy review events no
+  longer unlock review state.
+- Current verification for this API/action slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_content_review or content_refresh_action_payload_uses_public_final_url_semantics or action_operator_labels_are_specific or action_impact_check" --maxfail=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
 
