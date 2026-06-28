@@ -2509,12 +2509,13 @@ class DemandGenLandingQualityRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
 
 
-class DemandGenTransitionConstraintRow(BaseModel):
+class DemandGenCampaignModeReviewRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
     advertising_channel_type: str | None = None
-    transition_candidate: bool = False
+    review_required: bool = False
+    review_status_label: str = ""
     reason: str
     reason_label: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
@@ -3619,7 +3620,7 @@ class DemandGenReadinessContract(BaseModel):
     demand_gen_landing_quality_rows: list[DemandGenLandingQualityRow] = Field(
         default_factory=list
     )
-    demand_gen_transition_constraint_rows: list[DemandGenTransitionConstraintRow] = Field(
+    demand_gen_campaign_mode_review_rows: list[DemandGenCampaignModeReviewRow] = Field(
         default_factory=list
     )
     next_step: str

@@ -816,7 +816,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "available_read_contracts": ["ga4_landing_source_campaign_quality"],
             "missing_read_contracts": [
                 "demand_gen_landing_quality_by_campaign",
-                "demand_gen_transition_constraints",
+                "demand_gen_campaign_mode_review",
             ],
             "omitted_contracts": [
                 "keyword_match_context_read_contract",
@@ -902,7 +902,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     ]
     assert redacted["missing_read_contracts"] == [
         "demand_gen_landing_quality_by_campaign",
-        "demand_gen_transition_constraints",
+        "demand_gen_campaign_mode_review",
     ]
     assert redacted["omitted_contracts"] == [
         "keyword_match_context_read_contract",
@@ -967,13 +967,13 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "summary": (
                 "Nadal brakujące kontrakty: "
                 "demand_gen_landing_quality_by_campaign, "
-                "demand_gen_transition_constraints."
+                "demand_gen_campaign_mode_review."
             )
         }
     )["summary"] == (
         "Nadal brakujące kontrakty: "
         "demand_gen_landing_quality_by_campaign, "
-        "demand_gen_transition_constraints."
+        "demand_gen_campaign_mode_review."
     )
     assert redact_mapping({"summary": "token sk-this_must_be_hidden"})["summary"] == (
         "[REDACTED]"
@@ -17646,9 +17646,9 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     else:
         assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
     assert isinstance(data["demand_gen_landing_quality_rows"], list)
-    assert isinstance(data["demand_gen_transition_constraint_rows"], list)
+    assert isinstance(data["demand_gen_campaign_mode_review_rows"], list)
     assert "demand_gen_landing_quality_by_campaign" not in data["missing_read_contracts"]
-    assert "demand_gen_transition_constraints" not in data["missing_read_contracts"]
+    assert "demand_gen_campaign_mode_review" not in data["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
     assert "demand_gen_action_object" not in data["missing_read_contracts"]
     assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
@@ -17811,17 +17811,17 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert "demand_gen_asset_group_rows" not in data["missing_read_contracts"]
     assert "demand_gen_creative_asset_rows" not in data["missing_read_contracts"]
     assert "demand_gen_landing_quality_by_campaign" in data["available_read_contracts"]
-    assert "demand_gen_transition_constraints" in data["available_read_contracts"]
+    assert "demand_gen_campaign_mode_review" in data["available_read_contracts"]
     assert "demand_gen_landing_quality_by_campaign" not in data["missing_read_contracts"]
-    assert "demand_gen_transition_constraints" not in data["missing_read_contracts"]
+    assert "demand_gen_campaign_mode_review" not in data["missing_read_contracts"]
     assert data["metric_tiles"]["reklamy Demand Gen"] == 1
     assert data["metric_tiles"]["kreacje Demand Gen"] == 1
     assert data["metric_tiles"]["strony wejścia Demand Gen"] == 1
-    assert data["metric_tiles"]["ograniczenia"] == 1
+    assert data["metric_tiles"]["kontrola trybu"] == 1
     assert len(data["demand_gen_ad_group_ad_rows"]) == 1
     assert len(data["demand_gen_creative_asset_rows"]) == 1
     assert len(data["demand_gen_landing_quality_rows"]) == 1
-    assert len(data["demand_gen_transition_constraint_rows"]) == 1
+    assert len(data["demand_gen_campaign_mode_review_rows"]) == 1
     assert data["demand_gen_ad_group_ad_rows"][0]["ad_id"] == "803"
     assert data["demand_gen_ad_group_ad_rows"][0]["asset_reference_count"] == 4
     assert data["demand_gen_creative_asset_rows"][0]["asset_id"] == "901"
@@ -17831,16 +17831,19 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
     assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24
     assert data["demand_gen_landing_quality_rows"][0]["engagement_rate"] == 0.75
-    assert data["demand_gen_transition_constraint_rows"][0]["campaign_name"] == (
+    assert data["demand_gen_campaign_mode_review_rows"][0]["campaign_name"] == (
         "Demand Gen Test"
     )
-    assert data["demand_gen_transition_constraint_rows"][0]["transition_candidate"] is False
-    assert "already_demand_gen" in data["demand_gen_transition_constraint_rows"][0]["reason"]
+    campaign_mode_review_row = data["demand_gen_campaign_mode_review_rows"][0]
+    assert "transition_candidate" not in campaign_mode_review_row
+    assert campaign_mode_review_row["review_required"] is False
+    assert campaign_mode_review_row["review_status_label"] == "bez zmiany trybu"
+    assert "already_demand_gen" in campaign_mode_review_row["reason"]
     preview = data["payload_preview"][0]
     assert preview["demand_gen_ad_group_ad_row_count"] == 1
     assert preview["demand_gen_creative_asset_row_count"] == 1
     assert preview["demand_gen_landing_quality_row_count"] == 1
-    assert preview["demand_gen_transition_constraint_row_count"] == 1
+    assert preview["demand_gen_campaign_mode_review_row_count"] == 1
     assert preview["apply_allowed"] is False
     assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
 

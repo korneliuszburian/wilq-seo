@@ -1,6 +1,6 @@
 ---
 name: wilq-demand-gen-operator
-description: Obsługuje gotowość Demand Gen, jakość kreacji i workflow Ads-to-GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "czy Demand Gen ma sens?", "przygotuj przejście Discovery/Demand Gen", "sprawdź jakość kreacji i ruchu", "czy kampania dowozi jakościowy ruch?", albo pyta o plan Demand Gen, gotowość creative/asset, jakość ruchu kampanii, GA4 cross-checks lub bezpiecznych akcji do sprawdzenia przejścia. Musi zachować evidence i bramki sprawdzenia w WILQ.
+description: Obsługuje gotowość Demand Gen, jakość kreacji i workflow Ads-to-GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "czy Demand Gen ma sens?", "sprawdź tryb kampanii Demand Gen/Discovery", "sprawdź jakość kreacji i ruchu", "czy kampania dowozi jakościowy ruch?", albo pyta o plan Demand Gen, gotowość creative/asset, jakość ruchu kampanii, GA4 cross-checks lub bezpieczne akcje do sprawdzenia. Musi zachować evidence i bramki sprawdzenia w WILQ.
 ---
 
 # WILQ Demand Gen Operator
@@ -19,7 +19,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Czy Demand Gen ma sens dla Ekologus na podstawie obecnych danych?"
 - "Sprawdź jakość ruchu z kampanii i dopasowanie stron wejścia."
-- "Przygotuj brief gotowości przejścia bez zapisu zmian."
+- "Przygotuj brief gotowości Demand Gen bez zapisu zmian."
 - "Jakie assets/kreacje wymagają poprawy według evidence?"
 
 </triggers>

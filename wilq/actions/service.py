@@ -48,14 +48,14 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_LANDING_QUALITY_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_channel_label,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
     demand_gen_readiness_review_payload,
-    demand_gen_transition_constraint_rows_from_campaigns,
+    demand_gen_campaign_mode_review_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_ID,
@@ -1309,7 +1309,7 @@ def _demand_gen_readiness_review_action(
         DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
         DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
         DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-        DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+        DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     ]
     if not campaign_rows:
         missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
@@ -1329,8 +1329,8 @@ def _demand_gen_readiness_review_action(
         ga4_facts,
         demand_gen_rows,
     )
-    demand_gen_transition_constraint_rows = (
-        demand_gen_transition_constraint_rows_from_campaigns(demand_gen_rows)
+    demand_gen_campaign_mode_review_rows = (
+        demand_gen_campaign_mode_review_rows_from_campaigns(demand_gen_rows)
     )
     if demand_gen_contract_has_ready_fact(
         google_ads_facts,
@@ -1357,7 +1357,7 @@ def _demand_gen_readiness_review_action(
     available_read_contracts.extend(
         [
             DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-            DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+            DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
         ]
     )
     payload = demand_gen_readiness_review_payload(
@@ -1373,8 +1373,8 @@ def _demand_gen_readiness_review_action(
         demand_gen_landing_quality_rows=[
             row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
         ],
-        demand_gen_transition_constraint_rows=[
-            row.model_dump(mode="json") for row in demand_gen_transition_constraint_rows
+        demand_gen_campaign_mode_review_rows=[
+            row.model_dump(mode="json") for row in demand_gen_campaign_mode_review_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -1399,14 +1399,14 @@ def _demand_gen_readiness_review_action(
         metrics=action_metrics,
         human_diagnosis=(
             "WILQ ma kontekst Google Ads i GA4 do wstępnego przeglądu Demand Gen, "
-            "ale nadal blokuje uruchomienie, przejście kampanii, werdykty kreatywne "
+            "ale nadal blokuje uruchomienie, zmianę trybu kampanii, werdykty kreatywne "
             "i zapis zmian bez osobnych odczytów assetów, kreacji, jakości "
-            "stron wejścia i ograniczeń przejścia."
+            "stron wejścia i kontroli trybu kampanii."
         ),
         recommended_reason=(
             "Na /ads-doctor/demand-gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
             "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
-            "kampanii ani przejścia kampanii bez kolejnych read contracts."
+            "kampanii ani zmiany trybu kampanii bez kolejnych read contracts."
         ),
         payload=payload,
         validation_status="not_validated",
@@ -3136,7 +3136,7 @@ def _demand_gen_readiness_preview_cards(
                 str(item.get("demand_gen_creative_asset_row_count") or 0),
             ),
             _preview_row(
-                "Wiersze jakości stron wejścia",
+                "Odczyty jakości stron wejścia",
                 str(item.get("demand_gen_landing_quality_row_count") or 0),
             ),
         ]
@@ -4697,7 +4697,7 @@ def _action_gate_label(value: str) -> str | None:
         "ngram_to_negative_keyword_change_preview": "podgląd przejścia z tematu zapytań do wykluczenia",
         "block_local_tasks_without_contract": "blokuj lokalne zadania bez kontraktu",
         "demand_gen_landing_quality_by_campaign": "jakość stron wejścia Demand Gen według kampanii",
-        "demand_gen_transition_constraints": "ograniczenia przejścia na Demand Gen",
+        "demand_gen_campaign_mode_review": "kontrola trybu kampanii Demand Gen",
         "demand_gen_ad_group_ad_rows": "wiersze grup reklam Demand Gen",
         "demand_gen_creative_asset_rows": "wiersze kreacji i zasobów Demand Gen",
         "place_inventory": "lista lokalizacji",

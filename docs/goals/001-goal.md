@@ -124,6 +124,11 @@ use the cleaned language.
 - Opportunity, workflow run, marketing brief, tactical queue, Merchant issue
   cluster, Custom Segments read contracts and Demand Gen readiness contracts now
   expose the missing status/risk labels through typed API/shared schemas.
+- Demand Gen campaign mode review no longer exposes active
+  `transition_candidate` / `demand_gen_transition_*` contracts. API, shared
+  schemas, dashboard, skill smoke and playbook/rule IDs now use
+  `demand_gen_campaign_mode_review`, `review_required`, `review_status_label`
+  and marketer-facing labels such as `kontrola trybu kampanii`.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
@@ -141,9 +146,9 @@ are resolved or explicitly deferred.
    corners by adding typed API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Remove remaining stale product terms where they are active contracts, for
-   example Demand Gen `transition_candidate` wording if it still leaks into
-   marketer-facing decisions.
+4. Audit broad marketer-facing headings like `Dowody i ograniczenia ...` across
+   non-Demand Gen routes and replace them with action-oriented API/domain
+   labels where they do not help the marketer decide.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 

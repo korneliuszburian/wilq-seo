@@ -62,7 +62,7 @@ playbooks:
     card_type: ads_pattern_card
     source_anchors:
       - Google Ads Demand Gen
-      - Display to Demand Gen transition
+      - Demand Gen campaign mode review
     required_evidence:
       - display_campaigns
       - assets
@@ -70,16 +70,16 @@ playbooks:
       - goals
       - evidence_ids
     maps_to_opportunity_types:
-      - display_to_demand_gen_transition_candidates
+      - display_to_demand_gen_mode_review
       - demand_gen_asset_readiness
     maps_to_action_types:
-      - prepare_demand_gen_transition_plan
+      - prepare_demand_gen_mode_review_plan
       - prepare_demand_gen_campaign
     expert_rule_ids:
       - ads_demand_gen_v1
-    compact_playbook: Sprawdź kandydatów przejścia, gotowość zasobów, cele i stan odbiorców przed przygotowaniem działań Demand Gen. Zmiany automatycznych ulepszeń AI muszą być jawne.
+    compact_playbook: Sprawdź tryb kampanii, gotowość zasobów, cele i stan odbiorców przed przygotowaniem działań Demand Gen. Zmiany automatycznych ulepszeń AI muszą być jawne.
     refusal_rules:
-      - Odmów oceny gotowości przejścia bez dowodów kampanii i zasobów.
+      - Odmów oceny trybu kampanii bez dowodów kampanii i zasobów.
       - Odmów cichego włączenia automatycznych ulepszeń AI.
     output_contract: Okazja gotowości Demand Gen z dowodami i podglądem zmiany.
 

@@ -595,7 +595,7 @@ const demandGenActionFixture: ActionObject = {
         },
         {
           label: "Braki",
-          value: "jakość stron wejścia Demand Gen według kampanii, ograniczenia przejścia na Demand Gen"
+          value: "jakość stron wejścia Demand Gen według kampanii, kontrola trybu kampanii Demand Gen"
         }
       ],
       apply_state_label: "zapis zmian zablokowany",
@@ -630,11 +630,11 @@ const demandGenActionFixture: ActionObject = {
         demand_gen_landing_quality_row_count: 0,
         missing_read_contracts: [
           "demand_gen_landing_quality_by_campaign",
-          "demand_gen_transition_constraints"
+          "demand_gen_campaign_mode_review"
         ],
         missing_read_contract_labels: [
           "jakość stron wejścia Demand Gen według kampanii",
-          "ograniczenia przejścia na Demand Gen"
+          "kontrola trybu kampanii Demand Gen"
         ],
         required_validation: [
           "review_ads_campaign_channel_context",
@@ -648,7 +648,7 @@ const demandGenActionFixture: ActionObject = {
         ],
         blocked_claims: [
           "rekomendacja uruchomienia Demand Gen",
-          "gotowość przejścia na Demand Gen",
+          "gotowość trybu Demand Gen",
           "ocena jakości kreacji",
           "wzrost skuteczności"
         ],

@@ -2,7 +2,7 @@
 
 ## Cel
 
-Planowanie przejścia i gotowości Demand Gen na podstawie Ads i GA4 evidence.
+Planowanie gotowości Demand Gen na podstawie Ads i GA4 evidence.
 
 Oczekiwany wynik: ustalenia gotowości Demand Gen, blockery i akcje sprawdzone w WILQ.
 

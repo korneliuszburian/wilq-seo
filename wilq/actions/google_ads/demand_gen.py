@@ -7,7 +7,7 @@ from wilq.schemas import (
     DemandGenAdGroupAdRow,
     DemandGenCreativeAssetRow,
     DemandGenLandingQualityRow,
-    DemandGenTransitionConstraintRow,
+    DemandGenCampaignModeReviewRow,
     MetricFact,
 )
 
@@ -20,7 +20,7 @@ DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT = "demand_gen_campaign_rows"
 DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT = "demand_gen_ad_group_ad_rows"
 DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT = "demand_gen_creative_asset_rows"
 DEMAND_GEN_LANDING_QUALITY_CONTRACT = "demand_gen_landing_quality_by_campaign"
-DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT = "demand_gen_transition_constraints"
+DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT = "demand_gen_campaign_mode_review"
 DEMAND_GEN_AD_READ_STATUS_FACT = "demand_gen_ad_group_ad_status"
 DEMAND_GEN_AD_READ_ROW_COUNT_FACT = "demand_gen_ad_group_ad_row_count"
 DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT = "demand_gen_creative_asset_status"
@@ -34,7 +34,7 @@ DEMAND_GEN_READINESS_REQUIRED_VALIDATION = [
 ]
 DEMAND_GEN_READINESS_BLOCKED_CLAIMS = [
     "rekomendacja uruchomienia Demand Gen",
-    "gotowość przejścia na Demand Gen",
+    "gotowość trybu Demand Gen",
     "ocena jakości kreacji",
     "ocena skuteczności materiałów kreatywnych",
     "zmiana kampanii",
@@ -46,11 +46,11 @@ DEMAND_GEN_CONTRACT_LABELS = {
     "google_ads_impression_share_context": "udział w wyświetleniach Google Ads",
     "ga4_landing_source_campaign_quality": "jakość ruchu GA4 dla stron wejścia",
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT: "akcja sprawdzenia Demand Gen",
-    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT: "wiersze kampanii Demand Gen/Discovery",
-    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT: "wiersze reklam Demand Gen",
-    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT: "wiersze materiałów kreatywnych",
+    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT: "odczyt kampanii Demand Gen/Discovery",
+    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT: "odczyt reklam Demand Gen",
+    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT: "odczyt materiałów kreatywnych",
     DEMAND_GEN_LANDING_QUALITY_CONTRACT: "jakość stron wejścia według kampanii",
-    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT: "ograniczenia przejścia",
+    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT: "kontrola trybu kampanii",
     "demand_gen_specific_evidence_required": "konkretne dowody Demand Gen",
     "already_demand_gen_review_only": "już Demand Gen, bez zapisu zmian",
     "discovery_to_demand_gen_requires_human_review": (
@@ -95,7 +95,7 @@ def demand_gen_readiness_review_payload(
     demand_gen_ad_group_ad_rows: list[dict[str, Any]],
     demand_gen_creative_asset_rows: list[dict[str, Any]],
     demand_gen_landing_quality_rows: list[dict[str, Any]],
-    demand_gen_transition_constraint_rows: list[dict[str, Any]],
+    demand_gen_campaign_mode_review_rows: list[dict[str, Any]],
     available_read_contracts: list[str],
     missing_read_contracts: list[str],
     source_connectors: list[str],
@@ -117,10 +117,10 @@ def demand_gen_readiness_review_payload(
         "demand_gen_creative_asset_rows": demand_gen_creative_asset_rows[:4],
         "demand_gen_landing_quality_row_count": len(demand_gen_landing_quality_rows),
         "demand_gen_landing_quality_rows": demand_gen_landing_quality_rows[:4],
-        "demand_gen_transition_constraint_row_count": len(
-            demand_gen_transition_constraint_rows
+        "demand_gen_campaign_mode_review_row_count": len(
+            demand_gen_campaign_mode_review_rows
         ),
-        "demand_gen_transition_constraint_rows": demand_gen_transition_constraint_rows[:4],
+        "demand_gen_campaign_mode_review_rows": demand_gen_campaign_mode_review_rows[:4],
         "available_read_contracts": available_read_contracts,
         "available_read_contract_labels": demand_gen_contract_labels(
             available_read_contracts
@@ -132,8 +132,8 @@ def demand_gen_readiness_review_payload(
         "reason": (
             "Podgląd gotowości Demand Gen do sprawdzenia w WILQ. WILQ może pokazać "
             "kontekst kanałów kampanii Ads i GA4, ale nadal blokuje uruchomienie, "
-            "przejście kampanii, ocenę kreacji i zapis zmian bez osobnych "
-            "odczytów kreacji, jakości stron wejścia i ograniczeń przejścia."
+            "zmianę trybu kampanii, ocenę kreacji i zapis zmian bez osobnych "
+            "odczytów kreacji, jakości stron wejścia i kontroli trybu kampanii."
         ),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
         "required_validation_labels": demand_gen_contract_labels(
@@ -232,9 +232,9 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
             errors.append(
                 f"Demand Gen readiness preview item {index} requires landing rows."
             )
-        if not isinstance(preview.get("demand_gen_transition_constraint_rows"), list):
+        if not isinstance(preview.get("demand_gen_campaign_mode_review_rows"), list):
             errors.append(
-                f"Demand Gen readiness preview item {index} requires transition rows."
+                f"Demand Gen readiness preview item {index} requires campaign mode review rows."
             )
         if not isinstance(preview.get("missing_read_contracts"), list):
             errors.append(
@@ -345,26 +345,27 @@ def demand_gen_landing_quality_rows_from_facts(
     )
 
 
-def demand_gen_transition_constraint_rows_from_campaigns(
+def demand_gen_campaign_mode_review_rows_from_campaigns(
     demand_gen_campaign_rows: Iterable[dict[str, Any]],
-) -> list[DemandGenTransitionConstraintRow]:
-    rows: list[DemandGenTransitionConstraintRow] = []
+) -> list[DemandGenCampaignModeReviewRow]:
+    rows: list[DemandGenCampaignModeReviewRow] = []
     for campaign in demand_gen_campaign_rows:
         campaign_name = str(campaign.get("campaign_name") or "campaign").strip()
         channel = str(campaign.get("advertising_channel_type") or "").strip().upper()
         if channel == "DISCOVERY":
-            transition_candidate = True
+            review_required = True
             reason = "discovery_to_demand_gen_requires_human_review"
         else:
-            transition_candidate = False
+            review_required = False
             reason = "already_demand_gen_review_only"
         rows.append(
-            DemandGenTransitionConstraintRow(
+            DemandGenCampaignModeReviewRow(
                 campaign_id=campaign.get("campaign_id"),
                 campaign_name=campaign_name,
                 campaign_status=campaign.get("campaign_status"),
                 advertising_channel_type=campaign.get("advertising_channel_type"),
-                transition_candidate=transition_candidate,
+                review_required=review_required,
+                review_status_label=_demand_gen_review_status_label(review_required),
                 reason=reason,
                 reason_label=DEMAND_GEN_CONTRACT_LABELS.get(reason, reason),
                 evidence_ids=unique_items(campaign.get("evidence_ids") or []),
@@ -372,9 +373,15 @@ def demand_gen_transition_constraint_rows_from_campaigns(
         )
     return sorted(
         rows,
-        key=lambda row: (row.transition_candidate, row.campaign_name),
+        key=lambda row: (row.review_required, row.campaign_name),
         reverse=True,
     )
+
+
+def _demand_gen_review_status_label(review_required: bool) -> str:
+    if review_required:
+        return "wymaga oceny człowieka"
+    return "bez zmiany trybu"
 
 
 def demand_gen_contract_has_ready_fact(

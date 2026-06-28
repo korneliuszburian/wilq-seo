@@ -293,7 +293,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "demand_gen_ad_group_ad_rows",
                 "demand_gen_creative_asset_rows",
                 "demand_gen_landing_quality_by_campaign",
-                "demand_gen_transition_constraints",
+                "demand_gen_campaign_mode_review",
                 "demand_gen_readiness_review_action_object",
                 "zablokowane obietnice",
             },
@@ -459,7 +459,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     assert demand_gen_case["expected_blocked"] is True
     assert "rekomendacja uruchomienia Demand Gen" in demand_gen_case["blocked_claim_terms"]
-    assert "gotowość przejścia na Demand Gen" in demand_gen_case["blocked_claim_terms"]
+    assert "gotowość trybu Demand Gen" in demand_gen_case["blocked_claim_terms"]
     assert "wzrost skuteczności" in demand_gen_case["blocked_claim_terms"]
     custom_segments_case = cases["wilq-custom-segments"]
     assert "rozmiar odbiorców" in custom_segments_case["blocked_claim_terms"]

@@ -97,6 +97,11 @@ Date: 2026-06-28
 - Opportunity, workflow run, marketing brief, tactical queue, Merchant issue
   cluster, Custom Segments read contracts and Demand Gen readiness contracts now
   expose the missing status/risk labels through typed API/shared schemas.
+- Demand Gen campaign mode review no longer exposes active
+  `transition_candidate` / `demand_gen_transition_*` contracts. API, shared
+  schemas, dashboard, skill smoke and playbook/rule IDs now use
+  `demand_gen_campaign_mode_review`, `review_required`, `review_status_label`
+  and marketer-facing labels such as `kontrola trybu kampanii`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -109,9 +114,9 @@ Date: 2026-06-28
    corners by adding API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Remove remaining stale product terms where they are active contracts, for
-   example Demand Gen `transition_candidate` wording if it still leaks into
-   marketer-facing decisions.
+4. Audit broad marketer-facing headings like `Dowody i ograniczenia ...` across
+   non-Demand Gen routes and replace them with action-oriented API/domain
+   labels where they do not help the marketer decide.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
@@ -124,6 +129,7 @@ Recent focused proof used during the cleanup:
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=1`
+- `rtk uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics or content_diagnostics or wordpress_draft or tactical_queue or redaction or legacy_raw_audit_summary" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge" --maxfail=1`
@@ -140,6 +146,7 @@ Recent focused proof used during the cleanup:
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/TacticalQueuePanel.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/OpportunitiesRoute.test.tsx src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "registry|opportunit|tactical|custom segments route|demand gen route|merchant route|content route"`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`
 - `agent-browser` live `/merchant` proof after expanding full review: preview
   cards render and visible DOM contains no `MerchantProductStateReview`,
   `MerchantSupplementalFeedCandidateReview`,

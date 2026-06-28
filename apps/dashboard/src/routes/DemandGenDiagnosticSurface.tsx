@@ -16,7 +16,7 @@ export function DemandGenDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości przejścia kampanii ani jakości kreacji bez WILQ." />
+        <BlockerNotice message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości zmiany trybu kampanii ani jakości kreacji bez WILQ." />
       </main>
     );
   }
@@ -25,7 +25,7 @@ export function DemandGenDiagnosticSurface() {
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
   const landingQualityRows = data.demand_gen_landing_quality_rows;
-  const transitionConstraintRows = data.demand_gen_transition_constraint_rows;
+  const campaignModeReviewRows = data.demand_gen_campaign_mode_review_rows;
   const metricTileEntries = Object.entries(data.metric_tiles);
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -35,7 +35,7 @@ export function DemandGenDiagnosticSurface() {
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii
             Ads i GA4 od prawdziwych danych Demand Gen: kreacji, jakości
-            stron wejścia według kampanii, ograniczeń przejścia i akcji do sprawdzenia.
+            stron wejścia według kampanii, kontroli trybu kampanii i akcji do sprawdzenia.
           </p>
         </div>
         {metricTileEntries.length > 0 ? (
@@ -75,7 +75,7 @@ export function DemandGenDiagnosticSurface() {
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               WILQ może sprawdzić akcję do sprawdzenia i użyć Ads/GA4
-              jako kontekstu, ale nie może polecić uruchomienia, przejścia kampanii ani
+              jako kontekstu, ale nie może polecić uruchomienia, zmiany trybu kampanii ani
               jakości kreacji bez osobnych rekordów Demand Gen.
             </p>
           </div>
@@ -182,15 +182,15 @@ export function DemandGenDiagnosticSurface() {
           </div>
         ) : null}
 
-        {transitionConstraintRows.length > 0 ? (
+        {campaignModeReviewRows.length > 0 ? (
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            {transitionConstraintRows.slice(0, 4).map((row) => (
+            {campaignModeReviewRows.slice(0, 4).map((row) => (
               <article
                 key={`${row.campaign_id ?? row.campaign_name}-${row.reason}`}
                 className="rounded-md border border-line bg-white p-3"
               >
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  Odczyt ograniczeń przejścia
+                  Kontrola trybu kampanii
                 </div>
                 <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
                 <p className="mt-1 text-xs text-slate-500">
@@ -199,8 +199,8 @@ export function DemandGenDiagnosticSurface() {
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <MetricTile
-                    label="Przejście"
-                    value={row.transition_candidate ? "do sprawdzenia" : "nie dotyczy"}
+                    label="Ocena"
+                    value={row.review_status_label}
                   />
                   <MetricTile label="Powód" value={row.reason_label ?? row.reason} />
                 </div>
@@ -223,7 +223,7 @@ export function DemandGenDiagnosticSurface() {
           </div>
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Dowody i ograniczenia Demand Gen
+              Dowody i warunki sprawdzenia Demand Gen
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
               To jest sprawdzenie gotowości, nie kreator kampanii. Brakujące

@@ -28,7 +28,7 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-    DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     demand_gen_channel_labels,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
@@ -36,7 +36,7 @@ from wilq.actions.google_ads.demand_gen import (
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
     demand_gen_readiness_review_payload,
-    demand_gen_transition_constraint_rows_from_campaigns,
+    demand_gen_campaign_mode_review_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
@@ -1524,8 +1524,8 @@ def _demand_gen_readiness_contract(
         ga4_metric_facts,
         demand_gen_campaign_row_dicts,
     )
-    demand_gen_transition_constraint_rows = (
-        demand_gen_transition_constraint_rows_from_campaigns(
+    demand_gen_campaign_mode_review_rows = (
+        demand_gen_campaign_mode_review_rows_from_campaigns(
             demand_gen_campaign_row_dicts,
         )
     )
@@ -1599,7 +1599,7 @@ def _demand_gen_readiness_contract(
     available_read_contracts.extend(
         [
             DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-            DEMAND_GEN_TRANSITION_CONSTRAINTS_CONTRACT,
+            DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
         ]
     )
     available_contract_labels = demand_gen_contract_labels(available_read_contracts)
@@ -1630,8 +1630,8 @@ def _demand_gen_readiness_contract(
         demand_gen_landing_quality_rows=[
             row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
         ],
-        demand_gen_transition_constraint_rows=[
-            row.model_dump(mode="json") for row in demand_gen_transition_constraint_rows
+        demand_gen_campaign_mode_review_rows=[
+            row.model_dump(mode="json") for row in demand_gen_campaign_mode_review_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -1662,7 +1662,7 @@ def _demand_gen_readiness_contract(
             "reklamy Demand Gen": len(demand_gen_ad_group_ad_rows),
             "kreacje Demand Gen": len(demand_gen_creative_asset_rows),
             "strony wejścia Demand Gen": len(demand_gen_landing_quality_rows),
-            "ograniczenia": len(demand_gen_transition_constraint_rows),
+            "kontrola trybu": len(demand_gen_campaign_mode_review_rows),
             "braki": len(missing_read_contracts),
         },
         available_read_contracts=available_read_contracts,
@@ -1688,11 +1688,11 @@ def _demand_gen_readiness_contract(
         demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
         demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
         demand_gen_landing_quality_rows=demand_gen_landing_quality_rows,
-        demand_gen_transition_constraint_rows=demand_gen_transition_constraint_rows,
+        demand_gen_campaign_mode_review_rows=demand_gen_campaign_mode_review_rows,
         next_step=(
             "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. "
-            "Zanim WILQ pokaże propozycje uruchomienia albo przejścia kampanii, "
-            "potwierdź dostępność danych o jakości stron wejścia i ograniczeniach przejścia."
+            "Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, "
+            "potwierdź dostępność danych o jakości stron wejścia i kontroli trybu kampanii."
         ),
     )
 

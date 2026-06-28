@@ -412,14 +412,14 @@
       "demand_gen_ad_group_ad_rows",
       "demand_gen_creative_asset_rows",
       "demand_gen_landing_quality_by_campaign",
-      "demand_gen_transition_constraints",
+      "demand_gen_campaign_mode_review",
       "demand_gen_readiness_review_action_object",
       "zablokowane obietnice"
     ],
     "expected_blocked": true,
     "blocked_claim_terms": [
       "rekomendacja uruchomienia Demand Gen",
-      "gotowość przejścia na Demand Gen",
+      "gotowość trybu Demand Gen",
       "ocena jakości kreacji",
       "ocena skuteczności assetów",
       "zmiana kampanii",

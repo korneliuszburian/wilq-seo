@@ -6333,7 +6333,7 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads. Kanały w odczycie: PMax: 8, Search: 10. Kampanie Demand Gen/Discovery: 0. WILQ ma dowody Ads i GA4 do oceny ruchu. Odczyty reklam i kreacji Demand Gen są traktowane jako dostępne tylko wtedy, gdy API zwraca je w dostępnych danych. Nadal brakuje danych: jakość stron wejścia według kampanii, ograniczenia przejścia. To blokuje użyteczną rekomendację; nie jest to problem treści polecenia.",
+    "WILQ ocenił 18 kampanii Ads. Kanały w odczycie: PMax: 8, Search: 10. Kampanie Demand Gen/Discovery: 0. WILQ ma dowody Ads i GA4 do oceny ruchu. Odczyty reklam i kreacji Demand Gen są traktowane jako dostępne tylko wtedy, gdy API zwraca je w dostępnych danych. Nadal brakuje danych: jakość stron wejścia według kampanii, kontrola trybu kampanii. To blokuje użyteczną rekomendację; nie jest to problem treści polecenia.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
@@ -6355,7 +6355,7 @@ const demandGenDiagnostics = {
   ],
   missing_read_contracts: [
     "demand_gen_landing_quality_by_campaign",
-    "demand_gen_transition_constraints"
+    "demand_gen_campaign_mode_review"
   ],
   available_read_contract_labels: [
     "aktywność kampanii Google Ads",
@@ -6363,13 +6363,13 @@ const demandGenDiagnostics = {
     "udział w wyświetleniach Google Ads",
     "jakość ruchu GA4 dla stron wejścia",
     "akcja sprawdzenia Demand Gen",
-    "wiersze kampanii Demand Gen/Discovery",
-    "wiersze reklam Demand Gen",
-    "wiersze materiałów kreatywnych"
+    "odczyt kampanii Demand Gen/Discovery",
+    "odczyt reklam Demand Gen",
+    "odczyt materiałów kreatywnych"
   ],
   missing_read_contract_labels: [
     "jakość stron wejścia według kampanii",
-    "ograniczenia przejścia"
+    "kontrola trybu kampanii"
   ],
   operator_review_gate_labels: [
     "konkretne dowody Demand Gen",
@@ -6382,7 +6382,7 @@ const demandGenDiagnostics = {
   },
   blocked_claims: [
     "rekomendacja uruchomienia Demand Gen",
-    "gotowość przejścia na Demand Gen",
+    "gotowość trybu Demand Gen",
     "ocena jakości kreacji",
     "ocena skuteczności materiałów kreatywnych",
     "zmiana kampanii",
@@ -6449,7 +6449,7 @@ const demandGenDiagnostics = {
       ],
       missing_read_contracts: [
         "demand_gen_landing_quality_by_campaign",
-        "demand_gen_transition_constraints"
+        "demand_gen_campaign_mode_review"
       ],
       available_read_contract_labels: [
         "aktywność kampanii Google Ads",
@@ -6457,13 +6457,13 @@ const demandGenDiagnostics = {
         "udział w wyświetleniach Google Ads",
         "jakość ruchu GA4 dla stron wejścia",
         "akcja sprawdzenia Demand Gen",
-        "wiersze kampanii Demand Gen/Discovery",
-        "wiersze reklam Demand Gen",
-        "wiersze materiałów kreatywnych"
+        "odczyt kampanii Demand Gen/Discovery",
+        "odczyt reklam Demand Gen",
+        "odczyt materiałów kreatywnych"
       ],
       missing_read_contract_labels: [
         "jakość stron wejścia według kampanii",
-        "ograniczenia przejścia"
+        "kontrola trybu kampanii"
       ],
       required_validation: [
         "review_ads_campaign_channel_context",
@@ -6481,7 +6481,7 @@ const demandGenDiagnostics = {
       ],
       blocked_claims: [
         "rekomendacja uruchomienia Demand Gen",
-        "gotowość przejścia na Demand Gen",
+        "gotowość trybu Demand Gen",
         "ocena jakości kreacji",
         "ocena skuteczności materiałów kreatywnych",
         "zmiana kampanii",
@@ -6506,10 +6506,10 @@ const demandGenDiagnostics = {
         { label: "Kampanie Demand Gen", value: "0" },
         { label: "Grupy reklam Demand Gen", value: "1" },
         { label: "Kreacje i zasoby", value: "1" },
-        { label: "Wiersze jakości stron wejścia", value: "0" },
+        { label: "Odczyty jakości stron wejścia", value: "0" },
         {
           label: "Braki",
-          value: "jakość stron wejścia według kampanii, ograniczenia przejścia"
+          value: "jakość stron wejścia według kampanii, kontrola trybu kampanii"
         },
         {
           label: "Warunki sprawdzenia",
@@ -6553,7 +6553,7 @@ const demandGenDiagnostics = {
     }
   ],
   next_step:
-    "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. Zanim WILQ pokaże propozycje uruchomienia albo przejścia kampanii, potwierdź dostępność danych o jakości stron wejścia i ograniczeniach przejścia.",
+    "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, potwierdź dostępność danych o jakości stron wejścia i kontroli trybu kampanii.",
   risk: "medium"
 };
 
@@ -8288,15 +8288,15 @@ describe("WILQ dashboard", () => {
 
     expect(screen.getByText("Demand Gen: brak kampanii do rekomendacji")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć przed planem Demand Gen")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki sprawdzenia Demand Gen")).toBeInTheDocument();
     expect(screen.getByText("kampanie Ads")).toBeInTheDocument();
     expect(screen.getByText("PMax")).toBeInTheDocument();
     expect(screen.getByText("Search")).toBeInTheDocument();
     expect(
       screen.getByText(/W bieżących dowodach Ads nie ma kampanii Demand Gen ani Discovery/)
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/wiersze reklam Demand Gen/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/wiersze materiałów kreatywnych/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/odczyt reklam Demand Gen/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/odczyt materiałów kreatywnych/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/akcja do sprawdzenia/i).length).toBeGreaterThan(0);
     expect(screen.getByText("Podgląd gotowości Demand Gen")).toBeInTheDocument();
     expect(screen.getByText("Gotowość Demand Gen do sprawdzenia")).toBeInTheDocument();
@@ -8310,7 +8310,7 @@ describe("WILQ dashboard", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getAllByText(/jakość stron wejścia według kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ograniczenia przejścia/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/kontrola trybu kampanii/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Google Ads/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/GA4/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/google_ads/)).not.toBeInTheDocument();

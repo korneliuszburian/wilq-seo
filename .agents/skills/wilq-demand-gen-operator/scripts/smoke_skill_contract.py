@@ -116,7 +116,7 @@ def main() -> int:
             raise SystemExit(f"Demand Gen contract {contract} must be either available or missing")
     for contract in (
         "demand_gen_landing_quality_by_campaign",
-        "demand_gen_transition_constraints",
+        "demand_gen_campaign_mode_review",
     ):
         in_available = contract in available_read_contracts
         in_missing = contract in missing_read_contracts
@@ -155,12 +155,12 @@ def main() -> int:
     demand_gen_landing_quality_rows = readiness.get("demand_gen_landing_quality_rows")
     if not isinstance(demand_gen_landing_quality_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_landing_quality_rows list")
-    demand_gen_transition_constraint_rows = readiness.get(
-        "demand_gen_transition_constraint_rows"
+    demand_gen_campaign_mode_review_rows = readiness.get(
+        "demand_gen_campaign_mode_review_rows"
     )
-    if not isinstance(demand_gen_transition_constraint_rows, list):
+    if not isinstance(demand_gen_campaign_mode_review_rows, list):
         raise SystemExit(
-            "Demand Gen readiness must expose demand_gen_transition_constraint_rows list"
+            "Demand Gen readiness must expose demand_gen_campaign_mode_review_rows list"
         )
     action_ids = readiness.get("action_ids")
     if action_ids != [EXPECTED_ACTION_ID]:
@@ -221,8 +221,8 @@ def main() -> int:
                     "demand_gen_landing_quality_row_count": len(
                         demand_gen_landing_quality_rows
                     ),
-                    "demand_gen_transition_constraint_row_count": len(
-                        demand_gen_transition_constraint_rows
+                    "demand_gen_campaign_mode_review_row_count": len(
+                        demand_gen_campaign_mode_review_rows
                     ),
                     "available_read_contracts": available_read_contracts,
                     "missing_read_contracts": missing_read_contracts,

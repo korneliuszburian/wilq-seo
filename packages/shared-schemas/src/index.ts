@@ -2955,12 +2955,13 @@ export const DemandGenReadinessContractSchema = z.object({
     engagement_rate: z.number().nullable().optional(),
     evidence_ids: z.array(z.string()).default([])
   })).default([]),
-  demand_gen_transition_constraint_rows: z.array(z.object({
+  demand_gen_campaign_mode_review_rows: z.array(z.object({
     campaign_id: z.string().nullable().optional(),
     campaign_name: z.string(),
     campaign_status: z.string().nullable().optional(),
     advertising_channel_type: z.string().nullable().optional(),
-    transition_candidate: z.boolean().default(false),
+    review_required: z.boolean().default(false),
+    review_status_label: z.string().default(""),
     reason: z.string(),
     reason_label: z.string().nullable().optional(),
     evidence_ids: z.array(z.string()).default([])

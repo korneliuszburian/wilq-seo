@@ -2,7 +2,7 @@ from __future__ import annotations
 
 DEMAND_GEN_DIAGNOSTICS = (
     "display_campaign_inventory",
-    "display_to_demand_gen_transition_candidates",
+    "display_to_demand_gen_mode_review",
     "demand_gen_asset_readiness",
     "demand_gen_image_asset_requirements",
     "demand_gen_video_asset_requirements",
@@ -14,7 +14,7 @@ DEMAND_GEN_DIAGNOSTICS = (
 )
 
 DEMAND_GEN_ACTIONS = (
-    "prepare_demand_gen_transition_plan",
+    "prepare_demand_gen_mode_review_plan",
     "prepare_demand_gen_campaign",
     "prepare_demand_gen_ad_group",
     "prepare_demand_gen_audience_targeting",
