@@ -6657,7 +6657,8 @@ const knowledgeCards = [
     extracted_at: "2026-06-17T10:00:00Z",
     confidence: 0.86,
     last_seen_at: "2026-06-17T10:00:00Z",
-    source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"]
+    source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
+    source_lineage_summary_label: "2 ślady źródłowe"
   }
 ];
 
@@ -6696,19 +6697,24 @@ const knowledgeOperatingMap = {
       next_step: "Otwórz Google Ads i użyj wiedzy tylko z dowodami.",
       source_connectors: ["google_ads"],
       source_connector_labels: ["Google Ads"],
+      source_connector_summary_label: "Google Ads",
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       evidence_summary_label: "1 dowód źródłowy",
       action_ids: ["act_prepare_ads_campaign_review_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       metric_tiles: { kampanie: 18, zapytania: 50 },
       knowledge_card_ids: ["card_google_ads_search_playbook"],
       playbook_ids: ["google_ads_search_playbook"],
       expert_rule_ids: ["ads_search_terms_v1"],
+      knowledge_summary_label: "3 elementy wiedzy użyte w decyzji",
       required_evidence: ["search_terms", "evidence_ids"],
+      required_evidence_summary_label: "2 wymagane dowody",
       missing_contracts: [],
       missing_contract_labels: [],
       blocked_claims: ["ocena zmarnowanego budżetu"],
       blocked_claim_labels: ["ocena zmarnowanego budżetu"],
       source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
+      source_lineage_summary_label: "2 ślady źródłowe",
       risk: "low"
     }
   ]
@@ -7736,7 +7742,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co zrobić dalej")).toBeInTheDocument();
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("Zakazane obietnice: ocena zmarnowanego budżetu")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();

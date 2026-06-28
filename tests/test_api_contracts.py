@@ -1593,6 +1593,12 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
     assert knowledge_binding.route_label == "widok do sprawdzenia"
     assert raw_value not in knowledge_binding.route_label
+    assert knowledge_binding.source_connector_summary_label == "brak źródeł danych"
+    assert knowledge_binding.evidence_summary_label == "brak dowodów źródłowych"
+    assert knowledge_binding.action_summary_label == "brak akcji do sprawdzenia"
+    assert knowledge_binding.knowledge_summary_label == "brak użytej wiedzy"
+    assert knowledge_binding.required_evidence_summary_label == "brak wymaganych dowodów"
+    assert knowledge_binding.source_lineage_summary_label == "brak śladów źródłowych"
 
     merchant_items = _merchant_feed_items(
         [
@@ -18752,6 +18758,11 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert daily["evidence_ids"]
     assert daily["evidence_summary_label"]
     assert daily["source_connector_labels"]
+    assert daily["source_connector_summary_label"]
+    assert daily["action_summary_label"]
+    assert daily["knowledge_summary_label"]
+    assert daily["required_evidence_summary_label"]
+    assert daily["source_lineage_summary_label"]
     assert "blocked_claim_labels" in daily
     assert "missing_contract_labels" in daily
     visible_blocked_claims = [
@@ -18775,6 +18786,11 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert "ads_search_terms_v1" in ads["expert_rule_ids"]
     assert "search_terms" in ads["required_evidence"]
     assert ads["action_ids"]
+    assert ads["source_connector_summary_label"] == "Google Ads"
+    assert "akcj" in ads["action_summary_label"]
+    assert "wiedzy" in ads["knowledge_summary_label"]
+    assert "dow" in ads["required_evidence_summary_label"]
+    assert "ślad" in ads["source_lineage_summary_label"]
 
     localo = binding_by_id["knowledge_localo_visibility_review"]
     assert localo["status"] == "blocked"

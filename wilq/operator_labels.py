@@ -221,6 +221,28 @@ def knowledge_reference_count_label(
     return f"{count} elementów wiedzy użytych w decyzji"
 
 
+def required_evidence_count_label(required_evidence: Iterable[str]) -> str:
+    count = len(list(required_evidence))
+    if count == 0:
+        return "brak wymaganych dowodów"
+    if count == 1:
+        return "1 wymagany dowód"
+    if 2 <= count <= 4:
+        return f"{count} wymagane dowody"
+    return f"{count} wymaganych dowodów"
+
+
+def source_lineage_count_label(source_lineage: Iterable[str]) -> str:
+    count = len(list(source_lineage))
+    if count == 0:
+        return "brak śladów źródłowych"
+    if count == 1:
+        return "1 ślad źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} ślady źródłowe"
+    return f"{count} śladów źródłowych"
+
+
 def workflow_error_count_label(errors: Iterable[str]) -> str:
     count = len(list(errors))
     if count == 0:

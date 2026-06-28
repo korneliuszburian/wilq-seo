@@ -6,7 +6,15 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from wilq.operator_labels import blocked_claim_label
+from wilq.operator_labels import (
+    action_count_label,
+    blocked_claim_label,
+    evidence_count_label,
+    knowledge_reference_count_label,
+    required_evidence_count_label,
+    source_connector_summary_label,
+    source_lineage_count_label,
+)
 
 
 def utc_now() -> datetime:
@@ -664,6 +672,7 @@ class KnowledgeCard(BaseModel):
     confidence: float = Field(ge=0, le=1)
     last_seen_at: datetime = Field(default_factory=utc_now)
     source_lineage: list[str] = Field(default_factory=list)
+    source_lineage_summary_label: str = ""
 
     @model_validator(mode="after")
     def fill_operator_labels(self) -> KnowledgeCard:
@@ -677,6 +686,8 @@ class KnowledgeCard(BaseModel):
             self.card_type_label = _knowledge_card_type_label(self.card_type)
         if not self.source_type_label:
             self.source_type_label = _knowledge_source_type_label(self.source_type)
+        if not self.source_lineage_summary_label:
+            self.source_lineage_summary_label = source_lineage_count_label(self.source_lineage)
         return self
 
 
@@ -728,19 +739,24 @@ class KnowledgeDecisionBinding(BaseModel):
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
+    source_connector_summary_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     playbook_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
+    knowledge_summary_label: str = ""
     required_evidence: list[str] = Field(default_factory=list)
+    required_evidence_summary_label: str = ""
     missing_contracts: list[str] = Field(default_factory=list)
     missing_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
+    source_lineage_summary_label: str = ""
     risk: ActionRisk = ActionRisk.low
     risk_label: str = ""
 
@@ -753,6 +769,26 @@ class KnowledgeDecisionBinding(BaseModel):
         if not self.risk_label:
             risk_value = self.risk.value if isinstance(self.risk, ActionRisk) else self.risk
             self.risk_label = _knowledge_risk_label(str(risk_value))
+        if not self.source_connector_summary_label:
+            self.source_connector_summary_label = source_connector_summary_label(
+                self.source_connectors
+            )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        if not self.knowledge_summary_label:
+            self.knowledge_summary_label = knowledge_reference_count_label(
+                knowledge_card_ids=self.knowledge_card_ids,
+                playbook_ids=self.playbook_ids,
+                expert_rule_ids=self.expert_rule_ids,
+            )
+        if not self.required_evidence_summary_label:
+            self.required_evidence_summary_label = required_evidence_count_label(
+                self.required_evidence
+            )
+        if not self.source_lineage_summary_label:
+            self.source_lineage_summary_label = source_lineage_count_label(self.source_lineage)
         return self
 
 

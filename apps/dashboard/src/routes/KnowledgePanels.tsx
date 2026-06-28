@@ -53,15 +53,8 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
             </div>
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
               <div>Dowody: {binding.evidence_summary_label}</div>
-              <div>
-                Źródła danych:{" "}
-                {binding.source_connector_labels.join(", ") ||
-                  formatPolishCount(binding.source_connectors.length, "źródło", "źródła", "źródeł")}
-              </div>
-              <div>
-                Akcje do sprawdzenia:{" "}
-                {formatPolishCount(binding.action_ids.length, "akcja", "akcje", "akcji")}
-              </div>
+              <div>Źródła danych: {binding.source_connector_summary_label}</div>
+              <div>Akcje do sprawdzenia: {binding.action_summary_label}</div>
             </div>
             {binding.blocked_claims.length > 0 ? (
               <p className="mt-3 text-xs leading-5 text-slate-600">
@@ -171,8 +164,6 @@ type KnowledgeDecisionBinding = KnowledgeOperatingMapResponse["bindings"][number
 
 function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionBinding }) {
   const [showDetails, setShowDetails] = useState(false);
-  const knowledgeCount =
-    binding.knowledge_card_ids.length + binding.playbook_ids.length + binding.expert_rule_ids.length;
 
   return (
     <article className="rounded-md border border-line bg-white p-4">
@@ -202,8 +193,8 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <div>Dowody: {binding.evidence_summary_label}</div>
-        <div>Źródła danych: {binding.source_connector_labels.join(", ") || "brak"}</div>
-        <div>Wiedza użyta w decyzji: {formatCount(knowledgeCount, "element")}</div>
+        <div>Źródła danych: {binding.source_connector_summary_label}</div>
+        <div>Wiedza użyta w decyzji: {binding.knowledge_summary_label}</div>
         <div>Braki: {binding.missing_contract_labels.join(", ") || "brak"}</div>
       </div>
       {binding.blocked_claims.length > 0 ? (
@@ -227,19 +218,14 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
           </div>
           <div>
             Akcje:{" "}
-            {formatPolishCount(
-              binding.action_ids.length,
-              "akcja do sprawdzenia",
-              "akcje do sprawdzenia",
-              "akcji do sprawdzenia"
-            )}
+            {binding.action_summary_label}
           </div>
           <div>Karty wiedzy: {binding.knowledge_card_ids.length}</div>
           <div>Zasady pracy: {binding.playbook_ids.length}</div>
           <div>Reguły decyzji: {binding.expert_rule_ids.length}</div>
-          <div>Wymagane dowody: {binding.required_evidence.length}</div>
+          <div>Wymagane dowody: {binding.required_evidence_summary_label}</div>
           <div>Brakujące dane: {binding.missing_contract_labels.join(", ") || "brak"}</div>
-          <div>Ślady źródłowe: {formatCount(binding.source_lineage.length, "element")}</div>
+          <div>Ślady źródłowe: {binding.source_lineage_summary_label}</div>
           <div>Identyfikator: {binding.id}</div>
         </div>
       ) : null}
@@ -264,7 +250,7 @@ function KnowledgeCardItem({ card }: { card: KnowledgeCard }) {
         </span>
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <div>Ślady źródłowe: {formatCount(card.source_lineage.length, "element")}</div>
+        <div>Źródła wiedzy: {card.source_lineage_summary_label}</div>
         <div>Źródło: {card.source_type_label}</div>
       </div>
       <button
@@ -277,6 +263,7 @@ function KnowledgeCardItem({ card }: { card: KnowledgeCard }) {
       {showDetails ? (
         <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600">
           <p>Ta karta jest używana tylko jako wsparcie decyzji, gdy ma powiązanie z dowodami i źródłami danych.</p>
+          <p className="mt-2">Ślady źródłowe: {card.source_lineage_summary_label}</p>
           <p className="mt-2 break-words">Plik albo URL: {card.source_url_or_path}</p>
         </div>
       ) : null}

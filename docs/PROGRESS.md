@@ -47,6 +47,9 @@ Date: 2026-06-28
   API-owned preview cards or display labels instead of raw payload shape.
 - Knowledge details use API-owned source labels and Polish count forms instead
   of raw connector IDs.
+- Knowledge first-screen decision and card summaries use API/domain source,
+  action, evidence, knowledge and lineage summary labels instead of route-local
+  count assembly.
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
@@ -71,8 +74,9 @@ Date: 2026-06-28
    fall back to raw snake_case or English values in marketer-facing copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for Knowledge first-screen summaries
-   and any remaining payload-derived panels.
+5. Dashboard still needs focused cleanup for remaining payload-derived panels,
+   Ads raw ID fallbacks, content enum fallbacks and smaller Knowledge
+   playbook-list count labels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
@@ -84,6 +88,16 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map_binds_sources_to_decisions or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Browser proof: `.local-lab/proof/knowledge-summary-labels-clean.txt`
+
+Previous local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunities_are_derived_from_evidence_and_rule_mappings or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

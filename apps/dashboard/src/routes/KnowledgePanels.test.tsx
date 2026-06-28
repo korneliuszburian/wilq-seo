@@ -2,7 +2,12 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { KnowledgeCard, KnowledgeOperatingMapResponse, MarketingPlaybook } from "../lib/api";
-import { KnowledgeCardList, KnowledgeOperatingMapPanel, PlaybookList } from "./KnowledgePanels";
+import {
+  KnowledgeCardList,
+  KnowledgeDecisionImpactPanel,
+  KnowledgeOperatingMapPanel,
+  PlaybookList
+} from "./KnowledgePanels";
 
 describe("KnowledgePanels", () => {
   afterEach(() => {
@@ -27,6 +32,7 @@ describe("KnowledgePanels", () => {
             extracted_at: "2026-06-17T10:00:00Z",
             last_seen_at: "2026-06-17T10:00:00Z",
             source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+            source_lineage_summary_label: "1 ślad źródłowy",
             confidence: 0.9
           } satisfies KnowledgeCard)
         ]}
@@ -35,6 +41,7 @@ describe("KnowledgePanels", () => {
 
     expect(screen.getByText(/wzorzec Ads \/ zasada pracy/)).toBeInTheDocument();
     expect(screen.getByText("Źródło: zasada pracy")).toBeInTheDocument();
+    expect(screen.getByText("Źródła wiedzy: 1 ślad źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Pewność 90%")).toBeInTheDocument();
     expect(screen.queryByText(/playbook marketingowy/i)).not.toBeInTheDocument();
   });
@@ -100,6 +107,7 @@ describe("KnowledgePanels", () => {
             extracted_at: "2026-06-17T10:00:00Z",
             last_seen_at: "2026-06-17T10:00:00Z",
             source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+            source_lineage_summary_label: "1 ślad źródłowy",
             confidence: 0.82
           } satisfies KnowledgeCard)
         ]}
@@ -136,19 +144,24 @@ describe("KnowledgePanels", () => {
                 next_step: "Otwórz Ads i sprawdź decyzję z dowodami.",
                 source_connectors: ["google_ads"],
                 source_connector_labels: ["Google Ads"],
+                source_connector_summary_label: "Google Ads",
                 evidence_ids: ["ev_refresh_google_ads"],
                 evidence_summary_label: "1 dowód źródłowy",
                 action_ids: ["act_prepare_ads"],
+                action_summary_label: "1 akcja do sprawdzenia",
                 metric_tiles: {},
                 knowledge_card_ids: manyKnowledgeCards,
                 playbook_ids: ["google_ads_search_playbook"],
                 expert_rule_ids: ["ads_search_terms_v1"],
+                knowledge_summary_label: "15 elementów wiedzy użytych w decyzji",
                 required_evidence: ["search_terms"],
+                required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
                 blocked_claims: [],
                 blocked_claim_labels: [],
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+                source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
                 risk_label: "ryzyko z API"
               }
@@ -161,7 +174,7 @@ describe("KnowledgePanels", () => {
     expect(screen.getByText("Widok: Ads z API")).toBeInTheDocument();
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Wiedza użyta w decyzji: 15 elementów")).toBeInTheDocument();
+    expect(screen.getByText("Wiedza użyta w decyzji: 15 elementów wiedzy użytych w decyzji")).toBeInTheDocument();
     expect(screen.getByText("gotowe z API")).toBeInTheDocument();
     expect(screen.getByText("ryzyko z API")).toBeInTheDocument();
     expect(screen.queryByText("widok Google Ads")).not.toBeInTheDocument();
@@ -169,5 +182,61 @@ describe("KnowledgePanels", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne" }));
     expect(screen.getAllByText("Źródła: Google Ads").length).toBeGreaterThan(0);
     expect(screen.queryByText(/google_ads/)).not.toBeInTheDocument();
+  });
+
+  it("decision impact panel renders API summary labels instead of local counts", () => {
+    render(
+      <KnowledgeDecisionImpactPanel
+        map={
+          {
+            generated_at: "2026-06-17T10:00:00Z",
+            source_card_count: 1,
+            playbook_count: 1,
+            expert_rule_count: 1,
+            binding_count: 1,
+            bindings: [
+              {
+                id: "knowledge_ads_daily_check",
+                title: "Ocena Ads",
+                status: "ready",
+                status_label: "gotowe z API",
+                route: "/ads-doctor",
+                route_label: "Ads z API",
+                skill_id: "wilq-ads-doctor",
+                summary: "Decyzja oparta o karty wiedzy i dowody.",
+                next_step: "Otwórz Ads i sprawdź decyzję z dowodami.",
+                source_connectors: ["google_ads"],
+                source_connector_labels: ["Google Ads"],
+                source_connector_summary_label: "Google Ads",
+                evidence_ids: ["ev_refresh_google_ads"],
+                evidence_summary_label: "1 dowód źródłowy",
+                action_ids: ["act_prepare_ads"],
+                action_summary_label: "1 akcja do sprawdzenia",
+                metric_tiles: {},
+                knowledge_card_ids: ["card_google_ads_search_playbook"],
+                playbook_ids: ["google_ads_search_playbook"],
+                expert_rule_ids: ["ads_search_terms_v1"],
+                knowledge_summary_label: "3 elementy wiedzy użyte w decyzji",
+                required_evidence: ["search_terms"],
+                required_evidence_summary_label: "1 wymagany dowód",
+                missing_contracts: [],
+                missing_contract_labels: [],
+                blocked_claims: [],
+                blocked_claim_labels: [],
+                source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+                source_lineage_summary_label: "1 ślad źródłowy",
+                risk: "low",
+                risk_label: "ryzyko z API"
+              }
+            ]
+          } satisfies KnowledgeOperatingMapResponse
+        }
+      />
+    );
+
+    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
+    expect(screen.queryByText("Akcje do sprawdzenia: 1 akcja")).not.toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
   });
 });

@@ -6,7 +6,16 @@ from dataclasses import dataclass
 from wilq.expert.rules import list_expert_rule_summaries
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.knowledge.compilers.playbook_compiler import compile_playbook_cards, list_playbooks
-from wilq.operator_labels import evidence_count_label, missing_contract_labels, source_connector_labels
+from wilq.operator_labels import (
+    action_count_label,
+    evidence_count_label,
+    knowledge_reference_count_label,
+    missing_contract_labels,
+    required_evidence_count_label,
+    source_connector_labels,
+    source_connector_summary_label,
+    source_lineage_count_label,
+)
 from wilq.schemas import (
     ActionRisk,
     KnowledgeCard,
@@ -174,6 +183,16 @@ def _binding_from_blueprint(
     playbook_values = [playbooks[playbook_id] for playbook_id in valid_playbook_ids]
     card_values = [cards[card_id] for card_id in valid_card_ids]
     blocked_claims = _unique(workflow.blocked_claims)
+    required_evidence = _unique(
+        item for playbook in playbook_values for item in playbook.required_evidence
+    )
+    source_lineage = _unique(
+        [
+            *(line for card in card_values for line in card.source_lineage),
+            *(playbook.source_path for playbook in playbook_values),
+            *valid_rule_ids,
+        ]
+    )
     return KnowledgeDecisionBinding(
         id=f"knowledge_{workflow.id}",
         title=workflow.label,
@@ -187,27 +206,28 @@ def _binding_from_blueprint(
         or "Użyj tej wiedzy tylko z dowodami WILQ i sprawdzeniem akcji.",
         source_connectors=workflow.source_connectors,
         source_connector_labels=source_connector_labels(workflow.source_connectors),
+        source_connector_summary_label=source_connector_summary_label(workflow.source_connectors),
         evidence_ids=workflow.evidence_ids,
         evidence_summary_label=evidence_count_label(workflow.evidence_ids),
         action_ids=workflow.action_ids,
+        action_summary_label=action_count_label(workflow.action_ids),
         metric_tiles=workflow.metric_tiles,
         knowledge_card_ids=valid_card_ids,
         playbook_ids=valid_playbook_ids,
         expert_rule_ids=valid_rule_ids,
-        required_evidence=_unique(
-            item for playbook in playbook_values for item in playbook.required_evidence
+        knowledge_summary_label=knowledge_reference_count_label(
+            knowledge_card_ids=valid_card_ids,
+            playbook_ids=valid_playbook_ids,
+            expert_rule_ids=valid_rule_ids,
         ),
+        required_evidence=required_evidence,
+        required_evidence_summary_label=required_evidence_count_label(required_evidence),
         missing_contracts=workflow.missing_contracts,
         missing_contract_labels=missing_contract_labels(workflow.missing_contracts),
         blocked_claims=blocked_claims,
         blocked_claim_labels=operator_blocked_claims(blocked_claims),
-        source_lineage=_unique(
-            [
-                *(line for card in card_values for line in card.source_lineage),
-                *(playbook.source_path for playbook in playbook_values),
-                *valid_rule_ids,
-            ]
-        ),
+        source_lineage=source_lineage,
+        source_lineage_summary_label=source_lineage_count_label(source_lineage),
         risk=workflow.risk,
         risk_label=workflow.risk_label or "",
     )

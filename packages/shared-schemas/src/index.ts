@@ -2722,7 +2722,8 @@ export const KnowledgeCardSchema = z.object({
   extracted_at: z.string(),
   confidence: z.number(),
   last_seen_at: z.string(),
-  source_lineage: z.array(z.string())
+  source_lineage: z.array(z.string()),
+  source_lineage_summary_label: z.string().default("")
 });
 
 export const MarketingPlaybookSchema = z.object({
@@ -2763,19 +2764,24 @@ export const KnowledgeDecisionBindingSchema = z.object({
   next_step: z.string(),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
+  source_connector_summary_label: z.string().default(""),
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   metric_tiles: z.record(z.union([z.string(), z.number()])),
   knowledge_card_ids: z.array(z.string()),
   playbook_ids: z.array(z.string()),
   expert_rule_ids: z.array(z.string()),
+  knowledge_summary_label: z.string().default(""),
   required_evidence: z.array(z.string()),
+  required_evidence_summary_label: z.string().default(""),
   missing_contracts: z.array(z.string()),
   missing_contract_labels: z.array(z.string()).default([]),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   source_lineage: z.array(z.string()),
+  source_lineage_summary_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high"]),
   risk_label: z.string().default("")
 });
