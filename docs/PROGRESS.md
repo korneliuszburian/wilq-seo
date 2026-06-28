@@ -122,6 +122,9 @@ Date: 2026-06-28
   blockers and Ads targets instead of raw guardrail keys or micros field names.
 - Keyword Planner access actions and Codex context now expose Polish operator
   reasons instead of raw Google Ads authorization enums or English planning copy.
+- Merchant label helpers no longer turn unknown internal keys into prettified
+  operator labels; known Merchant claims stay explicit and unknown values use
+  safe Polish fallback labels.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.

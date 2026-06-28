@@ -71,6 +71,16 @@ MERCHANT_PREVIEW_CONTRACT_LABELS = {
     "merchant_supplemental_feed_review_preview_v1": "sprawdzenie uzupełnienia feedu",
 }
 
+MERCHANT_CLAIM_LABELS = {
+    "automatyczna zmiana feedu": "automatyczna zmiana feedu",
+    "efekt naprawy produktu": "efekt naprawy produktu",
+    "odzyskany przychód produktu": "odzyskany przychód produktu",
+    "ponowne zatwierdzenie produktu": "ponowne zatwierdzenie produktu",
+    "wpływ zmiany ceny": "wpływ zmiany ceny",
+    "zapis do feedu": "zapis do feedu",
+    "zwrot z reklam na poziomie produktu": "zwrot z reklam na poziomie produktu",
+}
+
 
 def merchant_display_label(value: object) -> str:
     text = str(value or "").strip()
@@ -78,9 +88,11 @@ def merchant_display_label(value: object) -> str:
         return MERCHANT_ISSUE_LABELS[text]
     if text in MERCHANT_ATTRIBUTE_LABELS:
         return MERCHANT_ATTRIBUTE_LABELS[text]
+    if text in MERCHANT_CLAIM_LABELS:
+        return MERCHANT_CLAIM_LABELS[text]
     if not text:
         return "wartość Merchant nieznana"
-    return " ".join(text.replace("_", " ").split())
+    return "wartość Merchant do sprawdzenia"
 
 
 def merchant_reporting_context_label(value: object) -> str:
@@ -113,19 +125,19 @@ def merchant_metric_snapshot_labels(metric_snapshot: dict[str, object]) -> dict[
 
 def merchant_metric_fact_label(value: object) -> str:
     text = str(value or "").strip()
-    return MERCHANT_METRIC_LABELS.get(text, merchant_display_label(text))
+    return MERCHANT_METRIC_LABELS.get(text, "metryka Merchant do sprawdzenia")
 
 
 def merchant_preview_contract_label(value: object) -> str:
     text = str(value or "").strip()
     if not text:
         return "typ sprawdzenia nieznany"
-    return MERCHANT_PREVIEW_CONTRACT_LABELS.get(text, merchant_display_label(text))
+    return MERCHANT_PREVIEW_CONTRACT_LABELS.get(text, "typ sprawdzenia do weryfikacji")
 
 
 def merchant_dimension_label(value: object) -> str:
     text = str(value or "").strip()
-    return MERCHANT_DIMENSION_LABELS.get(text, merchant_display_label(text))
+    return MERCHANT_DIMENSION_LABELS.get(text, "wymiar Merchant do sprawdzenia")
 
 
 def merchant_dimension_value_label(key: object, value: object) -> str:
@@ -140,4 +152,4 @@ def merchant_dimension_value_label(key: object, value: object) -> str:
         return merchant_severity_label(value)
     if key_text == "resolution":
         return merchant_resolution_label(value)
-    return merchant_display_label(value)
+    return "wartość Merchant do sprawdzenia"

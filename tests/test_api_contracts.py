@@ -41,6 +41,16 @@ from wilq.briefing.content_diagnostics import (
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.merchant_labels import (
+    merchant_dimension_label,
+    merchant_dimension_value_label,
+    merchant_display_label,
+    merchant_metric_fact_label,
+    merchant_preview_contract_label,
+    merchant_reporting_context_label,
+    merchant_resolution_label,
+    merchant_severity_label,
+)
 from wilq.briefing.tactical_queue import _merchant_dimension_label
 from wilq.briefing.merchant_diagnostics import (
     _merchant_price_impact_readiness,
@@ -1388,6 +1398,14 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         *_operator_missing_contract_labels([raw_value]),
         *_content_marketer_blocked_claims([raw_value]),
         _merchant_dimension_label(raw_value),
+        merchant_display_label(raw_value),
+        merchant_dimension_label(raw_value),
+        merchant_dimension_value_label("unknown_dimension", raw_value),
+        merchant_metric_fact_label(raw_value),
+        merchant_preview_contract_label(raw_value),
+        merchant_reporting_context_label(raw_value),
+        merchant_severity_label(raw_value),
+        merchant_resolution_label(raw_value),
         content_contract_label(raw_value),
         _draft_content_block_label(raw_value),
         _ads_recommendation_type_label(raw_value),
@@ -1397,6 +1415,14 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "brakujące dane do sprawdzenia",
         "obietnica do sprawdzenia",
         "wymiar Merchant do sprawdzenia",
+        "wartość Merchant do sprawdzenia",
+        "wymiar Merchant do sprawdzenia",
+        "wartość Merchant do sprawdzenia",
+        "metryka Merchant do sprawdzenia",
+        "typ sprawdzenia do weryfikacji",
+        "wartość Merchant do sprawdzenia",
+        "wartość Merchant do sprawdzenia",
+        "wartość Merchant do sprawdzenia",
         "warunek treści do sprawdzenia",
         "sekcja do sprawdzenia",
         "typ rekomendacji do sprawdzenia",
