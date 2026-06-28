@@ -133,6 +133,9 @@ Date: 2026-06-28
 - Tactical queue items now expose `dimension_value_labels`, and tactical/
   Merchant context chips plus metric chips avoid raw dimension values when API
   labels are missing.
+- Content source facts now use Polish operator labels such as `Strona z GSC`
+  and `Kliknięcia GSC` instead of `GSC page=` / `queries=` key-value strings,
+  and the Content status heading now reads `Stan danych treści`.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -184,6 +187,8 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_tactical_queue_uses_dimensioned_metric_facts or operator_label_fallbacks_do_not_humanize_raw_unknown_enums or merchant_diagnostics_exposes_feed_issue_queue" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/components/MetricFactChips.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "content_action_preview" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

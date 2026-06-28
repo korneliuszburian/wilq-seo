@@ -1740,16 +1740,16 @@ def _internal_link_direction(topic: str) -> list[str]:
 def _gsc_source_facts(page: str, page_facts: list[MetricFact], wordpress_match: bool) -> list[str]:
     snapshot = _gsc_metric_snapshot(page_facts)
     return [
-        f"GSC page={page}",
-        f"queries={snapshot['queries']}",
-        f"clicks={snapshot['clicks']}",
-        f"impressions={snapshot['impressions']}",
-        f"ctr={snapshot['ctr']}",
-        f"average_position={snapshot['average_position']}",
+        f"Strona z GSC: {page}",
+        f"Zapytania GSC: {snapshot['queries']}",
+        f"Kliknięcia GSC: {snapshot['clicks']}",
+        f"Wyświetlenia GSC: {snapshot['impressions']}",
+        f"CTR GSC: {snapshot['ctr']}",
+        f"Średnia pozycja GSC: {snapshot['average_position']}",
         (
-            "wordpress_inventory_match=present"
+            "WordPress: treść znaleziona w spisie"
             if wordpress_match
-            else "wordpress_inventory_match=missing"
+            else "WordPress: brak potwierdzonej treści w spisie"
         ),
     ]
 

@@ -82,7 +82,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status SEO / Content
+              Stan danych treści
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>

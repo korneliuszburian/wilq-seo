@@ -1377,7 +1377,10 @@ const contentActionFixture: ActionObject = {
         h2_direction: ["czym jest BDO", "obowiązki przedsiębiorcy", "najczęstsze ryzyka"],
         faq_direction: ["Co to jest BDO?", "Kto musi mieć BDO?"],
         cta_direction: "CTA do konsultacji obowiązków BDO bez obietnicy uniknięcia kar.",
-        source_facts: ["GSC page=/bdo-co-musi-wiedziec-przedsiebiorca/", "clicks=4"],
+        source_facts: [
+          "Strona z GSC: /bdo-co-musi-wiedziec-przedsiebiorca/",
+          "Kliknięcia GSC: 4"
+        ],
         missing_evidence: ["brak potwierdzonego kanonicznego URL w WordPress"],
         brief_outline: [
           {

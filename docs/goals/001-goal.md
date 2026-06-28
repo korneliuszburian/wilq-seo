@@ -121,6 +121,8 @@ use cleaned Polish operator language.
 - Tactical queue items expose API-owned `dimension_value_labels`, and touched
   tactical/Merchant/metric chips no longer fall back to raw dimension values in
   marketer-facing context.
+- Content source facts use Polish operator labels instead of raw GSC
+  key-value strings, and the Content status heading uses `Stan danych treści`.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

@@ -357,7 +357,10 @@ const actions = [
           faq_direction: ["Co oznacza Zielony Ład dla firmy?"],
           cta_direction: "CTA do rozmowy o wpływie regulacji na firmę.",
           internal_link_direction: ["powiązane treści o regulacjach środowiskowych"],
-          source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
+          source_facts: [
+            "Strona z GSC: /europejski-zielony-lad-co-to-takiego/",
+            "Kliknięcia GSC: 12"
+          ],
           missing_evidence: ["brak dowodu wzrost liczby leadów"],
           forbidden_claims: ["wzrost liczby leadów", "twierdzenie o wpływie na przychód", "gwarancja pozycji"],
           publication_readiness_status: "blocked_until_review",
@@ -7991,7 +7994,7 @@ describe("WILQ dashboard", () => {
   it("content route renders condensed selected decision with expandable detail", async () => {
     renderApp("/content-planner");
     await waitFor(
-      () => expect(screen.getByText("Status SEO / Content")).toBeInTheDocument(),
+      () => expect(screen.getByText("Stan danych treści")).toBeInTheDocument(),
       { timeout: 5_000 }
     );
     expect(screen.getByText("Czy można pisać?")).toBeInTheDocument();
@@ -8162,7 +8165,7 @@ describe("WILQ dashboard", () => {
   it("content route keeps review language clean in expanded workflows", async () => {
     renderApp("/content-planner");
     await waitFor(
-      () => expect(screen.getByText("Status SEO / Content")).toBeInTheDocument(),
+      () => expect(screen.getByText("Stan danych treści")).toBeInTheDocument(),
       { timeout: 10_000 }
     );
     expect(screen.getAllByText("GSC↔WP").length).toBeGreaterThanOrEqual(2);

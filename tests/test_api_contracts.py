@@ -2043,6 +2043,9 @@ def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregat
     assert previews[0]["internal_link_direction"]
     assert previews[0]["source_facts"]
     assert all("target_url=" not in fact for fact in previews[0]["source_facts"])
+    assert all("GSC page=" not in fact for fact in previews[0]["source_facts"])
+    assert all("queries=" not in fact for fact in previews[0]["source_facts"])
+    assert any("Strona z GSC:" in fact for fact in previews[0]["source_facts"])
     assert previews[0]["missing_evidence"]
     assert "gwarancja pozycji" in previews[0]["forbidden_claims"]
     assert previews[0]["apply_allowed"] is False
@@ -2528,6 +2531,9 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
     assert all("target_url=" not in fact for fact in brief_preview["source_facts"])
+    assert all("GSC page=" not in fact for fact in brief_preview["source_facts"])
+    assert all("queries=" not in fact for fact in brief_preview["source_facts"])
+    assert any("Strona z GSC:" in fact for fact in brief_preview["source_facts"])
     assert brief_preview["missing_evidence"]
     assert brief_preview["metric_snapshot_labels"]["clicks"] == "kliknięcia"
     assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
