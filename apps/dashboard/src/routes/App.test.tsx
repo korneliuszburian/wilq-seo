@@ -5283,11 +5283,11 @@ const contentDiagnostics = {
   sections: [
     {
       id: "content_query_page_matrix",
-      title: "GSC: query/page matrix",
+      title: "GSC: zapytania i URL-e",
       status: "ready",
-      summary: "WILQ ma 1 GSC tactical items i 1 query/page metryki.",
-      diagnosis: "Query/page matrix pozwala wskazać konkretne strony i zapytania.",
-      next_step: "Otwórz najwyższe priorytety i sprawdź intent oraz WordPress match.",
+      summary: "WILQ ma 1 zadanie GSC i 1 metrykę zapytań oraz URL-i.",
+      diagnosis: "Macierz zapytań i URL-i pozwala wskazać konkretne strony i zapytania.",
+      next_step: "Otwórz najwyższe priorytety i sprawdź intencję oraz dopasowanie w WordPress.",
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc"],
       metric_facts: [metricFacts[5]],
@@ -6719,15 +6719,15 @@ function mockFetch() {
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
-                metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
+                metric_tiles: { "zapytania/URL": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
-                  "GSC i WordPress tworzą kolejkę SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o query/page i spisie treści, nie obietnica leadów ani wzrostów pozycji.",
+                  "GSC i WordPress tworzą kolejkę treści: zapytania i URL-e=1, dopasowanie WordPress=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o zapytania, URL-e i spis treści, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
                 bezpieczny_next_step:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
                 operator_action:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
@@ -6820,7 +6820,7 @@ function mockFetch() {
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
-                metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
+                metric_tiles: { "zapytania/URL": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 blocked_claims: ["wzrost liczby leadów", "gwarancja pozycji"],
                 risk: "low"
               },
@@ -6908,7 +6908,7 @@ function mockFetch() {
                 priority: 12,
                 category: "Content + SEO",
                 why_it_matters:
-                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok query/page i URL jest w /content-planner.',
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
                 operator_action:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
