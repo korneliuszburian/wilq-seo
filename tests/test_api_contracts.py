@@ -1606,7 +1606,12 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert knowledge_binding.action_summary_label == "brak akcji do sprawdzenia"
     assert knowledge_binding.knowledge_summary_label == "brak użytej wiedzy"
     assert knowledge_binding.required_evidence_summary_label == "brak wymaganych dowodów"
+    assert knowledge_binding.missing_contract_summary_label == "brak brakujących danych"
+    assert knowledge_binding.missing_contract_detail_label == "brak"
+    assert knowledge_binding.has_missing_contracts is False
     assert knowledge_binding.blocked_claim_summary_label == "brak zakazanych obietnic"
+    assert knowledge_binding.blocked_claim_count_summary_label == "brak zablokowanych obietnic"
+    assert knowledge_binding.has_blocked_claims is False
     assert knowledge_binding.source_lineage_summary_label == "brak śladów źródłowych"
 
     knowledge_blocked_claim_binding = KnowledgeDecisionBinding(
@@ -1626,6 +1631,8 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         knowledge_blocked_claim_binding.blocked_claim_summary_label
         == "obietnica do sprawdzenia"
     )
+    assert knowledge_blocked_claim_binding.blocked_claim_count_summary_label == "1 zablokowana obietnica"
+    assert knowledge_blocked_claim_binding.has_blocked_claims is True
     assert raw_value not in knowledge_blocked_claim_binding.blocked_claim_summary_label
 
     merchant_items = _merchant_feed_items(
@@ -18937,6 +18944,9 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert data["source_card_count"] >= 10
     assert data["playbook_count"] >= 10
     assert data["expert_rule_count"] >= 10
+    assert data["blocked_binding_summary_label"]
+    assert data["missing_contract_summary_label"]
+    assert data["blocked_claim_count_summary_label"]
     binding_by_id = {binding["id"]: binding for binding in data["bindings"]}
 
     daily = binding_by_id["knowledge_daily_command"]
@@ -18954,8 +18964,13 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert daily["action_summary_label"]
     assert daily["knowledge_summary_label"]
     assert daily["required_evidence_summary_label"]
+    assert daily["missing_contract_summary_label"]
+    assert daily["missing_contract_detail_label"]
+    assert daily["has_missing_contracts"] is False
     assert daily["source_lineage_summary_label"]
     assert "blocked_claim_labels" in daily
+    assert "blocked_claim_count_summary_label" in daily
+    assert isinstance(daily["has_blocked_claims"], bool)
     assert "missing_contract_labels" in daily
     visible_blocked_claims = [
         claim
@@ -18990,6 +19005,9 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert localo["route_label"] == "Localo"
     assert "local_ranking_rows" in localo["missing_contracts"]
     assert "lokalne pozycje" in localo["missing_contract_labels"]
+    assert localo["missing_contract_summary_label"]
+    assert localo["missing_contract_detail_label"]
+    assert localo["has_missing_contracts"] is True
     assert "card_localo_local_seo_playbook" in localo["knowledge_card_ids"]
 
 

@@ -275,6 +275,10 @@ Known cleanup already started:
   unknown raw technical values from becoming marketer-facing copy.
 - Knowledge decision details use API-owned source labels instead of raw
   connector IDs, and count copy uses Polish plural forms.
+- Knowledge decision-impact panels now consume API-owned missing-data,
+  blocked-decision and blocked-claim summary labels. First-screen blocked-claim
+  copy is condensed to count summaries; full blocked-claim lists stay in
+  details.
 - Primary dashboard navigation and touched route headings now use Polish
   marketer-facing labels instead of mixed working names like `Command Center`,
   `Content` and `Ads Doctor`.

@@ -2857,9 +2857,14 @@ export const KnowledgeDecisionBindingSchema = z.object({
   required_evidence_summary_label: z.string().default(""),
   missing_contracts: z.array(z.string()),
   missing_contract_labels: z.array(z.string()).default([]),
+  missing_contract_summary_label: z.string().default(""),
+  missing_contract_detail_label: z.string().default(""),
+  has_missing_contracts: z.boolean().default(false),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   blocked_claim_summary_label: z.string().default(""),
+  blocked_claim_count_summary_label: z.string().default(""),
+  has_blocked_claims: z.boolean().default(false),
   source_lineage: z.array(z.string()),
   source_lineage_summary_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high"]),
@@ -2872,6 +2877,9 @@ export const KnowledgeOperatingMapResponseSchema = z.object({
   playbook_count: z.number(),
   expert_rule_count: z.number(),
   binding_count: z.number(),
+  blocked_binding_summary_label: z.string().default(""),
+  missing_contract_summary_label: z.string().default(""),
+  blocked_claim_count_summary_label: z.string().default(""),
   bindings: z.array(KnowledgeDecisionBindingSchema)
 });
 

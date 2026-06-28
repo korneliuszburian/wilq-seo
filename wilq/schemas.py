@@ -688,6 +688,16 @@ def _knowledge_risk_label(value: str) -> str:
     return KNOWLEDGE_RISK_LABELS.get(value, "ryzyko do sprawdzenia")
 
 
+def _knowledge_blocked_binding_count_label(count: int) -> str:
+    if count == 0:
+        return "brak zablokowanych decyzji"
+    if count == 1:
+        return "1 zablokowana decyzja"
+    if 2 <= count <= 4:
+        return f"{count} zablokowane decyzje"
+    return f"{count} zablokowanych decyzji"
+
+
 class KnowledgeCard(BaseModel):
     id: str
     card_type: str
@@ -794,9 +804,14 @@ class KnowledgeDecisionBinding(BaseModel):
     required_evidence_summary_label: str = ""
     missing_contracts: list[str] = Field(default_factory=list)
     missing_contract_labels: list[str] = Field(default_factory=list)
+    missing_contract_summary_label: str = ""
+    missing_contract_detail_label: str = ""
+    has_missing_contracts: bool = False
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     blocked_claim_summary_label: str = ""
+    blocked_claim_count_summary_label: str = ""
+    has_blocked_claims: bool = False
     source_lineage: list[str] = Field(default_factory=list)
     source_lineage_summary_label: str = ""
     risk: ActionRisk = ActionRisk.low
@@ -833,8 +848,22 @@ class KnowledgeDecisionBinding(BaseModel):
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
             ]
+        self.has_missing_contracts = bool(self.missing_contract_labels or self.missing_contracts)
+        if not self.missing_contract_summary_label:
+            self.missing_contract_summary_label = missing_contract_count_label(
+                self.missing_contracts
+            )
+        if not self.missing_contract_detail_label:
+            self.missing_contract_detail_label = (
+                ", ".join(self.missing_contract_labels) if self.missing_contract_labels else "brak"
+            )
+        self.has_blocked_claims = bool(self.blocked_claim_labels or self.blocked_claims)
         if not self.blocked_claim_summary_label:
             self.blocked_claim_summary_label = blocked_claim_summary_label(
+                self.blocked_claims
+            )
+        if not self.blocked_claim_count_summary_label:
+            self.blocked_claim_count_summary_label = blocked_claim_count_label(
                 self.blocked_claims
             )
         if not self.source_lineage_summary_label:
@@ -848,7 +877,31 @@ class KnowledgeOperatingMapResponse(BaseModel):
     playbook_count: int
     expert_rule_count: int
     binding_count: int
+    blocked_binding_summary_label: str = ""
+    missing_contract_summary_label: str = ""
+    blocked_claim_count_summary_label: str = ""
     bindings: list[KnowledgeDecisionBinding] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_operator_summary_labels(self) -> KnowledgeOperatingMapResponse:
+        if not self.blocked_binding_summary_label:
+            blocked_count = sum(1 for binding in self.bindings if binding.status == "blocked")
+            self.blocked_binding_summary_label = _knowledge_blocked_binding_count_label(
+                blocked_count
+            )
+        if not self.missing_contract_summary_label:
+            self.missing_contract_summary_label = missing_contract_count_label(
+                contract
+                for binding in self.bindings
+                for contract in binding.missing_contracts
+            )
+        if not self.blocked_claim_count_summary_label:
+            self.blocked_claim_count_summary_label = blocked_claim_count_label(
+                claim
+                for binding in self.bindings
+                for claim in binding.blocked_claims
+            )
+        return self
 
 
 class ExpertRule(BaseModel):

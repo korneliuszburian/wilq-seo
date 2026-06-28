@@ -16,23 +16,14 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
   }
 
   const topBindings = map.bindings.slice(0, 5);
-  const blockedCount = map.bindings.filter((binding) => binding.status === "blocked").length;
-  const missingContractCount = map.bindings.reduce(
-    (total, binding) => total + binding.missing_contracts.length,
-    0
-  );
-  const blockedClaimCount = map.bindings.reduce(
-    (total, binding) => total + binding.blocked_claims.length,
-    0
-  );
 
   return (
     <div className="grid gap-4">
       <div className="grid gap-2 text-center text-xs sm:grid-cols-4">
         <MetricTile label="Decyzje z wiedzą" value={map.binding_count} />
-        <MetricTile label="Blokady" value={blockedCount} />
-        <MetricTile label="Brakujące dane" value={missingContractCount} />
-        <MetricTile label="Zakazane obietnice" value={blockedClaimCount} />
+        <MetricTile label="Blokady" value={map.blocked_binding_summary_label} />
+        <MetricTile label="Brakujące dane" value={map.missing_contract_summary_label} />
+        <MetricTile label="Zakazane obietnice" value={map.blocked_claim_count_summary_label} />
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
         {topBindings.map((binding) => (
@@ -56,9 +47,9 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
               <div>Źródła danych: {binding.source_connector_summary_label}</div>
               <div>Akcje do sprawdzenia: {binding.action_summary_label}</div>
             </div>
-            {binding.blocked_claims.length > 0 ? (
+            {binding.has_blocked_claims ? (
               <p className="mt-3 text-xs leading-5 text-slate-600">
-                Zakazane obietnice: {binding.blocked_claim_summary_label}
+                Zakazane obietnice: {binding.blocked_claim_count_summary_label}
               </p>
             ) : null}
           </article>
@@ -195,11 +186,11 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
         <div>Dowody: {binding.evidence_summary_label}</div>
         <div>Źródła danych: {binding.source_connector_summary_label}</div>
         <div>Wiedza użyta w decyzji: {binding.knowledge_summary_label}</div>
-        <div>Braki: {binding.missing_contract_labels.join(", ") || "brak"}</div>
+        <div>Braki: {binding.missing_contract_summary_label}</div>
       </div>
-      {binding.blocked_claims.length > 0 ? (
+      {binding.has_blocked_claims ? (
         <p className="mt-3 text-xs text-slate-600">
-          Zablokowane obietnice: {binding.blocked_claim_summary_label}
+          Zablokowane obietnice: {binding.blocked_claim_count_summary_label}
         </p>
       ) : null}
       <button
@@ -211,7 +202,7 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       </button>
       {showDetails ? (
         <div className="mt-3 grid gap-2 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
-          <div>Źródła: {binding.source_connector_labels.join(", ") || "brak"}</div>
+          <div>Źródła: {binding.source_connector_summary_label}</div>
           <div>
             Dowody:{" "}
             {binding.evidence_summary_label}
@@ -220,11 +211,10 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
             Akcje:{" "}
             {binding.action_summary_label}
           </div>
-          <div>Karty wiedzy: {binding.knowledge_card_ids.length}</div>
-          <div>Zasady pracy: {binding.playbook_ids.length}</div>
-          <div>Reguły decyzji: {binding.expert_rule_ids.length}</div>
+          <div>Wiedza użyta: {binding.knowledge_summary_label}</div>
           <div>Wymagane dowody: {binding.required_evidence_summary_label}</div>
-          <div>Brakujące dane: {binding.missing_contract_labels.join(", ") || "brak"}</div>
+          <div>Brakujące dane: {binding.missing_contract_detail_label}</div>
+          <div>Zakazane obietnice: {binding.blocked_claim_summary_label}</div>
           <div>Ślady źródłowe: {binding.source_lineage_summary_label}</div>
           <div>Identyfikator: {binding.id}</div>
         </div>

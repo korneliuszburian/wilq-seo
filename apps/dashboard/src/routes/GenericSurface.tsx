@@ -127,19 +127,10 @@ export function GenericSurface({ routeName }: { routeName: string }) {
                 <LoadingBand />
               ) : knowledgeMap.error ? (
                 <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />
+              ) : !knowledgeMap.data ? (
+                <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />
               ) : (
-                <KnowledgeDecisionImpactPanel
-                  map={
-                    knowledgeMap.data ?? {
-                      generated_at: "",
-                      source_card_count: 0,
-                      playbook_count: 0,
-                      expert_rule_count: 0,
-                      binding_count: 0,
-                      bindings: []
-                    }
-                  }
-                />
+                <KnowledgeDecisionImpactPanel map={knowledgeMap.data} />
               )}
             </section>
             <section>
@@ -153,19 +144,10 @@ export function GenericSurface({ routeName }: { routeName: string }) {
                   <LoadingBand />
                 ) : knowledgeMap.error ? (
                   <InlineErrorState message="Nie udało się pobrać pełnej mapy wiedzy." />
+                ) : !knowledgeMap.data ? (
+                  <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />
                 ) : (
-                  <KnowledgeOperatingMapPanel
-                    map={
-                      knowledgeMap.data ?? {
-                        generated_at: "",
-                        source_card_count: 0,
-                        playbook_count: 0,
-                        expert_rule_count: 0,
-                        binding_count: 0,
-                        bindings: []
-                      }
-                    }
-                  />
+                  <KnowledgeOperatingMapPanel map={knowledgeMap.data} />
                 )
               ) : null}
             </section>

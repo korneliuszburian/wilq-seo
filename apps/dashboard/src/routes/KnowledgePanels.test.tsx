@@ -139,6 +139,9 @@ describe("KnowledgePanels", () => {
             playbook_count: 1,
             expert_rule_count: 1,
             binding_count: 1,
+            blocked_binding_summary_label: "brak zablokowanych decyzji",
+            missing_contract_summary_label: "brak brakujących danych",
+            blocked_claim_count_summary_label: "brak zablokowanych obietnic",
             bindings: [
               {
                 id: "knowledge_ads_daily_check",
@@ -166,9 +169,14 @@ describe("KnowledgePanels", () => {
                 required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
+                missing_contract_summary_label: "brak brakujących danych",
+                missing_contract_detail_label: "brak",
+                has_missing_contracts: false,
                 blocked_claims: [],
                 blocked_claim_labels: [],
                 blocked_claim_summary_label: "brak zakazanych obietnic",
+                blocked_claim_count_summary_label: "brak zablokowanych obietnic",
+                has_blocked_claims: false,
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
                 source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
@@ -203,6 +211,9 @@ describe("KnowledgePanels", () => {
             playbook_count: 1,
             expert_rule_count: 1,
             binding_count: 1,
+            blocked_binding_summary_label: "brak zablokowanych decyzji",
+            missing_contract_summary_label: "brak brakujących danych",
+            blocked_claim_count_summary_label: "1 zablokowana obietnica",
             bindings: [
               {
                 id: "knowledge_ads_daily_check",
@@ -230,9 +241,14 @@ describe("KnowledgePanels", () => {
                 required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
+                missing_contract_summary_label: "brak brakujących danych",
+                missing_contract_detail_label: "brak",
+                has_missing_contracts: false,
                 blocked_claims: ["ranking_guarantee"],
                 blocked_claim_labels: ["gwarancja pozycji"],
                 blocked_claim_summary_label: "gwarancja pozycji",
+                blocked_claim_count_summary_label: "1 zablokowana obietnica",
+                has_blocked_claims: true,
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
                 source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
@@ -246,10 +262,18 @@ describe("KnowledgePanels", () => {
 
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Zakazane obietnice: gwarancja pozycji")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: 1 zablokowana obietnica")).toBeInTheDocument();
+    expect(screen.getByText("Blokady")).toBeInTheDocument();
+    expect(screen.getByText("1 zablokowana obietnica")).toBeInTheDocument();
     expect(screen.queryByText("Akcje do sprawdzenia: 1 akcja")).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
-    expect(routeSource).toContain("binding.blocked_claim_summary_label");
+    expect(routeSource).toContain("binding.blocked_claim_count_summary_label");
+    expect(routeSource).toContain("binding.has_blocked_claims");
+    expect(routeSource).toContain("map.blocked_claim_count_summary_label");
+    expect(routeSource).not.toContain("binding.missing_contract_labels.join");
+    expect(routeSource).not.toContain("binding.knowledge_card_ids.length");
+    expect(routeSource).not.toContain("binding.playbook_ids.length");
+    expect(routeSource).not.toContain("binding.expert_rule_ids.length");
     expect(routeSource).not.toContain("binding.blocked_claim_labels.join");
     expect(routeSource).not.toContain("binding.blocked_claims.length}");
   });

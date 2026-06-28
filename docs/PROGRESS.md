@@ -102,6 +102,10 @@ Date: 2026-06-28
   labels instead of route-local Polish count formatting.
 - Knowledge decision cards use API/domain blocked-claim summary labels instead
   of joining blocked-claim arrays or falling back to raw counts in React.
+- Knowledge decision-impact panels use API/domain missing-data,
+  blocked-decision and blocked-claim summary labels. First-screen
+  blocked-claim copy is condensed to count summaries, while full claim lists
+  stay in details.
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
@@ -138,6 +142,21 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_humanize_raw_unknown_enums or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|Knowledge"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/knowledge/operating-map` returns
+  `blocked_binding_summary_label="4 zablokowane decyzje"`,
+  `missing_contract_summary_label="13 brakujących zakresów danych"` and
+  `blocked_claim_count_summary_label="29 zablokowanych obietnic"`.
+- Browser proof: `/knowledge` renders condensed labels such as
+  `17 zablokowanych obietnic` without raw Knowledge field names, payload
+  wording, migration wording or raw playbook IDs.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

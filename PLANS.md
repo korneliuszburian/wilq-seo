@@ -608,6 +608,10 @@ WILQ is complete for this long-range goal when:
   instead of route-local Polish count formatting. Live API proof confirmed the
   fields on `/api/knowledge/playbooks`; browser proof lives at
   `.local-lab/proof/knowledge-playbook-labels-clean.txt`.
+- 2026-06-28: Knowledge operating map now exposes API/domain
+  blocked-decision, missing-data and blocked-claim summary labels. The Knowledge
+  route renders condensed count summaries on the first screen and keeps full
+  blocked-claim lists in details.
 - 2026-06-28: Szanse cards now render API/domain evidence, source, action and
   knowledge summary labels instead of route-local count assembly.
 - 2026-06-28: Google Ads search-term, negative-keyword and change-history
@@ -854,6 +858,11 @@ WILQ is complete for this long-range goal when:
 - Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving knowledge blocked-claim summaries to API/domain labels.
+- Latest Knowledge condensation proof: focused API/shared-schema/dashboard
+  tests, dashboard typecheck, marketer language guard, live API proof and
+  browser proof passed after moving Knowledge operating-map aggregate summaries
+  to API/domain labels and rendering first-screen blocked claims as count
+  summaries.
 - Latest GA4 proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving GA4 evidence/action summaries to API/domain labels.

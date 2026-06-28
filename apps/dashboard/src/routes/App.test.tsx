@@ -6749,6 +6749,9 @@ const knowledgeOperatingMap = {
   playbook_count: 1,
   expert_rule_count: 1,
   binding_count: 1,
+  blocked_binding_summary_label: "brak zablokowanych decyzji",
+  missing_contract_summary_label: "brak brakujących danych",
+  blocked_claim_count_summary_label: "1 zablokowana obietnica",
   bindings: [
     {
       id: "knowledge_ads_daily_check",
@@ -6774,8 +6777,14 @@ const knowledgeOperatingMap = {
       required_evidence_summary_label: "2 wymagane dowody",
       missing_contracts: [],
       missing_contract_labels: [],
+      missing_contract_summary_label: "brak brakujących danych",
+      missing_contract_detail_label: "brak",
+      has_missing_contracts: false,
       blocked_claims: ["ocena zmarnowanego budżetu"],
       blocked_claim_labels: ["ocena zmarnowanego budżetu"],
+      blocked_claim_summary_label: "ocena zmarnowanego budżetu",
+      blocked_claim_count_summary_label: "1 zablokowana obietnica",
+      has_blocked_claims: true,
       source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
       source_lineage_summary_label: "2 ślady źródłowe",
       risk: "low"
@@ -7857,7 +7866,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("Zakazane obietnice: ocena zmarnowanego budżetu")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: 1 zablokowana obietnica")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
