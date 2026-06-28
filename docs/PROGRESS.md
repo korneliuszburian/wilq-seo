@@ -214,6 +214,9 @@ Date: 2026-06-28
   sprawdzenia`; browser proofs are in
   `.local-lab/proof/command-center-blocked-claims-clean.txt` and
   `.local-lab/proof/knowledge-blocked-claims-clean.txt`.
+- Command Center Merchant daily-decision metric facts now use Merchant domain
+  labels for product examples, issue types, attributes and reporting contexts;
+  API proof is in `.local-lab/proof/merchant-command-center-metric-labels-clean.json`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 

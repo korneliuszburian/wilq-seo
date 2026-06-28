@@ -202,6 +202,9 @@ use cleaned Polish operator language.
 - Blocked-claim labels now use one API/domain source in `wilq/operator_labels.py`.
   Command Center and Knowledge no longer show generic `blokada do
   sprawdzenia`; active payload tests and browser proofs cover the regression.
+- Command Center Merchant daily-decision metric facts now use Merchant domain
+  labels instead of generic dimension/value fallbacks; API proof covers the
+  active live payload.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no

@@ -2,12 +2,15 @@ from __future__ import annotations
 
 MERCHANT_ISSUE_LABELS = {
     "availability_updated": "zmiana dostępności do sprawdzenia",
+    "attribute_pending_review": "atrybut czeka na sprawdzenie",
     "image too small for high resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
     "image_too_small_for_high_resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
     "landing_page_error": "błąd strony produktu",
     "missing_image": "brak zdjęcia produktu",
+    "Missing image": "brak zdjęcia produktu",
     "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
     "problem feedu": "problem feedu",
+    "violated_discovery_ads_policy_experiment2": "naruszenie zasad reklam Discovery do sprawdzenia",
 }
 
 MERCHANT_ATTRIBUTE_LABELS = {
@@ -16,6 +19,7 @@ MERCHANT_ATTRIBUTE_LABELS = {
     "n:link": "link produktu",
     "link": "link produktu",
     "image_link": "link zdjęcia",
+    "image link": "link zdjęcia",
     "n:image_link": "link zdjęcia",
     "n:unit_pricing_measure": "miara ceny jednostkowej",
     "atrybut": "atrybut",
@@ -27,6 +31,7 @@ MERCHANT_REPORTING_CONTEXT_LABELS = {
     "DEMAND_GEN_ADS": "reklamy Demand Gen",
     "FREE_LISTINGS": "bezpłatne wyniki produktowe",
     "SHOPPING_ADS": "reklamy produktowe",
+    "VIDEO_ADS": "reklamy wideo",
 }
 
 MERCHANT_SEVERITY_LABELS = {
@@ -51,6 +56,8 @@ MERCHANT_METRIC_LABELS = {
     "max_issue_product_count": "największa liczba zgłoszeń",
     "reported_issue_occurrences": "wystąpienia problemów",
     "reporting_contexts": "konteksty raportów",
+    "sample_product_id": "produkt z przykładu",
+    "sample_product_title": "nazwa produktu z przykładu",
     "total_products": "produkty w feedzie",
 }
 
@@ -58,8 +65,11 @@ MERCHANT_DIMENSION_LABELS = {
     "affected_attribute": "atrybut",
     "country": "kraj",
     "issue_type": "problem",
+    "issue_title": "opis problemu",
     "reporting_context": "kontekst",
     "resolution": "rozwiązanie",
+    "sample_index": "numer przykładu",
+    "sample_source": "źródło przykładu",
     "severity": "status",
 }
 
@@ -144,6 +154,8 @@ def merchant_dimension_value_label(key: object, value: object) -> str:
     key_text = str(key or "").strip()
     if key_text == "issue_type":
         return merchant_display_label(value)
+    if key_text == "issue_title":
+        return merchant_display_label(value)
     if key_text == "affected_attribute":
         return merchant_display_label(value)
     if key_text == "reporting_context":
@@ -152,4 +164,11 @@ def merchant_dimension_value_label(key: object, value: object) -> str:
         return merchant_severity_label(value)
     if key_text == "resolution":
         return merchant_resolution_label(value)
+    if key_text == "country" and str(value or "").strip() == "PL":
+        return "Polska"
+    if key_text == "sample_index":
+        text = str(value or "").strip()
+        return f"przykład {text}" if text else "przykład produktu"
+    if key_text == "sample_source" and str(value or "").strip() == "products.list":
+        return "odczyt listy produktów"
     return "wartość Merchant do sprawdzenia"

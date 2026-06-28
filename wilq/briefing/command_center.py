@@ -20,6 +20,11 @@ from wilq.briefing.tactical_queue import (
     is_ahrefs_gap_fact,
     is_reviewable_ahrefs_gap_fact,
 )
+from wilq.briefing.merchant_labels import (
+    merchant_dimension_label,
+    merchant_dimension_value_label,
+    merchant_metric_fact_label,
+)
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
@@ -651,6 +656,7 @@ def _decision_metric_facts(
             if key in seen:
                 continue
             seen.add(key)
+            fact = _decision_metric_fact_with_operator_labels(connector_id, fact)
             if fact.evidence_id in evidence_ids:
                 matched.append(fact)
             else:
@@ -672,6 +678,26 @@ def _decision_metric_facts(
             continue
         break
     return selected
+
+
+def _decision_metric_fact_with_operator_labels(
+    connector_id: str,
+    fact: MetricFact,
+) -> MetricFact:
+    if connector_id != GOOGLE_MERCHANT_CONNECTOR_ID:
+        return fact
+    return fact.model_copy(
+        update={
+            "metric_label": merchant_metric_fact_label(fact.name),
+            "dimension_labels": {
+                key: merchant_dimension_label(key) for key in fact.dimensions
+            },
+            "dimension_value_labels": {
+                key: merchant_dimension_value_label(key, value)
+                for key, value in fact.dimensions.items()
+            },
+        }
+    )
 
 
 def _decision_candidate_facts(

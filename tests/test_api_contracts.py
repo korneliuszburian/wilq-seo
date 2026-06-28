@@ -5567,6 +5567,39 @@ def test_command_center_exposes_polish_operator_brief(
         ]
     ]
     assert "blokada do sprawdzenia" not in visible_blocked_claims
+    merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
+    merchant_metric_facts = merchant_decision["metric_facts"]
+    assert merchant_metric_facts
+    assert all(fact["metric_label"] for fact in merchant_metric_facts)
+    assert not any(
+        label == "wymiar"
+        for fact in merchant_metric_facts
+        for label in fact["dimension_labels"].values()
+    )
+    assert not any(
+        label == "wartość wymiaru do sprawdzenia"
+        for fact in merchant_metric_facts
+        for label in fact["dimension_value_labels"].values()
+    )
+    assert not any(
+        label == "wymiar Merchant do sprawdzenia"
+        for fact in merchant_metric_facts
+        for label in fact["dimension_labels"].values()
+    )
+    assert not any(
+        label == "wartość Merchant do sprawdzenia"
+        for fact in merchant_metric_facts
+        for label in fact["dimension_value_labels"].values()
+    )
+    reporting_context_labels = [
+        fact["dimension_value_labels"]["reporting_context"]
+        for fact in merchant_metric_facts
+        if "reporting_context" in fact["dimension_value_labels"]
+    ]
+    if reporting_context_labels:
+        assert set(reporting_context_labels).issubset(
+            {"reklamy produktowe", "bezpłatne wyniki produktowe", "wszystkie konteksty"}
+        )
     assert len(decisions_by_id) <= 4
     assert "decision_review_localo_visibility_facts" not in decisions_by_id
     assert "decision_finish_localo_access_before_local_visibility" not in decisions_by_id
