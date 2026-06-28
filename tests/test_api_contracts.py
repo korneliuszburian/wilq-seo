@@ -18789,7 +18789,12 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert daily_command["skill_id"] == "wilq-daily-command"
     assert daily_command["metric_tiles"]["decyzje"] >= 1
     assert daily_command["source_connectors"]
+    assert daily_command["source_connector_labels"]
+    assert daily_command["source_connector_summary_label"]
     assert daily_command["evidence_ids"]
+    assert daily_command["evidence_summary_label"]
+    assert daily_command["action_summary_label"]
+    assert daily_command["blocked_claim_summary_label"]
 
     ads_daily = workflow_by_id["ads_daily_check"]
     assert ads_daily["label"] == "Ocena Ads"
@@ -18807,8 +18812,13 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert localo["status_label"] == "zablokowane"
     assert localo["route"] == "/localo"
     assert localo["route_label"] == "Localo"
+    assert localo["source_connector_labels"] == ["Localo"]
+    assert localo["source_connector_summary_label"] == "Localo"
     assert "local_ranking_rows" in localo["missing_contracts"]
     assert "lokalne pozycje" in localo["missing_contract_labels"]
+    assert localo["missing_contract_summary_label"] == "3 brakujące zakresy danych"
+    assert localo["blocked_claim_labels"]
+    assert localo["blocked_claim_summary_label"] == "2 zablokowane obietnice"
 
     serialized = json.dumps(workflows, ensure_ascii=False)
     assert "Workflow definition runs against WILQ API" not in serialized
@@ -18821,6 +18831,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "ocena zwrotu z reklam" not in serialized
     assert "wzrost konwersji" not in serialized
     assert "local ranking " + "up" + "lift" not in serialized
+    assert "local_ranking_uplift_claim" not in serialized
     assert "GBP performance verdict" not in serialized
 
 

@@ -163,6 +163,9 @@ Date: 2026-06-28
 - Workflow cards now use API/domain `missing_contract_labels` for expanded
   missing-data details, so raw workflow contract keys stay out of marketer
   copy.
+- Workflow cards and run summaries now use API/domain source, evidence, action,
+  missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
+  longer wait on hidden related-action data.
 - Detail views now render source/domain labels as neutral chips instead of
   using marketer labels as visual badge states. The shared status badge no
   longer injects hidden punctuation into browser text output.

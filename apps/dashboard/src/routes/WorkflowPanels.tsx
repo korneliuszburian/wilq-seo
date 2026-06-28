@@ -29,9 +29,9 @@ export function WorkflowRunList({
             <StatusBadge value={run.status} label={run.status_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <div>Dowody: {run.output.evidence_ids.length}</div>
-            <div>Akcje: {run.output.action_ids.length}</div>
-            <div>Błędy: {run.output.errors.length}</div>
+            <div>Dowody: {run.output.evidence_summary_label}</div>
+            <div>Akcje: {run.output.action_summary_label}</div>
+            <div>Błędy: {run.output.error_summary_label}</div>
           </div>
         </article>
       ))}
@@ -95,11 +95,11 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <div>Źródła danych: {workflow.source_connectors.length || "brak"}</div>
-        <div>Akcje do sprawdzenia: {workflow.action_ids.length || "brak"}</div>
-        <div>Dowody: {workflow.evidence_ids.length || "brak"}</div>
-        <div>Brakujące dane: {workflow.missing_contract_labels.length || "brak"}</div>
-        <div>Granice wniosków: {workflow.blocked_claims.length || "brak"}</div>
+        <div>Źródła danych: {workflow.source_connector_summary_label}</div>
+        <div>Akcje do sprawdzenia: {workflow.action_summary_label}</div>
+        <div>Dowody: {workflow.evidence_summary_label}</div>
+        <div>Brakujące dane: {workflow.missing_contract_summary_label}</div>
+        <div>Granice wniosków: {workflow.blocked_claim_summary_label}</div>
         <div>
           Widok:{" "}
           {workflow.route ? (
@@ -130,7 +130,7 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
           ) : null}
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
             <div>Brakujące dane: {workflow.missing_contract_labels.join(", ") || "brak"}</div>
-            <div>Granice wniosków: {workflow.blocked_claims.join(", ") || "brak"}</div>
+            <div>Granice wniosków: {workflow.blocked_claim_labels.join(", ") || "brak"}</div>
           </div>
         </div>
       ) : null}

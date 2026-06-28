@@ -268,10 +268,10 @@ export function WorkflowsSurface() {
     enabled: showRelatedActions
   });
 
-  if (workflows.isLoading || workflowRuns.isLoading || actions.isLoading) {
+  if (workflows.isLoading || workflowRuns.isLoading || (showRelatedActions && actions.isLoading)) {
     return <LoadingBand />;
   }
-  if (workflows.error || workflowRuns.error || actions.error) {
+  if (workflows.error || workflowRuns.error || (showRelatedActions && actions.error)) {
     return <ErrorState />;
   }
 

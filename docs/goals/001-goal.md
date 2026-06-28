@@ -218,6 +218,9 @@ use cleaned Polish operator language.
 - Workflow cards now use API/domain `missing_contract_labels` for expanded
   missing-data details, so raw workflow contract keys stay out of marketer
   copy.
+- Workflow cards and run summaries now use API/domain source, evidence, action,
+  missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
+  longer wait on hidden related-action data.
 - Google Sheets compact route copy now uses safe export/testing language
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of

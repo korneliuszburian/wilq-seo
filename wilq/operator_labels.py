@@ -173,6 +173,13 @@ def source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
     return values
 
 
+def source_connector_summary_label(connector_ids: Iterable[str]) -> str:
+    labels = source_connector_labels(connector_ids)
+    if not labels:
+        return "brak źródeł danych"
+    return ", ".join(labels)
+
+
 def evidence_count_label(evidence_ids: Iterable[str]) -> str:
     count = len(list(evidence_ids))
     if count == 0:
@@ -193,6 +200,17 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     if 2 <= count <= 4:
         return f"{count} akcje do sprawdzenia"
     return f"{count} akcji do sprawdzenia"
+
+
+def workflow_error_count_label(errors: Iterable[str]) -> str:
+    count = len(list(errors))
+    if count == 0:
+        return "brak błędów procesu"
+    if count == 1:
+        return "1 błąd procesu"
+    if 2 <= count <= 4:
+        return f"{count} błędy procesu"
+    return f"{count} błędów procesu"
 
 
 def missing_contract_label(contract: object) -> str:
@@ -233,6 +251,28 @@ def missing_contract_labels(contracts: Iterable[object]) -> list[str]:
             seen.add(label)
             values.append(label)
     return values
+
+
+def missing_contract_count_label(contracts: Iterable[object]) -> str:
+    count = len(missing_contract_labels(contracts))
+    if count == 0:
+        return "brak brakujących danych"
+    if count == 1:
+        return "1 brakujący zakres danych"
+    if 2 <= count <= 4:
+        return f"{count} brakujące zakresy danych"
+    return f"{count} brakujących zakresów danych"
+
+
+def blocked_claim_count_label(claims: Iterable[str]) -> str:
+    count = len(blocked_claim_labels(claims))
+    if count == 0:
+        return "brak zablokowanych obietnic"
+    if count == 1:
+        return "1 zablokowana obietnica"
+    if 2 <= count <= 4:
+        return f"{count} zablokowane obietnice"
+    return f"{count} zablokowanych obietnic"
 
 
 def freshness_state_label(state: str | None) -> str:

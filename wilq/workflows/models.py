@@ -5,7 +5,17 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from wilq.operator_labels import missing_contract_labels
+from wilq.operator_labels import (
+    action_count_label,
+    blocked_claim_count_label,
+    blocked_claim_labels,
+    evidence_count_label,
+    missing_contract_count_label,
+    missing_contract_labels,
+    source_connector_labels,
+    source_connector_summary_label,
+    workflow_error_count_label,
+)
 from wilq.schemas import ActionRisk, utc_now
 
 
@@ -18,6 +28,19 @@ class WorkflowOutput(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    action_summary_label: str = ""
+    error_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> "WorkflowOutput":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        if not self.error_summary_label:
+            self.error_summary_label = workflow_error_count_label(self.errors)
+        return self
 
 
 class WorkflowStep(BaseModel):
@@ -39,19 +62,46 @@ class Workflow(BaseModel):
     skill_id: str | None = None
     safe_next_step: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
+    source_connector_summary_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     missing_contracts: list[str] = Field(default_factory=list)
     missing_contract_labels: list[str] = Field(default_factory=list)
+    missing_contract_summary_label: str = ""
     risk: ActionRisk = ActionRisk.low
     risk_label: str | None = None
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> "Workflow":
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        if not self.source_connector_summary_label:
+            self.source_connector_summary_label = source_connector_summary_label(
+                self.source_connectors
+            )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = blocked_claim_labels(self.blocked_claims)
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claims
+            )
         if not self.missing_contract_labels:
             self.missing_contract_labels = missing_contract_labels(self.missing_contracts)
+        if not self.missing_contract_summary_label:
+            self.missing_contract_summary_label = missing_contract_count_label(
+                self.missing_contracts
+            )
         return self
 
 
