@@ -73,6 +73,8 @@ Date: 2026-06-28
 - Google Ads campaign triage, search-term, n-gram, 90-day safety and keyword
   context rows use API/domain evidence summary labels instead of route-local
   evidence count formatting.
+- Connector settings cards use API/domain credential summary labels instead of
+  route-local credential/source count formatting.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms instead
@@ -120,6 +122,19 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Backend model proof: `ConnectorStatus` hydrates credential summary labels.
+- Live API proof: `/api/connectors` returns
+  `missing_credentials_summary_label` and `credential_source_summary_label`.
+- Browser proof: `/settings` expanded access panel renders credential/source
+  summaries without raw secret names, connector IDs or credential source IDs.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_search_terms" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

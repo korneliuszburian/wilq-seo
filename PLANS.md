@@ -583,6 +583,10 @@ WILQ is complete for this long-range goal when:
   refresh run cards now consume API/domain `evidence_summary_label` instead of
   route-local evidence count formatting. Live API proof confirmed
   `/api/connectors/refresh-runs`; browser proof confirmed `/actions`.
+- 2026-06-28: Connector settings cards now consume API/domain credential
+  summary labels instead of route-local credential/source count formatting.
+  Live API proof confirmed `/api/connectors`; browser proof confirmed
+  `/settings`.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
 - 2026-06-28: Knowledge first-screen decision and card summaries now use

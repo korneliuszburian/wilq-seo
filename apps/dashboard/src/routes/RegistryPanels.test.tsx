@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -62,7 +64,9 @@ describe("RegistryPanels", () => {
             status_label: "brakuje dostępu",
             configured: false,
             missing_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
+            missing_credentials_summary_label: "1 pole",
             available_credential_sources: ["repo_env"],
+            credential_source_summary_label: "1 źródło",
             freshness: { state: "missing" },
             supported_actions: []
           } satisfies ConnectorStatus)
@@ -79,6 +83,10 @@ describe("RegistryPanels", () => {
     expect(screen.queryByText("GOOGLE_ADS_DEVELOPER_TOKEN")).not.toBeInTheDocument();
     expect(screen.queryByText("repo_env")).not.toBeInTheDocument();
     expect(screen.queryByText("Brakujące credentiale")).not.toBeInTheDocument();
+
+    const source = readFileSync("src/routes/RegistryPanels.tsx", "utf8");
+    expect(source).not.toContain("connector.missing_credentials.length, \"pole\"");
+    expect(source).not.toContain("connector.available_credential_sources.length,");
   });
 
   it("evidence cards hide raw source identifiers from the list view", () => {

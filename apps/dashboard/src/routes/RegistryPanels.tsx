@@ -31,7 +31,7 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
             {connector.missing_credentials.length > 0 ? (
               <div>
                 <div className="mb-1 font-medium text-wait">Brakujące ustawienia dostępu</div>
-                <div>{formatPolishCount(connector.missing_credentials.length, "pole", "pola", "pól")}</div>
+                <div>{connector.missing_credentials_summary_label}</div>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-signal">
@@ -41,13 +41,7 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
             )}
             {connector.available_credential_sources.length > 0 ? (
               <div className="mt-2 text-slate-500">
-                Źródła konfiguracji:{" "}
-                {formatPolishCount(
-                  connector.available_credential_sources.length,
-                  "źródło",
-                  "źródła",
-                  "źródeł"
-                )}
+                Źródła konfiguracji: {connector.credential_source_summary_label}
               </div>
             ) : null}
           </div>

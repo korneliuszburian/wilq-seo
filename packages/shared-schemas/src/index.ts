@@ -7,7 +7,9 @@ export const ConnectorStatusSchema = z.object({
   status_label: z.string().default(""),
   configured: z.boolean(),
   missing_credentials: z.array(z.string()),
+  missing_credentials_summary_label: z.string().default(""),
   available_credential_sources: z.array(z.string()),
+  credential_source_summary_label: z.string().default(""),
   freshness: z.object({
     state: z.string(),
     notes: z.string().nullable().optional()

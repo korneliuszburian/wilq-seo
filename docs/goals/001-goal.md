@@ -120,6 +120,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads campaign triage, search-term, n-gram, 90-day safety and keyword
   context rows use API/domain evidence summary labels instead of route-local
   evidence count formatting.
+- Connector settings cards use API/domain credential summary labels instead of
+  route-local credential/source count formatting.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms.

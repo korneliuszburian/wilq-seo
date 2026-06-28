@@ -209,6 +209,28 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     return f"{count} akcji do sprawdzenia"
 
 
+def credential_field_count_label(fields: Iterable[str]) -> str:
+    count = len(list(fields))
+    if count == 0:
+        return "brak brakujących pól dostępu"
+    if count == 1:
+        return "1 pole"
+    if 2 <= count <= 4:
+        return f"{count} pola"
+    return f"{count} pól"
+
+
+def credential_source_count_label(sources: Iterable[str]) -> str:
+    count = len(list(sources))
+    if count == 0:
+        return "brak źródeł konfiguracji"
+    if count == 1:
+        return "1 źródło"
+    if 2 <= count <= 4:
+        return f"{count} źródła"
+    return f"{count} źródeł"
+
+
 def mapped_action_type_count_label(action_types: Iterable[str]) -> str:
     count = len(list(action_types))
     if count == 0:

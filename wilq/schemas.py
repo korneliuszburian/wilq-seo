@@ -10,6 +10,8 @@ from wilq.operator_labels import (
     action_count_label,
     blocked_claim_label,
     blocked_claim_summary_label,
+    credential_field_count_label,
+    credential_source_count_label,
     evidence_count_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
@@ -109,7 +111,9 @@ class ConnectorStatus(BaseModel):
     status_label: str = ""
     configured: bool
     missing_credentials: list[str] = Field(default_factory=list)
+    missing_credentials_summary_label: str = ""
     available_credential_sources: list[str] = Field(default_factory=list)
+    credential_source_summary_label: str = ""
     error: str | None = None
     last_success_at: datetime | None = None
     freshness: FreshnessState
@@ -120,6 +124,18 @@ class ConnectorStatus(BaseModel):
     cost_notes: str | None = None
     risk_notes: str | None = None
     health_check: str
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ConnectorStatus:
+        if not self.missing_credentials_summary_label:
+            self.missing_credentials_summary_label = credential_field_count_label(
+                self.missing_credentials
+            )
+        if not self.credential_source_summary_label:
+            self.credential_source_summary_label = credential_source_count_label(
+                self.available_credential_sources
+            )
+        return self
 
 
 class Evidence(BaseModel):
