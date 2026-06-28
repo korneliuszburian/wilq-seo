@@ -1402,6 +1402,36 @@ def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
         assert forbidden not in joined
 
 
+def test_ads_helper_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
+    from wilq.briefing.ads_change_history import (
+        _change_resource_type_label,
+        _resource_change_operation_label,
+    )
+    from wilq.briefing.ads_recommendations import (
+        _missing_metric_labels,
+        _recommendation_type_label,
+    )
+
+    joined = " ".join(
+        [
+            _recommendation_type_label("PERFORMANCE_GOAL"),
+            _missing_metric_labels(["recommendation_impact_quality_score_v2"]),
+            _change_resource_type_label("CUSTOM_CONVERSION_GOAL"),
+            _resource_change_operation_label("SET_PRIMARY"),
+        ]
+    )
+
+    for forbidden in (
+        "PERFORMANCE_GOAL",
+        "recommendation_impact_quality_score_v2",
+        "CUSTOM_CONVERSION_GOAL",
+        "SET_PRIMARY",
+        "quality score",
+        "custom conversion",
+    ):
+        assert forbidden not in joined
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -8891,7 +8921,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     assert "zdarzenia historii zmian" in readiness_items_by_id[
         "change_history_impact_review"
     ]["missing_read_contract_labels"]
-    assert "checklisty readiness" in readiness_items_by_id[
+    assert "checklisty gotowości" in readiness_items_by_id[
         "change_history_impact_review"
     ]["next_step"]
 

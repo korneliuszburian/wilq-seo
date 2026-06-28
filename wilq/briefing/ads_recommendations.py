@@ -459,14 +459,17 @@ def _recommendation_type_label(recommendation_type: object) -> str:
         "UNSPECIFIED": "typ rekomendacji nieokreślony",
     }
     value = str(recommendation_type)
-    return labels.get(value, value.replace("_", " ").lower())
+    return labels.get(value, "typ rekomendacji do sprawdzenia")
 
 
 def _missing_metric_labels(missing_metrics: list[str]) -> str:
     labels = {
         "recommendation_impact": "podgląd wpływu rekomendacji",
     }
-    return ", ".join(labels.get(metric, metric.replace("_", " ")) for metric in missing_metrics)
+    return ", ".join(
+        labels.get(metric, "brakująca metryka rekomendacji do sprawdzenia")
+        for metric in missing_metrics
+    )
 
 
 def _remove_missing_contract_names(

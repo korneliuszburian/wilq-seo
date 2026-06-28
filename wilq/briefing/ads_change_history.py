@@ -189,7 +189,7 @@ def _change_resource_type_label(value: object | None) -> str:
         "UNSPECIFIED": "typ zasobu nieokreślony",
     }
     text = str(value)
-    return labels.get(text, text.replace("_", " ").lower())
+    return labels.get(text, "typ zasobu Google Ads do sprawdzenia")
 
 
 def _resource_change_operation_label(value: object | None) -> str:
@@ -203,7 +203,7 @@ def _resource_change_operation_label(value: object | None) -> str:
         "UNSPECIFIED": "operacja nieokreślona",
     }
     text = str(value)
-    return labels.get(text, text.replace("_", " ").lower())
+    return labels.get(text, "typ zmiany Google Ads do sprawdzenia")
 
 
 def _int_metric_value(fact: MetricFact | None) -> int | None:

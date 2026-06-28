@@ -148,6 +148,9 @@ use the cleaned language.
 - Shared Python schema fallbacks for marketing risk, tactical domains,
   tactical dimensions, metric dimension values and Ads/Demand Gen read statuses
   now use safe Polish fallback labels instead of raw enum values.
+- Ads recommendation and change-history helper fallbacks now use safe Polish
+  labels for unknown recommendation types, missing recommendation metrics,
+  change resource types and change operation types.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
@@ -171,6 +174,10 @@ are resolved or explicitly deferred.
    fall back to raw snake_case or English values in marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
+6. Dashboard still needs focused cleanup for Knowledge first-screen blocked
+   claim summaries, tactical queue trace links, Google Sheets generic route
+   copy, workflow card counters, metric chip formatting and action focus card
+   metadata.
 
 ## Execution Policy
 

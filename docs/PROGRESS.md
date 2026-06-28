@@ -121,6 +121,9 @@ Date: 2026-06-28
 - Shared Python schema fallbacks for marketing risk, tactical domains,
   tactical dimensions, metric dimension values and Ads/Demand Gen read statuses
   now use safe Polish fallback labels instead of raw enum values.
+- Ads recommendation and change-history helper fallbacks now use safe Polish
+  labels for unknown recommendation types, missing recommendation metrics,
+  change resource types and change operation types.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -166,6 +169,7 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "route_label or operator_label_fallbacks" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics or ads_label_fallbacks or custom_segments or demand_gen or blocked_claim" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics or ads_label_fallbacks or custom_segments or demand_gen or blocked_claim or tactical_queue or opportunity" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_helper_label_fallbacks or ads_label_fallbacks or ads_change_history or ads_diagnostics" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/TacticalQueuePanel.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
