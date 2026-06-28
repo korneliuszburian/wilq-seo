@@ -552,10 +552,9 @@ WILQ is complete for this long-range goal when:
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
 - 2026-06-28: Current remaining cleanup work is label fallback hardening,
-  Knowledge first-screen summaries, workflow/registry counters, remaining
-  content/ads payload-derived panels, context-pack copy and recovery-doc
-  pruning. Do not start deferred product layers until `PLAN.md` completion is
-  green or explicitly deferred.
+  Knowledge first-screen summaries, remaining content/ads payload-derived
+  panels, context-pack copy and recovery-doc pruning. Do not start deferred
+  product layers until `PLAN.md` completion is green or explicitly deferred.
 - 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
   and Merchant tactical labels now fall back to neutral Polish operator labels.
   The remaining raw fallback scan is limited to non-marketer connector
@@ -568,6 +567,8 @@ WILQ is complete for this long-range goal when:
   payload previews.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
+- 2026-06-28: Szanse cards now render API/domain evidence, source, action and
+  knowledge summary labels instead of route-local count assembly.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.
@@ -769,3 +770,6 @@ WILQ is complete for this long-range goal when:
 - Latest Knowledge proof: focused route test, dashboard typecheck, marketer
   language guard and browser proof passed after Knowledge details stopped
   showing raw connector IDs and fixed Polish count forms.
+- Latest Szanse proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard and browser proof passed after moving
+  evidence, source, action and knowledge summaries to API/domain labels.

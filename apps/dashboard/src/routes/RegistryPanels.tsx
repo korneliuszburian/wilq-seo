@@ -87,15 +87,10 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           ) : null}
           <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {formatEvidenceCount(opportunity.evidence_ids.length)}</div>
-            <div>
-              Źródła danych:{" "}
-              {formatPolishCount(opportunity.source_connectors.length, "źródło", "źródła", "źródeł")}
-            </div>
-            <div>Akcje do sprawdzenia: {opportunity.action_ids.length}</div>
-            <div>
-              Użyta wiedza: {opportunity.expert_rule_ids.length + opportunity.playbook_ids.length}
-            </div>
+            <div>Dowody: {opportunity.evidence_summary_label}</div>
+            <div>Źródła danych: {opportunity.source_connector_labels.join(", ")}</div>
+            <div>Akcje do sprawdzenia: {opportunity.action_summary_label}</div>
+            <div>Użyta wiedza: {opportunity.knowledge_summary_label}</div>
           </div>
           {opportunity.is_fixture ? (
             <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">

@@ -118,6 +118,7 @@ from wilq.operator_labels import (
     blocked_claim_label,
     blocked_claim_labels,
     connector_refresh_status_label,
+    knowledge_reference_count_label,
     missing_contract_labels,
     opportunity_domain_label,
     route_cta_label,
@@ -1421,6 +1422,14 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert source_connector_label(unknown_connector) == "źródło danych do sprawdzenia"
     assert source_connector_labels([unknown_connector]) == ["źródło danych do sprawdzenia"]
     assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
+    assert knowledge_reference_count_label() == "brak użytej wiedzy"
+    assert (
+        knowledge_reference_count_label(
+            playbook_ids=["content_playbook_v1"],
+            expert_rule_ids=["content_rule_v1"],
+        )
+        == "2 elementy wiedzy użyte w decyzji"
+    )
 
     compact = _compact_refresh_run_for_operator_context(
         {
@@ -8067,6 +8076,8 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert google_ads["domain_label"] == "Google Ads"
     assert google_ads["source_connector_labels"] == ["Google Ads"]
     assert "dowod" in google_ads["evidence_summary_label"]
+    assert google_ads["action_summary_label"] == "4 akcje do sprawdzenia"
+    assert google_ads["knowledge_summary_label"] == "1 element wiedzy użyty w decyzji"
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",

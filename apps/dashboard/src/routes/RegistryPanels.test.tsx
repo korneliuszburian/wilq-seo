@@ -1,10 +1,56 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { ConnectorRefreshRun, ConnectorStatus, Evidence, ExpertRule } from "../lib/api";
-import { ConnectorGrid, ConnectorRefreshRunList, EvidenceList, ExpertRuleList } from "./RegistryPanels";
+import type { ConnectorRefreshRun, ConnectorStatus, Evidence, ExpertRule, Opportunity } from "../lib/api";
+import {
+  ConnectorGrid,
+  ConnectorRefreshRunList,
+  EvidenceList,
+  ExpertRuleList,
+  OpportunityList
+} from "./RegistryPanels";
 
 describe("RegistryPanels", () => {
+  it("opportunity cards use API summaries instead of raw counts", () => {
+    render(
+      <OpportunityList
+        opportunities={[
+          ({
+            id: "opp_ads_review",
+            type: "ads_review",
+            title: "Ocena Google Ads",
+            domain: "google_ads",
+            domain_label: "Google Ads",
+            source_connectors: ["google_ads"],
+            source_connector_labels: ["Google Ads"],
+            evidence_ids: ["ev_ads_1"],
+            evidence_summary_label: "1 dowód źródłowy",
+            metric_tiles: {},
+            metrics: [],
+            human_diagnosis: "WILQ widzi decyzję do sprawdzenia.",
+            recommended_action: "Sprawdź akcję w WILQ.",
+            risk: "medium",
+            risk_label: "średnie ryzyko",
+            action_ids: ["act_ads_1"],
+            action_summary_label: "1 akcja do sprawdzenia",
+            expert_rule_ids: ["ads_rule_v1"],
+            playbook_ids: ["ads_playbook_v1"],
+            knowledge_summary_label: "2 elementy wiedzy użyte w decyzji",
+            is_fixture: false
+          } satisfies Opportunity)
+        ]}
+      />
+    );
+
+    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Użyta wiedza: 2 elementy wiedzy użyte w decyzji")).toBeInTheDocument();
+    expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("ads_rule_v1")).not.toBeInTheDocument();
+    expect(screen.queryByText("ads_playbook_v1")).not.toBeInTheDocument();
+  });
+
   it("connector cards summarize access without raw ids or credential names", () => {
     render(
       <ConnectorGrid

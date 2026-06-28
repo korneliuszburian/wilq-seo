@@ -108,8 +108,10 @@ export const OpportunitySchema = z.object({
   risk: z.string(),
   risk_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   expert_rule_ids: z.array(z.string()),
   playbook_ids: z.array(z.string()),
+  knowledge_summary_label: z.string().default(""),
   is_fixture: z.boolean()
 });
 

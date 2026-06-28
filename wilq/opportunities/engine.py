@@ -7,7 +7,9 @@ from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
+    action_count_label,
     evidence_count_label,
+    knowledge_reference_count_label,
     opportunity_domain_label,
     source_connector_label,
     source_connector_labels,
@@ -450,6 +452,11 @@ def _label_opportunity(opportunity: Opportunity) -> Opportunity:
             ),
             "evidence_summary_label": evidence_count_label(opportunity.evidence_ids),
             "risk_label": _risk_label(opportunity.risk),
+            "action_summary_label": action_count_label(opportunity.action_ids),
+            "knowledge_summary_label": knowledge_reference_count_label(
+                playbook_ids=opportunity.playbook_ids,
+                expert_rule_ids=opportunity.expert_rule_ids,
+            ),
         }
     )
 

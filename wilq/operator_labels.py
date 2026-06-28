@@ -202,6 +202,25 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     return f"{count} akcji do sprawdzenia"
 
 
+def knowledge_reference_count_label(
+    knowledge_card_ids: Iterable[str] = (),
+    playbook_ids: Iterable[str] = (),
+    expert_rule_ids: Iterable[str] = (),
+) -> str:
+    count = (
+        len(list(knowledge_card_ids))
+        + len(list(playbook_ids))
+        + len(list(expert_rule_ids))
+    )
+    if count == 0:
+        return "brak użytej wiedzy"
+    if count == 1:
+        return "1 element wiedzy użyty w decyzji"
+    if 2 <= count <= 4:
+        return f"{count} elementy wiedzy użyte w decyzji"
+    return f"{count} elementów wiedzy użytych w decyzji"
+
+
 def workflow_error_count_label(errors: Iterable[str]) -> str:
     count = len(list(errors))
     if count == 0:

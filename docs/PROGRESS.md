@@ -50,6 +50,8 @@ Date: 2026-06-28
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
+- Szanse cards use API/domain evidence, source, action and knowledge summary
+  labels instead of route-local count assembly or raw identifiers.
 - Shared `StatusBadge` does not own a product-language dictionary; touched
   surfaces pass raw state values plus API/domain visible labels.
 - Unknown visible label fallbacks collapse to neutral Polish operator labels
@@ -69,15 +71,27 @@ Date: 2026-06-28
    fall back to raw snake_case or English values in marketer-facing copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
+5. Dashboard still needs focused cleanup for Knowledge first-screen summaries
+   and any remaining payload-derived panels.
+6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
-6. Continue checking compacted context-packs after dashboard/API cleanup; the
+7. Continue checking compacted context-packs after dashboard/API cleanup; the
    content strategist context currently preserves content preview labels.
-7. Real marketer UAT is still required for a usefulness claim unless the owner
+8. Real marketer UAT is still required for a usefulness claim unless the owner
    explicitly defers it.
 
 ## Latest Accepted Proof
+
+Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunities_are_derived_from_evidence_and_rule_mappings or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Browser proof: `.local-lab/proof/opportunity-summary-labels-clean.txt`
 
 Most recent committed slice:
 
