@@ -102,6 +102,42 @@ from wilq.storage.metric_store import metric_store
 
 client = TestClient(app)
 
+RAW_PREVIEW_ITEM_KEYS = {
+    "action_type",
+    "api_mutation_ready",
+    "apply_allowed",
+    "blocked_claims",
+    "candidate_id",
+    "destructive",
+    "evidence_ids",
+    "preview_contract",
+    "product_id",
+    "recommendation_id",
+    "sample_product_ids",
+    "source_type",
+}
+
+
+def assert_preview_items_are_operator_view_models(items: list[dict[str, Any]]) -> None:
+    allowed_keys = {"id", "title_label", "status_label", "rows"}
+    for item in items:
+        assert set(item) <= allowed_keys
+        assert item["id"].startswith("preview_item_")
+        assert item["title_label"]
+        assert not RAW_PREVIEW_ITEM_KEYS.intersection(item)
+        for row in item["rows"]:
+            assert set(row) == {"label", "value"}
+            assert row["label"]
+            assert isinstance(row["value"], str)
+
+
+def preview_card_row_values(card: dict[str, Any], label: str) -> list[str]:
+    return [
+        row["value"]
+        for row in card.get("rows", [])
+        if row.get("label") == label and isinstance(row.get("value"), str)
+    ]
+
 GOOGLE_ADS_TEST_ENV = (
     "GOOGLE_ADS_DEVELOPER_TOKEN",
     "GOOGLE_ADS_CLIENT_ID",
@@ -1514,6 +1550,8 @@ def test_action_preview_generates_dry_run_audit_without_apply(
     assert preview["audit_event"]["actor"] == "operator_test"
     assert preview["preview_items_total"] >= len(preview["preview_items"])
     assert len(preview["preview_items"]) <= 3
+    assert preview["preview_cards"]
+    assert_preview_items_are_operator_view_models(preview["preview_items"])
     assert preview["review_gate"]["apply_allowed"] is False
     assert preview["review_gate"]["status_label"]
     assert len(preview["blocker_labels"]) == len(preview["blockers"])
@@ -1548,26 +1586,21 @@ def test_content_action_preview_exposes_review_only_brief_payload(
     assert preview["mutation_allowed"] is False
     assert preview["status"] == "blocked"
     assert preview["preview_items_total"] >= 2
+    assert preview["preview_cards"]
+    assert_preview_items_are_operator_view_models(preview["preview_items"])
+    serialized_preview_items = json.dumps(preview["preview_items"], ensure_ascii=False)
+    assert "source_type" not in serialized_preview_items
+    assert "preview_contract" not in serialized_preview_items
+    assert "apply_allowed" not in serialized_preview_items
     assert any(
-        item["source_type"] == "gsc_query_page" for item in preview["preview_items"]
+        "odśwież istniejącą treść" in preview_card_row_values(card, "Tryb")
+        for card in preview["preview_cards"]
     )
     assert any(
-        item["mode_label"] == "odśwież istniejącą treść"
-        for item in preview["preview_items"]
-        if item["source_type"] == "gsc_query_page"
+        "kontrola prawna"
+        in ", ".join(preview_card_row_values(card, "Blokady publikacji"))
+        for card in preview["preview_cards"]
     )
-    assert any(
-        item["source_type"] == "ahrefs_gap_review" for item in preview["preview_items"]
-    )
-    assert not any(
-        item.get("preview_contract") == "wordpress_draft_payload_preview_v1"
-        for item in preview["preview_items"]
-    )
-    for item in preview["preview_items"]:
-        assert item["apply_allowed"] is False
-        assert item["api_mutation_ready"] is False
-        assert item["evidence_ids"]
-        assert "gwarancja pozycji" in item["blocked_claims"]
     assert "action_mode_prepare_only" in preview["blockers"]
 
 
@@ -6191,9 +6224,12 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     preview_payload = preview_response.json()
     assert preview_payload["preview_contract"] == "local_visibility_review_preview_v1"
     assert preview_payload["preview_items_total"] == 1
-    assert preview_payload["preview_items"][0]["metric_snapshot"][
-        "localo_reviews_count"
-    ] == 793
+    assert_preview_items_are_operator_view_models(preview_payload["preview_items"])
+    assert preview_payload["preview_cards"]
+    localo_card_text = json.dumps(preview_payload["preview_cards"], ensure_ascii=False)
+    assert "opinie Localo" in localo_card_text
+    assert "793" in localo_card_text
+    assert "metric_snapshot" not in json.dumps(preview_payload["preview_items"])
     assert "payload_preview_missing" not in preview_payload["blockers"]
 
     command_response = client.get("/api/dashboard/command-center")
@@ -12929,18 +12965,17 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     preview_payload = preview_response.json()
     assert preview_payload["preview_contract"] == "merchant_feed_issue_review_preview_v1"
     assert "payload_preview_missing" not in preview_payload["blockers"]
-    assert preview_payload["preview_items"][0]["sample_product_ids"] == [
-        "online~pl~PL~SKU-001",
-        "online~pl~PL~SKU-002",
-    ]
-    assert preview_payload["preview_items"][0]["issue_type_label"] == (
+    assert_preview_items_are_operator_view_models(preview_payload["preview_items"])
+    assert preview_payload["preview_cards"]
+    merchant_card = preview_payload["preview_cards"][0]
+    merchant_card_text = json.dumps(merchant_card, ensure_ascii=False)
+    assert "online~pl~PL~SKU-001" not in json.dumps(preview_payload["preview_items"])
+    assert preview_card_row_values(merchant_card, "Problem") == [
         "zmiana dostępności do sprawdzenia"
-    )
-    assert preview_payload["preview_items"][0]["affected_attribute_label"] == "dostępność"
-    assert preview_payload["preview_items"][0]["sample_titles"] == [
-        "Sorbent chemiczny 10 kg"
     ]
-    assert preview_payload["preview_items"][0]["apply_allowed"] is False
+    assert preview_card_row_values(merchant_card, "Atrybut") == ["dostępność"]
+    assert "Sorbent chemiczny 10 kg" in merchant_card_text
+    assert "sample_product_ids" not in json.dumps(preview_payload["preview_items"])
     serialized = json.dumps(payload)
     assert "5519957373" not in serialized
     assert "adc.json" not in serialized

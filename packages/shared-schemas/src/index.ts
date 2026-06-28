@@ -196,6 +196,13 @@ export const ActionPreviewCardViewModelSchema = z.object({
   system_readiness_label: z.string().default("")
 });
 
+export const ActionPreviewItemViewModelSchema = z.object({
+  id: z.string(),
+  title_label: z.string(),
+  status_label: z.string().default(""),
+  rows: z.array(ActionPreviewRowViewModelSchema).default([])
+});
+
 export const ActionObjectSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -271,7 +278,8 @@ export const ActionPreviewResultSchema = z.object({
   dry_run: z.boolean(),
   mutation_allowed: z.boolean(),
   preview_contract: z.string().nullable().optional(),
-  preview_items: z.array(z.record(z.unknown())),
+  preview_items: z.array(ActionPreviewItemViewModelSchema),
+  preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   preview_items_total: z.number(),
   omitted_items: z.number(),
   blockers: z.array(z.string()),

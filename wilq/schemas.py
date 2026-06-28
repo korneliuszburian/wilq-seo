@@ -362,6 +362,13 @@ class ActionPreviewCardViewModel(BaseModel):
     system_readiness_label: str = ""
 
 
+class ActionPreviewItemViewModel(BaseModel):
+    id: str
+    title_label: str
+    status_label: str = ""
+    rows: list[ActionPreviewRowViewModel] = Field(default_factory=list)
+
+
 class ActionObject(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -431,7 +438,8 @@ class ActionPreviewResult(BaseModel):
     dry_run: bool = True
     mutation_allowed: bool = False
     preview_contract: str | None = None
-    preview_items: list[dict[str, Any]] = Field(default_factory=list)
+    preview_items: list[ActionPreviewItemViewModel] = Field(default_factory=list)
+    preview_cards: list[ActionPreviewCardViewModel] = Field(default_factory=list)
     preview_items_total: int = 0
     omitted_items: int = 0
     blockers: list[str] = Field(default_factory=list)

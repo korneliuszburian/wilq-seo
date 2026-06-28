@@ -159,6 +159,9 @@ use the cleaned language.
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of
   `delta:` and key=value display.
+- Action preview API results now expose typed/redacted `preview_items` and
+  `preview_cards`. Marketer-facing preview surfaces must use those view-models;
+  raw action payload previews stay in payload/audit/technical detail only.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.

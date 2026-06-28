@@ -104,6 +104,7 @@ from wilq.schemas import (
     ActionMutationAuditRecord,
     ActionObject,
     ActionPreviewCardViewModel,
+    ActionPreviewItemViewModel,
     ActionPreviewRequest,
     ActionPreviewResult,
     ActionPreviewRowViewModel,
@@ -2249,9 +2250,16 @@ def preview_action(
 ) -> ActionPreviewResult:
     preview_request = request or ActionPreviewRequest()
     action.review_gate = _action_review_gate(action)
-    preview_items = _payload_preview_items(action.payload)
-    included_items = preview_items[: preview_request.max_items]
-    blockers = _action_preview_blockers(action, preview_items)
+    raw_preview_items = _payload_preview_items(action.payload)
+    included_items = raw_preview_items[: preview_request.max_items]
+    preview_cards = _action_preview_cards(action)
+    preview_items = _action_preview_item_view_models(
+        action=action,
+        raw_items=raw_preview_items,
+        preview_cards=preview_cards,
+        max_items=preview_request.max_items,
+    )
+    blockers = _action_preview_blockers(action, raw_preview_items)
     status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
     audit = AuditEvent(
         id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
@@ -2262,7 +2270,7 @@ def preview_action(
         summary=_action_preview_summary(
             status=status,
             included_items=len(included_items),
-            preview_items=len(preview_items),
+            preview_items=len(raw_preview_items),
         ),
         evidence_ids=action.evidence_ids,
     )
@@ -2273,10 +2281,11 @@ def preview_action(
         status_label=_action_result_status_label(status),
         dry_run=True,
         mutation_allowed=False,
-        preview_contract=_preview_contract(action.payload, preview_items),
-        preview_items=included_items,
-        preview_items_total=len(preview_items),
-        omitted_items=max(len(preview_items) - len(included_items), 0),
+        preview_contract=_preview_contract(action.payload, raw_preview_items),
+        preview_items=preview_items,
+        preview_cards=preview_cards,
+        preview_items_total=len(raw_preview_items),
+        omitted_items=max(len(raw_preview_items) - len(included_items), 0),
         blockers=blockers,
         blocker_labels=_action_gate_labels(blockers),
         audit_event=_audit_event_with_operator_label(audit),
@@ -2602,6 +2611,138 @@ def _action_preview_cards(action: ActionObject) -> list[ActionPreviewCardViewMod
     }:
         return _social_draft_input_preview_cards(action.payload)
     return []
+
+
+def _action_preview_item_view_models(
+    *,
+    action: ActionObject,
+    raw_items: list[dict[str, Any]],
+    preview_cards: list[ActionPreviewCardViewModel],
+    max_items: int,
+) -> list[ActionPreviewItemViewModel]:
+    if preview_cards:
+        return [
+            _preview_item_from_card(card, index)
+            for index, card in enumerate(preview_cards[:max_items])
+        ]
+    return [
+        _preview_item_from_raw_payload(action, item, index)
+        for index, item in enumerate(raw_items[:max_items])
+    ]
+
+
+def _preview_item_from_card(
+    card: ActionPreviewCardViewModel,
+    index: int,
+) -> ActionPreviewItemViewModel:
+    rows = list(card.rows[:4])
+    if card.apply_state_label:
+        rows.append(_preview_row("Zapis zmian", card.apply_state_label))
+    if card.system_readiness_label:
+        rows.append(_preview_row("Gotowość systemu", card.system_readiness_label))
+    return ActionPreviewItemViewModel(
+        id=f"preview_item_{index + 1}",
+        title_label=card.title_label or f"Pozycja podglądu {index + 1}",
+        status_label=card.status_label,
+        rows=rows,
+    )
+
+
+def _preview_item_from_raw_payload(
+    action: ActionObject,
+    item: dict[str, Any],
+    index: int,
+) -> ActionPreviewItemViewModel:
+    rows = _safe_raw_preview_rows(item)
+    if not rows:
+        rows = [
+            _preview_row("Zakres", _preview_contract_label(_preview_contract(action.payload, [item]))),
+        ]
+    return ActionPreviewItemViewModel(
+        id=f"preview_item_{index + 1}",
+        title_label=_raw_preview_title(item, index),
+        status_label=_raw_preview_status(item),
+        rows=rows[:6],
+    )
+
+
+def _safe_raw_preview_rows(item: dict[str, Any]) -> list[ActionPreviewRowViewModel]:
+    rows: list[ActionPreviewRowViewModel] = []
+    for label, value in _raw_preview_label_values(item):
+        rows.append(_preview_row(label, value))
+        if len(rows) >= 4:
+            break
+    if "apply_allowed" in item:
+        rows.append(_preview_row("Zapis zmian", _apply_state_label(item.get("apply_allowed"))))
+    if "api_mutation_ready" in item:
+        rows.append(
+            _preview_row("Gotowość systemu", _system_readiness_label(item.get("api_mutation_ready")))
+        )
+    return rows
+
+
+def _raw_preview_label_values(item: dict[str, Any]) -> list[tuple[str, str]]:
+    values: list[tuple[str, str]] = []
+    for key, value in item.items():
+        if not key.endswith("_label"):
+            continue
+        if key in {"id_label", "preview_contract_label"}:
+            continue
+        label = _raw_preview_row_label(key)
+        if isinstance(value, str) and value:
+            values.append((label, value))
+        elif isinstance(value, list):
+            values.extend((label, entry) for entry in value if isinstance(entry, str) and entry)
+    return values
+
+
+def _raw_preview_row_label(key: str) -> str:
+    labels = {
+        "affected_attribute_label": "Atrybut",
+        "issue_type_label": "Problem",
+        "mode_label": "Tryb",
+        "operation_type_label": "Operacja",
+        "readiness_label": "Gotowość",
+        "recommendation_type_label": "Rekomendacja",
+        "reason_label": "Powód",
+        "risk_label": "Ryzyko",
+        "status_label": "Status",
+        "validation_status_label": "Walidacja",
+    }
+    return labels.get(key, "Szczegół")
+
+
+def _raw_preview_title(item: dict[str, Any], index: int) -> str:
+    for key in (
+        "title_label",
+        "issue_type_label",
+        "recommendation_type_label",
+        "operation_type_label",
+        "mode_label",
+    ):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return f"Pozycja podglądu {index + 1}"
+
+
+def _raw_preview_status(item: dict[str, Any]) -> str:
+    for key in ("status_label", "validation_status_label", "readiness_label"):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _preview_contract_label(value: str | None) -> str:
+    labels = {
+        MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT: "przegląd problemów Merchant",
+        "content_brief_preview_v1": "brief treści do sprawdzenia",
+        "wordpress_draft_payload_preview_v1": "szkic WordPress do sprawdzenia",
+        "local_visibility_review_preview_v1": "widoczność lokalna do sprawdzenia",
+        "ga4_tracking_quality_review_v1": "jakość pomiaru GA4 do sprawdzenia",
+    }
+    return labels.get(value or "", "podgląd zmian do sprawdzenia")
 
 
 def _content_refresh_preview_cards(
@@ -4261,7 +4402,7 @@ def _action_gate_labels(values: Iterable[str]) -> list[str]:
     labels: list[str] = []
     for value in values:
         label = _action_gate_label(value)
-        if label and label not in labels:
+        if label:
             labels.append(label)
     return labels
 

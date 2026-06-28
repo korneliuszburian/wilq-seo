@@ -133,6 +133,10 @@ Date: 2026-06-28
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of
   `delta:` and key=value display.
+- Action preview API results now return typed/redacted `preview_items` and
+  `preview_cards`. Raw action payload preview details stay in action payloads
+  and technical detail, not in the primary preview result used by marketer
+  surfaces.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -218,6 +222,8 @@ Recent focused proof used during the cleanup:
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision|ahrefs route renders authority context"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route renders workflow-specific brief focus"`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "action_preview or content_action_preview or localo_visibility or merchant_feed_preview" --maxfail=5`
+- `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk curl --max-time 60 -sS http://127.0.0.1:8000/api/demand-gen/diagnostics`
 - `rtk uv run python - <<'PY' ... /api/ahrefs/diagnostics, /api/content/diagnostics, /api/actions/act_prepare_wordpress_draft_handoff and /api/marketing/tactical-queue public contract scan ... PY`
 - `rtk uv run python - <<'PY' ... /api/knowledge/operating-map label-field scan ... PY`
