@@ -128,6 +128,8 @@ use cleaned Polish operator language.
 - Active WILQ skill contracts now use Polish operator wording for dowody,
   źródła danych, blokady and technical trace IDs instead of pushing
   English/Polish mixed terms into primary skill answers.
+- Opportunity fallback copy and Content vendor-read blockers now use Polish
+  source-data wording instead of credential/vendor/query-page/playbook jargon.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

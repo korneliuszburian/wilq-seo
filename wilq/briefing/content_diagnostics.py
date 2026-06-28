@@ -14,7 +14,11 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import evidence_count_label, source_connector_labels
+from wilq.operator_labels import (
+    evidence_count_label,
+    source_connector_label,
+    source_connector_labels,
+)
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -1096,7 +1100,7 @@ def _content_blocker_reason(
         return latest.errors[0]
     if latest and latest.summary:
         return latest.summary
-    return f"Brak wykonanego odczytu danych dla {connector_id}."
+    return f"Brak wykonanego odczytu danych dla: {source_connector_label(connector_id)}."
 
 
 def _refresh_or_connector_evidence_ids(
@@ -1243,8 +1247,8 @@ def _content_vendor_read_blocker_decision(
         status="blocked",
         title="Content: odczyt GSC i WordPress wymagany przed decyzją",
         summary=(
-            "WILQ nie ma faktów query/page z Google Search Console ani spisu "
-            "treści WordPress wystarczających do decyzji: odświeżyć, scalić albo utworzyć."
+            "WILQ nie ma danych GSC dla zapytań i stron ani spisu treści "
+            "WordPress wystarczających do decyzji: odświeżyć, scalić albo utworzyć."
         ),
         priority=5,
         metric_tiles={"blokady": 2},

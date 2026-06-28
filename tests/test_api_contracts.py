@@ -7697,10 +7697,33 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert content["action_ids"] == ["act_prepare_content_refresh_queue"]
     assert content["is_fixture"] is False
     serialized = json.dumps(opportunities, ensure_ascii=False)
+    visible_opportunity_text = " ".join(
+        " ".join(
+            [
+                item["title"],
+                item["human_diagnosis"],
+                item["recommended_action"],
+            ]
+        )
+        for item in opportunities
+    )
     assert "opp_connector_" not in serialized
-    assert "rejestr reguł i playbooków" not in serialized
     assert "connector_configured" not in serialized
     assert "Run a read-only" not in serialized
+    for stale_label in (
+        "credentiali",
+        "credentiale",
+        "vendor_read",
+        "fresh evidence",
+        "query/page",
+        "content-gap evidence",
+        "inventory treści",
+        "read-only refresh",
+        "refreshu connectora",
+        "rejestr reguł i playbooków",
+        "playbooków",
+    ):
+        assert stale_label not in visible_opportunity_text
 
 
 def test_actions_reference_registered_evidence_ids() -> None:
@@ -13932,6 +13955,8 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
         "ev_connector_wordpress_ekologus_status",
     ]
     assert decision.metric_tiles == {"blokady": 2}
+    assert "query/page" not in decision.summary
+    assert "danych GSC dla zapytań i stron" in decision.summary
     assert "rekomendacja bez danych źródłowych" in decision.blocked_claims
     assert "odczyt danych" in decision.next_step
     assert diagnostics.operator_summary.top_decision_ids == [decision.id]

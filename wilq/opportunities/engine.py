@@ -80,8 +80,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_ads",
         domain=OpportunityDomain.google_ads,
         opportunity_type="google_ads_waste",
-        blocked_title="Google Ads: brak credentiali blokuje odczyt evidence",
-        ready_title="Google Ads: wymagane fresh evidence przed rekomendacją",
+        blocked_title="Google Ads: brak dostępu blokuje odczyt danych",
+        ready_title="Google Ads: wymagane świeże dowody przed rekomendacją",
         playbook_ids=(
             "google_ads_search_playbook",
             "google_ads_negative_keywords_playbook",
@@ -98,8 +98,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_search_console",
         domain=OpportunityDomain.gsc_seo,
         opportunity_type="gsc_ctr_opportunity",
-        blocked_title="GSC: brak credentiali blokuje odczyt query/page",
-        ready_title="GSC: wymagane fresh evidence przed rekomendacją",
+        blocked_title="GSC: brak dostępu blokuje odczyt zapytań i stron",
+        ready_title="GSC: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("gsc_seo_content_playbook",),
         expert_rule_ids=("seo_gsc_opportunities_v1", "seo_query_page_matrix_v1"),
     ),
@@ -108,7 +108,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         domain=OpportunityDomain.ga4,
         opportunity_type="ga4_tracking_gap",
         blocked_title="GA4: brak dostępu blokuje diagnostykę zachowania",
-        ready_title="GA4: wymagane fresh evidence przed rekomendacją",
+        ready_title="GA4: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("ga4_behavior_diagnostics_playbook",),
         expert_rule_ids=("ga4_diagnostics_v1",),
     ),
@@ -117,7 +117,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         domain=OpportunityDomain.merchant,
         opportunity_type="merchant_feed_issue",
         blocked_title="Merchant Center: brak dostępu blokuje diagnostykę feedu",
-        ready_title="Merchant Center: wymagane fresh evidence przed rekomendacją",
+        ready_title="Merchant Center: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("merchant_feed_optimization_playbook", "google_ads_pmax_playbook"),
         expert_rule_ids=("merchant_feed_rules_v1", "merchant_product_diagnostics_v1"),
         risk=ActionRisk.medium,
@@ -126,8 +126,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="ahrefs",
         domain=OpportunityDomain.ahrefs,
         opportunity_type="ahrefs_content_gap",
-        blocked_title="Ahrefs: brak tokena blokuje content-gap evidence",
-        ready_title="Ahrefs: wymagane fresh evidence przed rekomendacją",
+        blocked_title="Ahrefs: brak dostępu blokuje przegląd luk treści",
+        ready_title="Ahrefs: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("ahrefs_content_gap_playbook",),
         expert_rule_ids=("content_brief_rules_v1",),
     ),
@@ -136,7 +136,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         domain=OpportunityDomain.localo,
         opportunity_type="localo_visibility_drop",
         blocked_title="Localo: brak dostępu blokuje lokalną widoczność",
-        ready_title="Localo: wymagane fresh evidence przed rekomendacją",
+        ready_title="Localo: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("localo_local_seo_playbook",),
         expert_rule_ids=("local_visibility_v1", "local_reviews_v1"),
     ),
@@ -144,8 +144,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="wordpress_ekologus",
         domain=OpportunityDomain.wordpress,
         opportunity_type="wordpress_content_refresh",
-        blocked_title="WordPress ekologus.pl: brak dostępu blokuje inventory treści",
-        ready_title="WordPress ekologus.pl: wymagane fresh evidence przed rekomendacją",
+        blocked_title="WordPress ekologus.pl: brak dostępu blokuje spis treści",
+        ready_title="WordPress ekologus.pl: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("wordpress_content_refresh_playbook", "gsc_seo_content_playbook"),
         expert_rule_ids=("content_duplication_rules_v1", "content_brief_rules_v1"),
         risk=ActionRisk.medium,
@@ -155,7 +155,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         domain=OpportunityDomain.social,
         opportunity_type="social_post_candidate",
         blocked_title="LinkedIn: brak dostępu do organizacji blokuje publikację",
-        ready_title="LinkedIn: wymagane fresh evidence przed rekomendacją",
+        ready_title="LinkedIn: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("linkedin_content_playbook",),
         expert_rule_ids=("linkedin_rules_v1", "content_social_limits_v1"),
         risk=ActionRisk.medium,
@@ -165,7 +165,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         domain=OpportunityDomain.social,
         opportunity_type="social_post_candidate",
         blocked_title="Facebook: brak dostępu do strony blokuje publikację",
-        ready_title="Facebook: wymagane fresh evidence przed rekomendacją",
+        ready_title="Facebook: wymagane świeże dowody przed rekomendacją",
         playbook_ids=("facebook_content_playbook",),
         expert_rule_ids=("facebook_rules_v1", "content_social_limits_v1"),
         risk=ActionRisk.medium,
@@ -377,25 +377,28 @@ def _diagnosis(
     expert_rule_ids: tuple[str, ...],
     live_refresh_available: bool,
 ) -> str:
-    playbooks = ", ".join(playbook_ids)
-    rules = ", ".join(expert_rule_ids)
+    connector_label = source_connector_label(connector_id)
+    missing_count = len(missing_credentials)
     if live_refresh_available:
         return (
-            f"{connector_id} ma zakończony odczyt vendor_read w WILQ. Ta karta jest "
-            f"pomocniczym rejestrem reguł/playbooków ({playbooks}), nie gotową "
-            "rekomendacją marketingową."
+            f"{connector_label} ma zakończony odczyt danych w WILQ. Ta karta jest "
+            "pomocniczym przeglądem obszaru, nie samodzielną rekomendacją "
+            "marketingową."
         )
     if configured:
         return (
-            f"{connector_id} ma nazwy credentiali w runtime, ale ta karta nie zawiera "
-            f"jeszcze świeżych metryk performance. Najpierw użyj dedykowanego widoku "
-            "diagnostycznego albo refreshu connectora, potem dopiero playbooków: "
-            f"{playbooks}."
+            f"{connector_label} ma skonfigurowany dostęp, ale ta karta nie zawiera "
+            "jeszcze świeżych metryk do decyzji. Najpierw użyj dedykowanego widoku "
+            "diagnostycznego albo odśwież odczyt danych."
         )
+    missing_label = (
+        "brakuje dostępu do źródła danych"
+        if missing_count == 0
+        else f"brakuje dostępu do {missing_count} wymaganych ustawień źródła danych"
+    )
     return (
-        f"{connector_id} nie dostarcza evidence dla playbooków {playbooks} ani reguł "
-        f"{rules}, dopóki brakuje credentiali: "
-        f"{', '.join(missing_credentials)}."
+        f"{connector_label} nie dostarcza dowodów do decyzji, bo {missing_label}. "
+        "Najpierw trzeba skonfigurować dostęp i odświeżyć odczyt danych."
     )
 
 
@@ -405,20 +408,24 @@ def _recommended_action(
     missing_credentials: list[str],
     live_refresh_available: bool,
 ) -> str:
+    connector_label = source_connector_label(connector_id)
     if live_refresh_available:
         return (
-            f"Otwórz dedykowany widok diagnostyczny dla {connector_id}; "
-            "nie traktuj tej karty jako insightu."
+            f"Otwórz dedykowany widok diagnostyczny dla: {connector_label}. "
+            "Nie traktuj tej karty jako gotowego wniosku bez przejścia do widoku domeny."
         )
     if configured:
         return (
-            f"Uruchom read-only refresh dla {connector_id}, jeśli dedykowany widok "
-            "nie ma świeżego evidence."
+            f"Odśwież odczyt danych dla: {connector_label}, jeśli dedykowany widok "
+            "nie ma świeżych dowodów."
         )
-    return (
-        f"Skonfiguruj wymagane credentiale dla {connector_id}, potem odśwież dane: "
-        f"{', '.join(missing_credentials)}."
+    missing_count = len(missing_credentials)
+    missing_suffix = (
+        ""
+        if missing_count == 0
+        else f" Brakuje {missing_count} wymaganych ustawień dostępu."
     )
+    return f"Skonfiguruj dostęp dla: {connector_label}, potem odśwież dane.{missing_suffix}"
 
 
 def _title(
@@ -430,7 +437,7 @@ def _title(
         return blueprint.blocked_title
     if live_refresh_available:
         connector_label = source_connector_label(blueprint.connector_id)
-        return f"{connector_label}: rejestr reguł i playbooków"
+        return f"{connector_label}: przegląd obszaru z dowodami"
     return blueprint.ready_title
 
 
