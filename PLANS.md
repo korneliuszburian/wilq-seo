@@ -591,6 +591,10 @@ WILQ is complete for this long-range goal when:
   channel fallbacks. Live API proof confirmed
   `/api/demand-gen/diagnostics`; browser proof lives at
   `.local-lab/proof/demand-gen-summary-labels-clean.txt`.
+- 2026-06-28: Ahrefs decisions, sections, operator summary and gap contract now
+  expose evidence/action summary labels in API/shared schemas. The Ahrefs route
+  consumes those labels instead of route-local count formatting; live API proof
+  and browser proof live in `.local-lab/proof/`.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.
@@ -804,3 +808,6 @@ WILQ is complete for this long-range goal when:
 - Latest GA4 proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving GA4 evidence/action summaries to API/domain labels.
+- Latest Ahrefs proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving Ahrefs evidence/action summaries to API/domain labels.

@@ -7192,6 +7192,8 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert gap_contract["gap_records"] == []
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
+    assert gap_contract["evidence_summary_label"] == "1 dowód źródłowy"
+    assert gap_contract["action_summary_label"] == "brak akcji do sprawdzenia"
     assert "luka treści" in gap_contract["blocked_claims"]
     assert "luka treści" in gap_contract["blocked_claim_labels"]
     assert gap_contract["operator_review_gates"] == [
@@ -7211,6 +7213,8 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "zakończony"
     assert authority_decision["metric_tiles"]["zakres konkurencji"] == "subdomeny"
     assert authority_decision["metric_tiles"]["luki Ahrefs"] == 0
+    assert authority_decision["evidence_summary_label"] == "1 dowód źródłowy"
+    assert authority_decision["action_summary_label"] == "brak akcji do sprawdzenia"
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
     assert "konkurenci organiczni" in authority_decision["allowed_evidence_labels"]
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
@@ -7235,6 +7239,8 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert block_decision["priority_label"] == "wysoki priorytet"
     assert block_decision["metric_tiles"]["brakujące dane"] == 5
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
+    assert block_decision["evidence_summary_label"] == "1 dowód źródłowy"
+    assert block_decision["action_summary_label"] == "brak akcji do sprawdzenia"
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ahrefs_operator_summary"
     assert operator_summary["title"] == "Co marketer ma wiedzieć o Ahrefs"
@@ -7251,12 +7257,16 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "rekordy luk treści" in operator_summary["missing_read_contract_labels"]
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
+    assert operator_summary["evidence_summary_label"] == "1 dowód źródłowy"
+    assert operator_summary["action_summary_label"] == "brak akcji do sprawdzenia"
     assert "luka treści" in operator_summary["blocked_claims"]
     assert "luka treści" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
     assert payload["sections"][0]["status_label"]
+    assert payload["sections"][0]["evidence_summary_label"]
+    assert payload["sections"][0]["action_summary_label"]
     assert isinstance(payload["sections"][0]["blocked_claim_labels"], list)
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "ahrefs-token-test" not in serialized
@@ -7270,6 +7280,8 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert context_payload["ahrefs_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
     context_gap_contract = context_payload["ahrefs_diagnostics"]["gap_read_contract"]
     assert context_gap_contract["status"] == gap_contract["status"]
+    assert context_gap_contract["evidence_summary_label"] == gap_contract["evidence_summary_label"]
+    assert context_gap_contract["action_summary_label"] == gap_contract["action_summary_label"]
     assert context_gap_contract["gap_record_count"] == gap_contract["gap_record_count"]
     assert context_gap_contract["gap_records_omitted"] is True
     assert "gap_records" not in context_gap_contract
@@ -7494,6 +7506,8 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     gap_contract = payload["gap_read_contract"]
     assert gap_contract["status"] == "ready"
     assert gap_contract["status_label"] == "gotowe"
+    assert gap_contract["evidence_summary_label"]
+    assert gap_contract["action_summary_label"] == "brak akcji do sprawdzenia"
     assert gap_contract["missing_read_contracts"] == []
     assert gap_contract["available_read_contracts"] == [
         "ahrefs_authority_summary",
@@ -7723,6 +7737,13 @@ def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noi
     }
     decision_ids = {decision["id"] for decision in payload["decision_queue"]}
     assert "ahrefs_review_gap_records" in decision_ids
+    review_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ahrefs_review_gap_records"
+    )
+    assert review_decision["evidence_summary_label"]
+    assert review_decision["action_summary_label"] == "brak akcji do sprawdzenia"
     assert "ahrefs_block_gap_claims_without_records" not in decision_ids
 
 

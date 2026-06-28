@@ -47,6 +47,8 @@ Date: 2026-06-28
   API-owned preview cards or display labels instead of raw payload shape.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Ahrefs decision and gap-contract panels use API/domain evidence and action
+  summary labels instead of route-local count formatting.
 - Demand Gen uses API/domain action summary and campaign-channel labels instead
   of route-local action count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
@@ -100,6 +102,19 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims or ahrefs_diagnostics_builds_gap_review_records_from_metric_facts or ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noisy" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ahrefs route renders authority context"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/ahrefs/diagnostics` returns evidence/action summary
+  labels for the response, gap contract, operator summary, decisions and
+  sections.
+- Browser proof: `.local-lab/proof/ahrefs-summary-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ga4_measurement_decision_titles_include_reporting_context" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route renders workflow-specific brief focus"`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -111,7 +126,7 @@ Most recent verified local slice:
   decision `action_summary_label`.
 - Browser proof: `.local-lab/proof/ga4-summary-labels-clean.txt`
 
-Previous verified local slice:
+Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_expose_raw_connector_ids or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

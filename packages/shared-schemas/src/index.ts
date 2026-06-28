@@ -2563,9 +2563,11 @@ export const AhrefsDiagnosticSectionSchema = z.object({
   next_step: z.string(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   metric_fact_labels: z.record(z.string()).default({}),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -2595,9 +2597,11 @@ export const AhrefsDecisionItemSchema = z.object({
   missing_read_contract_labels: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   metric_fact_labels: z.record(z.string()).default({}),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -2645,6 +2649,9 @@ export const AhrefsGapReadContractSchema = z.object({
   operator_review_gate_labels: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
+  action_ids: z.array(z.string()).default([]),
+  action_summary_label: z.string().default(""),
   gap_records: z.array(AhrefsGapRecordSchema),
   gap_record_count: z.number(),
   next_step: z.string(),
@@ -2667,7 +2674,9 @@ export const AhrefsOperatorSummarySchema = z.object({
   missing_read_contract_labels: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([])
 });
@@ -2692,6 +2701,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   evidence_summary_label: z.string().default(""),
   source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
 

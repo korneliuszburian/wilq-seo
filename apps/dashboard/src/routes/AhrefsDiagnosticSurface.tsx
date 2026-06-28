@@ -157,7 +157,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         />
         <TraceLine
           label="Dowody"
-          values={[formatAhrefsEvidenceCount(decision.evidence_ids.length)]}
+          values={[decision.evidence_summary_label]}
           empty="brak"
         />
       </div>
@@ -202,7 +202,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         />
         <TraceLine
           label="Dowody"
-          values={[formatAhrefsEvidenceCount(contract.evidence_ids.length)]}
+          values={[contract.evidence_summary_label]}
           empty="brak"
         />
       </div>
@@ -273,13 +273,6 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
       </div>
     </section>
   );
-}
-
-function formatAhrefsEvidenceCount(count: number) {
-  if (count === 0) return "brak dowodów źródłowych";
-  if (count === 1) return "1 dowód źródłowy";
-  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
-  return `${count} dowodów źródłowych`;
 }
 
 function uniqueValues(values: string[]) {

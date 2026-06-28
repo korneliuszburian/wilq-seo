@@ -6020,6 +6020,9 @@ const ahrefsDiagnostics = {
     ],
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    evidence_summary_label: "1 dowód źródłowy",
+    action_ids: [],
+    action_summary_label: "brak akcji do sprawdzenia",
     gap_records: [
       {
         id: "ahrefs_gap_content_gap_test",
@@ -6212,7 +6215,9 @@ const ahrefsDiagnostics = {
     missing_read_contract_labels: [],
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: [],
+    action_summary_label: "brak akcji do sprawdzenia",
     blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
     blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"]
   },
@@ -6247,6 +6252,7 @@ const ahrefsDiagnostics = {
       missing_read_contract_labels: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [
         {
           name: "domain_rating",
@@ -6272,6 +6278,7 @@ const ahrefsDiagnostics = {
         ahrefs_rank: "pozycja w rankingu Ahrefs"
       },
       action_ids: [],
+      action_summary_label: "brak akcji do sprawdzenia",
       blocked_claims: [
         "wzrost ruchu",
         "wzrost autorytetu"
@@ -6317,6 +6324,7 @@ const ahrefsDiagnostics = {
       missing_read_contract_labels: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [
         {
           name: "ahrefs_content_gap_count",
@@ -6336,6 +6344,7 @@ const ahrefsDiagnostics = {
         ahrefs_content_gap_count: "luki treści"
       },
       action_ids: [],
+      action_summary_label: "brak akcji do sprawdzenia",
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -6355,9 +6364,11 @@ const ahrefsDiagnostics = {
         "Użyj tych danych jako pomocniczego kontekstu przy sprawdzeniu treści i GSC.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       metric_fact_labels: {},
       action_ids: [],
+      action_summary_label: "brak akcji do sprawdzenia",
       blocked_claims: [],
       blocked_claim_labels: [],
       risk: "low"
@@ -6372,9 +6383,11 @@ const ahrefsDiagnostics = {
       next_step: "Połącz rekordy z GSC i Spis treści WordPress przed decyzją contentową.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [],
       metric_fact_labels: {},
       action_ids: [],
+      action_summary_label: "brak akcji do sprawdzenia",
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -6388,6 +6401,7 @@ const ahrefsDiagnostics = {
   evidence_summary_label: "3 dowody źródłowe",
   source_connector_labels: ["Ahrefs"],
   action_ids: [],
+  action_summary_label: "brak akcji do sprawdzenia",
   blocker_count: 1
 };
 
@@ -7697,6 +7711,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/AhrefsDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("decision.evidence_summary_label");
+    expect(routeSource).toContain("contract.evidence_summary_label");
+    expect(routeSource).not.toContain("formatAhrefsEvidenceCount");
   });
 
   it("workflow route renders persisted workflow runs", async () => {

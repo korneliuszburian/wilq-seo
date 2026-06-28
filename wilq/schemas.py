@@ -3632,14 +3632,24 @@ class AhrefsDiagnosticSection(BaseModel):
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AhrefsDiagnosticSection":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AhrefsDecisionItem(BaseModel):
@@ -3666,14 +3676,24 @@ class AhrefsDecisionItem(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     metric_fact_labels: dict[str, str] = Field(default_factory=dict)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AhrefsDecisionItem":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AhrefsGapRecord(BaseModel):
@@ -3718,10 +3738,21 @@ class AhrefsGapReadContract(BaseModel):
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
     gap_record_count: int = 0
     next_step: str
     risk: ActionRisk = ActionRisk.medium
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AhrefsGapReadContract":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AhrefsOperatorSummary(BaseModel):
@@ -3740,9 +3771,19 @@ class AhrefsOperatorSummary(BaseModel):
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AhrefsOperatorSummary":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AhrefsDiagnosticsResponse(BaseModel):
@@ -3765,7 +3806,16 @@ class AhrefsDiagnosticsResponse(BaseModel):
     evidence_summary_label: str = ""
     source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocker_count: int = 0
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AhrefsDiagnosticsResponse":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class CommandCenterBriefItem(BaseModel):
