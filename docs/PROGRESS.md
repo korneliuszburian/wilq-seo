@@ -160,6 +160,9 @@ Date: 2026-06-28
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
+- Workflow cards now use API/domain `missing_contract_labels` for expanded
+  missing-data details, so raw workflow contract keys stay out of marketer
+  copy.
 - Google Sheets compact route copy now says safe export/testing language
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of

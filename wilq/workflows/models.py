@@ -5,6 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from wilq.operator_labels import missing_contract_labels
 from wilq.schemas import ActionRisk, utc_now
 
 
@@ -43,8 +44,15 @@ class Workflow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     missing_contracts: list[str] = Field(default_factory=list)
+    missing_contract_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
     risk_label: str | None = None
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> "Workflow":
+        if not self.missing_contract_labels:
+            self.missing_contract_labels = missing_contract_labels(self.missing_contracts)
+        return self
 
 
 class WorkflowRun(BaseModel):

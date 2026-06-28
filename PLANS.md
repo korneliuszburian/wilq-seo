@@ -568,6 +568,9 @@ WILQ is complete for this long-range goal when:
   payload previews.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
+- 2026-06-28: Workflow cards now use API/domain
+  `missing_contract_labels` for expanded missing-data details instead of raw
+  workflow contract keys.
 
 ## Discoveries
 
@@ -744,3 +747,6 @@ WILQ is complete for this long-range goal when:
 - Latest Knowledge proof: focused Knowledge/StatusBadge tests, dashboard
   typecheck, marketer language guard and browser text proof passed after
   separating confidence copy from status badge state.
+- Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard and browser proof passed after moving
+  missing-data details to API/domain labels.

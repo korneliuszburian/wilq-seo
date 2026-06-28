@@ -2915,6 +2915,7 @@ export const WorkflowSchema = z.object({
   blocked_claims: z.array(z.string()).default([]),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   missing_contracts: z.array(z.string()).default([]),
+  missing_contract_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high"]).default("low"),
   risk_label: z.string().nullable().optional()
 });

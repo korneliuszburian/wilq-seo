@@ -116,13 +116,13 @@ from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
 from wilq.operator_labels import (
     connector_refresh_status_label,
+    missing_contract_labels,
     opportunity_domain_label,
     route_cta_label,
     route_operator_label,
     source_connector_label,
     source_connector_labels,
 )
-from wilq.knowledge.operating_map import _operator_missing_contract_labels
 from wilq.opportunities.engine import _risk_label as _opportunity_risk_label
 from wilq.workflows.models import _workflow_run_status_label
 from wilq.workflows.registry import _risk_label as _workflow_risk_label
@@ -1441,7 +1441,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     raw_value = "new_VENDOR_raw_value"
 
     labels = [
-        *_operator_missing_contract_labels([raw_value]),
+        *missing_contract_labels([raw_value]),
         *_content_marketer_blocked_claims([raw_value]),
         _merchant_dimension_label(raw_value),
         merchant_display_label(raw_value),
@@ -18802,6 +18802,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert localo["route"] == "/localo"
     assert localo["route_label"] == "Localo"
     assert "local_ranking_rows" in localo["missing_contracts"]
+    assert "lokalne pozycje" in localo["missing_contract_labels"]
 
     serialized = json.dumps(workflows, ensure_ascii=False)
     assert "Workflow definition runs against WILQ API" not in serialized

@@ -98,7 +98,7 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
         <div>Źródła danych: {workflow.source_connectors.length || "brak"}</div>
         <div>Akcje do sprawdzenia: {workflow.action_ids.length || "brak"}</div>
         <div>Dowody: {workflow.evidence_ids.length || "brak"}</div>
-        <div>Brakujące dane: {workflow.missing_contracts.length || "brak"}</div>
+        <div>Brakujące dane: {workflow.missing_contract_labels.length || "brak"}</div>
         <div>Granice wniosków: {workflow.blocked_claims.length || "brak"}</div>
         <div>
           Widok:{" "}
@@ -129,7 +129,7 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
             </div>
           ) : null}
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <div>Brakujące dane: {workflow.missing_contracts.join(", ") || "brak"}</div>
+            <div>Brakujące dane: {workflow.missing_contract_labels.join(", ") || "brak"}</div>
             <div>Granice wniosków: {workflow.blocked_claims.join(", ") || "brak"}</div>
           </div>
         </div>

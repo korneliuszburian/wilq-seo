@@ -5,6 +5,7 @@ from collections.abc import Iterable
 UNKNOWN_SOURCE_CONNECTOR_LABEL = "źródło danych do sprawdzenia"
 UNKNOWN_REFRESH_STATUS_LABEL = "status odczytu do sprawdzenia"
 UNKNOWN_ROUTE_LABEL = "widok do sprawdzenia"
+UNKNOWN_MISSING_CONTRACT_LABEL = "brakujące dane do sprawdzenia"
 
 BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
@@ -143,6 +144,46 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     if 2 <= count <= 4:
         return f"{count} akcje do sprawdzenia"
     return f"{count} akcji do sprawdzenia"
+
+
+def missing_contract_label(contract: object) -> str:
+    labels = {
+        "monthly_comparison_window": "okno porównania miesiąca",
+        "client_report_payload": "zakres raportu dla klienta",
+        "change_history_summary": "podsumowanie historii zmian",
+        "pre_post_change_window": "okno przed i po zmianie",
+        "human_strategy_review": "sprawdzenie strategii przez człowieka",
+        "profit_margin_or_business_goal": "cel biznesowy albo marża",
+        "pre_post_change_impact": "wpływ zmian przed i po",
+        "operator_change_notes": "notatki operatora o zmianach",
+        "ngram_cluster_contract": "grupowanie fragmentów wyszukiwanych haseł",
+        "90_day_cross_check_by_ngram": "90-dniowe porównanie fragmentów wyszukiwań",
+        "forecast_or_audience_size": "prognoza albo wielkość grupy odbiorców",
+        "targeting_apply_preview": "podgląd zmiany targetowania",
+        "creative_asset_readiness": "gotowość kreacji",
+        "audience_readiness": "gotowość odbiorców",
+        "competitor_gap_matrix": "macierz luk względem konkurencji",
+        "backlink_gap_rows": "rekordy luk linków",
+        "local_ranking_rows": "lokalne pozycje",
+        "gbp_performance_rows": "wyniki profilu firmy",
+        "review_rows": "opinie",
+        "editorial_calendar_payload": "zakres kalendarza treści",
+        "owner_due_date_review": "właściciel i termin sprawdzenia",
+        "social_publish_permission": "uprawnienie do publikacji social",
+        "post_payload_preview": "podgląd posta przed publikacją",
+    }
+    return labels.get(str(contract), UNKNOWN_MISSING_CONTRACT_LABEL)
+
+
+def missing_contract_labels(contracts: Iterable[object]) -> list[str]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for contract in contracts:
+        label = missing_contract_label(contract)
+        if label and label not in seen:
+            seen.add(label)
+            values.append(label)
+    return values
 
 
 def freshness_state_label(state: str | None) -> str:
