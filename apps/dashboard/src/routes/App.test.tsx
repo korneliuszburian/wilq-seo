@@ -6030,6 +6030,7 @@ const ahrefsDiagnostics = {
     ],
     missing_read_contracts: [],
     missing_read_contract_labels: [],
+    missing_read_contract_summary_label: "brak brakujących danych",
     allowed_evidence: [
       "domain_rating",
       "ahrefs_rank",
@@ -6044,6 +6045,7 @@ const ahrefsDiagnostics = {
     ],
     blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
     blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
+    blocked_claim_summary_label: "2 zablokowane obietnice",
     operator_review_gates: [
       "ahrefs_gap_records_required",
       "content_planner_review_required",
@@ -8450,6 +8452,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("ocena domeny Ahrefs").length).toBeGreaterThan(0);
     expect(screen.getAllByText("pozycja w rankingu Ahrefs").length).toBeGreaterThan(0);
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("brak brakujących danych")).toBeInTheDocument();
+    expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/gap read contract/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Gap records")).not.toBeInTheDocument();
@@ -8482,6 +8486,11 @@ describe("WILQ dashboard", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/AhrefsDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("contract.missing_read_contract_summary_label");
+    expect(routeSource).toContain("contract.blocked_claim_summary_label");
+    expect(routeSource).not.toContain("contract.missing_read_contracts.length");
+    expect(routeSource).not.toContain("contract.blocked_claims.length");
   });
 
   it("demand gen route renders readiness contract instead of generic registry", async () => {

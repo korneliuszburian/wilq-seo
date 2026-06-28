@@ -68,6 +68,8 @@ Date: 2026-06-28
   formatting.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Ahrefs gap-contract metric tiles use API/domain missing-data and
+  blocked-claim summary labels instead of route-local count formatting.
 - Custom Segments candidate, forecast and proof panels use API/domain evidence
   and action summary labels instead of route-local count formatting.
 - Demand Gen uses API/domain evidence, action and campaign-channel labels
@@ -130,6 +132,20 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ahrefs route renders authority context and clean gap review language"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/ahrefs/diagnostics` returns
+  `missing_read_contract_summary_label="brak brakujących danych"` and
+  `blocked_claim_summary_label="2 zablokowane obietnice"`.
+- Browser proof: `/ahrefs` renders the same clean summary labels without raw
+  gap-contract field names, `payload` or `ActionObject` wording.
+
+Previous verified local slice:
 
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`

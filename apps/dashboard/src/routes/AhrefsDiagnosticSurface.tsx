@@ -183,8 +183,8 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
         <MetricTile label="Luki do sprawdzenia" value={contract.gap_records.length} />
-        <MetricTile label="Brakujące dane" value={contract.missing_read_contracts.length} />
-        <MetricTile label="Zablokowane obietnice" value={contract.blocked_claims.length} />
+        <MetricTile label="Brakujące dane" value={contract.missing_read_contract_summary_label} />
+        <MetricTile label="Zablokowane obietnice" value={contract.blocked_claim_summary_label} />
       </div>
       <p className="mt-3 text-sm font-semibold leading-6 text-ink">{contract.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">

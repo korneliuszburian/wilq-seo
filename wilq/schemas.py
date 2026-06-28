@@ -9,12 +9,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from wilq.operator_labels import (
     action_count_label,
     blocked_claim_label,
+    blocked_claim_count_label,
     blocked_claim_summary_label,
     credential_field_count_label,
     credential_source_count_label,
     evidence_count_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
+    missing_contract_count_label,
     policy_count_label,
     reported_issue_occurrence_count_label,
     required_validation_count_label,
@@ -3908,10 +3910,12 @@ class AhrefsGapReadContract(BaseModel):
     available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     allowed_evidence: list[str] = Field(default_factory=list)
     allowed_evidence_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
@@ -3930,6 +3934,14 @@ class AhrefsGapReadContract(BaseModel):
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claims
+            )
         return self
 
 

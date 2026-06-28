@@ -891,3 +891,7 @@ WILQ is complete for this long-range goal when:
   dashboard tests, dashboard typecheck, marketer language guard, live API proof
   and browser proof passed after moving Ads source-contract, policy and
   required-validation count labels to API/domain fields.
+- Latest Ahrefs gap-contract proof: focused API/shared-schema/dashboard tests,
+  dashboard typecheck, marketer language guard, live API proof and browser
+  proof passed after moving Ahrefs missing-data and blocked-claim count labels
+  to API/domain fields.
