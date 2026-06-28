@@ -2799,6 +2799,7 @@ export const KnowledgeDecisionBindingSchema = z.object({
   missing_contract_labels: z.array(z.string()).default([]),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
+  blocked_claim_summary_label: z.string().default(""),
   source_lineage: z.array(z.string()),
   source_lineage_summary_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high"]),

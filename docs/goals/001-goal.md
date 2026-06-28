@@ -104,6 +104,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   action, evidence, knowledge and lineage summary labels.
 - Knowledge playbook cards use API/domain evidence and action-type summary
   labels instead of route-local Polish count formatting.
+- Knowledge decision cards use API/domain blocked-claim summary labels instead
+  of joining blocked-claim arrays or falling back to raw counts in React.
 - Procesy cards and run summaries use API/domain summary labels and no longer
   block fresh `/workflows` loads on hidden related-action data.
 - Szanse cards use API/domain summary labels for evidence, sources, related

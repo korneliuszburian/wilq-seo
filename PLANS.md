@@ -798,3 +798,6 @@ WILQ is complete for this long-range goal when:
 - Latest Szanse proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard and browser proof passed after moving
   evidence, source, action and knowledge summaries to API/domain labels.
+- Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving knowledge blocked-claim summaries to API/domain labels.

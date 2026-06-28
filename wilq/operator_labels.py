@@ -146,6 +146,13 @@ def blocked_claim_labels(claims: Iterable[str]) -> list[str]:
     return values
 
 
+def blocked_claim_summary_label(claims: Iterable[str]) -> str:
+    labels = blocked_claim_labels(claims)
+    if not labels:
+        return "brak zakazanych obietnic"
+    return ", ".join(labels)
+
+
 def source_connector_label(connector_id: str) -> str:
     labels = {
         "ahrefs": "Ahrefs",

@@ -58,7 +58,7 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
             </div>
             {binding.blocked_claims.length > 0 ? (
               <p className="mt-3 text-xs leading-5 text-slate-600">
-                Zakazane obietnice: {binding.blocked_claim_labels.join(", ") || binding.blocked_claims.length}
+                Zakazane obietnice: {binding.blocked_claim_summary_label}
               </p>
             ) : null}
           </article>
@@ -199,7 +199,7 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       </div>
       {binding.blocked_claims.length > 0 ? (
         <p className="mt-3 text-xs text-slate-600">
-          Zablokowane obietnice: {binding.blocked_claim_labels.join(", ")}
+          Zablokowane obietnice: {binding.blocked_claim_summary_label}
         </p>
       ) : null}
       <button

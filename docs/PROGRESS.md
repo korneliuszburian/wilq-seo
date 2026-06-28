@@ -59,6 +59,8 @@ Date: 2026-06-28
   count assembly.
 - Knowledge playbook cards use API/domain evidence and action-type summary
   labels instead of route-local Polish count formatting.
+- Knowledge decision cards use API/domain blocked-claim summary labels instead
+  of joining blocked-claim arrays or falling back to raw counts in React.
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
@@ -96,6 +98,19 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_expose_raw_connector_ids or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/knowledge/operating-map` returns
+  `blocked_claim_summary_label` for knowledge bindings.
+- Browser proof:
+  `.local-lab/proof/knowledge-blocked-claim-summary-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen_readiness_uses_operator_summary_labels or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract instead of generic registry"`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -105,18 +120,6 @@ Most recent verified local slice:
 - Live API proof: `/api/demand-gen/diagnostics` returns
   `action_summary_label` and campaign-channel labels.
 - Browser proof: `.local-lab/proof/demand-gen-summary-labels-clean.txt`
-
-Previous verified local slice:
-
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_playbooks_are_machine_readable_and_evidence_gated" --maxfail=1`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk pnpm --dir packages/shared-schemas test`
-- `rtk pnpm --dir apps/dashboard typecheck`
-- `rtk uv run python scripts/marketer_language_guard.py`
-- `rtk git diff --check`
-- Live API proof: `/api/knowledge/playbooks` returns
-  `required_evidence_summary_label` and `mapped_action_type_summary_label`.
-- Browser proof: `.local-lab/proof/knowledge-playbook-labels-clean.txt`
 
 Earlier local slice:
 

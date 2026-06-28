@@ -168,6 +168,7 @@ describe("KnowledgePanels", () => {
                 missing_contract_labels: [],
                 blocked_claims: [],
                 blocked_claim_labels: [],
+                blocked_claim_summary_label: "brak zakazanych obietnic",
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
                 source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
@@ -229,8 +230,9 @@ describe("KnowledgePanels", () => {
                 required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
-                blocked_claims: [],
-                blocked_claim_labels: [],
+                blocked_claims: ["ranking_guarantee"],
+                blocked_claim_labels: ["gwarancja pozycji"],
+                blocked_claim_summary_label: "gwarancja pozycji",
                 source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
                 source_lineage_summary_label: "1 ślad źródłowy",
                 risk: "low",
@@ -244,7 +246,11 @@ describe("KnowledgePanels", () => {
 
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: gwarancja pozycji")).toBeInTheDocument();
     expect(screen.queryByText("Akcje do sprawdzenia: 1 akcja")).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
+    expect(routeSource).toContain("binding.blocked_claim_summary_label");
+    expect(routeSource).not.toContain("binding.blocked_claim_labels.join");
+    expect(routeSource).not.toContain("binding.blocked_claims.length}");
   });
 });

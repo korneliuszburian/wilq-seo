@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from wilq.operator_labels import (
     action_count_label,
     blocked_claim_label,
+    blocked_claim_summary_label,
     evidence_count_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
@@ -766,6 +767,7 @@ class KnowledgeDecisionBinding(BaseModel):
     missing_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_lineage: list[str] = Field(default_factory=list)
     source_lineage_summary_label: str = ""
     risk: ActionRisk = ActionRisk.low
@@ -797,6 +799,14 @@ class KnowledgeDecisionBinding(BaseModel):
         if not self.required_evidence_summary_label:
             self.required_evidence_summary_label = required_evidence_count_label(
                 self.required_evidence
+            )
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_summary_label(
+                self.blocked_claims
             )
         if not self.source_lineage_summary_label:
             self.source_lineage_summary_label = source_lineage_count_label(self.source_lineage)

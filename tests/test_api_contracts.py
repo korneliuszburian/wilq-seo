@@ -1606,7 +1606,27 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert knowledge_binding.action_summary_label == "brak akcji do sprawdzenia"
     assert knowledge_binding.knowledge_summary_label == "brak użytej wiedzy"
     assert knowledge_binding.required_evidence_summary_label == "brak wymaganych dowodów"
+    assert knowledge_binding.blocked_claim_summary_label == "brak zakazanych obietnic"
     assert knowledge_binding.source_lineage_summary_label == "brak śladów źródłowych"
+
+    knowledge_blocked_claim_binding = KnowledgeDecisionBinding(
+        id="binding_unknown_claim",
+        title="Powiązanie wiedzy",
+        status="blocked",
+        route="/knowledge",
+        summary="Sprawdzenie zakazanej obietnicy.",
+        next_step="Nie używaj obietnicy bez dowodu.",
+        risk=ActionRisk.high,
+        blocked_claims=[raw_value],
+    )
+    assert knowledge_blocked_claim_binding.blocked_claim_labels == [
+        "obietnica do sprawdzenia"
+    ]
+    assert (
+        knowledge_blocked_claim_binding.blocked_claim_summary_label
+        == "obietnica do sprawdzenia"
+    )
+    assert raw_value not in knowledge_blocked_claim_binding.blocked_claim_summary_label
 
     merchant_items = _merchant_feed_items(
         [
