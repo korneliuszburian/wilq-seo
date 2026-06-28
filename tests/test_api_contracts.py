@@ -12977,6 +12977,7 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         affected_attribute="n:availability",
         country="PL",
         reporting_context="SHOPPING_ADS",
+        reporting_context_label="reklamy produktowe",
         severity="NOT_IMPACTED",
         resolution="MERCHANT_ACTION",
         product_count=23,
@@ -13072,6 +13073,7 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
         affected_attribute="n:availability",
         country="PL",
         reporting_context="SHOPPING_ADS",
+        reporting_context_label="reklamy produktowe",
         severity="NOT_IMPACTED",
         resolution="MERCHANT_ACTION",
         product_count=1,
@@ -13314,9 +13316,11 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert decision["status"] == "ready"
     assert decision["metric_tiles"] == {
         "powiązane produkty": 1,
-        "NOT_ELIGIBLE": 1,
-        "OUT_OF_STOCK": 1,
+        "niekwalifikujące się": 1,
+        "niedostępne": 1,
     }
+    assert "NOT_ELIGIBLE" not in decision["metric_tiles"]
+    assert "OUT_OF_STOCK" not in decision["metric_tiles"]
     assert "zwrot z reklam na poziomie produktu" in decision["blocked_claims"]
     assert decision["payload_preview"][0]["preview_contract"] == (
         "merchant_product_state_review_preview_v1"
@@ -13399,10 +13403,20 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     ]
     row = readiness["performance_rows"][0]
     assert row["product_id"] == "online~pl~PL~SKU-001"
+    assert row["title_label"] == "Sorbent chemiczny 10 kg"
+    assert row["product_reference_label"] == (
+        "identyfikator produktu dostępny w szczegółach technicznych"
+    )
     assert row["issue_type"] == "availability_updated"
     assert row["ads_product_title"] == "Sorbent chemiczny 10 kg"
     assert row["ads_product_status"] == "NOT_ELIGIBLE"
+    assert row["ads_product_status_label"] == "nie kwalifikuje się do emisji"
     assert row["ads_product_availability"] == "OUT_OF_STOCK"
+    assert row["ads_product_availability_label"] == "niedostępny"
+    assert row["ads_product_price_label"] == "123.45 PLN"
+    assert "ads_clicks" in row["missing_metrics"]
+    assert "kliknięcia Ads" in row["missing_metric_labels"]
+    assert "ads_clicks" not in row["missing_metric_labels"]
 
 
 def test_merchant_price_impact_blocks_snapshot_history_without_price_change() -> None:

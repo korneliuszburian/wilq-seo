@@ -103,6 +103,9 @@ use the cleaned language.
   `row.payload_preview`.
 - Ads budget rows now expose API-owned preview cards. The dashboard route no
   longer derives the visible budget card from `row.payload_preview`.
+- Merchant product samples and product performance rows now expose API-owned
+  display labels. The dashboard route no longer shows raw product sample IDs,
+  raw Ads product status enums or raw Ads cost micros in those panels.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

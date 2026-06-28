@@ -4705,6 +4705,8 @@ const merchantDiagnostics = {
     sample_count: 2,
     sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
     sample_product_titles: ["Sorbent chemiczny 10 kg"],
+    sample_summary_label: "2 próbki produktów do sprawdzenia",
+    sample_title_labels: ["Sorbent chemiczny 10 kg"],
     current_read_contract: "merchant_aggregate_product_statuses",
     required_read_contracts: [
       "merchant_products_list_product_status",
@@ -4739,6 +4741,7 @@ const merchantDiagnostics = {
     ],
     join_key_candidates: ["product_id", "item_id", "offer_id"],
     sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+    sample_product_summary_label: "2 próbki produktów do sprawdzenia",
     performance_rows: [],
     source_connectors: ["google_merchant_center"],
     source_connector_labels: ["Merchant Center"],
@@ -7752,7 +7755,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Gotowość próbek produktów")).toBeInTheDocument();
     expect(screen.getByText("próbki produktów dostępne")).toBeInTheDocument();
     expect(screen.getByText(/Przykładowe produkty:/)).toBeInTheDocument();
-    expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/2 próbki produktów do sprawdzenia/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
     expect(screen.getByText(/Przykładowe tytuły:/)).toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Stan danych:/).length).toBeGreaterThan(0);

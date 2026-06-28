@@ -363,6 +363,12 @@ def _merchant_response_with_operator_labels(
                     "status_label": _merchant_product_sample_status_label(
                         response.product_sample_readiness
                     ),
+                    "sample_summary_label": _merchant_sample_summary_label(
+                        response.product_sample_readiness.sample_count
+                    ),
+                    "sample_title_labels": _merchant_sample_title_labels(
+                        response.product_sample_readiness.sample_product_titles
+                    ),
                     "blocked_claim_labels": _merchant_blocked_claim_labels(
                         response.product_sample_readiness.blocked_claims
                     ),
@@ -407,6 +413,9 @@ def _merchant_product_performance_readiness_with_operator_labels(
     return readiness.model_copy(
         update={
             "status_label": _merchant_product_performance_status_label(readiness.status),
+            "sample_product_summary_label": _merchant_sample_summary_label(
+                readiness.merchant_sample_count
+            ),
             "source_connector_labels": _merchant_source_connector_labels(
                 readiness.source_connectors
             ),
@@ -417,6 +426,8 @@ def _merchant_product_performance_readiness_with_operator_labels(
             "performance_rows": [
                 row.model_copy(
                     update={
+                        "title_label": _merchant_product_row_title_label(row),
+                        "product_reference_label": _merchant_product_reference_label(row),
                         "source_connector_labels": _merchant_source_connector_labels(
                             row.source_connectors
                         ),
@@ -425,6 +436,25 @@ def _merchant_product_performance_readiness_with_operator_labels(
                         ),
                         "blocked_claim_labels": _merchant_blocked_claim_labels(
                             row.blocked_claims
+                        ),
+                        "ads_product_status_label": _merchant_ads_product_status_label(
+                            row.ads_product_status
+                        ),
+                        "ads_product_availability_label": (
+                            _merchant_ads_product_availability_label(
+                                row.ads_product_availability
+                            )
+                        ),
+                        "ads_product_price_label": _merchant_micros_price_label(
+                            row.ads_product_price_micros,
+                            row.ads_product_currency_code,
+                        ),
+                        "ads_cost_label": _merchant_micros_price_label(
+                            row.ads_cost_micros,
+                            row.ads_product_currency_code,
+                        ),
+                        "missing_metric_labels": _merchant_missing_metric_labels(
+                            row.missing_metrics
                         ),
                     }
                 )
@@ -529,6 +559,82 @@ def _merchant_product_performance_status_label(status: object) -> str:
         if _enum_value(status) == "ready"
         else "dane Ads/GA4 zablokowane"
     )
+
+
+def _merchant_sample_summary_label(count: int) -> str:
+    if count <= 0:
+        return "brak próbek produktów"
+    if count == 1:
+        return "1 próbka produktu do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} próbki produktów do sprawdzenia"
+    return f"{count} próbek produktów do sprawdzenia"
+
+
+def _merchant_sample_title_labels(titles: Iterable[str]) -> list[str]:
+    return _unique(title.strip() for title in titles if title.strip())[:6]
+
+
+def _merchant_product_row_title_label(row: MerchantProductPerformanceRow) -> str:
+    return (
+        row.sample_title
+        or row.ads_product_title
+        or "Produkt Merchant do sprawdzenia"
+    )
+
+
+def _merchant_product_reference_label(row: MerchantProductPerformanceRow) -> str:
+    if row.sample_title or row.ads_product_title:
+        return "identyfikator produktu dostępny w szczegółach technicznych"
+    return "tytuł produktu niedostępny; identyfikator dostępny w szczegółach technicznych"
+
+
+def _merchant_ads_product_status_label(status: object) -> str:
+    labels = {
+        "ELIGIBLE": "kwalifikuje się do emisji",
+        "LIMITED": "ograniczona emisja",
+        "NOT_ELIGIBLE": "nie kwalifikuje się do emisji",
+    }
+    normalized = _enum_value(status)
+    if not normalized:
+        return "brak statusu Ads"
+    return labels.get(normalized, _merchant_display_label(normalized))
+
+
+def _merchant_ads_product_availability_label(availability: object) -> str:
+    labels = {
+        "IN_STOCK": "dostępny",
+        "OUT_OF_STOCK": "niedostępny",
+        "PREORDER": "przedsprzedaż",
+        "BACKORDER": "oczekuje na dostawę",
+    }
+    normalized = _enum_value(availability)
+    if not normalized:
+        return "brak dostępności Ads"
+    return labels.get(normalized, _merchant_display_label(normalized))
+
+
+def _merchant_micros_price_label(
+    value: int | float | None,
+    currency_code: str | None,
+) -> str:
+    if value is None:
+        return "brak"
+    amount = value / 1_000_000
+    currency = currency_code or "PLN"
+    return f"{amount:.2f} {currency}"
+
+
+def _merchant_missing_metric_labels(metrics: Iterable[str]) -> list[str]:
+    labels = {
+        "ads_clicks": "kliknięcia Ads",
+        "ads_cost_micros": "koszt Ads",
+        "ads_conversions": "konwersje Ads",
+        "ads_conversion_value": "wartość konwersji Ads",
+        "ga4_ecommerce_purchases": "zakupy GA4",
+        "ga4_purchase_revenue": "przychód GA4",
+    }
+    return _unique(labels.get(str(metric), _merchant_display_label(str(metric))) for metric in metrics)
 
 
 def _merchant_price_impact_status_label(status: object) -> str:
@@ -2226,8 +2332,8 @@ def _merchant_product_state_review_decision(
         metric_tiles=_clean_merchant_metric_tiles(
             {
                 "powiązane produkty": len(state_rows),
-                "NOT_ELIGIBLE": not_eligible_count,
-                "OUT_OF_STOCK": out_of_stock_count,
+                "niekwalifikujące się": not_eligible_count,
+                "niedostępne": out_of_stock_count,
             }
         ),
         sample_product_ids=[row.product_id for row in visible_rows],

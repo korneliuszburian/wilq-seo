@@ -2639,6 +2639,8 @@ class MerchantProductSampleReadiness(BaseModel):
     sample_count: int = 0
     sample_product_ids: list[str] = Field(default_factory=list)
     sample_product_titles: list[str] = Field(default_factory=list)
+    sample_summary_label: str = ""
+    sample_title_labels: list[str] = Field(default_factory=list)
     current_read_contract: Literal["merchant_aggregate_product_statuses"] = (
         "merchant_aggregate_product_statuses"
     )
@@ -2652,6 +2654,8 @@ class MerchantProductSampleReadiness(BaseModel):
 
 class MerchantProductPerformanceRow(BaseModel):
     product_id: str
+    title_label: str = ""
+    product_reference_label: str = ""
     sample_title: str | None = None
     issue_type: str | None = None
     issue_type_label: str | None = None
@@ -2666,8 +2670,11 @@ class MerchantProductPerformanceRow(BaseModel):
     evidence_summary_label: str = ""
     ads_product_title: str | None = None
     ads_product_status: str | None = None
+    ads_product_status_label: str = ""
     ads_product_availability: str | None = None
+    ads_product_availability_label: str = ""
     ads_product_price_micros: int | None = None
+    ads_product_price_label: str = ""
     ads_product_currency_code: str | None = None
     ads_product_price_collected_at: datetime | None = None
     ads_product_previous_price_micros: int | None = None
@@ -2677,11 +2684,13 @@ class MerchantProductPerformanceRow(BaseModel):
     ads_product_price_delta_percent: float | None = None
     ads_clicks: int | None = None
     ads_cost_micros: int | None = None
+    ads_cost_label: str = ""
     ads_conversions: float | None = None
     ads_conversion_value: float | None = None
     ga4_ecommerce_purchases: float | None = None
     ga4_purchase_revenue: float | None = None
     missing_metrics: list[str] = Field(default_factory=list)
+    missing_metric_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
@@ -2701,6 +2710,7 @@ class MerchantProductPerformanceReadiness(BaseModel):
     missing_read_contracts: list[str] = Field(default_factory=list)
     join_key_candidates: list[str] = Field(default_factory=list)
     sample_product_ids: list[str] = Field(default_factory=list)
+    sample_product_summary_label: str = ""
     performance_rows: list[MerchantProductPerformanceRow] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)

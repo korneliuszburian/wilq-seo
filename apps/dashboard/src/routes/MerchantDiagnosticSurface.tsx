@@ -650,13 +650,13 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
         <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
         <TraceLine
           label="Przykładowe produkty"
-          values={readiness.sample_product_ids.length ? readiness.sample_product_ids : ["brak próbek"]}
+          values={[readiness.sample_summary_label || "brak próbek"]}
         />
         <TraceLine
           label="Przykładowe tytuły"
           values={
-            readiness.sample_product_titles.length
-              ? readiness.sample_product_titles
+            readiness.sample_title_labels.length
+              ? readiness.sample_title_labels
               : ["brak tytułów"]
           }
         />
@@ -708,7 +708,7 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
         <MetricTile label="Fakty Ads" value={readiness.ads_product_fact_count} />
         <MetricTile label="Fakty GA4" value={readiness.ga4_product_fact_count} />
-        <MetricTile label="Próbki produktów" value={readiness.sample_product_ids.length} />
+        <MetricTile label="Próbki produktów" value={readiness.sample_product_summary_label} />
         <MetricTile label="Wiersze" value={readiness.performance_rows.length} />
       </div>
       {visibleRows.length > 0 ? (
@@ -727,22 +727,17 @@ function MerchantProductPerformanceRowCard({
 }: {
   row: MerchantProductPerformanceRow;
 }) {
-  const title = row.sample_title ?? row.ads_product_title ?? row.product_id;
+  const title = row.title_label || "Produkt Merchant do sprawdzenia";
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      {title !== row.product_id ? (
-        <p className="mt-1 break-all text-xs text-slate-500">{row.product_id}</p>
-      ) : null}
+      <p className="mt-1 text-xs text-slate-500">{row.product_reference_label}</p>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
-        <MetricTile label="Status Ads" value={row.ads_product_status ?? "brak"} />
-        <MetricTile label="Dostępność Ads" value={row.ads_product_availability ?? "brak"} />
-        <MetricTile
-          label="Cena Ads"
-          value={merchantMicrosPrice(row.ads_product_price_micros, row.ads_product_currency_code)}
-        />
+        <MetricTile label="Status Ads" value={row.ads_product_status_label} />
+        <MetricTile label="Dostępność Ads" value={row.ads_product_availability_label} />
+        <MetricTile label="Cena Ads" value={row.ads_product_price_label} />
         <MetricTile label="Kliknięcia Ads" value={row.ads_clicks ?? "brak"} />
-        <MetricTile label="Koszt Ads" value={row.ads_cost_micros ?? "brak"} />
+        <MetricTile label="Koszt Ads" value={row.ads_cost_label} />
         <MetricTile label="Zakupy GA4" value={row.ga4_ecommerce_purchases ?? "brak"} />
         <MetricTile label="Przychód GA4" value={row.ga4_purchase_revenue ?? "brak"} />
       </div>
@@ -763,7 +758,7 @@ function MerchantProductPerformanceRowCard({
           values={row.evidence_summary_label ? [row.evidence_summary_label] : []}
           empty="brak"
         />
-        <TraceLine label="Brakujące metryki" values={row.missing_metrics} empty="brak" />
+        <TraceLine label="Brakujące metryki" values={row.missing_metric_labels} empty="brak" />
         <TraceLine
           label="Nie wolno twierdzić"
           values={row.blocked_claim_labels}
@@ -892,11 +887,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         {decision.sample_product_ids.length || decision.sample_titles.length ? (
           <div className="rounded border border-line bg-white p-2">
             <p className="font-medium text-ink">Przykładowe produkty do sprawdzenia</p>
-            <TraceLine
-              label="ID produktów"
-              values={decision.sample_product_ids.slice(0, 6)}
-              empty="brak próbek"
-            />
+            <TraceLine label="Próbki" values={["przykłady dostępne w szczegółach technicznych"]} />
             <TraceLine
               label="Tytuły"
               values={decision.sample_titles.slice(0, 4)}
@@ -1005,13 +996,6 @@ function merchantWriteReadinessValues(preview: Record<string, unknown>) {
       : "system nie jest gotowy do przygotowania zapisu"
   );
   return values;
-}
-
-function merchantMicrosPrice(value: number | null | undefined, currencyCode?: string | null) {
-  if (value === null || value === undefined) return "brak";
-  const amount = value / 1_000_000;
-  const currency = currencyCode ?? "PLN";
-  return `${amount.toFixed(2)} ${currency}`;
 }
 
 function formatPolishCount(count: number, one: string, few: string, many: string) {
