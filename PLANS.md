@@ -595,6 +595,11 @@ WILQ is complete for this long-range goal when:
   expose evidence/action summary labels in API/shared schemas. The Ahrefs route
   consumes those labels instead of route-local count formatting; live API proof
   and browser proof live in `.local-lab/proof/`.
+- 2026-06-28: Custom Segments contract, candidates, forecast contract and
+  forecast rows now expose evidence/action summary labels in API/shared
+  schemas. The Custom Segments route consumes those labels instead of
+  route-local count formatting; live API proof and browser proof live in
+  `.local-lab/proof/`.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.
@@ -811,3 +816,7 @@ WILQ is complete for this long-range goal when:
 - Latest Ahrefs proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving Ahrefs evidence/action summaries to API/domain labels.
+- Latest Custom Segments proof: focused API/shared-schema/dashboard tests,
+  dashboard typecheck, marketer language guard, live API proof and browser
+  proof passed after moving Custom Segments evidence/action summaries to
+  API/domain labels.

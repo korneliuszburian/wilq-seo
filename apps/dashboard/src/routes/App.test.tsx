@@ -2601,6 +2601,7 @@ const adsDiagnostics = {
         ],
         source_connectors: ["google_ads"],
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        evidence_summary_label: "1 dowód źródłowy",
         metric_facts: [],
         confidence: "medium",
         validation_status: "pending_validation",
@@ -2736,6 +2737,7 @@ const adsDiagnostics = {
           reason:
             "Brak dowodów WILQ dla prognozy albo rozmiaru odbiorców tego segmentu.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          evidence_summary_label: "1 dowód źródłowy",
           blocked_claims: [
             "rozmiar odbiorców",
             "obietnica wzrostu konwersji",
@@ -2756,6 +2758,7 @@ const adsDiagnostics = {
       ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      evidence_summary_label: "1 dowód źródłowy",
       next_step: "Nie oceniaj zasięgu ani skuteczności segmentu bez forecastu."
     },
     source_connectors: ["google_ads"],
@@ -2776,6 +2779,8 @@ const adsDiagnostics = {
       "skuteczność kampanii"
     ],
     action_ids: ["act_prepare_custom_segments_from_search_terms"],
+    evidence_summary_label: "1 dowód źródłowy",
+    action_summary_label: "1 akcja do sprawdzenia",
     next_step: "Przejrzyj wyszukiwane hasła i sprawdź propozycję w WILQ przed zapisem zmian."
   },
   negative_keywords_read_contract: {
@@ -7698,8 +7703,14 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("missing_read_contract_labels");
     expect(routeSource).toContain("blocked_claim_labels");
     expect(routeSource).toContain("validation_status_label");
+    expect(routeSource).toContain("candidate.evidence_summary_label");
+    expect(routeSource).toContain("row.evidence_summary_label");
+    expect(routeSource).toContain("contract.evidence_summary_label");
+    expect(routeSource).toContain("contract.action_summary_label");
     expect(routeSource).toContain("candidate.preview_card");
     expect(routeSource).not.toContain("candidate.payload_preview");
+    expect(routeSource).not.toContain("formatCustomSegmentsEvidenceCount");
+    expect(routeSource).not.toContain("formatCustomSegmentsActionCount");
     expect(routeSource).not.toContain("from \"./marketingLabels\"");
     expect(routeSource).not.toContain(".map(adsMissingReadContractLabel)");
     expect(routeSource).not.toContain(".map(adsBlockedClaimLabel)");

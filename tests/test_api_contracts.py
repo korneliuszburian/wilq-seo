@@ -11853,6 +11853,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
+    assert custom_segments_contract["evidence_summary_label"] == "1 dowód źródłowy"
+    assert custom_segments_contract["action_summary_label"] == "1 akcja do sprawdzenia"
     assert "keyword_planner_enrichment" not in custom_segments_contract[
         "missing_read_contracts"
     ]
@@ -11876,6 +11878,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "audience_forecast_read_contract"
     ]
     assert audience_forecast_contract["status"] == "blocked"
+    assert audience_forecast_contract["evidence_summary_label"] == "1 dowód źródłowy"
     assert audience_forecast_contract["checked_candidate_count"] == 1
     assert audience_forecast_contract["forecast_row_count"] == 1
     assert audience_forecast_contract["missing_read_contracts"] == [
@@ -11904,10 +11907,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert forecast_row["evidence_ids"] == [
         refresh_response.json()["evidence_ids"][-1]
     ]
+    assert forecast_row["evidence_summary_label"] == "1 dowód źródłowy"
     assert custom_segments_contract["candidates"][0]["source_terms"] == [
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_contract["candidates"][0]["evidence_summary_label"] == (
+        "1 dowód źródłowy"
+    )
     assert custom_segments_contract["candidates"][0]["source_quality"] == {
         "total_terms": 2,
         "accepted_terms": 2,

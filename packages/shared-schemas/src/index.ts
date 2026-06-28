@@ -1408,6 +1408,7 @@ export const AdsCustomSegmentAudienceForecastRowSchema = z.object({
   source_terms: z.array(z.string()),
   reason: z.string(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).optional().default([])
 });
@@ -1429,6 +1430,7 @@ export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
   blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   next_step: z.string()
 });
 
@@ -1498,6 +1500,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   keyword_planner_ideas: z.array(AdsKeywordPlannerIdeaRowSchema).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   confidence: z.enum(["low", "medium", "high"]),
   confidence_label: z.string().optional().default("niska"),
@@ -1529,6 +1532,8 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).optional().default([]),
   action_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
+  action_summary_label: z.string().default(""),
   next_step: z.string()
 });
 

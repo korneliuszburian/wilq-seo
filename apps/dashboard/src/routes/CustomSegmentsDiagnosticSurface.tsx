@@ -114,7 +114,7 @@ export function AdsCustomSegmentCandidatesPanel({
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
               <TraceLine
                 label="Dowody"
-                values={[formatCustomSegmentsEvidenceCount(candidate.evidence_ids.length)]}
+                values={[candidate.evidence_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -176,7 +176,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
               <TraceLine label="Hasła źródłowe" values={row.source_terms.slice(0, 8)} />
               <TraceLine
                 label="Dowody"
-                values={[formatCustomSegmentsEvidenceCount(row.evidence_ids.length)]}
+                values={[row.evidence_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -339,11 +339,11 @@ export function CustomSegmentsDiagnosticSurface() {
           <TraceLine label="Źródła" values={[data.connector.label]} />
           <TraceLine
             label="Dowody"
-            values={[formatCustomSegmentsEvidenceCount(contract.evidence_ids.length)]}
+            values={[contract.evidence_summary_label]}
           />
           <TraceLine
             label="Akcje do sprawdzenia"
-            values={[formatCustomSegmentsActionCount(contract.action_ids.length)]}
+            values={[contract.action_summary_label]}
           />
           <TraceLine label="Tryb Codexa" values={["Segmenty z haseł"]} />
         </div>
@@ -354,16 +354,4 @@ export function CustomSegmentsDiagnosticSurface() {
 
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));
-}
-
-function formatCustomSegmentsEvidenceCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 dowód";
-  return `${count} dowody`;
-}
-
-function formatCustomSegmentsActionCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 akcja";
-  return `${count} akcje`;
 }

@@ -2303,8 +2303,15 @@ class AdsCustomSegmentAudienceForecastRow(BaseModel):
     source_terms: list[str] = Field(default_factory=list)
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsCustomSegmentAudienceForecastRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
@@ -2326,12 +2333,15 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     next_step: str
 
     @model_validator(mode="after")
     def fill_operator_labels(self) -> "AdsCustomSegmentAudienceForecastReadContract":
         if not self.status_label:
             self.status_label = _ads_read_contract_status_label(self.status)
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 
@@ -2420,6 +2430,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     confidence: Literal["low", "medium", "high"] = "low"
     confidence_label: str = "niska"
@@ -2430,6 +2441,12 @@ class AdsCustomSegmentCandidate(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsCustomSegmentCandidate":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class AdsCustomSegmentsReadContract(BaseModel):
@@ -2452,12 +2469,18 @@ class AdsCustomSegmentsReadContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+    action_summary_label: str = ""
     next_step: str
 
     @model_validator(mode="after")
     def fill_operator_labels(self) -> "AdsCustomSegmentsReadContract":
         if not self.status_label:
             self.status_label = _ads_read_contract_status_label(self.status)
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
         return self
 
 

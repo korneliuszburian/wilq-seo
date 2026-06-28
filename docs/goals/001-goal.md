@@ -96,6 +96,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   summary labels instead of route-local count formatting.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Custom Segments candidate, forecast and proof panels use API/domain evidence
+  and action summary labels instead of route-local count formatting.
 - Demand Gen uses API/domain action summary and campaign-channel labels instead
   of route-local action count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
