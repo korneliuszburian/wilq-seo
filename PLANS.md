@@ -813,6 +813,9 @@ WILQ is complete for this long-range goal when:
 - Compact context-pack metric facts must use those same metric and dimension
   labels. Do not feed Codex skills raw metric keys or raw vendor dimension
   enums when a Polish operator label exists.
+- Marketer-useful metric dimension values such as queries, pages, landing
+  pages, campaigns, sources and country should remain meaningful in compact
+  context instead of becoming generic placeholder copy.
 - Merchant metric labels belong in `merchant_labels.py` and the Merchant API
   view-model, not in `MerchantDiagnosticSurface`.
 - GA4 metric labels belong in the GA4 diagnostics API/domain view-model, not

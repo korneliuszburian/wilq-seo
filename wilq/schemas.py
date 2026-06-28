@@ -294,6 +294,7 @@ def _metric_dimension_label(value: str) -> str:
 
 
 def _metric_dimension_value_label(key: str, value: str) -> str:
+    text = str(value or "").strip()
     labels = {
         "active_places": "aktywne miejsca",
         "authority_summary": "autorytet domeny",
@@ -322,7 +323,27 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
     }
     if key == "connector_id":
         return source_connector_label(value)
-    return labels.get(value, "wartość wymiaru do sprawdzenia")
+    if text in labels:
+        return labels[text]
+    if text == "PL":
+        return "Polska"
+    if text == "(not set)":
+        return "brak wartości w danych źródłowych"
+    if text == "(organic)":
+        return "ruch organiczny"
+    if key in {
+        "campaign_name",
+        "competitor_domain",
+        "keyword",
+        "landing_page",
+        "page",
+        "query",
+        "source_medium",
+        "source_url",
+        "target_domain",
+    } and text:
+        return text
+    return "wartość wymiaru do sprawdzenia"
 
 
 class Opportunity(BaseModel):

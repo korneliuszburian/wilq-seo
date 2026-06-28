@@ -112,6 +112,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Daily context-pack metric facts now use API/schema-owned `metric_label`,
   `dimension_labels` and `dimension_value_labels`, so Codex skills do not get
   raw metric keys or raw vendor dimension enums in compact top metric facts.
+- Marketer-useful free-text metric dimensions now stay useful in compact
+  context where safe: GSC queries, GA4 source/campaign/landing-page values and
+  country labels do not collapse to generic placeholder copy.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
@@ -234,6 +237,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   metric labels from returning in metric fact contracts.
 - Compact context-pack metric facts use those labels and no longer expose raw
   metric names or vendor dimension enums when Polish operator labels exist.
+- Metric dimension value labels preserve useful free-text query/source/page
+  context where safe instead of over-condensing everything to a placeholder.
 - Google Ads campaign rows hydrate Polish campaign status and channel labels at
   the shared backend schema boundary, and live contract smoke now prevents empty
   or raw visible `*_label` fields in checked API payloads.
@@ -257,7 +262,8 @@ are resolved or explicitly deferred.
    naming into API/domain labels. Pure numeric formatting can stay in UI.
    Latest done slice: compact daily context-pack metric facts now consume
    `MetricFact.metric_label`, `dimension_labels` and `dimension_value_labels`
-   instead of raw metric keys or vendor dimension enums.
+   instead of raw metric keys or vendor dimension enums, while preserving useful
+   free-text query/source/page values where safe.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
    have typed-preview-card coverage. Action validation errors for Ads, GA4 and

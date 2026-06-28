@@ -117,6 +117,33 @@ def test_metric_fact_hydrates_known_ahrefs_metric_label() -> None:
     assert fact.metric_label == "strony konkurencji"
 
 
+def test_metric_fact_preserves_marketer_useful_dimension_values() -> None:
+    fact = MetricFact(
+        name="clicks",
+        value=14,
+        period="connector_refresh",
+        source_connector="google_search_console",
+        evidence_id="ev_metric_fact_dimension_values",
+        dimensions={
+            "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+            "query": "zielony ład co to",
+            "country": "PL",
+            "landing_page": "(not set)",
+            "campaign_name": "(organic)",
+        },
+    )
+
+    assert fact.dimension_value_labels["page"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert fact.dimension_value_labels["query"] == "zielony ład co to"
+    assert fact.dimension_value_labels["country"] == "Polska"
+    assert fact.dimension_value_labels["landing_page"] == (
+        "brak wartości w danych źródłowych"
+    )
+    assert fact.dimension_value_labels["campaign_name"] == "ruch organiczny"
+
+
 def test_ads_campaign_rows_hydrate_operator_enum_labels() -> None:
     metric_row = AdsCampaignMetricRow(
         campaign_name="Brand Search",

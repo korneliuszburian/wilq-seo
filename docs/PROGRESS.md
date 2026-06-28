@@ -39,6 +39,9 @@ Date: 2026-06-29
   `dimension_value_labels`. Compact skill context no longer exposes raw metric
   keys such as `issue_product_count` or raw vendor dimension enums such as
   `MERCHANT_ACTION`, `FREE_LISTINGS` and `competitor_page`.
+- Marketer-useful metric dimension values now stay useful in compact skill
+  context: GA4 source/campaign/landing-page values and GSC query values no
+  longer collapse to generic placeholder copy when they are safe to show.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -233,6 +236,21 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Metric dimension usefulness cleanup: shared `MetricFact.dimension_value_labels`
+  now preserves marketer-useful free-text values for queries, pages, landing
+  pages, campaigns, sources and country while still translating known vendor
+  enums. Live context-pack proof showed no guarded raw vendor terms and useful
+  GA4/GSC dimension values in top metric facts.
+  Verification:
+  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_metric_store_and_cli.py -q`
+  - `rtk uv run pytest tests/test_api_contracts.py::test_compact_metric_fact_context_uses_dimension_labels tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract -q`
+  - `rtk scripts/local_stack.sh restart`
+  - live `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` metric usefulness scan
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Daily context-pack metric-dimension cleanup: compact marketing brief metric
   facts now use `MetricFact.metric_label`, `dimension_labels` and

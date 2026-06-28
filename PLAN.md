@@ -334,6 +334,9 @@ Known cleanup already started:
   `dimension_labels` and `dimension_value_labels`. Do not expose raw metric
   keys or vendor dimension enums to Codex skills when a Polish operator label
   exists.
+- Marketer-useful metric dimensions such as query, landing page, campaign,
+  source and country should keep meaningful Polish/free-text values instead of
+  collapsing to generic "wartość wymiaru do sprawdzenia".
 - Merchant, Treści and Ahrefs browser proof now passes the targeted
   stale-term scan for visible `ID` proof-count and product-ID wording.
 
