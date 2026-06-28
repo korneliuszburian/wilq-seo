@@ -7719,12 +7719,14 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("interpretation.action_ids.length");
     expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
+    expect(routeSource).toContain("strategyReadiness.missing_read_contract_summary_label");
     expect(routeSource).not.toContain("formatAdsEvidenceCount");
     expect(routeSource).not.toContain("formatTraceIdCount");
     expect(routeSource).not.toContain("formatAdsContractCount");
     expect(routeSource).not.toContain("item.source_contract_ids.length");
     expect(routeSource).not.toContain("interpretation.policy_ids.length");
     expect(routeSource).not.toContain("strategyReadiness.required_validation.length");
+    expect(routeSource).not.toContain("strategyReadiness.missing_read_contracts.length");
     expect(readFileSync("src/routes/OperatingRouteSurfaces.tsx", "utf8")).not.toContain(
       "formatEvidenceCount(action.evidence_ids.length)"
     );

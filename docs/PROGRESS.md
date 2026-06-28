@@ -62,6 +62,8 @@ Date: 2026-06-28
 - Google Ads optimizer-readiness and strategy review panels use API/domain
   source-contract, policy and required-validation summary labels instead of
   route-local count formatting.
+- Google Ads strategy review panel uses API/domain missing-data summary labels
+  instead of route-local count formatting.
 - Action priority cards, action registry cards and connector refresh run cards
   use API/domain evidence summary labels instead of route-local evidence count
   formatting.
@@ -136,6 +138,18 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/ads/diagnostics` returns
+  `business_context_read_contract.strategy_review_readiness_contract.missing_read_contract_summary_label="2 brakujące zakresy danych"`.
+- Browser proof: expanded `/ads-doctor` renders `2 brakujące zakresy danych`
+  without raw strategy-readiness fields, `payload` or `ActionObject` wording.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route renders dedicated validation contract"`

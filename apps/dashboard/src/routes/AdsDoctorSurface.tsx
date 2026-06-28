@@ -1045,7 +1045,7 @@ function AdsBusinessTargetInterpretationPanel({
             label="Docelowy koszt pozyskania celu"
             value={adsStrategyContextValue(strategyReadiness.current_context.target_cpa_micros)}
           />
-          <MetricTile label="Braki" value={strategyReadiness.missing_read_contracts.length} />
+          <MetricTile label="Braki" value={strategyReadiness.missing_read_contract_summary_label} />
           <MetricTile label="Ocena" value={strategyReadiness.latest_review_status_label} />
         </div>
         <p className="mt-3 text-xs font-medium text-ink">{strategyReadiness.next_step}</p>

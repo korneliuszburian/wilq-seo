@@ -903,3 +903,7 @@ WILQ is complete for this long-range goal when:
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Custom Segments missing-data and required-check
   count labels to API/domain fields.
+- Latest Google Ads strategy proof: focused API/shared-schema/dashboard tests,
+  dashboard typecheck, marketer language guard, live API proof and browser
+  proof passed after moving strategy-readiness missing-data count labels to
+  API/domain fields.

@@ -618,6 +618,7 @@ export const AdsStrategyReviewReadinessContractSchema = z.object({
   required_validation_summary_label: z.string().optional().default(""),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).optional().default([]),
+  missing_read_contract_summary_label: z.string().optional().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).optional().default([]),
   source_connectors: z.array(z.string()),

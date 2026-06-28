@@ -1415,6 +1415,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     required_validation_summary_label: str = ""
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
@@ -1430,6 +1431,10 @@ class AdsStrategyReviewReadinessContract(BaseModel):
         if not self.required_validation_summary_label:
             self.required_validation_summary_label = required_validation_count_label(
                 self.required_validation
+            )
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
             )
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)

@@ -107,6 +107,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads optimizer-readiness and strategy review panels use API/domain
   source-contract, policy and required-validation summary labels instead of
   route-local count formatting.
+- Google Ads strategy review panel uses API/domain missing-data summary labels
+  instead of route-local count formatting.
 - Action priority cards, action registry cards and connector refresh run cards
   use API/domain evidence summary labels instead of route-local evidence count
   formatting.
