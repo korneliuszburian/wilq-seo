@@ -51,8 +51,8 @@ Date: 2026-06-28
   summary labels instead of route-local count formatting.
 - Custom Segments candidate, forecast and proof panels use API/domain evidence
   and action summary labels instead of route-local count formatting.
-- Demand Gen uses API/domain action summary and campaign-channel labels instead
-  of route-local action count formatting or raw channel fallbacks.
+- Demand Gen uses API/domain evidence, action and campaign-channel labels
+  instead of route-local count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
@@ -104,7 +104,19 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims or ahrefs_diagnostics_builds_gap_review_records_from_metric_facts or ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noisy" --maxfail=2`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract instead of generic registry"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/demand-gen/diagnostics` returns response-level
+  evidence/action summary labels; current live data has no Demand Gen row
+  records to display, and fixture tests cover row-level labels.
+- Browser proof: `.local-lab/proof/demand-gen-row-evidence-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route renders dedicated validation contract"`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -116,7 +128,7 @@ Most recent verified local slice:
   forecast rows.
 - Browser proof: `.local-lab/proof/custom-segments-summary-labels-clean.txt`
 
-Previous verified local slice:
+Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims or ahrefs_diagnostics_builds_gap_review_records_from_metric_facts or ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noisy" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ahrefs route renders authority context"`

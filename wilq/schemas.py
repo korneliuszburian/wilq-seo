@@ -1275,6 +1275,7 @@ class AdsCampaignMetricRow(BaseModel):
     conversions: float | None = None
     conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -1293,6 +1294,12 @@ class AdsCampaignMetricRow(BaseModel):
     review_reason: str = ""
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsCampaignMetricRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class AdsCampaignReadContract(BaseModel):
@@ -2779,6 +2786,13 @@ class DemandGenAdGroupAdRow(BaseModel):
     final_url_count: int = 0
     asset_reference_count: int = 0
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "DemandGenAdGroupAdRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class DemandGenCreativeAssetRow(BaseModel):
@@ -2787,6 +2801,13 @@ class DemandGenCreativeAssetRow(BaseModel):
     field_type: str | None = None
     impressions: int | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "DemandGenCreativeAssetRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class DemandGenLandingQualityRow(BaseModel):
@@ -2798,6 +2819,13 @@ class DemandGenLandingQualityRow(BaseModel):
     sessions: int | None = None
     engagement_rate: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "DemandGenLandingQualityRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class DemandGenCampaignModeReviewRow(BaseModel):
@@ -2812,6 +2840,13 @@ class DemandGenCampaignModeReviewRow(BaseModel):
     reason: str
     reason_label: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "DemandGenCampaignModeReviewRow":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class MerchantDiagnosticSection(BaseModel):

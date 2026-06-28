@@ -18752,12 +18752,25 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
         "Demand Gen"
     )
     assert data["demand_gen_campaign_rows"][0]["campaign_status_label"] == "wstrzymana"
+    assert data["demand_gen_campaign_rows"][0]["evidence_summary_label"] == (
+        "1 dowód źródłowy"
+    )
+    assert data["demand_gen_ad_group_ad_rows"][0]["evidence_summary_label"] == (
+        "1 dowód źródłowy"
+    )
+    assert data["demand_gen_creative_asset_rows"][0]["evidence_summary_label"] == (
+        "1 dowód źródłowy"
+    )
+    assert data["demand_gen_landing_quality_rows"][0]["evidence_summary_label"] == (
+        "1 dowód źródłowy"
+    )
     campaign_mode_review_row = data["demand_gen_campaign_mode_review_rows"][0]
     assert "transition_candidate" not in campaign_mode_review_row
     assert campaign_mode_review_row["advertising_channel_type_label"] == "Demand Gen"
     assert campaign_mode_review_row["campaign_status_label"] == "wstrzymana"
     assert campaign_mode_review_row["review_required"] is False
     assert campaign_mode_review_row["review_status_label"] == "bez zmiany trybu"
+    assert campaign_mode_review_row["evidence_summary_label"] == "1 dowód źródłowy"
     assert "already_demand_gen" in campaign_mode_review_row["reason"]
     preview = data["payload_preview"][0]
     assert preview["demand_gen_ad_group_ad_row_count"] == 1

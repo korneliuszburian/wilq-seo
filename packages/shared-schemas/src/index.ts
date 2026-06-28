@@ -515,6 +515,7 @@ export const AdsCampaignMetricRowSchema = z.object({
   conversions: z.number().nullable().optional(),
   conversion_value: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
@@ -3015,14 +3016,16 @@ export const DemandGenReadinessContractSchema = z.object({
     ad_status: z.string().nullable().optional(),
     final_url_count: z.number().default(0),
     asset_reference_count: z.number().default(0),
-    evidence_ids: z.array(z.string()).default([])
+    evidence_ids: z.array(z.string()).default([]),
+    evidence_summary_label: z.string().default("")
   })).default([]),
   demand_gen_creative_asset_rows: z.array(z.object({
     asset_id: z.string().nullable().optional(),
     asset_type: z.string().nullable().optional(),
     field_type: z.string().nullable().optional(),
     impressions: z.number().nullable().optional(),
-    evidence_ids: z.array(z.string()).default([])
+    evidence_ids: z.array(z.string()).default([]),
+    evidence_summary_label: z.string().default("")
   })).default([]),
   demand_gen_landing_quality_rows: z.array(z.object({
     campaign_id: z.string().nullable().optional(),
@@ -3032,7 +3035,8 @@ export const DemandGenReadinessContractSchema = z.object({
     active_users: z.number().nullable().optional(),
     sessions: z.number().nullable().optional(),
     engagement_rate: z.number().nullable().optional(),
-    evidence_ids: z.array(z.string()).default([])
+    evidence_ids: z.array(z.string()).default([]),
+    evidence_summary_label: z.string().default("")
   })).default([]),
   demand_gen_campaign_mode_review_rows: z.array(z.object({
     campaign_id: z.string().nullable().optional(),
@@ -3045,7 +3049,8 @@ export const DemandGenReadinessContractSchema = z.object({
     review_status_label: z.string().default(""),
     reason: z.string(),
     reason_label: z.string().nullable().optional(),
-    evidence_ids: z.array(z.string()).default([])
+    evidence_ids: z.array(z.string()).default([]),
+    evidence_summary_label: z.string().default("")
   })).default([]),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high"]),

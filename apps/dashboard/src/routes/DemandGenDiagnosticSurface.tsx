@@ -113,7 +113,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
+                    values={[row.evidence_summary_label]}
                   />
                 </div>
               </article>
@@ -169,7 +169,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
+                    values={[row.evidence_summary_label]}
                   />
                 </div>
               </article>
@@ -202,7 +202,7 @@ export function DemandGenDiagnosticSurface() {
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
                     label="Dowody"
-                    values={[formatDemandGenEvidenceCount(row.evidence_ids.length)]}
+                    values={[row.evidence_summary_label]}
                   />
                 </div>
               </article>
@@ -257,13 +257,6 @@ export function DemandGenDiagnosticSurface() {
       </section>
     </main>
   );
-}
-
-function formatDemandGenEvidenceCount(count: number) {
-  if (count === 0) return "brak dowodów źródłowych";
-  if (count === 1) return "1 dowód źródłowy";
-  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
-  return `${count} dowodów źródłowych`;
 }
 
 function adsCost(value: number | null | undefined, currencyCode?: string) {

@@ -8454,10 +8454,12 @@ describe("WILQ dashboard", () => {
     const routeSource = readFileSync("src/routes/DemandGenDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("data.preview_cards");
     expect(routeSource).toContain("data.action_summary_label");
+    expect(routeSource).toContain("row.evidence_summary_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
     expect(routeSource).not.toContain("data.campaign_channel_labels[channel] ?? channel");
     expect(routeSource).not.toContain("formatDemandGenIdCount");
+    expect(routeSource).not.toContain("formatDemandGenEvidenceCount");
     expect(routeSource).not.toContain("data.payload_preview[0]");
     expect(routeSource).not.toContain("row.advertising_channel_type ??");
     expect(routeSource).not.toContain("row.campaign_status ??");
