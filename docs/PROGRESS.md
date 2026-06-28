@@ -48,6 +48,8 @@ Date: 2026-06-28
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
+- Treści expanded decision and Ahrefs review cards use API labels or neutral
+  Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms instead
   of raw connector IDs.
 - Knowledge first-screen decision and card summaries use API/domain source,
@@ -77,8 +79,8 @@ Date: 2026-06-28
    fall back to raw snake_case or English values in marketer-facing copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for remaining payload-derived panels,
-   content enum fallbacks and smaller Knowledge playbook-list count labels.
+5. Dashboard still needs focused cleanup for remaining payload-derived panels
+   and smaller Knowledge playbook-list count labels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
@@ -91,6 +93,16 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Source scan: no visible fallback patterns from Treści decision/Ahrefs enum
+  fields remain in `ContentDiagnosticSurface.tsx`.
+- Browser proof: `.local-lab/proof/content-enum-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_entity_display_labels_do_not_expose_raw_ids or ads_label_fallbacks_do_not_expose_raw_vendor_values or ads_helper_label_fallbacks_do_not_expose_raw_vendor_values" --maxfail=3`
 - `rtk pnpm --dir packages/shared-schemas test`
 - `rtk pnpm --dir apps/dashboard typecheck`
@@ -101,7 +113,7 @@ Most recent verified local slice:
   negative-keyword rows.
 - Browser proof: `.local-lab/proof/ads-display-labels-clean.txt`
 
-Previous verified local slice:
+Earlier local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map_binds_sources_to_decisions or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

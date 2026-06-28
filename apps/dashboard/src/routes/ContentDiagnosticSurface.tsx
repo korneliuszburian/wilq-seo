@@ -740,7 +740,7 @@ function ContentDecisionCard({
         <div>
           <h3 className="text-sm font-semibold text-ink">{contentDecisionTitle(decision)}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {decision.decision_type_label || decision.decision_type}
+            {decision.decision_type_label || "typ decyzji do sprawdzenia"}
           </p>
         </div>
         <StatusBadge value={decision.status} label={decision.status_label} />
@@ -772,12 +772,12 @@ function ContentDecisionCard({
         ) : null}
         {decision.wordpress_match ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            WordPress: {decision.wordpress_match_label ?? decision.wordpress_match}
+            WordPress: {decision.wordpress_match_label || "stan spisu do sprawdzenia"}
           </span>
         ) : null}
         {decision.wordpress_match_confidence ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Dopasowanie: {decision.wordpress_match_confidence_label ?? decision.wordpress_match_confidence}
+            Dopasowanie: {decision.wordpress_match_confidence_label || "pewność dopasowania do sprawdzenia"}
           </span>
         ) : null}
         {canonicalUrl ? (
@@ -792,17 +792,17 @@ function ContentDecisionCard({
         ) : null}
         {decision.inventory_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Spis: {decision.inventory_gate_status_label ?? decision.inventory_gate_status}
+            Spis: {decision.inventory_gate_status_label || "status spisu do sprawdzenia"}
           </span>
         ) : null}
         {decision.canonical_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Kanoniczny: {decision.canonical_gate_status_label ?? decision.canonical_gate_status}
+            Kanoniczny: {decision.canonical_gate_status_label || "status URL kanonicznego do sprawdzenia"}
           </span>
         ) : null}
         {decision.duplicate_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            Duplikaty: {decision.duplicate_gate_status_label ?? decision.duplicate_gate_status}
+            Duplikaty: {decision.duplicate_gate_status_label || "status duplikatów do sprawdzenia"}
           </span>
         ) : null}
       </div>
@@ -821,17 +821,17 @@ function ContentDecisionCard({
                   <div>
                     <div className="text-sm font-semibold text-ink">{candidate.topic}</div>
                     <div className="mt-0.5 text-xs text-slate-500">
-                      {candidate.gap_type_label || candidate.gap_type} /{" "}
-                      {candidate.relevance_status_label || candidate.relevance_status} / score{" "}
+                      {candidate.gap_type_label || "typ luki do sprawdzenia"} /{" "}
+                      {candidate.relevance_status_label || "trafność do sprawdzenia"} / score{" "}
                       {candidate.relevance_score}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 text-xs">
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      GSC: {candidate.gsc_demand_label || candidate.gsc_demand}
+                      GSC: {candidate.gsc_demand_label || "popyt GSC do sprawdzenia"}
                     </span>
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      WP: {candidate.wordpress_inventory_match_label || candidate.wordpress_inventory_match}
+                      WP: {candidate.wordpress_inventory_match_label || "spis WordPress do sprawdzenia"}
                     </span>
                   </div>
                 </div>

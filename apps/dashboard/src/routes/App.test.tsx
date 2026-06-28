@@ -8139,6 +8139,28 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("action.preview_cards");
     expect(routeSource).not.toContain("action.payload.content_brief_preview");
     expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
+    expect(routeSource).not.toContain("decision.decision_type_label || decision.decision_type");
+    expect(routeSource).not.toContain("decision.wordpress_match_label ?? decision.wordpress_match");
+    expect(routeSource).not.toContain(
+      "decision.wordpress_match_confidence_label ?? decision.wordpress_match_confidence"
+    );
+    expect(routeSource).not.toContain(
+      "decision.inventory_gate_status_label ?? decision.inventory_gate_status"
+    );
+    expect(routeSource).not.toContain(
+      "decision.canonical_gate_status_label ?? decision.canonical_gate_status"
+    );
+    expect(routeSource).not.toContain(
+      "decision.duplicate_gate_status_label ?? decision.duplicate_gate_status"
+    );
+    expect(routeSource).not.toContain("candidate.gap_type_label || candidate.gap_type");
+    expect(routeSource).not.toContain(
+      "candidate.relevance_status_label || candidate.relevance_status"
+    );
+    expect(routeSource).not.toContain("candidate.gsc_demand_label || candidate.gsc_demand");
+    expect(routeSource).not.toContain(
+      "candidate.wordpress_inventory_match_label || candidate.wordpress_inventory_match"
+    );
   });
 
   it("localo route renders workflow-specific blockers and clean metric labels", async () => {

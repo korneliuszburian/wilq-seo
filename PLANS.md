@@ -552,8 +552,8 @@ WILQ is complete for this long-range goal when:
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
 - 2026-06-28: Current remaining cleanup work is label fallback hardening,
-  remaining content/ads payload-derived panels, content enum fallbacks, smaller
-  Knowledge playbook-list count labels, context-pack copy and recovery-doc
+  remaining content/ads payload-derived panels, smaller Knowledge playbook-list
+  count labels, context-pack copy and recovery-doc
   pruning. Do not start deferred product layers until `PLAN.md` completion is
   green or explicitly deferred.
 - 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
@@ -578,6 +578,10 @@ WILQ is complete for this long-range goal when:
   event and changed resource context instead of visible raw IDs. Live API proof
   confirmed label fields on `/api/ads/diagnostics?view=summary`; browser proof
   lives at `.local-lab/proof/ads-display-labels-clean.txt`.
+- 2026-06-28: Treści expanded decision and Ahrefs review cards now use API
+  labels or neutral Polish operator fallbacks instead of visible raw enum/status
+  keys. Browser proof lives at
+  `.local-lab/proof/content-enum-labels-clean.txt`.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.
