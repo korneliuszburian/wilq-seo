@@ -17,10 +17,9 @@ Date: 2026-06-28
 - `ekologus.pl` is the public canonical content home.
 - WILQ API remains the product brain. Dashboard and Codex skills consume typed
   API contracts, source connectors and WILQ-described evidence.
-- Active cleanup removes marketer-facing jargon and working names:
-  `Command Center` -> `Centrum pracy`, `Content Planner` -> `Treści` / widok
-  treści, `Ads Doctor` -> `Google Ads` / widok Google Ads, `blockery` ->
-  `blokady`, `evidence IDs` -> dowody opisane w WILQ.
+- Active cleanup removes marketer-facing jargon and old working names. The
+  canonical visible language is defined in `PLAN.md`; do not repeat stale terms
+  outside guardrail sections.
 - Do not preserve deprecated active fields, compatibility aliases or stale
   target/dev/migration semantics when direct migration is feasible.
 - Do not mask dirty copy with UI translators, `replaceAll` helpers or local
@@ -35,9 +34,9 @@ Date: 2026-06-28
   API/domain/shared-schema fields.
 - Primary navigation and touched route headings now use marketer-readable Polish
   labels such as `Centrum pracy`, `Treści` and `Google Ads`.
-- Touched marketer surfaces avoid raw evidence/action/connector IDs, endpoint
-  names, raw enum keys, old dev-site mapping language and English validation
-  wording in normal copy.
+- Touched marketer surfaces avoid raw trace IDs, endpoint names, raw enum keys,
+  stale dev-site placement language and English validation wording in normal
+  copy.
 - Action Detail normal preview renders typed API preview cards only. Raw action
   payloads remain available only behind the collapsed technical detail panel.
 - Demand Gen diagnostics now expose typed API preview cards and the dashboard no
@@ -46,19 +45,15 @@ Date: 2026-06-28
   segment first-screen labels were tightened to marketer-readable Polish.
 - Legacy raw audit summary text is no longer rewritten through string
   replacements; raw historical summaries collapse to a neutral audit note.
-- Ahrefs/content public contracts now use `referenced_public_url`; active
+- Ahrefs/content public contracts now use public URL wording; active
   diagnostics, source facts, tactical queue and WordPress draft handoff no
-  longer expose or fall back to `target_url`.
+  longer expose stale target-field semantics.
 - Knowledge operating map now carries API-owned labels for source connectors,
   evidence summaries, missing data and blocked claims, so the Knowledge route
   does not show playbook refusal rules or raw connector IDs on the first screen.
-- Knowledge playbooks now expose Polish source rules and output contracts; live
-  API proof shows no `Refuse`, `Evidence-backed`, `payload`, `connectora` or
-  `query/page` residue in `/api/knowledge/playbooks`.
+- Knowledge playbooks now expose Polish source rules and output contracts.
 - UAT packet/result scripts now use marketer-facing Polish route names and
-  markdown labels. Live packet proof shows no `Command Center`,
-  `Content Planner`, `Ads Doctor`, `dev preview`, `Route`, `Pass` or `Fail`
-  residue in the exported UAT packet.
+  markdown labels.
 - Ahrefs visible copy now uses `dowody`, `SEO i treści`, `linki zwrotne`,
   `widok Treści` and `organiczne słowa dla URL`; live Ahrefs API/browser proof
   shows no `Ahrefs evidence`, `SEO/content`, `backlinków` or `per URL` residue.
@@ -81,11 +76,8 @@ Date: 2026-06-28
 - Merchant decision and price-impact previews now expose API-owned preview
   cards. The Merchant route no longer parses raw `payload_preview` to build
   marketer-facing preview cards.
-- Content URL semantics now use public/final wording in active gates:
-  `public_canonical_confirmed` and
-  `existing_public_content_requires_refresh_or_merge`. The API no longer uses
-  old `target_site`, `target_url`, stale gate-state names or
-  `ekologus.dev.proudsite.pl` in active content diagnostics/actions output.
+- Content URL semantics now use public/final wording in active gates. Active
+  content diagnostics/actions no longer use dev-site placement semantics.
 - Social source inputs no longer depend on a hardcoded dev-preview host filter;
   content objects need a public/final/canonical URL before they can drive that
   workflow.
@@ -109,7 +101,7 @@ Date: 2026-06-28
   connector IDs in shared helpers, command center, marketing brief, GA4/Localo
   diagnostics and context-pack refresh-run summaries. Refresh-run summaries now
   expose `connector_label` and `status_label`.
-- Route labels now use one safe operator-label helper in Command Center and
+- Route labels now use safe operator-label helpers in Centrum pracy and the
   workflow registry. Unknown routes no longer fall back to raw route paths or
   generic fallback copy.
 - Ads diagnostics label fallbacks now use closed Polish labels for unknown
@@ -138,10 +130,9 @@ Date: 2026-06-28
   and technical detail, not in the primary preview result used by marketer
   surfaces.
 - Centrum pracy daily-decision badges now render API-owned
-  `decision_state_label` instead of raw decision-state enum text. Command
-  Center API titles use `Google Ads` and `Treści` wording instead of old
-  working names, and `drilldown` wording was removed from the active action
-  plan copy.
+  `decision_state_label` instead of raw decision-state enum text. API titles use
+  `Google Ads` and `Treści` wording, and old drilldown wording was removed from
+  the active action plan copy.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -161,106 +152,15 @@ Date: 2026-06-28
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
-## Proof
+## Latest Accepted Proof
 
-Recent focused proof used during the cleanup:
-
-- `rtk uv run python scripts/marketer_language_guard.py`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or marketing_brief or ahrefs_diagnostics or content_diagnostics or actions" --maxfail=1`
-- `rtk pnpm --dir apps/dashboard typecheck`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=1`
-- `rtk uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics or content_diagnostics or wordpress_draft or tactical_queue or redaction or legacy_raw_audit_summary" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics" --maxfail=1`
-- `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_negative_keyword_candidate_exposes_marketer_preview_card" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_recommendation_row_exposes_marketer_preview_card" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_budget_row_exposes_marketer_preview_card" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_product_performance_readiness_blocks_state_only_product_join or merchant_diagnostics_promotes_ads_product_state_review_decision" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics or wordpress_draft or social_draft_actions_exclude_dev_site_inventory_inputs" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunity or workflow or tactical_queue or marketing_brief or custom_segments or demand_gen or merchant_diagnostics" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks or ga4 or localo or marketing_brief or command_center" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "route_label or operator_label_fallbacks" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics or ads_label_fallbacks or custom_segments or demand_gen or blocked_claim" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics or ads_label_fallbacks or custom_segments or demand_gen or blocked_claim or tactical_queue or opportunity" --maxfail=1`
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_helper_label_fallbacks or ads_label_fallbacks or ads_change_history or ads_diagnostics" --maxfail=1`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/TacticalQueuePanel.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/OpportunitiesRoute.test.tsx src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "registry|opportunit|tactical|custom segments route|demand gen route|merchant route|content route"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`
-- `agent-browser` live `/merchant` proof after expanding full review: preview
-  cards render and visible DOM contains no `MerchantProductStateReview`,
-  `MerchantSupplementalFeedCandidateReview`,
-  `MerchantPriceImpactReadinessReview`, `merchant_product_state_review_preview_v1`,
-  `merchant_supplemental_feed_review_preview_v1`,
-  `merchant_price_impact_readiness_preview_v1` or raw product-ID samples.
-- Live API proof on `/api/content/diagnostics` and `/api/actions`: no
-  `current_url_confirmed`, `refresh_or_merge_required`,
-  `preview_url_as_final_canonical`, `selected_target_url`, `target_site`,
-  `target_url` or `ekologus.dev.proudsite.pl`; required public/final gate
-  labels are present.
-- Live API proof after stack restart on `/api/opportunities`,
-  `/api/workflow-runs`, `/api/ads/diagnostics`, `/api/demand-gen/diagnostics`,
-  `/api/merchant/diagnostics`, `/api/marketing/tactical-queue` and
-  `/api/marketing/brief`: required status/risk label fields are present.
-- `agent-browser` proof on `/opportunities`: visible status/risk text uses
-  Polish labels such as `średnie ryzyko` and `niskie ryzyko`; no raw status or
-  risk enum labels were found in the scanned visible text.
-- `agent-browser` proof on `/ads-doctor/custom-segments`: contract badges show
-  `gotowe` and `zablokowane` from API labels after removing route-local status
-  ternaries.
-- `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|playbook"`
-- `rtk uv run python - <<'PY' ... /api/knowledge/playbooks language residue scan ... PY`
-- `rtk uv run python scripts/export_marketer_uat_packet.py --format markdown`
-- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser eval ... on /ahrefs`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision|ahrefs route renders authority context"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract"`
-- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route renders workflow-specific brief focus"`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "action_preview or content_action_preview or localo_visibility or merchant_feed_preview" --maxfail=5`
-- `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "command_center" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
-- `rtk curl --max-time 60 -sS http://127.0.0.1:8000/api/demand-gen/diagnostics`
-- `rtk uv run python - <<'PY' ... /api/ahrefs/diagnostics, /api/content/diagnostics, /api/actions/act_prepare_wordpress_draft_handoff and /api/marketing/tactical-queue public contract scan ... PY`
-- `rtk uv run python - <<'PY' ... /api/knowledge/operating-map label-field scan ... PY`
-- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser get text main` on `/knowledge`
-- `rtk curl --max-time 10 -sS -i http://127.0.0.1:8000/api/health`
-- `rtk curl --max-time 15 -sS http://127.0.0.1:8000/api/actions/act_prepare_ads_campaign_review_queue`
-- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --compact --depth 6`
-- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --depth 10` on `/ads-doctor/custom-segments`
-- `rtk agent-browser read` on expanded `/ads-doctor` with short socket dir;
-  proof found `Wykluczenie słowa do sprawdzenia`, `Dopasowanie: dopasowanie
-  ścisłe` and `Poziom: grupa reklam`, without `EXACT` or `ad_group` in the
-  filtered visible text.
-- `rtk uv run python - <<'PY' ... /api/ads/diagnostics recommendations_read_contract
-  preview_card scan ... PY`; proof found `Rekomendacja Google Ads do
-  sprawdzenia`, `Operacja: zastosowanie rekomendacji Google Ads` and no
-  `ApplyRecommendationOperation`, `CAMPAIGN_BUDGET`, `101` or `701` in the
-  recommendation preview card. Browser proof on expanded `/ads-doctor` showed
-  the current live DOM does not render that recommendation card, so this slice
-  is verified by API contract, route fixture and absence of the old technical
-  strings in the live DOM.
-- `rtk uv run python - <<'PY' ... /api/ads/diagnostics budget_pacing_read_contract
-  preview_card scan ... PY`; proof found `Budżet kampanii do sprawdzenia`,
-  `Operacja: zmiana budżetu kampanii` and no `CampaignBudgetOperation`,
-  `mutation_audit`, `101` or `701` in the budget preview card. Browser proof on
-  expanded `/ads-doctor` full diagnostic tables found the same Polish card text
-  and no old technical tokens.
-- Browser proof on expanded `/merchant` found `12 próbek produktów do
-  sprawdzenia`, `identyfikator produktu dostępny w szczegółach technicznych`,
-  `nie kwalifikuje się do emisji` and `kliknięcia Ads`, without
-  `online~pl~PL~SKU`, `NOT_ELIGIBLE`, `OUT_OF_STOCK`, `ads_cost_micros` or
-  `missing_metrics` in the visible text.
-- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --depth 10` on expanded `/ga4`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
+
+Detailed historical proof belongs in git commits and `.local-lab/proof/`
+artifacts, not in this recovery ledger.

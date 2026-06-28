@@ -46,17 +46,11 @@ inspect it without reading technical internals.
 
 ## Current Cleanup Language
 
-Active marketer language is being normalized as:
-
-- `Command Center` -> `Centrum pracy`.
-- `Content Planner` -> `Treści` / widok treści.
-- `Ads Doctor` -> `Google Ads` / widok Google Ads.
-- `blockery` -> `blokady`.
-- `evidence IDs` -> dowody opisane w WILQ.
-
+The canonical cleanup vocabulary is defined in `PLAN.md`. This goal file should
+not repeat stale working names except when describing an explicit guardrail.
 Dashboard paths may keep existing technical route slugs during this goal, but
 primary navigation, headings, summaries, skill output and recovery docs should
-use the cleaned language.
+use cleaned Polish operator language.
 
 ## Current State
 
@@ -74,19 +68,15 @@ use the cleaned language.
   segment first-screen labels have been tightened to marketer-readable Polish.
 - Legacy raw audit summaries are no longer cleaned by string replacement
   helpers; raw historical summaries collapse to a neutral audit note.
-- Ahrefs/content public contracts now use `referenced_public_url`; active
+- Ahrefs/content public contracts now use public URL wording; active
   diagnostics, source facts, tactical queue and WordPress draft handoff no
-  longer expose or fall back to `target_url`.
+  longer expose stale target-field semantics.
 - Knowledge operating map now carries API-owned labels for source connectors,
   evidence summaries, missing data and blocked claims, so the Knowledge route
   does not show playbook refusal rules or raw connector IDs on the first screen.
-- Knowledge playbooks now expose Polish source rules and output contracts. Live
-  `/api/knowledge/playbooks` proof shows no `Refuse`, `Evidence-backed`,
-  `payload`, `connectora` or `query/page` residue in the playbook contract.
+- Knowledge playbooks now expose Polish source rules and output contracts.
 - UAT packet/result scripts now use marketer-facing Polish route names and
-  markdown labels. Live packet proof shows no `Command Center`,
-  `Content Planner`, `Ads Doctor`, `dev preview`, `Route`, `Pass` or `Fail`
-  residue in the exported UAT packet.
+  markdown labels.
 - Ahrefs visible copy now uses `dowody`, `SEO i treści`, `linki zwrotne`,
   `widok Treści` and `organiczne słowa dla URL`; live Ahrefs API/browser proof
   shows no `Ahrefs evidence`, `SEO/content`, `backlinków` or `per URL` residue.
@@ -109,11 +99,8 @@ use the cleaned language.
 - Merchant decision and price-impact previews now expose API-owned preview
   cards. The dashboard route no longer parses raw `payload_preview` for those
   marketer-facing cards.
-- Content URL semantics now use public/final wording in active gates:
-  `public_canonical_confirmed` and
-  `existing_public_content_requires_refresh_or_merge`. Active content
-  diagnostics/actions no longer expose old `target_site`, `target_url`, stale
-  gate-state names or `ekologus.dev.proudsite.pl`.
+- Content URL semantics now use public/final wording in active gates. Active
+  content diagnostics/actions no longer expose dev-site placement semantics.
 - Social source inputs no longer use a hardcoded dev-preview host filter.
   Content objects must expose a public/final/canonical URL before they can drive
   that workflow.
@@ -136,7 +123,7 @@ use the cleaned language.
   connector IDs in shared helpers, command center, marketing brief, GA4/Localo
   diagnostics and context-pack refresh-run summaries. Refresh-run summaries now
   expose `connector_label` and `status_label`.
-- Route labels now use one safe operator-label helper in Command Center and
+- Route labels now use safe operator-label helpers in Centrum pracy and the
   workflow registry. Unknown routes no longer fall back to raw route paths or
   generic fallback copy.
 - Ads diagnostics label fallbacks now use closed Polish labels for unknown
@@ -162,9 +149,12 @@ use the cleaned language.
 - Action preview API results now expose typed/redacted `preview_items` and
   `preview_cards`. Marketer-facing preview surfaces must use those view-models;
   raw action payload previews stay in payload/audit/technical detail only.
-- Browser proof after the status-label slice covered `/opportunities` and
-  `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
-  rather than raw status/risk enum values.
+- Centrum pracy daily-decision badges now render API-owned labels instead of raw
+  decision-state enum text. API titles use `Google Ads` and `Treści` wording,
+  and old drilldown wording was removed from the active action plan copy.
+- Browser proof after the status-label slice covered touched marketer routes;
+  visible badges used Polish labels from the API rather than raw status/risk
+  enum values.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -185,10 +175,8 @@ are resolved or explicitly deferred.
    fall back to raw snake_case or English values in marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-6. Dashboard still needs focused cleanup for Knowledge first-screen blocked
-   claim summaries, tactical queue trace links, Google Sheets generic route
-   copy, workflow card counters, metric chip formatting and action focus card
-   metadata.
+6. Dashboard still needs focused cleanup for Knowledge first-screen summaries,
+   workflow/registry counters and remaining content/ads payload-derived panels.
 
 ## Execution Policy
 

@@ -545,177 +545,17 @@ WILQ is complete for this long-range goal when:
 
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
-- 2026-06-25: Active cleanup proof is recorded in `docs/PROGRESS.md`: active
-  runtime dev/migration scan passed, Content Planner and Demand Gen browser
-  snapshots are clean for forbidden visible terms, and focused
-  API/dashboard/skill checks passed. Cleanup is not complete for the whole
-  cockpit: Command Center, Ads, Merchant, GA4 and Localo backend copy still
-  needs source-level marketer-language cleanup before Milestone 2 starts.
-- 2026-06-27: Action review-gate and preview validation labels are now sourced
-  from WILQ API/domain output instead of route-local cleanup. `DetailPanels`
-  prefers API label arrays for preview requirements and missing-data rows, and
-  API tests fail if action label arrays fall back to generic technical wording.
-- 2026-06-27: Action preview, confirmation and impact-check result blockers now
-  carry API-owned `blocker_labels`; dashboard result panels render those labels
-  instead of route-local blocker-key translations.
-- 2026-06-27: Action detail no longer uses route-local fallback labels for
-  preview requirements, missing-data rows or "after confirmation" rows.
-  Unknown technical keys are not converted into generic marketer copy; active
-  API sources must provide explicit Polish label arrays. Live API/browser proof
-  for Ads target guardrails found no generic fallback labels.
-- 2026-06-27: The last active `marketingLabels.ts` consumer was removed and
-  the file was deleted. Action detail now reads API-owned payload label fields
-  for blocked claims, Localo allowed reads, Ads target options and WordPress
-  post status; route-local Ads/blocked-claim label translation is not allowed
-  to return.
-- 2026-06-27: Ads Doctor start-here copy, effect-check plan copy and business
-  context status copy moved from React helpers into Ads API/shared-schema
-  presentation fields.
-- 2026-06-27: Google Ads negative-keyword action details now use typed API
-  preview cards with Polish match/level labels and no raw Google Ads IDs in the
-  primary card.
-- 2026-06-27: Google Ads custom-segment action details now use typed API
-  preview cards with Polish audience/source/safety rows and no raw member type,
-  old English internal segment name or Google Ads IDs in the primary card.
-- 2026-06-27: Demand Gen action details now use typed API preview cards with
-  labelled channel counts and no raw Google Ads channel enum keys in the
-  primary card.
-- 2026-06-27: Keyword Planner access blocker action details now use typed API
-  preview cards with a clean access reason and next step instead of raw Google
-  Ads API error strings in the primary card.
-- 2026-06-27: Social draft action details now use typed API preview cards with
-  clean source and metric labels instead of raw connector IDs or metric keys;
-  the Action Detail `source_inputs` payload fallback was removed.
-- 2026-06-27: WordPress draft handoff action details now use typed API preview
-  cards with clean URL/checklist rows instead of raw candidate IDs,
-  preview-contract names or operation names.
-- 2026-06-27: Localo blocked-claim source values, skill evals, smoke tests and
-  knowledge rules now use Polish operating language. Old active values such as
-  `GBP performance`, `GBP write`, `write path`, `competitor visibility` and
-  `local visibility uplift` are now language-guarded instead of translated in
-  React.
-- 2026-06-27: Legacy content-review audit events are normalized at the action
-  service boundary, so old dev-preview review terms stored in local state no
-  longer leak through `/api/actions`.
-- 2026-06-27: Removed the unused action gate label dictionary from
-  `ActionObjectPanels`; action panels now rely on API-owned label arrays instead
-  of route-local raw-key translation. A stale dashboard expectation for raw
-  Merchant vendor text was inverted into a guard against showing that text.
-- 2026-06-27: Merchant skill context-pack accepts the current runtime request
-  shape without falling back to full context. The API must validate supported
-  request fields explicitly and keep default skill contexts scoped and
-  condensed.
-- 2026-06-27: Social Publisher source evidence now uses `source_inputs` and
-  `missing_publish_access` in the active API/skill contract. The old
-  `candidate_inputs` field and social "permissions" wording were removed from
-  active context, smoke tests and eval cases. Social source inputs carry
-  condensed `context_summary` values instead of raw vendor dimensions.
-- 2026-06-27: Content Planner active decision labels, content gate labels,
-  WordPress match labels, preflight labels and Ahrefs candidate labels now come
-  from WILQ API/domain output. The content route consumes those fields instead
-  of owning React-side label helper maps for active content decisions. Proof is
-  stored under `.local-lab/proof/20260627-content-api-labels/`.
-- 2026-06-27: Command Center daily decisions now use WILQ API/shared-schema
-  label fields for decision state, priority, route, CTA, source connectors,
-  evidence summary, action summary, skill label and blocked promises. The route
-  no longer owns local business-copy helper maps for those fields. Proof:
-  `.local-lab/proof/20260627-command-center-api-labels/`.
-- 2026-06-27: Command Center daily decisions now use WILQ API/shared-schema
-  freshness labels. The route no longer falls back to raw freshness enum
-  states.
-- 2026-06-27: Marketing brief blockers now exclude successful vendor reads and
-  non-marketing runtime adapters. Completed GSC/GA4/Merchant reads stay in
-  evidence/metric sections; `what_blocks_us` now contains only real decision
-  blockers such as GA4 claim readiness and Ads business context. Proof:
-  `.local-lab/proof/20260627-marketing-brief-blockers/`.
-- 2026-06-27: Ahrefs status, priority and blocked-promise labels now come from
-  WILQ API/shared-schema fields. The `/ahrefs` route no longer owns Ahrefs
-  label helpers and no longer renders raw metric-fact values as first-screen
-  marketer copy. Proof:
-  `.local-lab/proof/20260627-ahrefs-api-status-labels/`.
-- 2026-06-27: Ads Doctor primary connector/status/decision labels now come
-  from WILQ API/shared-schema fields. The route no longer owns helper copy for
-  primary Ads titles, summaries, rationale, next step or top status labels, and
-  source summaries no longer expose `koszt_micros=`, `wartość_konwersji=`,
-  `search-term rows` or `wiersze_bez_konwersji` on the marketer surface. Proof:
-  `.local-lab/proof/20260627-ads-api-decision-labels/`.
-- 2026-06-27: Browser proof for Merchant, Content Planner and Ahrefs found
-  remaining visible `ID` proof counts and product-ID wording. The producing
-  API/domain/dashboard sources now render plain Polish proof summaries and the
-  proof scan under `.local-lab/proof/20260627-label-cleanup-browser/` is clean
-  for the targeted stale terms.
-- 2026-06-27: Ads secondary proof rows, registry/action evidence counts and
-  action impact-check results now use API-owned source/evidence/action labels
-  instead of route-local counts or raw connector IDs in normal UI.
-- 2026-06-27: Read-only parallel audit found one remaining active runtime
-  compatibility path for old content-review audit terms in
-  `wilq/actions/service.py` and stale 2026-06-25 handoff/audit docs that should
-  be marked superseded or rewritten before the next product goal.
-- 2026-06-27: Old content-review audit events based on dev-site mapping are now
-  dropped from active action output instead of being rewritten at response time.
-  The remaining cleanup is historical handoff/audit docs that still read like
-  current dev-site migration guidance.
-- 2026-06-27: Content action preview labels for brief source, brief mode,
-  WordPress draft operation, WordPress post status, draft generation status,
-  publication readiness and blocked claims moved into the content action API
-  payload. The Content route now renders those fields directly and the removed
-  local helper functions are guarded against returning.
-- 2026-06-27: Merchant action detail previews now use API-owned typed
-  `preview_cards`. The detail route prefers those cards before raw payload
-  fallback, and Merchant feed issue cards show Polish problem/sample summaries
-  without raw SKU/product IDs.
-- 2026-06-27: Google Ads recommendation action details now use API-owned typed
-  `preview_cards` without raw recommendation enums or raw campaign/budget IDs
-  in primary card text.
-- 2026-06-27: Google Ads budget action details now use API-owned typed
-  `preview_cards` without raw operation names or raw campaign/budget IDs in
-  primary card text.
-- 2026-06-27: Localo metric labels now live in one domain label source used by
-  Localo diagnostics and marketing brief. `MetricFactChips` no longer owns a
-  metric-name dictionary; it renders API `metric_label` and exposes missing
-  labels instead of guessing them.
-- 2026-06-27: `MetricFact` now carries API-owned dimension key/value labels.
-  `MetricFactChips` no longer owns dimension dictionaries and renders
-  `dimension_labels` plus `dimension_value_labels` directly.
-- 2026-06-27: Merchant diagnostic metric facts now receive API/domain
-  metric and dimension labels. The Merchant route no longer owns a local
-  metric-label dictionary for its evidence/limitations metric tiles.
-- 2026-06-27: GA4 diagnostic metric facts now receive API/domain metric and
-  dimension labels. The GA4 route no longer owns a local metric-label
-  dictionary for its proof metric tiles.
-- 2026-06-27: GA4 tracking-quality action previews now receive API/domain
-  operation and missing-dimension labels. The GA4 route no longer owns those
-  preview translators.
-- 2026-06-27: Merchant action preview payloads now receive API/domain
-  preview-contract labels. The Merchant route no longer owns that dictionary.
-- 2026-06-27: Merchant issue clusters and issue decisions now receive
-  API/domain reporting-context labels. The Merchant route no longer owns a
-  reporting-context fallback.
-- 2026-06-27: Content refresh action details now receive API-owned preview
-  cards for content brief review and WordPress draft payload review.
-  `DetailPanels.tsx` no longer renders those cards by inferring raw payload
-  shape, and the live action/browser proof shows no `target_site`, `target_url`
-  or mapping-review wording in the primary cards.
-- 2026-06-27: Google Ads search-term n-gram action details now receive
-  API-owned preview cards. `DetailPanels.tsx` no longer renders n-gram cards
-  by inferring raw payload shape, and browser proof shows no raw
-  `SearchTermNgramReview`, preview-contract names or n-gram-to-negative-keyword
-  contract keys in the primary cards. Runtime remains slow and needs a focused
-  performance slice.
-- 2026-06-27: GA4 tracking-quality action details now receive API-owned preview
-  cards. `DetailPanels.tsx` no longer renders GA4 tracking cards by inferring
-  raw payload shape, and live API/browser proof shows no raw preview-contract
-  names, operation names, metric keys or source metric keys in the primary
-  card. Runtime remains slow and needs a focused performance slice.
-- 2026-06-27: Localo visibility action details now receive API-owned preview
-  cards. `DetailPanels.tsx` no longer renders Localo visibility cards by
-  inferring raw payload shape, and the API card is condensed to key
-  visibility/review metrics with no raw `localo_*` metric keys in marketer copy.
-- 2026-06-28: Google Ads target-guardrail and strategy-review action details now
-  receive API-owned preview cards. `DetailPanels.tsx` no longer renders Ads
-  business-context cards by inferring raw payload shape, and live API proof shows
-  no raw action types, validation keys or `.env` field names in the primary
-  card copy.
+- 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
+  React helpers into typed API/domain/shared-schema fields across Command
+  Center, Ads, Merchant, GA4, Localo, Ahrefs, Knowledge, tactical queue, metric
+  chips and action previews. Detailed proof is in git commits and
+  `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
+  accepted proof.
+- 2026-06-28: Current remaining cleanup work is label fallback hardening,
+  Knowledge first-screen summaries, workflow/registry counters, remaining
+  content/ads payload-derived panels, context-pack copy and recovery-doc
+  pruning. Do not start deferred product layers until `PLAN.md` completion is
+  green or explicitly deferred.
 
 ## Discoveries
 
@@ -752,8 +592,9 @@ WILQ is complete for this long-range goal when:
   payload.
 - Content decision labels are product semantics, not presentation cleanup.
   Existing API-owned labels should be consumed directly by the route; active
-  route-local label helpers are debt unless they are only rendering old action
-  payload preview contracts waiting for their own cleanup slice.
+  route-local label helpers are debt. If an old action payload preview contract
+  still needs a route-local reader, record a dated blocker with the affected
+  action kind and removal condition instead of treating it as compatibility.
 - Content action preview labels are product semantics too. If a preview is
   visible to the marketer, the backend/action contract must provide its label;
   React must not translate source type, mode, operation, draft status or
