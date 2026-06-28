@@ -5,15 +5,10 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { CommandCenterResponse, getCommandCenter } from "../lib/api";
-import type { DailyDecision } from "@wilq/shared-schemas";
 
 function copyPromptToClipboard(prompt: string) {
   if (!navigator.clipboard) return;
   void navigator.clipboard.writeText(prompt);
-}
-
-function decisionStatusBadgeValue(item: DailyDecision) {
-  return item.decision_state;
 }
 
 function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
@@ -45,7 +40,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
                   {item.title}
                 </h3>
               </div>
-              <StatusBadge value={decisionStatusBadgeValue(item)} />
+              <StatusBadge value={item.decision_state} label={item.decision_state_label} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">
               {item.co_widzimy}

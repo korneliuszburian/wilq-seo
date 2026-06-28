@@ -137,6 +137,11 @@ Date: 2026-06-28
   `preview_cards`. Raw action payload preview details stay in action payloads
   and technical detail, not in the primary preview result used by marketer
   surfaces.
+- Centrum pracy daily-decision badges now render API-owned
+  `decision_state_label` instead of raw decision-state enum text. Command
+  Center API titles use `Google Ads` and `Treści` wording instead of old
+  working names, and `drilldown` wording was removed from the active action
+  plan copy.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -224,6 +229,8 @@ Recent focused proof used during the cleanup:
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route renders workflow-specific brief focus"`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "action_preview or content_action_preview or localo_visibility or merchant_feed_preview" --maxfail=5`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "command_center" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk curl --max-time 60 -sS http://127.0.0.1:8000/api/demand-gen/diagnostics`
 - `rtk uv run python - <<'PY' ... /api/ahrefs/diagnostics, /api/content/diagnostics, /api/actions/act_prepare_wordpress_draft_handoff and /api/marketing/tactical-queue public contract scan ... PY`
 - `rtk uv run python - <<'PY' ... /api/knowledge/operating-map label-field scan ... PY`

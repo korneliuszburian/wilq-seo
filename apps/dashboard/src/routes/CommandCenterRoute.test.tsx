@@ -220,6 +220,8 @@ describe("CommandCenter route", () => {
     expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
+    expect(screen.queryByText("ready")).not.toBeInTheDocument();
+    expect(screen.queryByText("stale")).not.toBeInTheDocument();
     expect(screen.getByText(/Świeżość źródeł: świeże dane/)).toBeInTheDocument();
     expect(screen.getByText(/Świeżość źródeł: dane wymagają odświeżenia/)).toBeInTheDocument();
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
@@ -256,8 +258,10 @@ describe("CommandCenter route", () => {
     expect(routeSource).not.toContain("marketerBlockedClaimLabels");
     expect(routeSource).not.toContain("priorityLabel");
     expect(routeSource).not.toContain("decisionFreshnessLabel");
+    expect(routeSource).not.toContain("function decisionStatusBadgeValue");
     expect(routeSource).not.toContain("item.freshness?.state");
     expect(routeSource).toContain("item.co_widzimy");
+    expect(routeSource).toContain("item.decision_state_label");
     expect(routeSource).toContain("item.freshness_label");
     expect(routeSource).toContain("item.skill_label");
     expect(routeSource).toContain("item.source_connector_labels");

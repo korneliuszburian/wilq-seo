@@ -809,9 +809,9 @@ def _ads_item_from_facts(
     return CommandCenterBriefItem(
         id="daily_ads_status",
         title=(
-            "Ads: kolejki budżetu, rekomendacji i zapytań"
+            "Google Ads: kolejki budżetu, rekomendacji i zapytań"
             if live_data_available
-            else "Ads: blokada OAuth przed oceną kosztów"
+            else "Google Ads: blokada OAuth przed oceną kosztów"
         ),
         route="/ads-doctor",
         status="ready" if live_data_available else "blocked",
@@ -1070,7 +1070,7 @@ def _ads_business_context_item_from_facts(
         return None
     return CommandCenterBriefItem(
         id="daily_ads_business_context",
-        title="Ads: brakuje kontekstu biznesowego do decyzji budżetowych",
+        title="Google Ads: brakuje kontekstu biznesowego do decyzji budżetowych",
         route="/ads-doctor",
         status="blocked",
         priority=18,
@@ -1422,9 +1422,9 @@ def _content_item_from_tactical(
     return CommandCenterBriefItem(
         id="daily_content_queue",
         title=(
-            "Content: kolejka SEO z GSC i WordPress"
+            "Treści: kolejka SEO z GSC i WordPress"
             if live_data_available
-            else "Content: brak kolejki SEO"
+            else "Treści: brak kolejki SEO"
         ),
         route="/content-planner",
         status="ready" if live_data_available else "blocked",
@@ -2018,7 +2018,7 @@ def _action_plan_item(
             priority=12,
             category="Content + SEO",
             why_it_matters=(
-                f"{item.summary} Pełny drilldown zapytań i URL-i jest w widoku Treści."
+                f"{item.summary} Pełne szczegóły zapytań i URL-i są w widoku Treści."
             ),
             operator_action=item.next_step,
             skill_id="wilq-content-strategist",

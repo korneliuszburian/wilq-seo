@@ -6765,7 +6765,7 @@ function mockFetch() {
             operator_brief: [
               {
                 id: "daily_ads_status",
-                title: "Ads: live campaign metrics dostępne",
+                title: "Google Ads: aktualne metryki kampanii dostępne",
                 route: "/ads-doctor",
                 status: "ready",
                 priority: 30,
@@ -6806,7 +6806,7 @@ function mockFetch() {
               },
               {
                 id: "daily_content_queue",
-                title: "Content: kolejka SEO z GSC i WordPress",
+                title: "Treści: kolejka SEO z GSC i WordPress",
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,

@@ -4979,7 +4979,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["decyzje"] >= 1
     assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
     assert brief_by_id["daily_content_queue"]["title"] == (
-        "Content: kolejka SEO z GSC i WordPress"
+        "Treści: kolejka SEO z GSC i WordPress"
     )
     assert "WordPress potwierdza istniejącą stronę" in brief_by_id[
         "daily_content_queue"
@@ -5044,7 +5044,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == (
         "wilq-ads-doctor"
     )
-    assert "wydatki reklamowe" in plan_by_id[
+    assert "blokada do sprawdzenia" in plan_by_id[
         "plan_fix_ads_oauth_before_spend_analysis"
     ]["blocked_claims"]
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
@@ -5089,8 +5089,8 @@ def test_command_center_exposes_polish_operator_brief(
         "brak danych",
         "nieznane",
     }
-    assert merchant_decision["route_label"] == "Merchant"
-    assert merchant_decision["cta_label"] == "Otwórz Merchant"
+    assert merchant_decision["route_label"] == "Merchant Center"
+    assert merchant_decision["cta_label"] == "Otwórz Merchant Center"
     assert merchant_decision["source_connector_labels"]
     assert merchant_decision["evidence_summary"].endswith("śladów w WILQ") or (
         merchant_decision["evidence_summary"].endswith("ślad w WILQ")
@@ -5241,7 +5241,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
     ads_item = brief_by_id["daily_ads_status"]
     assert ads_item["status"] == "ready"
-    assert ads_item["title"] == "Ads: kolejki budżetu, rekomendacji i zapytań"
+    assert ads_item["title"] == "Google Ads: kolejki budżetu, rekomendacji i zapytań"
     assert ads_item["priority"] == 16
     assert ads_item["metric_tiles"]["kampanie"] == 1
     assert ads_item["metric_tiles"]["zapytania"] == 1
@@ -5265,7 +5265,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "Zapis zmian wymaga sprawdzenia" in ads_item["next_step"]
     assert "apply" not in ads_item["next_step"]
     assert "wskaźniki kampanii" in ads_item["next_step"]
-    assert "zmiana budżetu" in ads_item["blocked_claims"]
+    assert "blokada do sprawdzenia" in ads_item["blocked_claims"]
     assert "werdykt kosztu pozyskania celu" in ads_item["blocked_claims"]
     assert "werdykt zwrotu z reklam" in ads_item["blocked_claims"]
     assert "opłacalność" in ads_item["blocked_claims"]
@@ -5344,7 +5344,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     sections_by_id = {section["id"]: section for section in brief_response.json()["sections"]}
     blockers = sections_by_id["what_blocks_us"]
     blocker_titles = {item["title"] for item in blockers["items"]}
-    assert "Ads: brakuje kontekstu biznesowego do decyzji budżetowych" in blocker_titles
+    assert "Google Ads: brakuje kontekstu biznesowego do decyzji budżetowych" in blocker_titles
     blocker_action_ids = {
         action_id for item in blockers["items"] for action_id in item["action_ids"]
     }
