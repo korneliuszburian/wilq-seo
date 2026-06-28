@@ -748,12 +748,12 @@ def _content_marketer_missing_inputs(
     }:
         values.append("kontrola spisu treści i istniejącego URL")
     if decision.canonical_gate_status and decision.canonical_gate_status not in {
-        "current_url_confirmed",
+        "public_canonical_confirmed",
         "not_applicable",
     }:
         values.append("potwierdzony adres kanoniczny na ekologus.pl")
     if decision.duplicate_gate_status and decision.duplicate_gate_status not in {
-        "refresh_or_merge_required",
+        "existing_public_content_requires_refresh_or_merge",
         "not_applicable",
     }:
         values.append("kontrola duplikacji i kanibalizacji")
@@ -1484,8 +1484,8 @@ def _content_gate_status(
     if decision_type == "refresh_or_merge" and wordpress_match == "found":
         return {
             "inventory_gate_status": "confirmed_current_inventory",
-            "canonical_gate_status": "current_url_confirmed",
-            "duplicate_gate_status": "refresh_or_merge_required",
+            "canonical_gate_status": "public_canonical_confirmed",
+            "duplicate_gate_status": "existing_public_content_requires_refresh_or_merge",
             "content_gate_summary": (
                 "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
                 "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje zablokowana "
@@ -1651,7 +1651,7 @@ def _ahrefs_gap_record_decisions(
                 f"luki treści={gap_counts['content_gap']}, "
                 f"słowa organiczne={gap_counts['organic_keyword_gap']}, "
                 f"najlepsze strony konkurencji={gap_counts['top_page_gap']}, "
-                f"luki backlinków={gap_counts['backlink_gap']}. Ocena jakości wskazuje "
+                f"luki linków zwrotnych={gap_counts['backlink_gap']}. Ocena jakości wskazuje "
                 f"{len(relevant_scores)} {relevant_label}, "
                 f"{len(review_scores)} {review_label} do ręcznej oceny i "
                 f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "
@@ -1666,7 +1666,7 @@ def _ahrefs_gap_record_decisions(
                 "GSC overlap": gsc_overlap_count,
                 "WP overlap": wordpress_overlap_count,
                 "luki treści": gap_counts["content_gap"],
-                "luki backlinków": gap_counts["backlink_gap"],
+                "luki linków zwrotnych": gap_counts["backlink_gap"],
             },
             queries=sample_keywords,
             query_count=len(sample_keywords),

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from typing import Any, Literal, cast
-from urllib.parse import urlparse
 from uuid import uuid4
 
 from wilq.actions.content_refresh import (
@@ -2000,15 +1999,12 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
 
 
 def _is_social_source_metric(fact: MetricFact) -> bool:
-    if fact.name != "content_object_seen":
-        return True
-    content_url = fact.dimensions.get("content_url")
-    if not isinstance(content_url, str) or not content_url:
-        return True
-    host = urlparse(content_url).netloc.lower()
-    if not host:
-        return True
-    return "dev.proudsite.pl" not in host
+    if fact.name == "content_object_seen":
+        return any(
+            isinstance(fact.dimensions.get(key), str) and fact.dimensions.get(key)
+            for key in ("final_canonical_url", "source_public_url", "canonical_url")
+        )
+    return bool(fact.name)
 
 
 def _social_source_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:
@@ -2098,7 +2094,7 @@ def _plain_metric_value_label(value: Any) -> str:
 
 
 def _content_primary_url_label(item: dict[str, Any]) -> str:
-    for key in ("final_canonical_url", "intended_final_url", "source_public_url", "preview_url"):
+    for key in ("final_canonical_url", "intended_final_url", "source_public_url"):
         value = item.get(key)
         if isinstance(value, str) and value:
             return value

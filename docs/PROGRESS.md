@@ -81,6 +81,15 @@ Date: 2026-06-28
 - Merchant decision and price-impact previews now expose API-owned preview
   cards. The Merchant route no longer parses raw `payload_preview` to build
   marketer-facing preview cards.
+- Content URL semantics now use public/final wording in active gates:
+  `public_canonical_confirmed` and
+  `existing_public_content_requires_refresh_or_merge`. The API no longer uses
+  old `target_site`, `target_url`, stale gate-state names or
+  `ekologus.dev.proudsite.pl` in active content diagnostics/actions output.
+- Social source inputs no longer depend on a hardcoded dev-preview host filter;
+  content objects need a public/final/canonical URL before they can drive that
+  workflow.
+- Content primary URL labels no longer fall back to `preview_url`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -91,12 +100,12 @@ Date: 2026-06-28
    artifacts.
 2. Remove scattered raw fallback paths in registry/workflow and knowledge
    routes by adding API/schema/view-model labels.
-3. Remove active content URL leftovers found by audit: `preview_url` must not
-   fall back as the primary URL, dev-preview hosts must not drive social/source
-   filtering, and old gate-state names should move to public/final URL wording.
-4. Remove shared dashboard raw status fallbacks: `StatusBadge`,
+3. Remove shared dashboard raw status fallbacks: `StatusBadge`,
    registry/workflow cards, Content fallbacks and Ads ID fallbacks should use
    API labels or add missing API labels.
+4. Remove remaining stale product terms where they are active contracts, for
+   example Demand Gen `transition_candidate` wording if it still leaks into
+   marketer-facing decisions.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
@@ -119,13 +128,20 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_recommendation_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_budget_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_product_performance_readiness_blocks_state_only_product_join or merchant_diagnostics_promotes_ads_product_state_review_decision" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics or wordpress_draft or social_draft_actions_exclude_dev_site_inventory_inputs" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
 - `agent-browser` live `/merchant` proof after expanding full review: preview
   cards render and visible DOM contains no `MerchantProductStateReview`,
   `MerchantSupplementalFeedCandidateReview`,
   `MerchantPriceImpactReadinessReview`, `merchant_product_state_review_preview_v1`,
   `merchant_supplemental_feed_review_preview_v1`,
   `merchant_price_impact_readiness_preview_v1` or raw product-ID samples.
+- Live API proof on `/api/content/diagnostics` and `/api/actions`: no
+  `current_url_confirmed`, `refresh_or_merge_required`,
+  `preview_url_as_final_canonical`, `selected_target_url`, `target_site`,
+  `target_url` or `ekologus.dev.proudsite.pl`; required public/final gate
+  labels are present.
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

@@ -1690,8 +1690,8 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
     assert normalized_alternative_url not in str(preview)
     assert dev_same_path_url not in str(preview)
     assert preview["inventory_gate_status"] == "confirmed_current_inventory"
-    assert preview["canonical_gate_status"] == "current_url_confirmed"
-    assert preview["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert preview["canonical_gate_status"] == "public_canonical_confirmed"
+    assert preview["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
     assert "duplik" in preview["content_gate_summary"]
     assert preview["seo_title_direction"]
     assert preview["meta_description_direction"]
@@ -2075,10 +2075,10 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "spis treści: spis potwierdzony na obecnej stronie" in draft_preview[
         "content_gate_status_summary"
     ]
-    assert "URL kanoniczny: obecny URL potwierdzony" in draft_preview[
+    assert "URL kanoniczny: publiczny URL kanoniczny potwierdzony" in draft_preview[
         "content_gate_status_summary"
     ]
-    assert "duplikaty: odśwież albo scal zamiast pisać od nowa" in draft_preview[
+    assert "duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia" in draft_preview[
         "content_gate_status_summary"
     ]
     draft_contract = draft_preview["draft_generation_contract"]
@@ -13947,8 +13947,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any(key.startswith("mapping_review_") for key in first_decision)
     assert not any(key.startswith("transition_candidate") for key in first_decision)
     assert first_decision["inventory_gate_status"] == "confirmed_current_inventory"
-    assert first_decision["canonical_gate_status"] == "current_url_confirmed"
-    assert first_decision["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert first_decision["canonical_gate_status"] == "public_canonical_confirmed"
+    assert first_decision["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
     assert "odświeżenie albo scalenie" in first_decision["content_gate_summary"]
     assert "nowy artykuł" in first_decision["content_gate_summary"]
     assert first_decision["normalized_page_path"] == (
@@ -13989,11 +13989,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert preflight_item["inventory_gate_status_label"] == (
         "spis potwierdzony na obecnej stronie"
     )
-    assert preflight_item["canonical_gate_status"] == "current_url_confirmed"
-    assert preflight_item["canonical_gate_status_label"] == "obecny URL potwierdzony"
-    assert preflight_item["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert preflight_item["canonical_gate_status"] == "public_canonical_confirmed"
+    assert preflight_item["canonical_gate_status_label"] == "publiczny URL kanoniczny potwierdzony"
+    assert preflight_item["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
     assert preflight_item["duplicate_gate_status_label"] == (
-        "odśwież albo scal zamiast pisać od nowa"
+        "istniejąca publiczna treść wymaga odświeżenia albo scalenia"
     )
     assert preflight_item["claim_gate_status_label"]
     assert preflight_item["service_mapping_status_label"]

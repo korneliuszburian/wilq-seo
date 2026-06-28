@@ -1321,7 +1321,7 @@ const contentActionFixture: ActionObject = {
         {
           label: "Kontrole treści",
           value:
-            "spis treści: spis potwierdzony na obecnej stronie, URL kanoniczny: obecny URL potwierdzony, duplikaty: odśwież albo scal zamiast pisać od nowa"
+            "spis treści: spis potwierdzony na obecnej stronie, URL kanoniczny: publiczny URL kanoniczny potwierdzony, duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia"
         },
         {
           label: "Szkic WordPress",
@@ -1447,8 +1447,8 @@ const contentActionFixture: ActionObject = {
         topic: "bdo co to",
         content_gate_status_summary: [
           "spis treści: spis potwierdzony na obecnej stronie",
-          "URL kanoniczny: obecny URL potwierdzony",
-          "duplikaty: odśwież albo scal zamiast pisać od nowa"
+          "URL kanoniczny: publiczny URL kanoniczny potwierdzony",
+          "duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia"
         ],
         draft_blocker_labels: [
           "kontrola URL-a kanonicznego",

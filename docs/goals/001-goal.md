@@ -109,6 +109,15 @@ use the cleaned language.
 - Merchant decision and price-impact previews now expose API-owned preview
   cards. The dashboard route no longer parses raw `payload_preview` for those
   marketer-facing cards.
+- Content URL semantics now use public/final wording in active gates:
+  `public_canonical_confirmed` and
+  `existing_public_content_requires_refresh_or_merge`. Active content
+  diagnostics/actions no longer expose old `target_site`, `target_url`, stale
+  gate-state names or `ekologus.dev.proudsite.pl`.
+- Social source inputs no longer use a hardcoded dev-preview host filter.
+  Content objects must expose a public/final/canonical URL before they can drive
+  that workflow.
+- Content primary URL labels no longer fall back to `preview_url`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -121,11 +130,11 @@ are resolved or explicitly deferred.
    aligned.
 2. Remove scattered raw fallback paths in registry/workflow and knowledge
    routes by adding typed API/schema/view-model labels.
-3. Remove active content URL leftovers: no `preview_url` primary fallback, no
-   dev-preview host as product filter, and no old gate-state names where
-   public/final URL wording is the real model.
-4. Remove shared dashboard raw status fallbacks in `StatusBadge`,
+3. Remove shared dashboard raw status fallbacks in `StatusBadge`,
    registry/workflow cards, Content fallbacks and Ads ID fallbacks.
+4. Remove remaining stale product terms where they are active contracts, for
+   example Demand Gen `transition_candidate` wording if it still leaks into
+   marketer-facing decisions.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 

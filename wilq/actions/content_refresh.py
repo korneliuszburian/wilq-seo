@@ -120,7 +120,7 @@ CONTENT_CONTRACT_LABELS = {
     "notes": "notatki",
     "outline_only_until_gates_pass": "plan treści do czasu kontroli",
     "prepare_only_review_recorded": "zapisano ocenę przygotowania",
-    "preview_url_as_final_canonical": "adres podglądu jako finalny URL kanoniczny",
+    "non_public_url_as_final_canonical": "niepubliczny URL jako finalny URL kanoniczny",
     "publish_ready_claim": "obietnica gotowości do publikacji",
     "production_wordpress_write": "zapis na produkcyjnym WordPressie",
     "public_content_inventory_required": "wymagany spis publicznych treści",
@@ -149,8 +149,10 @@ CONTENT_CONTRACT_LABELS = {
     "final_canonical_url": "finalny URL kanoniczny",
     "intended_final_url": "docelowy URL publiczny",
     "confirmed_current_inventory": "spis potwierdzony na obecnej stronie",
-    "current_url_confirmed": "obecny URL potwierdzony",
-    "refresh_or_merge_required": "odśwież albo scal zamiast pisać od nowa",
+    "public_canonical_confirmed": "publiczny URL kanoniczny potwierdzony",
+    "existing_public_content_requires_refresh_or_merge": (
+        "istniejąca publiczna treść wymaga odświeżenia albo scalenia"
+    ),
     "missing_inventory_match": "brak dopasowania w spisie treści",
     "blocked_until_inventory_review": "zablokowane do sprawdzenia spisu",
     "blocked_until_content_url_review": "zablokowane do sprawdzenia URL-a",
@@ -272,7 +274,7 @@ def content_url_review_contract() -> dict[str, Any]:
     blocked_outputs = [
         "wordpress_draft_write",
         "wordpress_publish",
-        "preview_url_as_final_canonical",
+        "non_public_url_as_final_canonical",
         "new_content_without_inventory_check",
         "duplicate_free_claim",
         "obietnica wzrostu pozycji albo leadów",
@@ -791,7 +793,7 @@ def _draft_generation_status(
         "blocked_until_content_url_review",
         "blocked_until_inventory_review",
     } or duplicate_gate_status in {
-        "refresh_or_merge_required",
+        "existing_public_content_requires_refresh_or_merge",
         "manual_merge_or_create_review",
         "create_blocked_until_duplicate_check",
     }:
@@ -1237,8 +1239,8 @@ def _content_gate_status_for_brief(
     if source_type == "gsc_query_page" and mode == "refresh" and wordpress_match:
         return {
             "inventory_gate_status": "confirmed_current_inventory",
-            "canonical_gate_status": "current_url_confirmed",
-            "duplicate_gate_status": "refresh_or_merge_required",
+            "canonical_gate_status": "public_canonical_confirmed",
+            "duplicate_gate_status": "existing_public_content_requires_refresh_or_merge",
             "content_gate_summary": (
                 "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
                 "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje "
