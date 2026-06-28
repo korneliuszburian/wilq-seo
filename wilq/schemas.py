@@ -11,6 +11,7 @@ from wilq.operator_labels import (
     blocked_claim_label,
     evidence_count_label,
     knowledge_reference_count_label,
+    mapped_action_type_count_label,
     required_evidence_count_label,
     source_connector_summary_label,
     source_lineage_count_label,
@@ -708,6 +709,8 @@ class MarketingPlaybook(BaseModel):
     refusal_rules: list[str] = Field(default_factory=list)
     output_contract: str = Field(min_length=1)
     source_path: str
+    required_evidence_summary_label: str = ""
+    mapped_action_type_summary_label: str = ""
 
     @model_validator(mode="after")
     def fill_operator_labels(self) -> MarketingPlaybook:
@@ -717,6 +720,14 @@ class MarketingPlaybook(BaseModel):
             self.card_type_label = _knowledge_card_type_label(self.card_type)
         if not self.source_type_label:
             self.source_type_label = "zasada pracy"
+        if not self.required_evidence_summary_label:
+            self.required_evidence_summary_label = required_evidence_count_label(
+                self.required_evidence
+            )
+        if not self.mapped_action_type_summary_label:
+            self.mapped_action_type_summary_label = mapped_action_type_count_label(
+                self.maps_to_action_types
+            )
         return self
 
 

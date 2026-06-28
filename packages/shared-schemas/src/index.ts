@@ -2759,7 +2759,9 @@ export const MarketingPlaybookSchema = z.object({
   compact_playbook: z.string(),
   refusal_rules: z.array(z.string()),
   output_contract: z.string(),
-  source_path: z.string()
+  source_path: z.string(),
+  required_evidence_summary_label: z.string().default(""),
+  mapped_action_type_summary_label: z.string().default("")
 });
 
 export const KnowledgeCompilerResultSchema = z.object({

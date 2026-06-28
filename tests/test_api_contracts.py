@@ -18787,6 +18787,8 @@ def test_knowledge_playbooks_are_machine_readable_and_evidence_gated() -> None:
     assert search_playbook["display_title"] == "Diagnostyka wyszukiwanych haseł Google Ads"
     assert search_playbook["card_type_label"] == "wzorzec Ads"
     assert search_playbook["source_type_label"] == "zasada pracy"
+    assert search_playbook["required_evidence_summary_label"] == "4 wymagane dowody"
+    assert search_playbook["mapped_action_type_summary_label"] == "3 typy akcji do sprawdzenia"
 
 
 def test_knowledge_compiler_produces_lineage_preserving_card_types() -> None:

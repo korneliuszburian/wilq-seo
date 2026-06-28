@@ -55,6 +55,8 @@ Date: 2026-06-28
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels instead of route-local
   count assembly.
+- Knowledge playbook cards use API/domain evidence and action-type summary
+  labels instead of route-local Polish count formatting.
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
@@ -79,8 +81,7 @@ Date: 2026-06-28
    fall back to raw snake_case or English values in marketer-facing copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for remaining payload-derived panels
-   and smaller Knowledge playbook-list count labels.
+5. Dashboard still needs focused cleanup for remaining payload-derived panels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
@@ -93,6 +94,18 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_playbooks_are_machine_readable_and_evidence_gated" --maxfail=1`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/knowledge/playbooks` returns
+  `required_evidence_summary_label` and `mapped_action_type_summary_label`.
+- Browser proof: `.local-lab/proof/knowledge-playbook-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
@@ -101,7 +114,7 @@ Most recent verified local slice:
   fields remain in `ContentDiagnosticSurface.tsx`.
 - Browser proof: `.local-lab/proof/content-enum-labels-clean.txt`
 
-Previous verified local slice:
+Earlier local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_entity_display_labels_do_not_expose_raw_ids or ads_label_fallbacks_do_not_expose_raw_vendor_values or ads_helper_label_fallbacks_do_not_expose_raw_vendor_values" --maxfail=3`
 - `rtk pnpm --dir packages/shared-schemas test`

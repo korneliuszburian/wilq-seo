@@ -8,6 +8,7 @@ import {
   KnowledgeOperatingMapPanel,
   PlaybookList
 } from "./KnowledgePanels";
+import routeSource from "./KnowledgePanels.tsx?raw";
 
 describe("KnowledgePanels", () => {
   afterEach(() => {
@@ -66,20 +67,27 @@ describe("KnowledgePanels", () => {
             maps_to_action_types: ["negative_keyword_candidate"],
             source_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
             compact_playbook: "Review search terms without claiming kosztu pozyskania celu ani zwrotu z reklam.",
-            refusal_rules: ["Brak dowodów oznacza brak rekomendacji."]
+            refusal_rules: ["Brak dowodów oznacza brak rekomendacji."],
+            required_evidence_summary_label: "2 wymagane dowody",
+            mapped_action_type_summary_label: "1 typ akcji do sprawdzenia"
           } satisfies MarketingPlaybook)
         ]}
       />
     );
 
     expect(screen.getByText("Diagnostyka wyszukiwanych haseł Google Ads")).toBeInTheDocument();
-    expect(screen.getByText("Akcje do sprawdzenia: 1 typ")).toBeInTheDocument();
+    expect(screen.getByText("Wymagane dowody: 2 wymagane dowody")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 1 typ akcji do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/playbook/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Powiązane działania/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Pokaż zasady" }));
-    expect(screen.getAllByText("Akcje do sprawdzenia: 1 typ").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Akcje do sprawdzenia: 1 typ akcji do sprawdzenia").length).toBeGreaterThan(1);
     expect(screen.queryByText(/Powiązane typy działań/)).not.toBeInTheDocument();
+    expect(routeSource).not.toContain("function formatCount");
+    expect(routeSource).not.toContain("function formatPolishCount");
+    expect(routeSource).not.toContain("playbook.required_evidence.length");
+    expect(routeSource).not.toContain("playbook.maps_to_action_types.length");
   });
 
   it("empty playbook list uses plain Polish", () => {

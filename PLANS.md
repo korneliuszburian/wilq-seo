@@ -552,8 +552,7 @@ WILQ is complete for this long-range goal when:
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
 - 2026-06-28: Current remaining cleanup work is label fallback hardening,
-  remaining content/ads payload-derived panels, smaller Knowledge playbook-list
-  count labels, context-pack copy and recovery-doc
+  remaining content/ads payload-derived panels, context-pack copy and recovery-doc
   pruning. Do not start deferred product layers until `PLAN.md` completion is
   green or explicitly deferred.
 - 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
@@ -571,6 +570,11 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Knowledge first-screen decision and card summaries now use
   API/domain source, action, evidence, knowledge and lineage labels instead of
   route-local count assembly.
+- 2026-06-28: Knowledge playbook cards now use API/domain
+  `required_evidence_summary_label` and `mapped_action_type_summary_label`
+  instead of route-local Polish count formatting. Live API proof confirmed the
+  fields on `/api/knowledge/playbooks`; browser proof lives at
+  `.local-lab/proof/knowledge-playbook-labels-clean.txt`.
 - 2026-06-28: Szanse cards now render API/domain evidence, source, action and
   knowledge summary labels instead of route-local count assembly.
 - 2026-06-28: Google Ads search-term, negative-keyword and change-history

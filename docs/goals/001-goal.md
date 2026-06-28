@@ -100,6 +100,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Knowledge details use API-owned source labels and Polish count forms.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels.
+- Knowledge playbook cards use API/domain evidence and action-type summary
+  labels instead of route-local Polish count formatting.
 - Procesy cards and run summaries use API/domain summary labels and no longer
   block fresh `/workflows` loads on hidden related-action data.
 - Szanse cards use API/domain summary labels for evidence, sources, related
@@ -124,7 +126,7 @@ are resolved or explicitly deferred.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 5. Dashboard still needs focused cleanup for remaining content/ads
-   payload-derived panels and smaller Knowledge playbook-list count labels.
+   payload-derived panels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
 7. Continue checking compacted context-packs after dashboard/API cleanup.

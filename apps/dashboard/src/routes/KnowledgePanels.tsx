@@ -278,8 +278,8 @@ function PlaybookItem({ playbook }: { playbook: MarketingPlaybook }) {
     <article className="rounded-md border border-line bg-white p-4">
       <h3 className="text-sm font-semibold">{playbook.display_title}</h3>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <div>Wymagane dowody: {formatCount(playbook.required_evidence.length, "element")}</div>
-        <div>Akcje do sprawdzenia: {formatCount(playbook.maps_to_action_types.length, "typ")}</div>
+        <div>Wymagane dowody: {playbook.required_evidence_summary_label}</div>
+        <div>Akcje do sprawdzenia: {playbook.mapped_action_type_summary_label}</div>
       </div>
       <button
         type="button"
@@ -291,33 +291,12 @@ function PlaybookItem({ playbook }: { playbook: MarketingPlaybook }) {
       {showDetails ? (
         <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600">
           <p>Ta zasada pracy może wspierać decyzję tylko wtedy, gdy WILQ ma wymagane dowody i listę twierdzeń, których nie wolno używać.</p>
-          <p className="mt-2">Wymagane dowody: {formatCount(playbook.required_evidence.length, "element")}</p>
+          <p className="mt-2">Wymagane dowody: {playbook.required_evidence_summary_label}</p>
           <p className="mt-2">
-            Akcje do sprawdzenia: {formatCount(playbook.maps_to_action_types.length, "typ")}
+            Akcje do sprawdzenia: {playbook.mapped_action_type_summary_label}
           </p>
         </div>
       ) : null}
     </article>
   );
-}
-
-function formatCount(count: number, unit: string) {
-  if (unit === "element") {
-    return formatPolishCount(count, "element", "elementy", "elementów");
-  }
-  if (unit === "typ") {
-    return formatPolishCount(count, "typ", "typy", "typów");
-  }
-  return count > 0 ? `${count} ${unit}` : "brak";
-}
-
-function formatPolishCount(count: number, singular: string, few: string, many: string) {
-  if (count === 0) return "brak";
-  if (count === 1) return `1 ${singular}`;
-  const lastDigit = count % 10;
-  const lastTwoDigits = count % 100;
-  if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwoDigits >= 12 && lastTwoDigits <= 14)) {
-    return `${count} ${few}`;
-  }
-  return `${count} ${many}`;
 }

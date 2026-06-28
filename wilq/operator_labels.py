@@ -202,6 +202,17 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     return f"{count} akcji do sprawdzenia"
 
 
+def mapped_action_type_count_label(action_types: Iterable[str]) -> str:
+    count = len(list(action_types))
+    if count == 0:
+        return "brak typów akcji do sprawdzenia"
+    if count == 1:
+        return "1 typ akcji do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} typy akcji do sprawdzenia"
+    return f"{count} typów akcji do sprawdzenia"
+
+
 def knowledge_reference_count_label(
     knowledge_card_ids: Iterable[str] = (),
     playbook_ids: Iterable[str] = (),
