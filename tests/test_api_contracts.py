@@ -4296,6 +4296,8 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert ahrefs_item["source_connector_labels"] == ["Ahrefs"]
     assert ahrefs_item["evidence_summary_label"] == "1 dowód źródłowy"
     assert ahrefs_item["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert ahrefs_item["kind"] == "metric"
+    assert ahrefs_item["kind_label"] == "fakt z danych"
     assert ahrefs_item["metric_facts"]
     blocker_items = sections["what_blocks_us"]["items"]
     assert any(item["source_connectors"] == ["google_ads"] for item in blocker_items)
@@ -4310,6 +4312,13 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     )
     for section in sections.values():
         for item in section["items"]:
+            assert item["kind_label"]
+            assert item["kind_label"] not in {
+                "metric",
+                "blocker",
+                "action",
+                "recommendation",
+            }
             assert item["priority_label"]
             assert isinstance(item["source_connector_labels"], list)
             assert item["evidence_summary_label"]

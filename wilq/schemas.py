@@ -812,6 +812,7 @@ class MarketingBriefItem(BaseModel):
     id: str
     title: str
     kind: Literal["metric", "blocker", "action", "recommendation"]
+    kind_label: str = ""
     priority: int = Field(ge=1, le=100)
     priority_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
@@ -829,6 +830,8 @@ class MarketingBriefItem(BaseModel):
 
     @model_validator(mode="after")
     def fill_marketer_labels(self) -> MarketingBriefItem:
+        if not self.kind_label:
+            self.kind_label = _marketing_brief_kind_label(self.kind)
         if not self.priority_label:
             self.priority_label = _marketing_priority_label(self.priority)
         if not self.source_connector_labels:
@@ -847,6 +850,15 @@ class MarketingBriefItem(BaseModel):
         if not self.risk_label:
             self.risk_label = _marketing_risk_label(self.risk)
         return self
+
+
+def _marketing_brief_kind_label(kind: str) -> str:
+    return {
+        "metric": "fakt z danych",
+        "blocker": "blokada",
+        "action": "akcja do sprawdzenia",
+        "recommendation": "rekomendacja",
+    }.get(kind, "element do sprawdzenia")
 
 
 def _marketing_brief_connector_label(connector_id: str) -> str:

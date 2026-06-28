@@ -116,6 +116,8 @@ use cleaned Polish operator language.
   schemas, dashboard, skill smoke and playbook/rule IDs now use
   `demand_gen_campaign_mode_review`, `review_required`, `review_status_label`
   and marketer-facing labels such as `kontrola trybu kampanii`.
+- Marketing brief items expose API-owned `kind_label`, and Brief Workflow cards
+  render that label instead of raw brief kind enums.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

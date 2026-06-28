@@ -127,6 +127,9 @@ Date: 2026-06-28
   safe Polish fallback labels.
 - Demand Gen campaign and campaign-mode rows now expose API-owned channel/status
   labels, and the dashboard renders those labels instead of raw Ads enums.
+- Marketing brief items now expose API-owned `kind_label`, and Brief Workflow
+  route cards render that label instead of raw `metric` / `blocker` / `action`
+  / `recommendation` enums.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -174,6 +177,8 @@ Date: 2026-06-28
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map or content_diagnostics or tactical_queue or action_preview or operator_label_fallbacks" --maxfail=3`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_brief" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

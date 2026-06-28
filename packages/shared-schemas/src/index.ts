@@ -354,6 +354,7 @@ export const MarketingBriefItemSchema = z.object({
   id: z.string(),
   title: z.string(),
   kind: z.enum(["metric", "blocker", "action", "recommendation"]),
+  kind_label: z.string().default(""),
   priority: z.number(),
   priority_label: z.string().default(""),
   source_connectors: z.array(z.string()),
