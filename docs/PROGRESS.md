@@ -47,7 +47,7 @@ Date: 2026-06-29
   as `payload_apply_allowed_false`. Skill contexts now use typed preview cards,
   Polish blocker labels and `/api/actions/{action_id}` for drilldown.
 - Connector status now uses the latest successful `vendor_read` when available.
-  GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
+  GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:52Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
 - Action validation errors for Ads, GA4 and Localo now use source-owned Polish
   operator copy instead of English/technical `payload`, `requires`,
