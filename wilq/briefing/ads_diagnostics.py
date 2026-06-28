@@ -52,7 +52,13 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import action_count_label, evidence_count_label, source_connector_labels
+from wilq.operator_labels import (
+    action_count_label,
+    blocked_claim_count_label,
+    evidence_count_label,
+    required_validation_count_label,
+    source_connector_labels,
+)
 from wilq.schemas import (
     ActionObject,
     ActionPreviewCardViewModel,
@@ -6428,6 +6434,10 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
     ]
     for owner in human_gate_owners:
         owner.human_review_gate_labels = _ads_review_gate_labels(owner.human_review_gates)
+        if hasattr(owner, "human_review_gate_summary_label"):
+            owner.human_review_gate_summary_label = required_validation_count_label(
+                owner.human_review_gate_labels or owner.human_review_gates
+            )
 
 
 def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
@@ -6513,6 +6523,9 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
     for row in response.derived_kpi_read_contract.kpi_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_summary_label = blocked_claim_count_label(
+            row.blocked_claim_labels or row.blocked_claims
+        )
     _hydrate_budget_pacing_marketer_labels(
         response.budget_pacing_read_contract,
         currency_code,
@@ -6560,11 +6573,17 @@ def _hydrate_budget_pacing_marketer_labels(
         row.budget_period_label = _ads_budget_period_label(row.budget_period)
         row.budget_status_label = _ads_campaign_status_label(row.budget_status)
         row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_summary_label = blocked_claim_count_label(
+            row.blocked_claim_labels or row.blocked_claims
+        )
         if row.payload_preview is not None:
             _hydrate_budget_payload_preview_labels(row.payload_preview)
             row.preview_card = _budget_preview_card(row.payload_preview, currency_code)
     for row in contract.shared_budget_distribution_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_summary_label = blocked_claim_count_label(
+            row.blocked_claim_labels or row.blocked_claims
+        )
         for share in row.campaign_shares:
             share.campaign_status_label = _ads_campaign_status_label(
                 share.campaign_status
@@ -6764,6 +6783,9 @@ def _hydrate_impression_share_marketer_labels(
             row.advertising_channel_type
         )
         row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.blocked_claim_summary_label = blocked_claim_count_label(
+            row.blocked_claim_labels or row.blocked_claims
+        )
 
 
 def _hydrate_change_history_marketer_labels(
@@ -6784,6 +6806,11 @@ def _hydrate_change_history_marketer_labels(
         )
         row.client_type_label = _ads_client_type_label(row.client_type)
         row.changed_field_labels = _ads_changed_field_labels(row.changed_fields)
+        row.changed_field_summary_label = (
+            ", ".join(row.changed_field_labels[:4])
+            if row.changed_field_labels
+            else f"{row.changed_field_count or 0} pól"
+        )
         row.blocked_claim_labels = _unique(row.blocked_claims)
 
 

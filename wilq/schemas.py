@@ -1361,6 +1361,8 @@ class AdsCampaignMetricRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     target_status: Literal[
         "within_target",
         "outside_target",
@@ -1376,11 +1378,24 @@ class AdsCampaignMetricRow(BaseModel):
     review_reason: str = ""
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
+    human_review_gate_summary_label: str = ""
 
     @model_validator(mode="after")
     def fill_summary_labels(self) -> "AdsCampaignMetricRow":
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        if not self.human_review_gate_summary_label:
+            self.human_review_gate_summary_label = required_validation_count_label(
+                self.human_review_gate_labels or self.human_review_gates
+            )
         return self
 
 
@@ -1557,6 +1572,19 @@ class AdsDerivedKpiRow(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsDerivedKpiRow":
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsDerivedKpiReadContract(BaseModel):
@@ -1649,6 +1677,19 @@ class AdsBudgetPacingRow(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsBudgetPacingRow":
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsSharedBudgetCampaignShare(BaseModel):
@@ -1675,6 +1716,19 @@ class AdsSharedBudgetDistributionRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsSharedBudgetDistributionRow":
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsBudgetPacingReadContract(BaseModel):
@@ -1758,6 +1812,19 @@ class AdsRecommendationRow(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsRecommendationRow":
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsRecommendationsReadContract(BaseModel):
@@ -1794,6 +1861,19 @@ class AdsImpressionShareRow(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_summary_labels(self) -> "AdsImpressionShareRow":
+        if not self.blocked_claim_labels:
+            self.blocked_claim_labels = [
+                blocked_claim_label(claim) for claim in self.blocked_claims
+            ]
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsImpressionShareReadContract(BaseModel):
@@ -1969,6 +2049,7 @@ class AdsChangeHistoryRow(BaseModel):
     changed_field_count: int | None = None
     changed_fields: list[str] = Field(default_factory=list)
     changed_field_labels: list[str] = Field(default_factory=list)
+    changed_field_summary_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
@@ -1984,6 +2065,13 @@ class AdsChangeHistoryRow(BaseModel):
             )
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(None, self.campaign_id)
+        if not self.changed_field_summary_label:
+            if self.changed_field_labels:
+                self.changed_field_summary_label = ", ".join(
+                    self.changed_field_labels[:4]
+                )
+            else:
+                self.changed_field_summary_label = f"{self.changed_field_count or 0} pól"
         return self
 
 

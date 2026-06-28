@@ -1112,9 +1112,7 @@ function AdsCampaignRowsTable({
                 <div className="font-semibold text-ink">
                   {row.review_priority} / {row.review_score}
                 </div>
-                <div className="mt-1 text-slate-500">
-                  {row.human_review_gate_labels.slice(0, 2).join(", ")}
-                </div>
+                <div className="mt-1 text-slate-500">{row.human_review_gate_summary_label}</div>
                 {row.target_status !== "no_target" ? (
                   <div className="mt-1 text-slate-500">{row.target_status_label}</div>
                 ) : null}
@@ -1305,7 +1303,7 @@ function AdsDerivedKpiRowsTable({
                 </span>
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claim_labels.slice(0, 2).join(", ")}
+                {row.blocked_claim_summary_label}
               </td>
             </tr>
           ))}
@@ -1385,7 +1383,7 @@ function AdsBudgetPacingRowsTable({
                 )}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claim_labels.slice(0, 2).join(", ")}
+                {row.blocked_claim_summary_label}
               </td>
             </tr>
           ))}
@@ -1639,7 +1637,7 @@ function AdsImpressionShareRowsTable({
                 {adsPercent(row.search_rank_lost_impression_share)}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.blocked_claim_labels.slice(0, 2).join(", ")}
+                {row.blocked_claim_summary_label}
               </td>
             </tr>
           ))}
@@ -1687,9 +1685,7 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
                 {row.campaign_label || "brak kampanii w odczycie"}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {row.changed_field_labels.length > 0
-                  ? row.changed_field_labels.slice(0, 4).join(", ")
-                  : `${row.changed_field_count ?? 0} pól`}
+                {row.changed_field_summary_label}
               </td>
             </tr>
           ))}

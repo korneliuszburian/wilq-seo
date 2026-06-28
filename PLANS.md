@@ -623,6 +623,11 @@ WILQ is complete for this long-range goal when:
   and keyword context rows now use API/domain `evidence_summary_label` instead
   of route-local evidence count formatting. Live API proof confirmed
   `/api/ads/diagnostics?view=summary`; browser proof confirmed `/ads-doctor`.
+- 2026-06-28: Google Ads campaign, KPI, budget, impression-share and
+  change-history tables now use API/domain row summary labels for human review
+  gates, blocked claims and changed fields instead of route-local label joins.
+  Live API proof confirmed `/api/ads/diagnostics?view=summary`; browser proof
+  confirmed expanded `/ads-doctor` diagnostic tables.
 - 2026-06-28: Treści expanded decision and Ahrefs review cards now use API
   labels or neutral Polish operator fallbacks instead of visible raw enum/status
   keys. Browser proof lives at
@@ -866,6 +871,10 @@ WILQ is complete for this long-range goal when:
 - Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving knowledge blocked-claim summaries to API/domain labels.
+- Latest Ads proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving Ads row-level human review gate, blocked-claim and changed-field
+  summaries to API/domain labels.
 - Latest Knowledge condensation proof: focused API/shared-schema/dashboard
   tests, dashboard typecheck, marketer language guard, live API proof and
   browser proof passed after moving Knowledge operating-map aggregate summaries

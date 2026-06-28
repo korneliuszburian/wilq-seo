@@ -522,6 +522,8 @@ export const AdsCampaignMetricRowSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default(""),
   target_status: z
     .enum([
       "within_target",
@@ -538,7 +540,8 @@ export const AdsCampaignMetricRowSchema = z.object({
   review_score: z.number().min(0).max(100).default(0),
   review_reason: z.string().default(""),
   human_review_gates: z.array(z.string()).default([]),
-  human_review_gate_labels: z.array(z.string()).optional().default([])
+  human_review_gate_labels: z.array(z.string()).optional().default([]),
+  human_review_gate_summary_label: z.string().optional().default("")
 });
 
 export const AdsCampaignReadContractSchema = z.object({
@@ -691,7 +694,8 @@ export const AdsDerivedKpiRowSchema = z.object({
   source_metric_names: z.array(z.string()),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).optional().default([])
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsDerivedKpiReadContractSchema = z.object({
@@ -781,7 +785,8 @@ export const AdsBudgetPacingRowSchema = z.object({
   preview_card: ActionPreviewCardViewModelSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).optional().default([])
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsSharedBudgetCampaignShareSchema = z.object({
@@ -807,7 +812,8 @@ export const AdsSharedBudgetDistributionRowSchema = z.object({
   campaign_shares: z.array(AdsSharedBudgetCampaignShareSchema),
   evidence_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).optional().default([])
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsBudgetPacingReadContractSchema = z.object({
@@ -890,7 +896,8 @@ export const AdsRecommendationRowSchema = z.object({
   preview_card: ActionPreviewCardViewModelSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).optional().default([])
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsRecommendationsReadContractSchema = z.object({
@@ -926,7 +933,8 @@ export const AdsImpressionShareRowSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).optional().default([])
+  blocked_claim_labels: z.array(z.string()).optional().default([]),
+  blocked_claim_summary_label: z.string().optional().default("")
 });
 
 export const AdsImpressionShareReadContractSchema = z.object({
@@ -1084,6 +1092,7 @@ export const AdsChangeHistoryRowSchema = z.object({
   changed_field_count: z.number().nullable().optional(),
   changed_fields: z.array(z.string()),
   changed_field_labels: z.array(z.string()).optional().default([]),
+  changed_field_summary_label: z.string().optional().default(""),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),

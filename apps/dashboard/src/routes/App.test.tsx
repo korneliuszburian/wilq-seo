@@ -7691,7 +7691,12 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
     expect(routeSource).toContain("row.budget_period_label");
-    expect(routeSource).toContain("row.blocked_claim_labels");
+    expect(routeSource).toContain("row.blocked_claim_summary_label");
+    expect(routeSource).toContain("row.human_review_gate_summary_label");
+    expect(routeSource).toContain("row.changed_field_summary_label");
+    expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
+    expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
+    expect(routeSource).not.toContain("row.changed_field_labels.slice(0, 4).join");
     expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.recommendation_type_label");
     expect(routeSource).toContain("row.preview_card");

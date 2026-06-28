@@ -290,6 +290,9 @@ Known cleanup already started:
   marketing brief and shared metric chips; remaining dimension labels in metric
   chips now come from API-owned `dimension_labels` and
   `dimension_value_labels`.
+- Google Ads campaign, KPI, budget, impression-share and change-history tables
+  now consume API/domain row summary labels for human review gates, blocked
+  claims and changed fields instead of joining label arrays in React.
 - Localo visibility action details now have typed API preview cards;
   `DetailPanels.tsx` no longer renders Localo cards by inferring raw payload
   shape. The card is condensed to key visibility/review metrics.

@@ -86,6 +86,9 @@ Date: 2026-06-28
 - Google Ads campaign triage, search-term, n-gram, 90-day safety and keyword
   context rows use API/domain evidence summary labels instead of route-local
   evidence count formatting.
+- Google Ads campaign, KPI, budget, impression-share and change-history tables
+  use API/domain row summary labels for human review gates, blocked claims and
+  changed fields instead of route-local label joins.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
 - Merchant issue-cluster cards and decision summaries use API/domain reported
@@ -138,12 +141,33 @@ Date: 2026-06-28
    them out of copy paths.
 7. Continue checking compacted context-packs after dashboard/API cleanup; the
    content strategist context currently preserves content preview labels.
-8. Real marketer UAT is still required for a usefulness claim unless the owner
+8. Ads full-review detail still contains some long blocked-claim and review-gate
+   lists outside the cleaned row tables; continue condensing those at API/domain
+   source instead of trimming them in React.
+9. Real marketer UAT is still required for a usefulness claim unless the owner
    explicitly defers it.
 
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_campaign_read_contract or ads_budget_pacing or ads_impression_share or ads_change_history" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas exec vitest run src/index.test.ts --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns
+  `human_review_gate_summary_label="7 wymaganych sprawdzeń"`,
+  `blocked_claim_summary_label="8 zablokowanych obietnic"` for a budget row and
+  `blocked_claim_summary_label="4 zablokowane obietnice"` for an
+  impression-share row.
+- Browser proof: expanded `/ads-doctor` tables render condensed row labels such
+  as `4 zablokowane obietnice` and `7 wymaganych sprawdzeń`; the proof scan has
+  no raw `payload`, `ActionObject`, migration, `human_review_gate_labels`,
+  `blocked_claim_labels`, `changed_field_labels`, `CAMPAIGN`, `UPDATE` or raw
+  changed-field key wording.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "workflows_are_decision_backed_operator_contracts or workflow_label_fallbacks_do_not_expose_raw_values" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/WorkflowPanels.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "workflow|Workflow|Procesy"`

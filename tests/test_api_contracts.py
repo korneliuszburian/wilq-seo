@@ -10608,6 +10608,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "marnowanie budżetu na zapytaniach",
                 "zmarnowany budżet",
             ],
+            "blocked_claim_labels": [
+                "koszt pozyskania celu",
+                "werdykt zwrotu z reklam",
+                "werdykt marnowania budżetu na zapytaniach",
+                "zmarnowany budżet",
+            ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
             "target_status": "no_target",
             "target_status_label": "brak celu",
             "review_priority": "wysokie",
@@ -10627,6 +10634,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     "wyszukiwane hasła przed decyzją budżetową",
                     "ocena strategii przez człowieka",
                 ],
+                "human_review_gate_summary_label": "5 wymaganych sprawdzeń",
             }
         ]
     assert "Kolejność oceny kampanii" in read_contract["campaign_rows"][0]["review_reason"]
@@ -11009,6 +11017,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
+            "blocked_claim_summary_label": "8 zablokowanych obietnic",
         }
     ]
     assert budget_contract["shared_budget_distribution_rows"] == []
@@ -11247,6 +11256,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmarnowany budżet",
                 "obietnica poprawy wyniku",
             ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
         }
     ]
     impression_share_section = next(
@@ -11447,6 +11457,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "changed_field_count": 2,
             "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
             "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
+            "changed_field_summary_label": "status kampanii, kwota budżetu kampanii",
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": change_history_contract["change_history_rows"][0][
                 "metric_facts"
