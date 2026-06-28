@@ -42,6 +42,10 @@ Date: 2026-06-29
 - Marketer-useful metric dimension values now stay useful in compact skill
   context: GA4 source/campaign/landing-page values and GSC query values no
   longer collapse to generic placeholder copy when they are safe to show.
+- Compact Codex skill context no longer exposes raw active-action payload
+  bodies, payload key lists, payload-preview key names or raw blocker keys such
+  as `payload_apply_allowed_false`. Skill contexts now use typed preview cards,
+  Polish blocker labels and `/api/actions/{action_id}` for drilldown.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -219,7 +223,9 @@ Date: 2026-06-29
    copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for remaining payload-derived panels.
+5. Dashboard still needs focused cleanup for any newly found payload-derived
+   panels. Compact skill context active actions are now guarded against raw
+   payload leakage.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
@@ -236,6 +242,22 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Compact skill action-context cleanup: active actions in daily, content,
+  Merchant, Ads, GA4 and Localo context packs now omit raw action payloads,
+  payload key lists, raw payload-preview field names and raw apply-blocker keys.
+  Full action detail remains available through `/api/actions/{action_id}` and
+  typed preview cards.
+  Verification:
+  - `rtk uv run pytest tests/test_api_contracts.py::test_daily_context_pack_uses_daily_decisions_for_action_summaries tests/test_api_contracts.py::test_daily_context_pack_preserves_action_review_gates tests/test_api_contracts.py::test_codex_context_pack_scopes_merchant_payload_preview -q`
+  - `rtk uv run pytest tests/test_api_contracts.py::test_codex_context_pack_scopes_content_strategist_payload tests/test_api_contracts.py::test_ads_doctor_context_pack_uses_summary_diagnostics -q`
+  - `rtk scripts/local_stack.sh restart`
+  - live `POST /api/codex/context-pack` active-action scan for daily, content,
+    Merchant, Ads, GA4 and Localo skills
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Metric dimension usefulness cleanup: shared `MetricFact.dimension_value_labels`
   now preserves marketer-useful free-text values for queries, pages, landing

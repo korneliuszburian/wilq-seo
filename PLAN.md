@@ -229,6 +229,9 @@ Known cleanup already started:
 - Mapping-review packet artifacts are being removed.
 - UI translators and ad hoc string cleanup helpers are being removed.
 - Action/detail summaries are being moved to clean typed/domain copy.
+- Compact skill contexts now expose active actions through typed preview cards,
+  Polish blocker labels and `/api/actions/{action_id}`, not raw action payloads
+  or payload key lists.
 - Merchant action detail previews now have typed API preview cards; remaining
   action kinds still need direct migration away from payload-shape inference.
 - Google Ads recommendation action details now have typed API preview cards

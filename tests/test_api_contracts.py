@@ -4582,14 +4582,17 @@ def test_daily_context_pack_preserves_action_review_gates(
     merchant_action = actions["act_review_merchant_feed_issues"]
     assert merchant_action["review_gate"]["status"] == "pending_validation"
     assert merchant_action["review_gate"]["apply_allowed"] is False
-    assert "action_validation_required" in merchant_action["review_gate"]["apply_blockers"]
-    assert "payload_apply_allowed_false" in merchant_action["review_gate"]["apply_blockers"]
+    assert "apply_blockers" not in merchant_action["review_gate"]
+    assert merchant_action["review_gate"]["apply_blockers_total"] >= 2
     assert "wymagane sprawdzenie w WILQ" in merchant_action["review_gate"][
         "apply_blocker_labels"
     ]
     assert "podgląd zmian nie pozwala na zapis" in merchant_action["review_gate"][
         "apply_blocker_labels"
     ]
+    assert "payload_apply_allowed_false" not in json.dumps(
+        merchant_action["review_gate"], ensure_ascii=False
+    )
     assert "last_mutation_adapter" not in merchant_action["review_gate"]
 
 
@@ -17622,7 +17625,11 @@ def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
     assert ga4_action["decision_id"] != "[REDACTED]"
     assert ga4_action["decision_id"].startswith("decision_")
     assert ga4_action["metric_tiles"]
+    assert all("payload_keys" not in action for action in payload["active_action_objects"])
     serialized = json.dumps(payload, ensure_ascii=False)
+    serialized_actions = json.dumps(payload["active_action_objects"], ensure_ascii=False)
+    assert "payload_preview" not in serialized_actions
+    assert "payload_apply_allowed_false" not in serialized_actions
     assert "active_products=12" not in serialized
     assert "disapproved_products=3" not in serialized
     assert "active_users=20" not in serialized
@@ -18401,23 +18408,22 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     ]
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
-    payload = merchant_action["payload"]
-    assert payload["preview_contract"] == "merchant_feed_issue_review_preview_v1"
-    assert payload["payload_preview_total"] == 1
-    assert payload["payload_preview_included"] == 1
-    preview = payload["payload_preview"][0]
-    assert preview["preview_contract"] == "merchant_feed_issue_review_preview_v1"
-    assert preview["operation_type"] == "MerchantIssueClusterReview"
-    assert "issue_type" not in preview
-    assert "cluster_id" not in preview
-    assert "reporting_context" not in preview
-    assert "issue_summary" in preview
-    assert preview["metric_snapshot"] == {"issue_product_count": 3}
-    assert preview["apply_allowed"] is False
-    assert preview["api_mutation_ready"] is False
-    assert preview["destructive"] is False
-    assert "zapis do feedu" in preview["blocked_claims"]
+    assert "payload" not in merchant_action
+    assert merchant_action["api_endpoint_template"] == "/api/actions/{action_id}"
+    assert merchant_action["preview_cards"]
+    assert merchant_action["preview_cards_total"] >= 1
+    assert merchant_action["preview_cards_included"] >= 1
+    preview_card = merchant_action["preview_cards"][0]
+    assert preview_card["kind"] == "merchant_feed_issue_review"
+    assert preview_card["title_label"] == "Problem feedu do sprawdzenia"
+    preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
+    assert "Problem" in preview_rows
+    assert "Zgłoszenia" in preview_rows
+    assert "zgłoszenia" in preview_rows["Zgłoszenia"]
+    assert "online~pl~PL~SKU" not in json.dumps(preview_card, ensure_ascii=False)
     serialized = json.dumps(data, ensure_ascii=False)
+    serialized_actions = json.dumps(data["active_action_objects"], ensure_ascii=False)
+    assert "payload" not in serialized_actions
     assert "landing_page_error" not in serialized
     assert "SHOPPING_ADS" not in serialized
     assert "MERCHANT_ACTION" not in serialized

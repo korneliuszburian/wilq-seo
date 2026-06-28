@@ -115,6 +115,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Marketer-useful free-text metric dimensions now stay useful in compact
   context where safe: GSC queries, GA4 source/campaign/landing-page values and
   country labels do not collapse to generic placeholder copy.
+- Compact Codex skill context active actions now omit raw action payloads,
+  payload key lists, payload-preview field names and raw apply-blocker keys.
+  Skills get typed preview cards, Polish blocker labels and
+  `/api/actions/{action_id}` for drilldown.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
@@ -263,7 +267,9 @@ are resolved or explicitly deferred.
    Latest done slice: compact daily context-pack metric facts now consume
    `MetricFact.metric_label`, `dimension_labels` and `dimension_value_labels`
    instead of raw metric keys or vendor dimension enums, while preserving useful
-   free-text query/source/page values where safe.
+   free-text query/source/page values where safe. Compact skill active-action
+   contexts now also use typed preview cards and Polish blocker labels instead
+   of raw payload bodies, payload key lists or raw apply-blocker keys.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
    have typed-preview-card coverage. Action validation errors for Ads, GA4 and

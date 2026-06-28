@@ -417,8 +417,6 @@ def _compact_daily_action_for_context(
     decision: DailyDecision | None = None,
 ) -> dict[str, Any]:
     dumped = action.model_dump(mode="json")
-    payload = dumped.get("payload")
-    payload_keys = sorted(payload) if isinstance(payload, dict) else []
     audit_events = dumped.get("audit_events")
     latest_audit_event = _compact_audit_event_for_daily_context(
         _latest_audit_event_for_context(audit_events)
@@ -438,7 +436,6 @@ def _compact_daily_action_for_context(
         "recommended_reason": dumped["recommended_reason"],
         "metric_count": len(dumped.get("metrics", [])),
         "latest_audit_event": latest_audit_event,
-        "payload_keys": payload_keys,
         "api_endpoint_template": "/api/actions/{action_id}",
     }
     _compact_action_review_gate_for_context(compact)
@@ -3028,7 +3025,6 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
                 "apply_allowed": review_gate.get("apply_allowed"),
                 "confirmation_required": review_gate.get("confirmation_required"),
                 "apply_blockers_total": len(apply_blockers),
-                "apply_blockers": apply_blockers[:4],
                 "apply_blocker_labels": apply_blocker_labels[:4],
                 "apply_blockers_included": min(len(apply_blockers), 4),
             }
@@ -3058,174 +3054,13 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             else metrics[:1]
         )
         compact["metrics_included"] = len(compact["metrics"])
-    payload = compact.get("payload")
-    if not isinstance(payload, dict):
-        return compact
-    compact_payload = dict(payload)
-    if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
-        compact_payload["blocked_reason"] = (
-            "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
-        )
-        helper_steps = compact_payload.get("helper_steps")
-        if isinstance(helper_steps, list):
-            compact_payload["helper_steps_total"] = len(helper_steps)
-            compact_payload["helper_steps"] = helper_steps[:1]
-            compact_payload["helper_steps_included"] = len(compact_payload["helper_steps"])
-    campaign_candidates = compact_payload.get("campaign_candidates")
-    if isinstance(campaign_candidates, list):
-        compact_payload["campaign_candidates_total"] = len(campaign_candidates)
-        compact_payload["campaign_candidates"] = _compact_campaign_candidates_for_context(
-            campaign_candidates
-        )
-        compact_payload["campaign_candidates_included"] = len(
-            compact_payload["campaign_candidates"]
-        )
-    content_brief_preview = compact_payload.get("content_brief_preview")
-    if isinstance(content_brief_preview, list):
-        compact_payload["content_brief_preview_total"] = len(content_brief_preview)
-        compact_payload["content_brief_preview"] = (
-            _compact_content_brief_preview_for_context(content_brief_preview)
-        )
-        compact_payload["content_brief_preview_included"] = len(
-            compact_payload["content_brief_preview"]
-        )
-    wordpress_draft_payload_preview = compact_payload.get("wordpress_draft_payload_preview")
-    if isinstance(wordpress_draft_payload_preview, list):
-        compact_payload["wordpress_draft_payload_preview_total"] = len(
-            wordpress_draft_payload_preview
-        )
-        compact_payload["wordpress_draft_payload_preview"] = (
-            _compact_wordpress_draft_payload_preview_for_context(
-                wordpress_draft_payload_preview
-            )
-        )
-        compact_payload["wordpress_draft_payload_preview_included"] = len(
-            compact_payload["wordpress_draft_payload_preview"]
-        )
-    payload_preview_kept = False
-    payload_preview = compact_payload.get("payload_preview")
-    if (
-        compact_payload.get("preview_contract") == "ga4_tracking_quality_review_v1"
-        and isinstance(payload_preview, list)
-    ):
-        compact_payload["payload_preview_total"] = len(payload_preview)
-        compact_payload["payload_preview"] = _compact_ga4_tracking_preview_for_context(
-            payload_preview
-        )
-        compact_payload["payload_preview_included"] = len(
-            compact_payload["payload_preview"]
-        )
-        payload_preview_kept = True
-    if (
-        compact_payload.get("preview_contract") == "local_visibility_review_preview_v1"
-        and isinstance(payload_preview, list)
-    ):
-        compact_payload["payload_preview_total"] = len(payload_preview)
-        compact_payload["payload_preview"] = _compact_localo_visibility_preview_for_context(
-            payload_preview
-        )
-        compact_payload["payload_preview_included"] = len(
-            compact_payload["payload_preview"]
-        )
-        payload_preview_kept = True
-    if (
-        compact_payload.get("preview_contract") == "merchant_feed_issue_review_preview_v1"
-        and isinstance(payload_preview, list)
-    ):
-        issue_clusters = compact_payload.get("issue_clusters")
-        if isinstance(issue_clusters, list):
-            compact_payload["issue_clusters_total"] = len(issue_clusters)
-            compact_payload.pop("issue_clusters", None)
-        compact_payload["payload_preview_total"] = len(payload_preview)
-        compact_payload["payload_preview"] = _compact_merchant_issue_preview_for_context(
-            payload_preview
-        )
-        compact_payload["payload_preview_included"] = len(
-            compact_payload["payload_preview"]
-        )
-        payload_preview_kept = True
-    if (
-        compact_payload.get("preview_contract") == "custom_segment_change_preview_v1"
-        and isinstance(payload_preview, list)
-    ):
-        compact_payload["payload_preview_total"] = len(payload_preview)
-        compact_payload["payload_preview"] = [
-            _compact_custom_segment_payload_preview_item(item)
-            for item in payload_preview
-            if isinstance(item, dict)
-        ]
-        compact_payload["payload_preview_included"] = len(
-            compact_payload["payload_preview"]
-        )
-        payload_preview_kept = True
-    if (
-        compact_payload.get("preview_contract")
-        == "wordpress_draft_handoff_preview_v1"
-        and isinstance(payload_preview, list)
-    ):
-        compact_payload["payload_preview_total"] = len(payload_preview)
-        compact_payload["payload_preview"] = (
-            _compact_wordpress_draft_handoff_preview_for_context(payload_preview)
-        )
-        compact_payload["payload_preview_included"] = len(
-            compact_payload["payload_preview"]
-        )
-        payload_preview_kept = True
-    ngram_preview = compact_payload.get("ngram_preview")
-    if (
-        compact_payload.get("preview_contract") == "search_term_ngram_review_v1"
-        and isinstance(ngram_preview, list)
-    ):
-        compact_payload["ngram_preview_total"] = len(ngram_preview)
-        compact_payload["ngram_preview"] = _compact_ngram_preview_for_context(
-            ngram_preview
-        )
-        compact_payload["ngram_preview_included"] = len(
-            compact_payload["ngram_preview"]
-        )
-    for key in (
-        "budget_payload_preview",
-        "recommendations",
-        "terms",
-        "source_terms",
-        "source_search_terms",
-        "payload_preview",
-        "keyword_match_context",
-        "source_metric_names",
-    ):
-        if key == "payload_preview" and payload_preview_kept:
-            continue
-        rows = compact_payload.get(key)
-        if isinstance(rows, list):
-            compact_payload[f"{key}_total"] = len(rows)
-            compact_payload[key] = []
-            compact_payload[f"{key}_included"] = len(compact_payload[key])
-    if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
-        evidence_ids = compact_payload.get("evidence_ids")
-        if isinstance(evidence_ids, list):
-            compact_payload["evidence_ids"] = evidence_ids[:1]
-        compact_payload = {
-            key: compact_payload.get(key)
-            for key in (
-                "action_type",
-                "connector",
-                "mode",
-                "preview_contract",
-                "operation_type",
-                "ngram_preview",
-                "ngram_preview_total",
-                "ngram_preview_included",
-                "evidence_ids",
-                "missing_read_contracts",
-                "required_validation",
-                "blocked_claims",
-                "api_mutation_ready",
-                "apply_allowed",
-                "destructive",
-            )
-            if key in compact_payload
-        }
-    compact["payload"] = compact_payload
+    preview_cards = compact.get("preview_cards")
+    if isinstance(preview_cards, list):
+        compact["preview_cards_total"] = len(preview_cards)
+        compact["preview_cards"] = preview_cards[:3]
+        compact["preview_cards_included"] = len(compact["preview_cards"])
+    compact.pop("payload", None)
+    compact["api_endpoint_template"] = "/api/actions/{action_id}"
     return compact
 
 
@@ -3268,7 +3103,6 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "apply_allowed": review_gate.get("apply_allowed"),
         "confirmation_required": review_gate.get("confirmation_required"),
         "apply_blockers_total": len(apply_blockers),
-        "apply_blockers": apply_blockers[:3],
         "apply_blocker_labels": apply_blocker_labels[:3],
         "apply_blockers_included": min(len(apply_blockers), 3),
         "missing_validation_total": len(missing_validation),
@@ -3281,7 +3115,6 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "warnings": warnings[:2],
         "warnings_included": min(len(warnings), 2),
         "last_mutation_blockers_total": len(last_mutation_blockers),
-        "last_mutation_blockers": last_mutation_blockers[:3],
         "last_mutation_blocker_labels": last_mutation_blocker_labels[:3],
         "last_mutation_blockers_included": min(len(last_mutation_blockers), 3),
     }
