@@ -103,6 +103,7 @@ const actionFixture: ActionObject = {
       "podgląd zmian nie pozwala na zapis",
       "potwierdzenie człowieka przed zapisem"
     ],
+    apply_blocker_summary_label: "4 blokady",
     confirmation_required: true,
     apply_allowed: false,
     last_confirmation_by: null,
@@ -128,7 +129,8 @@ const actionFixture: ActionObject = {
     last_mutation_adapter: null,
     last_mutation_audit_event_id: null,
     last_mutation_blockers: [],
-    last_mutation_blocker_labels: []
+    last_mutation_blocker_labels: [],
+    last_mutation_blocker_summary_label: "brak blokad"
   },
   audit_events: []
 };

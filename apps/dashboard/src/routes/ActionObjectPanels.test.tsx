@@ -37,6 +37,7 @@ describe("ActionObjectPanels", () => {
               operator_checklist_labels: ["sprawdź podgląd zmian"],
               apply_blockers: ["vendor_mutation_adapter_required"],
               apply_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"],
+              apply_blocker_summary_label: "1 blokada",
               confirmation_required: true,
               apply_allowed: false,
               last_confirmation_summary: null,
@@ -46,7 +47,8 @@ describe("ActionObjectPanels", () => {
               last_mutation_adapter: null,
               last_mutation_audit_event_id: "audit_apply_blocked",
               last_mutation_blockers: ["vendor_mutation_adapter_required"],
-              last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"]
+              last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"],
+              last_mutation_blocker_summary_label: "1 blokada"
             }
           } as ActionObject
         }
@@ -60,7 +62,8 @@ describe("ActionObjectPanels", () => {
     expect(screen.getByText("Czy próbowano zapisu: nie")).toBeInTheDocument();
     expect(screen.getByText("System zewnętrzny: brak")).toBeInTheDocument();
     expect(screen.getByText("Ślad bezpieczeństwa: zapisany")).toBeInTheDocument();
-    expect(screen.getAllByText(/brak bezpiecznej ścieżki zapisu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1 blokada/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/brak bezpiecznej ścieżki zapisu/)).not.toBeInTheDocument();
     expect(screen.queryByText("Ostatni audyt zmiany")).not.toBeInTheDocument();
     expect(screen.queryByText(/Adapter:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Zdarzenie audytu:/)).not.toBeInTheDocument();
@@ -100,10 +103,12 @@ describe("ActionObjectPanels", () => {
               operator_checklist_labels: ["sprawdź podgląd zmian"],
               apply_blockers: ["vendor_mutation_adapter_required"],
               apply_blocker_labels: ["brak bezpiecznej ścieżki zapisu"],
+              apply_blocker_summary_label: "1 blokada",
               confirmation_required: true,
               apply_allowed: false,
               last_mutation_blockers: [],
-              last_mutation_blocker_labels: []
+              last_mutation_blocker_labels: [],
+              last_mutation_blocker_summary_label: "brak blokad"
             },
             preview_cards: [],
             payload: {},
@@ -147,6 +152,14 @@ describe("ActionObjectPanels", () => {
     expect(source).toContain("actionSummaryLabel");
     expect(source).not.toContain("actionIds.length === 1");
     expect(source).not.toContain("`${actionIds.length} akcji do sprawdzenia`");
+  });
+
+  it("keeps effect checks in plain comparison language", () => {
+    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    expect(source).toContain("porównanie wyników sprzed zmiany i po zmianie");
+    expect(source).not.toContain("okno efektu");
+    expect(source).not.toContain("Zapisuje okno");
+    expect(source).not.toContain("Okna:");
   });
 });
 

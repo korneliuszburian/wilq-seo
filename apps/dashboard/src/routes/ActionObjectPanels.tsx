@@ -339,7 +339,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
         />
         <TraceLine
           label="Blokady zapisu zmian"
-          values={gate.apply_blocker_labels.slice(0, 8)}
+          values={[gate.apply_blocker_summary_label]}
           empty="brak"
         />
       </div>
@@ -368,7 +368,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           </div>
           <TraceLine
             label="Co blokuje zapis"
-            values={(gate.last_mutation_blocker_labels ?? []).slice(0, 8)}
+            values={[gate.last_mutation_blocker_summary_label]}
             empty="brak"
           />
         </div>
@@ -535,7 +535,7 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
     mutationFn: () =>
       impactCheckAction(action.id, {
         checked_by: "operator_local_dashboard",
-        notes: "Operator sprawdza okno efektu przed jakimkolwiek zapisem zmian.",
+        notes: "Operator sprawdza porównanie efektu przed jakimkolwiek zapisem zmian.",
         pre_window_days: 7,
         post_window_days: 7
       }),
@@ -553,8 +553,8 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
             Sprawdzenie efektu
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Zapisuje okno przed i po zmianie na podstawie metryk akcji. Nie ocenia
-            wzrostu i nie zapisuje zmian.
+            Zapisuje porównanie wyników sprzed zmiany i po zmianie na podstawie
+            metryk akcji. Nie ocenia wzrostu i nie zapisuje zmian.
           </p>
         </div>
         <button
@@ -603,7 +603,7 @@ function ActionImpactCheckResultPanel({
         Sprawdzenie efektu: <span className="font-semibold">{result.status_label}</span>
       </div>
       <div>
-        Okna: {result.pre_window_days} dni przed / {result.post_window_days} dni po.
+        Porównanie: {result.pre_window_days} dni przed zmianą / {result.post_window_days} dni po zmianie.
       </div>
       <div>Metryki z dowodami: {result.metric_fact_count}</div>
       <TraceLine label="Źródła" values={result.source_connector_labels} empty="brak" />

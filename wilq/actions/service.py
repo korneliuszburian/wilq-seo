@@ -92,7 +92,12 @@ from wilq.briefing.merchant_labels import (
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import evidence_count_label, source_connector_labels
+from wilq.operator_labels import (
+    blocker_count_label,
+    evidence_count_label,
+    impact_comparison_summary_label,
+    source_connector_labels,
+)
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,
@@ -3831,6 +3836,12 @@ def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGat
     return gate.model_copy(
         update={
             "status_label": _action_review_gate_status_label(gate.status),
+            "apply_blocker_summary_label": blocker_count_label(
+                gate.apply_blocker_labels or gate.apply_blockers
+            ),
+            "last_mutation_blocker_summary_label": blocker_count_label(
+                gate.last_mutation_blocker_labels or gate.last_mutation_blockers
+            ),
             "last_review_outcome_label": _review_outcome_label(gate.last_review_outcome)
             if gate.last_review_outcome
             else None,
@@ -4328,8 +4339,8 @@ def _action_impact_check_summary(
 ) -> str:
     parts = [
         f"Sprawdzenie efektu: {_action_result_status_label(status)}.",
-        f"Okno przed zmianą: {request.pre_window_days} dni.",
-        f"Okno po zmianie: {request.post_window_days} dni.",
+        f"Porównanie sprzed zmiany: {request.pre_window_days} dni.",
+        f"Porównanie po zmianie: {request.post_window_days} dni.",
         f"Metryki z dowodami: {metric_fact_count}.",
         "Źródła: "
         f"{', '.join(_source_connector_labels(source_connectors)) if source_connectors else 'brak'}.",
@@ -4600,14 +4611,26 @@ def _legacy_or_current_impact_summary(summary: str) -> str:
     else:
         prefix = "Sprawdzenie efektu zapisane."
     window_parts = [
-        part.strip()
+        _operator_impact_summary_part(part.strip())
         for part in summary.split(".")
-        if part.strip().startswith(("Okno przed zmianą", "Okno po zmianie", "Metryki z dowodami"))
+        if part.strip().startswith(
+            (
+                "Okno przed zmianą",
+                "Okno po zmianie",
+                "Porównanie sprzed zmiany",
+                "Porównanie po zmianie",
+                "Metryki z dowodami",
+            )
+        )
     ]
     clean_parts = [prefix, *[f"{part}." for part in window_parts]]
     if "Ten krok nie zapisuje zmian" not in " ".join(clean_parts):
         clean_parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
     return " ".join(clean_parts)
+
+
+def _operator_impact_summary_part(part: str) -> str:
+    return impact_comparison_summary_label(part) or part
 
 
 def _action_audit_event_label(event_type: str) -> str:

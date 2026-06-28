@@ -3273,9 +3273,12 @@ def test_action_impact_check_requires_confirmation(
     assert result["audit_event"]["event_type"] == "action_impact_check_blocked"
     assert "status=" not in result["audit_event"]["summary"]
     assert "google_merchant_center" not in result["audit_event"]["summary"]
+    assert "Porównanie sprzed zmiany" in result["audit_event"]["summary"]
+    assert "Okno przed zmianą" not in result["audit_event"]["summary"]
     assert result["review_gate"]["last_impact_check_status"] == "blocked"
     assert result["review_gate"]["apply_allowed"] is False
     assert "impact_sanity_check_required" in result["review_gate"]["apply_blockers"]
+    assert result["review_gate"]["apply_blocker_summary_label"]
 
 
 def test_action_impact_check_records_pre_apply_sanity_without_apply(
@@ -3315,6 +3318,10 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["status"] == "checked"
     assert "status=" not in result["audit_event"]["summary"]
     assert "google_merchant_center" not in result["audit_event"]["summary"]
+    assert "Porównanie sprzed zmiany: 7 dni" in result["audit_event"]["summary"]
+    assert "Porównanie po zmianie: 14 dni" in result["audit_event"]["summary"]
+    assert "Okno przed zmianą" not in result["audit_event"]["summary"]
+    assert "Okno po zmianie" not in result["audit_event"]["summary"]
     assert result["pre_window_days"] == 7
     assert result["post_window_days"] == 14
     assert result["metric_fact_count"] > 0
@@ -3329,6 +3336,7 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["review_gate"]["last_impact_checked_by"] == "operator_test"
     assert result["review_gate"]["apply_allowed"] is False
     assert "impact_sanity_check_required" not in result["review_gate"]["apply_blockers"]
+    assert result["review_gate"]["apply_blocker_summary_label"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -3341,6 +3349,16 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert merchant_action["latest_audit_event"]["event_type"] == "action_impact_check_completed"
     assert merchant_action["review_gate"]["last_impact_check_status"] == "checked"
     assert merchant_action["review_gate"]["apply_allowed"] is False
+
+    action_response = client.get(f"/api/actions/{action_id}")
+    assert action_response.status_code == 200
+    action_payload = action_response.json()
+    assert "Porównanie sprzed zmiany" in action_payload["review_gate"][
+        "last_impact_check_summary"
+    ]
+    assert "Okno przed zmianą" not in action_payload["review_gate"][
+        "last_impact_check_summary"
+    ]
 
 
 def test_daily_context_pack_preserves_human_review_outcome(
@@ -4069,6 +4087,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         assert "podgląd zmian nie pozwala na zapis" in action["review_gate"][
             "apply_blocker_labels"
         ]
+        assert action["review_gate"]["apply_blocker_summary_label"]
         assert action["evidence_ids"]
         for preview_key in (
             "payload_preview",

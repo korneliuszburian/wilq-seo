@@ -8,12 +8,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from wilq.operator_labels import (
     action_count_label,
+    blocker_count_label,
     blocked_claim_label,
     blocked_claim_count_label,
     blocked_claim_summary_label,
     credential_field_count_label,
     credential_source_count_label,
     evidence_count_label,
+    impact_comparison_summary_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
     missing_contract_count_label,
@@ -361,6 +363,7 @@ class ActionReviewGate(BaseModel):
     operator_checklist_labels: list[str] = Field(default_factory=list)
     apply_blockers: list[str] = Field(default_factory=list)
     apply_blocker_labels: list[str] = Field(default_factory=list)
+    apply_blocker_summary_label: str = ""
     confirmation_required: bool = True
     apply_allowed: bool = False
     last_review_outcome: ActionReviewOutcome | None = None
@@ -387,6 +390,22 @@ class ActionReviewGate(BaseModel):
     last_mutation_audit_event_id: str | None = None
     last_mutation_blockers: list[str] = Field(default_factory=list)
     last_mutation_blocker_labels: list[str] = Field(default_factory=list)
+    last_mutation_blocker_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def hydrate_summary_labels(self) -> "ActionReviewGate":
+        if not self.apply_blocker_summary_label:
+            self.apply_blocker_summary_label = blocker_count_label(
+                self.apply_blocker_labels or self.apply_blockers
+            )
+        if not self.last_mutation_blocker_summary_label:
+            self.last_mutation_blocker_summary_label = blocker_count_label(
+                self.last_mutation_blocker_labels or self.last_mutation_blockers
+            )
+        self.last_impact_check_summary = impact_comparison_summary_label(
+            self.last_impact_check_summary
+        )
+        return self
 
 
 class ActionPreviewRowViewModel(BaseModel):

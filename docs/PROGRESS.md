@@ -38,6 +38,10 @@ Date: 2026-06-28
   instead of route-local label dictionaries.
 - Action-detail normal preview uses typed API preview cards. Raw action payloads
   stay behind technical detail.
+- Action-detail review gates use API/domain blocker summary labels in normal
+  panels. Full blocker lists stay in technical detail.
+- Action-detail effect checks use plain before/after comparison wording from
+  API/domain labels, including historical stored summaries.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -93,7 +97,7 @@ Date: 2026-06-28
   campaign-triage and recommendation panels use API/domain summary labels for
   missing data, required checks and blocked claims instead of rendering long
   review/blocker arrays. Change-impact copy uses plain before/after comparison
-  wording, not starego technicznego słownictwa o oknach wyników.
+  wording instead of old technical result-window wording.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
 - Merchant issue-cluster cards and decision summaries use API/domain reported
@@ -156,6 +160,20 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "action_impact_check or context_pack_exposes_action_contracts" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "safety record|effect checks|Merchant|action detail labels"`
+- `rtk pnpm --dir packages/shared-schemas exec vitest run src/index.test.ts --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- Live API proof: `/api/actions/act_review_merchant_feed_issues` returns
+  `apply_blocker_summary_label: "10 blokad"` and a comparison summary without
+  old result-window wording.
+- Browser proof: `/actions/act_review_merchant_feed_issues` renders condensed
+  blocker labels and plain `Porównanie` copy; DOM proof has no long
+  `brak bezpiecznej ścieżki zapisu` blocker list and no old result-window
+  wording.
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_campaign_read_contract or ads_budget_pacing or ads_impression_share or ads_change_history or ads_search_terms or negative_keyword" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
 - `rtk pnpm --dir packages/shared-schemas exec vitest run src/index.test.ts --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
@@ -167,7 +185,7 @@ Most recent verified local slice:
   change-impact readiness and campaign-triage rows.
 - Browser proof: expanded `/ads-doctor` renders condensed labels such as
   `17 brakujące zakresy danych`, `14 wymaganych sprawdzeń` and
-  `23 zablokowanych obietnic`; DOM proof has no starego technicznego słownictwa o oknach wyników and
+  `23 zablokowanych obietnic`; DOM proof has no old result-window wording and
   keeps plain comparison copy for results before/after a change.
 
 Previous verified local slice:

@@ -157,6 +157,7 @@ export const ActionReviewGateSchema = z.object({
   operator_checklist_labels: z.array(z.string()).default([]),
   apply_blockers: z.array(z.string()).default([]),
   apply_blocker_labels: z.array(z.string()).default([]),
+  apply_blocker_summary_label: z.string().optional().default(""),
   confirmation_required: z.boolean().default(true),
   apply_allowed: z.boolean().default(false),
   last_review_outcome: ActionReviewOutcomeSchema.nullable().optional(),
@@ -182,7 +183,8 @@ export const ActionReviewGateSchema = z.object({
   last_mutation_adapter: z.string().nullable().optional(),
   last_mutation_audit_event_id: z.string().nullable().optional(),
   last_mutation_blockers: z.array(z.string()).default([]),
-  last_mutation_blocker_labels: z.array(z.string()).default([])
+  last_mutation_blocker_labels: z.array(z.string()).default([]),
+  last_mutation_blocker_summary_label: z.string().optional().default("")
 });
 
 export const ActionPreviewRowViewModelSchema = z.object({

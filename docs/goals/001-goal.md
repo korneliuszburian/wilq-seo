@@ -90,6 +90,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   is not active product logic.
 - Action-detail normal preview uses typed API preview cards; raw payloads stay
   behind technical detail.
+- Action-detail review gates use API/domain blocker summary labels in normal
+  panels. Full blocker lists stay in technical detail.
+- Action-detail effect checks use plain before/after comparison wording from
+  API/domain labels, including historical stored summaries.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
@@ -140,7 +144,7 @@ action IDs and audit fields may stay in technical contracts or drawers.
   campaign-triage and recommendation panels use API/domain summary labels for
   missing data, required checks and blocked claims instead of rendering long
   review/blocker arrays. Change-impact copy uses plain before/after comparison
-  wording, not starego technicznego słownictwa o oknach wyników.
+  wording instead of old technical result-window wording.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
 - Merchant issue-cluster cards and decision summaries use API/domain reported

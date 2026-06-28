@@ -402,6 +402,33 @@ def blocked_claim_count_label(claims: Iterable[str]) -> str:
     return f"{count} zablokowanych obietnic"
 
 
+def blocker_count_label(blockers: Iterable[object]) -> str:
+    count = len([blocker for blocker in blockers if str(blocker).strip()])
+    if count == 0:
+        return "brak blokad"
+    if count == 1:
+        return "1 blokada"
+    if 2 <= count <= 4:
+        return f"{count} blokady"
+    return f"{count} blokad"
+
+
+def impact_comparison_summary_label(summary: str | None) -> str | None:
+    if not summary:
+        return summary
+    parts = []
+    for part in summary.split(". "):
+        cleaned = part.strip()
+        if cleaned.startswith("Okno przed zmianą"):
+            cleaned = cleaned.replace(
+                "Okno przed zmianą", "Porównanie sprzed zmiany", 1
+            )
+        elif cleaned.startswith("Okno po zmianie"):
+            cleaned = cleaned.replace("Okno po zmianie", "Porównanie po zmianie", 1)
+        parts.append(cleaned)
+    return ". ".join(parts)
+
+
 def freshness_state_label(state: str | None) -> str:
     labels = {
         "fresh": "świeże dane",
