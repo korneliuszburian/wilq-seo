@@ -45,6 +45,9 @@ Date: 2026-06-28
   view-models instead of parsing raw action payload previews.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
+- Google Ads search-term, negative-keyword and change-history surfaces use
+  API/schema display labels for campaign, ad group, change event and changed
+  resource context instead of visible raw IDs.
 - Knowledge details use API-owned source labels and Polish count forms instead
   of raw connector IDs.
 - Knowledge first-screen decision and card summaries use API/domain source,
@@ -75,8 +78,7 @@ Date: 2026-06-28
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 5. Dashboard still needs focused cleanup for remaining payload-derived panels,
-   Ads raw ID fallbacks, content enum fallbacks and smaller Knowledge
-   playbook-list count labels.
+   content enum fallbacks and smaller Knowledge playbook-list count labels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
@@ -89,6 +91,18 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_entity_display_labels_do_not_expose_raw_ids or ads_label_fallbacks_do_not_expose_raw_vendor_values or ads_helper_label_fallbacks_do_not_expose_raw_vendor_values" --maxfail=3`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns `campaign_label`
+  and `ad_group_label` for checked search-term, safety, keyword-context and
+  negative-keyword rows.
+- Browser proof: `.local-lab/proof/ads-display-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map_binds_sources_to_decisions or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -97,7 +111,7 @@ Most recent verified local slice:
 - `rtk git diff --check`
 - Browser proof: `.local-lab/proof/knowledge-summary-labels-clean.txt`
 
-Previous local slice:
+Earlier local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunities_are_derived_from_evidence_and_rule_mappings or operator_label_fallbacks_do_not_expose_raw_connector_ids" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

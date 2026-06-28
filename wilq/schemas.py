@@ -1798,11 +1798,13 @@ class AdsChangeHistoryRow(BaseModel):
     change_resource_id: str | None = None
     change_resource_type: str | None = None
     change_resource_type_label: str = ""
+    change_resource_label: str = ""
     resource_change_operation: str | None = None
     resource_change_operation_label: str = ""
     client_type: str | None = None
     client_type_label: str = ""
     campaign_id: str | None = None
+    campaign_label: str = ""
     changed_field_count: int | None = None
     changed_fields: list[str] = Field(default_factory=list)
     changed_field_labels: list[str] = Field(default_factory=list)
@@ -1811,6 +1813,17 @@ class AdsChangeHistoryRow(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsChangeHistoryRow":
+        if not self.change_resource_label:
+            self.change_resource_label = _ads_change_resource_display_label(
+                self.change_resource_type_label,
+                self.change_resource_id,
+            )
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(None, self.campaign_id)
+        return self
 
 
 class AdsChangeHistoryReadContract(BaseModel):
@@ -1834,8 +1847,10 @@ class AdsChangeHistoryReadContract(BaseModel):
 
 class AdsChangeImpactReadinessRow(BaseModel):
     change_event_id: str | None = None
+    change_event_label: str = ""
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     change_date_time: str | None = None
     changed_fields: list[str] = Field(default_factory=list)
     changed_field_labels: list[str] = Field(default_factory=list)
@@ -1852,6 +1867,19 @@ class AdsChangeImpactReadinessRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsChangeImpactReadinessRow":
+        if not self.change_event_label:
+            self.change_event_label = _ads_change_event_display_label(
+                self.change_event_id
+            )
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        return self
 
 
 class AdsChangeImpactReadinessContract(BaseModel):
@@ -1875,12 +1903,54 @@ class AdsChangeImpactReadinessContract(BaseModel):
     next_step: str
 
 
+def _ads_campaign_display_label(
+    campaign_name: str | None,
+    campaign_id: str | None,
+) -> str:
+    name = (campaign_name or "").strip()
+    if name:
+        return name
+    if campaign_id:
+        return "kampania do sprawdzenia w szczegółach technicznych"
+    return "brak kampanii w odczycie"
+
+
+def _ads_change_event_display_label(change_event_id: str | None) -> str:
+    if change_event_id:
+        return "zmiana do sprawdzenia w szczegółach technicznych"
+    return "brak identyfikatora zmiany w odczycie"
+
+
+def _ads_change_resource_display_label(
+    resource_type_label: str | None,
+    change_resource_id: str | None,
+) -> str:
+    resource = (resource_type_label or "").strip() or "zasób zmiany"
+    if change_resource_id:
+        return f"{resource} do sprawdzenia w szczegółach technicznych"
+    return f"{resource} bez identyfikatora w odczycie"
+
+
+def _ads_ad_group_display_label(
+    ad_group_name: str | None,
+    ad_group_id: str | None,
+) -> str:
+    name = (ad_group_name or "").strip()
+    if name:
+        return name
+    if ad_group_id:
+        return "grupa reklam do sprawdzenia w szczegółach technicznych"
+    return "brak grupy reklam w odczycie"
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     search_term_status: str | None = None
     clicks: int | None = None
     impressions: int | None = None
@@ -1891,6 +1961,20 @@ class AdsSearchTermMetricRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsSearchTermMetricRow":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
 
 
 class AdsSearchTermsReadContract(BaseModel):
@@ -1914,8 +1998,10 @@ class AdsSearchTermReviewRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     search_term_status: str | None = None
     clicks: int | None = None
     impressions: int | None = None
@@ -1924,10 +2010,25 @@ class AdsSearchTermReviewRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsSearchTermReviewRow":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
+
 
 class AdsSearchTermCampaignReviewRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     search_term_count: int = 0
     zero_conversion_search_term_count: int = 0
     clicks: int = 0
@@ -1936,6 +2037,15 @@ class AdsSearchTermCampaignReviewRow(BaseModel):
     conversions: float = 0.0
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsSearchTermCampaignReviewRow":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        return self
 
 
 class AdsSearchTermReviewSummaryContract(BaseModel):
@@ -2001,8 +2111,10 @@ class AdsSearchTermSafetyRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     search_term_status: str | None = None
     clicks_90d: int | None = None
     impressions_90d: int | None = None
@@ -2013,6 +2125,20 @@ class AdsSearchTermSafetyRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsSearchTermSafetyRow":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
 
 
 class AdsSearchTermSafetyReadContract(BaseModel):
@@ -2042,11 +2168,27 @@ class AdsKeywordMatchContextRow(BaseModel):
     negative_label: str = ""
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsKeywordMatchContextRow":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
 
 
 class AdsKeywordMatchContextReadContract(BaseModel):
@@ -2316,8 +2458,10 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     level_label: str = ""
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     reason: str
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
@@ -2328,6 +2472,20 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsNegativeKeywordPayloadPreview":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
 
 
 class AdsNegativeKeywordCandidate(BaseModel):
@@ -2342,8 +2500,10 @@ class AdsNegativeKeywordCandidate(BaseModel):
     human_review_gate_labels: list[str] = Field(default_factory=list)
     campaign_id: str | None = None
     campaign_name: str | None = None
+    campaign_label: str = ""
     ad_group_id: str | None = None
     ad_group_name: str | None = None
+    ad_group_label: str = ""
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
@@ -2375,6 +2535,20 @@ class AdsNegativeKeywordCandidate(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def hydrate_display_labels(self) -> "AdsNegativeKeywordCandidate":
+        if not self.campaign_label:
+            self.campaign_label = _ads_campaign_display_label(
+                self.campaign_name,
+                self.campaign_id,
+            )
+        if not self.ad_group_label:
+            self.ad_group_label = _ads_ad_group_display_label(
+                self.ad_group_name,
+                self.ad_group_id,
+            )
+        return self
 
 
 class AdsNegativeKeywordsReadContract(BaseModel):

@@ -552,10 +552,10 @@ WILQ is complete for this long-range goal when:
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
 - 2026-06-28: Current remaining cleanup work is label fallback hardening,
-  remaining content/ads payload-derived panels, Ads raw ID fallbacks, content
-  enum fallbacks, smaller Knowledge playbook-list count labels, context-pack
-  copy and recovery-doc pruning. Do not start deferred product layers until
-  `PLAN.md` completion is green or explicitly deferred.
+  remaining content/ads payload-derived panels, content enum fallbacks, smaller
+  Knowledge playbook-list count labels, context-pack copy and recovery-doc
+  pruning. Do not start deferred product layers until `PLAN.md` completion is
+  green or explicitly deferred.
 - 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
   and Merchant tactical labels now fall back to neutral Polish operator labels.
   The remaining raw fallback scan is limited to non-marketer connector
@@ -573,6 +573,11 @@ WILQ is complete for this long-range goal when:
   route-local count assembly.
 - 2026-06-28: Szanse cards now render API/domain evidence, source, action and
   knowledge summary labels instead of route-local count assembly.
+- 2026-06-28: Google Ads search-term, negative-keyword and change-history
+  surfaces now use API/schema display labels for campaign, ad group, change
+  event and changed resource context instead of visible raw IDs. Live API proof
+  confirmed label fields on `/api/ads/diagnostics?view=summary`; browser proof
+  lives at `.local-lab/proof/ads-display-labels-clean.txt`.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.

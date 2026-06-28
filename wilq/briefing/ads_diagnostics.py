@@ -6856,11 +6856,11 @@ def _negative_keyword_preview_card(
         },
         {
             "label": "Kampania",
-            "value": preview.campaign_name or "kampania do sprawdzenia",
+            "value": preview.campaign_label or "kampania do sprawdzenia",
         },
         {
             "label": "Grupa reklam",
-            "value": preview.ad_group_name or "grupa reklam do sprawdzenia",
+            "value": preview.ad_group_label or "grupa reklam do sprawdzenia",
         },
     ]
     if preview.required_validation_labels:

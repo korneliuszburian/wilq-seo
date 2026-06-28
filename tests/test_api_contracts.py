@@ -136,7 +136,15 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    AdsChangeHistoryRow,
+    AdsChangeImpactReadinessRow,
+    AdsKeywordMatchContextRow,
+    AdsNegativeKeywordCandidate,
+    AdsNegativeKeywordPayloadPreview,
+    AdsSearchTermCampaignReviewRow,
     AdsSearchTermMetricRow,
+    AdsSearchTermReviewRow,
+    AdsSearchTermSafetyRow,
     AuditEvent,
     CommandCenterBriefItem,
     CommandCenterResponse,
@@ -1696,6 +1704,87 @@ def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
         "pre_change_performance_window_v2",
     ):
         assert forbidden not in joined
+
+
+def test_ads_entity_display_labels_do_not_expose_raw_ids() -> None:
+    raw_campaign_id = "customers/123/campaigns/987654321"
+    raw_ad_group_id = "customers/123/adGroups/123456789"
+    rows = [
+        AdsSearchTermMetricRow(
+            search_term="bdo cena",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+        ),
+        AdsSearchTermSafetyRow(
+            search_term="bdo cena",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+        ),
+        AdsSearchTermReviewRow(
+            search_term="bdo cena",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+        ),
+        AdsKeywordMatchContextRow(
+            keyword_text="bdo",
+            match_type="EXACT",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+        ),
+        AdsNegativeKeywordPayloadPreview(
+            id="preview",
+            search_term="bdo cena",
+            negative_keyword_text="bdo cena",
+            match_type="EXACT",
+            level="ad_group",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+            reason="Sprawdzenie wykluczenia.",
+        ),
+        AdsNegativeKeywordCandidate(
+            id="candidate",
+            search_term="bdo cena",
+            review_reason="Sprawdzenie wykluczenia.",
+            campaign_id=raw_campaign_id,
+            ad_group_id=raw_ad_group_id,
+            next_step="Sprawdź intencję.",
+        ),
+    ]
+    campaign_review = AdsSearchTermCampaignReviewRow(campaign_id=raw_campaign_id)
+    change_history = AdsChangeHistoryRow(
+        change_resource_id="customers/123/campaigns/987654321",
+        change_resource_type_label="kampania",
+        campaign_id=raw_campaign_id,
+    )
+    change_impact = AdsChangeImpactReadinessRow(
+        change_event_id="customers/123/changeEvents/111",
+        campaign_id=raw_campaign_id,
+    )
+
+    labels = [
+        label
+        for row in rows
+        for label in (
+            row.campaign_label,
+            row.ad_group_label,
+        )
+    ]
+    labels.extend(
+        [
+            campaign_review.campaign_label,
+            change_history.change_resource_label,
+            change_history.campaign_label,
+            change_impact.change_event_label,
+            change_impact.campaign_label,
+        ]
+    )
+
+    assert "kampania do sprawdzenia w szczegółach technicznych" in labels
+    assert "grupa reklam do sprawdzenia w szczegółach technicznych" in labels
+    assert all(raw_campaign_id not in label for label in labels)
+    assert all(raw_ad_group_id not in label for label in labels)
+    assert all("987654321" not in label for label in labels)
+    assert all("changeEvents" not in label for label in labels)
 
 
 def test_ads_helper_label_fallbacks_do_not_expose_raw_vendor_values() -> None:

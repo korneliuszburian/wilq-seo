@@ -1688,8 +1688,7 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
                 {row.change_date_time ?? "brak daty"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.change_resource_type_label || "typ zasobu: brak"} /{" "}
-                {row.change_resource_id ?? "brak ID"}
+                {row.change_resource_label || "zasób zmiany do sprawdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.resource_change_operation_label || "operacja: brak"}
@@ -1697,7 +1696,9 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
               <td className="py-2 pr-4 text-slate-700">
                 {row.client_type_label || "źródło zmiany: brak"}
               </td>
-              <td className="py-2 pr-4 text-slate-700">{row.campaign_id ?? "brak"}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.campaign_label || "brak kampanii w odczycie"}
+              </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.changed_field_labels.length > 0
                   ? row.changed_field_labels.slice(0, 4).join(", ")
@@ -1791,10 +1792,10 @@ function AdsChangeImpactReadinessCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h4 className="text-sm font-semibold text-ink">
-            {row.campaign_name ?? row.campaign_id ?? "kampania bez nazwy"}
+            {row.campaign_label || "brak kampanii w odczycie"}
           </h4>
           <p className="mt-1 text-xs text-slate-500">
-            {row.change_event_id ? `zmiana ${row.change_event_id}` : "brak ID zmiany"} /{" "}
+            {row.change_event_label || "brak identyfikatora zmiany w odczycie"} /{" "}
             {row.change_date_time ?? "brak daty"}
           </p>
         </div>
@@ -1879,7 +1880,7 @@ function AdsSearchTermReviewSummaryPanel({
                 {contract.campaign_review_rows.slice(0, 6).map((row) => (
                   <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name ?? "campaign"}`}>
                     <td className="py-2 pl-3 pr-3 font-medium text-ink">
-                      {row.campaign_name ?? row.campaign_id ?? "brak"}
+                      {row.campaign_label || "brak kampanii w odczycie"}
                     </td>
                     <td className="py-2 pr-3 text-slate-700">{row.search_term_count}</td>
                     <td className="py-2 pr-3 text-slate-700">
@@ -1909,7 +1910,7 @@ function AdsSearchTermReviewSummaryPanel({
               >
                 <div className="text-sm font-medium text-ink">{row.search_term}</div>
                 <div className="mt-1 text-xs text-slate-600">
-                  {row.campaign_name ?? row.campaign_id ?? "brak kampanii"} / koszt{" "}
+                  {row.campaign_label || "brak kampanii w odczycie"} / koszt{" "}
                   {adsCost(row.cost_micros, currencyCode)} / konwersje{" "}
                   {adsNumber(row.conversions)}
                 </div>
@@ -1969,10 +1970,10 @@ function AdsSearchTermRowsTable({
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.search_term}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_name ?? row.campaign_id ?? "brak"}
+                {row.campaign_label || "brak kampanii w odczycie"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+                {row.ad_group_label || "brak grupy reklam w odczycie"}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
@@ -2089,10 +2090,10 @@ function AdsSearchTermSafetyRowsTable({
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.search_term}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_name ?? row.campaign_id ?? "brak"}
+                {row.campaign_label || "brak kampanii w odczycie"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+                {row.ad_group_label || "brak grupy reklam w odczycie"}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks_90d)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions_90d)}</td>
@@ -2145,10 +2146,10 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
                 {row.negative_label || row.criterion_status_label || "status: brak"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_name ?? row.campaign_id ?? "brak"}
+                {row.campaign_label || "brak kampanii w odczycie"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+                {row.ad_group_label || "brak grupy reklam w odczycie"}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {formatAdsEvidenceCount(row.evidence_ids.length)}
@@ -2196,8 +2197,8 @@ function AdsNegativeKeywordCandidatesPanel({
               <div>
                 <h4 className="text-sm font-semibold text-ink">{candidate.search_term}</h4>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {candidate.campaign_name ?? candidate.campaign_id ?? "kampania"} /{" "}
-                  {candidate.ad_group_name ?? candidate.ad_group_id ?? "grupa reklam"}
+                  {candidate.campaign_label || "brak kampanii w odczycie"} /{" "}
+                  {candidate.ad_group_label || "brak grupy reklam w odczycie"}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
