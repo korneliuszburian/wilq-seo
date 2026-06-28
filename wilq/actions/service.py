@@ -410,14 +410,15 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 connector_evidence_id("google_search_console"),
             ],
             human_diagnosis=(
-                "Content jest core workflow WILQ. W clean runtime WILQ może "
-                "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki GSC/WordPress/GA4 "
-                "nie dostarczą URL/query evidence."
+                "Treści są jednym z głównych obszarów pracy WILQ. WILQ może "
+                "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki "
+                "GSC, WordPress i GA4 nie dostarczą danych o publicznych URL, "
+                "zapytaniach, stronach i zachowaniu użytkowników."
             ),
             recommended_reason=(
-                "Zbierz GSC query/page i spis treści WordPress, potem klasyfikuj "
-                "zachowanie, odświeżenie, scalenie, nową treść albo blokadę bez "
-                "obietnic leadów ani rankingów."
+                "Zbierz dane GSC dla zapytań i stron oraz spis treści WordPress, "
+                "potem klasyfikuj: zachować, odświeżyć, scalić, utworzyć albo "
+                "zablokować bez obietnic leadów ani rankingów."
             ),
             payload={
                 "action_type": "wordpress_content_refresh",
@@ -448,16 +449,17 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "canonical_gate_status": "blocked_until_inventory_review",
                         "duplicate_gate_status": "create_blocked_until_duplicate_check",
                         "content_gate_summary": (
-                            "Brak query/page i spisu treści WordPress w świeżym runtime. "
-                            "Najpierw zbierz dane źródłowe, potem oceniaj zachowanie, "
-                            "odświeżenie, scalenie albo utworzenie treści."
+                            "Brak danych GSC dla zapytań i stron oraz spisu treści "
+                            "WordPress w świeżym odczycie. Najpierw zbierz dane "
+                            "źródłowe, potem oceniaj zachowanie, odświeżenie, "
+                            "scalenie albo utworzenie treści."
                         ),
                         "wordpress_inventory_match": "missing",
                         "decision_options": ["block"],
                         "metric_snapshot": {},
                         "brief_goal": (
-                            "Zablokuj pisanie treści do czasu zebrania GSC "
-                            "i WordPress inventory."
+                            "Zablokuj pisanie treści do czasu zebrania danych GSC "
+                            "i spisu treści WordPress."
                         ),
                         "intent": "brak intencji do pisania bez danych źródłowych",
                         "content_angle": (
@@ -497,8 +499,8 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "human_confirm_before_wordpress_write",
                         ],
                         "source_facts": [
-                            "brak GSC query/page facts",
-                            "brak WordPress inventory facts",
+                            "brak danych GSC dla zapytań i stron",
+                            "brak spisu treści WordPress",
                         ],
                         "missing_evidence": [
                             "brak publicznego URL",

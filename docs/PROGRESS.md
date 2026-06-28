@@ -144,6 +144,8 @@ Date: 2026-06-28
   English/Polish mixed terms into primary skill answers.
 - Opportunity fallback copy and Content vendor-read blockers now use Polish
   source-data wording instead of credential/vendor/query-page/playbook jargon.
+- Seeded content refresh action copy now uses Polish source-data wording instead
+  of `URL/query evidence`, `GSC query/page` or WordPress inventory jargon.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -204,6 +206,7 @@ Date: 2026-06-28
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunities_are_derived_from_evidence_and_rule_mappings or content_diagnostics_blocks_until_vendor_read_when_no_content_evidence" --maxfail=3`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "actions_api_drops_legacy_content_review_audit_terms or content_refresh_empty_state_uses_operator_source_language" --maxfail=3`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

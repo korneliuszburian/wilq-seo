@@ -2431,6 +2431,31 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
     content_action = next(
         action for action in actions if action["id"] == "act_prepare_content_refresh_queue"
     )
+    visible_content_copy = "\n".join(
+        [
+            content_action["human_diagnosis"],
+            content_action["recommended_reason"],
+            *[
+                item["content_gate_summary"]
+                for item in content_action["payload"]["content_brief_preview"]
+            ],
+            *[
+                fact
+                for item in content_action["payload"]["content_brief_preview"]
+                for fact in item["source_facts"]
+            ],
+        ]
+    )
+    for stale_term in (
+        "URL/query evidence",
+        "GSC query/page",
+        "query/page facts",
+        "WordPress inventory facts",
+        "WordPress inventory",
+        "core workflow",
+        "clean runtime",
+    ):
+        assert stale_term not in visible_content_copy
     serialized = json.dumps(content_action["audit_events"], ensure_ascii=False)
     for stale_term in (
         "target_site",
@@ -2448,6 +2473,42 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
         for event in content_action["audit_events"]
     )
     assert content_action["review_gate"]["last_review_outcome"] is None
+
+
+def test_content_refresh_empty_state_uses_operator_source_language(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_empty_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_empty_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+
+    response = client.get("/api/actions/act_prepare_content_refresh_queue")
+
+    assert response.status_code == 200
+    action = response.json()
+    preview = action["payload"]["content_brief_preview"][0]
+    visible_copy = "\n".join(
+        [
+            action["human_diagnosis"],
+            action["recommended_reason"],
+            preview["content_gate_summary"],
+            preview["brief_goal"],
+            *preview["source_facts"],
+        ]
+    )
+    for stale_term in (
+        "URL/query evidence",
+        "GSC query/page",
+        "query/page facts",
+        "WordPress inventory facts",
+        "WordPress inventory",
+        "core workflow",
+        "clean runtime",
+    ):
+        assert stale_term not in visible_copy
+    assert "dane GSC dla zapytań i stron" in visible_copy
+    assert "spis treści WordPress" in visible_copy
 
 
 def test_content_strategist_context_pack_preserves_reviewed_draft_preview(

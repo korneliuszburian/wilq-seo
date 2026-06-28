@@ -130,6 +130,8 @@ use cleaned Polish operator language.
   English/Polish mixed terms into primary skill answers.
 - Opportunity fallback copy and Content vendor-read blockers now use Polish
   source-data wording instead of credential/vendor/query-page/playbook jargon.
+- Seeded content refresh action copy now uses Polish source-data wording instead
+  of `URL/query evidence`, `GSC query/page` or WordPress inventory jargon.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.
