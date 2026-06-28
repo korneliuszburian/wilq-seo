@@ -101,7 +101,7 @@ WORKFLOW_BLUEPRINTS: tuple[WorkflowBlueprint, ...] = (
         ),
         source_connectors=("google_ads",),
         missing_contracts=("ngram_cluster_contract", "90_day_cross_check_by_ngram"),
-        blocked_claims=("zapis wykluczeń", "werdykt przepalonego budżetu"),
+        blocked_claims=("zapis wykluczeń", "zmarnowany budżet"),
     ),
     WorkflowBlueprint(
         id="ads_custom_segments",

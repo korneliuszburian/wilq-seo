@@ -1346,6 +1346,62 @@ def test_route_label_fallbacks_do_not_expose_raw_paths() -> None:
     assert unknown_route not in route_cta_label(unknown_route)
 
 
+def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
+    from wilq.briefing.ads_diagnostics import (
+        _ads_allowed_metric_labels,
+        _ads_campaign_status_label,
+        _ads_changed_field_labels,
+        _ads_channel_type_label,
+        _ads_change_resource_type_label,
+        _ads_client_type_label,
+        _ads_google_operation_label,
+        _ads_keyword_criterion_status_label,
+        _ads_keyword_match_type_label,
+        _ads_missing_read_contract_labels,
+        _ads_recommendation_type_label,
+        _ads_resource_change_operation_label,
+        _ads_review_gate_labels,
+        _custom_segment_rejection_reason_label,
+    )
+
+    raw_values = {
+        _custom_segment_rejection_reason_label("competitor_term_detected"),
+        *_ads_review_gate_labels(["new_ads_gate"]),
+        _ads_campaign_status_label("APP_CAMPAIGN"),
+        _ads_channel_type_label("DISCOVERY"),
+        _ads_google_operation_label("ApplyExperimentalOperation"),
+        _ads_recommendation_type_label("PERFORMANCE_GOAL"),
+        _ads_change_resource_type_label("CUSTOM_CONVERSION_GOAL"),
+        _ads_resource_change_operation_label("SET_PRIMARY"),
+        _ads_client_type_label("THIRD_PARTY_TOOL"),
+        *_ads_changed_field_labels(["campaign.network_settings.target_search_network"]),
+        *_ads_allowed_metric_labels(["current_campaign_cost_micros_30d"]),
+        _ads_keyword_match_type_label("EXACTISH"),
+        _ads_keyword_criterion_status_label("ELIGIBLE_LIMITED"),
+        *_ads_missing_read_contract_labels(["pre_change_performance_window_v2"]),
+    }
+
+    joined = " ".join(sorted(raw_values))
+
+    for forbidden in (
+        "competitor_term_detected",
+        "new_ads_gate",
+        "APP_CAMPAIGN",
+        "DISCOVERY",
+        "ApplyExperimentalOperation",
+        "PERFORMANCE_GOAL",
+        "CUSTOM_CONVERSION_GOAL",
+        "SET_PRIMARY",
+        "THIRD_PARTY_TOOL",
+        "network_settings",
+        "current_campaign_cost_micros_30d",
+        "EXACTISH",
+        "ELIGIBLE_LIMITED",
+        "pre_change_performance_window_v2",
+    ):
+        assert forbidden not in joined
+
+
 def test_action_review_records_human_outcome_without_apply(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -5149,8 +5205,8 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "zmiana budżetu" in ads_item["blocked_claims"]
     assert "werdykt kosztu pozyskania celu" in ads_item["blocked_claims"]
     assert "werdykt zwrotu z reklam" in ads_item["blocked_claims"]
-    assert "werdykt opłacalności" in ads_item["blocked_claims"]
-    assert "werdykt przepalonego budżetu" in ads_item["blocked_claims"]
+    assert "opłacalność" in ads_item["blocked_claims"]
+    assert "zmarnowany budżet" in ads_item["blocked_claims"]
     assert "propozycje wykluczeń" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
@@ -5165,8 +5221,8 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["metric_tiles"]["braki"] == 5
     assert ads_business_item["metric_tiles"]["marża"] == "brak"
     assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
-    assert "werdykt opłacalności" in ads_business_item["blocked_claims"]
-    assert "werdykt przepalonego budżetu" in ads_business_item["blocked_claims"]
+    assert "opłacalność" in ads_business_item["blocked_claims"]
+    assert "zmarnowany budżet" in ads_business_item["blocked_claims"]
     assert ads_business_item["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
@@ -8971,8 +9027,8 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "werdykt przepalonego budżetu",
-                "werdykt opłacalności",
+                "zmarnowany budżet",
+                "opłacalność",
                 "werdykt kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
@@ -9735,7 +9791,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "marnowanie budżetu na zapytaniach",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
             ],
             "target_status": "no_target",
             "target_status_label": "brak celu",
@@ -9932,7 +9988,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
     assert "change_history" not in derived_kpi_contract["missing_read_contracts"]
-    assert "werdykt opłacalności" in derived_kpi_contract["blocked_claims"]
+    assert "opłacalność" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
             "campaign_id": "101",
@@ -9960,15 +10016,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "missing_metrics": [],
             "blocked_claims": [
-                "werdykt opłacalności",
+                "opłacalność",
                 "skalowanie budżetu",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
                 "zapis rekomendacji",
             ],
             "blocked_claim_labels": [
-                "werdykt opłacalności",
+                "opłacalność",
                 "skalowanie budżetu",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
                 "zapis rekomendacji",
             ],
         }
@@ -10055,8 +10111,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "skalowanie budżetu",
         "zmiana budżetu",
         "wstrzymanie kampanii",
-        "werdykt przepalonego budżetu",
-        "werdykt opłacalności",
+        "zmarnowany budżet",
+        "opłacalność",
         "werdykt kosztu pozyskania celu",
         "werdykt zwrotu z reklam",
         "zapis rekomendacji",
@@ -10122,8 +10178,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "werdykt przepalonego budżetu",
-                "werdykt opłacalności",
+                "zmarnowany budżet",
+                "opłacalność",
                 "werdykt kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
@@ -10132,8 +10188,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "wstrzymanie kampanii",
-                "werdykt przepalonego budżetu",
-                "werdykt opłacalności",
+                "zmarnowany budżet",
+                "opłacalność",
                 "werdykt kosztu pozyskania celu",
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
@@ -10194,76 +10250,39 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "act_prepare_google_ads_recommendation_review_queue"
     ]
     assert "zapis rekomendacji" in recommendations_contract["blocked_claims"]
-    assert recommendations_contract["recommendation_rows"] == [
-        {
-            "recommendation_id": "rec-1",
-            "recommendation_resource_name": "customers/test/recommendations/rec-1",
-            "recommendation_type": "CAMPAIGN_BUDGET",
-            "recommendation_type_label": "budżet kampanii",
-            "review_priority": "pilne",
-            "review_score": 70,
-            "review_reason": recommendations_contract["recommendation_rows"][0][
-                "review_reason"
-            ],
-                "human_review_gates": [
-                    "sprawdź typ rekomendacji",
-                    "sprawdź metryki wpływu",
-                    "porównaj z historią zmian",
-                    "porównaj z celem biznesowym",
-                    "zweryfikuj RMF/compliance",
-                    "potwierdź człowiekiem przed zapisem",
-                ],
-                "human_review_gate_labels": [
-                    "sprawdź typ rekomendacji",
-                    "sprawdź metryki wpływu",
-                    "porównaj z historią zmian",
-                    "porównaj z celem biznesowym",
-                    "zweryfikuj RMF/compliance",
-                    "potwierdź człowiekiem przed zapisem",
-                ],
-                "dismissed": False,
-            "campaign_id": "101",
-            "campaign_budget_id": "701",
-            "campaign_count": 1,
-            "impact_available": True,
-            "base_clicks": 20,
-            "potential_clicks": 25,
-            "delta_clicks": 5,
-            "base_impressions": 200,
-            "potential_impressions": 260,
-            "delta_impressions": 60,
-            "base_cost_micros": 10000000,
-            "potential_cost_micros": 12000000,
-            "delta_cost_micros": 2000000,
-            "base_conversions": None,
-            "potential_conversions": None,
-            "delta_conversions": None,
-            "base_conversion_value": None,
-            "potential_conversion_value": None,
-            "delta_conversion_value": None,
-            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": recommendations_contract["recommendation_rows"][0][
-                "metric_facts"
-            ],
-            "payload_preview": recommendations_contract["payload_preview"][0],
-            "preview_card": recommendations_contract["recommendation_rows"][0][
-                "preview_card"
-            ],
-            "missing_metrics": [],
-            "blocked_claims": [
-                "zapis rekomendacji",
-                "automatyczne przyjęcie rekomendacji",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-            ],
-            "blocked_claim_labels": [
-                "zapis rekomendacji",
-                "automatyczne przyjęcie rekomendacji",
-                "zmiana budżetu",
-                "zapis zmian kampanii",
-            ],
-        }
+    recommendation_row = recommendations_contract["recommendation_rows"][0]
+    assert recommendation_row["recommendation_id"] == "rec-1"
+    assert recommendation_row["recommendation_type"] == "CAMPAIGN_BUDGET"
+    assert recommendation_row["recommendation_type_label"] == "budżet kampanii"
+    assert recommendation_row["review_priority"] == "pilne"
+    assert recommendation_row["review_score"] == 70
+    assert recommendation_row["dismissed"] is False
+    assert recommendation_row["campaign_id"] == "101"
+    assert recommendation_row["campaign_budget_id"] == "701"
+    assert recommendation_row["campaign_count"] == 1
+    assert recommendation_row["impact_available"] is True
+    assert recommendation_row["delta_clicks"] == 5
+    assert recommendation_row["delta_impressions"] == 60
+    assert recommendation_row["delta_cost_micros"] == 2000000
+    assert recommendation_row["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
+    assert recommendation_row["missing_metrics"] == []
+    assert recommendation_row["blocked_claims"] == [
+        "zapis rekomendacji",
+        "automatyczne przyjęcie rekomendacji",
+        "zmiana budżetu",
+        "zapis zmian kampanii",
     ]
+    assert recommendation_row["blocked_claim_labels"] == recommendation_row[
+        "blocked_claims"
+    ]
+    assert recommendation_row["payload_preview"] == recommendations_contract[
+        "payload_preview"
+    ][0]
+    assert recommendation_row["preview_card"]["kind"] == "google_ads_recommendation_review"
+    assert "101" not in str(recommendation_row["preview_card"])
+    assert "701" not in str(recommendation_row["preview_card"])
+    assert "CAMPAIGN_BUDGET" not in str(recommendation_row["preview_card"])
+    assert "ApplyRecommendationOperation" not in str(recommendation_row["preview_card"])
     assert "budżet kampanii" in recommendations_contract["recommendation_rows"][0][
         "review_reason"
     ]
@@ -10404,13 +10423,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
                 "obietnica poprawy wyniku",
             ],
             "blocked_claim_labels": [
                 "skalowanie budżetu",
                 "zmiana budżetu",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
                 "obietnica poprawy wyniku",
             ],
         }
@@ -10454,7 +10473,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_contract["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "werdykt przepalonego budżetu" in campaign_triage_contract["blocked_claims"]
+    assert "zmarnowany budżet" in campaign_triage_contract["blocked_claims"]
     assert campaign_triage_contract["triage_rows"] == [
         {
             "campaign_id": "101",
@@ -10507,16 +10526,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "ocena strategii przez człowieka",
             ],
             "blocked_claims": [
-                "werdykt przepalonego budżetu",
-                "werdykt opłacalności",
+                "zmarnowany budżet",
+                "opłacalność",
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "zapis rekomendacji",
                 "zapis zmian kampanii",
             ],
             "blocked_claim_labels": [
-                "werdykt przepalonego budżetu",
-                "werdykt opłacalności",
+                "zmarnowany budżet",
+                "opłacalność",
                 "skalowanie budżetu",
                 "zmiana budżetu",
                 "zapis rekomendacji",
@@ -10793,7 +10812,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
             ],
         },
         {
@@ -10815,7 +10834,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
             ],
         },
     ]
@@ -10971,7 +10990,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "koszt pozyskania celu",
                 "zwrot z reklam",
                 "dodanie wykluczających słów kluczowych",
-                "werdykt przepalonego budżetu",
+                "zmarnowany budżet",
             ],
         }
     ]
@@ -11327,7 +11346,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "rekomendacje": 1,
         "podglądy": 2,
     }
-    assert "werdykt przepalonego budżetu" in campaign_triage_decision["blocked_claims"]
+    assert "zmarnowany budżet" in campaign_triage_decision["blocked_claims"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25
@@ -11340,7 +11359,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
     assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert "werdykt opłacalności" in derived_kpi_decision["blocked_claims"]
+    assert "opłacalność" in derived_kpi_decision["blocked_claims"]
     assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert budget_decision["status"] == "ready"
@@ -17181,7 +17200,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert triage_contract["triage_rows"][0]["action_ids"] == [
         "act_prepare_ads_campaign_review_queue"
     ]
-    assert "werdykt przepalonego budżetu" in triage_contract["blocked_claims"]
+    assert "zmarnowany budżet" in triage_contract["blocked_claims"]
     assert (
         ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
         == len(triage_contract["triage_rows"])

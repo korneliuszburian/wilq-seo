@@ -217,7 +217,7 @@ def _metric_dimension_value_label(value: str) -> str:
         "place_inventory": "spis miejsc",
         "reviews": "opinie",
     }
-    return labels.get(value, value)
+    return labels.get(value, "wartość wymiaru do sprawdzenia")
 
 
 class Opportunity(BaseModel):
@@ -895,7 +895,7 @@ def _marketing_risk_label(risk: ActionRisk | str) -> str:
         "high": "wysokie ryzyko",
         "critical": "krytyczne ryzyko",
     }
-    return labels.get(value, value)
+    return labels.get(value, "ryzyko do sprawdzenia")
 
 
 def _tactical_domain_label(domain: OpportunityDomain) -> str:
@@ -905,7 +905,7 @@ def _tactical_domain_label(domain: OpportunityDomain) -> str:
         OpportunityDomain.merchant: "Merchant",
         OpportunityDomain.content: "Content",
     }
-    return labels.get(domain, getattr(domain, "value", "powiązany obszar"))
+    return labels.get(domain, "powiązany obszar")
 
 
 def _tactical_intent_label(intent: str) -> str:
@@ -937,7 +937,7 @@ def _tactical_dimension_label(value: str) -> str:
         "wordpress_match_confidence": "pewność dopasowania",
         "gsc_page_query_count": "liczba zapytań GSC",
     }
-    return labels.get(value, value.replace("_", " "))
+    return labels.get(value, "wymiar do sprawdzenia")
 
 
 def _blocked_claim_label(value: str) -> str:
@@ -950,20 +950,20 @@ def _blocked_claim_label(value: str) -> str:
         "feed fix candidate": "propozycja naprawy feedu",
         "jakość leadów": "jakość leadów",
         "lead quality": "jakość leadów",
-        "marnowanie budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
+        "marnowanie budżetu na zapytaniach": "marnowanie budżetu na zapytaniach",
         "ocena atrybucji": "ocena atrybucji",
         "ocena kosztu pozyskania celu": "werdykt kosztu pozyskania celu",
         "ocena marży": "ocena marży",
-        "ocena opłacalności": "werdykt opłacalności",
-        "opłacalność": "werdykt opłacalności",
+        "ocena opłacalności": "opłacalność",
+        "opłacalność": "opłacalność",
         "przychód": "twierdzenie o przychodzie",
         "propozycje wykluczeń": "propozycje wykluczeń",
-        "spadek konwersji": "werdykt spadku konwersji",
+        "spadek konwersji": "spadek konwersji",
         "utrata konwersji": "utrata konwersji",
         "werdykt zwrotu z reklam": "werdykt zwrotu z reklam",
         "wpływ na przychód": "twierdzenie o wpływie na przychód",
         "wpływ zmian": "wpływ zmian",
-        "współczynnik konwersji": "werdykt współczynnika konwersji",
+        "współczynnik konwersji": "współczynnik konwersji",
         "wzrost konwersji": "obietnica wzrostu konwersji",
         "zapis rekomendacji": "zapis rekomendacji",
         "zapis w GA4": "zapis w GA4",
@@ -973,10 +973,10 @@ def _blocked_claim_label(value: str) -> str:
         "wpływ na revenue": "twierdzenie o wpływie na przychód",
         "CPA": "werdykt kosztu pozyskania celu",
         "zwrot z reklam": "werdykt zwrotu z reklam",
-        "zmarnowany budżet": "werdykt przepalonego budżetu",
+        "zmarnowany budżet": "zmarnowany budżet",
         "naprawiony pomiar": "twierdzenie o naprawionym pomiarze",
     }
-    return labels.get(value, value)
+    return labels.get(value, "blokada do sprawdzenia")
 
 
 class MarketingBriefSection(BaseModel):
@@ -2230,7 +2230,7 @@ def _ads_read_contract_status_label(status: str) -> str:
         "ready": "gotowe",
         "blocked": "zablokowane",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status do sprawdzenia")
 
 
 class AdsNegativeKeywordPayloadPreview(BaseModel):
@@ -3641,4 +3641,4 @@ def _demand_gen_status_label(status: str) -> str:
         "ready": "gotowe",
         "blocked": "zablokowane",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status do sprawdzenia")

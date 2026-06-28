@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Iterable
 from typing import Any, Literal, cast
@@ -6372,7 +6373,7 @@ def _strategy_review_label(status: str) -> str:
         "rejected": "odrzucone",
         "deferred": "odłożone",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status oceny strategii do sprawdzenia")
 
 
 def _clean_metric_tiles(
@@ -6586,6 +6587,12 @@ def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> No
     safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
 
 
+def _ads_preview_card_id(kind: str, source_id: str) -> str:
+    digest = hashlib.sha1(source_id.encode("utf-8")).digest()
+    suffix = "".join(chr(ord("a") + byte % 26) for byte in digest[:8])
+    return f"{kind}_card_{suffix}"
+
+
 def _budget_preview_card(
     preview: AdsBudgetApplyPreview,
     currency_code: str | None,
@@ -6642,7 +6649,7 @@ def _budget_preview_card(
             }
         )
     return ActionPreviewCardViewModel(
-        id=f"{preview.id}_card",
+        id=_ads_preview_card_id("google_ads_budget_review", preview.id),
         kind="google_ads_budget_review",
         title_label="Budżet kampanii do sprawdzenia",
         subtitle_label="ocena budżetu bez zapisu zmian",
@@ -6725,7 +6732,7 @@ def _recommendation_preview_card(
             }
         )
     return ActionPreviewCardViewModel(
-        id=f"{preview.id}_card",
+        id=_ads_preview_card_id("google_ads_recommendation_review", preview.id),
         kind="google_ads_recommendation_review",
         title_label="Rekomendacja Google Ads do sprawdzenia",
         subtitle_label="ocena rekomendacji bez zapisu zmian",
@@ -6871,7 +6878,7 @@ def _negative_keyword_preview_card(
             }
         )
     return ActionPreviewCardViewModel(
-        id=f"{preview.id}_card",
+        id=_ads_preview_card_id("google_ads_negative_keyword_review", preview.id),
         kind="google_ads_negative_keyword_review",
         title_label="Wykluczenie słowa do sprawdzenia",
         subtitle_label="ocena intencji zapytania bez zapisu zmian",
@@ -7050,7 +7057,7 @@ def _custom_segment_preview_card(
             }
         )
     return ActionPreviewCardViewModel(
-        id=f"{preview.id}_card",
+        id=_ads_preview_card_id("google_ads_custom_segment_review", preview.id),
         kind="google_ads_custom_segment_review",
         title_label="Segment odbiorców do sprawdzenia",
         subtitle_label="ocena segmentu bez zapisu zmian",
@@ -7094,11 +7101,15 @@ def _custom_segment_rejection_reason_label(reason: str) -> str:
         "short_or_low_signal": "za krótka fraza albo za słaby sygnał",
         "no_click_or_conversion_signal": "brak kliknięć albo sygnału celu",
     }
-    return labels.get(reason, reason.replace("_", " "))
+    return labels.get(reason, "odrzucona fraza do sprawdzenia")
 
 
 def _ads_review_gate_labels(gates: Iterable[object]) -> list[str]:
-    return [ADS_REVIEW_GATE_LABELS.get(str(gate), str(gate)) for gate in gates if str(gate)]
+    return [
+        ADS_REVIEW_GATE_LABELS.get(str(gate), "sprawdzenie przez operatora")
+        for gate in gates
+        if str(gate)
+    ]
 
 
 def _ads_business_use_labels(values: Iterable[object]) -> list[str]:
@@ -7124,7 +7135,11 @@ def _ads_business_use_labels(values: Iterable[object]) -> list[str]:
             "ocena opłacalności bez sprawdzenia modelu wartości"
         ),
     }
-    return [labels.get(str(value), str(value)) for value in values if str(value)]
+    return [
+        labels.get(str(value), "zastosowanie biznesowe do sprawdzenia")
+        for value in values
+        if str(value)
+    ]
 
 
 def _ads_strategy_review_status_label(status: object) -> str:
@@ -7136,7 +7151,7 @@ def _ads_strategy_review_status_label(status: object) -> str:
         "deferred": "odroczone",
     }
     value = str(status)
-    return labels.get(value, value)
+    return labels.get(value, "status oceny strategii do sprawdzenia")
 
 
 def _ads_campaign_status_label(status: object | None) -> str:
@@ -7150,7 +7165,7 @@ def _ads_campaign_status_label(status: object | None) -> str:
         "UNSPECIFIED": "status nieokreślony",
     }
     value = str(status)
-    return labels.get(value, value)
+    return labels.get(value, "status kampanii do sprawdzenia")
 
 
 def _ads_channel_type_label(channel_type: object | None) -> str:
@@ -7169,7 +7184,7 @@ def _ads_channel_type_label(channel_type: object | None) -> str:
         "UNSPECIFIED": "kanał nieokreślony",
     }
     value = str(channel_type)
-    return labels.get(value, value)
+    return labels.get(value, "kanał kampanii do sprawdzenia")
 
 
 def _ads_budget_period_label(period: object | None) -> str:
@@ -7183,7 +7198,7 @@ def _ads_budget_period_label(period: object | None) -> str:
         "UNSPECIFIED": "okres nieokreślony",
     }
     value = str(period)
-    return labels.get(value, value)
+    return labels.get(value, "okres budżetu do sprawdzenia")
 
 
 def _ads_google_operation_label(operation_type: object) -> str:
@@ -7192,7 +7207,7 @@ def _ads_google_operation_label(operation_type: object) -> str:
         "ApplyRecommendationOperation": "zastosowanie rekomendacji Google Ads",
     }
     value = str(operation_type)
-    return labels.get(value, value)
+    return labels.get(value, "operacja Google Ads do sprawdzenia")
 
 
 def _ads_recommendation_type_label(recommendation_type: object) -> str:
@@ -7212,7 +7227,7 @@ def _ads_recommendation_type_label(recommendation_type: object) -> str:
         "UNSPECIFIED": "typ rekomendacji nieokreślony",
     }
     value = str(recommendation_type)
-    return labels.get(value, value.replace("_", " ").lower())
+    return labels.get(value, "typ rekomendacji do sprawdzenia")
 
 
 def _ads_change_resource_type_label(value: object | None) -> str:
@@ -7231,7 +7246,7 @@ def _ads_change_resource_type_label(value: object | None) -> str:
         "UNSPECIFIED": "typ zasobu nieokreślony",
     }
     text = str(value)
-    return labels.get(text, text.replace("_", " ").lower())
+    return labels.get(text, "typ zasobu Google Ads do sprawdzenia")
 
 
 def _ads_resource_change_operation_label(value: object | None) -> str:
@@ -7245,7 +7260,7 @@ def _ads_resource_change_operation_label(value: object | None) -> str:
         "UNSPECIFIED": "operacja nieokreślona",
     }
     text = str(value)
-    return labels.get(text, text.replace("_", " ").lower())
+    return labels.get(text, "typ zmiany Google Ads do sprawdzenia")
 
 
 def _ads_client_type_label(value: object | None) -> str:
@@ -7260,7 +7275,7 @@ def _ads_client_type_label(value: object | None) -> str:
         "UNSPECIFIED": "źródło zmiany nieokreślone",
     }
     text = str(value)
-    return labels.get(text, text.replace("_", " ").lower())
+    return labels.get(text, "źródło zmiany Google Ads do sprawdzenia")
 
 
 def _ads_changed_field_labels(fields: Iterable[object]) -> list[str]:
@@ -7282,7 +7297,7 @@ def _ads_changed_field_labels(fields: Iterable[object]) -> list[str]:
         text = str(field)
         if not text:
             continue
-        result.append(labels.get(text, text.replace("_", " ").replace(".", " / ")))
+        result.append(labels.get(text, "pole zmiany Google Ads do sprawdzenia"))
     return result
 
 
@@ -7296,7 +7311,11 @@ def _ads_allowed_metric_labels(metrics: Iterable[object]) -> list[str]:
         "current_campaign_conversions": "bieżące konwersje kampanii",
         "current_campaign_conversion_value": "bieżąca wartość konwersji kampanii",
     }
-    return [labels.get(str(metric), str(metric)) for metric in metrics if str(metric)]
+    return [
+        labels.get(str(metric), "metryka Google Ads do sprawdzenia")
+        for metric in metrics
+        if str(metric)
+    ]
 
 
 def _ads_confidence_label(confidence: object) -> str:
@@ -7306,7 +7325,7 @@ def _ads_confidence_label(confidence: object) -> str:
         "high": "wysoka",
     }
     value = str(confidence)
-    return labels.get(value, value)
+    return labels.get(value, "pewność do sprawdzenia")
 
 
 def _ads_validation_status_label(status: object) -> str:
@@ -7315,7 +7334,7 @@ def _ads_validation_status_label(status: object) -> str:
         "blocked": "zablokowane",
     }
     value = str(status)
-    return labels.get(value, value)
+    return labels.get(value, "status sprawdzenia do sprawdzenia")
 
 
 def _ads_negative_keyword_safety_status_label(status: object) -> str:
@@ -7325,7 +7344,7 @@ def _ads_negative_keyword_safety_status_label(status: object) -> str:
         "blocked": "zablokowane",
     }
     value = str(status)
-    return labels.get(value, value)
+    return labels.get(value, "status bezpieczeństwa wykluczenia do sprawdzenia")
 
 
 def _ads_negative_keyword_level_label(level: object) -> str:
@@ -7334,7 +7353,7 @@ def _ads_negative_keyword_level_label(level: object) -> str:
         "campaign_review_required": "poziom do decyzji człowieka",
     }
     value = str(level)
-    return labels.get(value, value)
+    return labels.get(value, "poziom wykluczenia do sprawdzenia")
 
 
 def _ads_keyword_match_type_label(match_type: object) -> str:
@@ -7346,7 +7365,7 @@ def _ads_keyword_match_type_label(match_type: object) -> str:
         "UNSPECIFIED": "typ dopasowania nieokreślony",
     }
     value = str(match_type)
-    return labels.get(value, value.replace("_", " ").lower())
+    return labels.get(value, "typ dopasowania słowa do sprawdzenia")
 
 
 def _ads_keyword_criterion_status_label(status: object | None) -> str:
@@ -7360,7 +7379,7 @@ def _ads_keyword_criterion_status_label(status: object | None) -> str:
     if status is None or str(status) == "":
         return "status: brak"
     value = str(status)
-    return labels.get(value, value.replace("_", " ").lower())
+    return labels.get(value, "status słowa do sprawdzenia")
 
 
 def _ads_optimizer_mode_label(mode: object) -> str:
@@ -7368,7 +7387,7 @@ def _ads_optimizer_mode_label(mode: object) -> str:
         "review_only": "ocena bez zapisu",
     }
     value = str(mode)
-    return labels.get(value, value)
+    return labels.get(value, "tryb pracy Google Ads do sprawdzenia")
 
 
 def _ads_optimizer_status_label(status: object) -> str:
@@ -7377,7 +7396,7 @@ def _ads_optimizer_status_label(status: object) -> str:
         "blocked": "zablokowane",
     }
     value = str(status)
-    return labels.get(value, value)
+    return labels.get(value, "status optymalizacji do sprawdzenia")
 
 
 def _ads_optimizer_readiness_item_label(item_id: object) -> str:
@@ -7392,7 +7411,7 @@ def _ads_optimizer_readiness_item_label(item_id: object) -> str:
         "ads_apply_safety_gate": "bramka zapisu zmian",
     }
     value = str(item_id)
-    return labels.get(value, value)
+    return labels.get(value, "element gotowości Google Ads do sprawdzenia")
 
 
 def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
@@ -7441,7 +7460,11 @@ def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
         "search_term_view": "widok zapytań użytkowników",
         "zero_conversion_search_terms": "zapytania z zerową konwersją",
     }
-    return [labels.get(str(contract), str(contract)) for contract in contracts if str(contract)]
+    return [
+        labels.get(str(contract), "brakujący odczyt Ads do sprawdzenia")
+        for contract in contracts
+        if str(contract)
+    ]
 
 
 def _ads_status_label(status: object) -> str:
@@ -7452,7 +7475,7 @@ def _ads_status_label(status: object) -> str:
         "blocked": "zablokowane",
         "missing": "brak danych",
     }
-    return labels.get(value, value)
+    return labels.get(value, "status Google Ads do sprawdzenia")
 
 
 def _ads_decision_type_label(decision_type: object) -> str:
@@ -7474,7 +7497,7 @@ def _ads_decision_type_label(decision_type: object) -> str:
         "review_campaign_triage": "kolejność kampanii",
     }
     value = str(decision_type)
-    return labels.get(value, value)
+    return labels.get(value, "typ decyzji Google Ads do sprawdzenia")
 
 
 def _ads_decision_start_here_summary(
@@ -7586,7 +7609,7 @@ def _ads_risk_label(risk: object) -> str:
         "medium": "średnie",
         "low": "niskie",
     }
-    return labels.get(value, value)
+    return labels.get(value, "ryzyko Google Ads do sprawdzenia")
 
 
 def _ads_connector_status_label(status: str) -> str:
@@ -7595,7 +7618,7 @@ def _ads_connector_status_label(status: str) -> str:
         "missing_credentials": "brakuje dostępu",
         "disabled": "źródło wyłączone",
     }
-    return labels.get(status, f"status: {status}")
+    return labels.get(status, "status dostępu Google Ads do sprawdzenia")
 
 
 def _ads_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
@@ -7606,7 +7629,7 @@ def _ads_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
         "failed": "błąd",
         "running": "w toku",
     }
-    return labels.get(value, value)
+    return labels.get(value, "status odczytu Google Ads do sprawdzenia")
 
 
 def _ads_live_data_status_label(live_data_available: bool) -> str:

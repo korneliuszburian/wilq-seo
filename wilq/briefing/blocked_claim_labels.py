@@ -23,26 +23,26 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "link acquisition impact": "wpływ pozyskanych linków",
     "monthly performance verdict": "miesięczny werdykt skuteczności",
     "negative keyword addition": "dodanie wykluczających słów kluczowych",
-    "opłacalność": "werdykt opłacalności",
-    "ocena opłacalności": "werdykt opłacalności",
+    "opłacalność": "opłacalność",
+    "ocena opłacalności": "opłacalność",
     "recommendation applied": "wdrożona rekomendacja",
     "recommendation write": "zapis rekomendacji",
     "przychód": "twierdzenie o przychodzie",
     "marnowanie budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
     "spend": "wydatki reklamowe",
     "naprawiony pomiar": "twierdzenie o naprawionym pomiarze",
-    "zmarnowany budżet": "werdykt przepalonego budżetu",
+    "zmarnowany budżet": "zmarnowany budżet",
     "wpływ na przychód": "twierdzenie o wpływie na przychód",
     "wzrost konwersji": "obietnica wzrostu konwersji",
     "zwrot z reklam": "werdykt zwrotu z reklam",
-    "ocena zmarnowanego budżetu": "werdykt przepalonego budżetu",
+    "ocena zmarnowanego budżetu": "zmarnowany budżet",
 }
 
 
 def operator_blocked_claims(claims: Iterable[str]) -> list[str]:
     values: list[str] = []
     for claim in claims:
-        label = BLOCKED_CLAIM_LABELS.get(claim, claim.replace("_", " "))
+        label = BLOCKED_CLAIM_LABELS.get(claim, "blokada do sprawdzenia")
         if label and label not in values:
             values.append(label)
     return values

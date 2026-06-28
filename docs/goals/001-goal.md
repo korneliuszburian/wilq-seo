@@ -139,6 +139,15 @@ use the cleaned language.
 - Route labels now use one safe operator-label helper in Command Center and
   workflow registry. Unknown routes no longer fall back to raw route paths or
   generic fallback copy.
+- Ads diagnostics label fallbacks now use closed Polish labels for unknown
+  vendor enums, changed fields, missing read contracts, metrics and review
+  gates. Ads budget/recommendation preview cards no longer embed raw campaign or
+  budget IDs in their marketer-facing card IDs.
+- Ads blocked-claim source labels were cleaned from old verdict wording toward
+  direct labels such as `opłacalność` and `zmarnowany budżet`.
+- Shared Python schema fallbacks for marketing risk, tactical domains,
+  tactical dimensions, metric dimension values and Ads/Demand Gen read statuses
+  now use safe Polish fallback labels instead of raw enum values.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
@@ -152,13 +161,14 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Remove remaining scattered raw fallback paths in knowledge and Ads detail
-   corners by adding typed API/schema/view-model labels.
+2. Remove remaining scattered raw fallback paths in knowledge, Content, GA4,
+   Localo, Merchant and Ads helper modules by adding typed
+   API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Add typed contract/vendor-enum label registries so unknown read contracts and
-   vendor enums do not fall back to raw snake_case or English values in
-   marketer-facing copy.
+4. Add typed contract/vendor-enum label registries outside the already-cleaned
+   Ads diagnostics helper path so unknown read contracts and vendor enums do not
+   fall back to raw snake_case or English values in marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
