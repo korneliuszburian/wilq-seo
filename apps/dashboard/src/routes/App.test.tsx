@@ -4903,6 +4903,7 @@ const merchantDiagnostics = {
     evidence_ids: ["ev_refresh_merchant_feed"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_merchant_feed_issues"],
+    action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: [
       "ponowne zatwierdzenie produktu",
       "twierdzenie o odzyskanym przychodzie",
@@ -5001,6 +5002,7 @@ const merchantDiagnostics = {
       evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
       blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
       rationale:
@@ -5023,9 +5025,11 @@ const merchantDiagnostics = {
       next_step: "Przejdź do kolejki problemów i grupuj je po typie.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[2], metricFacts[3]],
       tactical_items: [],
       action_ids: ["act_review_merchant_feed_issues"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie"],
       blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie"],
       risk: "medium",
@@ -5043,9 +5047,11 @@ const merchantDiagnostics = {
       next_step: "Otwórz akcję `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[3]],
       tactical_items: [tacticalQueue.items[2]],
       action_ids: ["act_review_merchant_feed_issues"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
       blocked_claim_labels: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
       risk: "medium",
@@ -5060,6 +5066,7 @@ const merchantDiagnostics = {
   evidence_summary_label: "3 dowody źródłowe",
   source_connector_labels: ["Merchant Center"],
   action_ids: ["act_review_merchant_feed_issues"],
+  action_summary_label: "1 akcja do sprawdzenia",
   blocker_count: 0
 };
 
@@ -7943,6 +7950,12 @@ describe("WILQ dashboard", () => {
     expect(merchantProof.queryByText(/Przykładowe dowody/)).not.toBeInTheDocument();
     expect(merchantProof.queryByText("Łącznie dowodów")).not.toBeInTheDocument();
     expect(merchantProof.queryByText(/ev_refresh_merchant_safety/)).not.toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/MerchantDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("data.action_summary_label");
+    expect(routeSource).toContain("summary.action_summary_label");
+    expect(routeSource).toContain("decision.action_summary_label");
+    expect(routeSource).toContain("primaryDecision.action_summary_label");
+    expect(routeSource).not.toContain("formatMerchantIdCount");
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(
       screen.queryByText("Przygotuj kolejkę przeglądu feedu Merchant Center")

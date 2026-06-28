@@ -47,6 +47,9 @@ Date: 2026-06-28
   API-owned preview cards or display labels instead of raw payload shape.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Merchant overview, operator summary, decision, proof and action panels use
+  API/domain evidence and action summary labels instead of route-local count
+  formatting.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Custom Segments candidate, forecast and proof panels use API/domain evidence
@@ -104,6 +107,18 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/merchant/diagnostics` returns response, operator
+  summary, decision and section evidence/action summary labels.
+- Browser proof: `.local-lab/proof/merchant-summary-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract instead of generic registry"`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -115,7 +130,7 @@ Most recent verified local slice:
   records to display, and fixture tests cover row-level labels.
 - Browser proof: `.local-lab/proof/demand-gen-row-evidence-labels-clean.txt`
 
-Previous verified local slice:
+Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route renders dedicated validation contract"`

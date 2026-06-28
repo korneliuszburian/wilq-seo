@@ -63,7 +63,7 @@ export function MerchantDiagnosticSurface() {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Produkty" value={data.product_count ?? 0} />
           <MetricTile label="Problemy" value={data.issue_count ?? 0} />
-          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
         </div>
       </div>
 
@@ -110,7 +110,10 @@ export function MerchantDiagnosticSurface() {
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
-          <MerchantExpandableActionsPanel actions={routeActions} />
+          <MerchantExpandableActionsPanel
+            actions={routeActions}
+            actionSummaryLabel={data.action_summary_label}
+          />
         </div>
       ) : null}
     </main>
@@ -136,7 +139,7 @@ function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResp
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
           <MetricTile label="Zgłoszenia" value={data.operator_summary.reported_issue_occurrences} />
-          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
         </div>
       </div>
 
@@ -163,9 +166,14 @@ function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResp
   );
 }
 
-function MerchantExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
+function MerchantExpandableActionsPanel({
+  actions,
+  actionSummaryLabel
+}: {
+  actions: ActionObject[];
+  actionSummaryLabel: string;
+}) {
   const [showActions, setShowActions] = useState(false);
-  const actionCountLabel = formatMerchantIdCount(actions.length, "akcja", "akcji");
 
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -175,12 +183,12 @@ function MerchantExpandableActionsPanel({ actions }: { actions: ActionObject[] }
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {actionCountLabel} dla Merchant. Otwórz ją dopiero wtedy, gdy
+            WILQ ma {actionSummaryLabel} dla Merchant. Otwórz ją dopiero wtedy, gdy
             chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
             sprawdzić warunki bezpiecznego zapisu.
           </p>
         </div>
-        <MetricTile label="Akcje" value={actionCountLabel} />
+        <MetricTile label="Akcje" value={actionSummaryLabel} />
       </div>
 
       <button
@@ -312,7 +320,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           </p>
           <TraceLine
             label="Akcje"
-            values={[formatMerchantIdCount(primaryDecision.action_ids.length, "akcja", "akcji")]}
+            values={[primaryDecision.action_summary_label]}
             empty="brak akcji"
           />
           {primaryDecision.action_ids[0] ? (
@@ -566,7 +574,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             />
             <TraceLine
               label="Akcje"
-              values={[formatMerchantIdCount(actionIds.length, "akcja", "akcji")]}
+              values={[summary.action_summary_label]}
               empty="brak"
             />
             <TraceLine
@@ -899,9 +907,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         />
         <TraceLine
           label="Akcje"
-          values={[
-            formatMerchantIdCount(decision.action_ids.length, "akcja", "akcji")
-          ]}
+          values={[decision.action_summary_label]}
           empty="brak"
         />
         <TraceLine
@@ -969,19 +975,13 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
         <TraceLine label="Źródła danych" values={data.source_connector_labels} />
         <TraceLine
           label="Akcje"
-          values={[formatMerchantIdCount(data.action_ids.length, "akcja", "akcji")]}
+          values={[data.action_summary_label]}
           empty="brak akcji"
         />
         <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
       </div>
     </section>
   );
-}
-
-function formatMerchantIdCount(count: number, singular: string, plural: string) {
-  if (count === 0) return "brak";
-  if (count === 1) return `1 ${singular}`;
-  return `${count} ${plural}`;
 }
 
 function uniqueValues(values: string[]) {

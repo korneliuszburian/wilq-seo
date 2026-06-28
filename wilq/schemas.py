@@ -2860,9 +2860,11 @@ class MerchantDiagnosticSection(BaseModel):
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2943,6 +2945,7 @@ class MerchantDecisionItem(BaseModel):
     evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2986,6 +2989,7 @@ class MerchantOperatorSummary(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
@@ -3152,6 +3156,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     evidence_summary_label: str = ""
     source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocker_count: int = 0
 
 

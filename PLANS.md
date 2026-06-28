@@ -594,6 +594,10 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Demand Gen campaign, landing-quality and mode-review rows now use
   API/domain `evidence_summary_label` instead of route-local evidence count
   formatting. Focused API/dashboard tests and browser proof passed.
+- 2026-06-28: Merchant response, operator summary, decisions and sections now
+  expose evidence/action summary labels in API/shared schemas. The Merchant
+  route consumes those labels instead of route-local count formatting; live API
+  proof and browser proof live in `.local-lab/proof/`.
 - 2026-06-28: Ahrefs decisions, sections, operator summary and gap contract now
   expose evidence/action summary labels in API/shared schemas. The Ahrefs route
   consumes those labels instead of route-local count formatting; live API proof
@@ -827,3 +831,6 @@ WILQ is complete for this long-range goal when:
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Demand Gen row evidence summaries to API/domain
   labels.
+- Latest Merchant proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving Merchant evidence/action summaries to API/domain labels.

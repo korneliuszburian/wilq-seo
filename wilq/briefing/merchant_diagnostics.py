@@ -42,6 +42,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    action_count_label,
     utc_now,
 )
 from wilq.storage.metric_store import metric_store
@@ -333,6 +334,7 @@ def _merchant_response_with_operator_labels(
             "evidence_summary_label": _merchant_evidence_summary_label(
                 response.evidence_ids
             ),
+            "action_summary_label": action_count_label(response.action_ids),
             "freshness_assessment": response.freshness_assessment.model_copy(
                 update={
                     "state_label": _merchant_freshness_label(
@@ -347,6 +349,9 @@ def _merchant_response_with_operator_labels(
                     ),
                     "evidence_summary_label": _merchant_evidence_summary_label(
                         response.operator_summary.evidence_ids
+                    ),
+                    "action_summary_label": action_count_label(
+                        response.operator_summary.action_ids
                     ),
                     "blocked_claim_labels": _merchant_blocked_claim_labels(
                         response.operator_summary.blocked_claims
@@ -485,6 +490,7 @@ def _merchant_decision_with_operator_labels(
             "evidence_summary_label": _merchant_evidence_summary_label(
                 decision.evidence_ids
             ),
+            "action_summary_label": action_count_label(decision.action_ids),
             "blocked_claim_labels": _merchant_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _merchant_risk_label(decision.risk),
         }
@@ -498,6 +504,10 @@ def _merchant_section_with_operator_labels(
         update={
             "label": MERCHANT_SECTION_LABELS.get(section.id, section.title),
             "status_label": _merchant_status_label(section.status),
+            "evidence_summary_label": _merchant_evidence_summary_label(
+                section.evidence_ids
+            ),
+            "action_summary_label": action_count_label(section.action_ids),
             "blocked_claim_labels": _merchant_blocked_claim_labels(section.blocked_claims),
             "risk_label": _merchant_risk_label(section.risk),
         }

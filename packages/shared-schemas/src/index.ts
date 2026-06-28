@@ -2066,6 +2066,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   evidence_summary_label: z.string().default(""),
   source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
 
