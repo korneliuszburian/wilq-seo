@@ -9,7 +9,7 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import source_connector_label
+from wilq.operator_labels import action_count_label, source_connector_label
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -298,6 +298,9 @@ def _ga4_response_with_marketer_labels(
                         "evidence_summary_label": _ga4_evidence_summary_label(
                             response.conversion_readiness_contract.evidence_ids
                         ),
+                        "action_summary_label": _ga4_action_summary_label(
+                            response.conversion_readiness_contract.action_ids
+                        ),
                     }
                 )
             ),
@@ -308,6 +311,9 @@ def _ga4_response_with_marketer_labels(
                     ),
                     "evidence_summary_label": _ga4_evidence_summary_label(
                         response.operator_summary.evidence_ids
+                    ),
+                    "action_summary_label": _ga4_action_summary_label(
+                        response.operator_summary.action_ids
                     ),
                     "blocked_claim_labels": _ga4_blocked_claim_labels(
                         response.operator_summary.blocked_claims
@@ -321,6 +327,8 @@ def _ga4_response_with_marketer_labels(
             "sections": [
                 _ga4_section_with_marketer_labels(section) for section in response.sections
             ],
+            "evidence_summary_label": _ga4_evidence_summary_label(response.evidence_ids),
+            "action_summary_label": _ga4_action_summary_label(response.action_ids),
         }
     )
 
@@ -357,6 +365,7 @@ def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4Decision
                 decision.source_connectors
             ),
             "evidence_summary_label": _ga4_evidence_summary_label(decision.evidence_ids),
+            "action_summary_label": _ga4_action_summary_label(decision.action_ids),
             "metric_facts": [
                 _ga4_metric_fact_with_marketer_labels(fact)
                 for fact in decision.metric_facts
@@ -374,6 +383,7 @@ def _ga4_section_with_marketer_labels(section: Ga4DiagnosticSection) -> Ga4Diagn
             "status_label": _ga4_section_status_label(section.status),
             "source_connector_labels": _ga4_source_connector_labels(section.source_connectors),
             "evidence_summary_label": _ga4_evidence_summary_label(section.evidence_ids),
+            "action_summary_label": _ga4_action_summary_label(section.action_ids),
             "metric_facts": [
                 _ga4_metric_fact_with_marketer_labels(fact)
                 for fact in section.metric_facts
@@ -452,6 +462,10 @@ def _ga4_evidence_summary_label(evidence_ids: Iterable[str]) -> str:
     if 2 <= count <= 4:
         return f"{count} dowody źródłowe"
     return f"{count} dowodów źródłowych"
+
+
+def _ga4_action_summary_label(action_ids: Iterable[str]) -> str:
+    return action_count_label(action_ids)
 
 
 def _ga4_connector_status_label(status: object) -> str:

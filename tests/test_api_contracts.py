@@ -5583,6 +5583,14 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     assert decisions[0].campaign_name_label == "brak kampanii w raporcie"
     assert decisions[0].source_connector_labels == ["GA4"]
     assert decisions[0].evidence_summary_label == "1 dowód źródłowy"
+    assert decisions[0].action_summary_label == "brak akcji do sprawdzenia"
+    assert payload.evidence_summary_label == "4 dowody źródłowe"
+    assert payload.action_summary_label == "brak akcji do sprawdzenia"
+    assert payload.operator_summary.action_summary_label == "brak akcji do sprawdzenia"
+    assert (
+        payload.conversion_readiness_contract.action_summary_label
+        == "brak akcji do sprawdzenia"
+    )
 
 
 def test_command_center_exposes_polish_operator_brief(

@@ -3350,6 +3350,7 @@ class Ga4DiagnosticSection(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
@@ -3386,6 +3387,7 @@ class Ga4DecisionItem(BaseModel):
     evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -3415,6 +3417,7 @@ class Ga4ConversionReadinessContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
     risk: ActionRisk = ActionRisk.medium
@@ -3447,6 +3450,7 @@ class Ga4OperatorSummary(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
@@ -3470,7 +3474,9 @@ class Ga4DiagnosticsResponse(BaseModel):
     decision_queue: list[Ga4DecisionItem] = Field(default_factory=list)
     sections: list[Ga4DiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocker_count: int = 0
     decision_blocker_count: int = 0
 

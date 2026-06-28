@@ -134,7 +134,10 @@ export function Ga4DiagnosticSurface() {
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
-          <Ga4ExpandableActionsPanel actions={routeActions} />
+          <Ga4ExpandableActionsPanel
+            actions={routeActions}
+            actionSummaryLabel={data.action_summary_label}
+          />
         </div>
       ) : null}
     </main>
@@ -167,7 +170,7 @@ function Ga4ExpandableReviewPanel({
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Pomiar" value={data.operator_summary.measurement_issue_count} />
-          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
           <MetricTile label="Podglądy" value={trackingPreviewCards.length} />
         </div>
       </div>
@@ -233,9 +236,15 @@ function Ga4ExpandableReviewPanel({
   );
 }
 
-function Ga4ExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
+function Ga4ExpandableActionsPanel({
+  actions,
+  actionSummaryLabel
+}: {
+  actions: ActionObject[];
+  actionSummaryLabel: string;
+}) {
   const [showActions, setShowActions] = useState(false);
-  const actionCountLabel = formatGa4ActionCount(actions.length);
+  const actionCountLabel = actionSummaryLabel || "liczba akcji do sprawdzenia";
   const actionCountSentence =
     actions.length === 1 ? "WILQ ma jedną akcję dla GA4." : `WILQ ma ${actionCountLabel} dla GA4.`;
 
@@ -401,11 +410,11 @@ function Ga4OperatorSummary({
             />
             <TraceLine
               label="Dowody w WILQ"
-              values={[formatGa4EvidenceCount(data.evidence_ids.length)]}
+              values={[data.evidence_summary_label]}
             />
             <TraceLine
               label="Akcje"
-              values={[formatGa4ActionCount(actionIds.length)]}
+              values={[summary.action_summary_label]}
             />
             <TraceLine
               label="Nie wolno twierdzić"
@@ -490,7 +499,7 @@ function Ga4DecisionCard({
         <TraceLine label="Źródła" values={decision.source_connector_labels} empty="brak" />
         <TraceLine
           label="Akcje do sprawdzenia"
-          values={[formatGa4ActionCount(decision.action_ids.length)]}
+          values={[decision.action_summary_label]}
         />
         <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>
@@ -532,15 +541,15 @@ function Ga4DiagnosticProof({
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Obszary danych" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Dowody" value={formatGa4EvidenceCount(data.evidence_ids.length)} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
         </div>
       </div>
       {visibleMetricFacts.length > 0 ? <Ga4MetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.label)} />
-        <TraceLine label="Dowody" values={[formatGa4EvidenceCount(data.evidence_ids.length)]} />
+        <TraceLine label="Dowody" values={[data.evidence_summary_label]} />
         <TraceLine label="Źródła" values={sourceConnectorLabels} empty="brak" />
-        <TraceLine label="Akcje" values={[formatGa4ActionCount(data.action_ids.length)]} />
+        <TraceLine label="Akcje" values={[data.action_summary_label]} />
         <TraceLine
           label="Nie wolno twierdzić"
           values={data.sections.flatMap((section) => section.blocked_claim_labels)}
@@ -567,19 +576,6 @@ function Ga4MetricTiles({ facts }: { facts: Ga4MetricFact[] }) {
 function formatGa4MetricValue(value: string | number | boolean) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
   return value;
-}
-
-function formatGa4EvidenceCount(count: number) {
-  if (count === 0) return "brak dowodów źródłowych";
-  if (count === 1) return "1 dowód źródłowy";
-  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
-  return `${count} dowodów źródłowych`;
-}
-
-function formatGa4ActionCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 akcja";
-  return `${count} akcji`;
 }
 
 function uniqueValues(values: string[]) {

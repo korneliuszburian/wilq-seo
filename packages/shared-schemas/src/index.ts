@@ -1791,6 +1791,7 @@ export const MerchantDiagnosticSectionSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   tactical_items: z.array(TacticalQueueItemSchema),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"]),
@@ -1867,6 +1868,7 @@ export const MerchantDecisionItemSchema = z.object({
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   rationale: z.string(),
@@ -1898,6 +1900,7 @@ export const MerchantOperatorSummarySchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([])
 });
@@ -2319,6 +2322,7 @@ export const Ga4DecisionItemSchema = z.object({
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   rationale: z.string(),
@@ -2346,6 +2350,7 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -2378,6 +2383,7 @@ export const Ga4OperatorSummarySchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([])
 });
@@ -2401,7 +2407,9 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   decision_queue: z.array(Ga4DecisionItemSchema),
   sections: z.array(Ga4DiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocker_count: z.number(),
   decision_blocker_count: z.number()
 });

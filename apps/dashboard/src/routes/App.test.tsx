@@ -5523,6 +5523,7 @@ const ga4Diagnostics = {
     evidence_ids: ["ev_refresh_ga4"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
+    action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
     blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
     next_step:
@@ -5545,6 +5546,7 @@ const ga4Diagnostics = {
     evidence_ids: ["ev_refresh_ga4"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_review_ga4_tracking_quality"],
+    action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
     blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"]
   },
@@ -5575,6 +5577,7 @@ const ga4Diagnostics = {
       evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[4]],
       action_ids: ["act_review_ga4_tracking_quality"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
       blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"],
       rationale:
@@ -5602,6 +5605,7 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
       blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie"],
       risk: "low",
@@ -5623,6 +5627,7 @@ const ga4Diagnostics = {
       metric_facts: [metricFacts[4]],
       tactical_items: [tacticalQueue.items[0]],
       action_ids: ["act_review_ga4_tracking_quality"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["spadek konwersji", "diagnoza lejka"],
       blocked_claim_labels: ["spadek konwersji", "diagnoza lejka"],
       risk: "medium",
@@ -5630,7 +5635,9 @@ const ga4Diagnostics = {
     }
   ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_ga4_tracking_review", "ev_refresh_ga4_safety"],
+  evidence_summary_label: "3 dowody źródłowe",
   action_ids: ["act_review_ga4_tracking_quality"],
+  action_summary_label: "1 akcja do sprawdzenia",
   blocker_count: 1,
   decision_blocker_count: 1
 };
@@ -8047,7 +8054,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/Zapis zmian zablokowany/i).length).toBeGreaterThan(0);
     const routeSource = readFileSync("src/routes/Ga4DiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("action.preview_cards");
+    expect(routeSource).toContain("data.action_summary_label");
+    expect(routeSource).toContain("data.evidence_summary_label");
     expect(routeSource).not.toContain("action.payload.payload_preview");
+    expect(routeSource).not.toContain("function formatGa4EvidenceCount");
+    expect(routeSource).not.toContain("function formatGa4ActionCount");
   });
 
   it("content route renders condensed selected decision with expandable detail", async () => {

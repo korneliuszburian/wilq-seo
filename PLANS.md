@@ -801,3 +801,6 @@ WILQ is complete for this long-range goal when:
 - Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving knowledge blocked-claim summaries to API/domain labels.
+- Latest GA4 proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving GA4 evidence/action summaries to API/domain labels.
