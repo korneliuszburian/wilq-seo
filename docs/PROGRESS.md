@@ -186,6 +186,9 @@ Date: 2026-06-28
 - Dashboard StatusBadge usage now passes raw state values with API labels for
   Knowledge, Action, GA4 and Merchant status/risk/validation badges instead of
   using the visible label as the visual state.
+- Dashboard e2e proof for Action Detail and Merchant no longer expects raw
+  evidence IDs in the primary surface; trace IDs stay reachable through
+  technical detail after using marketer-facing `dowód 1` links.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -242,6 +245,7 @@ Date: 2026-06-28
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_humanize_raw_unknown_enums or content_action_preview or marketing_tactical_queue_keeps_exact_wordpress_url_matches_after_inventory_noise" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/StatusBadgeUsage.test.ts src/routes/KnowledgePanels.test.tsx src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk pnpm --dir apps/dashboard exec playwright test e2e/dashboard-api.spec.ts --workers=1 --grep "ga4|merchant|knowledge|action"`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_oauth_repair_action_is_explicit_and_redacted or merchant_blocked_feed_section_uses_operator_read_wording" --maxfail=3`

@@ -203,7 +203,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu feedu Merchant Center");
     await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd zmian" })).toBeVisible();
-    await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
+    await expect(page.getByText("Dowody: 1 dowód źródłowy")).toBeVisible();
+    await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
     await page.getByRole("button", { name: "Generuj podgląd" }).click();
     await expect(page.getByText("Podgląd zmian wygenerowany").first()).toBeVisible();
@@ -271,7 +272,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
+    const merchantDiagnosticsResponse = page.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return url.pathname === "/api/merchant/diagnostics" && response.status() === 200;
+      },
+      { timeout: 60_000 }
+    );
     await page.goto("/merchant");
+    const merchantDiagnostics = await (await merchantDiagnosticsResponse).json();
 
     await expectApiBackedRouteHeading(page, "Merchant Center", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
@@ -284,7 +293,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Affected", { exact: true })).toHaveCount(0);
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("dostęp skonfigurowany")).toBeVisible();
+    await expect(page.getByText(merchantDiagnostics.connector_status_label)).toBeVisible();
     await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Wpływ ceny produktu" })).toBeVisible();
@@ -296,13 +305,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/Zapis zmian:.*zablokowany/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa feedu" })).toBeVisible();
 
-    const evidenceLink = page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first();
+    await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
+    const evidenceLink = page.getByRole("link", { name: "dowód 1" }).first();
     await expect(evidenceLink).toBeVisible();
     await evidenceLink.click();
-    await expect(
-      page.getByRole("heading", { name: /ev_refresh_refresh_google_merchant_center/ })
-    ).toBeVisible();
-    await expect(page.getByText("Źródło: google_merchant_center")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Merchant Center/ })).toBeVisible();
+    await expect(page.getByText("Źródło: Merchant Center")).toBeVisible();
+    await page.getByRole("button", { name: "Pokaż szczegóły techniczne dowodu" }).click();
+    await expect(page.getByText(/ID dowodu: ev_refresh_refresh_google_merchant_center/)).toBeVisible();
   });
 
   test("localo route exposes aggregate facts without unsupported local claims", async ({ page }) => {
