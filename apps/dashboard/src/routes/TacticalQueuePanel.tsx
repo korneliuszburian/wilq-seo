@@ -183,9 +183,9 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
           <div className="font-semibold text-ink">Kontekst</div>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {tacticalContextPairs(item).map(([key, value]) => (
+            {tacticalContextPairs(item).map(({ key, label, valueLabel }) => (
               <span key={key} className="rounded border border-line bg-white px-2 py-1">
-                {item.dimension_labels[key] ?? key}: {value}
+                {label}: {valueLabel}
               </span>
             ))}
           </div>
@@ -196,7 +196,9 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
   );
 }
 
-export function tacticalContextPairs(item: TacticalQueueItem): Array<[string, string]> {
+export function tacticalContextPairs(
+  item: TacticalQueueItem
+): Array<{ key: string; label: string; valueLabel: string }> {
   const priorityKeys = [
     "query",
     "page",
@@ -214,7 +216,11 @@ export function tacticalContextPairs(item: TacticalQueueItem): Array<[string, st
   return priorityKeys
     .filter((key) => item.dimensions[key])
     .slice(0, 6)
-    .map((key) => [key, item.dimensions[key]]);
+    .map((key) => ({
+      key,
+      label: item.dimension_labels[key] || "kontekst",
+      valueLabel: item.dimension_value_labels[key] || "wartość do sprawdzenia"
+    }));
 }
 
 function uniqueValues(values: string[]) {

@@ -62,7 +62,7 @@ function formatMetricDimensions(fact: MetricFact) {
   return Object.entries(fact.dimensions ?? {})
     .map(([key, value]) => {
       const keyLabel = fact.dimension_labels[key] || "Wymiar bez etykiety";
-      const valueLabel = fact.dimension_value_labels[key] || value;
+      const valueLabel = fact.dimension_value_labels[key] || "wartość do sprawdzenia";
       return `${keyLabel}: ${valueLabel}`;
     })
     .join(", ");

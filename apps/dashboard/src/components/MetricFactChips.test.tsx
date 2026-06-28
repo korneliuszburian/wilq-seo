@@ -101,7 +101,8 @@ describe("MetricFactChips", () => {
       />
     );
 
-    expect(within(container).getByText(/Wymiar bez etykiety: competitor_visibility/)).toBeInTheDocument();
+    expect(within(container).getByText(/Wymiar bez etykiety: wartość do sprawdzenia/)).toBeInTheDocument();
     expect(within(container).queryByText(/obszar: widoczność konkurencji/)).not.toBeInTheDocument();
+    expect(within(container).queryByText(/competitor_visibility/)).not.toBeInTheDocument();
   });
 });

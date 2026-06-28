@@ -419,6 +419,7 @@ export const TacticalQueueItemSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   dimensions: z.record(z.string()).optional().default({}),
   dimension_labels: z.record(z.string()).optional().default({}),
+  dimension_value_labels: z.record(z.string()).optional().default({}),
   diagnosis: z.string(),
   next_step: z.string(),
   blocked_claims: z.array(z.string()),

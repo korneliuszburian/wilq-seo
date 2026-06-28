@@ -4513,6 +4513,8 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         assert item["evidence_summary_label"]
         assert item["action_summary_label"]
         assert item["dimension_labels"]
+        assert item["dimension_value_labels"]
+        assert set(item["dimensions"]) == set(item["dimension_value_labels"])
         assert item["blocked_claim_labels"]
         assert item["dimensions"]
         assert item["evidence_ids"]
@@ -4520,6 +4522,15 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         assert item["metric_facts"]
         assert item["blocked_claims"]
         assert item["next_step"]
+    content_wordpress_item = next(
+        item
+        for item in content_items
+        if item["dimensions"].get("wordpress_match_confidence") == "exact_url"
+    )
+    assert (
+        content_wordpress_item["dimension_value_labels"]["wordpress_match_confidence"]
+        == "dokładny adres URL"
+    )
 
 
 def test_ga4_diagnostics_exposes_landing_quality_contract(

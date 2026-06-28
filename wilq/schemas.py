@@ -960,6 +960,29 @@ def _tactical_dimension_label(value: str) -> str:
     return labels.get(value, "wymiar do sprawdzenia")
 
 
+def _tactical_dimension_value_label(key: str, value: str) -> str:
+    labels_by_key = {
+        "wordpress_match": {
+            "found": "znaleziono w WordPress",
+            "missing": "brak w WordPress",
+        },
+        "wordpress_match_confidence": {
+            "exact_url": "dokładny adres URL",
+            "same_path": "ten sam adres ścieżki",
+            "missing": "brak dopasowania",
+        },
+        "reporting_context": {
+            "ALL_CONTEXTS": "wszystkie miejsca emisji",
+            "FREE_LISTINGS": "bezpłatne wyniki",
+            "SHOPPING_ADS": "reklamy produktowe",
+        },
+        "country": {
+            "PL": "Polska",
+        },
+    }
+    return labels_by_key.get(key, {}).get(value, value)
+
+
 def _blocked_claim_label(value: str) -> str:
     labels = {
         "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
@@ -1046,6 +1069,7 @@ class TacticalQueueItem(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     dimensions: dict[str, str] = Field(default_factory=dict)
     dimension_labels: dict[str, str] = Field(default_factory=dict)
+    dimension_value_labels: dict[str, str] = Field(default_factory=dict)
     diagnosis: str
     next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
@@ -1090,6 +1114,11 @@ class TacticalQueueItem(BaseModel):
         if not self.dimension_labels:
             self.dimension_labels = {
                 key: _tactical_dimension_label(key) for key in self.dimensions
+            }
+        if not self.dimension_value_labels:
+            self.dimension_value_labels = {
+                key: _tactical_dimension_value_label(key, value)
+                for key, value in self.dimensions.items()
             }
         return self
 

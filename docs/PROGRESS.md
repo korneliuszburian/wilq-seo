@@ -130,6 +130,9 @@ Date: 2026-06-28
 - Marketing brief items now expose API-owned `kind_label`, and Brief Workflow
   route cards render that label instead of raw `metric` / `blocker` / `action`
   / `recommendation` enums.
+- Tactical queue items now expose `dimension_value_labels`, and tactical/
+  Merchant context chips plus metric chips avoid raw dimension values when API
+  labels are missing.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -179,6 +182,8 @@ Date: 2026-06-28
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map or content_diagnostics or tactical_queue or action_preview or operator_label_fallbacks" --maxfail=3`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_brief" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_tactical_queue_uses_dimensioned_metric_facts or operator_label_fallbacks_do_not_humanize_raw_unknown_enums or merchant_diagnostics_exposes_feed_issue_queue" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/components/MetricFactChips.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

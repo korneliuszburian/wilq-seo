@@ -542,9 +542,9 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <p className="mt-2 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
                 <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
-                  {tacticalContextPairs(item).map(([key, value]) => (
+                  {tacticalContextPairs(item).map(({ key, label, valueLabel }) => (
                     <span key={key} className="rounded border border-line bg-white px-2 py-1">
-                      {item.dimension_labels[key] ?? key}: {value}
+                      {label}: {valueLabel}
                     </span>
                   ))}
                 </div>

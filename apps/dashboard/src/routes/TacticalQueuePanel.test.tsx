@@ -43,11 +43,18 @@ const queue: TacticalQueueResponse = {
       metric_facts: [],
       dimensions: {
         query: "zielony ład co to",
-        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+        wordpress_match_confidence: "exact_url"
       },
       dimension_labels: {
         query: "zapytanie",
-        page: "strona"
+        page: "strona",
+        wordpress_match_confidence: "pewność dopasowania"
+      },
+      dimension_value_labels: {
+        query: "zielony ład co to",
+        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+        wordpress_match_confidence: "dokładny adres URL"
       },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
@@ -79,6 +86,10 @@ const queue: TacticalQueueResponse = {
       dimension_labels: {
         query: "zapytanie",
         page: "strona"
+      },
+      dimension_value_labels: {
+        query: "co to jest zielony ład",
+        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
       diagnosis: "Raw query/page item.",
       next_step: "Przygotuj plan treści po sprawdzeniu spisu treści.",
@@ -140,6 +151,8 @@ describe("TacticalQueuePanel", () => {
     expect(section?.textContent).toContain("Akcje do sprawdzenia");
     expect(scope.getAllByRole("link", { name: "dowód 1" }).length).toBeGreaterThan(0);
     expect(scope.getAllByRole("link", { name: "akcja 1" }).length).toBeGreaterThan(0);
+    expect(section?.textContent).toContain("pewność dopasowania: dokładny adres URL");
+    expect(section?.textContent).not.toContain("exact_url");
   });
 
   it("renders compact decision groups without raw evidence or action IDs", () => {

@@ -118,6 +118,9 @@ use cleaned Polish operator language.
   and marketer-facing labels such as `kontrola trybu kampanii`.
 - Marketing brief items expose API-owned `kind_label`, and Brief Workflow cards
   render that label instead of raw brief kind enums.
+- Tactical queue items expose API-owned `dimension_value_labels`, and touched
+  tactical/Merchant/metric chips no longer fall back to raw dimension values in
+  marketer-facing context.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.
