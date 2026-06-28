@@ -378,6 +378,7 @@ def build_content_diagnostics(
             _content_refresh_with_api_label(refresh) for refresh in latest_refreshes
         ],
         live_data_available=live_data_available,
+        live_data_status_label=_content_live_data_status_label(live_data_available),
         query_page_count=_query_page_count(content_tactical_items),
         matched_inventory_count=_matched_inventory_count(content_tactical_items),
         operator_summary=_operator_summary(decision_queue, sections, action_ids),
@@ -1309,6 +1310,14 @@ def _content_connector_with_api_label(connector: ConnectorStatus) -> ConnectorSt
 def _content_refresh_with_api_label(refresh: ConnectorRefreshRun) -> ConnectorRefreshRun:
     return refresh.model_copy(
         update={"status_label": _content_refresh_status_label(str(refresh.status))}
+    )
+
+
+def _content_live_data_status_label(live_data_available: bool) -> str:
+    return (
+        "dane GSC i WordPress dostępne"
+        if live_data_available
+        else "brak danych GSC lub WordPress do decyzji"
     )
 
 

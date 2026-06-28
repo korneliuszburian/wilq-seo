@@ -14921,6 +14921,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert all(connector["status_label"] for connector in payload["connectors"])
     assert all(refresh["status_label"] for refresh in payload["latest_refreshes"])
     assert payload["live_data_available"] is True
+    assert payload["live_data_status_label"] == "dane GSC i WordPress dostępne"
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
     assert "act_prepare_content_refresh_queue" in payload["action_ids"]

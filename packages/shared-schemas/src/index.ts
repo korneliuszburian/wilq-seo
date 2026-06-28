@@ -2290,6 +2290,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   connectors: z.array(ConnectorStatusSchema),
   latest_refreshes: z.array(ConnectorRefreshRunSchema),
   live_data_available: z.boolean(),
+  live_data_status_label: z.string().default(""),
   query_page_count: z.number(),
   matched_inventory_count: z.number(),
   operator_summary: ContentOperatorSummarySchema,

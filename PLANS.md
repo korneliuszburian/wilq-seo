@@ -669,6 +669,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: The old `Goal 002` draft moved to `docs/goals/archive/`; the
   marketer language guard now enforces `docs/goals/001-goal.md` as the only
   active first-level goal file.
+- 2026-06-28: Connector status labels now hydrate at the backend schema
+  boundary, and Treści renders API-owned live-data wording for GSC/WordPress
+  readiness.
 
 ## Discoveries
 

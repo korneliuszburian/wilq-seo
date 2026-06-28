@@ -213,6 +213,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Connector refresh runs hydrate Polish status labels at the shared schema
   boundary; fresh GSC, GA4 and Merchant reads on 2026-06-28 completed with
   vendor data collected.
+- Connector status objects hydrate Polish `status_label` values at the shared
+  backend schema boundary, and Treści diagnostics expose API-owned
+  `live_data_status_label` for GSC/WordPress readiness.
 - Current proof artifacts live in `.local-lab/proof/`; detailed implementation
   history lives in git commits, not in this file.
 

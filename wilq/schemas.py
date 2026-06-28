@@ -136,6 +136,8 @@ class ConnectorStatus(BaseModel):
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> ConnectorStatus:
+        if not self.status_label:
+            self.status_label = connector_status_label(self.status)
         if not self.missing_credentials_summary_label:
             self.missing_credentials_summary_label = credential_field_count_label(
                 self.missing_credentials
@@ -145,6 +147,24 @@ class ConnectorStatus(BaseModel):
                 self.available_credential_sources
             )
         return self
+
+
+def connector_status_label(status: ConnectorStatusValue | str) -> str:
+    labels = {
+        ConnectorStatusValue.configured: "dostęp skonfigurowany",
+        ConnectorStatusValue.missing_credentials: "brak dostępu",
+        ConnectorStatusValue.missing_dependency: "brak zależności",
+        ConnectorStatusValue.unreachable: "źródło niedostępne",
+        ConnectorStatusValue.auth_error: "błąd autoryzacji",
+        ConnectorStatusValue.rate_limited: "limit odczytu",
+        ConnectorStatusValue.error: "błąd źródła danych",
+        ConnectorStatusValue.disabled: "wyłączone w tym zakresie",
+    }
+    try:
+        normalized = ConnectorStatusValue(str(status))
+    except ValueError:
+        return "status źródła do sprawdzenia"
+    return labels.get(normalized, "status źródła do sprawdzenia")
 
 
 class Evidence(BaseModel):
@@ -3809,6 +3829,7 @@ class ContentDiagnosticsResponse(BaseModel):
     connectors: list[ConnectorStatus]
     latest_refreshes: list[ConnectorRefreshRun] = Field(default_factory=list)
     live_data_available: bool
+    live_data_status_label: str = ""
     query_page_count: int = 0
     matched_inventory_count: int = 0
     operator_summary: ContentOperatorSummary

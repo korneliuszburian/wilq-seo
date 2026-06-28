@@ -170,6 +170,11 @@ Date: 2026-06-28
   instead of exposing raw enum keys, snake_case or English values.
 - Connector refresh runs hydrate Polish status labels at the shared schema
   boundary, including historical runs returned by the API.
+- Connector status objects now hydrate Polish `status_label` values at the
+  shared backend schema boundary, so `/api/connectors` no longer returns empty
+  visible status labels.
+- Treści diagnostics now expose `live_data_status_label` from the API and the
+  route renders that field instead of owning local live-data wording.
 - Current proof artifacts live in `.local-lab/proof/`; detailed history lives
   in git commits.
 
@@ -202,6 +207,20 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Connector/content live-data label cleanup: `ConnectorStatus` hydrates Polish
+  status labels, `/api/connectors` has no empty status labels, and Treści shows
+  API-owned `live_data_status_label` for GSC/WordPress readiness.
+  Verification:
+  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q`
+  - `rtk pnpm --dir apps/dashboard typecheck`
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`
+  - live `/api/connectors` and `/api/content/diagnostics` proof after stack restart
+  - `agent-browser snapshot` for `/content-planner`
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Recovery goal-file cleanup: the old `Goal 002` draft moved to
   `docs/goals/archive/`, and `scripts/marketer_language_guard.py` now enforces
