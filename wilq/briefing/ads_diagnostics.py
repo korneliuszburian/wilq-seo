@@ -6679,6 +6679,9 @@ def _hydrate_negative_keywords_marketer_labels(
             _hydrate_keyword_match_context_row_labels(row)
         if candidate.payload_preview is not None:
             _hydrate_negative_keyword_payload_preview_labels(candidate.payload_preview)
+            candidate.preview_card = _negative_keyword_preview_card(
+                candidate.payload_preview
+            )
     for preview in contract.payload_preview:
         _hydrate_negative_keyword_payload_preview_labels(preview)
 
@@ -6692,6 +6695,63 @@ def _hydrate_negative_keyword_payload_preview_labels(
         preview.required_validation
     )
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
+
+
+def _negative_keyword_preview_card(
+    preview: AdsNegativeKeywordPayloadPreview,
+) -> ActionPreviewCardViewModel:
+    rows = [
+        {"label": "Hasło", "value": preview.search_term},
+        {"label": "Wykluczenie", "value": preview.negative_keyword_text},
+        {
+            "label": "Dopasowanie",
+            "value": preview.match_type_label or "dopasowanie do sprawdzenia",
+        },
+        {
+            "label": "Poziom",
+            "value": preview.level_label or "poziom do sprawdzenia",
+        },
+        {
+            "label": "Kampania",
+            "value": preview.campaign_name or "kampania do sprawdzenia",
+        },
+        {
+            "label": "Grupa reklam",
+            "value": preview.ad_group_name or "grupa reklam do sprawdzenia",
+        },
+    ]
+    if preview.required_validation_labels:
+        rows.append(
+            {
+                "label": "Warunki sprawdzenia",
+                "value": ", ".join(preview.required_validation_labels[:4]),
+            }
+        )
+    if preview.blocked_claim_labels:
+        rows.append(
+            {
+                "label": "Czego nie wolno twierdzić",
+                "value": ", ".join(preview.blocked_claim_labels[:4]),
+            }
+        )
+    return ActionPreviewCardViewModel(
+        id=f"{preview.id}_card",
+        kind="google_ads_negative_keyword_review",
+        title_label="Wykluczenie słowa do sprawdzenia",
+        subtitle_label="ocena intencji zapytania bez zapisu zmian",
+        status_label="zapis zmian zablokowany",
+        rows=rows,
+        apply_state_label=(
+            "możliwy zapis po sprawdzeniu"
+            if preview.apply_allowed
+            else "zapis zmian zablokowany"
+        ),
+        system_readiness_label=(
+            "system gotowy do zapisu"
+            if preview.api_mutation_ready
+            else "wymaga kontroli"
+        ),
+    )
 
 
 def _hydrate_keyword_match_context_marketer_labels(

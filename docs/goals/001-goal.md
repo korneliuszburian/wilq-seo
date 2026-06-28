@@ -95,6 +95,9 @@ use the cleaned language.
   from `candidate.payload_preview`.
 - GA4 full review now renders API-owned action preview cards and no longer
   parses `action.payload.payload_preview` for the review card.
+- Ads negative keyword candidates now expose API-owned preview cards. The
+  dashboard route no longer derives the visible negative-keyword card from
+  `candidate.payload_preview`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

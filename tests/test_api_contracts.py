@@ -12210,6 +12210,63 @@ def test_ads_custom_segment_source_quality_counts_rejections() -> None:
     }
 
 
+def test_ads_negative_keyword_candidate_exposes_marketer_preview_card() -> None:
+    from wilq.briefing.ads_diagnostics import _hydrate_negative_keywords_marketer_labels
+    from wilq.schemas import (
+        AdsNegativeKeywordCandidate,
+        AdsNegativeKeywordPayloadPreview,
+        AdsNegativeKeywordsReadContract,
+    )
+
+    preview = AdsNegativeKeywordPayloadPreview(
+        id="negative_keyword_preview_test",
+        search_term="odpady cena",
+        negative_keyword_text="odpady cena",
+        match_type="EXACT",
+        level="ad_group",
+        campaign_name="Ekologus Search",
+        ad_group_name="Odpady",
+        reason="Do sprawdzenia przed zapisem zmian.",
+        required_validation=[
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+        ],
+        blocked_claims=["dodanie wykluczających słów kluczowych"],
+    )
+    contract = AdsNegativeKeywordsReadContract(
+        status="ready",
+        title="Ocena wykluczeń z wyszukiwanych haseł",
+        summary="Kandydaci wykluczeń do sprawdzenia.",
+        candidates=[
+            AdsNegativeKeywordCandidate(
+                id="ads_negative_keyword_review_test",
+                search_term="odpady cena",
+                review_reason="Kandydat do ręcznej oceny.",
+                payload_preview=preview,
+                next_step="Sprawdź intencję i historię przed wykluczeniem.",
+            )
+        ],
+        payload_preview=[preview],
+        next_step="Sprawdź intencję i historię przed wykluczeniem.",
+    )
+
+    _hydrate_negative_keywords_marketer_labels(contract)
+
+    card = contract.candidates[0].preview_card
+    assert card is not None
+    assert card.kind == "google_ads_negative_keyword_review"
+    assert card.title_label == "Wykluczenie słowa do sprawdzenia"
+    rows = {row.label: row.value for row in card.rows}
+    assert rows["Dopasowanie"] == "dopasowanie ścisłe"
+    assert rows["Poziom"] == "grupa reklam"
+    assert "sprawdzenie intencji zapytania" in rows["Warunki sprawdzenia"]
+    assert "dodanie wykluczających słów kluczowych" in rows[
+        "Czego nie wolno twierdzić"
+    ]
+    assert "EXACT" not in str(card.model_dump())
+    assert "ad_group" not in str(card.model_dump())
+
+
 def test_merchant_diagnostics_exposes_feed_issue_queue(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -2792,6 +2792,23 @@ const adsDiagnostics = {
           apply_allowed: false,
           destructive: false
         },
+        preview_card: {
+          id: "negative_keyword_preview_123_789_odpady_cena_card",
+          kind: "google_ads_negative_keyword_review",
+          title_label: "Wykluczenie słowa do sprawdzenia",
+          subtitle_label: "ocena intencji zapytania bez zapisu zmian",
+          status_label: "zapis zmian zablokowany",
+          rows: [
+            { label: "Hasło", value: "odpady cena" },
+            { label: "Wykluczenie", value: "odpady cena" },
+            { label: "Dopasowanie", value: "dopasowanie ścisłe" },
+            { label: "Poziom", value: "grupa reklam" },
+            { label: "Kampania", value: "Ekologus Search" },
+            { label: "Grupa reklam", value: "Odpady" }
+          ],
+          apply_state_label: "zapis zmian zablokowany",
+          system_readiness_label: "wymaga kontroli"
+        },
         required_checks: [
           "review_search_term_context",
           "check_existing_keywords_and_match_types",
@@ -3711,6 +3728,23 @@ const adsDiagnostics = {
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
+          },
+          preview_card: {
+            id: "negative_keyword_preview_123_789_odpady_cena_card",
+            kind: "google_ads_negative_keyword_review",
+            title_label: "Wykluczenie słowa do sprawdzenia",
+            subtitle_label: "ocena intencji zapytania bez zapisu zmian",
+            status_label: "zapis zmian zablokowany",
+            rows: [
+              { label: "Hasło", value: "odpady cena" },
+              { label: "Wykluczenie", value: "odpady cena" },
+              { label: "Dopasowanie", value: "dopasowanie ścisłe" },
+              { label: "Poziom", value: "grupa reklam" },
+              { label: "Kampania", value: "Ekologus Search" },
+              { label: "Grupa reklam", value: "Odpady" }
+            ],
+            apply_state_label: "zapis zmian zablokowany",
+            system_readiness_label: "wymaga kontroli"
           },
           required_checks: [
             "review_search_term_context",
@@ -7419,6 +7453,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.recommendation_type_label");
     expect(routeSource).toContain("row.payload_preview.operation_type_label");
+    expect(routeSource).toContain("candidate.preview_card");
+    expect(routeSource).not.toContain("candidate.payload_preview");
     expect(routeSource).toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");

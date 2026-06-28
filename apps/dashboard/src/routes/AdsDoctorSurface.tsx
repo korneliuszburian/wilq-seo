@@ -16,6 +16,7 @@ import {
   AdsCustomSegmentAudienceForecastPanel,
   AdsCustomSegmentCandidatesPanel
 } from "./CustomSegmentsDiagnosticSurface";
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
@@ -2260,23 +2261,9 @@ function AdsNegativeKeywordCandidatesPanel({
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {candidate.next_step}
             </p>
-            {candidate.payload_preview ? (
-              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
-                <div className="font-semibold uppercase tracking-normal text-blue-700">
-                  Podgląd wykluczenia
-                </div>
-                <div>
-                  `{candidate.payload_preview.negative_keyword_text}` /{" "}
-                  {candidate.payload_preview.match_type_label} /{" "}
-                  {candidate.payload_preview.level_label}
-                </div>
-                <div className="text-slate-600">
-                  Zapis zmian:{" "}
-                  {candidate.payload_preview.apply_allowed
-                    ? "wymaga sprawdzenia"
-                    : "zablokowane"}
-                  . {candidate.payload_preview.reason}
-                </div>
+            {candidate.preview_card ? (
+              <div className="mt-2">
+                <ActionPreviewCard card={candidate.preview_card} />
               </div>
             ) : null}
             {candidate.keyword_context_rows.length > 0 ? (

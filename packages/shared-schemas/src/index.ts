@@ -1551,6 +1551,7 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   safety_metric_facts: z.array(MetricFactSchema),
   keyword_context_rows: z.array(AdsKeywordMatchContextRowSchema).optional().default([]),
   payload_preview: AdsNegativeKeywordPayloadPreviewSchema.nullable().optional(),
+  preview_card: ActionPreviewCardViewModelSchema.nullable().optional(),
   required_checks: z.array(z.string()),
   required_check_labels: z.array(z.string()).optional().default([]),
   safety_status: z.enum(["needs_90_day_review", "read_ready_needs_human_review", "blocked"]),

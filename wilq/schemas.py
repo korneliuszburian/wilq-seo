@@ -2236,6 +2236,7 @@ class AdsNegativeKeywordCandidate(BaseModel):
     safety_metric_facts: list[MetricFact] = Field(default_factory=list)
     keyword_context_rows: list[AdsKeywordMatchContextRow] = Field(default_factory=list)
     payload_preview: AdsNegativeKeywordPayloadPreview | None = None
+    preview_card: ActionPreviewCardViewModel | None = None
     required_checks: list[str] = Field(default_factory=list)
     required_check_labels: list[str] = Field(default_factory=list)
     safety_status: Literal[
