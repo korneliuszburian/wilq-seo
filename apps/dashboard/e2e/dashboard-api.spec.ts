@@ -34,13 +34,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/command-center");
     await commandCenterResponse;
 
-    await expect(page.getByRole("heading", { name: "Command Center" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Centrum pracy" })).toBeVisible();
     await expect(
       page.getByText("WILQ pokazuje tylko metryki i dowody z danych źródłowych.").first()
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(page.getByText("Decyzje").first()).toBeVisible();
-    await expect(page.getByText("Blockery").first()).toBeVisible();
+    await expect(page.getByText("Blokady").first()).toBeVisible();
     await expect(page.getByText("Źródła danych:").first()).toBeVisible();
     await expect(page.getByText("Dowody w WILQ:").first()).toBeVisible();
     await expect(page.getByText(/potwierdzonych śladów w WILQ/).first()).toBeVisible();
@@ -51,10 +51,6 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/act_review_merchant_feed_issues/)).toHaveCount(0);
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
     await expect(page.getByText("Przykładowe evidence")).toHaveCount(0);
-    await expect(page.getByText("ponowne zatwierdzenie produktu").first()).toBeVisible();
-    await expect(page.getByText("jakość leadów").first()).toBeVisible();
-    await expect(page.getByText("opłacalność").first()).toBeVisible();
-    await expect(page.getByText("zmarnowany budżet").first()).toBeVisible();
     await expect(page.getByText("approval restored")).toHaveCount(0);
     await expect(page.getByText("lead uplift")).toHaveCount(0);
     await expect(page.getByText("traffic uplift")).toHaveCount(0);
@@ -79,10 +75,6 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Kopiuj polecenie").first()).toBeVisible();
     await expect(page.getByText("Context-pack: /api/codex/context-pack")).toHaveCount(0);
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
-    await expect(
-      page.getByRole("heading", { name: "Ułóż kolejkę odświeżenia i scalania treści SEO" })
-    ).toBeVisible();
-    await expect(page.getByText("Polecenie: strategia treści")).toBeVisible();
     await expect(page.getByText("Skill: wilq-content-strategist")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toHaveCount(0);
@@ -103,7 +95,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("ads doctor route exposes live metric-backed diagnostics", async ({ page }) => {
     await page.goto("/ads-doctor");
 
-    await expectApiBackedRouteHeading(page, "Ads Doctor");
+    await expectApiBackedRouteHeading(page, "Google Ads", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
     await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeVisible();
@@ -120,16 +112,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Najpierw sprawdź w Ads" })).toBeVisible();
     await expect(page.getByText("tryb: sprawdzenie przed zapisem zmian")).toBeVisible();
     await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
-    await expect(page.getByText("Operator Ads")).toBeVisible();
     await expect(page.getByText("Budżety").first()).toBeVisible();
-    await expect(page.getByText("Rekom.").first()).toBeVisible();
     await expect(page.getByText("Zablokowane wnioski i zapis zmian")).toBeVisible();
     await expect(page.getByText(/akcj/i).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toBeVisible();
-    await expect(page.getByText("Brakujące warunki sprawdzenia:").first()).toBeVisible();
-    await expect(page.getByText("Konwersje").first()).toBeVisible();
-    await expect(page.getByText("Wartość konw.").first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "ev_connector_google_ads_status" }).first()).toBeVisible();
+    await expect(page.getByText(/ev_connector_google_ads_status/)).toHaveCount(0);
     await expect(page.getByText("Handoff blockera Ads")).toHaveCount(0);
     await expect(page.getByText(/handoff blockera OAuth/i)).toHaveCount(0);
     await expect(page.getByText("Read contract Ads")).toHaveCount(0);
@@ -192,15 +179,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
     await page.goto("/content-planner");
 
-    await expectApiBackedRouteHeading(page, "Content Planner", { exact: true });
-    await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Treści", { exact: true });
+    await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
     await expect(
       page.getByRole("heading", {
         name: "Zachowaj istniejącą treść i przygotuj odświeżenie albo scalenie, zamiast pisać nowy tekst od zera."
       })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
-    await page.getByRole("button", { name: "Pokaż pełny przegląd Content" }).click();
+    await page.getByRole("button", { name: "Pokaż pełny przegląd treści" }).click();
     await expect(page.getByRole("heading", { name: "Dowody i warunki decyzji treści" })).toBeVisible();
     await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
     await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);

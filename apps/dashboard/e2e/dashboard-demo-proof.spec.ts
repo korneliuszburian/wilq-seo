@@ -70,8 +70,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     });
 
     await gotoAndWaitForApi(page, "/content-planner", "/api/content/diagnostics");
-    await expect(page.getByRole("heading", { name: "Content Planner", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Treści", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
@@ -95,7 +95,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     });
 
     await gotoAndWaitForApi(page, "/ads-doctor", "/api/ads/diagnostics");
-    await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Google Ads", exact: true })).toBeVisible();
     await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();

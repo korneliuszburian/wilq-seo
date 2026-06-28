@@ -8004,7 +8004,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Szkic i WordPress pozostają zablokowane/)).toBeInTheDocument();
     expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż plany treści" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
@@ -8027,7 +8027,7 @@ describe("WILQ dashboard", () => {
     expect(within(contentDecisionCard as HTMLElement).getByText("rekordy Ahrefs")).toBeInTheDocument();
     expect(within(contentDecisionCard as HTMLElement).getByText("pasujące")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Sprawdź w WILQ" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" }));
     expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb treści")).toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
@@ -8180,7 +8180,7 @@ describe("WILQ dashboard", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Payload: 4 checked items")).not.toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" }));
     expect(screen.getAllByText("Dowody i warunki decyzji treści").length).toBeGreaterThan(0);
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(

@@ -169,7 +169,7 @@ function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsRespon
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Pełny przegląd Content
+            Pełny przegląd treści
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Rozwiń pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, status
@@ -188,7 +188,7 @@ function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsRespon
         onClick={() => setShowReview((current) => !current)}
         className="mt-4 rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
       >
-        {showReview ? "Ukryj pełny przegląd Content" : "Pokaż pełny przegląd Content"}
+        {showReview ? "Ukryj pełny przegląd treści" : "Pokaż pełny przegląd treści"}
       </button>
 
       {showReview ? (

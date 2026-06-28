@@ -146,6 +146,9 @@ Date: 2026-06-28
   source-data wording instead of credential/vendor/query-page/playbook jargon.
 - Seeded content refresh action copy now uses Polish source-data wording instead
   of `URL/query evidence`, `GSC query/page` or WordPress inventory jargon.
+- Dashboard e2e proof now checks current marketer labels such as `Centrum
+  pracy`, `Treści` and `Google Ads`, and no longer expects raw Ads evidence IDs
+  in the primary Ads proof panel.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -207,6 +210,9 @@ Date: 2026-06-28
 - `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunities_are_derived_from_evidence_and_rule_mappings or content_diagnostics_blocks_until_vendor_read_when_no_content_evidence" --maxfail=3`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "actions_api_drops_legacy_content_review_audit_terms or content_refresh_empty_state_uses_operator_source_language" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec playwright test e2e/dashboard-api.spec.ts --workers=1 --grep "command center|ads doctor|seo and content"`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard typecheck`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

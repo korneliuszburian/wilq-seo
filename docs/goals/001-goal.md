@@ -132,6 +132,9 @@ use cleaned Polish operator language.
   source-data wording instead of credential/vendor/query-page/playbook jargon.
 - Seeded content refresh action copy now uses Polish source-data wording instead
   of `URL/query evidence`, `GSC query/page` or WordPress inventory jargon.
+- Dashboard e2e proof now checks current marketer labels such as `Centrum
+  pracy`, `Treści` and `Google Ads`, and no longer expects raw Ads evidence IDs
+  in the primary Ads proof panel.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.
