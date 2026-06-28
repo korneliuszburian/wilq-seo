@@ -10674,6 +10674,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "act_prepare_ads_campaign_review_queue" in operator_summary["action_ids"]
     assert "akcj" in operator_summary["action_summary_label"]
     assert "zwrot z reklam" in operator_summary["blocked_claims"]
+    assert operator_summary["missing_read_contract_summary_label"]
+    assert operator_summary["operator_review_gate_summary_label"]
+    assert operator_summary["blocked_claim_summary_label"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     marketer_text = "\n".join(
@@ -10793,6 +10796,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_context_decision["operator_review_gate_labels"] == (
         business_context_contract["operator_review_gate_labels"]
     )
+    assert business_context_decision["missing_read_contract_summary_label"]
+    assert business_context_decision["operator_review_gate_summary_label"]
+    assert business_context_decision["blocked_claim_summary_label"]
     assert operator_summary["operator_review_gate_labels"]
     assert "human_strategy_review" not in operator_summary["operator_review_gate_labels"]
     assert business_context_decision["action_ids"] == expected_business_context_actions
@@ -11427,8 +11433,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "change_history" not in change_history_contract["missing_read_contracts"]
     assert change_history_contract["missing_read_contract_labels"] == [
-        "okno wyników przed zmianą",
-        "okno wyników po zmianie",
+        "wyniki sprzed zmiany",
+        "wyniki po zmianie",
         "ręczna ocena wpływu zmian",
         "podgląd zmian",
     ]
@@ -11542,8 +11548,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "apply_preview",
             ],
             "missing_read_contract_labels": [
-                "okno wyników przed zmianą",
-                "okno wyników po zmianie",
+                "wyniki sprzed zmiany",
+                "wyniki po zmianie",
                 "ręczna ocena wpływu zmian",
                 "podgląd zmian",
             ],
@@ -11696,6 +11702,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "marnowanie budżetu na zapytaniach" in search_term_review_contract["blocked_claims"]
     assert "dodanie wykluczających słów kluczowych" in search_term_review_contract["blocked_claims"]
+    assert search_term_review_contract["missing_read_contract_summary_label"]
+    assert search_term_review_contract["operator_review_gate_summary_label"]
+    assert search_term_review_contract["blocked_claim_summary_label"]
     search_terms_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_terms"
     )
@@ -12031,10 +12040,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert negative_keywords_contract["missing_read_contracts"] == []
     assert negative_keywords_contract["missing_read_contract_labels"] == []
+    assert negative_keywords_contract["missing_read_contract_summary_label"] == (
+        "brak brakujących danych"
+    )
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract[
         "blocked_claim_labels"
     ]
+    assert negative_keywords_contract["blocked_claim_summary_label"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
     assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
     assert negative_keywords_contract["candidates"][0]["review_score"] == 53

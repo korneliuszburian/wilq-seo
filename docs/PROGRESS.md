@@ -89,6 +89,11 @@ Date: 2026-06-28
 - Google Ads campaign, KPI, budget, impression-share and change-history tables
   use API/domain row summary labels for human review gates, blocked claims and
   changed fields instead of route-local label joins.
+- Google Ads full-review optimizer, strategy-readiness, change-impact,
+  campaign-triage and recommendation panels use API/domain summary labels for
+  missing data, required checks and blocked claims instead of rendering long
+  review/blocker arrays. Change-impact copy uses plain before/after comparison
+  wording, not starego technicznego słownictwa o oknach wyników.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
 - Merchant issue-cluster cards and decision summaries use API/domain reported
@@ -141,9 +146,9 @@ Date: 2026-06-28
    them out of copy paths.
 7. Continue checking compacted context-packs after dashboard/API cleanup; the
    content strategist context currently preserves content preview labels.
-8. Ads full-review detail still contains some long blocked-claim and review-gate
-   lists outside the cleaned row tables; continue condensing those at API/domain
-   source instead of trimming them in React.
+8. Continue focused browser audits on remaining expanded route details. Any
+   remaining long blocker/review lists must be condensed at API/domain source,
+   not trimmed in React.
 9. Real marketer UAT is still required for a usefulness claim unless the owner
    explicitly defers it.
 
@@ -151,21 +156,19 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_campaign_read_contract or ads_budget_pacing or ads_impression_share or ads_change_history" --maxfail=2`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_campaign_read_contract or ads_budget_pacing or ads_impression_share or ads_change_history or ads_search_terms or negative_keyword" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
 - `rtk pnpm --dir packages/shared-schemas exec vitest run src/index.test.ts --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
-- Live API proof: `/api/ads/diagnostics?view=summary` returns
-  `human_review_gate_summary_label="7 wymaganych sprawdzeń"`,
-  `blocked_claim_summary_label="8 zablokowanych obietnic"` for a budget row and
-  `blocked_claim_summary_label="4 zablokowane obietnice"` for an
-  impression-share row.
-- Browser proof: expanded `/ads-doctor` tables render condensed row labels such
-  as `4 zablokowane obietnice` and `7 wymaganych sprawdzeń`; the proof scan has
-  no raw `payload`, `ActionObject`, migration, `human_review_gate_labels`,
-  `blocked_claim_labels`, `changed_field_labels`, `CAMPAIGN`, `UPDATE` or raw
-  changed-field key wording.
+- Live API proof: `/api/ads/diagnostics?view=summary` returns condensed
+  `missing_read_contract_summary_label`, `operator_review_gate_summary_label`
+  and `blocked_claim_summary_label` for operator summary, optimizer readiness,
+  change-impact readiness and campaign-triage rows.
+- Browser proof: expanded `/ads-doctor` renders condensed labels such as
+  `17 brakujące zakresy danych`, `14 wymaganych sprawdzeń` and
+  `23 zablokowanych obietnic`; DOM proof has no starego technicznego słownictwa o oknach wyników and
+  keeps plain comparison copy for results before/after a change.
 
 Previous verified local slice:
 

@@ -136,6 +136,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads campaign, KPI, budget, impression-share and change-history tables
   use API/domain row summary labels for human review gates, blocked claims and
   changed fields instead of route-local label joins.
+- Google Ads full-review optimizer, strategy-readiness, change-impact,
+  campaign-triage and recommendation panels use API/domain summary labels for
+  missing data, required checks and blocked claims instead of rendering long
+  review/blocker arrays. Change-impact copy uses plain before/after comparison
+  wording, not starego technicznego słownictwa o oknach wyników.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
 - Merchant issue-cluster cards and decision summaries use API/domain reported
@@ -184,9 +189,9 @@ are resolved or explicitly deferred.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
 7. Continue checking compacted context-packs after dashboard/API cleanup.
-8. Ads full-review detail still contains some long blocked-claim and review-gate
-   lists outside the cleaned row tables; continue condensing those at API/domain
-   source instead of trimming them in React.
+8. Continue focused browser audits on remaining expanded route details. Any
+   remaining long blocker/review lists must be condensed at API/domain source,
+   not trimmed in React.
 9. Real marketer UAT is still required for usefulness claims unless explicitly
    deferred by the owner.
 

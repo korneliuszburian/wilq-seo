@@ -1486,6 +1486,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     missing_read_contract_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -1506,6 +1507,10 @@ class AdsStrategyReviewReadinessContract(BaseModel):
             )
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
         return self
 
 
@@ -1785,6 +1790,7 @@ class AdsRecommendationRow(BaseModel):
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
+    human_review_gate_summary_label: str = ""
     dismissed: bool = False
     campaign_id: str | None = None
     campaign_budget_id: str | None = None
@@ -1816,6 +1822,10 @@ class AdsRecommendationRow(BaseModel):
 
     @model_validator(mode="after")
     def fill_summary_labels(self) -> "AdsRecommendationRow":
+        if not self.human_review_gate_summary_label:
+            self.human_review_gate_summary_label = required_validation_count_label(
+                self.human_review_gate_labels or self.human_review_gates
+            )
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1935,10 +1945,13 @@ class AdsCampaignTriageRow(BaseModel):
     source_metric_names: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
+    human_review_gate_summary_label: str = ""
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> AdsCampaignTriageRow:
@@ -1946,6 +1959,18 @@ class AdsCampaignTriageRow(BaseModel):
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        if not self.human_review_gate_summary_label:
+            self.human_review_gate_summary_label = required_validation_count_label(
+                self.human_review_gate_labels or self.human_review_gates
+            )
         return self
 
 
@@ -1978,10 +2003,13 @@ class AdsOptimizerReadinessItem(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2001,6 +2029,18 @@ class AdsOptimizerReadinessItem(BaseModel):
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gate_labels or self.operator_review_gates
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
         return self
 
 
@@ -2018,10 +2058,13 @@ class AdsOptimizerReadinessContract(BaseModel):
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2031,6 +2074,26 @@ class AdsOptimizerReadinessContract(BaseModel):
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsOptimizerReadinessContract":
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gate_labels or self.operator_review_gates
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsChangeHistoryRow(BaseModel):
@@ -2113,9 +2176,11 @@ class AdsChangeImpactReadinessRow(BaseModel):
     current_conversion_value: float | None = None
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
     def hydrate_display_labels(self) -> "AdsChangeImpactReadinessRow":
@@ -2127,6 +2192,14 @@ class AdsChangeImpactReadinessRow(BaseModel):
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
                 self.campaign_id,
+            )
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
             )
         return self
 
@@ -2141,8 +2214,10 @@ class AdsChangeImpactReadinessContract(BaseModel):
     allowed_metric_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     readiness_rows: list[AdsChangeImpactReadinessRow] = Field(default_factory=list)
@@ -2151,6 +2226,20 @@ class AdsChangeImpactReadinessContract(BaseModel):
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsChangeImpactReadinessContract":
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 def _ads_campaign_display_label(
@@ -2314,10 +2403,13 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     total_search_term_count: int = 0
@@ -2331,6 +2423,22 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
         default_factory=list
     )
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsSearchTermReviewSummaryContract":
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gate_labels or self.operator_review_gates
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsSearchTermNgramRow(BaseModel):
@@ -2867,10 +2975,24 @@ class AdsNegativeKeywordsReadContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsNegativeKeywordsReadContract":
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsDecisionItem(BaseModel):
@@ -2906,8 +3028,10 @@ class AdsDecisionItem(BaseModel):
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2953,9 +3077,26 @@ class AdsDecisionItem(BaseModel):
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     risk_label: str = ""
     risk: ActionRisk = ActionRisk.low
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsDecisionItem":
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gate_labels or self.operator_review_gates
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsOperatorSummary(BaseModel):
@@ -2977,8 +3118,10 @@ class AdsOperatorSummary(BaseModel):
     allowed_metric_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2987,6 +3130,23 @@ class AdsOperatorSummary(BaseModel):
     action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    blocked_claim_summary_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_trace_summary_labels(self) -> "AdsOperatorSummary":
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gate_labels or self.operator_review_gates
+            )
+        if not self.blocked_claim_summary_label:
+            self.blocked_claim_summary_label = blocked_claim_count_label(
+                self.blocked_claim_labels or self.blocked_claims
+            )
+        return self
 
 
 class AdsDiagnosticsResponse(BaseModel):

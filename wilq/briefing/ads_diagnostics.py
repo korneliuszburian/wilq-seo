@@ -56,6 +56,7 @@ from wilq.operator_labels import (
     action_count_label,
     blocked_claim_count_label,
     evidence_count_label,
+    missing_contract_count_label,
     required_validation_count_label,
     source_connector_labels,
 )
@@ -2999,8 +3000,8 @@ def _change_impact_readiness_contract(
         )
     else:
         summary = (
-            "WILQ nie ma zdarzeń historii zmian do oceny wpływu, więc nie może zbudować "
-            "okien wyników przed/po ani przypisać zmian do kampanii."
+            "WILQ nie ma zdarzeń historii zmian do oceny wpływu, więc nie może porównać "
+            "wyników sprzed zmiany i po zmianie ani przypisać zmian do kampanii."
         )
     return AdsChangeImpactReadinessContract(
         status="blocked",
@@ -3022,8 +3023,8 @@ def _change_impact_readiness_contract(
         apply_allowed=False,
         next_step=(
             "Użyj tego jako checklisty gotowości: sprawdź, czy są zdarzenia historii zmian, "
-            "aktualny odczyt kampanii i okna wyników przed/po. Nie oceniaj "
-            "wpływu zmian bez okien przed/po i sprawdzenia przez człowieka."
+            "aktualny odczyt kampanii i porównanie wyników sprzed zmiany i po zmianie. "
+            "Nie oceniaj wpływu zmian bez takiego porównania i sprawdzenia przez człowieka."
         ),
     )
 
@@ -6424,6 +6425,10 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
         owner.operator_review_gate_labels = _ads_review_gate_labels(
             owner.operator_review_gates
         )
+        if hasattr(owner, "operator_review_gate_summary_label"):
+            owner.operator_review_gate_summary_label = required_validation_count_label(
+                owner.operator_review_gate_labels or owner.operator_review_gates
+            )
 
     human_gate_owners: list[Any] = [
         *response.campaign_read_contract.campaign_rows,
@@ -6456,11 +6461,18 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
         response.operator_summary.missing_read_contracts
     )
+    response.operator_summary.missing_read_contract_summary_label = (
+        missing_contract_count_label(response.operator_summary.missing_read_contracts)
+    )
     response.operator_summary.allowed_metric_labels = _ads_allowed_metric_labels(
         response.operator_summary.allowed_metrics
     )
     response.operator_summary.blocked_claim_labels = _unique(
         response.operator_summary.blocked_claims
+    )
+    response.operator_summary.blocked_claim_summary_label = blocked_claim_count_label(
+        response.operator_summary.blocked_claim_labels
+        or response.operator_summary.blocked_claims
     )
     response.decision_queue = [
         decision.model_copy(
@@ -6482,7 +6494,17 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "missing_read_contract_labels": _ads_missing_read_contract_labels(
                     decision.missing_read_contracts
                 ),
+                "missing_read_contract_summary_label": missing_contract_count_label(
+                    decision.missing_read_contracts
+                ),
                 "blocked_claim_labels": _unique(decision.blocked_claims),
+                "blocked_claim_summary_label": blocked_claim_count_label(
+                    _unique(decision.blocked_claims)
+                ),
+                "operator_review_gate_summary_label": required_validation_count_label(
+                    decision.operator_review_gate_labels
+                    or decision.operator_review_gates
+                ),
             }
         )
         for decision in response.decision_queue
@@ -6536,6 +6558,23 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_change_impact_marketer_labels(response.change_impact_readiness_contract)
     response.search_term_review_summary_contract.blocked_claim_labels = _unique(
         response.search_term_review_summary_contract.blocked_claims
+    )
+    response.search_term_review_summary_contract.blocked_claim_summary_label = (
+        blocked_claim_count_label(
+            response.search_term_review_summary_contract.blocked_claim_labels
+            or response.search_term_review_summary_contract.blocked_claims
+        )
+    )
+    response.search_term_review_summary_contract.missing_read_contract_summary_label = (
+        missing_contract_count_label(
+            response.search_term_review_summary_contract.missing_read_contracts
+        )
+    )
+    response.search_term_review_summary_contract.operator_review_gate_summary_label = (
+        required_validation_count_label(
+            response.search_term_review_summary_contract.operator_review_gate_labels
+            or response.search_term_review_summary_contract.operator_review_gates
+        )
     )
     _hydrate_negative_keywords_marketer_labels(response.negative_keywords_read_contract)
     _hydrate_keyword_match_context_marketer_labels(
@@ -6838,7 +6877,13 @@ def _hydrate_negative_keywords_marketer_labels(
     contract.missing_read_contract_labels = _ads_missing_read_contract_labels(
         contract.missing_read_contracts
     )
+    contract.missing_read_contract_summary_label = missing_contract_count_label(
+        contract.missing_read_contracts
+    )
     contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.blocked_claim_summary_label = blocked_claim_count_label(
+        contract.blocked_claim_labels or contract.blocked_claims
+    )
     for candidate in contract.candidates:
         candidate.required_check_labels = _ads_review_gate_labels(
             candidate.required_checks
@@ -7465,8 +7510,8 @@ def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
         "profit_margin": "marża albo model rentowności",
         "human_budget_goal": "cel budżetu od człowieka",
         "account_currency": "waluta konta",
-        "pre_change_performance_window": "okno wyników przed zmianą",
-        "post_change_performance_window": "okno wyników po zmianie",
+        "pre_change_performance_window": "wyniki sprzed zmiany",
+        "post_change_performance_window": "wyniki po zmianie",
         "human_change_impact_review": "ręczna ocena wpływu zmian",
         "apply_preview": "podgląd zmian",
         "change_event_rows": "zdarzenia historii zmian",

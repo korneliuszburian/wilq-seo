@@ -1921,8 +1921,8 @@ const adsDiagnostics = {
           "human_change_impact_review"
         ],
         missing_read_contract_labels: [
-          "okno wyników przed zmianą",
-          "okno wyników po zmianie",
+          "wyniki sprzed zmiany",
+          "wyniki po zmianie",
           "ręczna ocena wpływu zmian"
         ],
         operator_review_gates: ["human_change_impact_review"],
@@ -1977,8 +1977,8 @@ const adsDiagnostics = {
       "human_confirm_before_apply"
     ],
     missing_read_contract_labels: [
-      "okno wyników przed zmianą",
-      "okno wyników po zmianie",
+      "wyniki sprzed zmiany",
+      "wyniki po zmianie",
       "ręczna ocena wpływu zmian",
       "sprawdzenie zapisu zmian w Google Ads",
       "potwierdzenie człowieka przed zapisem"
@@ -2028,8 +2028,8 @@ const adsDiagnostics = {
       "apply_preview"
     ],
     missing_read_contract_labels: [
-      "okno wyników przed zmianą",
-      "okno wyników po zmianie",
+      "wyniki sprzed zmiany",
+      "wyniki po zmianie",
       "ręczna ocena wpływu zmian",
       "podgląd zmian"
     ],
@@ -2116,8 +2116,8 @@ const adsDiagnostics = {
       "apply_preview"
     ],
     missing_read_contract_labels: [
-      "okno wyników przed zmianą",
-      "okno wyników po zmianie",
+      "wyniki sprzed zmiany",
+      "wyniki po zmianie",
       "ręczna ocena wpływu zmian",
       "podgląd zmian"
     ],
@@ -2160,8 +2160,8 @@ const adsDiagnostics = {
           "apply_preview"
         ],
         missing_read_contract_labels: [
-          "okno wyników przed zmianą",
-          "okno wyników po zmianie",
+          "wyniki sprzed zmiany",
+          "wyniki po zmianie",
           "ręczna ocena wpływu zmian",
           "podgląd zmian"
         ],
@@ -2186,7 +2186,7 @@ const adsDiagnostics = {
     api_mutation_ready: false,
     apply_allowed: false,
     next_step:
-      "Użyj tego jako checklisty gotowości: najpierw dołóż okna pomiaru przed/po i ręczne sprawdzenie wpływu zmian, potem dopiero rozważ zapis zmian."
+      "Użyj tego jako checklisty gotowości: najpierw dołóż porównanie wyników sprzed zmiany i po zmianie i ręczne sprawdzenie wpływu zmian, potem dopiero rozważ zapis zmian."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -2288,11 +2288,14 @@ const adsDiagnostics = {
       "conversion_value"
     ],
     missing_read_contracts: ["90_day_safety_check"],
+    missing_read_contract_summary_label: "1 brakujący zakres danych",
     operator_review_gates: [
       "human_intent_review",
       "negative_keyword_action_validation"
     ],
+    operator_review_gate_summary_label: "2 wymagane sprawdzenia",
     blocked_claims: ["werdykt marnowania budżetu na zapytaniach", "dodanie wykluczających słów kluczowych", "werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam"],
+    blocked_claim_summary_label: "4 zablokowane obietnice",
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     total_search_term_count: 1,
@@ -3008,13 +3011,16 @@ const adsDiagnostics = {
     blocked_area_count: 3,
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
     missing_read_contracts: ["profit_margin", "human_strategy_review"],
+    missing_read_contract_summary_label: "2 brakujące zakresy danych",
     operator_review_gates: ["human_strategy_review", "review_campaign_goal"],
+    operator_review_gate_summary_label: "2 wymagane sprawdzenia",
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_prepare_ads_campaign_review_queue"],
     action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
+    blocked_claim_summary_label: "3 zablokowane obietnice",
     missing_read_contract_labels: ["marża albo cel opłacalności", "ocena strategii przez człowieka"],
     blocked_claim_labels: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
   },
@@ -7595,9 +7601,10 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("odczyt kampanii").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/bieżące kliknięcia kampanii/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/okno wyników przed zmianą/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/okno wyników po zmianie/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/wpływ zmian/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/brakujące zakresy danych/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/zablokowane obietnice/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/okn[ao] wynik/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/wpływ zmian/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/kampania/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zmiana/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/status kampanii/).length).toBeGreaterThan(0);
@@ -7635,7 +7642,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/72,91%/)).not.toBeInTheDocument();
     expect(screen.queryByText("CAMPAIGN_BUDGET")).not.toBeInTheDocument();
     expect(screen.queryByText(/SEARCH \/ ENABLED/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/automatyczne przyjęcie rekomendacji/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/automatyczne przyjęcie rekomendacji/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/zablokowane obietnice/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Karty wiedzy:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/card_google_ads_budget_review_playbook/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Reguły:/)).not.toBeInTheDocument();
@@ -7666,11 +7674,11 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");
     expect(routeSource).toContain("primaryDecision?.action_summary_label");
-    expect(routeSource).toContain("summary.missing_read_contract_labels");
-    expect(routeSource).toContain("summary.blocked_claim_labels");
+    expect(routeSource).toContain("summary.missing_read_contract_summary_label");
+    expect(routeSource).toContain("summary.blocked_claim_summary_label");
     expect(routeSource).toContain("optimizer_readiness_contract");
     expect(routeSource).toContain("contract.mode_label");
-    expect(routeSource).toContain("item.missing_read_contract_labels");
+    expect(routeSource).toContain("item.missing_read_contract_summary_label");
     expect(routeSource).toContain("item.source_contract_summary_label");
     expect(routeSource).toContain("interpretation.allowed_use_labels");
     expect(routeSource).toContain("interpretation.blocked_use_labels");
@@ -7681,12 +7689,18 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("strategyReadiness.status_label");
     expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
     expect(routeSource).toContain("strategyReadiness.required_validation_summary_label");
-    expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
-    expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
+    expect(routeSource).toContain("strategyReadiness.missing_read_contract_summary_label");
+    expect(routeSource).toContain("strategyReadiness.blocked_claim_summary_label");
     expect(routeSource).toContain("strategyReadiness.action_summary_label");
     expect(routeSource).toContain("decision.start_here_summary");
     expect(routeSource).toContain("decision.action_summary_label");
+    expect(routeSource).toContain("decision.blocked_claim_summary_label");
     expect(routeSource).toContain("primaryDecision?.measurement_plan");
+    expect(routeSource).toContain("summary.missing_read_contract_summary_label");
+    expect(routeSource).toContain("summary.operator_review_gate_summary_label");
+    expect(routeSource).toContain("summary.blocked_claim_summary_label");
+    expect(routeSource).toContain("primaryDecision.blocked_claim_summary_label");
+    expect(routeSource).toContain("primaryDecision.missing_read_contract_summary_label");
     expect(routeSource).toContain("business_context_read_contract.status_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
@@ -7697,13 +7711,21 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.changed_field_labels.slice(0, 4).join");
+    expect(routeSource).not.toContain("summary.blocked_claim_labels.slice(0, 8)");
+    expect(routeSource).not.toContain("decision.blocked_claim_labels.slice(0, 3)");
+    expect(routeSource).not.toContain("primaryDecision.blocked_claim_labels");
     expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.recommendation_type_label");
     expect(routeSource).toContain("row.preview_card");
     expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");
     expect(routeSource).toContain("candidate.preview_card");
     expect(routeSource).not.toContain("candidate.payload_preview");
-    expect(routeSource).toContain("row.missing_read_contract_labels");
+    expect(routeSource).toContain("row.missing_read_contract_summary_label");
+    expect(routeSource).toContain("row.human_review_gate_summary_label");
+    expect(routeSource).not.toContain("adsCampaignTriageNextStep");
+    expect(routeSource).not.toContain("row.missing_read_contract_labels");
+    expect(routeSource).not.toContain("row.blocked_claim_labels");
+    expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 3)");
     expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
     expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
     expect(routeSource).not.toContain("adsOptimizerReadinessNextStep");

@@ -275,12 +275,12 @@ function AdsCondensedDecisionPanel({
       .map((decisionId) => decisionsById.get(decisionId))
       .find((decision): decision is AdsDecisionItem => Boolean(decision)) ??
     data.decision_queue[0];
-  const blockedClaims = primaryDecision
-    ? primaryDecision.blocked_claim_labels
-    : summary.blocked_claim_labels;
-  const missingInputs = primaryDecision
-    ? primaryDecision.missing_read_contract_labels
-    : summary.missing_read_contract_labels;
+  const blockedClaimSummary = primaryDecision
+    ? primaryDecision.blocked_claim_summary_label
+    : summary.blocked_claim_summary_label;
+  const missingInputSummary = primaryDecision
+    ? primaryDecision.missing_read_contract_summary_label
+    : summary.missing_read_contract_summary_label;
   const evidenceSummary = primaryDecision
     ? primaryDecision.evidence_summary_label
     : summary.evidence_summary_label;
@@ -351,8 +351,8 @@ function AdsCondensedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Czego WILQ nie powie</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Nie wolno twierdzić" values={blockedClaims.slice(0, 6)} />
-            <TraceLine label="Brakujące wejścia" values={missingInputs.slice(0, 6)} />
+            <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} />
+            <TraceLine label="Brakujące wejścia" values={[missingInputSummary]} />
           </div>
         </div>
       </div>
@@ -415,12 +415,12 @@ function AdsMarketSnapshot({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
           label="Brakujące dane"
-          values={summary.missing_read_contract_labels}
+          values={[summary.missing_read_contract_summary_label]}
           empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={summary.blocked_claim_labels.slice(0, 8)}
+          values={[summary.blocked_claim_summary_label]}
           empty="brak"
         />
       </div>
@@ -443,9 +443,9 @@ function AdsOperatorSummary({
     .map((decisionId) => decisionsById.get(decisionId))
     .filter((decision): decision is AdsDecisionItem => Boolean(decision));
   const allowedMetrics = summary.allowed_metric_labels;
-  const missingReadContracts = summary.missing_read_contract_labels;
-  const operatorReviewGates = summary.operator_review_gate_labels;
-  const blockedClaims = summary.blocked_claim_labels;
+  const missingReadContractSummary = summary.missing_read_contract_summary_label;
+  const operatorReviewGateSummary = summary.operator_review_gate_summary_label;
+  const blockedClaimSummary = summary.blocked_claim_summary_label;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -518,8 +518,8 @@ function AdsOperatorSummary({
               values={[data.account_currency_read_contract.currency_code ?? "brak"]}
               empty="brak"
             />
-            <TraceLine label="Brakujące dane" values={missingReadContracts} empty="brak" />
-            <TraceLine label="Wymagana ocena" values={operatorReviewGates} empty="brak" />
+            <TraceLine label="Brakujące dane" values={[missingReadContractSummary]} empty="brak" />
+            <TraceLine label="Wymagana ocena" values={[operatorReviewGateSummary]} empty="brak" />
             <TraceLine
               label="Dowody"
               values={[summary.evidence_summary_label]}
@@ -530,7 +530,7 @@ function AdsOperatorSummary({
               values={[summary.action_summary_label]}
               empty="brak"
             />
-            <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
+            <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} empty="brak" />
           </div>
         </div>
       </div>
@@ -587,7 +587,7 @@ function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
               />
               <TraceLine
                 label="Nie wolno"
-                values={decision.blocked_claim_labels.slice(0, 3)}
+                values={[decision.blocked_claim_summary_label]}
                 empty="brak"
               />
             </div>
@@ -642,12 +642,12 @@ function AdsOptimizerReadinessPanel({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Brakujące dane"
-          values={contract.missing_read_contract_labels}
+          values={[contract.missing_read_contract_summary_label]}
           empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contract.blocked_claim_labels}
+          values={[contract.blocked_claim_summary_label]}
           empty="brak"
         />
         <TraceLine
@@ -713,12 +713,12 @@ function AdsOptimizerReadinessGroup({
               />
               <TraceLine
                 label="Braki"
-                values={item.missing_read_contract_labels}
+                values={[item.missing_read_contract_summary_label]}
                 empty="brak"
               />
               <TraceLine
                 label="Blokady"
-                values={item.blocked_claim_labels}
+                values={[item.blocked_claim_summary_label]}
                 empty="brak"
               />
             </div>
@@ -807,13 +807,13 @@ function AdsDecisionCard({
           values={[decision.action_summary_label]}
           empty="brak"
         />
-        {decision.operator_review_gate_labels.length > 0 ? (
+        {decision.operator_review_gates.length > 0 ? (
           <TraceLine
             label="Wymagana ocena"
-            values={decision.operator_review_gate_labels}
+            values={[decision.operator_review_gate_summary_label]}
           />
         ) : null}
-        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
+        <TraceLine label="Nie wolno twierdzić" values={[decision.blocked_claim_summary_label]} />
       </div>
     </article>
   );
@@ -847,9 +847,9 @@ function AdsMetricEvidencePanel({
   const customSegmentForecastRows =
     data.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
-  const missingReadContracts = summary.missing_read_contract_labels;
-  const operatorReviewGates = summary.operator_review_gate_labels;
-  const blockedClaims = summary.blocked_claim_labels;
+  const missingReadContractSummary = summary.missing_read_contract_summary_label;
+  const operatorReviewGateSummary = summary.operator_review_gate_summary_label;
+  const blockedClaimSummary = summary.blocked_claim_summary_label;
 
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -960,9 +960,9 @@ function AdsMetricEvidencePanel({
       ) : null}
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Brakujące dane" values={missingReadContracts} />
-        <TraceLine label="Wymaga oceny" values={operatorReviewGates} empty="brak" />
-        <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
+        <TraceLine label="Brakujące dane" values={[missingReadContractSummary]} />
+        <TraceLine label="Wymaga oceny" values={[operatorReviewGateSummary]} empty="brak" />
+        <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} />
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
           label="Sekcje źródłowe"
@@ -1057,12 +1057,12 @@ function AdsBusinessTargetInterpretationPanel({
           />
           <TraceLine
             label="Braki"
-            values={strategyReadiness.missing_read_contract_labels}
+            values={[strategyReadiness.missing_read_contract_summary_label]}
             empty="brak"
           />
           <TraceLine
             label="Nie wolno twierdzić"
-            values={strategyReadiness.blocked_claim_labels}
+            values={[strategyReadiness.blocked_claim_summary_label]}
             empty="brak"
           />
           <TraceLine
@@ -1214,17 +1214,17 @@ function AdsCampaignTriageRowsPanel({
               {row.review_reason}
             </p>
             <p className="mt-2 text-xs font-medium text-ink">
-              {adsCampaignTriageNextStep(row)}
+              {row.next_step}
             </p>
             <div className="mt-3 grid gap-1 text-xs text-slate-600 md:grid-cols-2">
               <TraceLine
                 label="Wymagana ocena"
-                values={row.human_review_gate_labels.slice(0, 4)}
+                values={[row.human_review_gate_summary_label]}
                 empty="brak"
               />
               <TraceLine
                 label="Braki"
-                values={row.missing_read_contract_labels}
+                values={[row.missing_read_contract_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -1482,7 +1482,7 @@ function AdsSharedBudgetDistributionPanel({
               />
               <TraceLine
                 label="Nie wolno twierdzić"
-                values={row.blocked_claim_labels}
+                values={[row.blocked_claim_summary_label]}
               />
             </div>
           </article>
@@ -1570,12 +1570,12 @@ function AdsRecommendationRowsPanel({
             )}
             <TraceLine
               label="Ocena człowieka"
-              values={row.human_review_gate_labels}
+              values={[row.human_review_gate_summary_label]}
               empty="brak"
             />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={row.blocked_claim_labels}
+              values={[row.blocked_claim_summary_label]}
             />
             <LinkedTraceLine
               label="Dowody"
@@ -1744,12 +1744,12 @@ function AdsChangeImpactReadinessPanel({
         />
         <TraceLine
           label="Brakujące dane"
-          values={contract.missing_read_contract_labels}
+          values={[contract.missing_read_contract_summary_label]}
           empty="brak"
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contract.blocked_claim_labels}
+          values={[contract.blocked_claim_summary_label]}
           empty="brak"
         />
         <LinkedTraceLine
@@ -1801,12 +1801,12 @@ function AdsChangeImpactReadinessCard({
         />
         <TraceLine
           label="Braki"
-          values={row.missing_read_contract_labels}
+          values={[row.missing_read_contract_summary_label]}
           empty="brak"
         />
         <TraceLine
           label="Blokady"
-          values={row.blocked_claim_labels}
+          values={[row.blocked_claim_summary_label]}
           empty="brak"
         />
         <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" empty="brak" />
@@ -1906,11 +1906,11 @@ function AdsSearchTermReviewSummaryPanel({
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
           label="Wymaga oceny"
-          values={contract.operator_review_gate_labels}
+          values={[contract.operator_review_gate_summary_label]}
         />
         <TraceLine
           label="Nie wolno twierdzić"
-          values={contract.blocked_claim_labels}
+          values={[contract.blocked_claim_summary_label]}
         />
       </div>
     </div>
@@ -2311,13 +2311,6 @@ function adsStrategyContextValue(value: unknown) {
   if (value === null || value === undefined || value === "") return "brak";
   if (typeof value === "number") return adsNumber(value);
   return String(value);
-}
-
-function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {
-  const gates = row.human_review_gate_labels.slice(0, 3);
-  return `Sprawdź kampanię ręcznie: ${gates.join(
-    ", "
-  ) || "cel kampanii, konwersje, budżet i wyszukiwane hasła"}. Zapis zmian wymaga sprawdzenia w WILQ i potwierdzenia człowieka.`;
 }
 
 function adsNumber(value: number | null | undefined) {
