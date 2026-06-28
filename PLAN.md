@@ -522,7 +522,7 @@ Product identity:
 
 Main outcome:
 Clean WILQ's active product semantics and marketer-facing surfaces, then
-continue toward the final Marketing Operating System described in `PLAN.md`.
+continue toward the final Marketing Operating System described in `PLANS.md`.
 
 Goal contract:
 - Outcome: active WILQ contracts, docs and marketer surfaces are logically clean,
