@@ -753,3 +753,6 @@ WILQ is complete for this long-range goal when:
 - Latest blocked-claim fallback proof: focused API fallback tests, marketer
   language guard and helper proof passed after central labels stopped exposing
   unknown raw technical claim values.
+- Latest Knowledge proof: focused route test, dashboard typecheck, marketer
+  language guard and browser proof passed after Knowledge details stopped
+  showing raw connector IDs and fixed Polish count forms.

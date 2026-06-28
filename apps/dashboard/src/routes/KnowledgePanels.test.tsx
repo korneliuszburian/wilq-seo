@@ -113,6 +113,7 @@ describe("KnowledgePanels", () => {
   });
 
   it("operating map uses API labels for status, risk and route", () => {
+    const manyKnowledgeCards = Array.from({ length: 13 }, (_, index) => `card_${index + 1}`);
     render(
       <KnowledgeOperatingMapPanel
         map={
@@ -139,7 +140,7 @@ describe("KnowledgePanels", () => {
                 evidence_summary_label: "1 dowód źródłowy",
                 action_ids: ["act_prepare_ads"],
                 metric_tiles: {},
-                knowledge_card_ids: ["card_google_ads_search_playbook"],
+                knowledge_card_ids: manyKnowledgeCards,
                 playbook_ids: ["google_ads_search_playbook"],
                 expert_rule_ids: ["ads_search_terms_v1"],
                 required_evidence: ["search_terms"],
@@ -160,8 +161,13 @@ describe("KnowledgePanels", () => {
     expect(screen.getByText("Widok: Ads z API")).toBeInTheDocument();
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
+    expect(screen.getByText("Wiedza użyta w decyzji: 15 elementów")).toBeInTheDocument();
     expect(screen.getByText("gotowe z API")).toBeInTheDocument();
     expect(screen.getByText("ryzyko z API")).toBeInTheDocument();
     expect(screen.queryByText("widok Google Ads")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne" }));
+    expect(screen.getAllByText("Źródła: Google Ads").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/google_ads/)).not.toBeInTheDocument();
   });
 });

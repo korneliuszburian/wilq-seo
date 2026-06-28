@@ -168,6 +168,8 @@ Date: 2026-06-28
   longer injects hidden punctuation into browser text output.
 - Central blocked-claim labels now keep known Polish claim labels specific and
   collapse unknown raw technical values to `obietnica do sprawdzenia`.
+- Knowledge decision details now use API-owned source labels instead of raw
+  connector IDs, and Knowledge count copy uses Polish plural forms.
 - Google Sheets compact route copy now says safe export/testing language
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of

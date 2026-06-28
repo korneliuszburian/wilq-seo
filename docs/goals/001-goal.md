@@ -237,6 +237,9 @@ use cleaned Polish operator language.
 - Central blocked-claim labels no longer expose unknown raw technical values.
   Known Polish claim labels stay specific, while raw snake_case/English
   fallback values collapse to `obietnica do sprawdzenia`.
+- Knowledge decision details now render API-owned source labels instead of raw
+  connector IDs, and Knowledge count copy uses Polish plural forms such as
+  `13 elementów`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

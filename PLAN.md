@@ -273,6 +273,8 @@ Known cleanup already started:
   into browser text output.
 - Central blocked-claim labels keep known Polish claims specific and prevent
   unknown raw technical values from becoming marketer-facing copy.
+- Knowledge decision details use API-owned source labels instead of raw
+  connector IDs, and count copy uses Polish plural forms.
 - Primary dashboard navigation and touched route headings now use Polish
   marketer-facing labels instead of mixed working names like `Command Center`,
   `Content` and `Ads Doctor`.

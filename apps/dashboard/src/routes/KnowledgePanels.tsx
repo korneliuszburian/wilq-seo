@@ -220,7 +220,6 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
       </button>
       {showDetails ? (
         <div className="mt-3 grid gap-2 rounded-md border border-line bg-slate-50 p-3 text-xs leading-5 text-slate-600 sm:grid-cols-2">
-          <div>Źródła techniczne: {binding.source_connectors.join(", ") || "brak"}</div>
           <div>Źródła: {binding.source_connector_labels.join(", ") || "brak"}</div>
           <div>
             Dowody:{" "}
@@ -316,6 +315,12 @@ function PlaybookItem({ playbook }: { playbook: MarketingPlaybook }) {
 }
 
 function formatCount(count: number, unit: string) {
+  if (unit === "element") {
+    return formatPolishCount(count, "element", "elementy", "elementów");
+  }
+  if (unit === "typ") {
+    return formatPolishCount(count, "typ", "typy", "typów");
+  }
   return count > 0 ? `${count} ${unit}` : "brak";
 }
 
