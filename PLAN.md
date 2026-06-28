@@ -252,9 +252,9 @@ Known cleanup already started:
   primary card copy.
 - Content refresh action details now have typed API preview cards for content
   brief review and WordPress draft payload review. The primary card copy uses
-  public/final URL semantics and no longer depends on raw content payload
-  contracts, `target_site`, `target_url` or mapping-review wording.
-- Content Planner's selected-decision first screen now uses API-owned
+  public/final URL semantics and no longer depends on stale dev-preview URL
+  fields or old URL-review wording.
+- Treści selected-decision first screen now uses API-owned
   `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
   source facts. The route no longer parses `action.payload.content_brief_preview`
   for the primary marketer card.
@@ -283,9 +283,8 @@ Known cleanup already started:
   condensed blocked-claim summaries; the route no longer joins label arrays in
   React for visible process detail copy.
 - Primary dashboard navigation and touched route headings now use Polish
-  marketer-facing labels instead of mixed working names like `Command Center`,
-  `Content` and `Ads Doctor`.
-- Ads Doctor no longer carries unused route-local status/risk label helpers.
+  marketer-facing labels instead of mixed legacy route names.
+- Google Ads no longer carries unused route-local status/risk label helpers.
 - Localo metric names now come from API/domain `metric_label` in diagnostics,
   marketing brief and shared metric chips; remaining dimension labels in metric
   chips now come from API-owned `dimension_labels` and
@@ -323,7 +322,7 @@ Known cleanup already started:
 - `wilq-daily-command` reaches the live WILQ API and the daily context-pack
   smoke passes after capping embedded evidence summaries at 32. Keep watching
   context-pack size as live evidence grows.
-- Merchant, Content Planner and Ahrefs browser proof now passes the targeted
+- Merchant, Treści and Ahrefs browser proof now passes the targeted
   stale-term scan for visible `ID` proof-count and product-ID wording.
 
 ## 9. Current Goal
