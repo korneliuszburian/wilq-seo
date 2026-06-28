@@ -497,6 +497,13 @@ def _content_marketer_decision(
         mode_label=_content_marketer_mode_label(decision.decision_type),
         why_it_matters=_content_marketer_why(decision),
         safe_next_action=_content_marketer_next_action(decision),
+        metric_tiles=_content_marketer_metric_tiles(decision),
+        content_angle=_content_marketer_content_angle(decision),
+        h1_direction=_content_marketer_h1_direction(decision),
+        h2_direction=_content_marketer_h2_direction(decision),
+        faq_direction=_content_marketer_faq_direction(decision),
+        cta_direction=_content_marketer_cta_direction(decision),
+        source_facts=_content_marketer_source_facts(decision),
         blocked_claims=blocked_claims,
         missing_inputs=missing_inputs,
         evidence_summary=_content_marketer_evidence_summary(decision),
@@ -736,6 +743,115 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
             "do sprawdzenia, nie gotową decyzję."
         )
     return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież widok treści."
+
+
+def _content_marketer_metric_tiles(decision: ContentDecisionItem) -> dict[str, int | float | str]:
+    tiles: dict[str, int | float | str] = {}
+    if decision.query_count:
+        tiles["Zapytania"] = decision.query_count
+    if decision.total_clicks is not None:
+        tiles["Kliknięcia"] = decision.total_clicks
+    if decision.total_impressions is not None:
+        tiles["Wyświetlenia"] = decision.total_impressions
+    if decision.aggregate_ctr is not None:
+        tiles["CTR"] = _format_percent(decision.aggregate_ctr)
+    if decision.best_average_position is not None:
+        tiles["Pozycja"] = round(decision.best_average_position, 2)
+    if not tiles:
+        tiles.update(decision.metric_tiles)
+    return dict(list(tiles.items())[:4])
+
+
+def _content_marketer_topic(decision: ContentDecisionItem) -> str:
+    return decision.primary_query or decision.title or "ten temat"
+
+
+def _content_marketer_content_angle(decision: ContentDecisionItem) -> str:
+    topic = _content_marketer_topic(decision)
+    if decision.decision_type == "refresh_or_merge":
+        return (
+            f"Zachowaj istniejącą treść i odśwież ją wokół intencji: {topic}. "
+            "Nie obiecuj wzrostu pozycji, leadów ani przychodu."
+        )
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return (
+            f"Najpierw sprawdź, czy temat {topic} nie dubluje istniejącej treści. "
+            "Plan pisania powstaje dopiero po kontroli spisu i kanonicznego URL-a."
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "To nie jest jeszcze temat do pisania. Najpierw trzeba potwierdzić jakość pomiaru GA4."
+    if decision.decision_type == "review_ahrefs_gap_records":
+        return (
+            f"Traktuj temat {topic} jako inspirację do sprawdzenia, nie jako gotowy brief. "
+            "Potrzebne jest zestawienie z GSC i WordPress."
+        )
+    return "Brakuje danych źródłowych, więc WILQ pokazuje tylko blokadę decyzji contentowej."
+
+
+def _content_marketer_h1_direction(decision: ContentDecisionItem) -> str:
+    topic = _content_marketer_topic(decision)
+    if decision.decision_type == "block_until_vendor_read":
+        return "H1 powstaje dopiero po odczycie GSC i spisu treści WordPress."
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "Nie przygotowuj H1, dopóki problem pomiaru nie jest rozdzielony od jakości treści."
+    return f"H1 ma jasno odpowiedzieć na intencję: {topic}."
+
+
+def _content_marketer_h2_direction(decision: ContentDecisionItem) -> list[str]:
+    topic = _content_marketer_topic(decision)
+    if decision.decision_type == "block_until_vendor_read":
+        return ["odczyt danych GSC", "spis treści WordPress"]
+    if decision.decision_type == "refresh_or_merge":
+        return [f"co już odpowiada na temat {topic}", "co wymaga aktualizacji", "czego nie wolno obiecać"]
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return ["istniejące treści do sprawdzenia", "ryzyko duplikacji", "decyzja: zachować, odświeżyć, scalić albo utworzyć"]
+    if decision.decision_type == "block_as_tracking_not_content":
+        return ["brak pomiaru", "co trzeba naprawić przed oceną treści"]
+    return ["gap do sprawdzenia", "popyt w GSC", "dopasowanie do oferty Ekologus"]
+
+
+def _content_marketer_faq_direction(decision: ContentDecisionItem) -> list[str]:
+    topic = _content_marketer_topic(decision)
+    if decision.decision_type == "block_until_vendor_read":
+        return ["Jakie dane muszą wrócić, zanim powstanie plan treści?"]
+    if decision.decision_type == "block_as_tracking_not_content":
+        return ["Czy problem wynika z pomiaru, czy z jakości treści?"]
+    return [
+        f"Co oznacza {topic} dla firmy?",
+        "Kiedy warto skonsultować temat z Ekologus?",
+    ]
+
+
+def _content_marketer_cta_direction(decision: ContentDecisionItem) -> str:
+    if decision.decision_type in {
+        "block_until_vendor_read",
+        "block_as_tracking_not_content",
+    }:
+        return "CTA zostaje zablokowane do czasu uzupełnienia danych."
+    return "CTA do konsultacji wpływu wymagań środowiskowych na firmę, bez obietnic wyniku."
+
+
+def _content_marketer_source_facts(decision: ContentDecisionItem) -> list[str]:
+    facts: list[str] = []
+    if decision.source_public_url or decision.page:
+        facts.append(f"URL publiczny: {decision.source_public_url or decision.page}")
+    if decision.primary_query:
+        facts.append(f"Główne zapytanie: {decision.primary_query}")
+    if decision.total_clicks is not None:
+        facts.append(f"Kliknięcia GSC: {decision.total_clicks}")
+    if decision.total_impressions is not None:
+        facts.append(f"Wyświetlenia GSC: {decision.total_impressions}")
+    if decision.wordpress_match_label:
+        facts.append(f"Spis treści WordPress: {decision.wordpress_match_label}")
+    elif decision.wordpress_match:
+        facts.append(f"Spis treści WordPress: {_wordpress_match_tile(decision.wordpress_match)}")
+    return facts[:5]
 
 
 def _content_marketer_missing_inputs(

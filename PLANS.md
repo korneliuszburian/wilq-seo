@@ -563,6 +563,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Content Planner's expandable plan/draft panel now renders
   API-owned action preview cards instead of constructing marketer-facing cards
   from content/WordPress payload arrays.
+- 2026-06-28: Content Planner's selected-decision first screen now renders
+  API-owned `marketer_decision` fields instead of parsing content action
+  payload previews.
 
 ## Discoveries
 
@@ -647,6 +650,9 @@ WILQ is complete for this long-range goal when:
 - A dashboard panel that needs action preview semantics should render
   `ActionObject.preview_cards`; reading action payload arrays is temporary debt
   only when a domain-specific selected-decision view-model does not yet exist.
+- A dashboard's selected-decision first screen should use a domain view-model
+  such as `marketer_decision`; action preview cards are for expandable action
+  details, not for reconstructing the primary decision.
 
 ## Decision Log
 
@@ -703,6 +709,9 @@ WILQ is complete for this long-range goal when:
 - Content Planner plan/draft cards are action preview semantics. They must stay
   on `ActionObject.preview_cards`; do not restore route-local content/WordPress
   payload card renderers.
+- Content Planner selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
+  snapshot belong to `marketer_decision`; do not restore
+  `action.payload.content_brief_preview` parsing in the route.
 
 ## Outcomes & Retrospective
 
@@ -727,3 +736,6 @@ WILQ is complete for this long-range goal when:
 - Latest Content Planner proof: focused route test, dashboard typecheck,
   marketer language guard and browser text proof passed after moving the
   expandable plan/draft panel to API-owned preview cards.
+- Latest Content Planner proof: focused API test, route test, dashboard
+  typecheck, marketer language guard and browser text proof passed after moving
+  the selected-decision snapshot to API-owned `marketer_decision`.

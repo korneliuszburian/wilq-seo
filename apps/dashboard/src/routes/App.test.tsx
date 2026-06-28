@@ -8131,6 +8131,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("poprawna")).toBeInTheDocument();
     const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("action.preview_cards");
+    expect(routeSource).not.toContain("action.payload.content_brief_preview");
     expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
   });
 

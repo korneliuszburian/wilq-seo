@@ -254,6 +254,10 @@ Known cleanup already started:
   brief review and WordPress draft payload review. The primary card copy uses
   public/final URL semantics and no longer depends on raw content payload
   contracts, `target_site`, `target_url` or mapping-review wording.
+- Content Planner's selected-decision first screen now uses API-owned
+  `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
+  source facts. The route no longer parses `action.payload.content_brief_preview`
+  for the primary marketer card.
 - Google Ads search-term n-gram action details now have typed API preview
   cards without raw `SearchTermNgramReview`, preview-contract names or
   n-gram-to-negative-keyword contract keys in primary card copy. The route is

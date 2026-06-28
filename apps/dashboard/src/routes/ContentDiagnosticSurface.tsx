@@ -106,7 +106,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
       <ContentPreflightPanel data={preflight.data} isLoading={preflight.isLoading} isError={Boolean(preflight.error)} />
 
-      <ContentSelectedDecisionPanel data={data} actions={routeActions} />
+      <ContentSelectedDecisionPanel data={data} />
 
       <ContentExpandableBriefPanel actions={routeActions} />
 
@@ -376,59 +376,6 @@ function ContentSafetyGatePanel({ data }: { data: ContentDiagnosticsResponse }) 
   );
 }
 
-type ContentBriefPreviewItem = {
-  action_id: string;
-  candidate_id: string;
-  source_type: string;
-  source_type_label: string;
-  mode: string;
-  mode_label: string;
-  topic: string;
-  source_public_url?: string | null;
-  preview_url?: string | null;
-  intended_final_url?: string | null;
-  final_canonical_url?: string | null;
-  inventory_gate_status?: string | null;
-  canonical_gate_status?: string | null;
-  duplicate_gate_status?: string | null;
-  content_gate_summary?: string | null;
-  competitor_domain?: string | null;
-  wordpress_inventory_match?: string | null;
-  gsc_demand?: string | null;
-  metric_snapshot: Record<string, string | number | boolean | null>;
-  metric_snapshot_labels?: Record<string, string>;
-  brief_goal: string;
-  intent?: string | null;
-  content_angle?: string | null;
-  audience?: string | null;
-  key_objections?: string[];
-  h1_direction?: string | null;
-  seo_title_direction?: string | null;
-  meta_description_direction?: string | null;
-  h2_direction?: string[];
-  faq_direction?: string[];
-  schema_direction?: string | null;
-  cta_direction?: string | null;
-  internal_link_direction?: string[];
-  legal_review_notes?: string[];
-  brand_voice_notes?: string[];
-  publication_readiness_status?: string | null;
-  publication_readiness_status_label: string;
-  publication_blockers?: string[];
-  publication_blocker_labels?: string[];
-  source_facts?: string[];
-  missing_evidence?: string[];
-  forbidden_claims?: string[];
-  required_validation: string[];
-  required_validation_labels?: string[];
-  blocked_claims: string[];
-  blocked_claim_labels: string[];
-  source_connectors?: string[];
-  evidence_ids: string[];
-  apply_allowed: boolean;
-  api_mutation_ready: boolean;
-};
-
 function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
   const previews = contentActionPreviewCardsFromActions(actions, "content_brief_review").slice(0, 4);
   const draftPreviews = contentActionPreviewCardsFromActions(
@@ -502,39 +449,33 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
 }
 
 function ContentSelectedDecisionPanel({
-  data,
-  actions
+  data
 }: {
   data: ContentDiagnosticsResponse;
-  actions: ActionObject[];
 }) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
-  const previews = contentBriefPreviewItemsFromActions(actions);
   const topDecisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
     .filter((decision): decision is ContentDecisionItem => Boolean(decision));
   const primaryDecision =
-    topDecisions.find((decision) =>
-      previews.some((preview) => contentBriefPreviewMatchesDecision(preview, decision))
-    ) ??
+    (data.marketer_decision?.technical_decision_id
+      ? decisionsById.get(data.marketer_decision.technical_decision_id)
+      : undefined) ??
     topDecisions[0] ??
     data.decision_queue[0];
-  const primaryPreview = contentPrimaryBriefPreview(primaryDecision, previews);
   const blockedClaims = uniqueValues([
-    ...(primaryPreview?.blocked_claims ?? []),
     ...(primaryDecision?.blocked_claims ?? [])
   ]);
   const missingInputs = uniqueValues([
-    ...(primaryPreview?.publication_blocker_labels ?? []),
-    ...(primaryPreview?.required_validation_labels ?? [])
+    ...(primaryDecision?.inventory_gate_status_label ? [primaryDecision.inventory_gate_status_label] : []),
+    ...(primaryDecision?.canonical_gate_status_label ? [primaryDecision.canonical_gate_status_label] : []),
+    ...(primaryDecision?.duplicate_gate_status_label ? [primaryDecision.duplicate_gate_status_label] : [])
   ]);
   const evidenceIds = uniqueValues([
-    ...(primaryPreview?.evidence_ids ?? []),
     ...(primaryDecision?.evidence_ids ?? [])
   ]);
   const sourceConnectors = uniqueValues([
-    ...(primaryPreview?.source_connectors ?? []),
     ...(primaryDecision?.source_connectors ?? [])
   ]);
   const marketerDecision = data.marketer_decision;
@@ -547,7 +488,7 @@ function ContentSelectedDecisionPanel({
     data.connectors
   );
   const panelMeasurementPlan =
-    marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan(primaryPreview);
+    marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan();
 
   if (!primaryDecision) {
     return (
@@ -573,11 +514,11 @@ function ContentSelectedDecisionPanel({
               "Wybrany temat do zachowania albo odświeżenia"}
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-            {primaryPreview?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
+            {marketerDecision?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          {contentSelectedMetricTiles(primaryDecision, primaryPreview).map(([label, value]) => (
+          {contentSelectedMetricTiles(primaryDecision, marketerDecision?.metric_tiles).map(([label, value]) => (
             <MetricTile key={label} label={label} value={value} />
           ))}
         </div>
@@ -601,22 +542,22 @@ function ContentSelectedDecisionPanel({
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine
               label="H1"
-              values={primaryPreview?.h1_direction ? [primaryPreview.h1_direction] : []}
+              values={marketerDecision?.h1_direction ? [marketerDecision.h1_direction] : []}
               empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="H2"
-              values={primaryPreview?.h2_direction?.slice(0, 3) ?? []}
+              values={marketerDecision?.h2_direction?.slice(0, 3) ?? []}
               empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="FAQ"
-              values={primaryPreview?.faq_direction?.slice(0, 3) ?? []}
+              values={marketerDecision?.faq_direction?.slice(0, 3) ?? []}
               empty="do doprecyzowania w planie treści"
             />
             <TraceLine
               label="Wezwanie do działania"
-              values={primaryPreview?.cta_direction ? [primaryPreview.cta_direction] : []}
+              values={marketerDecision?.cta_direction ? [marketerDecision.cta_direction] : []}
               empty="do doprecyzowania w planie treści"
             />
           </div>
@@ -642,7 +583,6 @@ function ContentSelectedDecisionPanel({
               label="Podgląd"
               values={[
                 marketerDecision?.preview_url ??
-                  primaryPreview?.preview_url ??
                   ""
               ].filter(Boolean).map(shortPath)}
               empty="brak podglądu"
@@ -667,7 +607,7 @@ function ContentSelectedDecisionPanel({
             <TraceLine label="Źródła" values={panelSourceConnectors} />
             <TraceLine
               label="Fakty"
-              values={primaryPreview?.source_facts?.slice(0, 4) ?? []}
+              values={marketerDecision?.source_facts?.slice(0, 4) ?? []}
               empty="zobacz szczegóły niżej"
             />
           </div>
@@ -1017,8 +957,6 @@ function contentDecisionTitle(decision: ContentDecisionItem) {
   return decision.title;
 }
 
-type ContentBriefPreviewPayload = Omit<ContentBriefPreviewItem, "action_id">;
-
 function contentActionPreviewCardsFromActions(actions: ActionObject[], kind: string) {
   return actions.flatMap((action) =>
     action.preview_cards
@@ -1027,101 +965,21 @@ function contentActionPreviewCardsFromActions(actions: ActionObject[], kind: str
   );
 }
 
-function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBriefPreviewItem[] {
-  return actions.flatMap((action) => {
-    const rows = action.payload.content_brief_preview;
-    if (!Array.isArray(rows)) return [];
-    return rows
-      .filter(isContentBriefPreviewItem)
-      .map((row) => ({ ...row, action_id: action.id }));
-  });
-}
-
-function contentPrimaryBriefPreview(
-  decision: ContentDecisionItem | undefined,
-  previews: ContentBriefPreviewItem[]
-) {
-  if (!decision) return previews[0];
-  return previews.find((preview) => contentBriefPreviewMatchesDecision(preview, decision));
-}
-
-function contentBriefPreviewMatchesDecision(
-  preview: ContentBriefPreviewItem,
-  decision: ContentDecisionItem
-) {
-  return (
-    Boolean(preview.source_public_url) &&
-    (preview.source_public_url === decision.source_public_url ||
-      preview.source_public_url === decision.final_canonical_url ||
-      preview.source_public_url === decision.intended_final_url ||
-      preview.source_public_url === decision.page)
-  );
-}
-
 function contentSelectedMetricTiles(
   decision: ContentDecisionItem,
-  preview: ContentBriefPreviewItem | undefined
+  marketerMetricTiles: Record<string, string | number> | undefined
 ): Array<[string, string | number]> {
-  const snapshot = preview?.metric_snapshot ?? {};
-  const rawRows: Array<[string, string | number]> = [
-    ["Zapytania", contentMetricSnapshotValue(snapshot, "queries")],
-    ["Kliknięcia", contentMetricSnapshotValue(snapshot, "clicks")],
-    ["Wyświetlenia", contentMetricSnapshotValue(snapshot, "impressions")],
-    ["CTR", contentMetricSnapshotValue(snapshot, "ctr")]
-  ];
-  const rows = rawRows.filter(
-    (row): row is [string, string | number] => row[1] !== "brak"
-  );
-  if (rows.length) return rows;
+  const marketerRows = Object.entries(marketerMetricTiles ?? {}).slice(0, 4);
+  if (marketerRows.length) return marketerRows;
   return Object.entries(decision.metric_tiles)
     .slice(0, 4)
     .map(([label, value]): [string, string | number] => [label, value]);
 }
 
-function contentMetricSnapshotValue(
-  snapshot: Record<string, string | number | boolean | null>,
-  key: string
-) {
-  if (!(key in snapshot)) return "brak";
-  return contentBriefMetricValue(key, snapshot[key]);
-}
-
-function contentSelectedMeasurementPlan(preview: ContentBriefPreviewItem | undefined) {
-  if (!preview) {
-    return "Najpierw zapisz sprawdzenie planu treści. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
-  }
-  return [
-    "Po sprawdzeniu zapisz decyzję contentową i punkt odniesienia z GSC/WordPress.",
-    "Po ewentualnym szkicu i publikacji potrzebne są okna sprawdzenia w GSC/GA4.",
-    "Do tego czasu WILQ blokuje obietnice pozycji, ruchu, leadów i przychodu."
-  ].join(" ");
-}
-
-function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewPayload {
-  if (!isPlainObject(value)) return false;
-  return (
-    typeof value.candidate_id === "string" &&
-    typeof value.source_type === "string" &&
-    typeof value.mode === "string" &&
-    typeof value.topic === "string" &&
-    isPlainObject(value.metric_snapshot) &&
-    typeof value.brief_goal === "string" &&
-    Array.isArray(value.required_validation) &&
-    Array.isArray(value.blocked_claims) &&
-    Array.isArray(value.evidence_ids) &&
-    typeof value.apply_allowed === "boolean" &&
-    typeof value.api_mutation_ready === "boolean"
-  );
-}
-
-function contentBriefMetricValue(metricName: string, value: string | number | boolean | null) {
-  return formatContentMetricValue(metricName, value);
+function contentSelectedMeasurementPlan() {
+  return "Najpierw zapisz sprawdzenie planu treści. Bez publikacji oraz danych po publikacji WILQ nie ocenia sukcesu ani porażki.";
 }
 
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

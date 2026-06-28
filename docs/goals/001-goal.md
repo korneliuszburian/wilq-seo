@@ -186,6 +186,9 @@ use cleaned Polish operator language.
 - Content Planner's expandable plan/draft panel now renders API-owned
   `ActionObject.preview_cards` for content brief and WordPress draft previews
   instead of building marketer-facing cards from raw action payload arrays.
+- Content Planner's selected-decision first screen now uses API-owned
+  `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
+  source facts instead of reading `action.payload.content_brief_preview`.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
@@ -225,12 +228,9 @@ are resolved or explicitly deferred.
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 6. Dashboard still needs focused cleanup for Knowledge first-screen summaries,
    workflow/registry counters and remaining content/ads payload-derived panels.
-7. Content selected-decision metrics still read the content brief payload for a
-   primary decision snapshot. Migrate that into a typed content view-model in a
-   separate slice.
-8. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
+7. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
-9. The remaining dashboard StatusBadge label-as-value scan hits are source and
+8. The remaining dashboard StatusBadge label-as-value scan hits are source and
    domain tags, not status/risk/validation state badges.
 
 ## Execution Policy

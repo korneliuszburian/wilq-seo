@@ -3021,6 +3021,13 @@ class ContentMarketerDecision(BaseModel):
     mode_label: str
     why_it_matters: str
     safe_next_action: str
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    content_angle: str | None = None
+    h1_direction: str | None = None
+    h2_direction: list[str] = Field(default_factory=list)
+    faq_direction: list[str] = Field(default_factory=list)
+    cta_direction: str | None = None
+    source_facts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     missing_inputs: list[str] = Field(default_factory=list)
     evidence_summary: str
