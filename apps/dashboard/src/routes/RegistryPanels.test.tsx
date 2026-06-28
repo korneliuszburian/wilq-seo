@@ -124,6 +124,7 @@ describe("RegistryPanels", () => {
             status_label: "zakończony",
             summary: "Odczyt Google Ads zakończony.",
             evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+            evidence_summary_label: "2 dowody źródłowe",
             missing_credentials: [],
             checked_credentials: [],
             started_at: "2026-06-17T10:00:00Z",

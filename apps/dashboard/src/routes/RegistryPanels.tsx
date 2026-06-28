@@ -151,7 +151,7 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dane z zewnętrznego systemu: {run.vendor_data_collected ? "tak" : "nie"}</div>
             <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
-            <div>Dowody: {formatEvidenceCount(run.evidence_ids.length)}</div>
+            <div>Dowody: {run.evidence_summary_label}</div>
           </div>
           {formatMetricCount(run.metric_summary) ? (
             <p className="mt-3 text-xs leading-5 text-slate-600">
@@ -190,7 +190,7 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
             <StatusBadge value={action.risk} label={action.risk_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
+            <div>Dowody: {action.evidence_summary_label}</div>
             <div>Zapisane sprawdzenia: {action.audit_events.length}</div>
           </div>
           <Link
@@ -204,10 +204,6 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
       ))}
     </div>
   );
-}
-
-function formatEvidenceCount(count: number) {
-  return formatPolishCount(count, "dowód źródłowy", "dowody źródłowe", "dowodów źródłowych");
 }
 
 function formatPolishCount(count: number, singular: string, few: string, many: string) {

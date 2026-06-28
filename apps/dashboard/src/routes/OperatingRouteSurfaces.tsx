@@ -233,7 +233,7 @@ function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
             <StatusBadge value={action.risk} label={action.risk_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
+            <div>Dowody: {action.evidence_summary_label}</div>
             <div>Metryki: {action.metrics.length}</div>
           </div>
           <Link
@@ -247,13 +247,6 @@ function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
       ))}
     </div>
   );
-}
-
-function formatEvidenceCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 dowód źródłowy";
-  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
-  return `${count} dowodów źródłowych`;
 }
 
 export function WorkflowsSurface() {

@@ -775,6 +775,7 @@ const connectorRefreshRuns = [
     started_at: "2026-06-17T10:00:00Z",
     completed_at: "2026-06-17T10:00:01Z",
     evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+    evidence_summary_label: "2 dowody źródłowe",
     missing_credentials: [],
     checked_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
     external_call_attempted: false,
@@ -7709,6 +7710,15 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("interpretation.action_ids.length");
     expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
+    expect(readFileSync("src/routes/OperatingRouteSurfaces.tsx", "utf8")).not.toContain(
+      "formatEvidenceCount(action.evidence_ids.length)"
+    );
+    expect(readFileSync("src/routes/RegistryPanels.tsx", "utf8")).not.toContain(
+      "formatEvidenceCount(action.evidence_ids.length)"
+    );
+    expect(readFileSync("src/routes/RegistryPanels.tsx", "utf8")).not.toContain(
+      "formatEvidenceCount(run.evidence_ids.length)"
+    );
   });
 
   it("custom segments route renders dedicated validation contract", async () => {

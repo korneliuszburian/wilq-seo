@@ -102,6 +102,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads start-here, business-context, strategy-readiness and campaign
   triage panels use API/domain action summary labels instead of route-local
   action count formatting.
+- Action priority cards, action registry cards and connector refresh run cards
+  use API/domain evidence summary labels instead of route-local evidence count
+  formatting.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.

@@ -579,6 +579,10 @@ WILQ is complete for this long-range goal when:
   labels in API/shared schemas. The Ads route no longer owns local action-count
   formatting for these deep panels; live API proof and browser proof live in
   `.local-lab/proof/`.
+- 2026-06-28: Action priority cards, action registry cards and connector
+  refresh run cards now consume API/domain `evidence_summary_label` instead of
+  route-local evidence count formatting. Live API proof confirmed
+  `/api/connectors/refresh-runs`; browser proof confirmed `/actions`.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
 - 2026-06-28: Knowledge first-screen decision and card summaries now use

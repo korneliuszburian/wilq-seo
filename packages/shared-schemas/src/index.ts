@@ -81,6 +81,7 @@ export const ConnectorRefreshRunSchema = z.object({
   started_at: z.string(),
   completed_at: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   missing_credentials: z.array(z.string()),
   checked_credentials: z.array(z.string()),
   external_call_attempted: z.boolean(),

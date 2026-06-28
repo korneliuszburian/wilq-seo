@@ -152,6 +152,7 @@ class ConnectorRefreshRun(BaseModel):
     started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     missing_credentials: list[str] = Field(default_factory=list)
     checked_credentials: list[str] = Field(default_factory=list)
     external_call_attempted: bool = False
@@ -160,6 +161,12 @@ class ConnectorRefreshRun(BaseModel):
     summary: str
     errors: list[str] = Field(default_factory=list)
     redacted: bool = True
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ConnectorRefreshRun:
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class MetricFact(BaseModel):
