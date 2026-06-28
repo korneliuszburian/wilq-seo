@@ -556,6 +556,10 @@ WILQ is complete for this long-range goal when:
   content/ads payload-derived panels, context-pack copy and recovery-doc
   pruning. Do not start deferred product layers until `PLAN.md` completion is
   green or explicitly deferred.
+- 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
+  and Merchant tactical labels now fall back to neutral Polish operator labels.
+  The remaining raw fallback scan is limited to non-marketer connector
+  normalization and title fallback paths.
 
 ## Discoveries
 
@@ -633,6 +637,10 @@ WILQ is complete for this long-range goal when:
   `NOT_IMPACTED` may remain internal/test input values, but marketer-facing
   payloads must expose Polish label fields and route tests must guard against
   rendering the raw enum.
+- Unknown enum fallback is a shared product surface. Even if a normal dataset
+  only emits known values, fallback paths must be neutral Polish copy because
+  vendor contracts drift and tests should prove the drift does not leak raw
+  keys to the marketer.
 
 ## Decision Log
 
@@ -684,6 +692,8 @@ WILQ is complete for this long-range goal when:
 - If a marketer route needs a semantic dictionary to explain a status, blocker,
   metric, source or action, treat it as a missing API/schema/view-model field.
   Do not add or preserve route-local translators as cleanup strategy.
+- Unknown vendor/domain values in API-owned labels must use neutral Polish
+  operator copy. Do not fall back to raw enum/source values in visible labels.
 
 ## Outcomes & Retrospective
 
@@ -702,3 +712,6 @@ WILQ is complete for this long-range goal when:
 - Next improvement: keep `docs/PROGRESS.md` and `docs/goals/001-goal.md`
   concise; move detailed history to git/proof artifacts and keep only active
   gaps plus the next executable slice in recovery docs.
+- Latest fallback cleanup proof: focused API fallback tests, marketer language
+  guard and `git diff --check` passed for Knowledge, Localo, GA4, Demand Gen,
+  opportunity domain and Merchant tactical fallback labels.

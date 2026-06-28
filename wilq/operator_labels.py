@@ -133,4 +133,4 @@ def opportunity_domain_label(domain: object) -> str:
         "social": "Social",
         "wordpress": "WordPress",
     }
-    return labels.get(str(value), str(value))
+    return labels.get(str(value), "obszar do sprawdzenia")

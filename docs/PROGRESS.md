@@ -189,6 +189,10 @@ Date: 2026-06-28
 - Dashboard e2e proof for Action Detail and Merchant no longer expects raw
   evidence IDs in the primary surface; trace IDs stay reachable through
   technical detail after using marketer-facing `dowód 1` links.
+- Unknown Knowledge card types/routes, Localo contracts/metrics, GA4 read
+  contracts, Demand Gen conditions, opportunity domains and Merchant tactical
+  issue labels now fall back to neutral Polish operator labels instead of raw
+  enum/source values.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -197,9 +201,9 @@ Date: 2026-06-28
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and
    `docs/goals/001-goal.md` short and aligned. History belongs in git and proof
    artifacts.
-2. Remove remaining scattered raw fallback paths in knowledge, Content, GA4,
-   Localo, Merchant and Ads helper modules by adding API/schema/view-model
-   labels.
+2. Continue raw fallback cleanup in active API/helper modules. Current scan is
+   down to non-marketer connector normalization and title fallbacks; any new
+   visible raw fallback must be fixed at typed API/schema/view-model source.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
 4. Add typed contract/vendor-enum label registries outside the already-cleaned
@@ -220,6 +224,9 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks or route_label_fallbacks or tactical_queue" --maxfail=3`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map or content_diagnostics or tactical_queue or action_preview or operator_label_fallbacks" --maxfail=3`

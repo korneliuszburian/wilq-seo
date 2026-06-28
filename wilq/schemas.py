@@ -625,6 +625,26 @@ KNOWLEDGE_RISK_LABELS = {
 }
 
 
+def _knowledge_card_type_label(value: str) -> str:
+    return KNOWLEDGE_CARD_TYPE_LABELS.get(value, "typ wiedzy do sprawdzenia")
+
+
+def _knowledge_source_type_label(value: str) -> str:
+    return KNOWLEDGE_SOURCE_TYPE_LABELS.get(value, "źródło wiedzy do sprawdzenia")
+
+
+def _knowledge_route_label(value: str) -> str:
+    return KNOWLEDGE_ROUTE_LABELS.get(value, "widok do sprawdzenia")
+
+
+def _knowledge_status_label(value: str) -> str:
+    return KNOWLEDGE_STATUS_LABELS.get(value, "status wiedzy do sprawdzenia")
+
+
+def _knowledge_risk_label(value: str) -> str:
+    return KNOWLEDGE_RISK_LABELS.get(value, "ryzyko do sprawdzenia")
+
+
 class KnowledgeCard(BaseModel):
     id: str
     card_type: str
@@ -650,12 +670,9 @@ class KnowledgeCard(BaseModel):
                 or self.title
             )
         if not self.card_type_label:
-            self.card_type_label = KNOWLEDGE_CARD_TYPE_LABELS.get(self.card_type, self.card_type)
+            self.card_type_label = _knowledge_card_type_label(self.card_type)
         if not self.source_type_label:
-            self.source_type_label = KNOWLEDGE_SOURCE_TYPE_LABELS.get(
-                self.source_type,
-                self.source_type,
-            )
+            self.source_type_label = _knowledge_source_type_label(self.source_type)
         return self
 
 
@@ -682,7 +699,7 @@ class MarketingPlaybook(BaseModel):
         if not self.display_title:
             self.display_title = KNOWLEDGE_DISPLAY_TITLE_LABELS.get(self.id, self.title)
         if not self.card_type_label:
-            self.card_type_label = KNOWLEDGE_CARD_TYPE_LABELS.get(self.card_type, self.card_type)
+            self.card_type_label = _knowledge_card_type_label(self.card_type)
         if not self.source_type_label:
             self.source_type_label = "zasada pracy"
         return self
@@ -726,12 +743,12 @@ class KnowledgeDecisionBinding(BaseModel):
     @model_validator(mode="after")
     def fill_operator_labels(self) -> KnowledgeDecisionBinding:
         if not self.status_label:
-            self.status_label = KNOWLEDGE_STATUS_LABELS.get(self.status, self.status)
+            self.status_label = _knowledge_status_label(self.status)
         if not self.route_label:
-            self.route_label = KNOWLEDGE_ROUTE_LABELS.get(self.route, self.route)
+            self.route_label = _knowledge_route_label(self.route)
         if not self.risk_label:
             risk_value = self.risk.value if isinstance(self.risk, ActionRisk) else self.risk
-            self.risk_label = KNOWLEDGE_RISK_LABELS.get(risk_value, risk_value)
+            self.risk_label = _knowledge_risk_label(str(risk_value))
         return self
 
 
@@ -980,7 +997,7 @@ def _tactical_dimension_value_label(key: str, value: str) -> str:
             "PL": "Polska",
         },
     }
-    return labels_by_key.get(key, {}).get(value, value)
+    return labels_by_key.get(key, {}).get(value, "wartość do sprawdzenia")
 
 
 def _blocked_claim_label(value: str) -> str:

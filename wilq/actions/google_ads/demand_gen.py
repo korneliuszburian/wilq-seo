@@ -82,7 +82,17 @@ DEMAND_GEN_CAMPAIGN_STATUS_LABELS = {
 
 
 def demand_gen_contract_labels(values: Iterable[str]) -> list[str]:
-    return [DEMAND_GEN_CONTRACT_LABELS.get(str(value), str(value)) for value in values]
+    return [
+        DEMAND_GEN_CONTRACT_LABELS.get(str(value), "warunek Demand Gen do sprawdzenia")
+        for value in values
+    ]
+
+
+def demand_gen_contract_label(value: object) -> str:
+    return DEMAND_GEN_CONTRACT_LABELS.get(
+        str(value or ""),
+        "warunek Demand Gen do sprawdzenia",
+    )
 
 
 def demand_gen_campaign_status_label(value: object) -> str:
@@ -385,7 +395,7 @@ def demand_gen_campaign_mode_review_rows_from_campaigns(
                 review_required=review_required,
                 review_status_label=_demand_gen_review_status_label(review_required),
                 reason=reason,
-                reason_label=DEMAND_GEN_CONTRACT_LABELS.get(reason, reason),
+                reason_label=demand_gen_contract_label(reason),
                 evidence_ids=unique_items(campaign.get("evidence_ids") or []),
             )
         )

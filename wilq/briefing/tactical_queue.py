@@ -663,9 +663,15 @@ def _merchant_feed_items(
         product_count = _numeric_fact(group_facts, "issue_product_count")
         issue_title = _dimension_value(group_facts, "issue_title")
         affected_attribute = _dimension_value(group_facts, "affected_attribute")
-        issue_label = MERCHANT_ISSUE_LABELS.get(issue_type, issue_title or issue_type)
-        severity_label = MERCHANT_SEVERITY_LABELS.get(severity, severity)
-        resolution_label = MERCHANT_RESOLUTION_LABELS.get(resolution, resolution)
+        issue_label = MERCHANT_ISSUE_LABELS.get(
+            issue_type,
+            issue_title or "problem Merchant do sprawdzenia",
+        )
+        severity_label = MERCHANT_SEVERITY_LABELS.get(severity, "ważność Merchant do sprawdzenia")
+        resolution_label = MERCHANT_RESOLUTION_LABELS.get(
+            resolution,
+            "rozwiązanie Merchant do sprawdzenia",
+        )
         items.append(
             TacticalQueueItem(
                 id=(

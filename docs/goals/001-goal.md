@@ -179,6 +179,10 @@ use cleaned Polish operator language.
 - Dashboard e2e proof for Action Detail and Merchant no longer expects raw
   evidence IDs in the primary surface; trace IDs stay reachable through
   technical detail after using marketer-facing `dowód 1` links.
+- Unknown Knowledge card types/routes, Localo contracts/metrics, GA4 read
+  contracts, Demand Gen conditions, opportunity domains and Merchant tactical
+  issue labels now use neutral Polish fallback labels instead of raw enum/source
+  values.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
@@ -206,9 +210,9 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Remove remaining scattered raw fallback paths in knowledge, Content, GA4,
-   Localo, Merchant and Ads helper modules by adding typed
-   API/schema/view-model labels.
+2. Continue raw fallback cleanup in active API/helper modules. Current scan is
+   down to non-marketer connector normalization and title fallbacks; any new
+   visible raw fallback must be fixed at typed API/schema/view-model source.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
 4. Add typed contract/vendor-enum label registries outside the already-cleaned

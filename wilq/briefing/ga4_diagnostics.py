@@ -849,7 +849,7 @@ def _conversion_readiness_contract(
 
 
 def _ga4_read_contract_labels(values: Iterable[str]) -> list[str]:
-    return [GA4_READ_CONTRACT_LABELS.get(value, value) for value in values]
+    return [GA4_READ_CONTRACT_LABELS.get(value, "zakres danych GA4 do sprawdzenia") for value in values]
 
 
 def _ga4_action_safety_section(

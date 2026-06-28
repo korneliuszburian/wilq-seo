@@ -18,6 +18,7 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.campaign_triage import _campaign_channel_label
+from wilq.actions.google_ads.demand_gen import demand_gen_contract_labels
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.ga4.tracking_quality import (
@@ -52,6 +53,7 @@ from wilq.briefing.ga4_diagnostics import (
     _ga4_decision_with_marketer_labels,
     _ga4_freshness_label,
     _ga4_optional_label,
+    _ga4_read_contract_labels,
     _ga4_refresh_status_label,
     _ga4_risk_label,
     _ga4_section_status_label,
@@ -70,6 +72,7 @@ from wilq.briefing.localo_diagnostics import (
     _localo_refresh_status_label,
     _localo_section_status_label,
 )
+from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fact_label
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_labels import (
     merchant_dimension_label,
@@ -81,7 +84,7 @@ from wilq.briefing.merchant_labels import (
     merchant_resolution_label,
     merchant_severity_label,
 )
-from wilq.briefing.tactical_queue import _merchant_dimension_label
+from wilq.briefing.tactical_queue import _merchant_dimension_label, _merchant_feed_items
 from wilq.briefing.merchant_diagnostics import (
     _merchant_connector_status_label,
     _merchant_freshness_label,
@@ -113,6 +116,7 @@ from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
 from wilq.operator_labels import (
     connector_refresh_status_label,
+    opportunity_domain_label,
     route_cta_label,
     route_operator_label,
     source_connector_label,
@@ -145,6 +149,7 @@ from wilq.schemas import (
     FreshnessState,
     Ga4DecisionItem,
     KnowledgeCard,
+    KnowledgeDecisionBinding,
     MarketingBrief,
     MerchantIssueCluster,
     MerchantProductPerformanceReadiness,
@@ -1477,6 +1482,11 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         _ga4_tracking_validation_label(raw_value),
         _ga4_tracking_blocked_claim_label(raw_value),
         _opportunity_risk_label(raw_value),
+        localo_contract_label(raw_value),
+        localo_metric_fact_label(raw_value),
+        *_ga4_read_contract_labels([raw_value]),
+        *demand_gen_contract_labels([raw_value]),
+        opportunity_domain_label(raw_value),
     ]
 
     assert labels == [
@@ -1521,6 +1531,11 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "warunek GA4 do sprawdzenia",
         "wniosek GA4 do sprawdzenia",
         "ryzyko szansy do sprawdzenia",
+        "zakres danych Localo do sprawdzenia",
+        "metryka Localo do sprawdzenia",
+        "zakres danych GA4 do sprawdzenia",
+        "warunek Demand Gen do sprawdzenia",
+        "obszar do sprawdzenia",
     ]
     assert all(raw_value not in label for label in labels)
     assert all("new VENDOR raw value" not in label for label in labels)
@@ -1536,6 +1551,65 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     labelled_ga4_decision = _ga4_decision_with_marketer_labels(ga4_decision)
     assert labelled_ga4_decision.decision_type_label == "typ decyzji GA4 do sprawdzenia"
     assert raw_value not in labelled_ga4_decision.decision_type_label
+
+    knowledge_card = KnowledgeCard(
+        id="card_unknown_operator_label",
+        card_type=raw_value,
+        title="Karta wiedzy",
+        summary="Karta testowa.",
+        source_type=raw_value,
+        source_id="source_unknown_operator_label",
+        source_url_or_path="docs/source.md",
+        confidence=0.5,
+    )
+    assert knowledge_card.card_type_label == "typ wiedzy do sprawdzenia"
+    assert knowledge_card.source_type_label == "źródło wiedzy do sprawdzenia"
+    assert raw_value not in knowledge_card.card_type_label
+    assert raw_value not in knowledge_card.source_type_label
+
+    knowledge_binding = KnowledgeDecisionBinding(
+        id="binding_unknown_route",
+        title="Powiązanie wiedzy",
+        status="ready",
+        route=f"/{raw_value}",
+        summary="Sprawdzenie wiedzy.",
+        next_step="Otwórz widok.",
+        risk=ActionRisk.low,
+    )
+    assert knowledge_binding.route_label == "widok do sprawdzenia"
+    assert raw_value not in knowledge_binding.route_label
+
+    merchant_items = _merchant_feed_items(
+        [
+            MetricFact(
+                name="issue_product_count",
+                value=3,
+                period="test",
+                source_connector="google_merchant_center",
+                evidence_id="ev_unknown_merchant_issue",
+                dimensions={
+                    "severity": raw_value,
+                    "resolution": raw_value,
+                    "issue_type": raw_value,
+                    "country": "PL",
+                },
+            )
+        ],
+        {"google_merchant_center": ["act_unknown_merchant_issue"]},
+    )
+    assert merchant_items
+    assert merchant_items[0].dimension_value_labels["severity"] == "wartość do sprawdzenia"
+    assert merchant_items[0].dimension_value_labels["resolution"] == "wartość do sprawdzenia"
+    assert merchant_items[0].dimension_value_labels["issue_type"] == "wartość do sprawdzenia"
+    merchant_item_text = " ".join(
+        [
+            merchant_items[0].title,
+            merchant_items[0].diagnosis,
+            merchant_items[0].next_step,
+        ]
+    )
+    assert raw_value not in merchant_item_text
+    assert "Merchant do sprawdzenia" in merchant_item_text
 
 
 def test_route_label_fallbacks_do_not_expose_raw_paths() -> None:

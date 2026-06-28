@@ -2259,7 +2259,7 @@ def _merchant_payload_preview_with_operator_labels(
     if not isinstance(checks, list):
         return preview
     labels = [
-        MERCHANT_REQUIRED_VALIDATION_LABELS.get(check, check)
+        MERCHANT_REQUIRED_VALIDATION_LABELS.get(check, "warunek Merchant do sprawdzenia")
         for check in checks
         if isinstance(check, str)
     ]

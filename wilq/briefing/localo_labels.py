@@ -45,7 +45,7 @@ LOCALO_METRIC_FACT_LABELS = {
 
 
 def localo_contract_label(value: str) -> str:
-    return LOCALO_CONTRACT_LABELS.get(value, value)
+    return LOCALO_CONTRACT_LABELS.get(value, "zakres danych Localo do sprawdzenia")
 
 
 def localo_evidence_label(value: str) -> str:
@@ -53,4 +53,4 @@ def localo_evidence_label(value: str) -> str:
 
 
 def localo_metric_fact_label(value: str) -> str:
-    return LOCALO_METRIC_FACT_LABELS.get(value, value)
+    return LOCALO_METRIC_FACT_LABELS.get(value, "metryka Localo do sprawdzenia")

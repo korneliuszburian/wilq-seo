@@ -1855,7 +1855,7 @@ def _localo_contracts_phrase(contracts: list[str]) -> str:
         "reviews": "recenzje",
         "local_tasks": "zadania lokalne",
     }
-    values = [labels.get(contract, contract) for contract in contracts]
+    values = [labels.get(contract, "zakres danych Localo do sprawdzenia") for contract in contracts]
     if not values:
         return "brak"
     if len(values) == 1:
