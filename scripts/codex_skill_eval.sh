@@ -206,7 +206,7 @@ blocked_claim_terms_instruction = (
     else ""
 )
 expected_no_actions_instruction = (
-    "\n<expected_no_action_ids>\nWILQ API nie zwraca ActionObject dla tego workflow. "
+    "\n<expected_no_action_ids>\nWILQ API nie zwraca akcji do sprawdzenia dla tego workflow. "
     "Nie dodawaj żadnych nie-null `action_id` w `action_candidates`.\n"
     "</expected_no_action_ids>\n"
     if expected_no_action_ids
@@ -252,16 +252,19 @@ Oczekiwane connector surfaces: {connectors}
 - Nie edytuj plików.
 - Nie drukuj sekretów, tokenów, credential paths ani raw vendor response bodies.
 - Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
-- Każda rekomendacja musi mieć evidence_ids i source_connectors z WILQ API.
+- Każda rekomendacja musi mieć identyfikatory dowodów i źródła danych z WILQ API
+  w polach `evidence_ids` i `source_connectors`.
 - Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
 - Jeżeli `expected_blocker` podaje zablokowane twierdzenia, nie umieszczaj tych
   twierdzeń w `recommendations[].label_pl` ani w nieblokowanych action labels.
   Jeżeli musisz wymienić zablokowane twierdzenie przy konkretnej rekomendacji, ustaw
   dla niej niepusty `blocked_reason`; preferuj jednak top-level
   `blocked_reason`, `notes` albo action candidate ze stanem `blocked`.
-- Nie proponuj write/apply bez validated ActionObject i jawnej zgody użytkownika.
+- Nie proponuj zapisu zmian bez zweryfikowanej propozycji w WILQ i jawnej zgody użytkownika.
 - Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
-- ID endpointów, connectorów, evidence, opportunity i ActionObject zostaw bez tłumaczenia.
+- Identyfikatory endpointów, connectorów, dowodów, szans i akcji zostaw w
+  polach technicznych bez tłumaczenia, ale nie używaj ich jako widocznych
+  etykiet dla operatora.
 - Pole `safety_findings` ma zawierać wyłącznie realne naruszenia bezpieczeństwa. Jeśli naruszeń nie ma, zwróć pustą listę.
 - Pole `decision_quality` jest obowiązkowe i nie jest dekoracją. Ustaw:
   - `actionable_decision=true`, gdy odpowiedź daje decyzję, kolejkę review,
@@ -272,8 +275,8 @@ Oczekiwane connector surfaces: {connectors}
     albo nie występują w danym workflow.
   - `workflow_specific_interpretation=true`, gdy odpowiedź używa właściwego
     route/diagnostics/action contract zamiast generycznej porady marketingowej.
-  - `evidence_backed_reasoning=true`, gdy decyzja wynika z evidence IDs,
-    source connectors i danych ze smoke/API.
+  - `evidence_backed_reasoning=true`, gdy decyzja wynika z identyfikatorów dowodów,
+    źródeł danych i danych ze smoke/API.
   - `notes_pl` krótko wyjaśnia po polsku, dlaczego decyzja jest użyteczna albo
     co blokuje pełną decyzję.
 - Wykonaj najwyżej: odczyt SKILL.md/output-contract i poniższy smoke script. Potem zakończ finalnym JSON.
@@ -286,14 +289,14 @@ Oczekiwane connector surfaces: {connectors}
 
 <interpretation>
 Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor`
-`ads_diagnostics` jest najmocniejszym dowodem Ads Doctor. Dla
+`ads_diagnostics` jest najmocniejszym dowodem Google Ads. Dla
 `wilq-merchant-feed-operator` `merchant_diagnostics` jest najmocniejszym dowodem
 Merchant route. Dla `wilq-gsc-content-doctor` i `wilq-content-strategist`
 `content_diagnostics` jest najmocniejszym dowodem SEO/content route. Dla
 `wilq-ga4-analyst` `ga4_diagnostics` jest najmocniejszym dowodem GA4 route. Dla
 pozostałych route-specific skillów `brief_items` są wycinkiem z
 /api/marketing/brief. Jeżeli script podaje tylko liczniki, nie wymyślaj
-brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo
+brakujących identyfikatorów dowodów. W takiej sytuacji zostaw `recommendations` puste albo
 ustaw blocker/notes z uczciwym ograniczeniem.
 </interpretation>
 
@@ -409,6 +412,25 @@ combined_text = " ".join(texts)
 combined_json_text = json.dumps(data, ensure_ascii=False)
 if not re.search(r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]", combined_text):
     errors.append("no Polish diacritics found in operator-facing JSON values")
+
+default_forbidden_operator_terms = (
+    "Action" + "Object",
+    "Command" + " Center",
+    "Content" + " Planner",
+    "Ads" + " Doctor",
+    "evidence" + " IDs",
+    "pay" + "load",
+    "block" + "ery",
+    "target" + "_site",
+    "mapping" + "_review",
+    "mapping" + "-review",
+    "migration" + "-map",
+    "wykonanie" + " zmian",
+    "tylko do" + " sprawdzenia",
+)
+for term in default_forbidden_operator_terms:
+    if term.lower() in combined_text.lower():
+        errors.append(f"forbidden operator-facing term present: {term}")
 
 surface_path = case.get("surface_path")
 if surface_path and surface_path not in combined_json_text:

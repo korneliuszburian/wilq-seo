@@ -2,7 +2,7 @@
   {
     "skill": "wilq-daily-command",
     "surface_path": "/command-center",
-    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, evidence IDs, core action IDs i jeden najbezpieczniejszy następny krok. Nie promuj szkiców social ani Localo jako głównego zadania dnia, jeśli nie występują w command_center.daily_decisions.",
+    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/dashboard/command-center, /api/marketing/brief i context-packu: realne metryki, identyfikatory dowodów, identyfikatory akcji i jeden najbezpieczniejszy następny krok. Nie promuj szkiców social ani Localo jako głównego zadania dnia, jeśli nie występują w command_center.daily_decisions.",
     "expected_terms_pl": [
       "Plan działań",
       "action_plan",
@@ -13,9 +13,9 @@
       "/ga4",
       "/ads-doctor",
       "Merchant",
-      "Content",
+      "Treści",
       "GA4",
-      "Ads",
+      "Google Ads",
       "Localo poza daily_decisions"
     ],
     "expected_action_ids": [
@@ -61,7 +61,7 @@
     "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania kosztu pozyskania celu ani zwrotu z reklam, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
-      "Ads Doctor",
+      "Google Ads",
       "google_ads",
       "ads_diagnostics",
       "live_data_available",
@@ -138,7 +138,7 @@
     "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
     "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
     "expected_terms_pl": [
-      "Content Planner",
+      "Treści",
       "GSC",
       "treści",
       "content_diagnostics",
@@ -257,7 +257,7 @@
       "wordpress_ekologus"
     ],
     "expected_terms_pl": [
-      "Content Planner",
+      "Treści",
       "WordPress",
       "google_search_console",
       "content_diagnostics",
@@ -374,7 +374,7 @@
     "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować segmenty niestandardowe z realnych source_terms i dowodów. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj terminów odbiorców, rozmiaru odbiorców, zwrotu z reklam ani efektu kampanii.",
     "expected_connectors": ["google_ads", "google_search_console"],
     "expected_terms_pl": [
-      "Ads Doctor",
+      "Google Ads",
       "segmenty niestandardowe",
       "ads_diagnostics",
       "custom_segments_read_contract",
@@ -438,7 +438,7 @@
   {
     "skill": "wilq-ga4-analyst",
     "surface_path": "/ga4",
-    "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, akcję do sprawdzenia oraz twierdzenia, których nie wolno mówić.",
+    "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż identyfikatory dowodów, akcję do sprawdzenia oraz twierdzenia, których nie wolno mówić.",
     "messy_task_pl": "Czy te strony wejścia są słabe, czy pomiar jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
     "expected_connectors": ["google_analytics_4"],
     "expected_terms_pl": [

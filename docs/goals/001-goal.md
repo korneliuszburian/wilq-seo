@@ -97,6 +97,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
   wording such as `dowody techniczne`, `techniczne warunki akcji` and
   `techniczne potwierdzenie`. Technical detail drawers remain allowed.
+- Codex skill eval cases and harness no longer require old working route names,
+  English evidence wording or action-model jargon in operator-facing output.
+  The harness now fails final operator-facing JSON values that reintroduce
+  those terms.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
@@ -195,7 +199,10 @@ are resolved or explicitly deferred.
    payload-derived panels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
-7. Continue checking compacted context-packs after dashboard/API cleanup.
+7. Continue checking compacted context-packs after dashboard/API cleanup. The
+   skill eval harness now blocks old working route names and technical jargon
+   in operator-facing JSON values, but context-pack string values still need
+   periodic focused audits.
 8. Continue focused browser audits on remaining expanded route details. Any
    remaining long blocker/review lists must be condensed at API/domain source,
    not trimmed in React.

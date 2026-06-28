@@ -45,6 +45,10 @@ Date: 2026-06-28
 - Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
   wording such as `dowody techniczne`, `techniczne warunki akcji` and
   `techniczne potwierdzenie`. Technical detail drawers remain allowed.
+- Codex skill eval cases no longer require working route names or English
+  evidence wording as operator-visible output, and the eval harness now fails
+  operator-facing JSON values that reintroduce old route names or technical
+  jargon.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -164,9 +168,15 @@ Date: 2026-06-28
 Most recent verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics_shows_access_ready_without_visibility_claims or localo_diagnostics_exposes_partial_visibility_contracts" --maxfail=2`
+- `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "localo|merchant|content|ads doctor|safety record"`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk bash -lc 'CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ga4-analyst'`
+- Targeted eval-case scan: no active hits for old route names, action-model
+  jargon, English evidence wording, stale content URL fields or old blocker
+  wording in `docs/evals/cases/wilq-skill-eval-cases.json`,
+  `scripts/codex_skill_eval.sh` and `tests/test_codex_skill_eval_cases.py`.
 - Live API proof: `/api/localo/diagnostics` has no
   `techniczne potwierdzenie`, `dowody techniczne`, `techniczne warunki akcji`
   or `skrót technicznych` in Localo access/section/operator summaries.

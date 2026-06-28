@@ -75,6 +75,36 @@ def test_active_eval_prompts_do_not_reintroduce_content_schema_labels() -> None:
         assert phrase not in active_text
 
 
+def test_active_eval_cases_do_not_require_forbidden_operator_jargon() -> None:
+    cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
+
+    forbidden_expected_terms = {
+        "Command" + " Center",
+        "Content" + " Planner",
+        "Ads" + " Doctor",
+        "Action" + "Object",
+        "evidence" + " IDs",
+        "pay" + "load",
+        "block" + "ery",
+        "target" + "_site",
+        "mapping" + "_review",
+        "mapping" + "-review",
+        "migration" + "-map",
+        "wykonanie" + " zmian",
+        "tylko do" + " sprawdzenia",
+    }
+
+    for case in cases:
+        searchable_parts = [
+            *(case.get("expected_terms_pl") or []),
+            case.get("task_pl") or "",
+            case.get("messy_task_pl") or "",
+        ]
+        searchable = "\n".join(str(part) for part in searchable_parts)
+        for phrase in forbidden_expected_terms:
+            assert phrase not in searchable, f"{case['skill']} reintroduced {phrase!r}"
+
+
 def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     cases = {case["skill"]: case for case in json.loads(CASES_PATH.read_text(encoding="utf-8"))}
 
@@ -82,7 +112,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-ads-doctor": {
             "surface_path": "/ads-doctor",
             "terms": {
-                "Ads Doctor",
+                "Google Ads",
                 "google_ads",
                 "ads_diagnostics",
                 "live_data_available",
@@ -150,7 +180,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-gsc-content-doctor": {
             "surface_path": "/content-planner",
             "terms": {
-                "Content Planner",
+                "Treści",
                 "GSC",
                 "treści",
                 "content_diagnostics",
@@ -228,7 +258,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-content-strategist": {
             "surface_path": "/content-planner",
             "terms": {
-                "Content Planner",
+                "Treści",
                 "WordPress",
                 "google_search_console",
                 "content_diagnostics",
@@ -264,7 +294,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-custom-segments": {
             "surface_path": "/ads-doctor",
             "terms": {
-                "Ads Doctor",
+                "Google Ads",
                 "segmenty niestandardowe",
                 "ads_diagnostics",
                 "custom_segments_read_contract",
@@ -359,9 +389,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "/ga4",
                 "/ads-doctor",
                 "Merchant",
-                "Content",
+                "Treści",
                 "GA4",
-                "Ads",
+                "Google Ads",
                 "Localo poza daily_decisions",
             },
             "action_ids": {
@@ -561,6 +591,10 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "messy_task_pl",
         "task_pl = case.get(\"task_pl\") or messy_task_pl",
         "requires task_pl or messy_task_pl",
+        "forbidden operator-facing term present",
+        "default_forbidden_operator_terms",
+        "identyfikatory dowodów",
+        "zweryfikowanej propozycji w WILQ",
     ):
         assert required in harness
 
