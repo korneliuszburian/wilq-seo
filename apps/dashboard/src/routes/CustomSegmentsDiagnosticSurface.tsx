@@ -282,11 +282,11 @@ export function CustomSegmentsDiagnosticSurface() {
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
             <MetricTile
               label="Brakujące dane"
-              value={contract.missing_read_contracts.length}
+              value={contract.missing_read_contract_summary_label}
             />
             <MetricTile
               label="Warunki sprawdzenia"
-              value={contract.operator_review_gates.length}
+              value={contract.operator_review_gate_summary_label}
             />
           </div>
         </div>

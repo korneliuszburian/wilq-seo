@@ -2569,8 +2569,10 @@ class AdsCustomSegmentsReadContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
+    operator_review_gate_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -2586,6 +2588,14 @@ class AdsCustomSegmentsReadContract(BaseModel):
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        if not self.operator_review_gate_summary_label:
+            self.operator_review_gate_summary_label = required_validation_count_label(
+                self.operator_review_gates
+            )
         return self
 
 

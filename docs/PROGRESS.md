@@ -74,6 +74,8 @@ Date: 2026-06-28
   blocked-claim summary labels instead of route-local count formatting.
 - Custom Segments candidate, forecast and proof panels use API/domain evidence
   and action summary labels instead of route-local count formatting.
+- Custom Segments validation tiles use API/domain missing-data and
+  required-check summary labels instead of route-local count formatting.
 - Demand Gen uses API/domain evidence, action and campaign-channel labels
   instead of route-local count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
@@ -134,6 +136,19 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route renders dedicated validation contract"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns
+  `missing_read_contract_summary_label="2 brakujące zakresy danych"` and
+  `operator_review_gate_summary_label="5 wymaganych sprawdzeń"`.
+- Browser proof: `/ads-doctor/custom-segments` renders those labels without
+  raw contract fields, `payload` or `ActionObject` wording.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "localo route renders workflow-specific blockers and clean metric labels"`

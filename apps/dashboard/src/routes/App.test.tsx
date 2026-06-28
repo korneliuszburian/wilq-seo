@@ -2769,6 +2769,7 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     missing_read_contracts: ["forecast_or_audience_size"],
+    missing_read_contract_summary_label: "1 brakujący zakres danych",
     operator_review_gates: [
       "review_source_terms",
       "reject_brand_or_low_intent_terms",
@@ -2776,6 +2777,7 @@ const adsDiagnostics = {
       "forecast_or_audience_size",
       "human_confirm_before_apply"
     ],
+    operator_review_gate_summary_label: "5 wymaganych sprawdzeń",
     blocked_claims: [
       "rozmiar odbiorców",
       "obietnica wzrostu konwersji",
@@ -7757,6 +7759,8 @@ describe("WILQ dashboard", () => {
       expect(within(card).queryByText(/ev_/)).not.toBeInTheDocument();
     }
     expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
+    expect(screen.getByText("1 brakujący zakres danych")).toBeInTheDocument();
+    expect(screen.getByText("5 wymaganych sprawdzeń")).toBeInTheDocument();
     expect(screen.getByText(/Brakujące warunki sprawdzenia/)).toBeInTheDocument();
     expect(screen.getByText(/Wymaga oceny/)).toBeInTheDocument();
     expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
@@ -7774,8 +7778,12 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.evidence_summary_label");
     expect(routeSource).toContain("contract.evidence_summary_label");
     expect(routeSource).toContain("contract.action_summary_label");
+    expect(routeSource).toContain("contract.missing_read_contract_summary_label");
+    expect(routeSource).toContain("contract.operator_review_gate_summary_label");
     expect(routeSource).toContain("candidate.preview_card");
     expect(routeSource).not.toContain("candidate.payload_preview");
+    expect(routeSource).not.toContain("contract.missing_read_contracts.length");
+    expect(routeSource).not.toContain("contract.operator_review_gates.length");
     expect(routeSource).not.toContain("formatCustomSegmentsEvidenceCount");
     expect(routeSource).not.toContain("formatCustomSegmentsActionCount");
     expect(routeSource).not.toContain("from \"./marketingLabels\"");
