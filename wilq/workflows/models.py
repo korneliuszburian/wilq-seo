@@ -87,4 +87,4 @@ def _workflow_run_status_label(status: str) -> str:
         "failed": "błąd",
         "blocked": "zablokowane",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status uruchomienia do sprawdzenia")

@@ -175,6 +175,8 @@ Date: 2026-06-28
 - Ahrefs, GA4, Localo and Merchant diagnostic label helpers now use neutral
   Polish fallback labels for unknown statuses, read contracts and risks instead
   of exposing raw enum values or `status: ...` strings.
+- Workflow registry and workflow-run labels now use neutral Polish fallback
+  labels for unknown process statuses and risks instead of exposing raw values.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -222,6 +224,7 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_humanize_raw_unknown_enums" --maxfail=3`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "workflow_label_fallbacks_do_not_expose_raw_values or workflows_are_decision_backed_operator_contracts" --maxfail=3`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_oauth_repair_action_is_explicit_and_redacted or merchant_blocked_feed_section_uses_operator_read_wording" --maxfail=3`

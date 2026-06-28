@@ -344,7 +344,7 @@ def _status_label(status: str) -> str:
         "blocked": "zablokowane",
         "planned": "planowane",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status procesu do sprawdzenia")
 
 
 def _risk_label(risk: ActionRisk | str) -> str:
@@ -354,7 +354,7 @@ def _risk_label(risk: ActionRisk | str) -> str:
         "medium": "średnie ryzyko",
         "high": "wysokie ryzyko",
     }
-    return labels.get(value, value)
+    return labels.get(value, "ryzyko procesu do sprawdzenia")
 
 
 def _route_label(route: str | None) -> str | None:

@@ -112,6 +112,9 @@ from wilq.operator_labels import (
     source_connector_labels,
 )
 from wilq.knowledge.operating_map import _operator_missing_contract_labels
+from wilq.workflows.models import _workflow_run_status_label
+from wilq.workflows.registry import _risk_label as _workflow_risk_label
+from wilq.workflows.registry import _status_label as _workflow_status_label
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
@@ -18526,7 +18529,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     daily_command = workflow_by_id["daily_command"]
     assert daily_command["label"] == "Plan dnia WILQ"
     assert daily_command["route"] == "/command-center"
-    assert daily_command["route_label"] == "Plan dnia"
+    assert daily_command["route_label"] == "Centrum pracy"
     assert daily_command["status_label"] in {"gotowe", "zablokowane"}
     assert daily_command["risk_label"] in {"niskie ryzyko", "średnie ryzyko"}
     assert daily_command["skill_id"] == "wilq-daily-command"
@@ -18564,6 +18567,23 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "wzrost konwersji" not in serialized
     assert "local ranking " + "up" + "lift" not in serialized
     assert "GBP performance verdict" not in serialized
+
+
+def test_workflow_label_fallbacks_do_not_expose_raw_values() -> None:
+    raw_value = "new_raw_workflow_status"
+
+    labels = [
+        _workflow_status_label(raw_value),
+        _workflow_risk_label(raw_value),
+        _workflow_run_status_label(raw_value),
+    ]
+
+    assert labels == [
+        "status procesu do sprawdzenia",
+        "ryzyko procesu do sprawdzenia",
+        "status uruchomienia do sprawdzenia",
+    ]
+    assert all(raw_value not in label for label in labels)
 
 
 def test_workflow_run_persists_to_local_state_with_redaction(

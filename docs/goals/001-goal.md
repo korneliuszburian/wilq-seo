@@ -165,6 +165,8 @@ use cleaned Polish operator language.
 - Ahrefs, GA4, Localo and Merchant diagnostic label helpers now use neutral
   Polish fallback labels for unknown statuses, read contracts and risks instead
   of exposing raw enum values or `status: ...` strings.
+- Workflow registry and workflow-run labels now use neutral Polish fallback
+  labels for unknown process statuses and risks instead of exposing raw values.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
