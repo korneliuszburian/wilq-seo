@@ -3002,10 +3002,12 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             }
     if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
         compact["human_diagnosis"] = (
-            "N-gram review z Google Ads search-term evidence; nie wykonuj zmian."
+            "Przegląd tematów zapytań z Google Ads oparty o dowody "
+            "z wyszukiwanych haseł; nie wykonuj zmian."
         )
         compact["recommended_reason"] = (
-            "Sprawdź intencję tematów i próbki zapytań przed negative keyword queue."
+            "Sprawdź intencję tematów i próbki zapytań przed kolejką "
+            "sprawdzenia wykluczeń."
         )
         compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
     audit_events = compact.get("audit_events")

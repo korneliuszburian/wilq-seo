@@ -10116,7 +10116,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_id": "101",
             "campaign_name": "Brand Search",
             "campaign_status": "ENABLED",
+            "campaign_status_label": "",
             "advertising_channel_type": "SEARCH",
+            "advertising_channel_type_label": "",
             "clicks": 9,
             "impressions": 90,
             "cost_micros": 12000000,
@@ -11851,6 +11853,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngram_action["payload"]["apply_allowed"] is False
     assert ngram_action["payload"]["destructive"] is False
     assert ngram_action["payload"]["api_mutation_ready"] is False
+    ngram_operator_text = "\n".join(
+        [
+            ngram_action["human_diagnosis"],
+            ngram_action["recommended_reason"],
+        ]
+    )
+    assert "negative keyword queue" not in ngram_operator_text
+    assert "search-term evidence" not in ngram_operator_text
+    assert "kolejki sprawdzenia wykluczeń" in ngram_operator_text
     assert ngram_action["preview_cards"]
     ngram_preview_card = ngram_action["preview_cards"][0]
     assert ngram_preview_card["kind"] == "google_ads_search_term_ngram_review"
@@ -12202,6 +12213,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "słowa kluczowe"
     )
     assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    custom_segment_reason = custom_segment_action["payload"]["payload_preview"][0]["reason"]
+    assert "search-term evidence" not in custom_segment_reason
+    assert "dowodów z wyszukiwanych haseł" in custom_segment_reason
     assert custom_segment_action["preview_cards"]
     custom_segment_preview_card = custom_segment_action["preview_cards"][0]
     assert custom_segment_preview_card["kind"] == "google_ads_custom_segment_review"
@@ -12226,6 +12240,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segment_safety_review["api_mutation_ready"] is False
     assert custom_segment_safety_review["destructive"] is False
     assert custom_segment_safety_review["audit_required"] is True
+    assert "forecast," not in custom_segment_safety_review["reason"]
+    assert "prognozy rozmiaru odbiorców" in custom_segment_safety_review["reason"]
     assert "forecast_or_audience_size" in custom_segment_safety_review[
         "missing_requirements"
     ]
@@ -17733,6 +17749,12 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         if action["id"] == SEARCH_TERM_NGRAM_ACTION_ID
     )
     assert ngram_context_action["payload"]["ngram_preview_included"] <= 4
+    ngram_context_text = json.dumps(ngram_context_action, ensure_ascii=False)
+    assert "N-gram review" not in ngram_context_text
+    assert "search-term evidence" not in ngram_context_text
+    assert "negative keyword queue" not in ngram_context_text
+    assert "Przegląd tematów zapytań" in ngram_context_text
+    assert "kolejką sprawdzenia wykluczeń" in ngram_context_text
 
 
 def test_ads_doctor_context_pack_preserves_recommendation_impact_rows(

@@ -137,6 +137,9 @@ use cleaned Polish operator language.
   in the primary Ads proof panel.
 - Google Ads OAuth repair and blocked Merchant feed diagnostics now use Polish
   operator wording instead of raw OAuth/credential/vendor-read jargon.
+- Ads n-gram and custom-segment action/context copy now uses Polish operator
+  wording instead of `N-gram review`, `search-term evidence`, `negative keyword
+  queue` or English `forecast` wording.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

@@ -1155,7 +1155,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             recommended_reason=(
                 "Na /ads-doctor przejrzyj n-gramy z kosztem, kliknięciami i "
                 "przykładowymi wyszukiwanymi hasłami. Dopiero po ręcznej ocenie intencji wróć "
-                "do negative keyword queue."
+                "do kolejki sprawdzenia wykluczeń."
             ),
             payload=search_term_ngram_payload,
             validation_status="not_validated",

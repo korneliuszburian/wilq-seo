@@ -151,6 +151,9 @@ Date: 2026-06-28
   in the primary Ads proof panel.
 - Google Ads OAuth repair and blocked Merchant feed diagnostics now use Polish
   operator wording instead of raw OAuth/credential/vendor-read jargon.
+- Ads n-gram and custom-segment action/context copy now uses Polish operator
+  wording instead of `N-gram review`, `search-term evidence`, `negative keyword
+  queue` or English `forecast` wording.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -216,6 +219,7 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_oauth_repair_action_is_explicit_and_redacted or merchant_blocked_feed_section_uses_operator_read_wording" --maxfail=3`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_exposes_live_campaign_metric_facts or codex_context_pack_scopes_ads_doctor_payload" --maxfail=3`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

@@ -121,7 +121,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                 "source_terms": terms[:20],
                 "reason": (
                     "Do sprawdzenia: słowa kluczowe segmentu odbiorców z Google Ads "
-                    "search-term evidence."
+                    "na podstawie dowodów z wyszukiwanych haseł."
                 ),
                 "evidence_ids": evidence_ids,
                 "source_metric_names": _unique(fact.name for fact in eligible_facts),
@@ -186,8 +186,9 @@ def custom_segment_apply_safety_review(
         "status_label": "zablokowane",
         "reason": (
             "Zapis zmian w custom segment zablokowany: podgląd jest "
-            "do sprawdzenia. WILQ wymaga danych z Keyword Planner albo forecast, "
-            "audytu zmiany Google Ads i potwierdzenia człowieka przed zapisem zmian."
+            "do sprawdzenia. WILQ wymaga danych z Keyword Planner albo prognozy "
+            "rozmiaru odbiorców, audytu zmiany Google Ads i potwierdzenia "
+            "człowieka przed zapisem zmian."
         ),
         "missing_requirements": missing_requirements,
         "required_validation": CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION,
