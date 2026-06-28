@@ -166,6 +166,8 @@ Date: 2026-06-28
 - Detail views now render source/domain labels as neutral chips instead of
   using marketer labels as visual badge states. The shared status badge no
   longer injects hidden punctuation into browser text output.
+- Central blocked-claim labels now keep known Polish claim labels specific and
+  collapse unknown raw technical values to `obietnica do sprawdzenia`.
 - Google Sheets compact route copy now says safe export/testing language
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of

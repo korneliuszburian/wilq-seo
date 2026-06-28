@@ -234,6 +234,9 @@ use cleaned Polish operator language.
 - Detail views now render source/domain labels as neutral chips instead of
   using marketer labels as `StatusBadge` state values. The shared badge no
   longer injects a hidden semicolon into page text.
+- Central blocked-claim labels no longer expose unknown raw technical values.
+  Known Polish claim labels stay specific, while raw snake_case/English
+  fallback values collapse to `obietnica do sprawdzenia`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

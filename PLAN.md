@@ -271,6 +271,8 @@ Known cleanup already started:
 - Detail views render source/domain labels as neutral text chips, not as visual
   status values. The shared status badge no longer injects hidden punctuation
   into browser text output.
+- Central blocked-claim labels keep known Polish claims specific and prevent
+  unknown raw technical values from becoming marketer-facing copy.
 - Primary dashboard navigation and touched route headings now use Polish
   marketer-facing labels instead of mixed working names like `Command Center`,
   `Content` and `Ads Doctor`.

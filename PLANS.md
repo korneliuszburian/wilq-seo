@@ -750,3 +750,6 @@ WILQ is complete for this long-range goal when:
 - Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard and browser proof passed after moving
   missing-data details to API/domain labels.
+- Latest blocked-claim fallback proof: focused API fallback tests, marketer
+  language guard and helper proof passed after central labels stopped exposing
+  unknown raw technical claim values.

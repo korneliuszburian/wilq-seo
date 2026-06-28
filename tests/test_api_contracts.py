@@ -115,6 +115,8 @@ from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
 from wilq.operator_labels import (
+    blocked_claim_label,
+    blocked_claim_labels,
     connector_refresh_status_label,
     missing_contract_labels,
     opportunity_domain_label,
@@ -1442,6 +1444,8 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
 
     labels = [
         *missing_contract_labels([raw_value]),
+        blocked_claim_label(raw_value),
+        *blocked_claim_labels([raw_value]),
         *_content_marketer_blocked_claims([raw_value]),
         _merchant_dimension_label(raw_value),
         merchant_display_label(raw_value),
@@ -1491,6 +1495,8 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
 
     assert labels == [
         "brakujące dane do sprawdzenia",
+        "obietnica do sprawdzenia",
+        "obietnica do sprawdzenia",
         "obietnica do sprawdzenia",
         "wymiar Merchant do sprawdzenia",
         "wartość Merchant do sprawdzenia",

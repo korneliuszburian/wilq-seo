@@ -6,8 +6,10 @@ UNKNOWN_SOURCE_CONNECTOR_LABEL = "źródło danych do sprawdzenia"
 UNKNOWN_REFRESH_STATUS_LABEL = "status odczytu do sprawdzenia"
 UNKNOWN_ROUTE_LABEL = "widok do sprawdzenia"
 UNKNOWN_MISSING_CONTRACT_LABEL = "brakujące dane do sprawdzenia"
+UNKNOWN_BLOCKED_CLAIM_LABEL = "obietnica do sprawdzenia"
 
 BLOCKED_CLAIM_LABELS: dict[str, str] = {
+    "automatic_wordpress_write": "automatyczny zapis WordPress",
     "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
     "90-dniowe bezpieczeństwo wykluczeń": "90-dniowe bezpieczeństwo wykluczeń",
     "automatyczne przyjęcie rekomendacji": "automatyczne przyjęcie rekomendacji",
@@ -30,6 +32,7 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "ocena docelowego zwrotu z reklam": "werdykt docelowego zwrotu z reklam",
     "CPC": "koszt kliknięcia",
     "CTR": "współczynnik kliknięć",
+    "conversion_rate": "werdykt współczynnika konwersji",
     "spadek konwersji": "werdykt spadku konwersji",
     "werdykt spadku konwersji": "werdykt spadku konwersji",
     "współczynnik konwersji": "werdykt współczynnika konwersji",
@@ -40,6 +43,7 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "lead quality": "jakość leadów",
     "jakość leadów": "jakość leadów",
     "link acquisition impact": "wpływ pozyskanych linków",
+    "lead_uplift": "wzrost liczby leadów",
     "monthly performance verdict": "miesięczny werdykt skuteczności",
     "negative keyword addition": "dodanie wykluczających słów kluczowych",
     "opłacalność": "opłacalność",
@@ -47,6 +51,10 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "recommendation applied": "wdrożona rekomendacja",
     "recommendation write": "zapis rekomendacji",
     "przychód": "twierdzenie o przychodzie",
+    "ranking guarantee": "gwarancja pozycji",
+    "ranking_guarantee": "gwarancja pozycji",
+    "revenue_impact": "twierdzenie o wpływie na przychód",
+    "roas": "werdykt zwrotu z reklam",
     "twierdzenie o przychodzie": "twierdzenie o przychodzie",
     "marnowanie budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
     "werdykt marnowania budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
@@ -63,6 +71,9 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "twierdzenie o wpływie na przychód": "twierdzenie o wpływie na przychód",
     "wpływ zmian": "wpływ zmian",
     "wzrost konwersji": "obietnica wzrostu konwersji",
+    "wzrost liczby leadów": "wzrost liczby leadów",
+    "wzrost ruchu": "wzrost ruchu",
+    "gwarancja pozycji": "gwarancja pozycji",
     "obietnica wzrostu konwersji": "obietnica wzrostu konwersji",
     "propozycje wykluczeń": "propozycje wykluczeń",
     "utrata konwersji": "utrata konwersji",
@@ -70,6 +81,8 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
     "zapis wykluczeń": "zapis wykluczeń",
     "zwrot z reklam": "werdykt zwrotu z reklam",
     "werdykt zwrotu z reklam": "werdykt zwrotu z reklam",
+    "wordpress_publish": "publikacja WordPress",
+    "wordpress_write": "zapis WordPress",
     "ocena zmarnowanego budżetu": "zmarnowany budżet",
     "ponowne zatwierdzenie produktu": "ponowne zatwierdzenie produktu",
     "odzyskany przychód": "odzyskany przychód",
@@ -83,7 +96,43 @@ BLOCKED_CLAIM_LABELS: dict[str, str] = {
 
 
 def blocked_claim_label(claim: str) -> str:
-    return BLOCKED_CLAIM_LABELS.get(claim, claim)
+    if claim in BLOCKED_CLAIM_LABELS:
+        return BLOCKED_CLAIM_LABELS[claim]
+    if _looks_like_raw_operator_value(claim):
+        return UNKNOWN_BLOCKED_CLAIM_LABEL
+    return claim
+
+
+def _looks_like_raw_operator_value(value: object) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return True
+    if "_" in text or ":" in text:
+        return True
+    if text.upper() == text and any(character.isalpha() for character in text):
+        return True
+    raw_terms = {
+        "apply",
+        "auto",
+        "automatic",
+        "budget",
+        "campaign",
+        "claim",
+        "conversion",
+        "forecast",
+        "guarantee",
+        "impact",
+        "keyword",
+        "payload",
+        "publish",
+        "ranking",
+        "recommendation",
+        "revenue",
+        "uplift",
+        "write",
+    }
+    normalized = text.lower().replace("-", " ")
+    return any(term in normalized.split() for term in raw_terms)
 
 
 def blocked_claim_labels(claims: Iterable[str]) -> list[str]:
