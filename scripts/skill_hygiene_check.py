@@ -54,6 +54,15 @@ FORBIDDEN_SKILL_PROSE = {
     "prompt fix",
     "napraw skill",
     "naprawa skilla",
+    "blockery",
+    "znane blockery",
+    "blocker report",
+    "zwróć blocker",
+    "Pokaż blocker",
+    "daily command center",
+    "Command Center",
+    "Content Planner",
+    "Ads Doctor",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900

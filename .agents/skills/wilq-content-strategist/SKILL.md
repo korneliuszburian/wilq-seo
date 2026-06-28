@@ -1,9 +1,9 @@
 ---
 name: wilq-content-strategist
-description: 'Planuje strategię treści Ekologus z WILQ API, dowodami, kartami wiedzy, GSC, GA4, Ahrefs, Merchant i spisem treści WordPress. Użyj, gdy marketer pyta "co napisać albo odświeżyć?", "zrób plan treści", "przygotuj brief SEO", "jakie treści dadzą największą szansę?", "co zrobić z tym adresem albo zapytaniem?", albo chce decyzje: zachować, odświeżyć, scalić, przepisać, utworzyć albo zablokować. Musi używać evidence IDs, source connector IDs i knowledge card IDs jako identyfikatorów źródeł, nie generycznego brainstormingu.'
+description: 'Planuje strategię treści Ekologus z WILQ API, dowodami, kartami wiedzy, GSC, GA4, Ahrefs, Merchant i spisem treści WordPress. Użyj, gdy marketer pyta "co napisać albo odświeżyć?", "zrób plan treści", "przygotuj brief SEO", "jakie treści dadzą największą szansę?", "co zrobić z tym adresem albo zapytaniem?", albo chce decyzje: zachować, odświeżyć, scalić, przepisać, utworzyć albo zablokować. Musi używać identyfikatory dowodów, identyfikatory źródeł danych i identyfikatory kart wiedzy jako identyfikatorów źródeł, nie generycznego brainstormingu.'
 ---
 
-# WILQ Content Strategist
+# WILQ Strateg treści
 
 ## Skill Contract
 
@@ -18,13 +18,13 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 <triggers>
 
 - "Co napisać lub odświeżyć dla ekologus.pl, żeby realnie pomóc marketerowi?"
-- "Przygotuj brief SEO dla tej karty z Command Center."
+- "Przygotuj brief SEO dla tej karty z Centrum pracy."
 - "Zrób kolejkę zachowania, odświeżenia, scalenia, nowej treści albo blokady z GSC, GA4 i WordPress."
 - "Jak przełożyć dane z Ads/Merchant/GSC na treści i CTA?"
 
 </triggers>
 
-## Workflow Contract
+## Kontrakt workflow
 
 <workflow>
 
@@ -33,9 +33,9 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 3. Wywołaj `GET /api/content/diagnostics` przed budową planu treści lub kolejki.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-content-strategist"}` i potwierdź, że istnieje osadzone `content_diagnostics`.
 5. Użyj `content_diagnostics.decision_queue` jako kanonicznej kolejki decyzji. Nie odtwarzaj klasyfikacji contentowej w promptach.
-6. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
+6. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 7. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-8. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+8. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
@@ -58,15 +58,15 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego odczytu danych.
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy źródło danych jest skonfigurowane i zadanie jawnie wymaga świeżego odczytu danych.
 
 </allowed_endpoints>
 
-## Evidence Contract
+## Kontrakt dowodów
 
 <evidence_requirements>
 
-Wymagane powierzchnie connectorów dla tego skilla:
+Wymagane powierzchnie źródeł danych dla tego skilla:
 
 - `google_search_console`
 - `google_analytics_4`
@@ -74,21 +74,21 @@ Wymagane powierzchnie connectorów dla tego skilla:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
+Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikatory dowodów z WILQ API. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
 
 </evidence_requirements>
 
-## Output Contract
+## Kontrakt odpowiedzi
 
 <output_contract>
 
 Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output_contract>
 
-## Safety Contract
+## Kontrakt bezpieczeństwa
 
 <safety_rules>
 
@@ -98,5 +98,5 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
 - Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
-- Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.
+- Nie omijaj sprawdzenia w WILQ, identyfikatorów dowodów ani wymagań audytu.
 </safety_rules>

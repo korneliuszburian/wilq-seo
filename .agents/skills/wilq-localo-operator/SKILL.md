@@ -1,6 +1,6 @@
 ---
 name: wilq-localo-operator
-description: Obsługuje workflow Localo i lokalnej widoczności dla Ekologus przez WILQ API readiness i dowody Localo. Użyj, gdy marketer pyta "jak poprawić lokalną widoczność?", "sprawdź Localo/GBP", "które lokalne frazy spadły?", "porównaj widoczność z konkurencją", "zrób lokalny SEO plan", albo pyta o lokalne rankingi, widoczność Google Business Profile, reviews, lokalnych konkurentów, akcji do sprawdzenia GBP post lub blokery dostępu Localo. Nie wolno obiecywać metryk Localo bez WILQ dowodów z WILQ API.
+description: Obsługuje proces Localo i lokalnej widoczności dla Ekologus przez gotowość i dowody Localo w WILQ API. Użyj, gdy marketer pyta "jak poprawić lokalną widoczność?", "sprawdź Localo/GBP", "które lokalne frazy spadły?", "porównaj widoczność z konkurencją", "zrób lokalny SEO plan", albo pyta o lokalne rankingi, widoczność Google Business Profile, opinie, lokalnych konkurentów, akcje do sprawdzenia wpisu GBP lub blokady dostępu Localo. Nie wolno obiecywać metryk Localo bez dowodów WILQ API.
 ---
 
 # WILQ Localo Operator
@@ -9,7 +9,7 @@ description: Obsługuje workflow Localo i lokalnej widoczności dla Ekologus prz
 
 <operating_rule>
 
-Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed obietnicami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje dowodów, zwróć blocker zamiast wypełniać luki.
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed obietnicami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje dowodów, zwróć blokadę zamiast wypełniać luki.
 
 </operating_rule>
 
@@ -19,22 +19,22 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Jak poprawić lokalną widoczność Ekologus?"
 - "Sprawdź Localo i GBP, ale bez zmyślania rankingów."
-- "Czy mamy evidence lokalnych spadków albo konkurencji?"
-- "Pokaż blocker Localo i co trzeba zrobić dalej."
+- "Czy mamy dowody lokalnych spadków albo konkurencji?"
+- "Pokaż blokadę Localo i co trzeba zrobić dalej."
 
 </triggers>
 
-## Workflow Contract
+## Kontrakt workflow
 
 <workflow>
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
-3. Wywołaj `GET /api/localo/diagnostics` przed podsumowaniem metryk, opportunities lub akcji do sprawdzenia.
+3. Wywołaj `GET /api/localo/diagnostics` przed podsumowaniem metryk, szans albo akcji do sprawdzenia.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-localo-operator"}` i potwierdź, że osadzone `localo_diagnostics` zgadza się z endpointem.
-5. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
+5. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+7. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
@@ -55,33 +55,33 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego odczytu danych.
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy źródło danych jest skonfigurowane i zadanie jawnie wymaga świeżego odczytu danych.
 
 </allowed_endpoints>
 
-## Evidence Contract
+## Kontrakt dowodów
 
 <evidence_requirements>
 
-Wymagane powierzchnie connectorów dla tego skilla:
+Wymagane powierzchnie źródeł danych dla tego skilla:
 
 - `localo`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikatory dowodów z WILQ API. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
 
 </evidence_requirements>
 
-## Output Contract
+## Kontrakt odpowiedzi
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output_contract>
 
-## Safety Contract
+## Kontrakt bezpieczeństwa
 
 <safety_rules>
 
@@ -91,5 +91,5 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
 - Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
-- Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.
+- Nie omijaj sprawdzenia w WILQ, identyfikatorów dowodów ani wymagań audytu.
 </safety_rules>

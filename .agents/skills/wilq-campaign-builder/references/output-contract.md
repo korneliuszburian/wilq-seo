@@ -1,21 +1,21 @@
-# WILQ Campaign Builder Output Contract
+# WILQ Campaign Builder Kontrakt odpowiedzi
 
 ## Cel
 
 Planowanie kampanii i przygotowanie akcji do sprawdzenia z sprawdzeniem w WILQ.
 
-Oczekiwany wynik: struktura kampanii do sprawdzenia z evidence IDs, podglądem zmian i statusem sprawdzenia w WILQ.
+Oczekiwany wynik: struktura kampanii do sprawdzenia z identyfikatorami dowodów, podglądem zmian i statusem sprawdzenia w WILQ.
 
 ## Wymagany kontekst API
 
 Pobierz `POST /api/codex/context-pack` z
 `{"skill":"wilq-campaign-builder"}` przed analizą marketingową. Skillowy
-context-pack musi zawierać `ads_diagnostics` i `content_landing_context`; traktuj
+pakiet kontekstu musi zawierać `ads_diagnostics` i `content_landing_context`; traktuj
 je jako typed kontrakt odczytu danych, a nie promptowy brainstorm. Użyj
-`GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy
-readiness ma znaczenie.
+`GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy
+gotowość ma znaczenie.
 
-Wymagane connectory:
+Wymagane źródła danych:
 
 - `google_ads`
 - `google_analytics_4`
@@ -25,26 +25,26 @@ Wymagane connectory:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i action IDs zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: `ads_diagnostics`, `content_landing_context`, evidence IDs, connector IDs, notatki freshness i metric summaries wyłącznie z WILQ API.
-3. `Diagnoza`: co wspiera evidence, z niepewnością gdy evidence jest zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: użyj `content_landing_context.query_page_candidates`, `campaign_candidates` z podglądem zmian i action IDs, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
+2. `Dowody`: `ads_diagnostics`, `content_landing_context`, identyfikatory dowodów, identyfikatory źródeł danych, notatki freshness i podsumowania metryk wyłącznie z WILQ API.
+3. `Diagnoza`: co wspiera evidence, z niepewnością gdy dowody są zagregowane, stare albo niepełne.
+4. `Akcje do sprawdzenia`: użyj `content_landing_context.query_page_candidates`, `campaign_candidates` z podglądem zmian i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
-## Warunki odmowy lub downgrade do blockera
+## Warunki odmowy lub obniżenia do blokady
 
-Odmów albo obniż odpowiedź do blocker report, gdy:
+Odmów albo obniż odpowiedź do raportu blokad, gdy:
 
 - WILQ API jest niedostępne.
-- Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- Żądana metryka albo akcja nie występuje w context-pack, evidence, odczytach źródeł danych, expert rules ani akcjach do sprawdzenia.
-- Skillowy context-pack nie zawiera `content_landing_context` albo `ads_diagnostics`.
+- Wymagane źródło danych ma status `missing_credentials`, `disabled` albo niepowodzenie dla żądanej operacji.
+- Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
+- Pakiet kontekstu skilla nie zawiera `content_landing_context` albo `ads_diagnostics`.
 - Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
 
-## Reguły evidence
+## Reguły dowodów
 
-Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak podglądu zmian sprawdzonego w WILQ oznacza brak zapisu zmian. Brak audit event oznacza brak zapisu zmian.
+Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak podglądu zmian sprawdzonego w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.

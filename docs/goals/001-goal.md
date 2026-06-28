@@ -125,6 +125,9 @@ use cleaned Polish operator language.
   key-value strings, and the Content status heading uses `Stan danych treści`.
 - Tactical queue GSC diagnoses use Polish metric labels instead of raw
   `clicks=` / `impressions=` key-value strings.
+- Active WILQ skill contracts now use Polish operator wording for dowody,
+  źródła danych, blokady and technical trace IDs instead of pushing
+  English/Polish mixed terms into primary skill answers.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

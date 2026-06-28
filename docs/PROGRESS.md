@@ -139,6 +139,9 @@ Date: 2026-06-28
 - Tactical queue GSC diagnoses now use Polish metric labels such as
   `kliknięcia:` and `wyświetlenia:` instead of `clicks=` /
   `impressions=` key-value strings.
+- Active WILQ skill contracts now require Polish operator wording for dowody,
+  źródła danych, blokady and technical trace IDs instead of pushing
+  English/Polish mixed terms into primary skill answers.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -195,6 +198,9 @@ Date: 2026-06-28
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_tactical_queue_uses_dimensioned_metric_facts" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `agent-browser` proof: `.local-lab/proof/content-planner-tactical-metrics-clean.txt`
+- `rtk uv run python scripts/skill_hygiene_check.py`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

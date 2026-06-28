@@ -1,6 +1,6 @@
 ---
 name: wilq-ahrefs-gap-finder
-description: Analizuje dane Ahrefs dla Ekologus przez WILQ API i wskazuje defensywne okazje SEO, treściowe i backlinkowe. Użyj, gdy marketer pyta "gdzie konkurencja ma przewagę SEO?", "jakie mamy luki treści?", "co mówi Ahrefs o domenie?", "jak wykorzystać DR/backlinki?", albo pyta o luki względem konkurencji, rozbudowę treści/linków, kontekst autorytetu lub priorytety SEO z Ahrefs. Musi cytować WILQ evidence IDs i nie wolno zmyślać wartości Ahrefs.
+description: Analizuje dane Ahrefs dla Ekologus przez WILQ API i wskazuje defensywne okazje SEO, treściowe i backlinkowe. Użyj, gdy marketer pyta "gdzie konkurencja ma przewagę SEO?", "jakie mamy luki treści?", "co mówi Ahrefs o domenie?", "jak wykorzystać DR/backlinki?", albo pyta o luki względem konkurencji, rozbudowę treści/linków, kontekst autorytetu lub priorytety SEO z Ahrefs. Musi cytować WILQ identyfikatory dowodów i nie wolno zmyślać wartości Ahrefs.
 ---
 
 # WILQ Ahrefs Gap Finder
@@ -24,7 +24,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </triggers>
 
-## Workflow Contract
+## Kontrakt workflow
 
 <workflow>
 
@@ -32,9 +32,9 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 2. Uruchom `uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
 3. Wywołaj `GET /api/ahrefs/diagnostics` przed podsumowaniem metryk, okazji lub akcji do sprawdzenia.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` i potwierdź, że osadzony `ahrefs_diagnostics` zgadza się z endpointem.
-5. Endpointów refresh connectorów używaj tylko do jawnych odczytów danych i tylko gdy connector jest skonfigurowany.
+5. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
 6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+7. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
@@ -56,35 +56,35 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy connector jest skonfigurowany i zadanie jawnie wymaga świeżego odczytu danych.
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` tylko wtedy, gdy źródło danych jest skonfigurowane i zadanie jawnie wymaga świeżego odczytu danych.
 
 </allowed_endpoints>
 
-## Evidence Contract
+## Kontrakt dowodów
 
 <evidence_requirements>
 
-Wymagane powierzchnie connectorów dla tego skilla:
+Wymagane powierzchnie źródeł danych dla tego skilla:
 
 - `ahrefs`
 - `google_search_console`
 - `wordpress_ekologus`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikatory dowodów z WILQ API. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
 
 </evidence_requirements>
 
-## Output Contract
+## Kontrakt odpowiedzi
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blockery i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
 
-Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, action IDs, endpoint paths i enum values zostaw bez zmian.
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 
 </output_contract>
 
-## Safety Contract
+## Kontrakt bezpieczeństwa
 
 <safety_rules>
 
@@ -94,5 +94,5 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, spisu treści, dostępów social ani ustaleń Localo.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
 - Nie wywołuj endpointów zapisu zmian, chyba że WILQ API wystawia akcję, sprawdzenie w WILQ przechodzi i użytkownik jawnie prosi o zapis zmian.
-- Nie omijaj sprawdzenia w WILQ, evidence IDs ani wymagań audytu.
+- Nie omijaj sprawdzenia w WILQ, identyfikatorów dowodów ani wymagań audytu.
 </safety_rules>
