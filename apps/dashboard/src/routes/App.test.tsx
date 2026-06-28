@@ -6582,6 +6582,7 @@ const workflowRuns = [
     id: "run_daily_command_test",
     workflow_id: "daily_command",
     status: "queued",
+    status_label: "w kolejce",
     started_at: "2026-06-17T10:00:00Z",
     completed_at: null,
     input: { connector_ids: [], parameters: {} },
@@ -6651,7 +6652,7 @@ const knowledgeOperatingMap = {
       missing_contracts: [],
       missing_contract_labels: [],
       blocked_claims: ["ocena zmarnowanego budżetu"],
-      blocked_claim_labels: ["werdykt przepalonego budżetu"],
+      blocked_claim_labels: ["ocena zmarnowanego budżetu"],
       source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
       risk: "low"
     }
@@ -7188,7 +7189,7 @@ function mockFetch() {
               source_connectors: ["google_ads"],
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
-              blocked_claims: ["werdykt zwrotu z reklam"],
+              blocked_claims: ["ocena zwrotu z reklam"],
               metric_tiles: { decyzje: 4, blokady: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               risk: "low",
@@ -7640,8 +7641,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByRole("button", { name: "Pokaż opis procesu" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/werdykt zwrotu z reklam/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Polecenie Codex: dostępne/)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Braki:/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Zakazane obietnice:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brakujące dane:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Granice wniosków:/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/obietnica wzrostu konwersji/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż wyniki procesów" })).toBeInTheDocument();
@@ -7660,8 +7661,12 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Workflowy WILQ")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Pokaż uruchomienia (1)" }));
-    expect(await screen.findByText("queued")).toBeInTheDocument();
+    expect(await screen.findByText("w kolejce")).toBeInTheDocument();
     expect(screen.queryByText("run_daily_command_test")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Pokaż opis procesu" })[0]);
+    expect(screen.getAllByText(/Granice wniosków:/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/werdykt zwrotu z reklam/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Pokaż wyniki procesów" }));
     expect(screen.getByText("Dowody z procesów")).toBeInTheDocument();

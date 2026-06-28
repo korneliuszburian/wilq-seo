@@ -1,8 +1,23 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TacticalQueueResponse } from "../lib/api";
 import { TacticalQueuePanel } from "./TacticalQueuePanel";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    params
+  }: {
+    children: ReactNode;
+    params?: { actionId?: string; evidenceId?: string };
+  }) => {
+    const id = params?.actionId ?? params?.evidenceId ?? "";
+    const prefix = params?.actionId ? "/actions/" : "/evidence/";
+    return <a href={`${prefix}${id}`}>{children}</a>;
+  }
+}));
 
 const queue: TacticalQueueResponse = {
   generated_at: "2026-06-23T10:00:00Z",
@@ -100,6 +115,33 @@ const queue: TacticalQueueResponse = {
 };
 
 describe("TacticalQueuePanel", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("renders full tactical cards with summaries before technical trace IDs", () => {
+    render(
+      <TacticalQueuePanel
+        queue={queue}
+        title="Taktyki z WILQ"
+        isLoading={false}
+        isError={false}
+      />
+    );
+
+    const section = screen.getByText("Taktyki z WILQ").closest("section");
+    expect(section).not.toBeNull();
+    const scope = within(section as HTMLElement);
+
+    expect(section?.textContent).toContain("1 dowód źródłowy");
+    expect(section?.textContent).toContain("1 akcja do sprawdzenia");
+    expect(scope.getAllByText("Szczegóły techniczne").length).toBeGreaterThan(0);
+    expect(section?.textContent).toContain("Dowody źródłowe");
+    expect(section?.textContent).toContain("Akcje do sprawdzenia");
+    expect(scope.getAllByRole("link", { name: "dowód 1" }).length).toBeGreaterThan(0);
+    expect(scope.getAllByRole("link", { name: "akcja 1" }).length).toBeGreaterThan(0);
+  });
+
   it("renders compact decision groups without raw evidence or action IDs", () => {
     render(
       <TacticalQueuePanel

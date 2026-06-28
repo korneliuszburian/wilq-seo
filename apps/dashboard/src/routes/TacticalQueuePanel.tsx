@@ -122,7 +122,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
           values={group.action_summary_label ? [group.action_summary_label] : []}
           empty="brak"
         />
-        <TraceLine label="Nie wolno twierdzić" values={group.blocked_claim_labels} />
+        <TraceLine label="Granice wniosków" values={group.blocked_claim_labels} />
       </div>
     </article>
   );
@@ -152,11 +152,33 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={item.evidence_summary_label ? [item.evidence_summary_label] : []}
+          empty="brak dowodów do pokazania"
+        />
         <TraceLine label="Źródła" values={item.source_connector_labels} />
-        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-        <TraceLine label="Nie wolno twierdzić" values={item.blocked_claim_labels} />
+        <TraceLine
+          label="Akcje"
+          values={item.action_summary_label ? [item.action_summary_label] : []}
+          empty="brak akcji do sprawdzenia"
+        />
+        <TraceLine label="Granice wniosków" values={item.blocked_claim_labels} />
       </div>
+      {item.evidence_ids.length > 0 || item.action_ids.length > 0 ? (
+        <details className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-600">
+          <summary className="cursor-pointer font-medium text-ink">Szczegóły techniczne</summary>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <LinkedTraceLine label="Dowody źródłowe" values={item.evidence_ids} kind="evidence" />
+            <LinkedTraceLine
+              label="Akcje do sprawdzenia"
+              values={item.action_ids}
+              kind="actions"
+              empty="brak"
+            />
+          </div>
+        </details>
+      ) : null}
       {tacticalContextPairs(item).length > 0 ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
           <div className="font-semibold text-ink">Kontekst</div>

@@ -124,6 +124,15 @@ Date: 2026-06-28
 - Ads recommendation and change-history helper fallbacks now use safe Polish
   labels for unknown recommendation types, missing recommendation metrics,
   change resource types and change operation types.
+- Tactical queue cards now show evidence/action summaries on the card face and
+  keep linked trace IDs inside `Szczegóły techniczne`.
+- Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
+  low-value process jargon, and workflow test fixtures no longer preserve raw
+  `queued` / old verdict wording as visible labels.
+- Google Sheets compact route copy now says safe export/testing language
+  instead of export contract/UAT jargon.
+- Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of
+  `delta:` and key=value display.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 

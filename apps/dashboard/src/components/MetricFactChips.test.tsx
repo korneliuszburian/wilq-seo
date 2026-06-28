@@ -38,8 +38,8 @@ describe("MetricFactChips", () => {
     );
 
     expect(screen.getByText(/Zmiany konkurencji/)).toBeInTheDocument();
-    expect(screen.getByText(/obszar=widoczność konkurencji/)).toBeInTheDocument();
-    expect(screen.getByText(/zakres=aktywne miejsca/)).toBeInTheDocument();
+    expect(screen.getByText(/obszar: widoczność konkurencji/)).toBeInTheDocument();
+    expect(screen.getByText(/zakres: aktywne miejsca/)).toBeInTheDocument();
     expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localo_competitor_change_count/)).not.toBeInTheDocument();
     expect(screen.queryByText(/competitor_visibility/)).not.toBeInTheDocument();
@@ -101,7 +101,7 @@ describe("MetricFactChips", () => {
       />
     );
 
-    expect(within(container).getByText(/Wymiar bez etykiety=competitor_visibility/)).toBeInTheDocument();
-    expect(within(container).queryByText(/obszar=widoczność konkurencji/)).not.toBeInTheDocument();
+    expect(within(container).getByText(/Wymiar bez etykiety: competitor_visibility/)).toBeInTheDocument();
+    expect(within(container).queryByText(/obszar: widoczność konkurencji/)).not.toBeInTheDocument();
   });
 });

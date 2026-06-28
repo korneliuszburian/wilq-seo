@@ -48,14 +48,14 @@ function formatMetricFactValue(fact: MetricFact) {
 
 function formatMetricDelta(fact: MetricFact) {
   if (fact.delta === null || fact.delta === undefined || !fact.trend || fact.trend === "unknown") {
-    return "delta: brak";
+    return "zmiana: brak";
   }
   const sign = fact.delta > 0 ? "+" : "";
   const percent =
     fact.delta_percent === null || fact.delta_percent === undefined
       ? ""
       : ` (${sign}${fact.delta_percent.toFixed(1)}%)`;
-  return `delta: ${sign}${fact.delta}${percent}`;
+  return `zmiana: ${sign}${fact.delta}${percent}`;
 }
 
 function formatMetricDimensions(fact: MetricFact) {
@@ -63,7 +63,7 @@ function formatMetricDimensions(fact: MetricFact) {
     .map(([key, value]) => {
       const keyLabel = fact.dimension_labels[key] || "Wymiar bez etykiety";
       const valueLabel = fact.dimension_value_labels[key] || value;
-      return `${keyLabel}=${valueLabel}`;
+      return `${keyLabel}: ${valueLabel}`;
     })
     .join(", ");
 }

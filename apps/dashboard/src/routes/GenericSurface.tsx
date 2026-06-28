@@ -253,9 +253,9 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     title: "Google Sheets",
     description:
       "Miejsce na eksporty i pakiety do pracy operacyjnej. Ten widok nie powinien udawać raportu ani pokazywać pełnego rejestru WILQ.",
-    status: "zablokowane do czasu kontraktu eksportu",
+    status: "zablokowane do czasu ustalenia bezpiecznego eksportu",
     nextStep:
-      "Najpierw wybierz konkretny zakres eksportu: pakiet UAT, lista decyzji, kolejka treści albo dowody do sprawdzenia.",
+      "Najpierw wybierz konkretny zakres eksportu: pakiet testowy, lista decyzji, kolejka treści albo dowody do sprawdzenia.",
     blockers: [
       "brak zatwierdzonego zakresu eksportu",
       "brak reguł, które pola mogą trafić do arkusza bez sekretów i technicznych śladów"

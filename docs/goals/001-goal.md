@@ -151,6 +151,14 @@ use the cleaned language.
 - Ads recommendation and change-history helper fallbacks now use safe Polish
   labels for unknown recommendation types, missing recommendation metrics,
   change resource types and change operation types.
+- Tactical queue cards show evidence/action summaries first and keep linked
+  trace IDs inside `Szczegóły techniczne`.
+- Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
+  longer preserve raw `queued` or old verdict wording as visible workflow copy.
+- Google Sheets compact route copy now uses safe export/testing language
+  instead of export contract/UAT jargon.
+- Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of
+  `delta:` and key=value display.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
