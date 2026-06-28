@@ -2559,6 +2559,21 @@ const adsDiagnostics = {
           apply_allowed: false,
           destructive: false
         },
+        preview_card: {
+          id: "preview_ads_custom_segment_123_card",
+          kind: "google_ads_custom_segment_review",
+          title_label: "Segment odbiorców do sprawdzenia",
+          subtitle_label: "ocena segmentu bez zapisu zmian",
+          status_label: "zapis zmian zablokowany",
+          rows: [
+            { label: "Nazwa", value: "Zapytania użytkowników: Ekologus Search" },
+            { label: "Typ odbiorców", value: "słowa kluczowe" },
+            { label: "Hasła źródłowe", value: "bdo rejestracja" },
+            { label: "Kampania do sprawdzenia", value: "Ekologus Search" }
+          ],
+          apply_state_label: "zapis zmian zablokowany",
+          system_readiness_label: "wymaga kontroli"
+        },
         blocked_claims: [
           "rozmiar odbiorców",
           "obietnica wzrostu konwersji",
@@ -7456,6 +7471,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("missing_read_contract_labels");
     expect(routeSource).toContain("blocked_claim_labels");
     expect(routeSource).toContain("validation_status_label");
+    expect(routeSource).toContain("candidate.preview_card");
+    expect(routeSource).not.toContain("candidate.payload_preview");
     expect(routeSource).not.toContain("from \"./marketingLabels\"");
     expect(routeSource).not.toContain(".map(adsMissingReadContractLabel)");
     expect(routeSource).not.toContain(".map(adsBlockedClaimLabel)");

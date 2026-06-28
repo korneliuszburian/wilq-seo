@@ -90,6 +90,9 @@ use the cleaned language.
 - Ahrefs visible copy now uses `dowody`, `SEO i treści`, `linki zwrotne`,
   `widok Treści` and `organiczne słowa dla URL`; live Ahrefs API/browser proof
   shows no `Ahrefs evidence`, `SEO/content`, `backlinków` or `per URL` residue.
+- Custom Segments candidates now expose API-owned preview cards and rejection
+  reason labels. The dashboard route no longer derives the visible segment card
+  from `candidate.payload_preview`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

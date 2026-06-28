@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
 
 import { AdsDiagnosticsResponse, getAdsDiagnostics } from "../lib/api";
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -38,7 +39,9 @@ export function AdsCustomSegmentCandidatesPanel({
       ) : null}
       <div className={compact ? "grid gap-2" : "grid gap-3 md:grid-cols-2"}>
         {candidates.slice(0, compact ? 2 : 6).map((candidate) => {
-          const rejectionEntries = Object.entries(candidate.source_quality.rejection_reasons);
+          const rejectionEntries = Object.entries(
+            candidate.source_quality.rejection_reason_labels
+          );
           return (
           <article key={candidate.id} className="rounded-md border border-line bg-white p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
@@ -78,42 +81,9 @@ export function AdsCustomSegmentCandidatesPanel({
               Sprawdzenie w WILQ: {candidate.validation_status_label}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
-            {candidate.payload_preview ? (
-              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
-                <div className="font-semibold uppercase tracking-normal text-blue-700">
-                  Podgląd segmentu
-                </div>
-                <div>{candidate.payload_preview.custom_segment_name}</div>
-                <div className="text-slate-600">
-                  Typ wejścia: {candidate.payload_preview.member_type_label}. Zapis zmian:{" "}
-                  {candidate.payload_preview.apply_allowed
-                    ? "wymaga sprawdzenia"
-                    : "zablokowane"}
-                  .
-                </div>
-                <div className="mt-1 text-slate-600">
-                  Bezpieczeństwo:{" "}
-                  {candidate.payload_preview.safety_review.audit_required
-                    ? "audyt wymagany"
-                    : "audyt niewymagany"}
-                  . Braki:{" "}
-                  {candidate.payload_preview.safety_review.missing_requirement_labels.join(", ")}
-                  .
-                </div>
-                {candidate.payload_preview.targeting_preview.length > 0 ? (
-                  <div className="mt-1 text-slate-600">
-                    Podgląd kierowania:{" "}
-                    {candidate.payload_preview.targeting_preview
-                      .slice(0, 2)
-                      .map((target) =>
-                        [
-                          target.campaign_name || target.campaign_id || "kampania do oceny",
-                          target.apply_allowed ? "wymaga sprawdzenia" : "zapis zmian zablokowany"
-                        ].join(" / ")
-                      )
-                      .join(", ")}
-                  </div>
-                ) : null}
+            {candidate.preview_card ? (
+              <div className="mt-2">
+                <ActionPreviewCard card={candidate.preview_card} />
               </div>
             ) : null}
             {candidate.keyword_planner_ideas.length > 0 ? (

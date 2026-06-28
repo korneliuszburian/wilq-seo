@@ -2123,6 +2123,7 @@ class AdsCustomSegmentSourceQuality(BaseModel):
     rejected_terms: int = 0
     missing_metric_terms: int = 0
     rejection_reasons: dict[str, int] = Field(default_factory=dict)
+    rejection_reason_labels: dict[str, int] = Field(default_factory=dict)
 
 
 class AdsCustomSegmentCandidate(BaseModel):
@@ -2152,6 +2153,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
     validation_status_label: str = "do sprawdzenia"
     payload_preview: AdsCustomSegmentPayloadPreview | None = None
+    preview_card: ActionPreviewCardViewModel | None = None
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
     next_step: str

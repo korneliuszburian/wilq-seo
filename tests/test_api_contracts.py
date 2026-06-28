@@ -11007,6 +11007,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "rejected_terms": 0,
         "missing_metric_terms": 0,
         "rejection_reasons": {},
+        "rejection_reason_labels": {},
     }
     assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
     assert custom_segments_contract["candidates"][0]["review_score"] == 85
@@ -11014,6 +11015,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["candidates"][0]["validation_status_label"] == (
         "do sprawdzenia"
     )
+    preview_card = custom_segments_contract["candidates"][0]["preview_card"]
+    assert preview_card["kind"] == "google_ads_custom_segment_review"
+    assert preview_card["title_label"] == "Segment odbiorców do sprawdzenia"
+    assert preview_card["status_label"] == "zapis zmian zablokowany"
+    assert preview_card["rows"][0] == {
+        "label": "Nazwa",
+        "value": custom_segments_contract["candidates"][0]["name"],
+    }
+    assert "zapis zmian zablokowany" in preview_card["apply_state_label"]
     assert "zwrot z reklam" in custom_segments_contract["candidates"][0][
         "blocked_claim_labels"
     ]

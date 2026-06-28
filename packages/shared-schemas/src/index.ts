@@ -1448,14 +1448,16 @@ export const AdsCustomSegmentCandidateSchema = z.object({
       accepted_terms: z.number().int().nonnegative().default(0),
       rejected_terms: z.number().int().nonnegative().default(0),
       missing_metric_terms: z.number().int().nonnegative().default(0),
-      rejection_reasons: z.record(z.string(), z.number().int().nonnegative()).default({})
+      rejection_reasons: z.record(z.string(), z.number().int().nonnegative()).default({}),
+      rejection_reason_labels: z.record(z.string(), z.number().int().nonnegative()).default({})
     })
     .default({
       total_terms: 0,
       accepted_terms: 0,
       rejected_terms: 0,
       missing_metric_terms: 0,
-      rejection_reasons: {}
+      rejection_reasons: {},
+      rejection_reason_labels: {}
     }),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   keyword_planner_ideas: z.array(AdsKeywordPlannerIdeaRowSchema).optional().default([]),
@@ -1467,6 +1469,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   validation_status: z.enum(["pending_validation", "blocked"]),
   validation_status_label: z.string().optional().default("do sprawdzenia"),
   payload_preview: AdsCustomSegmentPayloadPreviewSchema.nullable().optional(),
+  preview_card: ActionPreviewCardViewModelSchema.nullable().optional(),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).optional().default([]),
   next_step: z.string()

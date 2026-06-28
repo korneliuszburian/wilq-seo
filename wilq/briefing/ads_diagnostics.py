@@ -54,6 +54,7 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import action_count_label, evidence_count_label, source_connector_labels
 from wilq.schemas import (
     ActionObject,
+    ActionPreviewCardViewModel,
     ActionRisk,
     AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
@@ -4440,10 +4441,10 @@ def _custom_segments_read_contract(
         status="ready",
         title="Segmenty z realnych wyszukiwanych haseł",
         summary=(
-            f"WILQ ma {len(candidates)} akcji do sprawdzenia segmentów i "
-            f"{source_terms_count} haseł źródłowych z dowodów Google Ads oraz "
-            f"{keyword_planner_idea_count} pomysłów Keyword Planner oraz "
-            f"{len(payload_preview)} podglądów zmian do sprawdzenia."
+            f"WILQ ma {_custom_segment_candidate_count_label(len(candidates))} i "
+            f"{source_terms_count} haseł źródłowych z dowodów Google Ads, "
+            f"{_custom_segment_keyword_planner_count_label(keyword_planner_idea_count)} i "
+            f"{_custom_segment_preview_count_label(len(payload_preview))}."
         ),
         candidates=candidates,
         payload_preview=payload_preview,
@@ -4491,7 +4492,7 @@ def _custom_segment_audience_forecast_read_contract(
         status="blocked",
         title="Prognoza i rozmiar odbiorców segmentów",
         summary=(
-            f"WILQ sprawdził {len(candidates)} akcji do sprawdzenia segmentów, ale "
+            f"WILQ sprawdził {_custom_segment_candidate_count_label(len(candidates))}, ale "
             "nie ma dowodów prognozy ani rozmiaru odbiorców. Segmenty można tylko "
             "przygotować do oceny."
         ),
@@ -4513,6 +4514,32 @@ def _custom_segment_audience_forecast_read_contract(
             "kierowania reklam."
         ),
     )
+
+
+def _custom_segment_candidate_count_label(count: int) -> str:
+    if count == 1:
+        return "1 segment do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} segmenty do sprawdzenia"
+    return f"{count} segmentów do sprawdzenia"
+
+
+def _custom_segment_preview_count_label(count: int) -> str:
+    if count == 1:
+        return "1 podgląd zmian do sprawdzenia"
+    if 2 <= count <= 4:
+        return f"{count} podglądy zmian do sprawdzenia"
+    return f"{count} podglądów zmian do sprawdzenia"
+
+
+def _custom_segment_keyword_planner_count_label(count: int) -> str:
+    if count == 0:
+        return "brak pomysłów Keyword Planner"
+    if count == 1:
+        return "1 pomysł Keyword Planner"
+    if 2 <= count <= 4:
+        return f"{count} pomysły Keyword Planner"
+    return f"{count} pomysłów Keyword Planner"
 
 
 def _custom_segment_candidates(
@@ -6759,14 +6786,87 @@ def _hydrate_custom_segments_marketer_labels(
             candidate.validation_status
         )
         candidate.blocked_claim_labels = _unique(candidate.blocked_claims)
+        candidate.source_quality.rejection_reason_labels = {
+            _custom_segment_rejection_reason_label(reason): count
+            for reason, count in candidate.source_quality.rejection_reasons.items()
+        }
         if candidate.payload_preview is not None:
             _hydrate_custom_segment_payload_preview_labels(candidate.payload_preview)
+            candidate.preview_card = _custom_segment_preview_card(candidate.payload_preview)
 
     for preview in contract.payload_preview:
         _hydrate_custom_segment_payload_preview_labels(preview)
 
     for row in forecast_contract.forecast_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
+
+
+def _custom_segment_preview_card(
+    preview: AdsCustomSegmentPayloadPreview,
+) -> ActionPreviewCardViewModel:
+    targeting_preview = preview.targeting_preview[0] if preview.targeting_preview else None
+    safety_review = preview.safety_review
+    rows = [
+        {
+            "label": "Nazwa",
+            "value": preview.custom_segment_name,
+        },
+        {
+            "label": "Typ odbiorców",
+            "value": preview.member_type_label or "typ odbiorców do sprawdzenia",
+        },
+        {
+            "label": "Hasła źródłowe",
+            "value": ", ".join(preview.source_terms[:4]) if preview.source_terms else "brak haseł",
+        },
+        {
+            "label": "Kampania do sprawdzenia",
+            "value": (
+                targeting_preview.campaign_name
+                if targeting_preview is not None and targeting_preview.campaign_name
+                else "kampania do sprawdzenia"
+            ),
+        },
+        {
+            "label": "Bezpieczeństwo",
+            "value": safety_review.status_label or "wymaga sprawdzenia",
+        },
+    ]
+    if safety_review.missing_requirement_labels:
+        rows.append(
+            {
+                "label": "Braki",
+                "value": ", ".join(safety_review.missing_requirement_labels[:4]),
+            }
+        )
+    if preview.required_validation_labels:
+        rows.append(
+            {
+                "label": "Warunki sprawdzenia",
+                "value": ", ".join(preview.required_validation_labels[:4]),
+            }
+        )
+    if preview.blocked_claim_labels:
+        rows.append(
+            {
+                "label": "Czego nie wolno twierdzić",
+                "value": ", ".join(preview.blocked_claim_labels[:4]),
+            }
+        )
+    return ActionPreviewCardViewModel(
+        id=f"{preview.id}_card",
+        kind="google_ads_custom_segment_review",
+        title_label="Segment odbiorców do sprawdzenia",
+        subtitle_label="ocena segmentu bez zapisu zmian",
+        status_label="zapis zmian zablokowany",
+        rows=rows,
+        apply_state_label=(
+            "możliwy zapis po sprawdzeniu" if preview.apply_allowed else "zapis zmian zablokowany"
+        ),
+        system_readiness_label=(
+            "system gotowy do zapisu" if preview.api_mutation_ready else "wymaga kontroli"
+        ),
+    )
 
 
 def _hydrate_custom_segment_payload_preview_labels(
@@ -6790,6 +6890,15 @@ def _hydrate_custom_segment_payload_preview_labels(
             target.required_validation
         )
         target.blocked_claim_labels = _unique(target.blocked_claims)
+
+
+def _custom_segment_rejection_reason_label(reason: str) -> str:
+    labels = {
+        "brand_or_generic": "brand albo zbyt ogólna fraza",
+        "short_or_low_signal": "za krótka fraza albo za słaby sygnał",
+        "no_click_or_conversion_signal": "brak kliknięć albo sygnału celu",
+    }
+    return labels.get(reason, reason.replace("_", " "))
 
 
 def _ads_review_gate_labels(gates: Iterable[object]) -> list[str]:
