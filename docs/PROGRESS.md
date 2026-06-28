@@ -139,6 +139,10 @@ Date: 2026-06-28
 - Dashboard API smoke and demo proof no longer require stale proof language such
   as raw Merchant issue keys, raw proof IDs in normal demo flow, `audience size`,
   `launchu`, `DR`, `brak facts` or `competitor_page`.
+- Dashboard API smoke now includes a shared runtime visible-copy guard over
+  `main`, so core routes fail if old working route names, registry headings,
+  stale URL/mapping terms, raw `payload` wording or vendor fallback keys return
+  to the visible marketer surface.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels instead of route-local
   count assembly.
@@ -200,6 +204,9 @@ Most recent verified local slice:
   assert current marketer-readable route copy and reject stale proof wording
   such as raw Merchant issue keys, raw proof IDs in the normal demo flow,
   `audience size`, `launchu`, `DR`, `brak facts` and `competitor_page`.
+- A shared runtime visible-copy guard now scans each core route's visible
+  `main` text for stale route names, registry headings, stale URL/mapping
+  terms, raw `payload` wording and vendor fallback keys.
 - Current verification for this dashboard proof slice:
   - `rtk pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`
   - `rtk pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-demo-proof.spec.ts --workers=1`

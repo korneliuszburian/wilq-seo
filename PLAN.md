@@ -262,6 +262,10 @@ Known cleanup already started:
   and reject stale proof wording such as raw Merchant issue keys, raw proof IDs
   in the normal demo flow, `audience size`, `launchu`, `DR`, `brak facts` and
   `competitor_page`.
+- Dashboard API smoke includes a shared runtime visible-copy guard over `main`,
+  so old working route names, registry headings, stale URL/mapping terms, raw
+  `payload` wording and vendor fallback keys fail on the actual rendered
+  marketer routes.
 - Google Ads search-term n-gram action details now have typed API preview
   cards without raw `SearchTermNgramReview`, preview-contract names or
   n-gram-to-negative-keyword contract keys in primary card copy. The route is

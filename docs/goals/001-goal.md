@@ -185,6 +185,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Dashboard API smoke and demo proof no longer require stale proof language such
   as raw Merchant issue keys, raw proof IDs in normal demo flow, `audience size`,
   `launchu`, `DR`, `brak facts` or `competitor_page`.
+- Dashboard API smoke includes a shared runtime visible-copy guard over `main`,
+  so core routes fail if old working route names, registry headings, stale
+  URL/mapping terms, raw `payload` wording or vendor fallback keys return to
+  the visible marketer surface.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels.
 - Knowledge playbook cards use API/domain evidence and action-type summary

@@ -1,6 +1,23 @@
 import { expect, type Page, test } from "@playwright/test";
 
 const routeReadyTimeoutMs = 30_000;
+const forbiddenVisibleCopy = [
+  "ActionObjecty",
+  "Ads Doctor",
+  "API-backed operating surface",
+  "Command Center",
+  "Connector Refresh Runs",
+  "Content Planner",
+  "Evidence Registry",
+  "Kandydaci działań API",
+  "audience size",
+  "brak facts",
+  "competitor_page",
+  "mapping-review",
+  "migration-map",
+  "payload",
+  "target_site"
+];
 
 async function expectApiBackedRouteHeading(
   page: Page,
@@ -10,6 +27,13 @@ async function expectApiBackedRouteHeading(
   await expect(page.getByRole("heading", { name, exact: options.exact })).toBeVisible({
     timeout: routeReadyTimeoutMs
   });
+}
+
+async function expectNoForbiddenVisibleCopy(page: Page) {
+  const text = await page.locator("main").innerText({ timeout: routeReadyTimeoutMs });
+  for (const term of forbiddenVisibleCopy) {
+    expect(text).not.toContain(term);
+  }
 }
 
 test.describe("WILQ dashboard API-backed smoke", () => {
@@ -85,6 +109,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
     await expect(page.getByText(/priority \d+/i)).toHaveCount(0);
     await expect(page.getByText("GA4: (not set) / (not set)")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
 
     await expect
       .poll(() => apiResponses.includes("200 /api/dashboard/command-center"))
@@ -124,6 +149,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Campaign activity read contract")).toHaveCount(0);
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("custom segments route exposes segment candidates for review", async ({ page }) => {
@@ -140,6 +166,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/audience size/i)).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("demand gen route exposes readiness blocker instead of generic registry", async ({ page }) => {
@@ -160,6 +187,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
@@ -176,6 +204,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
     await expect(page.getByText("GA4: tracking/conversion readiness")).toHaveCount(0);
     await expect(page.getByText("Analytics Safety Gate")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
@@ -197,6 +226,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Akcje do sprawdzenia", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("action detail route shows validation, evidence and change preview", async ({ page }) => {
@@ -217,6 +247,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Sprawdź efekt", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Sprawdź efekt" }).click();
     await expect(page.getByText("Sprawdzenie efektu zapisane").first()).toBeVisible();
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("actions route starts with actions instead of registry dumps", async ({ page }) => {
@@ -229,6 +260,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("workflows route exposes decision-backed operator workflows", async ({ page }) => {
@@ -252,6 +284,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Fetch WILQ API context")).toHaveCount(0);
     await expect(page.getByText("Rejestr workflowów")).toHaveCount(0);
     await expect(page.getByText("Workflowy WILQ")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("knowledge route maps source knowledge to decisions", async ({ page }) => {
@@ -271,6 +304,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Feed Merchant").first()).toBeVisible();
     await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
@@ -308,6 +342,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa feedu" })).toBeVisible();
 
     await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
     const evidenceLink = page.getByRole("link", { name: "dowód 1" }).first();
     await expect(evidenceLink).toBeVisible();
     await evidenceLink.click();
@@ -339,6 +374,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Taktyki z WILQ API")).toHaveCount(0);
     await expect(page.getByText("Metric facts")).toHaveCount(0);
     await expect(page.getByText("24 Taktyki")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 
   test("ahrefs route exposes authority context and gap safety state", async ({ page }) => {
@@ -362,5 +398,6 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
+    await expectNoForbiddenVisibleCopy(page);
   });
 });
