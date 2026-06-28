@@ -45,7 +45,12 @@ from wilq.schemas import (
     TacticalQueueResponse,
     utc_now,
 )
-from wilq.operator_labels import freshness_state_label, source_connector_label
+from wilq.operator_labels import (
+    freshness_state_label,
+    route_cta_label,
+    route_operator_label,
+    source_connector_label,
+)
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -496,17 +501,11 @@ def _connector_label(connector_id: str, labels: dict[str, str]) -> str:
 
 
 def _route_label(route: str) -> str:
-    return {
-        "/ads-doctor": "Google Ads",
-        "/content-planner": "Treści",
-        "/ga4": "GA4",
-        "/merchant": "Merchant",
-        "/localo": "Localo",
-    }.get(route, "widok WILQ")
+    return route_operator_label(route)
 
 
 def _route_cta_label(route: str) -> str:
-    return f"Otwórz {_route_label(route)}"
+    return route_cta_label(route)
 
 
 def _skill_label(skill_id: str | None) -> str | None:

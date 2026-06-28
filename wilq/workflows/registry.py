@@ -6,6 +6,7 @@ from typing import Literal
 
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.daily_runtime import build_daily_runtime
+from wilq.operator_labels import route_operator_label
 from wilq.schemas import ActionRisk, DailyDecision
 from wilq.workflows.models import Workflow, WorkflowStep
 
@@ -357,20 +358,9 @@ def _risk_label(risk: ActionRisk | str) -> str:
 
 
 def _route_label(route: str | None) -> str | None:
-    labels = {
-        "/command-center": "Plan dnia",
-        "/merchant": "Merchant",
-        "/content-planner": "Treści",
-        "/ads-doctor": "Google Ads",
-        "/ads-doctor/demand-gen": "Demand Gen",
-        "/ahrefs": "Ahrefs",
-        "/ga4": "GA4",
-        "/localo": "Localo",
-        "/social-publisher": "Social",
-    }
     if route is None:
         return None
-    return labels.get(route, route)
+    return route_operator_label(route)
 
 
 def _blueprint_next_step(blueprint: WorkflowBlueprint) -> str:

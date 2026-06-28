@@ -136,6 +136,9 @@ use the cleaned language.
   connector IDs in shared helpers, command center, marketing brief, GA4/Localo
   diagnostics and context-pack refresh-run summaries. Refresh-run summaries now
   expose `connector_label` and `status_label`.
+- Route labels now use one safe operator-label helper in Command Center and
+  workflow registry. Unknown routes no longer fall back to raw route paths or
+  generic fallback copy.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
@@ -153,9 +156,9 @@ are resolved or explicitly deferred.
    corners by adding typed API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Add typed route/contract/vendor-enum label registries so unknown route IDs,
-   read contracts and vendor enums do not fall back to raw snake_case or English
-   values in marketer-facing copy.
+4. Add typed contract/vendor-enum label registries so unknown read contracts and
+   vendor enums do not fall back to raw snake_case or English values in
+   marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 

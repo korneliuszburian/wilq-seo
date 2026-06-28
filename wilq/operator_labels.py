@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 UNKNOWN_SOURCE_CONNECTOR_LABEL = "źródło danych do sprawdzenia"
 UNKNOWN_REFRESH_STATUS_LABEL = "status odczytu do sprawdzenia"
+UNKNOWN_ROUTE_LABEL = "widok do sprawdzenia"
 
 
 def source_connector_label(connector_id: str) -> str:
@@ -86,6 +87,34 @@ def connector_refresh_status_label(status: object) -> str:
         "skipped": "odczyt pominięty",
     }
     return labels.get(str(value or ""), UNKNOWN_REFRESH_STATUS_LABEL)
+
+
+def route_operator_label(route: str | None) -> str:
+    labels = {
+        "/actions": "Akcje do sprawdzenia",
+        "/ads-doctor": "Google Ads",
+        "/ads-doctor/custom-segments": "Segmenty Google Ads",
+        "/ads-doctor/demand-gen": "Demand Gen",
+        "/ahrefs": "Ahrefs",
+        "/codex-runs": "Uruchomienia Codexa",
+        "/command-center": "Centrum pracy",
+        "/content-inventory": "Spis treści",
+        "/content-planner": "Treści",
+        "/ga4": "GA4",
+        "/google-sheets": "Google Sheets",
+        "/knowledge": "Baza wiedzy",
+        "/localo": "Localo",
+        "/merchant": "Merchant Center",
+        "/opportunities": "Szanse",
+        "/security": "Bezpieczeństwo",
+        "/settings": "Ustawienia",
+        "/social-publisher": "Social",
+    }
+    return labels.get(str(route or ""), UNKNOWN_ROUTE_LABEL)
+
+
+def route_cta_label(route: str | None) -> str:
+    return f"Otwórz {route_operator_label(route)}"
 
 
 def opportunity_domain_label(domain: object) -> str:

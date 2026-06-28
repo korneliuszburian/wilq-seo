@@ -109,6 +109,9 @@ Date: 2026-06-28
   connector IDs in shared helpers, command center, marketing brief, GA4/Localo
   diagnostics and context-pack refresh-run summaries. Refresh-run summaries now
   expose `connector_label` and `status_label`.
+- Route labels now use one safe operator-label helper in Command Center and
+  workflow registry. Unknown routes no longer fall back to raw route paths or
+  generic fallback copy.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -121,9 +124,9 @@ Date: 2026-06-28
    corners by adding API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Add typed route/contract/vendor-enum label registries so unknown route IDs,
-   read contracts and vendor enums do not fall back to raw snake_case or English
-   values in marketer-facing copy.
+4. Add typed contract/vendor-enum label registries so unknown read contracts and
+   vendor enums do not fall back to raw snake_case or English values in
+   marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
@@ -150,6 +153,7 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics or wordpress_draft or social_draft_actions_exclude_dev_site_inventory_inputs" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunity or workflow or tactical_queue or marketing_brief or custom_segments or demand_gen or merchant_diagnostics" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks or ga4 or localo or marketing_brief or command_center" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "route_label or operator_label_fallbacks" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/TacticalQueuePanel.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

@@ -60,6 +60,8 @@ from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
 from wilq.operator_labels import (
     connector_refresh_status_label,
+    route_cta_label,
+    route_operator_label,
     source_connector_label,
     source_connector_labels,
 )
@@ -1333,6 +1335,15 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert compact["status_label"] == "status odczytu do sprawdzenia"
     assert unknown_connector not in compact["summary"]
     assert "new_raw_status" not in compact["summary"]
+
+
+def test_route_label_fallbacks_do_not_expose_raw_paths() -> None:
+    unknown_route = "/internal/raw-route"
+
+    assert route_operator_label("/command-center") == "Centrum pracy"
+    assert route_cta_label("/command-center") == "Otwórz Centrum pracy"
+    assert route_operator_label(unknown_route) == "widok do sprawdzenia"
+    assert unknown_route not in route_cta_label(unknown_route)
 
 
 def test_action_review_records_human_outcome_without_apply(
