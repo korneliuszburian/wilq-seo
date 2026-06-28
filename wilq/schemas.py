@@ -2769,7 +2769,9 @@ class AdsDiagnosticsResponse(BaseModel):
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocker_count: int = 0
 
 

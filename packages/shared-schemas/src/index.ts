@@ -1777,7 +1777,9 @@ export const AdsDiagnosticsResponseSchema = z.object({
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
 

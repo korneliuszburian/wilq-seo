@@ -3004,7 +3004,9 @@ const adsDiagnostics = {
     operator_review_gates: ["human_strategy_review", "review_campaign_goal"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     action_ids: ["act_prepare_ads_campaign_review_queue"],
+    action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"],
     missing_read_contract_labels: ["marża albo cel opłacalności", "ocena strategii przez człowieka"],
     blocked_claim_labels: ["werdykt zwrotu z reklam", "zmiana budżetu", "dodanie wykluczających słów kluczowych"]
@@ -3199,6 +3201,7 @@ const adsDiagnostics = {
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
       action_ids: ["act_prepare_ads_campaign_review_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_diagnostics_v1", "ads_scaling_candidates_v1"],
       blocked_claims: [
@@ -4241,11 +4244,13 @@ const adsDiagnostics = {
   ],
   blocked_handoff: null,
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+  evidence_summary_label: "2 dowody źródłowe",
   action_ids: [
     "act_prepare_google_ads_recommendation_review_queue",
     "act_prepare_custom_segments_from_search_terms",
     "act_prepare_negative_keyword_review_queue"
   ],
+  action_summary_label: "3 akcje do sprawdzenia",
   blocker_count: 1
 };
 
@@ -7627,6 +7632,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    expect(routeSource).toContain("data.evidence_summary_label");
+    expect(routeSource).toContain("data.action_summary_label");
+    expect(routeSource).toContain("summary.action_summary_label");
+    expect(routeSource).toContain("primaryDecision?.action_summary_label");
     expect(routeSource).toContain("summary.missing_read_contract_labels");
     expect(routeSource).toContain("summary.blocked_claim_labels");
     expect(routeSource).toContain("optimizer_readiness_contract");
@@ -7685,6 +7694,9 @@ describe("WILQ dashboard", () => {
       "strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)"
     );
     expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
+    expect(routeSource).not.toContain("data.evidence_ids.length");
+    expect(routeSource).not.toContain("formatActionObjectCount(actions.length)");
+    expect(routeSource).not.toContain("summary.action_ids.length");
   });
 
   it("custom segments route renders dedicated validation contract", async () => {

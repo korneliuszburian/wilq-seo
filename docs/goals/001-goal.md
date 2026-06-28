@@ -96,6 +96,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   evidence and action summary labels instead of route-local count formatting.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Google Ads first-screen, condensed decision, proof and action panels use
+  API/domain evidence and action summary labels instead of route-local count
+  formatting.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.

@@ -6432,6 +6432,8 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
 
 def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     currency_code = response.account_currency_read_contract.currency_code
+    response.evidence_summary_label = evidence_count_label(response.evidence_ids)
+    response.action_summary_label = action_count_label(response.action_ids)
     response.operator_summary.source_connector_labels = source_connector_labels(
         response.operator_summary.source_connectors
     )

@@ -569,6 +569,11 @@ WILQ is complete for this long-range goal when:
   summary labels in API/shared schemas. The route consumes those labels instead
   of route-local count formatting; live API proof and browser proof live in
   `.local-lab/proof/`.
+- 2026-06-28: Google Ads diagnostics now expose response-level
+  evidence/action summary labels in API/shared schemas. The Ads route consumes
+  those labels in the first screen, condensed decision and action panels
+  instead of route-local count formatting; live API proof and browser proof
+  live in `.local-lab/proof/`.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
 - 2026-06-28: Knowledge first-screen decision and card summaries now use
@@ -841,4 +846,8 @@ WILQ is complete for this long-range goal when:
 - Latest Treści proof: focused API/shared-schema/dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving Content diagnostics/preflight evidence and action summaries to
+  API/domain labels.
+- Latest Google Ads proof: focused API/shared-schema/dashboard tests,
+  dashboard typecheck, marketer language guard, live API proof and browser
+  proof passed after moving Google Ads response evidence/action summaries to
   API/domain labels.

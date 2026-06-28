@@ -109,7 +109,7 @@ export function AdsDoctorSurface() {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
           <MetricTile label="Blokady" value={blockedDecisionCount} />
-          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Dowody" value={data.evidence_summary_label} />
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
         </div>
       </div>
@@ -156,7 +156,10 @@ export function AdsDoctorSurface() {
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
-          <AdsExpandableActionsPanel actions={routeActions} />
+          <AdsExpandableActionsPanel
+            actions={routeActions}
+            actionSummaryLabel={data.action_summary_label}
+          />
         </div>
       ) : null}
 
@@ -164,9 +167,14 @@ export function AdsDoctorSurface() {
   );
 }
 
-function AdsExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
+function AdsExpandableActionsPanel({
+  actions,
+  actionSummaryLabel
+}: {
+  actions: ActionObject[];
+  actionSummaryLabel: string;
+}) {
   const [showActions, setShowActions] = useState(false);
-  const actionCountLabel = formatActionObjectCount(actions.length);
 
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -176,12 +184,12 @@ function AdsExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {actionCountLabel} dla Ads. Otwórz je dopiero wtedy, gdy
+            WILQ ma {actionSummaryLabel} dla Google Ads. Otwórz je dopiero wtedy, gdy
             chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
             sprawdzić techniczne warunki akcji.
           </p>
         </div>
-        <MetricTile label="Akcje" value={actionCountLabel} />
+        <MetricTile label="Akcje" value={actionSummaryLabel} />
       </div>
 
       <button
@@ -229,7 +237,7 @@ function AdsExpandableReviewPanel({
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Gotowe" value={summary.ready_area_count} />
           <MetricTile label="Blokady" value={summary.blocked_area_count} />
-          <MetricTile label="Akcje" value={formatActionObjectCount(summary.action_ids.length)} />
+          <MetricTile label="Akcje" value={summary.action_summary_label} />
         </div>
       </div>
 
@@ -276,7 +284,7 @@ function AdsCondensedDecisionPanel({
   const evidenceSummary = primaryDecision
     ? primaryDecision.evidence_summary_label
     : summary.evidence_summary_label;
-  const actionCount = primaryDecision?.action_ids.length ?? summary.action_ids.length;
+  const actionSummary = primaryDecision?.action_summary_label ?? summary.action_summary_label;
   const sourceConnectors = primaryDecision
     ? primaryDecision.source_connector_labels
     : summary.source_connector_labels;
@@ -303,7 +311,7 @@ function AdsCondensedDecisionPanel({
           <MetricTile label="Kliknięcia" value={adsNumber(summary.total_clicks)} />
           <MetricTile label="Koszt" value={adsCost(summary.total_cost_micros, currencyCode)} />
           <MetricTile label="Konwersje" value={adsNumber(summary.total_conversions)} />
-          <MetricTile label="Akcje" value={formatActionObjectCount(actionCount)} />
+          <MetricTile label="Akcje" value={actionSummary} />
         </div>
       </div>
 

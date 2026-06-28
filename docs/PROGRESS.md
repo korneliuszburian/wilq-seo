@@ -49,6 +49,9 @@ Date: 2026-06-28
   API-owned preview cards or display labels instead of raw payload shape.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
+- Google Ads first-screen, condensed decision, proof and action panels use
+  API/domain evidence and action summary labels instead of route-local count
+  formatting.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
@@ -109,6 +112,18 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/ads/diagnostics` returns response, operator summary,
+  decision and section evidence/action summary labels.
+- Browser proof: `.local-lab/proof/ads-summary-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -120,7 +135,7 @@ Most recent verified local slice:
   summary labels.
 - Browser proof: `.local-lab/proof/content-summary-labels-clean.txt`
 
-Previous verified local slice:
+Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
@@ -131,8 +146,6 @@ Previous verified local slice:
 - Live API proof: `/api/merchant/diagnostics` returns response, operator
   summary, decision and section evidence/action summary labels.
 - Browser proof: `.local-lab/proof/merchant-summary-labels-clean.txt`
-
-Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract instead of generic registry"`

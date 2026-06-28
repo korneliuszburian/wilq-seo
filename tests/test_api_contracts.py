@@ -12919,6 +12919,10 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
 
     assert summary_bytes < full_bytes
     assert summary_payload["operator_summary"] == full_payload["operator_summary"]
+    assert summary_payload["evidence_summary_label"] == full_payload["evidence_summary_label"]
+    assert summary_payload["action_summary_label"] == full_payload["action_summary_label"]
+    assert summary_payload["evidence_summary_label"]
+    assert summary_payload["action_summary_label"]
     assert summary_payload["connector_status_label"]
     assert summary_payload["live_data_status_label"]
     if summary_payload["latest_refresh"]:
