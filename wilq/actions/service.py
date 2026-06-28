@@ -4703,7 +4703,7 @@ def _ads_recommendation_type_label(value: str) -> str:
         "UNKNOWN": "typ rekomendacji nieznany",
         "UNSPECIFIED": "typ rekomendacji nieokreślony",
     }
-    return labels.get(value, value.replace("_", " ").lower())
+    return labels.get(value, "typ rekomendacji do sprawdzenia")
 
 
 def _ads_keyword_match_type_label(value: str) -> str:

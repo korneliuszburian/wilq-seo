@@ -429,7 +429,7 @@ def _merchant_dimension_label(value: str) -> str:
     return (
         MERCHANT_ISSUE_LABELS.get(value)
         or MERCHANT_ATTRIBUTE_LABELS.get(value)
-        or value.replace("_", " ")
+        or "wymiar Merchant do sprawdzenia"
     )
 
 

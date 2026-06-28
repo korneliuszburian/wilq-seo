@@ -133,6 +133,9 @@ Date: 2026-06-28
   `decision_state_label` instead of raw decision-state enum text. API titles use
   `Google Ads` and `Treści` wording, and old drilldown wording was removed from
   the active action plan copy.
+- Unknown active labels in Knowledge, Content, tactical queue, content actions
+  and Ads recommendation helpers now fall back to neutral Polish operator
+  wording instead of humanizing raw enum keys by replacing underscores.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -161,6 +164,7 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map or content_diagnostics or tactical_queue or action_preview or operator_label_fallbacks" --maxfail=3`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

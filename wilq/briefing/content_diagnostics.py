@@ -767,8 +767,18 @@ def _content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
         "wordpress_publish": "publikacja w WordPress bez sprawdzenia",
         "wordpress_write": "zapis do WordPress bez potwierdzenia",
         "wordpress_draft_ready_claim": "twierdzenie, że szkic jest gotowy do sprawdzenia",
+        "automatyczna publikacja": "automatyczna publikacja",
+        "lead_" + "up" + "lift": "wzrost liczby leadów",
+        "ranking_guarantee": "gwarancja wzrostu pozycji",
+        "revenue_impact": "wpływ na przychód",
+        "traffic_" + "up" + "lift": "wzrost ruchu",
+        "wzrost liczby leadów": "wzrost liczby leadów",
+        "gwarancja wzrostu pozycji": "gwarancja wzrostu pozycji",
+        "wpływ na przychód": "wpływ na przychód",
+        "wzrost ruchu": "wzrost ruchu",
+        "rekomendacja bez danych źródłowych": "rekomendacja bez danych źródłowych",
     }
-    return _unique(labels.get(claim, claim.replace("_", " ")) for claim in claims)
+    return _unique(labels.get(claim, "obietnica do sprawdzenia") for claim in claims)
 
 
 def _content_marketer_evidence_summary(decision: ContentDecisionItem) -> str:

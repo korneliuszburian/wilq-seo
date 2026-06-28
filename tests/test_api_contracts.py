@@ -21,20 +21,27 @@ from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTIO
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import (
+    _ads_recommendation_type_label,
     _operator_audit_summary_text,
     _social_draft_actions,
     apply_action,
     list_actions,
 )
+from wilq.actions.content_refresh import content_contract_label, _draft_content_block_label
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
     _custom_segment_source_quality,
     build_ads_diagnostics,
 )
-from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
+from wilq.briefing.content_diagnostics import (
+    _content_marketer_blocked_claims,
+    build_content_diagnostics,
+    build_content_preflight,
+)
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.tactical_queue import _merchant_dimension_label
 from wilq.briefing.merchant_diagnostics import (
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
@@ -65,6 +72,7 @@ from wilq.operator_labels import (
     source_connector_label,
     source_connector_labels,
 )
+from wilq.knowledge.operating_map import _operator_missing_contract_labels
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
@@ -1371,6 +1379,30 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert compact["status_label"] == "status odczytu do sprawdzenia"
     assert unknown_connector not in compact["summary"]
     assert "new_raw_status" not in compact["summary"]
+
+
+def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
+    raw_value = "new_VENDOR_raw_value"
+
+    labels = [
+        *_operator_missing_contract_labels([raw_value]),
+        *_content_marketer_blocked_claims([raw_value]),
+        _merchant_dimension_label(raw_value),
+        content_contract_label(raw_value),
+        _draft_content_block_label(raw_value),
+        _ads_recommendation_type_label(raw_value),
+    ]
+
+    assert labels == [
+        "brakujące dane do sprawdzenia",
+        "obietnica do sprawdzenia",
+        "wymiar Merchant do sprawdzenia",
+        "warunek treści do sprawdzenia",
+        "sekcja do sprawdzenia",
+        "typ rekomendacji do sprawdzenia",
+    ]
+    assert all(raw_value not in label for label in labels)
+    assert all("new VENDOR raw value" not in label for label in labels)
 
 
 def test_route_label_fallbacks_do_not_expose_raw_paths() -> None:
@@ -18099,7 +18131,7 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
 
     daily = binding_by_id["knowledge_daily_command"]
     assert daily["route"] == "/command-center"
-    assert daily["route_label"] == "Plan dnia"
+    assert daily["route_label"] == "Centrum pracy"
     assert daily["status_label"] in {"gotowe", "zablokowane"}
     assert daily["risk_label"] in {"niskie ryzyko", "średnie ryzyko"}
     assert daily["skill_id"] == "wilq-daily-command"

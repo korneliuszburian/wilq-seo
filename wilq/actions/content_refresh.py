@@ -294,7 +294,7 @@ def content_url_review_contract() -> dict[str, Any]:
 
 
 def _content_contract_label(value: str) -> str:
-    return CONTENT_CONTRACT_LABELS.get(value, value.replace("_", " "))
+    return CONTENT_CONTRACT_LABELS.get(value, "warunek treści do sprawdzenia")
 
 
 def _content_contract_labels(values: Iterable[str]) -> list[str]:
@@ -1227,7 +1227,7 @@ def _draft_content_block_label(section: str) -> str:
         "internal_links": "linkowanie wewnętrzne",
         "legal_review": "kontrola prawna",
     }
-    return labels.get(section, section.replace("_", " "))
+    return labels.get(section, "sekcja do sprawdzenia")
 
 
 def _content_gate_status_for_brief(

@@ -245,7 +245,7 @@ def _operator_missing_contract_labels(contracts: Iterable[str]) -> list[str]:
     }
     labels: list[str] = []
     for contract in contracts:
-        label = label_map.get(str(contract), str(contract).replace("_", " ").strip())
+        label = label_map.get(str(contract), "brakujące dane do sprawdzenia")
         if label and label not in labels:
             labels.append(label)
     return labels
