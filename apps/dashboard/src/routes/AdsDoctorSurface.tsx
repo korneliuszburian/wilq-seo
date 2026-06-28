@@ -720,7 +720,7 @@ function AdsOptimizerReadinessGroup({
             </p>
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
-                label="Kontrakty"
+                label="Warunki źródłowe"
                 values={[formatAdsContractCount(item.source_contract_ids.length)]}
                 empty="brak"
               />
@@ -869,7 +869,7 @@ function AdsMetricEvidencePanel({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dowody i ograniczenia Ads
+            Dowody i warunki przeglądu Ads
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             To jest skrót źródeł i blokad w WILQ. Decyzje dla marketera są powyżej;

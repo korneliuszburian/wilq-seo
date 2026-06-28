@@ -1269,7 +1269,7 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dowody i ograniczenia Content
+            Dowody i warunki decyzji treści
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             To jest skrót danych i ograniczeń WILQ. Decyzje dla marketera są powyżej;

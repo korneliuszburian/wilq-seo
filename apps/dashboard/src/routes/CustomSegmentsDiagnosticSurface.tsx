@@ -306,7 +306,7 @@ export function CustomSegmentsDiagnosticSurface() {
           </div>
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Dowody i ograniczenia segmentów
+              Dowody i warunki segmentów
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
               Ten ekran nie służy do tworzenia odbiorców bez sprawdzenia. Pokazuje
@@ -316,7 +316,7 @@ export function CustomSegmentsDiagnosticSurface() {
         </div>
         <div className="grid gap-2 text-xs text-slate-600">
           <TraceLine
-            label="Brakujące kontrakty"
+            label="Brakujące warunki sprawdzenia"
             values={uniqueValues([
               ...contract.missing_read_contract_labels,
               ...audienceForecast.missing_read_contract_labels

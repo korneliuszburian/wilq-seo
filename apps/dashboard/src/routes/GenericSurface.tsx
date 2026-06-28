@@ -380,7 +380,7 @@ function CompactRoutePanel({ config }: { config: CompactRouteConfig }) {
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <MetricTile label="Status" value={config.status} />
         <MetricTile label="Blokady" value={config.blockers.length} />
-        <MetricTile label="Rejestry techniczne" value="schowane" />
+        <MetricTile label="Szczegóły systemowe" value="schowane" />
       </div>
       <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-wait">
         <div className="font-semibold">Co zrobić dalej</div>

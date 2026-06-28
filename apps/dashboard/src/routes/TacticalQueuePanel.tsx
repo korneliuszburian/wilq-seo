@@ -69,7 +69,7 @@ export function TacticalQueuePanel({
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
-              ? "Skondensowana kolejka decyzji z WILQ. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
+              ? "Skondensowana kolejka decyzji z WILQ. Duplikaty zapytań i URL-i są zgrupowane; pełne szczegóły są w dedykowanych widokach."
               : "Gotowe taktyki z danych WILQ. Każda karta pokazuje źródła, dowody, akcje i twierdzenia, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>

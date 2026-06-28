@@ -283,7 +283,7 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dowody i ograniczenia Localo
+            Dowody i warunki diagnozy Localo
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             WILQ pokazuje techniczne potwierdzenie dostępu osobno od danych lokalnych.

@@ -7470,7 +7470,7 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
     expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toBeInTheDocument();
     expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Wartość konwersji").length).toBeGreaterThan(0);
@@ -7590,7 +7590,7 @@ describe("WILQ dashboard", () => {
       screen.getByText("Status segmentów i dowodów z wyszukiwanych haseł")
     ).toBeInTheDocument();
     expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia segmentów")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki segmentów")).toBeInTheDocument();
     expect(screen.getAllByText("Zapytania użytkowników: Ekologus Search").length).toBeGreaterThan(0);
     const customSegmentCards = screen
       .getAllByText("Zapytania użytkowników: Ekologus Search")
@@ -7601,7 +7601,7 @@ describe("WILQ dashboard", () => {
       expect(within(card).queryByText(/ev_/)).not.toBeInTheDocument();
     }
     expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
+    expect(screen.getByText(/Brakujące warunki sprawdzenia/)).toBeInTheDocument();
     expect(screen.getByText(/Wymaga oceny/)).toBeInTheDocument();
     expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
     expect(screen.getByText(/Tryb Codexa: Segmenty z haseł/)).toBeInTheDocument();
@@ -7745,11 +7745,11 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
-    expect(screen.queryByText("Dowody i ograniczenia Merchant")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody i warunki przeglądu Merchant")).not.toBeInTheDocument();
     expect(screen.queryByText("Czego nie wiemy o feedzie Merchant Center")).not.toBeInTheDocument();
     expect(screen.queryByText("Gotowość próbek produktów")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }));
-    expect(await screen.findByText("Dowody i ograniczenia Merchant")).toBeInTheDocument();
+    expect(await screen.findByText("Dowody i warunki przeglądu Merchant")).toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: feed/product health")).not.toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: kolejka feed/product issues")).not.toBeInTheDocument();
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
@@ -7831,7 +7831,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/FREE_LISTINGS|SHOPPING_ADS|MERCHANT_ACTION|NOT_IMPACTED/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ev_refresh_merchant_feed/)).not.toBeInTheDocument();
     const merchantProofSection = screen
-      .getByText("Dowody i ograniczenia Merchant")
+      .getByText("Dowody i warunki przeglądu Merchant")
       .closest("section");
     expect(merchantProofSection).not.toBeNull();
     const merchantProof = within(merchantProofSection as HTMLElement);
@@ -7906,7 +7906,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
     expect(screen.queryByText("Problemy pomiaru GA4")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody i ograniczenia GA4")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody i warunki pomiaru GA4")).not.toBeInTheDocument();
     expect(screen.queryByText("Podgląd przeglądu GA4")).not.toBeInTheDocument();
     expect(screen.queryByText("Brama bezpieczeństwa GA4")).not.toBeInTheDocument();
     expect(
@@ -7930,7 +7930,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/Gotowość pomiaru/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd GA4" }));
     expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia GA4")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki pomiaru GA4")).toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
@@ -7961,7 +7961,7 @@ describe("WILQ dashboard", () => {
       within(ga4OperatorSection as HTMLElement).getByRole("link", { name: "Sprawdź GA4 w WILQ" })
     ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
     const ga4ProofSection = screen
-      .getByText("Dowody i ograniczenia GA4")
+      .getByText("Dowody i warunki pomiaru GA4")
       .closest("section");
     expect(ga4ProofSection).not.toBeNull();
     const ga4Proof = within(ga4ProofSection as HTMLElement);
@@ -8003,7 +8003,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
     expect(screen.queryByText("Co marketer ma zrobić teraz z treściami")).not.toBeInTheDocument();
     expect(screen.queryByText("Bezpieczny tryb treści")).not.toBeInTheDocument();
-    expect(screen.queryByText("Dowody i ograniczenia Content")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dowody i warunki decyzji treści")).not.toBeInTheDocument();
     expect(screen.queryByText("Brama bezpieczeństwa treści")).not.toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getAllByText(/Ahrefs: zweryfikuj luki SEO/).length).toBeGreaterThan(0)
@@ -8036,7 +8036,7 @@ describe("WILQ dashboard", () => {
     expect(
       within(contentSafeMode as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki decyzji treści")).toBeInTheDocument();
     expect(screen.queryByText("GSC: query/page matrix")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(screen.queryByText("WordPress match: found")).not.toBeInTheDocument();
@@ -8045,7 +8045,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/clicks: 12/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Kliknięcia").length).toBeGreaterThan(0);
     const contentProofSection = screen
-      .getByText("Dowody i ograniczenia Content")
+      .getByText("Dowody i warunki decyzji treści")
       .closest("section");
     expect(contentProofSection).not.toBeNull();
     const contentProof = within(contentProofSection as HTMLElement);
@@ -8084,7 +8084,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Status Localo / widoczność lokalna")).toBeInTheDocument();
     expect(screen.getByText("Aktualny odczyt lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki diagnozy Localo")).toBeInTheDocument();
     expect(
       screen.getByText("Dostęp Localo działa; brakuje rankingów i danych profilu firmy w Google")
     ).toBeInTheDocument();
@@ -8173,7 +8173,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Payload: 4 checked items")).not.toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Content" }));
-    expect(screen.getAllByText("Dowody i ograniczenia Content").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Dowody i warunki decyzji treści").length).toBeGreaterThan(0);
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(
       screen.getAllByText("Ahrefs: zweryfikuj luki SEO przed planem treści").length
@@ -8227,7 +8227,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Status Ahrefs / dowody SEO")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
-    expect(screen.getByText("Dowody i ograniczenia Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i warunki analizy Ahrefs")).toBeInTheDocument();
     expect(
       screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
     ).toBeInTheDocument();
@@ -8258,7 +8258,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("subdomains")).not.toBeInTheDocument();
     expect(screen.queryByText("completed")).not.toBeInTheDocument();
     const ahrefsProofSection = screen
-      .getByText("Dowody i ograniczenia Ahrefs")
+      .getByText("Dowody i warunki analizy Ahrefs")
       .closest("section");
     expect(ahrefsProofSection).not.toBeNull();
     const ahrefsProof = within(ahrefsProofSection as HTMLElement);

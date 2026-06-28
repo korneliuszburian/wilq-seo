@@ -522,7 +522,7 @@ function Ga4DiagnosticProof({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dowody i ograniczenia GA4
+            Dowody i warunki pomiaru GA4
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             To jest skrót źródeł i blokad w WILQ. Decyzje dla marketera są powyżej;

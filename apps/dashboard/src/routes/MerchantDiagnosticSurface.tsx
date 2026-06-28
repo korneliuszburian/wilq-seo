@@ -940,7 +940,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dowody i ograniczenia Merchant
+            Dowody i warunki przeglądu Merchant
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             To jest skrót technicznych źródeł i blokad w WILQ. Pełna kolejka pracy

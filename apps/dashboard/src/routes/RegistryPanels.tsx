@@ -196,7 +196,7 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
-            <div>Zdarzenia audytu: {action.audit_events.length}</div>
+            <div>Zapisane sprawdzenia: {action.audit_events.length}</div>
           </div>
           <Link
             to="/actions/$actionId"

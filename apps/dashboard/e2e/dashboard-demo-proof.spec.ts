@@ -55,7 +55,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Pierwszy problem Merchant do sprawdzenia" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
     await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
-    await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
+    await expect(page.getByText("Dowody i warunki przeglądu Merchant")).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(
       page.getByText(/missing_potentially_required_attribute|availability_updated/).first()
@@ -84,7 +84,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w jakości ruchu" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd GA4" }).click();
-    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i warunki pomiaru GA4" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa GA4" })).toBeVisible();
     await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
     await expect(page.getByText("Analytics Safety Gate")).toHaveCount(0);
@@ -99,13 +99,13 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByText("Decyzja skondensowana")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pełny przegląd Ads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Pokaż pełny przegląd Ads" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toHaveCount(0);
     await page.getByRole("button", { name: "Pokaż pełny przegląd Ads" }).click();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
     await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i warunki przeglądu Ads" })).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "05-ads-live-campaign-metrics.png"),
       fullPage: true,
@@ -115,7 +115,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Localo / widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(
       page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
     ).toBeVisible();

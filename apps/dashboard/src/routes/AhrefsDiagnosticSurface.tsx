@@ -238,7 +238,7 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3">
         <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          Dowody i ograniczenia Ahrefs
+          Dowody i warunki analizy Ahrefs
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
           WILQ pokazuje dane autorytetu osobno od konkretnych luk SEO. Brak luk

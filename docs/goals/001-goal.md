@@ -129,6 +129,9 @@ use the cleaned language.
   schemas, dashboard, skill smoke and playbook/rule IDs now use
   `demand_gen_campaign_mode_review`, `review_required`, `review_status_label`
   and marketer-facing labels such as `kontrola trybu kampanii`.
+- Dashboard proof sections now use action-oriented `Dowody i warunki ...`
+  wording, and touched routes/tests no longer expose low-value proof/audit
+  jargon in primary marketer copy.
 - Browser proof after the status-label slice covered `/opportunities` and
   `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
   rather than raw status/risk enum values.
@@ -146,9 +149,9 @@ are resolved or explicitly deferred.
    corners by adding typed API/schema/view-model labels.
 3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
    the caller can pass both visual state and API label.
-4. Audit broad marketer-facing headings like `Dowody i ograniczenia ...` across
-   non-Demand Gen routes and replace them with action-oriented API/domain
-   labels where they do not help the marketer decide.
+4. Add typed route/connector/contract label registries so unknown route IDs,
+   connector IDs and vendor enums do not fall back to raw snake_case or English
+   values in marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
