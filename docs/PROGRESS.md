@@ -209,6 +209,11 @@ Date: 2026-06-28
 - Content strategist context-pack now preserves API-owned labels for content
   brief and WordPress draft previews, including source type, mode, draft
   operation, post status and concrete blocked-claim labels.
+- Blocked-claim labels now use one API/domain source in `wilq/operator_labels.py`.
+  Command Center and Knowledge no longer surface generic `blokada do
+  sprawdzenia`; browser proofs are in
+  `.local-lab/proof/command-center-blocked-claims-clean.txt` and
+  `.local-lab/proof/knowledge-blocked-claims-clean.txt`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 

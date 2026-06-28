@@ -5546,10 +5546,27 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == (
         "wilq-ads-doctor"
     )
-    assert "blokada do sprawdzenia" in plan_by_id[
+    assert "blokada do sprawdzenia" not in plan_by_id[
+        "plan_fix_ads_oauth_before_spend_analysis"
+    ]["blocked_claims"]
+    assert "wydatki reklamowe" in plan_by_id[
         "plan_fix_ads_oauth_before_spend_analysis"
     ]["blocked_claims"]
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
+    visible_blocked_claims = [
+        claim
+        for surface in (
+            payload["operator_brief"],
+            payload["action_plan"],
+            payload["daily_decisions"],
+        )
+        for item in surface
+        for claim in [
+            *item.get("blocked_claims", []),
+            *item.get("blocked_claim_labels", []),
+        ]
+    ]
+    assert "blokada do sprawdzenia" not in visible_blocked_claims
     assert len(decisions_by_id) <= 4
     assert "decision_review_localo_visibility_facts" not in decisions_by_id
     assert "decision_finish_localo_access_before_local_visibility" not in decisions_by_id
@@ -5767,9 +5784,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "Zapis zmian wymaga sprawdzenia" in ads_item["next_step"]
     assert "apply" not in ads_item["next_step"]
     assert "wskaźniki kampanii" in ads_item["next_step"]
-    assert "blokada do sprawdzenia" in ads_item["blocked_claims"]
+    assert "blokada do sprawdzenia" not in ads_item["blocked_claims"]
     assert "werdykt kosztu pozyskania celu" in ads_item["blocked_claims"]
     assert "werdykt zwrotu z reklam" in ads_item["blocked_claims"]
+    assert "dodanie wykluczających słów kluczowych" in ads_item["blocked_claims"]
     assert "opłacalność" in ads_item["blocked_claims"]
     assert "zmarnowany budżet" in ads_item["blocked_claims"]
     assert "propozycje wykluczeń" not in ads_item["blocked_claims"]
@@ -18675,6 +18693,15 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert daily["source_connector_labels"]
     assert "blocked_claim_labels" in daily
     assert "missing_contract_labels" in daily
+    visible_blocked_claims = [
+        claim
+        for binding in data["bindings"]
+        for claim in [
+            *binding.get("blocked_claims", []),
+            *binding.get("blocked_claim_labels", []),
+        ]
+    ]
+    assert "blokada do sprawdzenia" not in visible_blocked_claims
 
     ads = binding_by_id["knowledge_ads_daily_check"]
     assert ads["route"] == "/ads-doctor"

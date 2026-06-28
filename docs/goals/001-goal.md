@@ -199,6 +199,9 @@ use cleaned Polish operator language.
 - Content strategist context-pack now preserves API-owned labels for content
   brief and WordPress draft previews, including source type, mode, draft
   operation, post status and concrete blocked-claim labels.
+- Blocked-claim labels now use one API/domain source in `wilq/operator_labels.py`.
+  Command Center and Knowledge no longer show generic `blokada do
+  sprawdzenia`; active payload tests and browser proofs cover the regression.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no

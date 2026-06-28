@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from wilq.operator_labels import blocked_claim_label
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
@@ -1001,42 +1003,7 @@ def _tactical_dimension_value_label(key: str, value: str) -> str:
 
 
 def _blocked_claim_label(value: str) -> str:
-    labels = {
-        "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
-        "automatyczne przyjęcie rekomendacji": "automatyczne przyjęcie rekomendacji",
-        "automatyczna publikacja WordPress": "automatyczna publikacja WordPress",
-        "automatyczna zmiana feedu": "automatyczna zmiana feedu",
-        "campaign creation": "utworzenie kampanii",
-        "feed fix candidate": "propozycja naprawy feedu",
-        "jakość leadów": "jakość leadów",
-        "lead quality": "jakość leadów",
-        "marnowanie budżetu na zapytaniach": "marnowanie budżetu na zapytaniach",
-        "ocena atrybucji": "ocena atrybucji",
-        "ocena kosztu pozyskania celu": "werdykt kosztu pozyskania celu",
-        "ocena marży": "ocena marży",
-        "ocena opłacalności": "opłacalność",
-        "opłacalność": "opłacalność",
-        "przychód": "twierdzenie o przychodzie",
-        "propozycje wykluczeń": "propozycje wykluczeń",
-        "spadek konwersji": "spadek konwersji",
-        "utrata konwersji": "utrata konwersji",
-        "werdykt zwrotu z reklam": "werdykt zwrotu z reklam",
-        "wpływ na przychód": "twierdzenie o wpływie na przychód",
-        "wpływ zmian": "wpływ zmian",
-        "współczynnik konwersji": "współczynnik konwersji",
-        "wzrost konwersji": "obietnica wzrostu konwersji",
-        "zapis rekomendacji": "zapis rekomendacji",
-        "zapis w GA4": "zapis w GA4",
-        "zapis wykluczeń": "zapis wykluczeń",
-        "zmiana budżetu": "zapis zmiany budżetu",
-        "zapis zmian kampanii": "zmiana kampanii",
-        "wpływ na revenue": "twierdzenie o wpływie na przychód",
-        "CPA": "werdykt kosztu pozyskania celu",
-        "zwrot z reklam": "werdykt zwrotu z reklam",
-        "zmarnowany budżet": "zmarnowany budżet",
-        "naprawiony pomiar": "twierdzenie o naprawionym pomiarze",
-    }
-    return labels.get(value, "blokada do sprawdzenia")
+    return blocked_claim_label(value)
 
 
 class MarketingBriefSection(BaseModel):

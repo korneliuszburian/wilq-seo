@@ -6,6 +6,95 @@ UNKNOWN_SOURCE_CONNECTOR_LABEL = "źródło danych do sprawdzenia"
 UNKNOWN_REFRESH_STATUS_LABEL = "status odczytu do sprawdzenia"
 UNKNOWN_ROUTE_LABEL = "widok do sprawdzenia"
 
+BLOCKED_CLAIM_LABELS: dict[str, str] = {
+    "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
+    "90-dniowe bezpieczeństwo wykluczeń": "90-dniowe bezpieczeństwo wykluczeń",
+    "automatyczne przyjęcie rekomendacji": "automatyczne przyjęcie rekomendacji",
+    "automatyczna publikacja": "automatyczna publikacja",
+    "automatyczna publikacja WordPress": "automatyczna publikacja WordPress",
+    "automatyczna zmiana feedu": "automatyczna zmiana feedu",
+    "budget change": "zmiana budżetu",
+    "budget optimization": "optymalizacja budżetu",
+    "skalowanie budżetu": "skalowanie budżetu",
+    "campaign creation": "utworzenie kampanii",
+    "feed fix candidate": "propozycja naprawy feedu",
+    "dodanie wykluczających słów kluczowych": "dodanie wykluczających słów kluczowych",
+    "zapis zmian kampanii": "zmiana kampanii",
+    "causal impact": "przyczynowy wpływ zmian",
+    "client-ready report": "raport gotowy dla klienta",
+    "CPA": "werdykt kosztu pozyskania celu",
+    "ocena kosztu pozyskania celu": "werdykt kosztu pozyskania celu",
+    "werdykt kosztu pozyskania celu": "werdykt kosztu pozyskania celu",
+    "ocena docelowego kosztu pozyskania celu": "werdykt docelowego kosztu pozyskania celu",
+    "ocena docelowego zwrotu z reklam": "werdykt docelowego zwrotu z reklam",
+    "CPC": "koszt kliknięcia",
+    "CTR": "współczynnik kliknięć",
+    "spadek konwersji": "werdykt spadku konwersji",
+    "werdykt spadku konwersji": "werdykt spadku konwersji",
+    "współczynnik konwersji": "werdykt współczynnika konwersji",
+    "wdrożona konfiguracja konwersji": "wdrożona konfiguracja konwersji",
+    "Demand Gen launch ready": "gotowość uruchomienia Demand Gen",
+    "zapis zmian GBP": "zapis zmian w profilu firmy",
+    "zapis zmian w profilu firmy": "zapis zmian w profilu firmy",
+    "lead quality": "jakość leadów",
+    "jakość leadów": "jakość leadów",
+    "link acquisition impact": "wpływ pozyskanych linków",
+    "monthly performance verdict": "miesięczny werdykt skuteczności",
+    "negative keyword addition": "dodanie wykluczających słów kluczowych",
+    "opłacalność": "opłacalność",
+    "ocena opłacalności": "opłacalność",
+    "recommendation applied": "wdrożona rekomendacja",
+    "recommendation write": "zapis rekomendacji",
+    "przychód": "twierdzenie o przychodzie",
+    "twierdzenie o przychodzie": "twierdzenie o przychodzie",
+    "marnowanie budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
+    "werdykt marnowania budżetu na zapytaniach": "werdykt marnowania budżetu na zapytaniach",
+    "ocena atrybucji": "ocena atrybucji",
+    "ocena marży": "ocena marży",
+    "spend": "wydatki reklamowe",
+    "wydatki reklamowe": "wydatki reklamowe",
+    "zapytania z reklam": "zapytania z reklam",
+    "naprawiony pomiar": "twierdzenie o naprawionym pomiarze",
+    "twierdzenie o naprawionym pomiarze": "twierdzenie o naprawionym pomiarze",
+    "zmarnowany budżet": "zmarnowany budżet",
+    "wpływ na przychód": "twierdzenie o wpływie na przychód",
+    "wpływ na revenue": "twierdzenie o wpływie na przychód",
+    "twierdzenie o wpływie na przychód": "twierdzenie o wpływie na przychód",
+    "wpływ zmian": "wpływ zmian",
+    "wzrost konwersji": "obietnica wzrostu konwersji",
+    "obietnica wzrostu konwersji": "obietnica wzrostu konwersji",
+    "propozycje wykluczeń": "propozycje wykluczeń",
+    "utrata konwersji": "utrata konwersji",
+    "zapis w GA4": "zapis w GA4",
+    "zapis wykluczeń": "zapis wykluczeń",
+    "zwrot z reklam": "werdykt zwrotu z reklam",
+    "werdykt zwrotu z reklam": "werdykt zwrotu z reklam",
+    "ocena zmarnowanego budżetu": "zmarnowany budżet",
+    "ponowne zatwierdzenie produktu": "ponowne zatwierdzenie produktu",
+    "odzyskany przychód": "odzyskany przychód",
+    "lokalne rankingi": "lokalne rankingi",
+    "wyniki profilu firmy w Google": "wyniki profilu firmy w Google",
+    "widoczność konkurencji": "widoczność konkurencji",
+    "tempo nowych opinii": "tempo nowych opinii",
+    "ukończone zadanie lokalne": "ukończone zadanie lokalne",
+    "poprawa widoczności lokalnej": "poprawa widoczności lokalnej",
+}
+
+
+def blocked_claim_label(claim: str) -> str:
+    return BLOCKED_CLAIM_LABELS.get(claim, claim)
+
+
+def blocked_claim_labels(claims: Iterable[str]) -> list[str]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for claim in claims:
+        label = blocked_claim_label(claim)
+        if label and label not in seen:
+            seen.add(label)
+            values.append(label)
+    return values
+
 
 def source_connector_label(connector_id: str) -> str:
     labels = {
