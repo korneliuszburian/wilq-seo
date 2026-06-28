@@ -777,14 +777,14 @@ def _google_ads_keyword_planner_access_action() -> ActionObject | None:
         ),
         human_diagnosis=(
             "Google Ads live read działa, ale wzbogacenie Keyword Planner jest "
-            f"zablokowany przez Google Ads API: {blocker}. WILQ może używać "
+            f"zablokowane przez Google Ads API: {blocker}. WILQ może używać "
             "oceny haseł źródłowych, ale nie może twierdzić nic o prognozie ani "
             "rozmiarze odbiorców."
         ),
         recommended_reason=(
             "Dopóki token deweloperski nie ma zatwierdzonego dostępu Keyword Planner, "
             "segmenty zostają bez prognozy i wzbogacenia. To jest zewnętrzny "
-            "access blocker, nie brak promptu."
+            "blokada dostępu, nie brak promptu."
         ),
         payload=keyword_planner_access_payload(blocker),
         validation_status="not_validated",
@@ -808,7 +808,7 @@ def _keyword_planner_access_blocker(run: ConnectorRefreshRun) -> str | None:
         and http_status != "403"
     ):
         return None
-    return blocker_text
+    return "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:

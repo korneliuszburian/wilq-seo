@@ -120,6 +120,8 @@ Date: 2026-06-28
   keep linked trace IDs inside `Szczegóły techniczne`.
 - Action confirmation and impact audit summaries now use operator labels for
   blockers and Ads targets instead of raw guardrail keys or micros field names.
+- Keyword Planner access actions and Codex context now expose Polish operator
+  reasons instead of raw Google Ads authorization enums or English planning copy.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.

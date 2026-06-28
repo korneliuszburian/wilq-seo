@@ -2971,10 +2971,11 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     compact = dict(action)
     if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
         compact["human_diagnosis"] = (
-            "Keyword Planner enrichment jest zablokowany przez Google Ads API."
+            "Wzbogacenie Keyword Planner jest zablokowane przez Google Ads API."
         )
         compact["recommended_reason"] = (
-            "Odblokuj developer token przed forecast, audience size i Keyword Planner claims."
+            "Odblokuj dostęp tokena deweloperskiego przed użyciem prognoz, "
+            "rozmiaru odbiorców i twierdzeń opartych na Keyword Plannerze."
         )
         review_gate = compact.get("review_gate")
         if isinstance(review_gate, dict):
@@ -3022,7 +3023,9 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         return compact
     compact_payload = dict(payload)
     if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
-        compact_payload["blocked_reason"] = "PERMISSION_DENIED: DEVELOPER_TOKEN_NOT_APPROVED"
+        compact_payload["blocked_reason"] = (
+            "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
+        )
         helper_steps = compact_payload.get("helper_steps")
         if isinstance(helper_steps, list):
             compact_payload["helper_steps_total"] = len(helper_steps)

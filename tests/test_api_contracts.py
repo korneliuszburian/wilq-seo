@@ -3419,7 +3419,9 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     assert action["risk"] == "low"
     assert action["payload"]["action_type"] == "configure_google_ads_keyword_planner_access"
     assert action["payload"]["blocked_api"] == "Keyword Planner"
-    assert "DEVELOPER_TOKEN_NOT_APPROVED" in action["payload"]["blocked_reason"]
+    assert action["payload"]["blocked_reason"] == (
+        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
+    )
     assert action["payload"]["apply_allowed"] is False
     assert action["payload"]["destructive"] is False
     assert "rozmiar odbiorców" in action["payload"]["blocked_claims"]
@@ -3433,8 +3435,33 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     )
     assert "api_code=403" not in str(preview_card)
     assert "DEVELOPER_TOKEN_NOT_APPROVED" not in str(preview_card)
+    assert "PERMISSION_DENIED" not in serialized
+    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in serialized
     assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
     assert "client_secret" not in serialized
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ads-doctor"},
+    )
+    assert context_response.status_code == 200
+    keyword_planner_context_action = next(
+        action
+        for action in context_response.json()["active_action_objects"]
+        if action["id"] == KEYWORD_PLANNER_ACCESS_ACTION_ID
+    )
+    context_text = json.dumps(keyword_planner_context_action, ensure_ascii=False)
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in context_text
+    assert "PERMISSION_DENIED" not in context_text
+    assert "DEVELOPER_TOKEN_NOT_APPROVED" not in context_text
+    assert "developer token" not in context_text
+    assert "forecast" not in context_text
+    assert "audience size" not in context_text
+    assert "Keyword Planner claims" not in context_text
+    assert (
+        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
+        in context_text
+    )
 
     validate_response = client.post(f"/api/actions/{KEYWORD_PLANNER_ACCESS_ACTION_ID}/validate")
     assert validate_response.status_code == 200
