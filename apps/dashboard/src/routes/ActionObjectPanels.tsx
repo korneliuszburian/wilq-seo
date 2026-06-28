@@ -191,17 +191,26 @@ function ActionPreviewResultPanel({
   );
 }
 
-export function ActionObjectIdFocus({ actionIds, note }: { actionIds: string[]; note: string }) {
-  const actionCountLabel =
-    actionIds.length === 1 ? "1 akcja do sprawdzenia" : `${actionIds.length} akcji do sprawdzenia`;
-
+export function ActionObjectIdFocus({
+  actionIds,
+  actionSummaryLabel,
+  note
+}: {
+  actionIds: string[];
+  actionSummaryLabel: string;
+  note: string;
+}) {
   return (
     <section>
       <SectionHeading title="Akcje do sprawdzenia" />
       <div className="rounded-md border border-line bg-white p-4 text-sm leading-6 text-slate-700">
         <p>{note}</p>
         <div className="mt-3">
-          <TraceLine label="Akcje" values={actionIds.length > 0 ? [actionCountLabel] : []} empty="brak" />
+          <TraceLine
+            label="Akcje"
+            values={actionIds.length > 0 ? [actionSummaryLabel] : []}
+            empty="brak"
+          />
         </div>
       </div>
     </section>

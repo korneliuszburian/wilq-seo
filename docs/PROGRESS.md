@@ -43,6 +43,8 @@ Date: 2026-06-28
   logic.
 - Treści selected-decision and plan/draft panels render API-owned
   view-models instead of parsing raw action payload previews.
+- Treści loading/error action fallback uses the API-owned action summary label
+  instead of assembling action-count copy from action IDs.
 - Treści preflight, summary, decision, proof and action panels use API/domain
   evidence and action summary labels instead of route-local count formatting.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
@@ -128,6 +130,19 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/content/diagnostics` returns
+  `action_summary_label="2 akcje do sprawdzenia"`.
+- Browser proof: `/content-planner` renders `2 akcje do sprawdzenia` without
+  fallback action-count wording, raw payload wording or stale
+  target/migration terms.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

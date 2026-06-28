@@ -249,11 +249,13 @@ function ContentExpandableActionsPanel({
           {isLoading ? (
             <ActionObjectIdFocus
               actionIds={actionIds}
+              actionSummaryLabel={actionSummaryLabel}
               note="Ładuję szczegóły akcji; decyzje contentowe powyżej są już oparte o dane WILQ."
             />
           ) : isError ? (
             <ActionObjectIdFocus
               actionIds={actionIds}
+              actionSummaryLabel={actionSummaryLabel}
               note="Nie udało się odczytać pełnych akcji. Linki do sprawdzenia zostają widoczne, ale podgląd zmian wymaga danych akcji."
             />
           ) : (

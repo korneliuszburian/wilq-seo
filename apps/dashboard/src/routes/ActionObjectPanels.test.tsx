@@ -141,6 +141,13 @@ describe("ActionObjectPanels", () => {
     );
     expect(source).not.toContain('value={lastReviewLabel ?? "brak przeglądu"}');
   });
+
+  it("does not assemble action count copy from action IDs", () => {
+    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    expect(source).toContain("actionSummaryLabel");
+    expect(source).not.toContain("actionIds.length === 1");
+    expect(source).not.toContain("`${actionIds.length} akcji do sprawdzenia`");
+  });
 });
 
 function renderWithQueryClient(ui: ReactElement) {

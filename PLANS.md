@@ -565,6 +565,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Treści selected-decision first screen now renders
   API-owned `marketer_decision` fields instead of parsing content action
   payload previews.
+- 2026-06-28: Treści loading/error action fallback now consumes the API-owned
+  `action_summary_label` instead of assembling action-count copy from action
+  IDs in `ActionObjectPanels`.
 - 2026-06-28: Treści diagnostics and preflight now expose evidence/action
   summary labels in API/shared schemas. The route consumes those labels instead
   of route-local count formatting; live API proof and browser proof live in
@@ -872,6 +875,9 @@ WILQ is complete for this long-range goal when:
   typecheck, marketer language guard, live API proof and browser proof passed
   after moving Content diagnostics/preflight evidence and action summaries to
   API/domain labels.
+- Latest Treści action-fallback proof: focused dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after removing local action-count copy from `ActionObjectIdFocus`.
 - Latest Google Ads proof: focused API/shared-schema/dashboard tests,
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Google Ads response evidence/action summaries to

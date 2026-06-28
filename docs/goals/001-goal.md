@@ -92,6 +92,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   behind technical detail.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
+- Treści loading/error action fallback uses the API-owned action summary label
+  instead of assembling action-count copy from action IDs.
 - Treści preflight, summary, decision, proof and action panels use API/domain
   evidence and action summary labels instead of route-local count formatting.
 - GA4 overview, decision and proof panels use API/domain evidence and action
