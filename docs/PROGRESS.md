@@ -72,6 +72,8 @@ Date: 2026-06-28
   negative-keyword cards.
 - Ads recommendation rows now expose API-owned preview cards. The Ads route no
   longer reads `row.payload_preview` for marketer-facing recommendation cards.
+- Ads budget rows now expose API-owned preview cards. The Ads route no longer
+  reads `row.payload_preview` for marketer-facing budget cards.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -102,6 +104,7 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_negative_keyword_candidate_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_recommendation_row_exposes_marketer_preview_card" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_budget_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
@@ -135,5 +138,11 @@ Recent focused proof used during the cleanup:
   the current live DOM does not render that recommendation card, so this slice
   is verified by API contract, route fixture and absence of the old technical
   strings in the live DOM.
+- `rtk uv run python - <<'PY' ... /api/ads/diagnostics budget_pacing_read_contract
+  preview_card scan ... PY`; proof found `Budżet kampanii do sprawdzenia`,
+  `Operacja: zmiana budżetu kampanii` and no `CampaignBudgetOperation`,
+  `mutation_audit`, `101` or `701` in the budget preview card. Browser proof on
+  expanded `/ads-doctor` full diagnostic tables found the same Polish card text
+  and no old technical tokens.
 - `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --depth 10` on expanded `/ga4`
 - `rtk git diff --check`

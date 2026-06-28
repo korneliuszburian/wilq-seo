@@ -6510,7 +6510,10 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     _hydrate_campaign_triage_marketer_labels(response.campaign_triage_read_contract)
     for row in response.derived_kpi_read_contract.kpi_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
-    _hydrate_budget_pacing_marketer_labels(response.budget_pacing_read_contract)
+    _hydrate_budget_pacing_marketer_labels(
+        response.budget_pacing_read_contract,
+        currency_code,
+    )
     _hydrate_recommendations_marketer_labels(response.recommendations_read_contract)
     _hydrate_impression_share_marketer_labels(response.impression_share_read_contract)
     _hydrate_change_history_marketer_labels(response.change_history_read_contract)
@@ -6540,6 +6543,7 @@ def _hydrate_campaign_triage_marketer_labels(
 
 def _hydrate_budget_pacing_marketer_labels(
     contract: AdsBudgetPacingReadContract,
+    currency_code: str | None,
 ) -> None:
     for preview in contract.payload_preview:
         _hydrate_budget_payload_preview_labels(preview)
@@ -6553,6 +6557,7 @@ def _hydrate_budget_pacing_marketer_labels(
         row.blocked_claim_labels = _unique(row.blocked_claims)
         if row.payload_preview is not None:
             _hydrate_budget_payload_preview_labels(row.payload_preview)
+            row.preview_card = _budget_preview_card(row.payload_preview, currency_code)
     for row in contract.shared_budget_distribution_rows:
         row.blocked_claim_labels = _unique(row.blocked_claims)
         for share in row.campaign_shares:
@@ -6579,6 +6584,81 @@ def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> No
         safety_review.required_validation
     )
     safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
+
+
+def _budget_preview_card(
+    preview: AdsBudgetApplyPreview,
+    currency_code: str | None,
+) -> ActionPreviewCardViewModel:
+    rows = [
+        {
+            "label": "Budżet teraz",
+            "value": _format_money_micros(
+                preview.current_budget_amount_micros,
+                currency_code,
+            )
+            or "brak danych",
+        },
+        {
+            "label": "Propozycja do sprawdzenia",
+            "value": _format_money_micros(
+                preview.proposed_budget_amount_micros,
+                currency_code,
+            )
+            or "brak danych",
+        },
+        {
+            "label": "Operacja",
+            "value": preview.operation_type_label or "zmiana budżetu do sprawdzenia",
+        },
+    ]
+    if preview.campaign_id or preview.campaign_budget_id:
+        rows.append(
+            {
+                "label": "Powiązanie",
+                "value": "kampania albo budżet do sprawdzenia w szczegółach technicznych",
+            }
+        )
+    if preview.required_validation_labels:
+        rows.append(
+            {
+                "label": "Warunki sprawdzenia",
+                "value": ", ".join(preview.required_validation_labels[:4]),
+            }
+        )
+    missing_requirements = preview.safety_review.missing_requirement_labels
+    if missing_requirements:
+        rows.append(
+            {
+                "label": "Braki bezpieczeństwa",
+                "value": ", ".join(missing_requirements[:4]),
+            }
+        )
+    if preview.blocked_claim_labels:
+        rows.append(
+            {
+                "label": "Czego nie wolno twierdzić",
+                "value": ", ".join(preview.blocked_claim_labels[:4]),
+            }
+        )
+    return ActionPreviewCardViewModel(
+        id=f"{preview.id}_card",
+        kind="google_ads_budget_review",
+        title_label="Budżet kampanii do sprawdzenia",
+        subtitle_label="ocena budżetu bez zapisu zmian",
+        status_label="zapis zmian zablokowany",
+        rows=rows,
+        apply_state_label=(
+            "możliwy zapis po sprawdzeniu"
+            if preview.apply_allowed
+            else "zapis zmian zablokowany"
+        ),
+        system_readiness_label=(
+            "system gotowy do zapisu"
+            if preview.api_mutation_ready
+            else "wymaga kontroli"
+        ),
+    )
 
 
 def _hydrate_recommendations_marketer_labels(
@@ -7354,6 +7434,7 @@ def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
         ),
         "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
         "google_ads_mutation_audit": "sprawdzenie zapisu zmian w Google Ads",
+        "mutation_audit": "audyt zapisu zmian",
         "keyword_planner_enrichment": "wzbogacenie przez Keyword Planner",
         "forecast_or_audience_size": "prognoza albo rozmiar odbiorców",
         "campaign activity": "aktywność kampanii",

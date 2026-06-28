@@ -101,6 +101,8 @@ use the cleaned language.
 - Ads recommendation rows now expose API-owned preview cards. The dashboard
   route no longer derives the visible recommendation card from
   `row.payload_preview`.
+- Ads budget rows now expose API-owned preview cards. The dashboard route no
+  longer derives the visible budget card from `row.payload_preview`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

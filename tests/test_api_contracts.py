@@ -10037,6 +10037,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_safety_review["api_mutation_ready"] is False
     assert budget_safety_review["apply_allowed"] is False
     assert budget_safety_review["destructive"] is False
+    budget_preview_card = budget_contract["budget_rows"][0]["preview_card"]
+    assert budget_preview_card["kind"] == "google_ads_budget_review"
+    assert budget_preview_card["title_label"] == "Budżet kampanii do sprawdzenia"
+    budget_preview_rows = {
+        row["label"]: row["value"] for row in budget_preview_card["rows"]
+    }
+    assert budget_preview_rows["Budżet teraz"] == "30 PLN"
+    assert budget_preview_rows["Propozycja do sprawdzenia"] == "42 PLN"
+    assert budget_preview_rows["Operacja"] == "zmiana budżetu kampanii"
+    assert budget_preview_rows["Powiązanie"] == (
+        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    )
+    assert "CampaignBudgetOperation" not in str(budget_preview_card)
+    assert "101" not in str(budget_preview_card)
+    assert "701" not in str(budget_preview_card)
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -10061,6 +10076,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": budget_contract["budget_rows"][0]["metric_facts"],
             "payload_preview": budget_contract["payload_preview"][0],
+            "preview_card": budget_contract["budget_rows"][0]["preview_card"],
             "missing_metrics": [],
             "blocked_claims": [
                 "skalowanie budżetu",
@@ -12289,6 +12305,84 @@ def test_ads_negative_keyword_candidate_exposes_marketer_preview_card() -> None:
     ]
     assert "EXACT" not in str(card.model_dump())
     assert "ad_group" not in str(card.model_dump())
+
+
+def test_ads_budget_row_exposes_marketer_preview_card() -> None:
+    from wilq.briefing.ads_diagnostics import _hydrate_budget_pacing_marketer_labels
+    from wilq.schemas import (
+        AdsBudgetApplyPreview,
+        AdsBudgetApplySafetyReview,
+        AdsBudgetPacingReadContract,
+        AdsBudgetPacingRow,
+    )
+
+    preview = AdsBudgetApplyPreview(
+        id="budget_apply_preview_test",
+        campaign_id="101",
+        campaign_name="Brand Search",
+        campaign_budget_id="701",
+        campaign_budget_name="Brand budget",
+        operation_type="CampaignBudgetOperation",
+        current_budget_amount_micros=30000000,
+        proposed_budget_amount_micros=42000000,
+        proposed_budget_delta_micros=12000000,
+        reason="Budżet do sprawdzenia przed zapisem zmian.",
+        required_validation=[
+            "review_campaign_activity",
+            "verify_account_currency",
+            "budget_pacing",
+        ],
+        blocked_claims=["zmiana budżetu"],
+        safety_review=AdsBudgetApplySafetyReview(
+            id="budget_apply_preview_test_safety",
+            budget_preview_id="budget_apply_preview_test",
+            reason="Zapis zmian zablokowany.",
+            missing_requirements=[
+                "change_history",
+                "human_budget_goal",
+                "mutation_audit",
+            ],
+            blocked_claims=["zmiana budżetu"],
+        ),
+    )
+    contract = AdsBudgetPacingReadContract(
+        status="ready",
+        title="Budżety kampanii",
+        summary="Budżety do sprawdzenia.",
+        budget_rows=[
+            AdsBudgetPacingRow(
+                campaign_id="101",
+                campaign_name="Brand Search",
+                budget_id="701",
+                budget_name="Brand budget",
+                payload_preview=preview,
+            )
+        ],
+        payload_preview=[preview],
+        next_step="Sprawdź budżet przed zapisem zmian.",
+    )
+
+    _hydrate_budget_pacing_marketer_labels(contract, "PLN")
+
+    card = contract.budget_rows[0].preview_card
+    assert card is not None
+    assert card.kind == "google_ads_budget_review"
+    assert card.title_label == "Budżet kampanii do sprawdzenia"
+    rows = {row.label: row.value for row in card.rows}
+    assert rows["Budżet teraz"] == "30 PLN"
+    assert rows["Propozycja do sprawdzenia"] == "42 PLN"
+    assert rows["Operacja"] == "zmiana budżetu kampanii"
+    assert rows["Powiązanie"] == (
+        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    )
+    assert "sprawdzenie aktywności kampanii" in rows["Warunki sprawdzenia"]
+    assert "historia zmian" in rows["Braki bezpieczeństwa"]
+    assert "audyt zapisu zmian" in rows["Braki bezpieczeństwa"]
+    assert "mutation_audit" not in rows["Braki bezpieczeństwa"]
+    dumped = str(card.model_dump())
+    assert "CampaignBudgetOperation" not in dumped
+    assert "101" not in dumped
+    assert "701" not in dumped
 
 
 def test_ads_recommendation_row_exposes_marketer_preview_card() -> None:

@@ -1222,14 +1222,15 @@ const adsDiagnostics = {
           destructive: false
         },
         preview_card: {
-          id: "recommendation_apply_preview_rec-1_card",
-          kind: "google_ads_recommendation_review",
-          title_label: "Rekomendacja Google Ads do sprawdzenia",
-          subtitle_label: "ocena rekomendacji bez zapisu zmian",
+          id: "budget_apply_preview_123_777_card",
+          kind: "google_ads_budget_review",
+          title_label: "Budżet kampanii do sprawdzenia",
+          subtitle_label: "ocena budżetu bez zapisu zmian",
           status_label: "zapis zmian zablokowany",
           rows: [
-            { label: "Rekomendacja", value: "budżet kampanii" },
-            { label: "Operacja", value: "zastosowanie rekomendacji Google Ads" },
+            { label: "Budżet teraz", value: "30 PLN" },
+            { label: "Propozycja do sprawdzenia", value: "42 PLN" },
+            { label: "Operacja", value: "zmiana budżetu kampanii" },
             {
               label: "Powiązanie",
               value: "kampania albo budżet do sprawdzenia w szczegółach technicznych"
@@ -1237,7 +1238,12 @@ const adsDiagnostics = {
             {
               label: "Warunki sprawdzenia",
               value:
-                "sprawdzenie typu rekomendacji, sprawdzenie wpływu rekomendacji, sprawdzenie historii zmian, sprawdzenie celu biznesowego"
+                "sprawdzenie aktywności kampanii, sprawdzenie waluty konta, tempo wydawania budżetu, udział w wyświetleniach"
+            },
+            {
+              label: "Braki bezpieczeństwa",
+              value:
+                "historia zmian, cel budżetu od człowieka, audyt zapisu zmian, potwierdzenie człowieka przed zapisem"
             }
           ],
           apply_state_label: "zapis zmian zablokowany",
@@ -7494,7 +7500,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.campaign_status_label");
     expect(routeSource).toContain("row.budget_period_label");
     expect(routeSource).toContain("row.blocked_claim_labels");
-    expect(routeSource).toContain("row.payload_preview.operation_type_label");
+    expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.recommendation_type_label");
     expect(routeSource).toContain("row.preview_card");
     expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");

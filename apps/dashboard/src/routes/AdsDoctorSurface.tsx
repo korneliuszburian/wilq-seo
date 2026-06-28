@@ -1389,32 +1389,9 @@ function AdsBudgetPacingRowsTable({
                   : "brak"}
               </td>
               <td className="min-w-48 py-2 pr-4 text-xs text-slate-600">
-                {row.payload_preview ? (
-                  <div>
-                    <div className="font-semibold text-ink">
-                      {adsCost(
-                        row.payload_preview.proposed_budget_amount_micros,
-                        currencyCode
-                      )}
-                    </div>
-                    <div>
-                      {row.payload_preview.operation_type_label} /{" "}
-                      {row.payload_preview.apply_allowed
-                        ? "wymaga sprawdzenia"
-                        : "zapis zmian zablokowany"}
-                    </div>
-                    <div className="mt-1 text-slate-500">
-                      Bezpieczeństwo budżetu:{" "}
-                      {row.payload_preview.safety_review.apply_allowed
-                        ? "gotowe do sprawdzenia"
-                        : "zablokowane"}
-                    </div>
-                    <div className="text-slate-500">
-                      Braki:{" "}
-                      {formatTraceIdCount(
-                        row.payload_preview.safety_review.missing_requirements.length
-                      )}
-                    </div>
+                {row.preview_card ? (
+                  <div className="min-w-72">
+                    <ActionPreviewCard card={row.preview_card} />
                   </div>
                 ) : (
                   "brak"

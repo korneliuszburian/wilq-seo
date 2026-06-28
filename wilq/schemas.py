@@ -1414,6 +1414,7 @@ class AdsBudgetPacingRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     payload_preview: AdsBudgetApplyPreview | None = None
+    preview_card: ActionPreviewCardViewModel | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
