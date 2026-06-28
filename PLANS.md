@@ -449,7 +449,7 @@ Acceptance:
 
 Objective:
 
-Make Command Center API-owned and decision-first.
+Make Centrum pracy API-owned and decision-first.
 
 Tasks:
 
@@ -546,8 +546,8 @@ WILQ is complete for this long-range goal when:
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
-  React helpers into typed API/domain/shared-schema fields across Command
-  Center, Ads, Merchant, GA4, Localo, Ahrefs, Knowledge, tactical queue, metric
+  React helpers into typed API/domain/shared-schema fields across Centrum
+  pracy, Ads, Merchant, GA4, Localo, Ahrefs, Knowledge, tactical queue, metric
   chips and action previews. Detailed proof is in git commits and
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
@@ -560,10 +560,10 @@ WILQ is complete for this long-range goal when:
   and Merchant tactical labels now fall back to neutral Polish operator labels.
   The remaining raw fallback scan is limited to non-marketer connector
   normalization and title fallback paths.
-- 2026-06-28: Content Planner's expandable plan/draft panel now renders
+- 2026-06-28: Treści expandable plan/draft panel now renders
   API-owned action preview cards instead of constructing marketer-facing cards
   from content/WordPress payload arrays.
-- 2026-06-28: Content Planner's selected-decision first screen now renders
+- 2026-06-28: Treści selected-decision first screen now renders
   API-owned `marketer_decision` fields instead of parsing content action
   payload previews.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
@@ -574,6 +574,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Workflow cards and run summaries now use API/domain source,
   evidence, action, missing-data and blocked-claim summary labels. Fresh
   `/workflows` loads no longer wait on hidden related-action data.
+- 2026-06-28: Recovery docs were condensed again. `docs/PROGRESS.md` and
+  `docs/goals/001-goal.md` now keep current state, active findings and latest
+  proof instead of append-only implementation history.
 
 ## Discoveries
 
@@ -617,7 +620,7 @@ WILQ is complete for this long-range goal when:
   visible to the marketer, the backend/action contract must provide its label;
   React must not translate source type, mode, operation, draft status or
   publication readiness enums.
-- Command Center labels are part of the canonical daily view-model. If the first
+- Centrum pracy labels are part of the canonical daily view-model. If the first
   screen needs better wording, fix the command-center API/domain source and
   schema, not React-side dictionaries.
 - Daily context-pack size is sensitive to live evidence count. The current
@@ -634,7 +637,7 @@ WILQ is complete for this long-range goal when:
   in the active runtime path.
   Keep proof scans as part of every route cleanup slice and promote repeated
   findings into API/domain labels or language guards.
-- Content Planner diagnostic labels follow the same rule as action preview
+- Treści diagnostic labels follow the same rule as action preview
   labels: connector status, refresh status, section blockers and metric names
   are API/domain semantics. React may format numbers, but it must not own the
   meaning of those fields.
@@ -661,6 +664,9 @@ WILQ is complete for this long-range goal when:
 - A dashboard's selected-decision first screen should use a domain view-model
   such as `marketer_decision`; action preview cards are for expandable action
   details, not for reconstructing the primary decision.
+- Recovery docs can become product noise if they preserve every finished slice.
+  Keep detailed history in git commits and proof artifacts, and keep recovery
+  files short enough to restart from.
 
 ## Decision Log
 
@@ -683,11 +689,11 @@ WILQ is complete for this long-range goal when:
 - `source_inputs` is the active social draft source-evidence contract. Do not
   restore `candidate_inputs` or publish-permissions wording as compatibility
   aliases.
-- Active Content Planner decision, gate, WordPress match, preflight and Ahrefs
+- Active Treści decision, gate, WordPress match, preflight and Ahrefs
   candidate labels are API-owned. Do not reintroduce React dictionaries for
   those labels; migrate remaining action-preview label helpers only through
   typed API/action source fields.
-- Active Command Center daily-decision labels are API-owned. Do not reintroduce
+- Active Centrum pracy daily-decision labels are API-owned. Do not reintroduce
   route-local dictionaries for decision copy, source labels, metric labels,
   blocked promises, CTA labels or skill labels.
 - Action detail first-screen preview cards must come from typed
@@ -714,10 +720,10 @@ WILQ is complete for this long-range goal when:
   Do not add or preserve route-local translators as cleanup strategy.
 - Unknown vendor/domain values in API-owned labels must use neutral Polish
   operator copy. Do not fall back to raw enum/source values in visible labels.
-- Content Planner plan/draft cards are action preview semantics. They must stay
+- Treści plan/draft cards are action preview semantics. They must stay
   on `ActionObject.preview_cards`; do not restore route-local content/WordPress
   payload card renderers.
-- Content Planner selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
+- Treści selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
   snapshot belong to `marketer_decision`; do not restore
   `action.payload.content_brief_preview` parsing in the route.
 
@@ -725,10 +731,10 @@ WILQ is complete for this long-range goal when:
 
 - Current outcome: the active cleanup is materially reducing dashboard/API
   Polglish and raw technical leakage, but it is not complete.
-- Latest accepted proof: Merchant, Content Planner and Ahrefs no longer show
+- Latest accepted proof: Merchant, Treści and Ahrefs no longer show
   targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
   and the focused API/dashboard checks plus language guard passed.
-- Latest content cleanup proof: Content Planner diagnostics now expose
+- Latest content cleanup proof: Treści diagnostics now expose
   API-owned status, blocked-claim and metric labels; focused API/dashboard
   tests, typecheck, language guard, live API proof and `agent-browser read` for
   `/content-planner` passed.
@@ -741,10 +747,10 @@ WILQ is complete for this long-range goal when:
 - Latest fallback cleanup proof: focused API fallback tests, marketer language
   guard and `git diff --check` passed for Knowledge, Localo, GA4, Demand Gen,
   opportunity domain and Merchant tactical fallback labels.
-- Latest Content Planner proof: focused route test, dashboard typecheck,
+- Latest Treści proof: focused route test, dashboard typecheck,
   marketer language guard and browser text proof passed after moving the
   expandable plan/draft panel to API-owned preview cards.
-- Latest Content Planner proof: focused API test, route test, dashboard
+- Latest Treści proof: focused API test, route test, dashboard
   typecheck, marketer language guard and browser text proof passed after moving
   the selected-decision snapshot to API-owned `marketer_decision`.
 - Latest Knowledge proof: focused Knowledge/StatusBadge tests, dashboard
