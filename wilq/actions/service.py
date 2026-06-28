@@ -4247,7 +4247,7 @@ def _action_confirmation_summary(
     if blockers:
         return (
             "Potwierdzenie zapisu zmian zablokowane: "
-            f"{', '.join(blockers)}. "
+            f"{', '.join(_action_gate_labels(blockers))}. "
             f"Notatka: {request.notes}. "
             "Ten krok nie zapisuje zmian w zewnętrznych systemach."
         )
@@ -4278,14 +4278,17 @@ def _ads_target_confirmation_summary(
     if blockers:
         return (
             "Potwierdzenie celu Ads zablokowane: "
-            f"{', '.join(blockers)}. "
+            f"{', '.join(_action_gate_labels(blockers))}. "
             f"Notatka: {request.notes}. "
             "Ten krok nie zapisuje zmian w Google Ads."
         )
     if request.target_roas is not None:
-        target_summary = f"target_roas={request.target_roas}"
+        target_summary = f"docelowy zwrot z reklam: {request.target_roas:g}"
     else:
-        target_summary = f"target_cpa_micros={request.target_cpa_micros}"
+        target_summary = (
+            "docelowy koszt pozyskania celu: "
+            f"{_micros_money_label(request.target_cpa_micros)}"
+        )
     return (
         f"Potwierdzono roboczą zasadę bezpieczeństwa celu Ads: {target_summary}. "
         f"Notatka: {request.notes}. "
@@ -4327,7 +4330,7 @@ def _action_impact_check_summary(
         f"{', '.join(_source_connector_labels(source_connectors)) if source_connectors else 'brak'}.",
     ]
     if blockers:
-        parts.append(f"Blokady: {', '.join(blockers)}.")
+        parts.append(f"Blokady: {', '.join(_action_gate_labels(blockers))}.")
     parts.append(f"Notatka: {request.notes}.")
     parts.append("Ten krok nie zapisuje zmian w zewnętrznych systemach.")
     return " ".join(parts)
@@ -4534,9 +4537,13 @@ def _action_audit_summary_for_operator(event: AuditEvent) -> str:
     if event.event_type == "action_preview_generated":
         return _legacy_or_current_preview_summary(event.summary)
     if event.event_type in {"action_apply_confirmed", "action_apply_confirmation_confirmed"}:
-        return "Podgląd zmian potwierdzony. Nie zapisano zmian w zewnętrznych systemach."
+        return _operator_audit_summary_text(event.summary) or (
+            "Podgląd zmian potwierdzony. Nie zapisano zmian w zewnętrznych systemach."
+        )
     if event.event_type in {"action_confirmation_blocked", "action_apply_confirmation_blocked"}:
-        return "Potwierdzenie podglądu zablokowane. Nie zapisano zmian w zewnętrznych systemach."
+        return _operator_audit_summary_text(event.summary) or (
+            "Potwierdzenie podglądu zablokowane. Nie zapisano zmian w zewnętrznych systemach."
+        )
     if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
         return _legacy_or_current_impact_summary(event.summary)
     if event.event_type == "action_apply_blocked":
@@ -4853,6 +4860,8 @@ def _action_gate_label(value: str) -> str | None:
         "no_publishing_without_connector_credentials": "bez publikacji bez danych dostępowych źródła",
         "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
         "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot z reklam albo koszt pozyskania celu",
+        "target_roas_or_cpa_required": "podaj docelowy zwrot z reklam albo koszt pozyskania celu",
+        "exactly_one_target_guardrail_allowed": "podaj tylko jeden cel Ads do sprawdzenia",
         "record_human_strategy_review_outcome": "zapisz wynik sprawdzenia strategii przez człowieka",
         "WILQ_ADS_TARGET_ROAS": "docelowy zwrot z reklam",
         "WILQ_ADS_TARGET_CPA_MICROS": "docelowy koszt pozyskania celu",

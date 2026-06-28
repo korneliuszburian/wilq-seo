@@ -118,6 +118,8 @@ Date: 2026-06-28
   change resource types and change operation types.
 - Tactical queue cards now show evidence/action summaries on the card face and
   keep linked trace IDs inside `Szczegóły techniczne`.
+- Action confirmation and impact audit summaries now use operator labels for
+  blockers and Ads targets instead of raw guardrail keys or micros field names.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
