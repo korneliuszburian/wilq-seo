@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
+import pytest
+
+from wilq.connectors.registry import get_connector_status
 from wilq.schemas import (
     AdsCampaignMetricRow,
     AdsCampaignTriageRow,
     ConnectorCapability,
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorStatusValue,
     FreshnessState,
     MetricFact,
     connector_status_label,
+    utc_now,
 )
 
 
@@ -32,6 +41,42 @@ def test_connector_status_unknown_fallback_is_neutral_polish_copy() -> None:
     assert connector_status_label("vendor_status_that_drifted") == (
         "status źródła do sprawdzenia"
     )
+
+
+def test_connector_status_uses_latest_successful_vendor_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_at = utc_now() - timedelta(minutes=10)
+    run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_test",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        vendor_data_collected=True,
+        summary="Odczyt Merchant Center zakończony.",
+    )
+
+    class FakeStateStore:
+        def list_connector_refresh_runs(
+            self,
+            connector_id: str | None = None,
+        ) -> list[ConnectorRefreshRun]:
+            assert connector_id == "google_merchant_center"
+            return [run]
+
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456789")
+    monkeypatch.setattr("wilq.connectors.registry.google_credentials_available", lambda: True)
+    monkeypatch.setattr("wilq.connectors.registry.local_state_store", lambda: FakeStateStore())
+
+    connector = get_connector_status("google_merchant_center")
+
+    assert connector is not None
+    assert connector.configured is True
+    assert connector.last_success_at == completed_at
+    assert connector.freshness.state == "fresh"
+    assert connector.freshness.last_success_at == completed_at
+    assert "udany odczyt danych zewnętrznych" in (connector.freshness.notes or "")
 
 
 def test_metric_fact_hydrates_operator_metric_label() -> None:

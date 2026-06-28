@@ -30,6 +30,9 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Connector status now uses the latest successful `vendor_read` when available.
+  GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
+  `/api/connectors` now reports fresh `last_success_at` values for all three.
 - Action validation errors for Ads, GA4 and Localo now use source-owned Polish
   operator copy instead of English/technical `payload`, `requires`,
   `apply_allowed` or mutation-readiness wording. Focused tests guard this
@@ -221,6 +224,21 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Connector freshness cleanup: live GSC, GA4 and Merchant vendor reads
+  completed with external calls and `vendor_data_collected=true`; connector
+  status now reuses the latest successful vendor read instead of showing
+  credential-presence-only freshness after a successful refresh.
+  Verification:
+  - `rtk uv run wilq connectors refresh google_search_console --mode vendor_read --reason "Goal 001 live GSC data proof after access check"`
+  - `rtk uv run wilq connectors refresh google_analytics_4 --mode vendor_read --reason "Goal 001 live GA4 data proof after access check"`
+  - `rtk uv run wilq connectors refresh google_merchant_center --mode vendor_read --reason "Goal 001 live Merchant data proof after access check"`
+  - `rtk uv run pytest tests/test_connector_status_labels.py -q`
+  - `rtk uv run pytest tests/test_api_contracts.py::test_google_first_party_status_accepts_authorized_user_credentials tests/test_api_contracts.py::test_connector_status_does_not_expose_secret_values -q`
+  - live `/api/connectors`, `/api/content/diagnostics`, `/api/ga4/diagnostics`
+    and `/api/merchant/diagnostics` proof after `rtk scripts/local_stack.sh restart`
+
+Previous verified local slice:
 
 - Ads/GA4 source-label cleanup: `/api/ads/diagnostics?view=summary` and
   `/api/ga4/diagnostics` now expose top-level API-owned

@@ -543,6 +543,10 @@ WILQ is complete for this long-range goal when:
 
 ## Progress
 
+- 2026-06-29: Connector status freshness now uses the latest successful
+  `vendor_read` instead of only credential-presence state. Live GSC, GA4 and
+  Merchant refreshes completed with `vendor_data_collected=true`; `/api/connectors`
+  now shows fresh `last_success_at` for those sources.
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
@@ -821,6 +825,10 @@ WILQ is complete for this long-range goal when:
 - Treści selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
   snapshot belong to `marketer_decision`; do not restore
   `action.payload.content_brief_preview` parsing in the route.
+- Connector readiness copy must not stop at "credentials configured" when a
+  successful external read exists. `/api/connectors` must reuse the latest
+  successful vendor read for `last_success_at` and freshness so Settings,
+  context packs and diagnostics agree on access state.
 
 ## Outcomes & Retrospective
 

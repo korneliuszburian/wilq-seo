@@ -216,6 +216,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Connector refresh runs hydrate Polish status labels at the shared schema
   boundary; fresh GSC, GA4 and Merchant reads on 2026-06-28 completed with
   vendor data collected.
+- Connector status now reuses the latest successful vendor read for freshness
+  and `last_success_at`. GSC, GA4 and Merchant live refreshes on
+  2026-06-28T23:04-23:05Z completed with `vendor_data_collected=true`.
 - Connector status objects hydrate Polish `status_label` values at the shared
   backend schema boundary, and Treści diagnostics expose API-owned
   `live_data_status_label` for GSC/WordPress readiness.

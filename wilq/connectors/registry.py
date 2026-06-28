@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 
 from wilq.connectors.google_auth import (
     GOOGLE_CREDENTIAL_ENV_NAMES,
@@ -12,7 +13,19 @@ from wilq.credentials.runtime import (
     credential_source_summary,
     variable_available,
 )
-from wilq.schemas import ConnectorCapability, ConnectorStatus, ConnectorStatusValue, FreshnessState
+from wilq.schemas import (
+    ConnectorCapability,
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+    ConnectorStatus,
+    ConnectorStatusValue,
+    FreshnessState,
+    utc_now,
+)
+from wilq.storage.local_state import local_state_store
+
+CONNECTOR_FRESH_AFTER_HOURS = 48
 
 
 @dataclass(frozen=True)
@@ -291,6 +304,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         if not _credential_available(name)
     ] + _missing_credential_groups(definition)
     configured = not missing
+    latest_success = _latest_successful_vendor_read(definition.id) if configured else None
+    freshness = _connector_freshness(configured=configured, latest_success=latest_success)
     return ConnectorStatus(
         id=definition.id,
         label=definition.label,
@@ -301,10 +316,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         missing_credentials=missing,
         available_credential_sources=credential_source_summary(required_names),
         error=_connector_error(missing),
-        freshness=FreshnessState(
-            state="unknown" if configured else "missing",
-            notes="Credential presence only; no external API call was made.",
-        ),
+        last_success_at=latest_success.completed_at if latest_success else None,
+        freshness=freshness,
         capabilities=ConnectorCapability(
             read=definition.read,
             write=definition.write,
@@ -328,3 +341,52 @@ def get_connector_status(connector_id: str) -> ConnectorStatus | None:
     if definition is None:
         return None
     return connector_status(definition)
+
+
+def _latest_successful_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:
+    for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id):
+        if (
+            run.mode == ConnectorRefreshMode.vendor_read
+            and run.status == ConnectorRefreshStatus.completed
+            and run.vendor_data_collected
+            and run.completed_at is not None
+        ):
+            return run
+    return None
+
+
+def _connector_freshness(
+    *,
+    configured: bool,
+    latest_success: ConnectorRefreshRun | None,
+) -> FreshnessState:
+    if not configured:
+        return FreshnessState(
+            state="missing",
+            notes="Brakuje dostępu do źródła danych.",
+        )
+    if latest_success is None:
+        return FreshnessState(
+            state="unknown",
+            notes=(
+                "Dostęp jest skonfigurowany, ale WILQ nie ma jeszcze udanego "
+                "odczytu danych zewnętrznych."
+            ),
+        )
+    completed_at = latest_success.completed_at
+    if completed_at is None:
+        return FreshnessState(
+            state="unknown",
+            notes="WILQ ma odczyt źródła danych bez czasu zakończenia.",
+        )
+    age = utc_now() - completed_at
+    state = "fresh" if age <= timedelta(hours=CONNECTOR_FRESH_AFTER_HOURS) else "stale"
+    freshness_label = "świeży" if state == "fresh" else "do odświeżenia"
+    return FreshnessState(
+        state=state,
+        last_success_at=completed_at,
+        notes=(
+            f"Ostatni udany odczyt danych zewnętrznych: {completed_at.isoformat()}; "
+            f"status: {freshness_label}."
+        ),
+    )
