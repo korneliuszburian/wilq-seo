@@ -798,17 +798,17 @@ def _label_localo_operator_summary(
 
 def _localo_decision_status_label(status: str) -> str:
     labels = {"ready": "gotowe", "blocked": "zablokowane"}
-    return labels.get(status, status)
+    return labels.get(status, "status decyzji do sprawdzenia")
 
 
 def _localo_section_status_label(status: str) -> str:
     labels = {"ready": "gotowe", "blocked": "zablokowane", "missing": "brak danych"}
-    return labels.get(status, status)
+    return labels.get(status, "status sekcji do sprawdzenia")
 
 
 def _localo_read_contract_status_label(status: str) -> str:
     labels = {"ready": "gotowe", "missing": "brak danych"}
-    return labels.get(status, status)
+    return labels.get(status, "status danych do sprawdzenia")
 
 
 def _localo_decision_type_label(value: str) -> str:
@@ -818,7 +818,7 @@ def _localo_decision_type_label(value: str) -> str:
         "review_local_visibility": "przejrzyj widoczność",
         "block_visibility_claims": "blokada obietnic",
     }
-    return labels.get(value, value)
+    return labels.get(value, "typ decyzji Localo do sprawdzenia")
 
 
 def _localo_connector_status_label(status: str) -> str:
@@ -827,13 +827,13 @@ def _localo_connector_status_label(status: str) -> str:
         "missing_credentials": "brakuje dostępu",
         "disabled": "źródło wyłączone",
     }
-    return labels.get(status, f"status: {status}")
+    return labels.get(status, "status źródła do sprawdzenia")
 
 
 def _localo_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
     value = status.value if isinstance(status, ConnectorRefreshStatus) else status
     labels = {"completed": "zakończony", "blocked": "zablokowany", "failed": "błąd"}
-    return labels.get(value, value)
+    return labels.get(value, "status odczytu do sprawdzenia")
 
 
 def _localo_access_status_label(status: str) -> str:
@@ -983,7 +983,7 @@ def _localo_contract_evidence_kind(contract: str) -> str:
         "reviews": "recenzje i odpowiedzi",
         "local_tasks": "lokalne zadania do wykonania",
     }
-    return labels.get(contract, contract)
+    return labels.get(contract, "zakres danych Localo do sprawdzenia")
 
 
 def _localo_contracts_phrase(contracts: list[str]) -> str:

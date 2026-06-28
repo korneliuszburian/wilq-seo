@@ -511,7 +511,7 @@ def _merchant_connector_status_label(status: object) -> str:
         "missing_credentials": "brakuje dostępu",
         "disabled": "źródło wyłączone",
     }
-    return labels.get(normalized, f"status: {normalized}")
+    return labels.get(normalized, "status źródła do sprawdzenia")
 
 
 def _merchant_refresh_status_label(status: object) -> str:
@@ -522,7 +522,7 @@ def _merchant_refresh_status_label(status: object) -> str:
         "failed": "błąd",
         "running": "w toku",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "status odczytu do sprawdzenia")
 
 
 def _merchant_live_data_status_label(live_data_available: bool) -> str:
@@ -537,7 +537,7 @@ def _merchant_freshness_label(status: object) -> str:
         "missing": "brak odczytu",
         "blocked": "odczyt zablokowany",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "świeżość danych do sprawdzenia")
 
 
 def _merchant_status_label(status: object) -> str:
@@ -547,7 +547,7 @@ def _merchant_status_label(status: object) -> str:
         "blocked": "zablokowane",
         "missing": "brak danych",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "status sekcji do sprawdzenia")
 
 
 def _merchant_product_sample_status_label(readiness: MerchantProductSampleReadiness) -> str:
@@ -658,7 +658,7 @@ def _merchant_risk_label(risk: object) -> str:
         "high": "wysokie ryzyko",
         "critical": "ryzyko krytyczne",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "ryzyko do sprawdzenia")
 
 
 def _merchant_blocked_claim_labels(claims: Iterable[str]) -> list[str]:

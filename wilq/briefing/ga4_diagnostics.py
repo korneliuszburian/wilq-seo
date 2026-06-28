@@ -330,7 +330,7 @@ def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4Decision
         update={
             "decision_type_label": GA4_DECISION_TYPE_LABELS.get(
                 decision.decision_type,
-                decision.decision_type,
+                "typ decyzji GA4 do sprawdzenia",
             ),
             "status_label": _ga4_decision_status_label(decision.status),
             "wordpress_match_label": _ga4_optional_label(
@@ -422,7 +422,7 @@ def _ga4_metric_dimension_value_label(key: str, value: str) -> str:
 def _ga4_optional_label(value: str | None, labels: dict[str, str]) -> str | None:
     if value is None:
         return None
-    return labels.get(value, value)
+    return labels.get(value, "wartość GA4 do sprawdzenia")
 
 
 def _ga4_dimension_value_label(value: str | None, *, missing_label: str) -> str:
@@ -461,7 +461,7 @@ def _ga4_connector_status_label(status: object) -> str:
         "missing_credentials": "brakuje dostępu",
         "disabled": "źródło wyłączone",
     }
-    return labels.get(normalized, f"status: {normalized}")
+    return labels.get(normalized, "status źródła do sprawdzenia")
 
 
 def _ga4_refresh_status_label(status: object) -> str:
@@ -472,7 +472,7 @@ def _ga4_refresh_status_label(status: object) -> str:
         "failed": "błąd",
         "running": "w toku",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "status odczytu do sprawdzenia")
 
 
 def _ga4_live_data_status_label(live_data_available: bool) -> str:
@@ -487,7 +487,7 @@ def _ga4_freshness_label(status: object) -> str:
         "missing": "brak odczytu",
         "blocked": "odczyt zablokowany",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "świeżość danych do sprawdzenia")
 
 
 def _ga4_decision_status_label(status: object) -> str:
@@ -501,7 +501,7 @@ def _ga4_section_status_label(status: object) -> str:
         "blocked": "zablokowane",
         "missing": "brak metryk konwersji",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "status sekcji do sprawdzenia")
 
 
 def _ga4_conversion_readiness_status_label(status: object) -> str:
@@ -520,7 +520,7 @@ def _ga4_risk_label(risk: object) -> str:
         "high": "wysokie ryzyko",
         "critical": "ryzyko krytyczne",
     }
-    return labels.get(normalized, normalized)
+    return labels.get(normalized, "ryzyko do sprawdzenia")
 
 
 def _ga4_blocked_claim_labels(claims: Iterable[str]) -> list[str]:

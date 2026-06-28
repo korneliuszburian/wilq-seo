@@ -40,6 +40,29 @@ from wilq.briefing.content_diagnostics import (
     build_content_preflight,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.ga4_diagnostics import (
+    _ga4_connector_status_label,
+    _ga4_decision_with_marketer_labels,
+    _ga4_freshness_label,
+    _ga4_optional_label,
+    _ga4_refresh_status_label,
+    _ga4_risk_label,
+    _ga4_section_status_label,
+)
+from wilq.briefing.ahrefs_diagnostics import (
+    _ahrefs_connector_status_label,
+    _ahrefs_refresh_status_label,
+    _ahrefs_status_label,
+)
+from wilq.briefing.localo_diagnostics import (
+    _localo_connector_status_label,
+    _localo_contract_evidence_kind,
+    _localo_decision_status_label,
+    _localo_decision_type_label,
+    _localo_read_contract_status_label,
+    _localo_refresh_status_label,
+    _localo_section_status_label,
+)
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_labels import (
     merchant_dimension_label,
@@ -53,8 +76,13 @@ from wilq.briefing.merchant_labels import (
 )
 from wilq.briefing.tactical_queue import _merchant_dimension_label
 from wilq.briefing.merchant_diagnostics import (
+    _merchant_connector_status_label,
+    _merchant_freshness_label,
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
+    _merchant_refresh_status_label,
+    _merchant_risk_label,
+    _merchant_status_label,
     build_merchant_diagnostics,
 )
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
@@ -104,6 +132,7 @@ from wilq.schemas import (
     ConnectorSummary,
     DailyDecision,
     FreshnessState,
+    Ga4DecisionItem,
     KnowledgeCard,
     MarketingBrief,
     MerchantIssueCluster,
@@ -1410,6 +1439,27 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         content_contract_label(raw_value),
         _draft_content_block_label(raw_value),
         _ads_recommendation_type_label(raw_value),
+        _ahrefs_status_label(raw_value),
+        _ahrefs_connector_status_label(raw_value),
+        _ahrefs_refresh_status_label(raw_value),
+        _ga4_optional_label(raw_value, {}),
+        _ga4_connector_status_label(raw_value),
+        _ga4_refresh_status_label(raw_value),
+        _ga4_freshness_label(raw_value),
+        _ga4_section_status_label(raw_value),
+        _ga4_risk_label(raw_value),
+        _localo_decision_status_label(raw_value),
+        _localo_section_status_label(raw_value),
+        _localo_read_contract_status_label(raw_value),
+        _localo_decision_type_label(raw_value),
+        _localo_connector_status_label(raw_value),
+        _localo_refresh_status_label(raw_value),
+        _localo_contract_evidence_kind(raw_value),
+        _merchant_connector_status_label(raw_value),
+        _merchant_refresh_status_label(raw_value),
+        _merchant_freshness_label(raw_value),
+        _merchant_status_label(raw_value),
+        _merchant_risk_label(raw_value),
     ]
 
     assert labels == [
@@ -1427,9 +1477,42 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "warunek treści do sprawdzenia",
         "sekcja do sprawdzenia",
         "typ rekomendacji do sprawdzenia",
+        "status Ahrefs do sprawdzenia",
+        "status źródła do sprawdzenia",
+        "status odczytu do sprawdzenia",
+        "wartość GA4 do sprawdzenia",
+        "status źródła do sprawdzenia",
+        "status odczytu do sprawdzenia",
+        "świeżość danych do sprawdzenia",
+        "status sekcji do sprawdzenia",
+        "ryzyko do sprawdzenia",
+        "status decyzji do sprawdzenia",
+        "status sekcji do sprawdzenia",
+        "status danych do sprawdzenia",
+        "typ decyzji Localo do sprawdzenia",
+        "status źródła do sprawdzenia",
+        "status odczytu do sprawdzenia",
+        "zakres danych Localo do sprawdzenia",
+        "status źródła do sprawdzenia",
+        "status odczytu do sprawdzenia",
+        "świeżość danych do sprawdzenia",
+        "status sekcji do sprawdzenia",
+        "ryzyko do sprawdzenia",
     ]
     assert all(raw_value not in label for label in labels)
     assert all("new VENDOR raw value" not in label for label in labels)
+
+    ga4_decision = Ga4DecisionItem.model_construct(
+        id="decision_unknown_ga4_type",
+        decision_type=raw_value,
+        title="GA4",
+        status="ready",
+        rationale="Sprawdzenie GA4.",
+        next_step="Otwórz GA4.",
+    )
+    labelled_ga4_decision = _ga4_decision_with_marketer_labels(ga4_decision)
+    assert labelled_ga4_decision.decision_type_label == "typ decyzji GA4 do sprawdzenia"
+    assert raw_value not in labelled_ga4_decision.decision_type_label
 
 
 def test_route_label_fallbacks_do_not_expose_raw_paths() -> None:

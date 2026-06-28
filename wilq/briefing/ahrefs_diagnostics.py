@@ -751,7 +751,7 @@ def _ahrefs_status_label(status: str) -> str:
         "blocked": "zablokowane",
         "missing": "brak danych",
     }
-    return labels.get(status, status)
+    return labels.get(status, "status Ahrefs do sprawdzenia")
 
 
 def _ahrefs_connector_status_label(status: str) -> str:
@@ -760,7 +760,7 @@ def _ahrefs_connector_status_label(status: str) -> str:
         "missing_credentials": "brakuje dostępu",
         "disabled": "źródło wyłączone",
     }
-    return labels.get(status, f"status: {status}")
+    return labels.get(status, "status źródła do sprawdzenia")
 
 
 def _ahrefs_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
@@ -771,7 +771,7 @@ def _ahrefs_refresh_status_label(status: ConnectorRefreshStatus | str) -> str:
         "failed": "błąd",
         "running": "w toku",
     }
-    return labels.get(value, value)
+    return labels.get(value, "status odczytu do sprawdzenia")
 
 
 def _ahrefs_live_data_status_label(live_data_available: bool) -> str:

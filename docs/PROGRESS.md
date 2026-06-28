@@ -172,6 +172,9 @@ Date: 2026-06-28
 - Unknown active labels in Knowledge, Content, tactical queue, content actions
   and Ads recommendation helpers now fall back to neutral Polish operator
   wording instead of humanizing raw enum keys by replacing underscores.
+- Ahrefs, GA4, Localo and Merchant diagnostic label helpers now use neutral
+  Polish fallback labels for unknown statuses, read contracts and risks instead
+  of exposing raw enum values or `status: ...` strings.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -218,6 +221,9 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec playwright test e2e/dashboard-api.spec.ts --workers=1 --grep "command center|ads doctor|seo and content"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_humanize_raw_unknown_enums" --maxfail=3`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_oauth_repair_action_is_explicit_and_redacted or merchant_blocked_feed_section_uses_operator_read_wording" --maxfail=3`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_exposes_live_campaign_metric_facts or codex_context_pack_scopes_ads_doctor_payload" --maxfail=3`
 

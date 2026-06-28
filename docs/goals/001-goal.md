@@ -162,6 +162,9 @@ use cleaned Polish operator language.
 - Ads recommendation and change-history helper fallbacks now use safe Polish
   labels for unknown recommendation types, missing recommendation metrics,
   change resource types and change operation types.
+- Ahrefs, GA4, Localo and Merchant diagnostic label helpers now use neutral
+  Polish fallback labels for unknown statuses, read contracts and risks instead
+  of exposing raw enum values or `status: ...` strings.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
