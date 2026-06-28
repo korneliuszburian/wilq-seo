@@ -584,6 +584,7 @@ export const AdsBusinessTargetInterpretationSchema = z.object({
   policy_ids: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()).optional().default([]),
+  action_summary_label: z.string().optional().default(""),
   apply_allowed: z.boolean(),
   destructive: z.boolean()
 });
@@ -617,6 +618,7 @@ export const AdsStrategyReviewReadinessContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().optional().default(""),
   apply_allowed: z.boolean(),
   destructive: z.boolean(),
   next_step: z.string()
@@ -977,6 +979,7 @@ export const AdsCampaignTriageRowSchema = z.object({
   has_recommendation_apply_preview: z.boolean().default(false),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().optional().default(""),
   source_metric_names: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).optional().default([]),
@@ -998,6 +1001,7 @@ export const AdsCampaignTriageReadContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   triage_rows: z.array(AdsCampaignTriageRowSchema),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().optional().default(""),
   next_step: z.string()
 });
 
@@ -1138,6 +1142,7 @@ export const AdsChangeImpactReadinessContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   readiness_rows: z.array(AdsChangeImpactReadinessRowSchema),
   action_ids: z.array(z.string()).optional().default([]),
+  action_summary_label: z.string().optional().default(""),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   next_step: z.string()

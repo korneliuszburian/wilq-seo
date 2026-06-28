@@ -12923,6 +12923,17 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert summary_payload["action_summary_label"] == full_payload["action_summary_label"]
     assert summary_payload["evidence_summary_label"]
     assert summary_payload["action_summary_label"]
+    assert summary_payload["business_context_read_contract"]["target_interpretation"][
+        "action_summary_label"
+    ]
+    assert summary_payload["business_context_read_contract"][
+        "strategy_review_readiness_contract"
+    ]["action_summary_label"]
+    assert all(
+        row["action_summary_label"]
+        for row in summary_payload["campaign_triage_read_contract"]["triage_rows"]
+    )
+    assert summary_payload["change_impact_readiness_contract"]["action_summary_label"]
     assert summary_payload["connector_status_label"]
     assert summary_payload["live_data_status_label"]
     if summary_payload["latest_refresh"]:

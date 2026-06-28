@@ -582,7 +582,7 @@ function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
                 label="Akcje"
-                values={[formatActionObjectCount(decision.action_ids.length)]}
+                values={[decision.action_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -670,13 +670,6 @@ function formatTraceIdCount(count: number) {
   if (count === 1) return "1 pozycja";
   if (count >= 2 && count <= 4) return `${count} pozycje`;
   return `${count} pozycji`;
-}
-
-function formatActionObjectCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 akcja do sprawdzenia";
-  if (count >= 2 && count <= 4) return `${count} akcje do sprawdzenia`;
-  return `${count} akcji do sprawdzenia`;
 }
 
 function formatAdsContractCount(count: number) {
@@ -1035,7 +1028,7 @@ function AdsBusinessTargetInterpretationPanel({
         />
         <TraceLine
           label="Akcje do sprawdzenia"
-          values={[formatActionObjectCount(interpretation.action_ids.length)]}
+          values={[interpretation.action_summary_label]}
           empty="brak"
         />
       </div>
@@ -1088,7 +1081,7 @@ function AdsBusinessTargetInterpretationPanel({
           />
           <TraceLine
             label="Akcje do sprawdzenia"
-            values={[formatActionObjectCount(strategyReadiness.action_ids.length)]}
+            values={[strategyReadiness.action_summary_label]}
             empty="brak"
           />
         </div>
@@ -1257,7 +1250,7 @@ function AdsCampaignTriageRowsPanel({
               />
               <TraceLine
                 label="Akcje do sprawdzenia"
-                values={[formatActionObjectCount(row.action_ids.length)]}
+                values={[row.action_summary_label]}
                 empty="brak"
               />
             </div>

@@ -6533,6 +6533,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
 def _hydrate_campaign_triage_marketer_labels(
     contract: AdsCampaignTriageReadContract,
 ) -> None:
+    contract.action_summary_label = action_count_label(contract.action_ids)
     for row in contract.triage_rows:
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
         row.advertising_channel_type_label = _ads_channel_type_label(
@@ -6542,6 +6543,7 @@ def _hydrate_campaign_triage_marketer_labels(
             row.missing_read_contracts
         )
         row.blocked_claim_labels = _unique(row.blocked_claims)
+        row.action_summary_label = action_count_label(row.action_ids)
 
 
 def _hydrate_budget_pacing_marketer_labels(
@@ -6794,6 +6796,7 @@ def _hydrate_change_impact_marketer_labels(
         contract.missing_read_contracts
     )
     contract.blocked_claim_labels = _unique(contract.blocked_claims)
+    contract.action_summary_label = action_count_label(contract.action_ids)
     for row in contract.readiness_rows:
         row.changed_field_labels = _ads_changed_field_labels(row.changed_fields)
         row.missing_read_contract_labels = _ads_missing_read_contract_labels(
@@ -6932,6 +6935,7 @@ def _hydrate_business_context_marketer_labels(
     interpretation.required_validation_labels = _ads_review_gate_labels(
         interpretation.required_validation
     )
+    interpretation.action_summary_label = action_count_label(interpretation.action_ids)
 
     readiness = contract.strategy_review_readiness_contract
     readiness.status_label = _ads_status_label(readiness.status)
@@ -6945,6 +6949,7 @@ def _hydrate_business_context_marketer_labels(
         readiness.missing_read_contracts
     )
     readiness.blocked_claim_labels = _unique(readiness.blocked_claims)
+    readiness.action_summary_label = action_count_label(readiness.action_ids)
 
 
 def _hydrate_optimizer_readiness_marketer_labels(

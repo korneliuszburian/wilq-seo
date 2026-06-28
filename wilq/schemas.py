@@ -1349,6 +1349,7 @@ class AdsBusinessTargetInterpretation(BaseModel):
     policy_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     apply_allowed: bool = False
     destructive: bool = False
 
@@ -1380,6 +1381,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     apply_allowed: bool = False
     destructive: bool = False
     next_step: str
@@ -1741,6 +1743,7 @@ class AdsCampaignTriageRow(BaseModel):
     has_recommendation_apply_preview: bool = False
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     source_metric_names: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
@@ -1762,6 +1765,7 @@ class AdsCampaignTriageReadContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     triage_rows: list[AdsCampaignTriageRow] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     next_step: str
 
 
@@ -1926,6 +1930,7 @@ class AdsChangeImpactReadinessContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     readiness_rows: list[AdsChangeImpactReadinessRow] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     next_step: str

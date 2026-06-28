@@ -52,6 +52,9 @@ Date: 2026-06-28
 - Google Ads first-screen, condensed decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
+- Google Ads start-here, business-context, strategy-readiness and campaign
+  triage panels use API/domain action summary labels instead of route-local
+  action count formatting.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
@@ -118,11 +121,24 @@ Most recent verified local slice:
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns nested Ads
+  action summary labels for target interpretation, strategy readiness,
+  campaign triage contract/rows and change-impact readiness.
+- Browser proof: `.local-lab/proof/ads-deep-action-summary-labels-clean.txt`
+
+Previous verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
 - Live API proof: `/api/ads/diagnostics` returns response, operator summary,
   decision and section evidence/action summary labels.
 - Browser proof: `.local-lab/proof/ads-summary-labels-clean.txt`
 
-Previous verified local slice:
+Earlier verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`

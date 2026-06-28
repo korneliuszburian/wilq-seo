@@ -574,6 +574,11 @@ WILQ is complete for this long-range goal when:
   those labels in the first screen, condensed decision and action panels
   instead of route-local count formatting; live API proof and browser proof
   live in `.local-lab/proof/`.
+- 2026-06-28: Google Ads target interpretation, strategy readiness, campaign
+  triage contract/rows and change-impact readiness now expose action summary
+  labels in API/shared schemas. The Ads route no longer owns local action-count
+  formatting for these deep panels; live API proof and browser proof live in
+  `.local-lab/proof/`.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
 - 2026-06-28: Knowledge first-screen decision and card summaries now use
@@ -851,3 +856,8 @@ WILQ is complete for this long-range goal when:
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Google Ads response evidence/action summaries to
   API/domain labels.
+- Latest Google Ads deep-panel proof: focused API/shared-schema/dashboard
+  tests, dashboard typecheck, marketer language guard, live API proof and
+  browser proof passed after removing route-local action count formatting from
+  Ads start-here, business-context, strategy-readiness and campaign triage
+  panels.

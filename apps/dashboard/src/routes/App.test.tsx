@@ -958,6 +958,7 @@ const adsDiagnostics = {
       policy_ids: ["complete_business_context_before_ads_verdicts"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       action_ids: ["act_configure_ads_business_context"],
+      action_summary_label: "1 akcja do sprawdzenia",
       apply_allowed: false,
       destructive: false
     },
@@ -1027,6 +1028,7 @@ const adsDiagnostics = {
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       action_ids: ["act_record_ads_strategy_review"],
+      action_summary_label: "1 akcja do sprawdzenia",
       apply_allowed: false,
       destructive: false,
       next_step:
@@ -1770,6 +1772,7 @@ const adsDiagnostics = {
         has_recommendation_apply_preview: true,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         action_ids: ["act_prepare_ads_campaign_review_queue"],
+        action_summary_label: "1 akcja do sprawdzenia",
         source_metric_names: [
           "clicks",
           "conversion_value",
@@ -1811,6 +1814,7 @@ const adsDiagnostics = {
       }
     ],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
+    action_summary_label: "1 akcja do sprawdzenia",
     next_step:
       "Przejrzyj kampanie od góry kolejki. Apply i skalowanie zostają zablokowane."
   },
@@ -7645,11 +7649,14 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("interpretation.blocked_use_labels");
     expect(routeSource).toContain("interpretation.missing_requirement_labels");
     expect(routeSource).toContain("interpretation.status_label");
+    expect(routeSource).toContain("interpretation.action_summary_label");
     expect(routeSource).toContain("strategyReadiness.status_label");
     expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
     expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
     expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
+    expect(routeSource).toContain("strategyReadiness.action_summary_label");
     expect(routeSource).toContain("decision.start_here_summary");
+    expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("primaryDecision?.measurement_plan");
     expect(routeSource).toContain("business_context_read_contract.status_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
@@ -7696,7 +7703,12 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
     expect(routeSource).not.toContain("data.evidence_ids.length");
     expect(routeSource).not.toContain("formatActionObjectCount(actions.length)");
+    expect(routeSource).not.toContain("formatActionObjectCount");
     expect(routeSource).not.toContain("summary.action_ids.length");
+    expect(routeSource).not.toContain("decision.action_ids.length");
+    expect(routeSource).not.toContain("interpretation.action_ids.length");
+    expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
+    expect(routeSource).not.toContain("row.action_ids.length");
   });
 
   it("custom segments route renders dedicated validation contract", async () => {
