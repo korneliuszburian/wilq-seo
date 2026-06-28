@@ -136,6 +136,9 @@ Date: 2026-06-28
   of raw connector IDs.
 - Knowledge seed cards use Polish marketer-facing summaries instead of English
   wording about evidence identifiers.
+- Dashboard API smoke and demo proof no longer require stale proof language such
+  as raw Merchant issue keys, raw proof IDs in normal demo flow, `audience size`,
+  `launchu`, `DR`, `brak facts` or `competitor_page`.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels instead of route-local
   count assembly.
@@ -193,12 +196,13 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Action/knowledge copy cleanup proof: live scans for `/api/actions` and
-  `/api/knowledge/cards` have no visible technical checklist jargon or English
-  evidence wording; browser proof for `/actions` and `/knowledge` shows
-  marketer-readable action and knowledge summaries.
-- Current verification for this API/browser slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "wordpress_handoff_review_gate_avoids_payload_jargon or content_refresh_review_gates_use_polish_operator_language or knowledge_compiler" --maxfail=1`
+- Dashboard proof contract cleanup: API-backed e2e smoke and demo proof now
+  assert current marketer-readable route copy and reject stale proof wording
+  such as raw Merchant issue keys, raw proof IDs in the normal demo flow,
+  `audience size`, `launchu`, `DR`, `brak facts` and `competitor_page`.
+- Current verification for this dashboard proof slice:
+  - `rtk pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`
+  - `rtk pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-demo-proof.spec.ts --workers=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
 

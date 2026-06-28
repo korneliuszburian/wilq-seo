@@ -135,8 +135,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer może przygotować teraz" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki segmentów" })).toBeVisible();
-    await expect(page.getByText(/Search terms:|Brak search-term rows/).first()).toBeVisible();
-    await expect(page.getByText(/nie twierdzi, że segment ma zasięg|audience size/i).first()).toBeVisible();
+    await expect(page.getByText(/Wyszukiwane hasła|Brak danych o wyszukiwanych hasłach/).first()).toBeVisible();
+    await expect(page.getByText(/nie twierdzi, że segment ma zasięg|rozmiar odbiorców/i).first()).toBeVisible();
+    await expect(page.getByText(/audience size/i)).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
   });
@@ -151,10 +152,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki sprawdzenia Demand Gen" })).toBeVisible();
     await expect(page.getByText("kampanie Ads")).toBeVisible();
-    await expect(page.getByText("Brakujące warunki sprawdzenia").first()).toBeVisible();
+    await expect(page.getByText(/Brakujące dane: brak/).first()).toBeVisible();
     await expect(page.getByText(/akcj/i).first()).toBeVisible();
-    await expect(page.getByText("Podgląd sprawdzenia gotowości Demand Gen")).toBeVisible();
-    await expect(page.getByText("rekomendacja launchu Demand Gen").first()).toBeVisible();
+    await expect(page.getByText("Podgląd gotowości Demand Gen")).toBeVisible();
+    await expect(page.getByText(/rekomendacja uruchomienia Demand Gen/i).first()).toBeVisible();
+    await expect(page.getByText(/launchu/i)).toHaveCount(0);
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
@@ -197,7 +199,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę odświeżenia treści ekologus.pl" }).first()).toBeVisible();
   });
 
-  test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
+  test("action detail route shows validation, evidence and change preview", async ({ page }) => {
     await page.goto("/actions/act_review_merchant_feed_issues");
 
     await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu feedu Merchant Center");
@@ -350,12 +352,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i warunki analizy Ahrefs" })).toBeVisible();
     await expect(page.getByText(/odczyt autorytetu Ahrefs|metryki Ahrefs dostępne/).first()).toBeVisible();
     await expect(page.getByText(/Przejrzyj rekordy luk Ahrefs|Brak typed gap records/).first()).toBeVisible();
-    await expect(page.getByText(/DR|brak facts/).first()).toBeVisible();
+    await expect(page.getByText(/ocena domeny Ahrefs|brakujące dane/).first()).toBeVisible();
     await expect(page.getByText("Rekordy luk").first()).toBeVisible();
     await expect(page.getByText(/gotowe|zablokowane/).first()).toBeVisible();
-    await expect(page.getByText(/competitor_page|strony konkurencji/).first()).toBeVisible();
+    await expect(page.getByText(/strony konkurencji/).first()).toBeVisible();
+    await expect(page.getByText(/competitor_page/)).toHaveCount(0);
     await expect(page.getByText(/Strona konkurencji:|rekordy luk treści/).first()).toBeVisible();
-    await expect(page.getByText(/poprawa autorytetu/).first()).toBeVisible();
+    await expect(page.getByText(/wzrost autorytetu/).first()).toBeVisible();
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);

@@ -26,13 +26,13 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await gotoAndWaitForApi(page, "/command-center", "/api/dashboard/command-center");
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Przejrzyj problemy produktów w Merchant Center" })
+      page.getByRole("heading", { name: "Przejrzyj kolejkę problemów Merchant Center" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Ułóż kolejkę odświeżenia i scalania treści SEO" })
+      page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Sprawdź pomiar GA4 zanim ocenimy kampanie" })
+      page.getByRole("heading", { name: "GA4: pomiar i jakość ruchu do kontroli" })
     ).toBeVisible();
     await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
     await expect(
@@ -57,13 +57,12 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
     await expect(page.getByText("Dowody i warunki przeglądu Merchant")).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
-    await expect(
-      page.getByText(/missing_potentially_required_attribute|availability_updated/).first()
-    ).toBeVisible();
+    await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/missing_potentially_required_attribute|availability_updated/)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "dowód 1" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "02-merchant-feed-issues.png"),
       fullPage: true,

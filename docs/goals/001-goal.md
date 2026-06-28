@@ -182,6 +182,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Knowledge details use API-owned source labels and Polish count forms.
 - Knowledge seed cards use Polish marketer-facing summaries instead of English
   wording about evidence identifiers.
+- Dashboard API smoke and demo proof no longer require stale proof language such
+  as raw Merchant issue keys, raw proof IDs in normal demo flow, `audience size`,
+  `launchu`, `DR`, `brak facts` or `competitor_page`.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels.
 - Knowledge playbook cards use API/domain evidence and action-type summary

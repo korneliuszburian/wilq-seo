@@ -258,6 +258,10 @@ Known cleanup already started:
   `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
   source facts. The route no longer parses `action.payload.content_brief_preview`
   for the primary marketer card.
+- Dashboard API smoke and demo proof now assert current marketer-readable copy
+  and reject stale proof wording such as raw Merchant issue keys, raw proof IDs
+  in the normal demo flow, `audience size`, `launchu`, `DR`, `brak facts` and
+  `competitor_page`.
 - Google Ads search-term n-gram action details now have typed API preview
   cards without raw `SearchTermNgramReview`, preview-contract names or
   n-gram-to-negative-keyword contract keys in primary card copy. The route is
