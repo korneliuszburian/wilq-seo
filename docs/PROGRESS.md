@@ -150,6 +150,8 @@ Date: 2026-06-28
   surfaces pass raw state values plus API/domain visible labels.
 - Unknown visible label fallbacks collapse to neutral Polish operator labels
   instead of exposing raw enum keys, snake_case or English values.
+- Connector refresh runs hydrate Polish status labels at the shared schema
+  boundary, including historical runs returned by the API.
 - Current proof artifacts live in `.local-lab/proof/`; detailed history lives
   in git commits.
 
@@ -183,11 +185,11 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Audit cleanup: removed the special obsolete content-review filter and replaced
-  it with a generic raw-contract audit sanitizer. Raw legacy review events no
-  longer unlock review state.
-- Current verification for this API/action slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_content_review or content_refresh_action_payload_uses_public_final_url_semantics or action_operator_labels_are_specific or action_impact_check" --maxfail=1`
+- Connector proof: GSC, GA4 and Merchant Center completed fresh `vendor_read`
+  refreshes on 2026-06-28 with `vendor_data_collected=true`; live
+  `/api/connectors/refresh-runs` returns `status_label="odczyt zakończony"`.
+- Current verification for this API/schema slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_expose_raw_connector_ids or connector" --maxfail=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
 

@@ -192,6 +192,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   actions and knowledge references instead of route-local raw counts.
 - Shared status, route, source, metric, risk, blocker and preview labels are
   increasingly centralized in API/domain helpers.
+- Connector refresh runs hydrate Polish status labels at the shared schema
+  boundary; fresh GSC, GA4 and Merchant reads on 2026-06-28 completed with
+  vendor data collected.
 - Current proof artifacts live in `.local-lab/proof/`; detailed implementation
   history lives in git commits, not in this file.
 

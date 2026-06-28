@@ -456,6 +456,7 @@ def evidence_source_type_label(source_type: str) -> str:
 def connector_refresh_status_label(status: object) -> str:
     value = getattr(status, "value", status)
     labels = {
+        "blocked": "odczyt zablokowany",
         "completed": "odczyt zakończony",
         "failed": "odczyt nieudany",
         "missing_credentials": "brak dostępu",

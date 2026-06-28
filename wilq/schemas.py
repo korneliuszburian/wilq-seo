@@ -14,6 +14,7 @@ from wilq.operator_labels import (
     blocked_claim_summary_label,
     credential_field_count_label,
     credential_source_count_label,
+    connector_refresh_status_label,
     evidence_count_label,
     impact_comparison_summary_label,
     knowledge_reference_count_label,
@@ -188,6 +189,8 @@ class ConnectorRefreshRun(BaseModel):
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> ConnectorRefreshRun:
+        if not self.status_label:
+            self.status_label = connector_refresh_status_label(self.status)
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self

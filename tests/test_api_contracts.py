@@ -1441,6 +1441,12 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
 
     assert source_connector_label(unknown_connector) == "źródło danych do sprawdzenia"
     assert source_connector_labels([unknown_connector]) == ["źródło danych do sprawdzenia"]
+    assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == (
+        "odczyt zakończony"
+    )
+    assert connector_refresh_status_label(ConnectorRefreshStatus.blocked) == (
+        "odczyt zablokowany"
+    )
     assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
     assert knowledge_reference_count_label() == "brak użytej wiedzy"
     assert (
@@ -1463,6 +1469,24 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     )
 
     assert compact["connector_label"] == "źródło danych do sprawdzenia"
+    run = ConnectorRefreshRun(
+        id="refresh_status_label_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_status_label_test"],
+        summary="Testowy odczyt.",
+    )
+    blocked_run = ConnectorRefreshRun(
+        id="refresh_blocked_status_label_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.blocked,
+        summary="Testowy odczyt zablokowany.",
+    )
+
+    assert run.status_label == "odczyt zakończony"
+    assert blocked_run.status_label == "odczyt zablokowany"
     assert compact["status_label"] == "status odczytu do sprawdzenia"
     assert unknown_connector not in compact["summary"]
     assert "new_raw_status" not in compact["summary"]
