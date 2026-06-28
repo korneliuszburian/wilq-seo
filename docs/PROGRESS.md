@@ -49,6 +49,8 @@ Date: 2026-06-28
   evidence and action summary labels instead of route-local count formatting.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
+- Localo top metric tiles use API/domain missing-data summary labels instead
+  of route-local count formatting.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Google Ads first-screen, condensed decision, proof and action panels use
@@ -132,6 +134,18 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "localo route renders workflow-specific blockers and clean metric labels"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/localo/diagnostics` returns
+  `missing_read_contract_summary_label="1 brakujący zakres danych"`.
+- Browser proof: `/localo` renders `1 brakujący zakres danych` without raw
+  Localo contract fields, `payload` or `ActionObject` wording.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "ahrefs_diagnostics" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ahrefs route renders authority context and clean gap review language"`

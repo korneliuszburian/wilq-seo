@@ -202,8 +202,14 @@ def _metric_snapshot_labels(facts: list[MetricFact]) -> dict[str, str]:
     labels: dict[str, str] = {}
     for fact in facts:
         if fact.name not in labels:
-            labels[fact.name] = localo_metric_fact_label(fact.name)
+            labels[fact.name] = _localo_action_metric_label(fact.name)
     return labels
+
+
+def _localo_action_metric_label(metric_name: str) -> str:
+    if metric_name == "localo_reviews_count":
+        return "opinie Localo"
+    return localo_metric_fact_label(metric_name)
 
 
 def _unique(items: Iterable[str]) -> list[str]:

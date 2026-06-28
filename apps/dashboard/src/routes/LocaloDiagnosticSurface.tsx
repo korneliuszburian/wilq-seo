@@ -40,7 +40,7 @@ export function LocaloDiagnosticSurface() {
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Dane lokalne" value={data.visibility_fact_count} />
-          <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contracts.length} />
+          <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contract_summary_label} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
       </div>

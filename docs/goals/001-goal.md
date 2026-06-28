@@ -119,6 +119,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   blocked-claim summary labels instead of route-local count formatting.
 - Custom Segments candidate, forecast and proof panels use API/domain evidence
   and action summary labels instead of route-local count formatting.
+- Localo top metric tiles use API/domain missing-data summary labels instead
+  of route-local count formatting.
 - Demand Gen uses API/domain evidence, action and campaign-channel labels
   instead of route-local count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use

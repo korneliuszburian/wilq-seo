@@ -2559,6 +2559,7 @@ export const LocaloOperatorSummarySchema = z.object({
   visibility_fact_count: z.number(),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).default([]),
+  missing_read_contract_summary_label: z.string().default(""),
   read_contract_statuses: z.array(LocaloReadContractStatusSchema).default([]),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),

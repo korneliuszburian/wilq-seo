@@ -5766,6 +5766,7 @@ const localoDiagnostics = {
       "opinie",
       "zadania lokalne"
     ],
+    missing_read_contract_summary_label: "5 brakujących danych",
     source_connectors: ["localo"],
     source_connector_labels: ["Localo"],
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
@@ -8303,6 +8304,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("dostęp MCP")).not.toBeInTheDocument();
     expect(screen.getAllByText("dane Localo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("brakujące dane").length).toBeGreaterThan(0);
+    expect(screen.getByText("5 brakujących danych")).toBeInTheDocument();
     expect(screen.getByText("blokady obietnic")).toBeInTheDocument();
     expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
     expect(screen.queryByText(/local_rankings/)).not.toBeInTheDocument();
@@ -8349,6 +8351,9 @@ describe("WILQ dashboard", () => {
         String(url).endsWith("/api/marketing/tactical-queue")
       )
     ).toBe(false);
+    const routeSource = readFileSync("src/routes/LocaloDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("data.operator_summary.missing_read_contract_summary_label");
+    expect(routeSource).not.toContain("data.operator_summary.missing_read_contracts.length");
   });
 
   it("social route renders workflow-specific blockers", async () => {

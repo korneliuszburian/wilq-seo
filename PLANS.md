@@ -895,3 +895,7 @@ WILQ is complete for this long-range goal when:
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Ahrefs missing-data and blocked-claim count labels
   to API/domain fields.
+- Latest Localo proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving Localo missing-data count labels to API/domain fields and
+  tightening Localo review-card wording.
