@@ -124,6 +124,9 @@ use the cleaned language.
 - Opportunity, workflow run, marketing brief, tactical queue, Merchant issue
   cluster, Custom Segments read contracts and Demand Gen readiness contracts now
   expose the missing status/risk labels through typed API/shared schemas.
+- Browser proof after the status-label slice covered `/opportunities` and
+  `/ads-doctor/custom-segments`; visible badges used Polish labels from the API
+  rather than raw status/risk enum values.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

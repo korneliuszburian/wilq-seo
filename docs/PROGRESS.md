@@ -155,6 +155,12 @@ Recent focused proof used during the cleanup:
   `/api/workflow-runs`, `/api/ads/diagnostics`, `/api/demand-gen/diagnostics`,
   `/api/merchant/diagnostics`, `/api/marketing/tactical-queue` and
   `/api/marketing/brief`: required status/risk label fields are present.
+- `agent-browser` proof on `/opportunities`: visible status/risk text uses
+  Polish labels such as `średnie ryzyko` and `niskie ryzyko`; no raw status or
+  risk enum labels were found in the scanned visible text.
+- `agent-browser` proof on `/ads-doctor/custom-segments`: contract badges show
+  `gotowe` and `zablokowane` from API labels after removing route-local status
+  ternaries.
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
