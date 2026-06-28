@@ -666,6 +666,9 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Recovery docs were condensed again. `docs/PROGRESS.md` and
   `docs/goals/001-goal.md` now keep current state, active findings and latest
   proof instead of append-only implementation history.
+- 2026-06-28: The old `Goal 002` draft moved to `docs/goals/archive/`; the
+  marketer language guard now enforces `docs/goals/001-goal.md` as the only
+  active first-level goal file.
 
 ## Discoveries
 

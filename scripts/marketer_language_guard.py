@@ -27,6 +27,9 @@ ACTIVE_CONTRACT_FILES = (
     Path("tests/test_codex_skill_eval_cases.py"),
 )
 
+ACTIVE_GOAL_DIR = Path("docs/goals")
+ONLY_ACTIVE_GOAL_FILE = Path("docs/goals/001-goal.md")
+
 SKIP_SUFFIXES = (
     ".test.ts",
     ".test.tsx",
@@ -622,6 +625,7 @@ FORBIDDEN_PHRASES = (
 
 def main() -> None:
     errors: list[str] = []
+    errors.extend(_active_goal_file_errors())
     for path in _iter_active_files():
         text = path.read_text(encoding="utf-8", errors="replace")
         for forbidden in FORBIDDEN_PHRASES:
@@ -635,6 +639,20 @@ def main() -> None:
     if errors:
         raise SystemExit("Marketer language guard failed:\n- " + "\n- ".join(errors))
     print("Marketer language guard passed")
+
+
+def _active_goal_file_errors() -> list[str]:
+    if not ACTIVE_GOAL_DIR.exists():
+        return []
+    errors: list[str] = []
+    for path in sorted(ACTIVE_GOAL_DIR.glob("*.md")):
+        if path == ONLY_ACTIVE_GOAL_FILE:
+            continue
+        errors.append(
+            f"{path.as_posix()}: archived or future goals must live under "
+            "docs/goals/archive/. docs/goals/001-goal.md is the only active goal file."
+        )
+    return errors
 
 
 def _iter_active_files() -> list[Path]:

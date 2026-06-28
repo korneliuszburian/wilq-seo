@@ -1,9 +1,11 @@
-# Goal 002 - System Audit, Anti-Slop Contracts and Plug-And-Play Proof
+# Archived Goal 002 - System Audit, Anti-Slop Contracts and Plug-And-Play Proof
 
 Last updated: 2026-06-18.
+Archived: 2026-06-28.
 
-This is the next audit goal after Goal 001 cleanup. Keep this file short and
-operational. Do not turn it into a work log.
+This is a historical draft. It is not an active goal and must not be used as a
+current recovery source. The only active goal is `docs/goals/001-goal.md`;
+current execution and visible-language requirements live in `PLAN.md`.
 
 ## Purpose
 

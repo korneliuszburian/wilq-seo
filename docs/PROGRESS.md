@@ -143,6 +143,9 @@ Date: 2026-06-28
   `main`, so core routes fail if old working route names, registry headings,
   stale URL/mapping terms, raw `payload` wording or vendor fallback keys return
   to the visible marketer surface.
+- The old `Goal 002` draft is archived under `docs/goals/archive/`, and the
+  marketer language guard now fails if another first-level `docs/goals/*.md`
+  file appears beside the canonical `001-goal.md`.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels instead of route-local
   count assembly.
@@ -199,6 +202,15 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Recovery goal-file cleanup: the old `Goal 002` draft moved to
+  `docs/goals/archive/`, and `scripts/marketer_language_guard.py` now enforces
+  that `docs/goals/001-goal.md` is the only active first-level goal file.
+  Verification:
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Dashboard proof contract cleanup: API-backed e2e smoke and demo proof now
   assert current marketer-readable route copy and reject stale proof wording

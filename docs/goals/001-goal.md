@@ -189,6 +189,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   so core routes fail if old working route names, registry headings, stale
   URL/mapping terms, raw `payload` wording or vendor fallback keys return to
   the visible marketer surface.
+- The old `Goal 002` draft is archived under `docs/goals/archive/`, and the
+  marketer language guard now prevents additional first-level active goal files
+  beside `docs/goals/001-goal.md`.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels.
 - Knowledge playbook cards use API/domain evidence and action-type summary
