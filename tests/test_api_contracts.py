@@ -18892,6 +18892,16 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     assert "card_localo_local_seo_playbook" in localo["knowledge_card_ids"]
 
 
+def test_demand_gen_readiness_uses_operator_summary_labels() -> None:
+    response = client.get("/api/demand-gen/diagnostics")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["evidence_summary_label"]
+    assert data["action_summary_label"]
+    assert all(label for label in data["campaign_channel_labels"].values())
+    assert "PERFORMANCE_MAX" not in data["campaign_channel_labels"].values()
+
+
 def test_workflows_are_decision_backed_operator_contracts() -> None:
     response = client.get("/api/workflows")
     assert response.status_code == 200

@@ -6448,6 +6448,7 @@ const demandGenDiagnostics = {
   evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
   evidence_summary_label: "2 dowody źródłowe",
   action_ids: ["act_review_demand_gen_readiness"],
+  action_summary_label: "1 akcja do sprawdzenia",
   operator_review_gates: [
     "demand_gen_specific_evidence_required",
     "human_strategy_review",
@@ -8412,8 +8413,11 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/DemandGenDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("data.preview_cards");
+    expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
+    expect(routeSource).not.toContain("data.campaign_channel_labels[channel] ?? channel");
+    expect(routeSource).not.toContain("formatDemandGenIdCount");
     expect(routeSource).not.toContain("data.payload_preview[0]");
     expect(routeSource).not.toContain("row.advertising_channel_type ??");
     expect(routeSource).not.toContain("row.campaign_status ??");

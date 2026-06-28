@@ -83,7 +83,7 @@ export function DemandGenDiagnosticSurface() {
             {channelEntries.slice(0, 4).map(([channel, count]) => (
               <MetricTile
                 key={channel}
-                label={data.campaign_channel_labels[channel] ?? channel}
+                label={data.campaign_channel_labels[channel] || "kanał kampanii do sprawdzenia"}
                 value={count}
               />
             ))}
@@ -141,13 +141,7 @@ export function DemandGenDiagnosticSurface() {
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine
                 label="Akcje"
-                values={[
-                  formatDemandGenIdCount(
-                    data.action_ids.length,
-                    "akcja",
-                    "akcji"
-                  )
-                ]}
+                values={[data.action_summary_label]}
               />
             </div>
           </article>
@@ -248,7 +242,7 @@ export function DemandGenDiagnosticSurface() {
           />
           <TraceLine
             label="Akcje"
-            values={[formatDemandGenIdCount(data.action_ids.length, "akcja", "akcji")]}
+            values={[data.action_summary_label]}
           />
           <TraceLine
             label="Warunki sprawdzenia"
@@ -263,11 +257,6 @@ export function DemandGenDiagnosticSurface() {
       </section>
     </main>
   );
-}
-
-function formatDemandGenIdCount(count: number, singular: string, plural: string) {
-  if (count === 1) return `1 ${singular}`;
-  return `${count} ${plural}`;
 }
 
 function formatDemandGenEvidenceCount(count: number) {

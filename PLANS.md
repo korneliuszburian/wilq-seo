@@ -586,6 +586,11 @@ WILQ is complete for this long-range goal when:
   labels or neutral Polish operator fallbacks instead of visible raw enum/status
   keys. Browser proof lives at
   `.local-lab/proof/content-enum-labels-clean.txt`.
+- 2026-06-28: Demand Gen now uses API/domain `action_summary_label` and
+  campaign-channel labels instead of route-local action count formatting or raw
+  channel fallbacks. Live API proof confirmed
+  `/api/demand-gen/diagnostics`; browser proof lives at
+  `.local-lab/proof/demand-gen-summary-labels-clean.txt`.
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.

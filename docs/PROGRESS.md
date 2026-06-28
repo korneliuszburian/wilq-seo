@@ -45,6 +45,8 @@ Date: 2026-06-28
   view-models instead of parsing raw action payload previews.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
+- Demand Gen uses API/domain action summary and campaign-channel labels instead
+  of route-local action count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
@@ -94,6 +96,18 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "demand_gen_readiness_uses_operator_summary_labels or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "demand gen route renders readiness contract instead of generic registry"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/demand-gen/diagnostics` returns
+  `action_summary_label` and campaign-channel labels.
+- Browser proof: `.local-lab/proof/demand-gen-summary-labels-clean.txt`
+
+Previous verified local slice:
+
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_playbooks_are_machine_readable_and_evidence_gated" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir packages/shared-schemas test`
@@ -104,7 +118,7 @@ Most recent verified local slice:
   `required_evidence_summary_label` and `mapped_action_type_summary_label`.
 - Browser proof: `.local-lab/proof/knowledge-playbook-labels-clean.txt`
 
-Previous verified local slice:
+Earlier local slice:
 
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision with expandable detail"`
 - `rtk pnpm --dir apps/dashboard typecheck`

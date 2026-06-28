@@ -3872,6 +3872,7 @@ class DemandGenReadinessContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     operator_review_gates: list[str] = Field(default_factory=list)
     operator_review_gate_labels: list[str] = Field(default_factory=list)
     payload_preview: list[dict[str, Any]] = Field(default_factory=list)
@@ -3900,6 +3901,10 @@ class DemandGenReadinessContract(BaseModel):
             self.status_label = _demand_gen_status_label(self.status)
         if not self.risk_label:
             self.risk_label = _marketing_risk_label(self.risk)
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
         return self
 
 

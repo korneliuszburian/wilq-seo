@@ -2970,6 +2970,7 @@ export const DemandGenReadinessContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   operator_review_gates: z.array(z.string()),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
   payload_preview: z.array(z.record(z.unknown())).default([]),

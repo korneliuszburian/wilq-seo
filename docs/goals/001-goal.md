@@ -92,6 +92,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   behind technical detail.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
+- Demand Gen uses API/domain action summary and campaign-channel labels instead
+  of route-local action count formatting or raw channel fallbacks.
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
