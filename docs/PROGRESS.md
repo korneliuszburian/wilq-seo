@@ -54,6 +54,9 @@ Date: 2026-06-28
   compacted prompt context cannot quietly reintroduce the cleaned language.
 - Active actions with operator preview payloads are guarded to expose typed
   preview cards, preventing fallback rows assembled from raw preview shape.
+- Expanded DOM audit across core marketer routes and action details has no
+  visible hits for old route names, stale content URL terms or technical
+  action-model jargon outside technical drawers.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -163,9 +166,10 @@ Date: 2026-06-28
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs now have string-value guards; extend
    the same pattern when another skill context changes.
-8. Continue focused browser audits on remaining expanded route details. Any
-   remaining long blocker/review lists must be condensed at API/domain source,
-   not trimmed in React.
+8. Continue focused browser audits when touched routes change. The latest
+   expanded audit of core routes and action details is clean; any future long
+   blocker/review list must be condensed at API/domain source, not trimmed in
+   React.
 9. Real marketer UAT is still required for a usefulness claim unless the owner
    explicitly defers it.
 
@@ -173,17 +177,16 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Recovery ledger pruning: removed long historical proof lists from this file.
-- History now lives in git commits and `.local-lab/proof/`.
-- Current verification for this recovery/API-guard slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "actions_with_operator_preview_data_expose_typed_preview_cards or ads_recommendation" --maxfail=1`
+- Expanded route language audit: 14 core routes/action details were checked
+  after opening non-technical details and product accordions.
+- Proof artifact: `.local-lab/proof/expanded-route-language-audit.json`
+- Current verification for this browser-audit slice:
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
-  - Live API proof: `/api/actions` returns 16 actions and no action with
-    operator preview payload missing typed preview cards.
-  - `docs/PROGRESS.md` scan has no stale route names, stale URL terms or
-    action-model jargon outside current summaries. The canonical forbidden-term
-    list remains in `docs/goals/001-goal.md` by design.
+  - Playwright DOM audit result: `routes=14`, `failures=[]`
+  - `agent-browser read` was attempted for `/content-planner`, but this Vite app
+    returned an empty text artifact in the current session; Playwright DOM text
+    is the useful proof.
 
 ## Older Proof History
 

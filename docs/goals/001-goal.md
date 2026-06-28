@@ -106,6 +106,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
+- Expanded DOM audit across core marketer routes and action details is clean
+  for old route names, stale content URL terms and technical action-model
+  jargon outside technical drawers.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
@@ -208,9 +211,10 @@ are resolved or explicitly deferred.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs now have string-value guards; extend
    the same pattern when another skill context changes.
-8. Continue focused browser audits on remaining expanded route details. Any
-   remaining long blocker/review lists must be condensed at API/domain source,
-   not trimmed in React.
+8. Continue focused browser audits when touched routes change or a new visible
+   copy risk is found. The latest expanded audit across core routes/action
+   details is clean; any future long blocker/review list must be condensed at
+   API/domain source, not trimmed in React.
 9. Real marketer UAT is still required for usefulness claims unless explicitly
    deferred by the owner.
 
