@@ -6591,6 +6591,7 @@ def _hydrate_recommendations_marketer_labels(
         row.blocked_claim_labels = _unique(row.blocked_claims)
         if row.payload_preview is not None:
             _hydrate_recommendation_payload_preview_labels(row.payload_preview)
+            row.preview_card = _recommendation_preview_card(row.payload_preview)
     for preview in contract.payload_preview:
         _hydrate_recommendation_payload_preview_labels(preview)
 
@@ -6606,6 +6607,61 @@ def _hydrate_recommendation_payload_preview_labels(
         preview.required_validation
     )
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
+
+
+def _recommendation_preview_card(
+    preview: AdsRecommendationApplyPreview,
+) -> ActionPreviewCardViewModel:
+    rows = [
+        {
+            "label": "Rekomendacja",
+            "value": preview.recommendation_type_label
+            or "rekomendacja do sprawdzenia",
+        },
+        {
+            "label": "Operacja",
+            "value": preview.operation_type_label or "operacja do sprawdzenia",
+        },
+    ]
+    if preview.campaign_id or preview.campaign_budget_id:
+        rows.append(
+            {
+                "label": "Powiązanie",
+                "value": "kampania albo budżet do sprawdzenia w szczegółach technicznych",
+            }
+        )
+    if preview.required_validation_labels:
+        rows.append(
+            {
+                "label": "Warunki sprawdzenia",
+                "value": ", ".join(preview.required_validation_labels[:4]),
+            }
+        )
+    if preview.blocked_claim_labels:
+        rows.append(
+            {
+                "label": "Czego nie wolno twierdzić",
+                "value": ", ".join(preview.blocked_claim_labels[:4]),
+            }
+        )
+    return ActionPreviewCardViewModel(
+        id=f"{preview.id}_card",
+        kind="google_ads_recommendation_review",
+        title_label="Rekomendacja Google Ads do sprawdzenia",
+        subtitle_label="ocena rekomendacji bez zapisu zmian",
+        status_label="zapis zmian zablokowany",
+        rows=rows,
+        apply_state_label=(
+            "możliwy zapis po sprawdzeniu"
+            if preview.apply_allowed
+            else "zapis zmian zablokowany"
+        ),
+        system_readiness_label=(
+            "system gotowy do zapisu"
+            if preview.api_mutation_ready
+            else "wymaga kontroli"
+        ),
+    )
 
 
 def _hydrate_impression_share_marketer_labels(

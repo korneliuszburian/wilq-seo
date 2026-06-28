@@ -859,6 +859,7 @@ export const AdsRecommendationRowSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   payload_preview: AdsRecommendationApplyPreviewSchema.nullable().optional(),
+  preview_card: ActionPreviewCardViewModelSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).optional().default([])

@@ -98,6 +98,9 @@ use the cleaned language.
 - Ads negative keyword candidates now expose API-owned preview cards. The
   dashboard route no longer derives the visible negative-keyword card from
   `candidate.payload_preview`.
+- Ads recommendation rows now expose API-owned preview cards. The dashboard
+  route no longer derives the visible recommendation card from
+  `row.payload_preview`.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

@@ -1221,6 +1221,28 @@ const adsDiagnostics = {
           apply_allowed: false,
           destructive: false
         },
+        preview_card: {
+          id: "recommendation_apply_preview_rec-1_card",
+          kind: "google_ads_recommendation_review",
+          title_label: "Rekomendacja Google Ads do sprawdzenia",
+          subtitle_label: "ocena rekomendacji bez zapisu zmian",
+          status_label: "zapis zmian zablokowany",
+          rows: [
+            { label: "Rekomendacja", value: "budżet kampanii" },
+            { label: "Operacja", value: "zastosowanie rekomendacji Google Ads" },
+            {
+              label: "Powiązanie",
+              value: "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+            },
+            {
+              label: "Warunki sprawdzenia",
+              value:
+                "sprawdzenie typu rekomendacji, sprawdzenie wpływu rekomendacji, sprawdzenie historii zmian, sprawdzenie celu biznesowego"
+            }
+          ],
+          apply_state_label: "zapis zmian zablokowany",
+          system_readiness_label: "wymaga kontroli"
+        },
         missing_metrics: [],
         blocked_claims: [
           "skalowanie budżetu",
@@ -3298,6 +3320,28 @@ const adsDiagnostics = {
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
+          },
+          preview_card: {
+            id: "recommendation_apply_preview_rec-1_card",
+            kind: "google_ads_recommendation_review",
+            title_label: "Rekomendacja Google Ads do sprawdzenia",
+            subtitle_label: "ocena rekomendacji bez zapisu zmian",
+            status_label: "zapis zmian zablokowany",
+            rows: [
+              { label: "Rekomendacja", value: "budżet kampanii" },
+              { label: "Operacja", value: "zastosowanie rekomendacji Google Ads" },
+              {
+                label: "Powiązanie",
+                value: "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+              },
+              {
+                label: "Warunki sprawdzenia",
+                value:
+                  "sprawdzenie typu rekomendacji, sprawdzenie wpływu rekomendacji, sprawdzenie historii zmian, sprawdzenie celu biznesowego"
+              }
+            ],
+            apply_state_label: "zapis zmian zablokowany",
+            system_readiness_label: "wymaga kontroli"
           },
           missing_metrics: [],
           blocked_claims: [
@@ -7452,7 +7496,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.blocked_claim_labels");
     expect(routeSource).toContain("row.payload_preview.operation_type_label");
     expect(routeSource).toContain("row.recommendation_type_label");
-    expect(routeSource).toContain("row.payload_preview.operation_type_label");
+    expect(routeSource).toContain("row.preview_card");
+    expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");
     expect(routeSource).toContain("candidate.preview_card");
     expect(routeSource).not.toContain("candidate.payload_preview");
     expect(routeSource).toContain("row.missing_read_contract_labels");

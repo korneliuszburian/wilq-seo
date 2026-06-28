@@ -10190,6 +10190,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "metric_facts"
             ],
             "payload_preview": recommendations_contract["payload_preview"][0],
+            "preview_card": recommendations_contract["recommendation_rows"][0][
+                "preview_card"
+            ],
             "missing_metrics": [],
             "blocked_claims": [
                 "zapis rekomendacji",
@@ -10223,6 +10226,27 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "nie zgoda na zapis zmian" in recommendations_contract[
         "recommendation_rows"
     ][0]["review_reason"]
+    recommendation_preview_card = recommendations_contract["recommendation_rows"][0][
+        "preview_card"
+    ]
+    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
+    assert recommendation_preview_card["title_label"] == (
+        "Rekomendacja Google Ads do sprawdzenia"
+    )
+    recommendation_preview_rows = {
+        row["label"]: row["value"] for row in recommendation_preview_card["rows"]
+    }
+    assert recommendation_preview_rows["Rekomendacja"] == "budżet kampanii"
+    assert recommendation_preview_rows["Operacja"] == (
+        "zastosowanie rekomendacji Google Ads"
+    )
+    assert recommendation_preview_rows["Powiązanie"] == (
+        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    )
+    assert "ApplyRecommendationOperation" not in str(recommendation_preview_card)
+    assert "CAMPAIGN_BUDGET" not in str(recommendation_preview_card)
+    assert "101" not in str(recommendation_preview_card)
+    assert "701" not in str(recommendation_preview_card)
     assert recommendations_contract["payload_preview"] == [
         {
             "id": "recommendation_apply_preview_rec-1",
@@ -12265,6 +12289,65 @@ def test_ads_negative_keyword_candidate_exposes_marketer_preview_card() -> None:
     ]
     assert "EXACT" not in str(card.model_dump())
     assert "ad_group" not in str(card.model_dump())
+
+
+def test_ads_recommendation_row_exposes_marketer_preview_card() -> None:
+    from wilq.briefing.ads_diagnostics import _hydrate_recommendations_marketer_labels
+    from wilq.schemas import (
+        AdsRecommendationApplyPreview,
+        AdsRecommendationRow,
+        AdsRecommendationsReadContract,
+    )
+
+    preview = AdsRecommendationApplyPreview(
+        id="recommendation_apply_preview_test",
+        recommendation_id="rec-1",
+        recommendation_type="CAMPAIGN_BUDGET",
+        campaign_id="101",
+        campaign_budget_id="701",
+        operation_type="ApplyRecommendationOperation",
+        reason="Do sprawdzenia przed zapisem zmian.",
+        required_validation=[
+            "review_recommendation_type",
+            "review_impact_metrics",
+        ],
+        blocked_claims=["zapis rekomendacji"],
+    )
+    contract = AdsRecommendationsReadContract(
+        status="ready",
+        title="Rekomendacje Google Ads",
+        summary="Rekomendacje do sprawdzenia.",
+        recommendation_rows=[
+            AdsRecommendationRow(
+                recommendation_id="rec-1",
+                recommendation_type="CAMPAIGN_BUDGET",
+                review_reason="Rekomendacja do ręcznej oceny.",
+                payload_preview=preview,
+            )
+        ],
+        payload_preview=[preview],
+        next_step="Sprawdź rekomendację przed zapisem zmian.",
+    )
+
+    _hydrate_recommendations_marketer_labels(contract)
+
+    card = contract.recommendation_rows[0].preview_card
+    assert card is not None
+    assert card.kind == "google_ads_recommendation_review"
+    assert card.title_label == "Rekomendacja Google Ads do sprawdzenia"
+    rows = {row.label: row.value for row in card.rows}
+    assert rows["Rekomendacja"] == "budżet kampanii"
+    assert rows["Operacja"] == "zastosowanie rekomendacji Google Ads"
+    assert rows["Powiązanie"] == (
+        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
+    )
+    assert "sprawdzenie typu rekomendacji" in rows["Warunki sprawdzenia"]
+    assert "zapis rekomendacji" in rows["Czego nie wolno twierdzić"]
+    dumped = str(card.model_dump())
+    assert "ApplyRecommendationOperation" not in dumped
+    assert "CAMPAIGN_BUDGET" not in dumped
+    assert "101" not in dumped
+    assert "701" not in dumped
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(

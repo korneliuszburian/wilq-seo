@@ -1566,9 +1566,8 @@ function AdsRecommendationRowsPanel({
                   {row.recommendation_type_label}
                 </div>
                 <div className="mt-1 text-xs leading-5 text-slate-600">
-                  Kampania: {row.campaign_id ?? "brak"} / budżet:{" "}
-                  {row.campaign_budget_id ?? "brak"} / zakres kampanii:{" "}
-                  {row.campaign_count ?? 0}
+                  Zakres: {row.campaign_count ?? 0} kampanii. Szczegóły techniczne
+                  powiązania są dostępne w danych akcji.
                 </div>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -1621,19 +1620,9 @@ function AdsRecommendationRowsPanel({
               values={row.evidence_ids.slice(0, 2)}
               kind="evidence"
             />
-            {row.payload_preview ? (
-              <div className="mt-3 rounded-md border border-line bg-slate-50 px-2 py-2 text-xs text-slate-700">
-                <div className="font-semibold text-ink">Podgląd zmian: zablokowany</div>
-                <div className="mt-1">
-                  Operacja: {row.payload_preview.operation_type_label}.
-                  Zapis zmian:{" "}
-                  {row.payload_preview.apply_allowed
-                    ? "dozwolone"
-                    : "niedozwolone bez oceny i audytu"}.
-                </div>
-                <div className="mt-1">
-                  Warunki sprawdzenia: {formatTraceIdCount(row.payload_preview.required_validation.length)}.
-                </div>
+            {row.preview_card ? (
+              <div className="mt-3">
+                <ActionPreviewCard card={row.preview_card} />
               </div>
             ) : null}
           </article>
