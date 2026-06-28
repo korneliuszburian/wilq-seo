@@ -3,6 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
+from wilq.actions.validation_copy import (
+    missing,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.schemas import Ga4TrackingQualityPayloadPreview, MetricFact
 
 GA4_TRACKING_QUALITY_ACTION_TYPE = "ga4_tracking_gap"
@@ -44,30 +52,32 @@ GA4_TRACKING_REQUIRED_VALIDATION = [
 
 def validate_ga4_tracking_quality_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Sprawdzenie pomiaru GA4"
     preview = payload.get("payload_preview")
     if not isinstance(preview, list) or not preview:
-        errors.append("GA4 tracking payload requires payload_preview list.")
+        errors.append(missing(subject, "podglądu sprawdzenia"))
         return errors
-    for item in preview:
+    for index, item in enumerate(preview):
+        item_subject = row("Podgląd sprawdzenia GA4", index)
         if not isinstance(item, dict):
-            errors.append("GA4 tracking payload_preview items must be objects.")
+            errors.append(wrong(item_subject, "ma nieprawidłową strukturę"))
             continue
         if item.get("preview_contract") != GA4_TRACKING_QUALITY_PREVIEW_CONTRACT:
-            errors.append("GA4 tracking podgląd zmian_contract is invalid.")
+            errors.append(missing(item_subject, "poprawnego kontraktu podglądu"))
         if not isinstance(item.get("tracking_dimension_gaps"), list):
-            errors.append("GA4 tracking payload requires tracking_dimension_gaps list.")
+            errors.append(missing(item_subject, "listy braków w wymiarach pomiaru"))
         metric_snapshot = item.get("metric_snapshot")
         metric_snapshot_labels = item.get("metric_snapshot_labels")
         if isinstance(metric_snapshot, dict) and metric_snapshot and not isinstance(
             metric_snapshot_labels, dict
         ):
-            errors.append("GA4 tracking payload requires metric_snapshot_labels for visible metrics.")
+            errors.append(missing(item_subject, "etykiet widocznych metryk"))
         if item.get("apply_allowed") is not False:
-            errors.append("GA4 tracking podgląd zmian must keep apply_allowed=false.")
+            errors.append(no_write(item_subject))
         if item.get("api_mutation_ready") is not False:
-            errors.append("GA4 tracking podgląd zmian must keep api_mutation_ready=false.")
+            errors.append(no_api_write(item_subject))
         if item.get("destructive") is not False:
-            errors.append("GA4 tracking podgląd zmian must keep destructive=false.")
+            errors.append(no_destructive_change(item_subject))
     return errors
 
 

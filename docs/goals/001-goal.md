@@ -248,7 +248,9 @@ are resolved or explicitly deferred.
    field directly.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
-   have typed-preview-card coverage.
+   have typed-preview-card coverage. Action validation errors for Ads, GA4 and
+   Localo now return Polish operator copy from source validators, with focused
+   regression coverage for forbidden technical fragments.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily

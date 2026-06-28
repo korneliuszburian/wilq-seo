@@ -4,6 +4,16 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    missing_review_check,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.schemas import MetricFact
 
 SEARCH_TERM_NGRAM_ACTION_ID = "act_review_ads_search_term_ngrams"
@@ -105,53 +115,49 @@ def search_term_ngram_payload_from_metric_facts(
 
 def validate_search_term_ngram_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd grup wyszukiwanych haseł"
     if not payload.get("evidence_ids"):
-        errors.append("Search-term n-gram payload requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     if payload.get("preview_contract") != SEARCH_TERM_NGRAM_PREVIEW_CONTRACT:
-        errors.append("Search-term n-gram payload requires preview contract.")
+        errors.append(missing(subject, "poprawnego kontraktu podglądu"))
     if payload.get("operation_type") != SEARCH_TERM_NGRAM_OPERATION_TYPE:
-        errors.append("Search-term n-gram payload requires operation type.")
+        errors.append(missing(subject, "poprawnego typu operacji"))
     if payload.get("apply_allowed") is not False:
-        errors.append("Search-term n-gram payload must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("Search-term n-gram payload must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     if payload.get("api_mutation_ready") is not False:
-        errors.append("Search-term n-gram payload must not be API-mutation ready.")
+        errors.append(no_api_write(subject))
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
-        errors.append("Search-term n-gram payload requires required_validation list.")
+        errors.append(missing(subject, "listy wymaganych sprawdzeń"))
     else:
         for required_check in SEARCH_TERM_NGRAM_REQUIRED_VALIDATION:
             if required_check not in required_validation:
-                errors.append(f"Search-term n-gram payload requires {required_check}.")
+                errors.append(missing_review_check(subject))
     previews = payload.get("ngram_preview")
     if not isinstance(previews, list) or not previews:
-        errors.append("Search-term n-gram payload requires ngram_preview.")
+        errors.append(missing(subject, "podglądu grup haseł"))
         return errors
     for index, preview in enumerate(previews):
+        preview_subject = row("Podgląd grupy haseł", index)
         if not isinstance(preview, dict):
-            errors.append(f"Search-term n-gram preview item {index} must be object.")
+            errors.append(wrong(preview_subject, "ma nieprawidłową strukturę"))
             continue
         if preview.get("operation_type") != SEARCH_TERM_NGRAM_OPERATION_TYPE:
-            errors.append(f"Search-term n-gram preview item {index} requires operation type.")
+            errors.append(missing(preview_subject, "poprawnego typu operacji"))
         if not preview.get("ngram"):
-            errors.append(f"Search-term n-gram preview item {index} requires ngram.")
+            errors.append(missing(preview_subject, "grupy haseł"))
         if not preview.get("sample_search_terms"):
-            errors.append(
-                f"Search-term n-gram preview item {index} requires sample_search_terms."
-            )
+            errors.append(missing(preview_subject, "przykładowych wyszukiwanych haseł"))
         if not preview.get("evidence_ids"):
-            errors.append(f"Search-term n-gram preview item {index} requires evidence IDs.")
+            errors.append(missing_evidence(preview_subject))
         if preview.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Search-term n-gram preview item {index} must not be API-mutation ready."
-            )
+            errors.append(no_api_write(preview_subject))
         if preview.get("apply_allowed") is not False:
-            errors.append(
-                f"Search-term n-gram preview item {index} must keep apply_allowed=false."
-            )
+            errors.append(no_write(preview_subject))
         if preview.get("destructive") is not False:
-            errors.append(f"Search-term n-gram preview item {index} must be non-destructive.")
+            errors.append(no_destructive_change(preview_subject))
     return errors
 
 

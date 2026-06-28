@@ -3,6 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    missing_review_check,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.schemas import MetricFact
 
 RECOMMENDATION_REVIEW_ACTION_ID = "act_prepare_google_ads_recommendation_review_queue"
@@ -26,48 +36,41 @@ RECOMMENDATION_REVIEW_REQUIRED_VALIDATION = [
 
 def validate_recommendation_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd rekomendacji Google Ads"
     if not payload.get("recommendations"):
-        errors.append("Recommendation review payload requires recommendation rows.")
+        errors.append(missing(subject, "wierszy rekomendacji"))
     if not payload.get("evidence_ids"):
-        errors.append("Recommendation review payload requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     if payload.get("apply_allowed") is not False:
-        errors.append("Recommendation review payload must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("Recommendation review payload must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
-        errors.append("Recommendation review payload requires required_validation list.")
+        errors.append(missing(subject, "listy wymaganych sprawdzeń"))
     else:
         for required_check in RECOMMENDATION_REVIEW_REQUIRED_VALIDATION:
             if required_check not in required_validation:
-                errors.append(f"Recommendation review payload requires {required_check}.")
+                errors.append(missing_review_check(subject))
     preview_items = payload.get("payload_preview")
     if not isinstance(preview_items, list) or not preview_items:
-        errors.append("Recommendation review payload requires payload_preview.")
+        errors.append(missing(subject, "podglądu zmian"))
         return errors
     for index, item in enumerate(preview_items):
+        item_subject = row("Podgląd rekomendacji Google Ads", index)
         if not isinstance(item, dict):
-            errors.append(f"Recommendation podgląd zmian item {index} must be object.")
+            errors.append(wrong(item_subject, "ma nieprawidłową strukturę"))
             continue
         if item.get("operation_type") != "ApplyRecommendationOperation":
-            errors.append(
-                f"Recommendation podgląd zmian item {index} must use "
-                "ApplyRecommendationOperation."
-            )
+            errors.append(wrong(item_subject, "ma nieprawidłowy typ operacji"))
         if item.get("apply_allowed") is not False:
-            errors.append(
-                f"Recommendation podgląd zmian item {index} must keep apply_allowed=false."
-            )
+            errors.append(no_write(item_subject))
         if item.get("destructive") is not False:
-            errors.append(
-                f"Recommendation podgląd zmian item {index} must be non-destructive."
-            )
+            errors.append(no_destructive_change(item_subject))
         if item.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Recommendation podgląd zmian item {index} must not be API-mutation ready."
-            )
+            errors.append(no_api_write(item_subject))
         if not item.get("evidence_ids"):
-            errors.append(f"Recommendation podgląd zmian item {index} requires evidence IDs.")
+            errors.append(missing_evidence(item_subject))
     return errors
 
 

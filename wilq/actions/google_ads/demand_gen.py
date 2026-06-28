@@ -3,6 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    missing_review_check,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.schemas import (
     DemandGenAdGroupAdRow,
     DemandGenCreativeAssetRow,
@@ -198,88 +208,78 @@ def demand_gen_readiness_review_payload(
 
 def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd gotowości Demand Gen"
     if payload.get("connector") != "google_ads":
-        errors.append("Demand Gen readiness review requires connector=google_ads.")
+        errors.append(wrong(subject, "dotyczy tylko Google Ads"))
     if payload.get("mode") != "prepare_only":
-        errors.append("Demand Gen readiness review requires mode=prepare_only.")
+        errors.append(wrong(subject, "musi pozostać etapem przygotowania"))
     if payload.get("preview_contract") != DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT:
-        errors.append("Demand Gen readiness review requires preview contract.")
+        errors.append(missing(subject, "poprawnego kontraktu podglądu"))
     if payload.get("api_mutation_ready") is not False:
-        errors.append("Demand Gen readiness review must not be API-mutation ready.")
+        errors.append(no_api_write(subject))
     if payload.get("apply_allowed") is not False:
-        errors.append("Demand Gen readiness review must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("Demand Gen readiness review must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     if not isinstance(payload.get("source_connectors"), list):
-        errors.append("Demand Gen readiness review requires source_connectors list.")
+        errors.append(missing(subject, "źródeł danych"))
     if not isinstance(payload.get("evidence_ids"), list) or not payload.get("evidence_ids"):
-        errors.append("Demand Gen readiness review requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     if not isinstance(payload.get("available_read_contracts"), list):
-        errors.append("Demand Gen readiness review requires available_read_contracts list.")
+        errors.append(missing(subject, "listy dostępnych odczytów"))
     if not isinstance(payload.get("missing_read_contracts"), list):
-        errors.append("Demand Gen readiness review requires missing_read_contracts list.")
+        errors.append(missing(subject, "listy brakujących odczytów"))
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
-        errors.append("Demand Gen readiness review requires required_validation list.")
+        errors.append(missing(subject, "listy wymaganych sprawdzeń"))
     else:
         for required_check in DEMAND_GEN_READINESS_REQUIRED_VALIDATION:
             if required_check not in required_validation:
-                errors.append(f"Demand Gen readiness review requires {required_check}.")
+                errors.append(missing_review_check(subject))
     blocked_claims = payload.get("blocked_claims")
     if not isinstance(blocked_claims, list):
-        errors.append("Demand Gen readiness review requires blocked_claims list.")
+        errors.append(missing(subject, "listy zakazanych obietnic"))
     else:
         for claim in DEMAND_GEN_READINESS_BLOCKED_CLAIMS:
             if claim not in blocked_claims:
-                errors.append(f"Demand Gen readiness review must block {claim}.")
+                errors.append(missing(subject, f"blokady obietnicy: {claim}"))
     previews = payload.get("payload_preview")
     if not isinstance(previews, list) or not previews:
-        errors.append("Demand Gen readiness review requires payload_preview list.")
+        errors.append(missing(subject, "podglądu sprawdzenia"))
         return errors
     for index, preview in enumerate(previews):
+        preview_subject = row("Podgląd gotowości Demand Gen", index)
         if not isinstance(preview, dict):
-            errors.append(f"Demand Gen readiness preview item {index} must be object.")
+            errors.append(wrong(preview_subject, "ma nieprawidłową strukturę"))
             continue
         if preview.get("preview_contract") != DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT:
-            errors.append(f"Demand Gen readiness preview item {index} requires contract.")
+            errors.append(missing(preview_subject, "poprawnego kontraktu podglądu"))
         if preview.get("operation_type") != DEMAND_GEN_READINESS_REVIEW_OPERATION_TYPE:
-            errors.append(f"Demand Gen readiness preview item {index} requires operation type.")
+            errors.append(missing(preview_subject, "poprawnego typu operacji"))
         if not isinstance(preview.get("campaign_channel_counts"), dict):
-            errors.append(f"Demand Gen readiness preview item {index} requires channel counts.")
+            errors.append(missing(preview_subject, "podsumowania kanałów kampanii"))
         if not isinstance(preview.get("demand_gen_ad_group_ad_rows"), list):
-            errors.append(f"Demand Gen readiness preview item {index} requires ad rows.")
+            errors.append(missing(preview_subject, "odczytu reklam"))
         if not isinstance(preview.get("demand_gen_creative_asset_rows"), list):
-            errors.append(f"Demand Gen readiness preview item {index} requires asset rows.")
+            errors.append(missing(preview_subject, "odczytu materiałów kreatywnych"))
         if not isinstance(preview.get("demand_gen_landing_quality_rows"), list):
-            errors.append(
-                f"Demand Gen readiness preview item {index} requires landing rows."
-            )
+            errors.append(missing(preview_subject, "odczytu jakości stron wejścia"))
         if not isinstance(preview.get("demand_gen_campaign_mode_review_rows"), list):
-            errors.append(
-                f"Demand Gen readiness preview item {index} requires campaign mode review rows."
-            )
+            errors.append(missing(preview_subject, "sprawdzenia trybu kampanii"))
         if not isinstance(preview.get("missing_read_contracts"), list):
-            errors.append(
-                f"Demand Gen readiness preview item {index} requires missing contracts."
-            )
+            errors.append(missing(preview_subject, "listy brakujących odczytów"))
         if not isinstance(preview.get("required_validation"), list):
-            errors.append(
-                f"Demand Gen readiness preview item {index} requires required validation."
-            )
+            errors.append(missing(preview_subject, "listy wymaganych sprawdzeń"))
         if not isinstance(preview.get("evidence_ids"), list) or not preview.get(
             "evidence_ids"
         ):
-            errors.append(f"Demand Gen readiness preview item {index} requires evidence IDs.")
+            errors.append(missing_evidence(preview_subject))
         if preview.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Demand Gen readiness preview item {index} must not be API-mutation ready."
-            )
+            errors.append(no_api_write(preview_subject))
         if preview.get("apply_allowed") is not False:
-            errors.append(
-                f"Demand Gen readiness preview item {index} must keep apply_allowed=false."
-            )
+            errors.append(no_write(preview_subject))
         if preview.get("destructive") is not False:
-            errors.append(f"Demand Gen readiness preview item {index} must be non-destructive.")
+            errors.append(no_destructive_change(preview_subject))
     return errors
 
 

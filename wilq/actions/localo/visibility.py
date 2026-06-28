@@ -3,6 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    wrong,
+)
 from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.schemas import MetricFact
 
@@ -94,62 +101,50 @@ def localo_visibility_review_payload_from_metric_facts(
 
 def validate_localo_visibility_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd widoczności lokalnej"
     if payload.get("connector") != "localo":
-        errors.append("local_visibility_task requires connector=localo.")
+        errors.append(wrong(subject, "dotyczy tylko Localo"))
     if payload.get("mode") != "prepare_only":
-        errors.append("local_visibility_task requires mode=prepare_only.")
+        errors.append(wrong(subject, "musi pozostać etapem przygotowania"))
     if not isinstance(payload.get("source_metric_names"), list):
-        errors.append("local_visibility_task requires source_metric_names list.")
+        errors.append(missing(subject, "listy odczytanych metryk"))
     if not isinstance(payload.get("allowed_contracts"), list):
-        errors.append("local_visibility_task requires allowed_contracts list.")
+        errors.append(missing(subject, "listy dostępnych odczytów"))
     if not isinstance(payload.get("missing_read_contracts"), list):
-        errors.append("local_visibility_task requires missing_read_contracts list.")
+        errors.append(missing(subject, "listy brakujących odczytów"))
     if not isinstance(payload.get("review_steps"), list):
-        errors.append("local_visibility_task requires review_steps list.")
+        errors.append(missing(subject, "listy kroków sprawdzenia"))
     if not isinstance(payload.get("blocked_claims"), list):
-        errors.append("local_visibility_task requires blocked_claims list.")
+        errors.append(missing(subject, "listy zablokowanych obietnic"))
     preview_items = payload.get("payload_preview")
     if not isinstance(preview_items, list) or not preview_items:
-        errors.append("local_visibility_task requires payload_preview list.")
+        errors.append(missing(subject, "podglądu sprawdzenia"))
     elif not all(isinstance(item, dict) for item in preview_items):
-        errors.append("local_visibility_task payload_preview items must be objects.")
+        errors.append(wrong(f"{subject}, podgląd", "ma nieprawidłową strukturę"))
     else:
         for preview in preview_items:
             if preview.get("preview_contract") != LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT:
-                errors.append(
-                    "local_visibility_task payload_preview requires "
-                    f"{LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}."
-                )
+                errors.append(missing(f"{subject}, podgląd", "poprawnego kontraktu"))
             if not isinstance(preview.get("metric_snapshot"), dict):
-                errors.append("local_visibility_task payload_preview requires metric_snapshot.")
+                errors.append(missing(f"{subject}, podgląd", "podsumowania metryk"))
             if preview.get("metric_snapshot") and not isinstance(
                 preview.get("metric_snapshot_labels"), dict
             ):
-                errors.append(
-                    "local_visibility_task payload_preview requires "
-                    "metric_snapshot_labels for visible metrics."
-                )
+                errors.append(missing(f"{subject}, podgląd", "etykiet widocznych metryk"))
             if not isinstance(preview.get("required_validation"), list):
-                errors.append(
-                    "local_visibility_task payload_preview requires required_validation list."
-                )
+                errors.append(missing(f"{subject}, podgląd", "listy wymaganych sprawdzeń"))
             if not isinstance(preview.get("evidence_ids"), list):
-                errors.append("local_visibility_task payload_preview requires evidence_ids list.")
+                errors.append(missing(f"{subject}, podgląd", "dowodów w WILQ"))
             if preview.get("api_mutation_ready") is not False:
-                errors.append(
-                    "local_visibility_task payload_preview must keep "
-                    "api_mutation_ready=false."
-                )
+                errors.append(no_api_write(f"{subject}, podgląd"))
             if preview.get("apply_allowed") is not False:
-                errors.append(
-                    "local_visibility_task payload_preview must keep apply_allowed=false."
-                )
+                errors.append(no_write(f"{subject}, podgląd"))
             if preview.get("destructive") is not False:
-                errors.append("local_visibility_task payload_preview must be non-destructive.")
+                errors.append(no_destructive_change(f"{subject}, podgląd"))
     if payload.get("apply_allowed") is not False:
-        errors.append("local_visibility_task must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("local_visibility_task must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     return errors
 
 

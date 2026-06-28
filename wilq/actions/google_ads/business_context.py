@@ -4,6 +4,7 @@ import os
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import missing, no_destructive_change, no_write, wrong
 from wilq.schemas import AdsStrategyReviewRecord, AdsTargetGuardrailConfirmation
 from wilq.storage.local_state import local_state_store
 
@@ -324,90 +325,90 @@ def ads_strategy_review_state() -> AdsStrategyReviewRecord | None:
 
 def validate_ads_business_context_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Kontekst biznesowy Google Ads"
     if payload.get("connector") != "google_ads":
-        errors.append("configure_ads_business_context requires connector=google_ads.")
+        errors.append(wrong(subject, "dotyczy tylko Google Ads"))
     if payload.get("mode") != "prepare_only":
-        errors.append("configure_ads_business_context requires mode=prepare_only.")
+        errors.append(wrong(subject, "musi pozostać etapem przygotowania"))
     required_env = payload.get("required_env")
     if not isinstance(required_env, list) or not set(ADS_BUSINESS_CONTEXT_REQUIRED_ENV).issubset(
         set(required_env)
     ):
-        errors.append("configure_ads_business_context requires core business env names.")
+        errors.append(missing(subject, "podstawowych ustawień biznesowych"))
     alternative_env = payload.get("alternative_env")
     if not isinstance(alternative_env, dict) or "target_roas_or_cpa" not in alternative_env:
-        errors.append("configure_ads_business_context requires target_roas_or_cpa options.")
+        errors.append(missing(subject, "wariantów celu kosztu lub zwrotu z reklam"))
     missing_read_contracts = payload.get("missing_read_contracts")
     if not isinstance(missing_read_contracts, list):
-        errors.append("configure_ads_business_context requires missing_read_contracts list.")
+        errors.append(missing(subject, "listy brakujących odczytów"))
     if payload.get("apply_allowed") is not False:
-        errors.append("configure_ads_business_context must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("configure_ads_business_context must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     if not isinstance(payload.get("helper_commands"), list):
-        errors.append("configure_ads_business_context requires helper_commands list.")
+        errors.append(missing(subject, "instrukcji pomocniczych"))
     return errors
 
 
 def validate_ads_target_confirmation_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Potwierdzenie celów Google Ads"
     if payload.get("connector") != "google_ads":
-        errors.append("confirm_ads_target_guardrails requires connector=google_ads.")
+        errors.append(wrong(subject, "dotyczy tylko Google Ads"))
     if payload.get("mode") != "prepare_only":
-        errors.append("confirm_ads_target_guardrails requires mode=prepare_only.")
+        errors.append(wrong(subject, "musi pozostać etapem przygotowania"))
     current_context = payload.get("current_context")
     if not isinstance(current_context, dict):
-        errors.append("confirm_ads_target_guardrails requires current_context.")
+        errors.append(missing(subject, "obecnego kontekstu biznesowego"))
     else:
         for key in ("profit_margin", "business_goal", "budget_goal"):
             if key not in current_context:
-                errors.append(f"confirm_ads_target_guardrails missing current_context.{key}.")
+                errors.append(missing(subject, "pełnego kontekstu biznesowego"))
     target_env_options = payload.get("target_env_options")
     if not isinstance(target_env_options, dict):
-        errors.append("confirm_ads_target_guardrails requires target_env_options.")
+        errors.append(missing(subject, "wariantów ustawień celu"))
     elif set(target_env_options.get("target_roas_or_cpa", [])) != set(
         ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS
     ):
-        errors.append(
-            "confirm_ads_target_guardrails requires WILQ_ADS_TARGET_ROAS or "
-            "WILQ_ADS_TARGET_CPA_MICROS env options."
-        )
+        errors.append(missing(subject, "celu zwrotu z reklam albo kosztu pozyskania celu"))
     missing_read_contracts = payload.get("missing_read_contracts")
     if (
         not isinstance(missing_read_contracts, list)
         or "target_roas_or_cpa" not in missing_read_contracts
     ):
-        errors.append("confirm_ads_target_guardrails requires target_roas_or_cpa missing.")
+        errors.append(missing(subject, "informacji o brakującym celu biznesowym"))
     required_validation = payload.get("required_validation")
     if (
         not isinstance(required_validation, list)
         or "confirm_target_roas_or_cpa" not in required_validation
     ):
-        errors.append("confirm_ads_target_guardrails requires target confirmation validation.")
+        errors.append(missing(subject, "sprawdzenia celu przez człowieka"))
     if payload.get("apply_allowed") is not False:
-        errors.append("confirm_ads_target_guardrails must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("confirm_ads_target_guardrails must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     if not isinstance(payload.get("helper_commands"), list):
-        errors.append("confirm_ads_target_guardrails requires helper_commands list.")
+        errors.append(missing(subject, "instrukcji pomocniczych"))
     return errors
 
 
 def validate_ads_strategy_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd strategii Google Ads"
     if payload.get("connector") != "google_ads":
-        errors.append("record_ads_strategy_review requires connector=google_ads.")
+        errors.append(wrong(subject, "dotyczy tylko Google Ads"))
     if payload.get("mode") != "prepare_only":
-        errors.append("record_ads_strategy_review requires mode=prepare_only.")
+        errors.append(wrong(subject, "musi pozostać etapem przygotowania"))
     if not isinstance(payload.get("current_context"), dict):
-        errors.append("record_ads_strategy_review requires current_context.")
+        errors.append(missing(subject, "obecnego kontekstu biznesowego"))
     required_validation = payload.get("required_validation")
     if (
         not isinstance(required_validation, list)
         or "record_human_strategy_review_outcome" not in required_validation
     ):
-        errors.append("record_ads_strategy_review requires strategy review validation.")
+        errors.append(missing(subject, "sprawdzenia strategii przez człowieka"))
     if payload.get("apply_allowed") is not False:
-        errors.append("record_ads_strategy_review must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("record_ads_strategy_review must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     return errors

@@ -3,6 +3,16 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    missing_review_check,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.schemas import MetricFact
 
 CHANGE_HISTORY_IMPACT_ACTION_ID = "act_review_ads_change_history_impact"
@@ -80,49 +90,47 @@ def change_history_impact_payload_from_metric_facts(
 
 def validate_change_history_impact_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd wpływu zmian w Google Ads"
     if not payload.get("evidence_ids"):
-        errors.append("Change history impact payload requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     if payload.get("preview_contract") != CHANGE_HISTORY_IMPACT_PREVIEW_CONTRACT:
-        errors.append("Change history impact payload requires preview contract.")
+        errors.append(missing(subject, "poprawnego kontraktu podglądu"))
     if payload.get("operation_type") != CHANGE_HISTORY_IMPACT_OPERATION_TYPE:
-        errors.append("Change history impact payload requires operation type.")
+        errors.append(missing(subject, "poprawnego typu operacji"))
     if payload.get("apply_allowed") is not False:
-        errors.append("Change history impact payload must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("Change history impact payload must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     if payload.get("api_mutation_ready") is not False:
-        errors.append("Change history impact payload must not be API-mutation ready.")
+        errors.append(no_api_write(subject))
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
-        errors.append("Change history impact payload requires required_validation list.")
+        errors.append(missing(subject, "listy wymaganych sprawdzeń"))
     else:
         for required_check in CHANGE_HISTORY_IMPACT_REQUIRED_VALIDATION:
             if required_check not in required_validation:
-                errors.append(f"Change history impact payload requires {required_check}.")
+                errors.append(missing_review_check(subject))
     previews = payload.get("change_history_preview")
     if not isinstance(previews, list) or not previews:
-        errors.append("Change history impact payload requires change_history_preview.")
+        errors.append(missing(subject, "podglądu historii zmian"))
         return errors
     for index, preview in enumerate(previews):
+        preview_subject = row("Podgląd historii zmian", index)
         if not isinstance(preview, dict):
-            errors.append(f"Change history preview item {index} must be object.")
+            errors.append(wrong(preview_subject, "ma nieprawidłową strukturę"))
             continue
         if preview.get("operation_type") != CHANGE_HISTORY_IMPACT_OPERATION_TYPE:
-            errors.append(f"Change history preview item {index} requires operation type.")
+            errors.append(missing(preview_subject, "poprawnego typu operacji"))
         if not preview.get("change_event_id"):
-            errors.append(f"Change history preview item {index} requires change_event_id.")
+            errors.append(missing(preview_subject, "identyfikatora zmiany"))
         if not preview.get("evidence_ids"):
-            errors.append(f"Change history preview item {index} requires evidence IDs.")
+            errors.append(missing_evidence(preview_subject))
         if preview.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Change history preview item {index} must not be API-mutation ready."
-            )
+            errors.append(no_api_write(preview_subject))
         if preview.get("apply_allowed") is not False:
-            errors.append(
-                f"Change history preview item {index} must keep apply_allowed=false."
-            )
+            errors.append(no_write(preview_subject))
         if preview.get("destructive") is not False:
-            errors.append(f"Change history preview item {index} must be non-destructive.")
+            errors.append(no_destructive_change(preview_subject))
     return errors
 
 

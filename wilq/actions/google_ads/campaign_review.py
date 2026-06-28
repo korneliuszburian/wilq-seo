@@ -10,6 +10,16 @@ from wilq.actions.google_ads.business_context import (
     ads_float_env,
     ads_int_env,
 )
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    missing_review_check,
+    no_api_write,
+    no_destructive_change,
+    no_write,
+    row,
+    wrong,
+)
 from wilq.actions.google_ads.campaign_triage import (
     campaign_review_gates,
     campaign_review_priority,
@@ -57,11 +67,13 @@ CAMPAIGN_REVIEW_REQUIRED_VALIDATION = [
 
 def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Przegląd kampanii Google Ads"
     if not payload.get("campaign_candidates"):
-        errors.append("Campaign review payload requires evidence-backed campaign candidates.")
+        errors.append(missing(subject, "kampanii do sprawdzenia opartych na dowodach"))
     for index, candidate in enumerate(payload.get("campaign_candidates", [])):
+        candidate_subject = row("Kampania do sprawdzenia", index)
         if not isinstance(candidate, dict):
-            errors.append(f"Campaign candidate {index} must be object.")
+            errors.append(wrong(candidate_subject, "ma nieprawidłową strukturę"))
             continue
         for key in (
             "review_priority",
@@ -71,27 +83,27 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             "target_context",
         ):
             if key not in candidate:
-                errors.append(f"Campaign candidate {index} requires {key}.")
+                errors.append(missing(candidate_subject, "kompletu informacji do decyzji"))
         if not isinstance(candidate.get("human_review_gates"), list):
-            errors.append(f"Campaign candidate {index} requires human_review_gates list.")
+            errors.append(missing(candidate_subject, "listy sprawdzeń człowieka"))
         if not isinstance(candidate.get("target_context"), dict):
-            errors.append(f"Campaign candidate {index} requires target_context object.")
+            errors.append(missing(candidate_subject, "kontekstu celu kampanii"))
     if not payload.get("evidence_ids"):
-        errors.append("Campaign review payload requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     if payload.get("apply_allowed") is not False:
-        errors.append("Campaign review payload must keep apply_allowed=false.")
+        errors.append(no_write(subject))
     if payload.get("destructive") is not False:
-        errors.append("Campaign review payload must be non-destructive.")
+        errors.append(no_destructive_change(subject))
     required_validation = payload.get("required_validation")
     if not isinstance(required_validation, list):
-        errors.append("Campaign review payload requires required_validation list.")
+        errors.append(missing(subject, "listy wymaganych sprawdzeń"))
         return errors
     for required_check in CAMPAIGN_REVIEW_REQUIRED_VALIDATION:
         if required_check not in required_validation:
-            errors.append(f"Campaign review payload requires {required_check}.")
+            errors.append(missing_review_check(subject))
     preview_items = payload.get("budget_payload_preview")
     if not isinstance(preview_items, list):
-        errors.append("Campaign review payload requires budget operation preview list.")
+        errors.append(missing(subject, "podglądu zmian budżetu"))
         return errors
     candidates_with_budget = [
         candidate
@@ -101,47 +113,34 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
         and candidate["budget_context"].get("budget_amount_micros") is not None
     ]
     if candidates_with_budget and not preview_items:
-        errors.append("Campaign review payload requires budget preview for budget facts.")
+        errors.append(missing(subject, "podglądu budżetu dla kampanii z danymi budżetowymi"))
     for index, item in enumerate(preview_items):
+        item_subject = row("Podgląd zmiany budżetu", index)
         if not isinstance(item, dict):
-            errors.append(f"Budget operation preview item {index} must be object.")
+            errors.append(wrong(item_subject, "ma nieprawidłową strukturę"))
             continue
         if item.get("operation_type") != "CampaignBudgetOperation":
-            errors.append(
-                f"Budget operation preview item {index} must use CampaignBudgetOperation."
-            )
+            errors.append(wrong(item_subject, "ma nieprawidłowy typ operacji"))
         if item.get("apply_allowed") is not False:
-            errors.append(f"Budget operation preview item {index} must keep apply_allowed=false.")
+            errors.append(no_write(item_subject))
         if item.get("destructive") is not False:
-            errors.append(f"Budget operation preview item {index} must be non-destructive.")
+            errors.append(no_destructive_change(item_subject))
         if item.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Budget operation preview item {index} must not be API-mutation ready."
-            )
+            errors.append(no_api_write(item_subject))
         if not item.get("evidence_ids"):
-            errors.append(f"Budget operation preview item {index} requires evidence IDs.")
+            errors.append(missing_evidence(item_subject))
         safety_review = item.get("safety_review")
         if not isinstance(safety_review, dict):
-            errors.append(f"Budget operation preview item {index} requires safety_review.")
+            errors.append(missing(item_subject, "sprawdzenia bezpieczeństwa budżetu"))
             continue
         if safety_review.get("safety_contract") != "campaign_budget_apply_safety_v1":
-            errors.append(
-                f"Budget operation preview item {index} requires campaign budget safety contract."
-            )
+            errors.append(missing(item_subject, "poprawnego sprawdzenia bezpieczeństwa budżetu"))
         if safety_review.get("apply_allowed") is not False:
-            errors.append(
-                f"Budget operation preview item {index} safety review must keep "
-                "apply_allowed=false."
-            )
+            errors.append(no_write(f"{item_subject}, sprawdzenie bezpieczeństwa"))
         if safety_review.get("api_mutation_ready") is not False:
-            errors.append(
-                f"Budget operation preview item {index} safety review must not "
-                "be API-mutation ready."
-            )
+            errors.append(no_api_write(f"{item_subject}, sprawdzenie bezpieczeństwa"))
         if safety_review.get("destructive") is not False:
-            errors.append(
-                f"Budget operation preview item {index} safety review must be non-destructive."
-            )
+            errors.append(no_destructive_change(f"{item_subject}, sprawdzenie bezpieczeństwa"))
     return errors
 
 

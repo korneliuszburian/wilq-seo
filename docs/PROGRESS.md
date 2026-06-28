@@ -30,6 +30,10 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Action validation errors for Ads, GA4 and Localo now use source-owned Polish
+  operator copy instead of English/technical `payload`, `requires`,
+  `apply_allowed` or mutation-readiness wording. Focused tests guard this
+  against regression.
 - Primary navigation and touched route headings use marketer-readable Polish:
   `Centrum pracy`, `Merchant`, `Treści`, `Google Ads`, `GA4`, `Procesy`,
   `Szanse`, `Akcje`, `Baza wiedzy`.

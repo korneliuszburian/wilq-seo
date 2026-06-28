@@ -3,6 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.validation_copy import (
+    missing,
+    missing_evidence,
+    no_api_write,
+    no_write,
+    wrong,
+)
 from wilq.schemas import MetricFact
 
 CUSTOM_SEGMENT_ACTION_ID = "act_prepare_custom_segments_from_search_terms"
@@ -27,17 +34,18 @@ CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION = [
 
 def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    subject = "Segment niestandardowy Google Ads"
     if not payload.get("terms"):
-        errors.append("Custom segment payload requires real evidence-backed terms.")
+        errors.append(missing(subject, "haseł opartych na dowodach"))
     if payload.get("invented_terms") is True:
-        errors.append("Custom segment payload must not contain invented terms.")
+        errors.append(wrong(subject, "nie może zawierać wymyślonych haseł"))
     if not payload.get("evidence_ids"):
-        errors.append("Custom segment payload requires evidence IDs.")
+        errors.append(missing_evidence(subject))
     preview = payload.get("payload_preview")
     if not isinstance(preview, list) or not preview:
-        errors.append("Custom segment validation requires a non-mutating preview list.")
+        errors.append(missing(subject, "bezpiecznego podglądu zmian"))
     elif any(item.get("apply_allowed") is not False for item in preview if isinstance(item, dict)):
-        errors.append("Custom segment podgląd zmian must keep apply_allowed=false.")
+        errors.append(no_write(f"{subject}, podgląd zmian"))
     else:
         for item in preview:
             if not isinstance(item, dict):
@@ -45,43 +53,31 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
             targeting_preview = item.get("targeting_preview")
             safety_review = item.get("safety_review")
             if not isinstance(safety_review, dict):
-                errors.append("Custom segment preview requires safety_review before zapis zmian.")
+                errors.append(missing(f"{subject}, podgląd zmian", "sprawdzenia bezpieczeństwa"))
             else:
                 if safety_review.get("apply_allowed") is not False:
-                    errors.append(
-                        "Custom segment safety review must keep apply_allowed=false."
-                    )
+                    errors.append(no_write(f"{subject}, sprawdzenie bezpieczeństwa"))
                 if safety_review.get("api_mutation_ready") is not False:
-                    errors.append(
-                        "Custom segment safety review must keep "
-                        "api_mutation_ready=false."
-                    )
+                    errors.append(no_api_write(f"{subject}, sprawdzenie bezpieczeństwa"))
                 if safety_review.get("safety_contract") != (
                     CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT
                 ):
-                    errors.append(
-                        "Custom segment safety review must use "
-                        "custom_segment_apply_safety_v1."
-                    )
+                    errors.append(missing(f"{subject}, sprawdzenie bezpieczeństwa", "poprawnej kontroli segmentu"))
             if not isinstance(targeting_preview, list) or not targeting_preview:
-                errors.append(
-                    "Custom segment podgląd zmian requires targeting_preview."
-                )
+                errors.append(missing(f"{subject}, podgląd zmian", "sprawdzenia kierowania"))
                 continue
             if any(
                 target.get("apply_allowed") is not False
                 for target in targeting_preview
                 if isinstance(target, dict)
             ):
-                errors.append("Custom segment targeting preview must keep apply_allowed=false.")
+                errors.append(no_write(f"{subject}, sprawdzenie kierowania"))
             if any(
                 target.get("api_mutation_ready") is not False
                 for target in targeting_preview
                 if isinstance(target, dict)
             ):
-                errors.append(
-                    "Custom segment targeting preview must keep api_mutation_ready=false."
-                )
+                errors.append(no_api_write(f"{subject}, sprawdzenie kierowania"))
     return errors
 
 
