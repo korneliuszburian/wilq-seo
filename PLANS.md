@@ -947,3 +947,8 @@ WILQ is complete for this long-range goal when:
   marketer language guard, live API `*_label` scan and `git diff --check`
   passed after hydrating campaign status/channel labels at the shared schema
   boundary and guarding against empty/raw visible operator labels.
+- Latest Content source-label proof: focused API/schema/dashboard tests,
+  dashboard typecheck, live contract smoke, marketer language guard and
+  browser text proof passed after moving content refresh/source connector
+  labels to API contracts and removing Content Planner's local connector-ID
+  mapping.

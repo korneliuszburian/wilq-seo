@@ -1441,6 +1441,14 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
 
     assert source_connector_label(unknown_connector) == "źródło danych do sprawdzenia"
     assert source_connector_labels([unknown_connector]) == ["źródło danych do sprawdzenia"]
+    connector_run = ConnectorRefreshRun(
+        id="refresh_test",
+        connector_id=unknown_connector,
+        mode=ConnectorRefreshMode.status_probe,
+        status=ConnectorRefreshStatus.completed,
+        summary="Testowy odczyt.",
+    )
+    assert connector_run.connector_label == "źródło danych do sprawdzenia"
     assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == (
         "odczyt zakończony"
     )
@@ -14749,6 +14757,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
 
     assert diagnostics.live_data_available is False
     assert all(connector.status_label for connector in diagnostics.connectors)
+    assert all(refresh.connector_label for refresh in diagnostics.latest_refreshes)
     assert len(diagnostics.decision_queue) == 1
     decision = diagnostics.decision_queue[0]
     assert decision.id == "content_block_vendor_read"
@@ -14757,6 +14766,10 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert decision.source_connectors == [
         "google_search_console",
         "wordpress_ekologus",
+    ]
+    assert decision.source_connector_labels == [
+        "Google Search Console",
+        "WordPress ekologus.pl",
     ]
     assert decision.evidence_ids == [
         "ev_connector_google_search_console_status",
@@ -14768,6 +14781,10 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert "rekomendacja bez danych źródłowych" in decision.blocked_claims
     assert "odczyt danych" in decision.next_step
     assert diagnostics.operator_summary.top_decision_ids == [decision.id]
+    assert diagnostics.operator_summary.source_connector_labels == [
+        "Google Search Console",
+        "WordPress ekologus.pl",
+    ]
     assert diagnostics.operator_summary.blocked_claim_labels
     assert "blokada do czasu odczytu danych" in (
         diagnostics.operator_summary.decision_type_labels
@@ -14775,6 +14792,10 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert diagnostics.marketer_decision is not None
     assert diagnostics.marketer_decision.technical_decision_id == decision.id
     assert diagnostics.marketer_decision.status == "blocked"
+    assert diagnostics.marketer_decision.source_connector_labels == [
+        "Google Search Console",
+        "WordPress ekologus.pl",
+    ]
     assert "GSC" in diagnostics.marketer_decision.decision
     assert "automatyczna publikacja" in diagnostics.marketer_decision.blocked_claims
     assert all("_" not in value for value in diagnostics.marketer_decision.missing_inputs)
@@ -14783,6 +14804,10 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert preflight.primary_item is not None
     assert preflight.primary_item.recommended_mode == "block"
     assert preflight.primary_item.status == "blocked"
+    assert preflight.primary_item.source_connector_labels == [
+        "Google Search Console",
+        "WordPress ekologus.pl",
+    ]
     assert preflight.primary_item.create_allowed is False
     assert preflight.primary_item.draft_allowed is False
     assert preflight.primary_item.wordpress_draft_allowed is False
@@ -14946,6 +14971,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert payload["language"] == "pl-PL"
     assert all(connector["status_label"] for connector in payload["connectors"])
     assert all(refresh["status_label"] for refresh in payload["latest_refreshes"])
+    assert all(refresh["connector_label"] for refresh in payload["latest_refreshes"])
     assert payload["live_data_available"] is True
     assert payload["live_data_status_label"] == "dane GSC i WordPress dostępne"
     assert payload["query_page_count"] >= 1
@@ -15004,6 +15030,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any(key.startswith("mapping_review_") for key in operator_summary)
     assert not any(key.startswith("transition_candidate") for key in operator_summary)
     assert "odświeżenie albo scalenie" in operator_summary["decision_type_labels"]
+    assert operator_summary["source_connector_labels"]
+    assert not any("_" in value for value in operator_summary["source_connector_labels"])
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
     assert operator_summary["evidence_summary_label"]
     assert "akcj" in operator_summary["action_summary_label"]
@@ -15025,6 +15053,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert marketer_decision["source_facts"]
     assert marketer_decision["evidence_summary"]
     assert marketer_decision["source_connectors"]
+    assert marketer_decision["source_connector_labels"]
+    assert not any("_" in value for value in marketer_decision["source_connector_labels"])
     assert marketer_decision["evidence_ids"]
     assert marketer_decision["measurement_plan"]
     if marketer_decision["source_public_url"]:
@@ -15049,6 +15079,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         if decision["decision_type"] == "refresh_or_merge"
     )
     assert first_decision["decision_type"] == "refresh_or_merge"
+    assert first_decision["source_connector_labels"]
+    assert not any("_" in value for value in first_decision["source_connector_labels"])
     assert all(fact["metric_label"] for fact in first_decision["metric_facts"])
     assert first_decision["status"] == "ready"
     assert first_decision["priority"] == 23
@@ -15125,6 +15157,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         if item["technical_decision_id"] == first_decision["id"]
     )
     assert preflight_payload["primary_item"] == preflight_item
+    assert preflight_payload["source_connector_labels"]
+    assert not any("_" in value for value in preflight_payload["source_connector_labels"])
     assert preflight_item["recommended_mode"] == "refresh"
     assert preflight_item["recommended_mode_label"] == "odświeżyć"
     assert preflight_item["status"] == "review_required"
@@ -15134,6 +15168,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert preflight_item["wordpress_draft_allowed"] is False
     assert preflight_item["sales_brief_allowed"] is True
     assert preflight_item["evidence_summary_label"]
+    assert preflight_item["source_connector_labels"] == first_decision[
+        "source_connector_labels"
+    ]
     assert preflight_item["source_public_url"] == first_decision["source_public_url"]
     assert preflight_item["final_canonical_url"] == first_decision["final_canonical_url"]
     assert preflight_item["preview_url"] is None
@@ -15200,6 +15237,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "Wspólne sygnały: GSC: zielony ład" in zielony_lad_candidate["next_step"]
     assert "branża.example" not in json.dumps(ahrefs_decision["ahrefs_candidate_rows"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
+    assert ahrefs_decision["source_connector_labels"] == ["Ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
     assert "act_prepare_content_refresh_queue" in ahrefs_decision["action_ids"]
     assert ahrefs_decision["knowledge_card_ids"] == [

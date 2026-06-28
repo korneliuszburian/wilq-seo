@@ -400,6 +400,9 @@ def build_content_preflight(
     diagnostics = diagnostics or build_content_diagnostics()
     items = [_content_preflight_item(decision) for decision in diagnostics.decision_queue]
     primary_item = next((item for item in items if item.status != "blocked"), None)
+    source_connectors = _unique(
+        connector for item in items for connector in item.source_connectors
+    )
     return ContentPreflightResponse(
         strict_instruction=(
             "Bramka pisania działa przed planem treści i szkicem. Nie wolno pisać "
@@ -409,9 +412,8 @@ def build_content_preflight(
         primary_item=primary_item or (items[0] if items else None),
         items=items,
         evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
-        source_connectors=_unique(
-            connector for item in items for connector in item.source_connectors
-        ),
+        source_connectors=source_connectors,
+        source_connector_labels=source_connector_labels(source_connectors),
         blocker_count=sum(1 for item in items if item.status == "blocked"),
     )
 
@@ -1309,7 +1311,10 @@ def _content_connector_with_api_label(connector: ConnectorStatus) -> ConnectorSt
 
 def _content_refresh_with_api_label(refresh: ConnectorRefreshRun) -> ConnectorRefreshRun:
     return refresh.model_copy(
-        update={"status_label": _content_refresh_status_label(str(refresh.status))}
+        update={
+            "connector_label": source_connector_label(refresh.connector_id),
+            "status_label": _content_refresh_status_label(str(refresh.status)),
+        }
     )
 
 

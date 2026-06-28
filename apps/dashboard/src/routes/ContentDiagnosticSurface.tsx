@@ -6,13 +6,11 @@ import {
   ActionObject,
   ContentDiagnosticsResponse,
   ContentPreflightResponse,
-  ConnectorStatus,
   getActions,
   getContentDiagnostics,
   getContentPreflight,
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
-import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import { formatContentMetricValue } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
@@ -55,8 +53,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
   const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
   const latestStatuses = data.latest_refreshes.map((refresh) => {
-    const [label] = connectorLabelsFromStatuses([refresh.connector_id], data.connectors);
-    return `${label}: ${refresh.status_label}`;
+    return `${refresh.connector_label}: ${refresh.status_label}`;
   });
 
   return (
@@ -477,8 +474,8 @@ function ContentSelectedDecisionPanel({
     ...(primaryDecision?.canonical_gate_status_label ? [primaryDecision.canonical_gate_status_label] : []),
     ...(primaryDecision?.duplicate_gate_status_label ? [primaryDecision.duplicate_gate_status_label] : [])
   ]);
-  const sourceConnectors = uniqueValues([
-    ...(primaryDecision?.source_connectors ?? [])
+  const sourceConnectorLabels = uniqueValues([
+    ...(primaryDecision?.source_connector_labels ?? [])
   ]);
   const marketerDecision = data.marketer_decision;
   const panelBlockedClaims = marketerDecision?.blocked_claims ?? blockedClaims;
@@ -487,10 +484,10 @@ function ContentSelectedDecisionPanel({
     marketerDecision?.evidence_summary ??
     primaryDecision?.evidence_summary_label ??
     "brak dowodów źródłowych";
-  const panelSourceConnectors = connectorLabelsFromStatuses(
-    marketerDecision?.source_connectors ?? sourceConnectors,
-    data.connectors
-  );
+  const panelSourceConnectors =
+    marketerDecision?.source_connector_labels?.length
+      ? marketerDecision.source_connector_labels
+      : sourceConnectorLabels;
   const panelMeasurementPlan =
     marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan();
 
@@ -673,7 +670,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="grid gap-3">
           {topDecisions.length > 0 ? (
             topDecisions.map((decision) => (
-              <ContentDecisionCard key={decision.id} decision={decision} connectors={data.connectors} />
+              <ContentDecisionCard key={decision.id} decision={decision} />
             ))
           ) : (
             <BlockerNotice message="Brak decyzji contentowych. Najpierw uruchom odczyt GSC i WordPress." />
@@ -731,11 +728,9 @@ function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
 }
 
 function ContentDecisionCard({
-  decision,
-  connectors
+  decision
 }: {
   decision: ContentDecisionItem;
-  connectors: ConnectorStatus[];
 }) {
   const canonicalUrl = decision.final_canonical_url ?? decision.intended_final_url;
   return (
@@ -863,7 +858,7 @@ function ContentDecisionCard({
           values={[decision.evidence_summary_label]}
           empty="brak"
         />
-        <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectors)} />
+        <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine label="Akcje" values={[decision.action_summary_label]} />
         <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>

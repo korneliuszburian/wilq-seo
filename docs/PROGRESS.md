@@ -215,6 +215,21 @@ Date: 2026-06-29
 
 Most recent verified local slice:
 
+- Content source-label cleanup: connector refresh runs now expose
+  API-owned `connector_label`, content diagnostics/preflight decision objects
+  expose `source_connector_labels`, and Content Planner no longer maps
+  connector IDs in React.
+  Verification:
+  - `rtk uv run pytest tests/test_api_contracts.py::test_operator_label_fallbacks_do_not_expose_raw_connector_ids tests/test_api_contracts.py::test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q`
+  - `rtk pnpm --dir apps/dashboard typecheck`
+  - `rtk pnpm --dir apps/dashboard test src/routes/ContentDiagnosticSurface.test.ts src/routes/App.test.tsx --pool forks --poolOptions.forks.singleFork`
+  - `rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000`
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `agent-browser` text proof for `/content-planner`
+  - `rtk git diff --check`
+
+Previous verified local slice:
+
 - Ads enum-label cleanup: Google Ads campaign rows hydrate Polish campaign
   status/channel labels, live API scans across core endpoints found no empty or
   raw visible `*_label` fields, and `live_contract_smoke.py` now guards visible

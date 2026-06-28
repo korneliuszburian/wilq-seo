@@ -240,6 +240,9 @@ are resolved or explicitly deferred.
    copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
+   Latest done slice: Content refresh runs and content diagnostics/preflight
+   decisions now expose source labels from API contracts, and Content Planner no
+   longer maps connector IDs in React.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
    have typed-preview-card coverage.

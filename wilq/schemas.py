@@ -29,6 +29,8 @@ from wilq.operator_labels import (
     required_evidence_count_label,
     source_connector_summary_label,
     source_contract_count_label,
+    source_connector_label,
+    source_connector_labels,
     source_lineage_count_label,
 )
 
@@ -194,6 +196,7 @@ class ConnectorRefreshRequest(BaseModel):
 class ConnectorRefreshRun(BaseModel):
     id: str
     connector_id: str
+    connector_label: str = ""
     mode: ConnectorRefreshMode
     status: ConnectorRefreshStatus
     status_label: str = ""
@@ -212,6 +215,8 @@ class ConnectorRefreshRun(BaseModel):
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> ConnectorRefreshRun:
+        if not self.connector_label:
+            self.connector_label = source_connector_label(self.connector_id)
         if not self.status_label:
             self.status_label = connector_refresh_status_label(self.status)
         if not self.evidence_summary_label:
@@ -3732,6 +3737,7 @@ class ContentDecisionItem(BaseModel):
     duplicate_gate_status_label: str | None = None
     content_gate_summary: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
@@ -3746,6 +3752,12 @@ class ContentDecisionItem(BaseModel):
     next_step: str
     risk: ActionRisk = ActionRisk.low
 
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ContentDecisionItem:
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        return self
+
 
 class ContentOperatorSummary(BaseModel):
     id: Literal["content_operator_summary"] = "content_operator_summary"
@@ -3758,12 +3770,19 @@ class ContentOperatorSummary(BaseModel):
     current_site_match_count: int = 0
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ContentOperatorSummary:
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        return self
 
 
 class ContentMarketerDecision(BaseModel):
@@ -3785,12 +3804,19 @@ class ContentMarketerDecision(BaseModel):
     missing_inputs: list[str] = Field(default_factory=list)
     evidence_summary: str
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     measurement_plan: str
     source_public_url: str | None = None
     preview_url: str | None = None
     intended_final_url: str | None = None
     final_canonical_url: str | None = None
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ContentMarketerDecision:
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        return self
 
 
 class ContentPreflightItem(BaseModel):
@@ -3825,7 +3851,14 @@ class ContentPreflightItem(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ContentPreflightItem:
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        return self
 
 
 class ContentPreflightResponse(BaseModel):
@@ -3836,7 +3869,14 @@ class ContentPreflightResponse(BaseModel):
     items: list[ContentPreflightItem] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
+    source_connector_labels: list[str] = Field(default_factory=list)
     blocker_count: int = 0
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> ContentPreflightResponse:
+        if not self.source_connector_labels:
+            self.source_connector_labels = source_connector_labels(self.source_connectors)
+        return self
 
 
 class ContentDiagnosticsResponse(BaseModel):

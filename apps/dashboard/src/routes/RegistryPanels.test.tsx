@@ -127,6 +127,7 @@ describe("RegistryPanels", () => {
           ({
             id: "refresh_google_ads_test",
             connector_id: "google_ads",
+            connector_label: "Google Ads",
             mode: "vendor_read",
             status: "completed",
             status_label: "zakończony",

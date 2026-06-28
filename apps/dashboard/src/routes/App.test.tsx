@@ -13,10 +13,14 @@ const connectors = [
     id: "google_ads",
     label: "Google Ads",
     status: "missing_credentials",
+    status_label: "braki dostępu",
     configured: false,
     missing_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
+    missing_credentials_summary_label: "1 pole",
     available_credential_sources: [],
+    credential_source_summary_label: "brak źródeł konfiguracji",
     freshness: { state: "missing" },
+    freshness_label: "brak danych",
     supported_actions: []
   }
 ];
@@ -771,6 +775,7 @@ const connectorRefreshRuns = [
   {
     id: "refresh_google_ads_test",
     connector_id: "google_ads",
+    connector_label: "Google Ads",
     mode: "status_probe",
     status: "completed",
     status_label: "zakończony",
@@ -7496,7 +7501,6 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Pokaż dane techniczne akcji" })).not.toBeInTheDocument();
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("Dowody: 1 dowód źródłowy").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();

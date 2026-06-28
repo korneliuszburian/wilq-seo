@@ -77,6 +77,7 @@ export const EvidenceSchema = z.object({
 export const ConnectorRefreshRunSchema = z.object({
   id: z.string(),
   connector_id: z.string(),
+  connector_label: z.string().default(""),
   mode: z.enum(["status_probe", "vendor_read"]),
   status: z.enum(["completed", "blocked", "failed"]),
   status_label: z.string().default(""),
@@ -2196,6 +2197,7 @@ export const ContentDecisionItemSchema = z.object({
   duplicate_gate_status_label: z.string().nullable().optional(),
   content_gate_summary: z.string().nullable().optional(),
   source_connectors: z.array(z.string()),
+  source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
@@ -2248,6 +2250,7 @@ export const ContentOperatorSummarySchema = z.object({
   current_site_match_count: z.number(),
   decision_type_labels: z.array(z.string()),
   source_connectors: z.array(z.string()),
+  source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
@@ -2275,6 +2278,7 @@ export const ContentMarketerDecisionSchema = z.object({
   missing_inputs: z.array(z.string()).default([]),
   evidence_summary: z.string(),
   source_connectors: z.array(z.string()).default([]),
+  source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).default([]),
   measurement_plan: z.string(),
   source_public_url: z.string().nullable().optional(),
@@ -2337,6 +2341,7 @@ export const ContentPreflightItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   source_connectors: z.array(z.string()),
+  source_connector_labels: z.array(z.string()).default([]),
   next_step: z.string()
 });
 
@@ -2348,6 +2353,7 @@ export const ContentPreflightResponseSchema = z.object({
   items: z.array(ContentPreflightItemSchema),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string()),
+  source_connector_labels: z.array(z.string()).default([]),
   blocker_count: z.number()
 });
 
