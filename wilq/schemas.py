@@ -3169,9 +3169,11 @@ class ContentDiagnosticSection(BaseModel):
     next_step: str
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -3247,9 +3249,11 @@ class ContentDecisionItem(BaseModel):
     content_gate_summary: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     ahrefs_candidate_rows: list[ContentAhrefsCandidateRow] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     knowledge_card_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -3271,7 +3275,9 @@ class ContentOperatorSummary(BaseModel):
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
@@ -3333,6 +3339,7 @@ class ContentPreflightItem(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     missing_inputs: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     next_step: str
 
@@ -3365,6 +3372,7 @@ class ContentDiagnosticsResponse(BaseModel):
     evidence_summary_label: str = ""
     source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    action_summary_label: str = ""
     blocker_count: int = 0
 
 

@@ -15,6 +15,7 @@ from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
+    action_count_label,
     evidence_count_label,
     source_connector_label,
     source_connector_labels,
@@ -387,6 +388,7 @@ def build_content_diagnostics(
         evidence_summary_label=evidence_count_label(evidence_ids),
         source_connector_labels=source_connector_labels(response_source_connectors),
         action_ids=action_ids,
+        action_summary_label=action_count_label(action_ids),
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
 
@@ -458,7 +460,15 @@ def _operator_summary(
             for decision in top_decisions
             for evidence_id in decision.evidence_ids
         ),
+        evidence_summary_label=evidence_count_label(
+            _unique(
+                evidence_id
+                for decision in top_decisions
+                for evidence_id in decision.evidence_ids
+            )
+        ),
         action_ids=action_ids,
+        action_summary_label=action_count_label(action_ids),
         blocked_claims=_unique(
             claim for section in sections for claim in section.blocked_claims
         ),
@@ -571,6 +581,7 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
         blocked_claims=_content_marketer_blocked_claims(decision.blocked_claims),
         missing_inputs=missing_inputs,
         evidence_ids=decision.evidence_ids,
+        evidence_summary_label=evidence_count_label(decision.evidence_ids),
         source_connectors=decision.source_connectors,
         next_step=_content_preflight_next_step(decision, recommended_mode, status),
     )
@@ -1272,6 +1283,8 @@ def _content_decision_with_api_labels(decision: ContentDecisionItem) -> ContentD
     return decision.model_copy(
         update={
             "decision_type_label": _content_decision_type_summary_label(decision.decision_type),
+            "evidence_summary_label": evidence_count_label(decision.evidence_ids),
+            "action_summary_label": action_count_label(decision.action_ids),
             "wordpress_match_label": _content_wordpress_match_label(decision.wordpress_match),
             "wordpress_match_confidence_label": _content_wordpress_match_confidence_label(
                 decision.wordpress_match_confidence
@@ -1307,6 +1320,8 @@ def _content_section_with_api_labels(
             "metric_facts": [
                 _content_metric_fact_with_api_label(fact) for fact in section.metric_facts
             ],
+            "evidence_summary_label": evidence_count_label(section.evidence_ids),
+            "action_summary_label": action_count_label(section.action_ids),
             "blocked_claim_labels": _content_blocked_claim_labels(section.blocked_claims),
         }
     )

@@ -5183,7 +5183,9 @@ const contentDiagnostics = {
       "ev_refresh_gsc",
       "ev_refresh_wordpress_inventory"
     ],
+    evidence_summary_label: "3 dowody źródłowe",
     action_ids: ["act_prepare_content_refresh_queue"],
+    action_summary_label: "1 akcja do sprawdzenia",
     blocked_claims: [
       "wzrost liczby leadów",
       "obietnica wzrostu konwersji",
@@ -5238,8 +5240,10 @@ const contentDiagnostics = {
         "Spis treści potwierdza istniejący URL. WILQ traktuje to jako odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje zablokowana przed kontrolą duplikacji.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+      evidence_summary_label: "2 dowody źródłowe",
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       blocked_claim_labels: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       rationale:
@@ -5283,6 +5287,7 @@ const contentDiagnostics = {
       wordpress_content_url: null,
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_ahrefs_gap_records"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[6]],
       ahrefs_candidate_rows: [
         {
@@ -5323,6 +5328,7 @@ const contentDiagnostics = {
         }
       ],
       action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: [
         "rekomendacja treści poza zakresem",
         "plan treści bez kontroli trafności",
@@ -5354,9 +5360,11 @@ const contentDiagnostics = {
       next_step: "Otwórz najwyższe priorytety i sprawdź intencję oraz dopasowanie w WordPress.",
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc"],
+      evidence_summary_label: "1 dowód źródłowy",
       metric_facts: [metricFacts[5]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       risk: "low"
     },
@@ -5369,9 +5377,11 @@ const contentDiagnostics = {
       next_step: "Najpierw obsłuż potwierdzone odświeżenia i scalenia; nowe treści twórz po kontroli duplikacji.",
       source_connectors: ["wordpress_ekologus"],
       evidence_ids: ["ev_refresh_wordpress_inventory", "ev_refresh_gsc"],
+      evidence_summary_label: "2 dowody źródłowe",
       metric_facts: [metricFacts[0]],
       tactical_items: [tacticalQueue.items[1]],
       action_ids: ["act_prepare_content_refresh_queue"],
+      action_summary_label: "1 akcja do sprawdzenia",
       blocked_claims: ["nowa treść bez kontroli spisu treści"],
       risk: "low"
     }
@@ -5385,6 +5395,7 @@ const contentDiagnostics = {
   evidence_summary_label: "4 dowody źródłowe",
   source_connector_labels: ["Google Search Console", "WordPress ekologus.pl", "Ahrefs"],
   action_ids: ["act_prepare_content_refresh_queue"],
+  action_summary_label: "1 akcja do sprawdzenia",
   blocker_count: 0
 };
 
@@ -5422,6 +5433,7 @@ const contentPreflight = {
     blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+    evidence_summary_label: "2 dowody źródłowe",
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     next_step: "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
   },
@@ -5456,6 +5468,7 @@ const contentPreflight = {
       blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+      evidence_summary_label: "2 dowody źródłowe",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       next_step: "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
     }
@@ -8191,8 +8204,16 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("poprawna")).toBeInTheDocument();
     const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("action.preview_cards");
+    expect(routeSource).toContain("data.action_summary_label");
+    expect(routeSource).toContain("summary.evidence_summary_label");
+    expect(routeSource).toContain("summary.action_summary_label");
+    expect(routeSource).toContain("decision.evidence_summary_label");
+    expect(routeSource).toContain("decision.action_summary_label");
+    expect(routeSource).toContain("item.evidence_summary_label");
     expect(routeSource).not.toContain("action.payload.content_brief_preview");
     expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
+    expect(routeSource).not.toContain("formatContentEvidenceCount");
+    expect(routeSource).not.toContain("formatContentActionCount");
     expect(routeSource).not.toContain("decision.decision_type_label || decision.decision_type");
     expect(routeSource).not.toContain("decision.wordpress_match_label ?? decision.wordpress_match");
     expect(routeSource).not.toContain(

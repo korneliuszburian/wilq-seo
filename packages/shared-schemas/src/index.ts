@@ -2079,9 +2079,11 @@ export const ContentDiagnosticSectionSchema = z.object({
   next_step: z.string(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   tactical_items: z.array(TacticalQueueItemSchema),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -2130,6 +2132,7 @@ export const ContentDecisionItemSchema = z.object({
   content_gate_summary: z.string().nullable().optional(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   ahrefs_candidate_rows: z
     .array(
@@ -2161,6 +2164,7 @@ export const ContentDecisionItemSchema = z.object({
     )
     .default([]),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
   rationale: z.string(),
@@ -2180,7 +2184,9 @@ export const ContentOperatorSummarySchema = z.object({
   decision_type_labels: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([])
 });
@@ -2229,6 +2235,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   evidence_summary_label: z.string().default(""),
   source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
+  action_summary_label: z.string().default(""),
   blocker_count: z.number()
 });
 
@@ -2262,6 +2269,7 @@ export const ContentPreflightItemSchema = z.object({
   blocked_claims: z.array(z.string()),
   missing_inputs: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   source_connectors: z.array(z.string()),
   next_step: z.string()
 });

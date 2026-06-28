@@ -115,6 +115,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
       <ContentExpandableActionsPanel
         actions={routeActions}
         actionIds={data.action_ids}
+        actionSummaryLabel={data.action_summary_label}
         isLoading={actions.isLoading}
         isError={Boolean(actions.error)}
       />
@@ -207,11 +208,13 @@ function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsRespon
 function ContentExpandableActionsPanel({
   actions,
   actionIds,
+  actionSummaryLabel,
   isLoading,
   isError
 }: {
   actions: ActionObject[];
   actionIds: string[];
+  actionSummaryLabel: string;
   isLoading: boolean;
   isError: boolean;
 }) {
@@ -225,12 +228,12 @@ function ContentExpandableActionsPanel({
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {formatContentActionCount(actionIds.length)} dla Content.
+            WILQ ma {actionSummaryLabel} dla Treści.
             Otwórz je dopiero wtedy, gdy chcesz zapisać decyzję człowieka,
             wygenerować podgląd zmian albo sprawdzić warunki bezpiecznego zapisu.
           </p>
         </div>
-        <MetricTile label="Akcje" value={formatContentActionCount(actionIds.length)} />
+        <MetricTile label="Akcje" value={actionSummaryLabel} />
       </div>
 
       <button
@@ -341,7 +344,7 @@ function ContentPreflightPanel({
             />
             <TraceLine
               label="Dowody"
-              values={[formatContentEvidenceCount(item.evidence_ids.length)]}
+              values={[item.evidence_summary_label]}
             />
           </div>
         </div>
@@ -472,9 +475,6 @@ function ContentSelectedDecisionPanel({
     ...(primaryDecision?.canonical_gate_status_label ? [primaryDecision.canonical_gate_status_label] : []),
     ...(primaryDecision?.duplicate_gate_status_label ? [primaryDecision.duplicate_gate_status_label] : [])
   ]);
-  const evidenceIds = uniqueValues([
-    ...(primaryDecision?.evidence_ids ?? [])
-  ]);
   const sourceConnectors = uniqueValues([
     ...(primaryDecision?.source_connectors ?? [])
   ]);
@@ -482,7 +482,9 @@ function ContentSelectedDecisionPanel({
   const panelBlockedClaims = marketerDecision?.blocked_claims ?? blockedClaims;
   const panelMissingInputs = marketerDecision?.missing_inputs ?? missingInputs;
   const panelEvidenceSummary =
-    marketerDecision?.evidence_summary ?? formatContentEvidenceCount(evidenceIds.length);
+    marketerDecision?.evidence_summary ??
+    primaryDecision?.evidence_summary_label ??
+    "brak dowodów źródłowych";
   const panelSourceConnectors = connectorLabelsFromStatuses(
     marketerDecision?.source_connectors ?? sourceConnectors,
     data.connectors
@@ -695,10 +697,10 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             />
             <TraceLine
               label="Dowody"
-              values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
+              values={[summary.evidence_summary_label]}
               empty="brak"
             />
-            <TraceLine label="Akcje" values={[formatContentActionCount(actionIds.length)]} />
+            <TraceLine label="Akcje" values={[summary.action_summary_label]} />
             <TraceLine
               label="Nie wolno twierdzić"
               values={summary.blocked_claim_labels}
@@ -856,11 +858,11 @@ function ContentDecisionCard({
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine
           label="Dowody"
-          values={[formatContentEvidenceCount(decision.evidence_ids.length)]}
+          values={[decision.evidence_summary_label]}
           empty="brak"
         />
         <TraceLine label="Źródła" values={connectorLabelsFromStatuses(decision.source_connectors, connectors)} />
-        <TraceLine label="Akcje" values={[formatContentActionCount(decision.action_ids.length)]} />
+        <TraceLine label="Akcje" values={[decision.action_summary_label]} />
         <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claim_labels} />
       </div>
       {decision.metric_facts.length > 0 ? (
@@ -895,7 +897,7 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.title)} />
         <TraceLine label="Źródła danych" values={data.source_connector_labels} />
-        <TraceLine label="Akcje" values={[formatContentActionCount(data.action_ids.length)]} />
+        <TraceLine label="Akcje" values={[data.action_summary_label]} />
         <TraceLine
           label="Nie wolno twierdzić"
           values={data.sections.flatMap((section) => section.blocked_claim_labels)}
@@ -917,24 +919,6 @@ function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
       ))}
     </div>
   );
-}
-
-function formatContentEvidenceCount(count: number) {
-  if (count === 0) return "brak dowodów źródłowych";
-  if (count === 1) return "1 dowód źródłowy";
-  if (count >= 2 && count <= 4) return `${count} dowody źródłowe`;
-  return `${count} dowodów źródłowych`;
-}
-
-function formatContentActionCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 akcja";
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
-    return `${count} akcje`;
-  }
-  return `${count} akcji`;
 }
 
 function contentPreflightModeSentence(item: ContentPreflightItem) {

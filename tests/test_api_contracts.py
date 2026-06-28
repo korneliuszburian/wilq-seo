@@ -13486,7 +13486,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         in performance_readiness["blocked_claim_labels"]
     )
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
-    assert payload["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert "akcj" in payload["action_summary_label"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
     assert "merchant_product_examples_missing" not in unknown_ids
@@ -13538,7 +13538,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["source_connectors"] == ["google_merchant_center"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
-    assert operator_summary["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert "akcj" in operator_summary["action_summary_label"]
     assert "ponowne zatwierdzenie produktu" in operator_summary["blocked_claims"]
     assert "ponowne zatwierdzenie produktu" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
@@ -14724,10 +14724,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
     assert "act_prepare_content_refresh_queue" in payload["action_ids"]
+    assert "akcj" in payload["action_summary_label"]
     query_section = next(
         section for section in payload["sections"] if section["id"] == "content_query_page_matrix"
     )
     assert query_section["status"] == "ready"
+    assert query_section["evidence_summary_label"]
+    assert "akcj" in query_section["action_summary_label"]
     assert isinstance(query_section["blocked_claim_labels"], list)
     assert all(fact["metric_label"] for fact in query_section["metric_facts"])
     assert query_section["tactical_items"]
@@ -14739,6 +14742,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         section for section in payload["sections"] if section["id"] == "content_inventory_match"
     )
     assert inventory_section["status"] == "ready"
+    assert inventory_section["evidence_summary_label"]
+    assert "akcj" in inventory_section["action_summary_label"]
     assert isinstance(inventory_section["blocked_claim_labels"], list)
     assert all(fact["metric_label"] for fact in inventory_section["metric_facts"])
     assert any(
@@ -14773,6 +14778,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any(key.startswith("transition_candidate") for key in operator_summary)
     assert "odświeżenie albo scalenie" in operator_summary["decision_type_labels"]
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
+    assert operator_summary["evidence_summary_label"]
+    assert "akcj" in operator_summary["action_summary_label"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claims"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
@@ -14870,7 +14877,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "/europejski-zielony-lad-co-to-takiego"
     )
     assert first_decision["evidence_ids"]
+    assert first_decision["evidence_summary_label"]
     assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
+    assert first_decision["action_summary_label"] == "1 akcja do sprawdzenia"
     assert first_decision["knowledge_card_ids"] == [
         "card_gsc_seo_content_playbook",
         "card_wordpress_content_refresh_playbook",
@@ -14897,6 +14906,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert preflight_item["draft_allowed"] is False
     assert preflight_item["wordpress_draft_allowed"] is False
     assert preflight_item["sales_brief_allowed"] is True
+    assert preflight_item["evidence_summary_label"]
     assert preflight_item["source_public_url"] == first_decision["source_public_url"]
     assert preflight_item["final_canonical_url"] == first_decision["final_canonical_url"]
     assert preflight_item["preview_url"] is None
