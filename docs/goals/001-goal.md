@@ -101,6 +101,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   English evidence wording or action-model jargon in operator-facing output.
   The harness now fails final operator-facing JSON values that reintroduce
   those terms.
+- Daily and content-strategist context-pack tests now scan string values for
+  old working route names, stale content URL terms and technical jargon.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
@@ -199,10 +201,9 @@ are resolved or explicitly deferred.
    payload-derived panels.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
-7. Continue checking compacted context-packs after dashboard/API cleanup. The
-   skill eval harness now blocks old working route names and technical jargon
-   in operator-facing JSON values, but context-pack string values still need
-   periodic focused audits.
+7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
+   and content-strategist context packs now have string-value guards; extend
+   the same pattern when another skill context changes.
 8. Continue focused browser audits on remaining expanded route details. Any
    remaining long blocker/review lists must be condensed at API/domain source,
    not trimmed in React.

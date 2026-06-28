@@ -16874,6 +16874,42 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     assert "sk-supersecretvalue1234567890" not in serialized
 
 
+def _string_values_from(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        strings: list[str] = []
+        for item in value:
+            strings.extend(_string_values_from(item))
+        return strings
+    if isinstance(value, dict):
+        strings = []
+        for item in value.values():
+            strings.extend(_string_values_from(item))
+        return strings
+    return []
+
+
+def _assert_context_pack_operator_strings_clean(context: dict[str, Any]) -> None:
+    context_text = "\n".join(_string_values_from(context))
+    forbidden_terms = (
+        "Action" + "Object",
+        "Command" + " Center",
+        "Content" + " Planner",
+        "Ads" + " Doctor",
+        "evidence" + " IDs",
+        "block" + "ery",
+        "target" + "_site",
+        "mapping" + "_review",
+        "mapping" + "-review",
+        "migration" + "-map",
+        "wykonanie" + " zmian",
+        "tylko do" + " sprawdzenia",
+    )
+    for forbidden_term in forbidden_terms:
+        assert forbidden_term not in context_text
+
+
 def test_marketing_brief_dedupes_command_center_blockers() -> None:
     blocked_decision = DailyDecision(
         id="decision_review_ga4_landing_quality",
@@ -17146,6 +17182,7 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert context_response.status_code == 200
     context_payload = context_response.json()
+    _assert_context_pack_operator_strings_clean(context_payload)
     context_brief = context_payload["marketing_brief"]
 
     assert context_payload["context_scope"]["mode"] == "daily"
@@ -17890,6 +17927,7 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
 
     assert response.status_code == 200
     data = response.json()
+    _assert_context_pack_operator_strings_clean(data)
     assert data["context_scope"]["mode"] == "skill"
     assert data["context_scope"]["skill"] == "wilq-content-strategist"
     assert "content_diagnostics" in data

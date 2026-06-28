@@ -49,6 +49,9 @@ Date: 2026-06-28
   evidence wording as operator-visible output, and the eval harness now fails
   operator-facing JSON values that reintroduce old route names or technical
   jargon.
+- Daily and content-strategist context-pack tests now scan string values for
+  old working route names, stale content URL terms and technical jargon so
+  compacted prompt context cannot quietly reintroduce the cleaned language.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -173,6 +176,7 @@ Most recent verified local slice:
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk bash -lc 'CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ga4-analyst'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "codex_context_pack_embeds_marketing_brief_contract or codex_context_pack_scopes_content_strategist_payload" --maxfail=1`
 - Targeted eval-case scan: no active hits for old route names, action-model
   jargon, English evidence wording, stale content URL fields or old blocker
   wording in `docs/evals/cases/wilq-skill-eval-cases.json`,
