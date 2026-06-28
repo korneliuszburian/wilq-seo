@@ -44,9 +44,10 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold">{action.title}</h3>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {action.connector_label} / {action.mode_label}
-                </p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                  <span>Źródła danych: {action.connector_label}</span>
+                  <span>Tryb pracy: {action.mode_label}</span>
+                </div>
               </div>
               <StatusBadge value={action.validation_status_label} />
             </div>

@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { readFileSync } from "node:fs";
 import type { ReactElement, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -113,6 +114,9 @@ describe("ActionObjectPanels", () => {
     );
 
     expect(screen.getByText("2 dowody źródłowe")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Tryb pracy: przygotowanie")).toBeInTheDocument();
+    expect(screen.queryByText("Merchant Center / przygotowanie")).not.toBeInTheDocument();
     expect(screen.queryByText("evidence_merchant_feed_status")).not.toBeInTheDocument();
     expect(screen.queryByText("evidence_merchant_policy_status")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "dowód 1" })).toHaveAttribute(
@@ -123,6 +127,11 @@ describe("ActionObjectPanels", () => {
       "href",
       "/evidence/evidence_merchant_policy_status"
     );
+  });
+
+  it("does not join action metadata with slash copy", () => {
+    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    expect(source).not.toContain("{action.connector_label} / {action.mode_label}");
   });
 });
 
