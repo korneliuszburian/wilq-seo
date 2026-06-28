@@ -939,3 +939,7 @@ WILQ is complete for this long-range goal when:
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving strategy-readiness missing-data count labels to
   API/domain fields.
+- Latest metric-label proof: focused API/schema tests, live contract smoke,
+  marketer language guard, live API metric-label scan and `git diff --check`
+  passed after moving metric fact labels to the shared backend schema boundary
+  and guarding against empty/raw metric labels.

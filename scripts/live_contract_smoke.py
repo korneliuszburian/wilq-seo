@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import Any
 from urllib.error import URLError
@@ -94,6 +95,9 @@ def evaluate_contracts(payloads: dict[str, Any]) -> list[str]:
         diagnostics = _mapping(payloads.get(name))
         _check_diagnostics_shape(diagnostics, name, errors)
 
+    for name, payload in payloads.items():
+        _check_metric_labels(payload, name, errors)
+
     return errors
 
 
@@ -166,6 +170,39 @@ def _require_nonempty_list(
 ) -> None:
     if not _list(payload.get(key)):
         errors.append(f"{label} must not be empty")
+
+
+def _check_metric_labels(value: Any, path: str, errors: list[str]) -> None:
+    if isinstance(value, dict):
+        if _looks_like_metric_fact(value):
+            metric_label = value.get("metric_label")
+            if not isinstance(metric_label, str) or not metric_label.strip():
+                errors.append(f"{path}.metric_label must be present")
+            elif _looks_like_raw_operator_value(metric_label):
+                errors.append(f"{path}.metric_label must be marketer-readable")
+        for key, child in value.items():
+            _check_metric_labels(child, f"{path}.{key}", errors)
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _check_metric_labels(child, f"{path}[{index}]", errors)
+
+
+def _looks_like_metric_fact(value: dict[str, Any]) -> bool:
+    return {
+        "name",
+        "value",
+        "period",
+        "source_connector",
+        "evidence_id",
+    }.issubset(value)
+
+
+def _looks_like_raw_operator_value(value: str) -> bool:
+    normalized = value.strip()
+    if not normalized:
+        return True
+    return bool(re.fullmatch(r"[a-z0-9]+(?:_[a-z0-9]+)+", normalized))
 
 
 def _fetch_json(api_base: str, path: str) -> dict[str, Any]:

@@ -19,6 +19,7 @@ from wilq.operator_labels import (
     impact_comparison_summary_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
+    metric_fact_label,
     missing_contract_count_label,
     policy_count_label,
     reported_issue_occurrence_count_label,
@@ -239,6 +240,8 @@ class MetricFact(BaseModel):
 
     @model_validator(mode="after")
     def fill_dimension_labels(self) -> MetricFact:
+        if not self.metric_label:
+            self.metric_label = metric_fact_label(self.name, self.source_connector)
         if not self.dimension_labels:
             self.dimension_labels = {
                 key: _metric_dimension_label(key) for key in self.dimensions

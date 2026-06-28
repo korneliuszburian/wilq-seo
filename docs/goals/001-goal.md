@@ -216,6 +216,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Connector status objects hydrate Polish `status_label` values at the shared
   backend schema boundary, and Treści diagnostics expose API-owned
   `live_data_status_label` for GSC/WordPress readiness.
+- Metric facts hydrate Polish `metric_label` values at the shared backend
+  schema boundary, and live contract smoke now prevents empty or raw snake_case
+  metric labels from returning in metric fact contracts.
 - Current proof artifacts live in `.local-lab/proof/`; detailed implementation
   history lives in git commits, not in this file.
 

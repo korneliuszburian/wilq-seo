@@ -9,7 +9,7 @@ Active goal: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-06-28
+Date: 2026-06-29
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -175,6 +175,9 @@ Date: 2026-06-28
   visible status labels.
 - Treści diagnostics now expose `live_data_status_label` from the API and the
   route renders that field instead of owning local live-data wording.
+- Metric facts now hydrate Polish `metric_label` values at the shared backend
+  schema boundary, and live contract smoke fails if a metric fact exposes an
+  empty or raw snake_case metric label.
 - Current proof artifacts live in `.local-lab/proof/`; detailed history lives
   in git commits.
 
@@ -207,6 +210,18 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Metric label cleanup: `MetricFact` hydrates Polish metric labels, live API
+  scans across core diagnostics/actions/opportunities found no empty or raw
+  metric labels, and `live_contract_smoke.py` now guards this contract.
+  Verification:
+  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_metric_store_and_cli.py::test_metrics_api_exposes_metric_store_status_and_facts tests/test_live_contract_smoke.py -q`
+  - `rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000`
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - live metric-label scan across core API endpoints
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Connector/content live-data label cleanup: `ConnectorStatus` hydrates Polish
   status labels, `/api/connectors` has no empty status labels, and Treści shows

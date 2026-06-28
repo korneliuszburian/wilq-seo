@@ -37,6 +37,7 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
                     "metric_facts": [
                         {
                             "name": "clicks",
+                            "metric_label": "kliknięcia Ads",
                             "value": value,
                             "period": "connector_refresh",
                             "source_connector": "google_ads",
@@ -141,3 +142,33 @@ def test_live_contract_smoke_rejects_daily_decision_without_decision_state() -> 
     errors = smoke.evaluate_contracts(payloads)
 
     assert "command_center.daily_decisions[0].decision_state must be present" in errors
+
+
+def test_live_contract_smoke_rejects_metric_fact_without_label() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    del payloads["command_center"]["daily_decisions"][0]["metric_facts"][0][
+        "metric_label"
+    ]
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert (
+        "command_center.daily_decisions[0].metric_facts[0].metric_label must be present"
+        in errors
+    )
+
+
+def test_live_contract_smoke_rejects_raw_metric_label() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    payloads["command_center"]["daily_decisions"][0]["metric_facts"][0][
+        "metric_label"
+    ] = "search_term_cost_micros"
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert (
+        "command_center.daily_decisions[0].metric_facts[0].metric_label must be marketer-readable"
+        in errors
+    )
