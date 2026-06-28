@@ -579,6 +579,10 @@ WILQ is complete for this long-range goal when:
   labels in API/shared schemas. The Ads route no longer owns local action-count
   formatting for these deep panels; live API proof and browser proof live in
   `.local-lab/proof/`.
+- 2026-06-28: Google Ads optimizer-readiness and strategy review panels now
+  consume API/domain source-contract, policy and required-validation summary
+  labels instead of route-local count formatting. Live API proof and browser
+  proof live in `.local-lab/proof/`.
 - 2026-06-28: Action priority cards, action registry cards and connector
   refresh run cards now consume API/domain `evidence_summary_label` instead of
   route-local evidence count formatting. Live API proof confirmed
@@ -877,3 +881,7 @@ WILQ is complete for this long-range goal when:
   browser proof passed after removing route-local action count formatting from
   Ads start-here, business-context, strategy-readiness and campaign triage
   panels.
+- Latest Google Ads contract-validation proof: focused API/shared-schema/
+  dashboard tests, dashboard typecheck, marketer language guard, live API proof
+  and browser proof passed after moving Ads source-contract, policy and
+  required-validation count labels to API/domain fields.

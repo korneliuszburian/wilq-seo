@@ -15,9 +15,12 @@ from wilq.operator_labels import (
     evidence_count_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
+    policy_count_label,
     reported_issue_occurrence_count_label,
+    required_validation_count_label,
     required_evidence_count_label,
     source_connector_summary_label,
+    source_contract_count_label,
     source_lineage_count_label,
 )
 
@@ -1371,11 +1374,20 @@ class AdsBusinessTargetInterpretation(BaseModel):
     required_validation: list[str] = Field(default_factory=list)
     required_validation_labels: list[str] = Field(default_factory=list)
     policy_ids: list[str] = Field(default_factory=list)
+    policy_summary_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     apply_allowed: bool = False
     destructive: bool = False
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self):
+        if not self.policy_summary_label:
+            self.policy_summary_label = policy_count_label(self.policy_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AdsStrategyReviewReadinessContract(BaseModel):
@@ -1398,6 +1410,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     current_context: dict[str, Any] = Field(default_factory=dict)
     required_validation: list[str] = Field(default_factory=list)
     required_validation_labels: list[str] = Field(default_factory=list)
+    required_validation_summary_label: str = ""
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -1409,6 +1422,16 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     apply_allowed: bool = False
     destructive: bool = False
     next_step: str
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self):
+        if not self.required_validation_summary_label:
+            self.required_validation_summary_label = required_validation_count_label(
+                self.required_validation
+            )
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AdsBusinessContextReadContract(BaseModel):
@@ -1811,6 +1834,7 @@ class AdsOptimizerReadinessItem(BaseModel):
     summary: str
     next_step: str
     source_contract_ids: list[str] = Field(default_factory=list)
+    source_contract_summary_label: str = ""
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
@@ -1826,6 +1850,18 @@ class AdsOptimizerReadinessItem(BaseModel):
     action_summary_label: str = ""
     risk: ActionRisk = ActionRisk.medium
     risk_label: str = ""
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self):
+        if not self.source_contract_summary_label:
+            self.source_contract_summary_label = source_contract_count_label(
+                self.source_contract_ids
+            )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AdsOptimizerReadinessContract(BaseModel):

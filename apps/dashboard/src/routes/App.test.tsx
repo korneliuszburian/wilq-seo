@@ -7647,13 +7647,16 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("optimizer_readiness_contract");
     expect(routeSource).toContain("contract.mode_label");
     expect(routeSource).toContain("item.missing_read_contract_labels");
+    expect(routeSource).toContain("item.source_contract_summary_label");
     expect(routeSource).toContain("interpretation.allowed_use_labels");
     expect(routeSource).toContain("interpretation.blocked_use_labels");
     expect(routeSource).toContain("interpretation.missing_requirement_labels");
     expect(routeSource).toContain("interpretation.status_label");
+    expect(routeSource).toContain("interpretation.policy_summary_label");
     expect(routeSource).toContain("interpretation.action_summary_label");
     expect(routeSource).toContain("strategyReadiness.status_label");
     expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
+    expect(routeSource).toContain("strategyReadiness.required_validation_summary_label");
     expect(routeSource).toContain("strategyReadiness.missing_read_contract_labels");
     expect(routeSource).toContain("strategyReadiness.blocked_claim_labels");
     expect(routeSource).toContain("strategyReadiness.action_summary_label");
@@ -7712,7 +7715,11 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
     expect(routeSource).not.toContain("formatAdsEvidenceCount");
-    expect(routeSource).not.toContain("formatTraceIdCount(row.evidence_ids.length)");
+    expect(routeSource).not.toContain("formatTraceIdCount");
+    expect(routeSource).not.toContain("formatAdsContractCount");
+    expect(routeSource).not.toContain("item.source_contract_ids.length");
+    expect(routeSource).not.toContain("interpretation.policy_ids.length");
+    expect(routeSource).not.toContain("strategyReadiness.required_validation.length");
     expect(readFileSync("src/routes/OperatingRouteSurfaces.tsx", "utf8")).not.toContain(
       "formatEvidenceCount(action.evidence_ids.length)"
     );

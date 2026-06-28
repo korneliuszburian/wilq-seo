@@ -209,6 +209,39 @@ def action_count_label(action_ids: Iterable[str]) -> str:
     return f"{count} akcji do sprawdzenia"
 
 
+def source_contract_count_label(contract_ids: Iterable[str]) -> str:
+    count = len(list(contract_ids))
+    if count == 0:
+        return "brak warunków źródłowych"
+    if count == 1:
+        return "1 warunek źródłowy"
+    if 2 <= count <= 4:
+        return f"{count} warunki źródłowe"
+    return f"{count} warunków źródłowych"
+
+
+def policy_count_label(policy_ids: Iterable[str]) -> str:
+    count = len(list(policy_ids))
+    if count == 0:
+        return "brak polityk"
+    if count == 1:
+        return "1 polityka"
+    if 2 <= count <= 4:
+        return f"{count} polityki"
+    return f"{count} polityk"
+
+
+def required_validation_count_label(required_validation: Iterable[str]) -> str:
+    count = len(list(required_validation))
+    if count == 0:
+        return "brak wymaganego sprawdzenia"
+    if count == 1:
+        return "1 wymagane sprawdzenie"
+    if 2 <= count <= 4:
+        return f"{count} wymagane sprawdzenia"
+    return f"{count} wymaganych sprawdzeń"
+
+
 def credential_field_count_label(fields: Iterable[str]) -> str:
     count = len(list(fields))
     if count == 0:

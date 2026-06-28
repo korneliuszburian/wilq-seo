@@ -55,6 +55,9 @@ Date: 2026-06-28
 - Google Ads start-here, business-context, strategy-readiness and campaign
   triage panels use API/domain action summary labels instead of route-local
   action count formatting.
+- Google Ads optimizer-readiness and strategy review panels use API/domain
+  source-contract, policy and required-validation summary labels instead of
+  route-local count formatting.
 - Action priority cards, action registry cards and connector refresh run cards
   use API/domain evidence summary labels instead of route-local evidence count
   formatting.
@@ -125,6 +128,21 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns
+  `source_contract_summary_label`, `policy_summary_label` and
+  `required_validation_summary_label`.
+- Browser proof: `/ads-doctor` expanded Ads review renders
+  `1 warunek źródłowy`, `5 polityk` and `5 wymaganych sprawdzeń`
+  without raw field names, `payload` or `ActionObject` wording.
+
+Previous verified local slice:
 
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision" --maxfail=2`

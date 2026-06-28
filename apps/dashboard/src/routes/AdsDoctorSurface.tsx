@@ -665,20 +665,6 @@ function AdsOptimizerReadinessPanel({
   );
 }
 
-function formatTraceIdCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 pozycja";
-  if (count >= 2 && count <= 4) return `${count} pozycje`;
-  return `${count} pozycji`;
-}
-
-function formatAdsContractCount(count: number) {
-  if (count === 0) return "brak";
-  if (count === 1) return "1 kontrakt";
-  if (count >= 2 && count <= 4) return `${count} kontrakty`;
-  return `${count} kontraktów`;
-}
-
 function AdsOptimizerReadinessGroup({
   title,
   items,
@@ -722,7 +708,7 @@ function AdsOptimizerReadinessGroup({
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
                 label="Warunki źródłowe"
-                values={[formatAdsContractCount(item.source_contract_ids.length)]}
+                values={[item.source_contract_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -1023,7 +1009,7 @@ function AdsBusinessTargetInterpretationPanel({
         />
         <TraceLine
           label="Polityki"
-          values={[formatTraceIdCount(interpretation.policy_ids.length)]}
+          values={[interpretation.policy_summary_label]}
           empty="brak"
         />
         <TraceLine
@@ -1066,7 +1052,7 @@ function AdsBusinessTargetInterpretationPanel({
         <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
           <TraceLine
             label="Wymagane sprawdzenie"
-            values={[formatTraceIdCount(strategyReadiness.required_validation.length)]}
+            values={[strategyReadiness.required_validation_summary_label]}
             empty="brak"
           />
           <TraceLine
