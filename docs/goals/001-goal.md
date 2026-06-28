@@ -93,6 +93,8 @@ use the cleaned language.
 - Custom Segments candidates now expose API-owned preview cards and rejection
   reason labels. The dashboard route no longer derives the visible segment card
   from `candidate.payload_preview`.
+- GA4 full review now renders API-owned action preview cards and no longer
+  parses `action.payload.payload_preview` for the review card.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 

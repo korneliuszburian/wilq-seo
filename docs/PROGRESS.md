@@ -65,6 +65,8 @@ Date: 2026-06-28
 - Custom Segments candidates now expose API-owned preview cards and rejection
   reason labels. The route no longer reads `candidate.payload_preview` for
   marketer-facing segment cards.
+- GA4 full review now renders API-owned action preview cards and no longer
+  parses `action.payload.payload_preview` for the review card.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -95,6 +97,7 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "custom_segments" --maxfail=1`
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ga4 route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/KnowledgePanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|playbook"`
 - `rtk uv run python - <<'PY' ... /api/knowledge/playbooks language residue scan ... PY`
@@ -112,4 +115,5 @@ Recent focused proof used during the cleanup:
 - `rtk curl --max-time 15 -sS http://127.0.0.1:8000/api/actions/act_prepare_ads_campaign_review_queue`
 - `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --compact --depth 6`
 - `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --depth 10` on `/ads-doctor/custom-segments`
+- `rtk env XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --depth 10` on expanded `/ga4`
 - `rtk git diff --check`

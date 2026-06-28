@@ -4,12 +4,14 @@ import { ShieldAlert } from "lucide-react";
 
 import {
   ActionObject,
+  ActionPreviewCardViewModel,
   ConnectorStatus,
   Ga4DiagnosticsResponse,
   getActions,
   getConnectors,
   getGa4Diagnostics
 } from "../lib/api";
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -17,36 +19,6 @@ import { ActionObjectFocus } from "./ActionObjectPanels";
 
 type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
 type Ga4MetricFact = Ga4DiagnosticsResponse["sections"][number]["metric_facts"][number];
-
-type Ga4TrackingQualityPreviewItem = {
-  action_id: string;
-  id: string;
-  preview_contract: string;
-  operation_type: string;
-  operation_type_label?: string;
-  landing_page?: string | null;
-  landing_page_label?: string;
-  source_medium?: string | null;
-  source_medium_label?: string;
-  campaign_name?: string | null;
-  campaign_name_label?: string;
-  tracking_dimension_gaps: string[];
-  tracking_dimension_gap_labels?: string[];
-  metric_snapshot: Record<string, string | number>;
-  metric_snapshot_labels: Record<string, string>;
-  reason: string;
-  required_validation: string[];
-  required_validation_labels?: string[];
-  blocked_claims: string[];
-  blocked_claim_labels?: string[];
-  evidence_ids: string[];
-  evidence_summary_label?: string;
-  apply_allowed: boolean;
-  api_mutation_ready: boolean;
-  destructive: boolean;
-};
-
-
 
 export function Ga4DiagnosticSurface() {
   const diagnostics = useQuery({
@@ -88,7 +60,7 @@ export function Ga4DiagnosticSurface() {
   const data = diagnostics.data;
   const connectorStatuses = connectors.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
-  const trackingPreviewItems = ga4TrackingQualityPreviewItemsFromActions(routeActions);
+  const trackingPreviewCards = ga4TrackingQualityPreviewCardsFromActions(routeActions);
   const latestRefresh = data.latest_refresh;
 
   return (
@@ -156,7 +128,7 @@ export function Ga4DiagnosticSurface() {
 
       <Ga4ExpandableReviewPanel
         data={data}
-        trackingPreviewItems={trackingPreviewItems}
+        trackingPreviewCards={trackingPreviewCards}
         connectorStatuses={connectorStatuses}
       />
 
@@ -171,11 +143,11 @@ export function Ga4DiagnosticSurface() {
 
 function Ga4ExpandableReviewPanel({
   data,
-  trackingPreviewItems,
+  trackingPreviewCards,
   connectorStatuses
 }: {
   data: Ga4DiagnosticsResponse;
-  trackingPreviewItems: Ga4TrackingQualityPreviewItem[];
+  trackingPreviewCards: ActionPreviewCardViewModel[];
   connectorStatuses: ConnectorStatus[];
 }) {
   const [showReview, setShowReview] = useState(false);
@@ -196,7 +168,7 @@ function Ga4ExpandableReviewPanel({
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Pomiar" value={data.operator_summary.measurement_issue_count} />
           <MetricTile label="Dowody" value={data.evidence_ids.length} />
-          <MetricTile label="Podglądy" value={trackingPreviewItems.length} />
+          <MetricTile label="Podglądy" value={trackingPreviewCards.length} />
         </div>
       </div>
 
@@ -212,7 +184,7 @@ function Ga4ExpandableReviewPanel({
         <div className="mt-4 grid gap-6">
           <Ga4MeasurementIssues data={data} connectorStatuses={connectorStatuses} />
           <Ga4DiagnosticProof data={data} />
-          {trackingPreviewItems.length > 0 ? (
+          {trackingPreviewCards.length > 0 ? (
             <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -224,11 +196,11 @@ function Ga4ExpandableReviewPanel({
                 ruchu i kampanię do kontroli bez zapisu zmian w GA4.
               </p>
             </div>
-            <MetricTile label="Pozycje" value={trackingPreviewItems.length} />
+            <MetricTile label="Pozycje" value={trackingPreviewCards.length} />
           </div>
           <div className="grid gap-3 xl:grid-cols-2">
-            {trackingPreviewItems.slice(0, 4).map((preview) => (
-              <Ga4TrackingQualityPreviewCard key={preview.id} preview={preview} />
+            {trackingPreviewCards.slice(0, 4).map((card) => (
+              <ActionPreviewCard key={card.id} card={card} />
             ))}
           </div>
             </section>
@@ -264,6 +236,8 @@ function Ga4ExpandableReviewPanel({
 function Ga4ExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
   const [showActions, setShowActions] = useState(false);
   const actionCountLabel = formatGa4ActionCount(actions.length);
+  const actionCountSentence =
+    actions.length === 1 ? "WILQ ma jedną akcję dla GA4." : `WILQ ma ${actionCountLabel} dla GA4.`;
 
   return (
     <section className="rounded-md border border-line bg-white p-4">
@@ -273,7 +247,7 @@ function Ga4ExpandableActionsPanel({ actions }: { actions: ActionObject[] }) {
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {actionCountLabel} dla GA4. Otwórz ją dopiero wtedy, gdy
+            {actionCountSentence} Otwórz ją dopiero wtedy, gdy
             chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
             sprawdzić warunki bezpiecznego zapisu.
           </p>
@@ -524,117 +498,12 @@ function Ga4DecisionCard({
   );
 }
 
-function Ga4TrackingQualityPreviewCard({
-  preview
-}: {
-  preview: Ga4TrackingQualityPreviewItem;
-}) {
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">
-            Strona wejścia: {preview.landing_page_label || preview.landing_page || "brak strony wejścia w raporcie"}
-          </h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {preview.operation_type_label || "operacja GA4 bez etykiety"} /{" "}
-            {preview.apply_allowed ? "zapis możliwy" : "zapis zablokowany"}
-          </p>
-        </div>
-        <StatusBadge value={preview.tracking_dimension_gaps.length ? "blocked" : "ready"} />
-      </div>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{preview.reason}</p>
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Źródło" values={[preview.source_medium_label || preview.source_medium || "brak źródła i medium w raporcie"]} />
-        <TraceLine label="Kampania" values={[preview.campaign_name_label || preview.campaign_name || "brak kampanii w raporcie"]} />
-        <TraceLine
-          label="Braki wymiarów"
-          values={preview.tracking_dimension_gap_labels ?? []}
-          empty="brak"
-        />
-        <TraceLine
-          label="Warunki sprawdzenia"
-          values={(preview.required_validation_labels ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Nie wolno twierdzić"
-          values={(preview.blocked_claim_labels ?? []).slice(0, 5)}
-        />
-        <TraceLine
-          label="Dowody"
-          values={preview.evidence_summary_label ? [preview.evidence_summary_label] : []}
-          empty="brak"
-        />
-        <TraceLine label="Akcja" values={["1 akcja do sprawdzenia"]} />
-      </div>
-      {Object.keys(preview.metric_snapshot).length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {Object.entries(preview.metric_snapshot)
-            .slice(0, 4)
-            .map(([label, value]) => (
-              <MetricTile
-                key={`${preview.id}-${label}`}
-                label={preview.metric_snapshot_labels[label] ?? label}
-                value={value}
-              />
-            ))}
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function ga4TrackingQualityPreviewItemsFromActions(
+function ga4TrackingQualityPreviewCardsFromActions(
   actions: ActionObject[]
-): Ga4TrackingQualityPreviewItem[] {
+): ActionPreviewCardViewModel[] {
   return actions.flatMap((action) => {
-    const rows = action.payload.payload_preview;
-    if (!Array.isArray(rows)) return [];
-    return rows
-      .filter(isGa4TrackingQualityPreviewItem)
-      .map((row) => ({ ...row, action_id: action.id }));
+    return action.preview_cards.filter((card) => card.kind === "ga4_tracking_quality_review");
   });
-}
-
-function isGa4TrackingQualityPreviewItem(
-  value: unknown
-): value is Omit<Ga4TrackingQualityPreviewItem, "action_id"> {
-  if (!isPlainObject(value)) return false;
-  return (
-    typeof value.id === "string" &&
-    value.preview_contract === "ga4_tracking_quality_review_v1" &&
-    typeof value.operation_type === "string" &&
-    typeof value.operation_type_label === "string" &&
-    Array.isArray(value.tracking_dimension_gaps) &&
-    value.tracking_dimension_gaps.every((item) => typeof item === "string") &&
-    Array.isArray(value.tracking_dimension_gap_labels) &&
-    value.tracking_dimension_gap_labels.every((item) => typeof item === "string") &&
-    isMetricSnapshot(value.metric_snapshot) &&
-    isMetricSnapshotLabels(value.metric_snapshot_labels) &&
-    typeof value.reason === "string" &&
-    Array.isArray(value.required_validation) &&
-    Array.isArray(value.blocked_claims) &&
-    Array.isArray(value.evidence_ids) &&
-    typeof value.apply_allowed === "boolean" &&
-    typeof value.api_mutation_ready === "boolean" &&
-    typeof value.destructive === "boolean"
-  );
-}
-
-function isMetricSnapshotLabels(value: unknown): value is Record<string, string> {
-  if (!isPlainObject(value)) return false;
-  return Object.values(value).every((item) => typeof item === "string");
-}
-
-function isMetricSnapshot(value: unknown): value is Record<string, string | number> {
-  if (!isPlainObject(value)) return false;
-  return Object.values(value).every(
-    (item) => typeof item === "string" || typeof item === "number"
-  );
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function Ga4DiagnosticProof({

@@ -267,6 +267,24 @@ const actions = [
       ],
       destructive: false
     },
+    preview_cards: [
+      {
+        id: "ga4_tracking_review_fixture",
+        kind: "ga4_tracking_quality_review",
+        title_label: "Sprawdź stronę wejścia",
+        subtitle_label: "/oferta/ / google / cpc",
+        status_label: "zapis zmian zablokowany",
+        rows: [
+          { label: "Strona wejścia", value: "/oferta/" },
+          { label: "Źródło", value: "google / cpc" },
+          { label: "Kampania", value: "(2026) Ekologus Ogólna" },
+          { label: "Aktywni użytkownicy", value: "20" },
+          { label: "Sesje", value: "30" }
+        ],
+        apply_state_label: "zapis zmian zablokowany",
+        system_readiness_label: "wymaga kontroli"
+      }
+    ],
     audit_events: []
   },
   {
@@ -7826,7 +7844,10 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
-    expect(screen.getByText(/Zapis zmian zablokowany/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Zapis zmian zablokowany/i).length).toBeGreaterThan(0);
+    const routeSource = readFileSync("src/routes/Ga4DiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("action.preview_cards");
+    expect(routeSource).not.toContain("action.payload.payload_preview");
   });
 
   it("content route renders condensed selected decision with expandable detail", async () => {
