@@ -651,6 +651,10 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Workflow cards now use API/domain
   `missing_contract_labels` for expanded missing-data details instead of raw
   workflow contract keys.
+- 2026-06-28: Procesy expanded details now use API/domain
+  `missing_contract_detail_label` for missing-data detail and keep blocked
+  claims condensed through `blocked_claim_summary_label`; `WorkflowPanels` no
+  longer joins label arrays in React for visible process detail copy.
 - 2026-06-28: Workflow cards and run summaries now use API/domain source,
   evidence, action, missing-data and blocked-claim summary labels. Fresh
   `/workflows` loads no longer wait on hidden related-action data.
@@ -843,6 +847,10 @@ WILQ is complete for this long-range goal when:
   route test, dashboard typecheck, marketer language guard and browser proof
   passed after moving process summaries to API/domain labels and fixing the
   hidden-actions loading state.
+- Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
+  typecheck, marketer language guard, live API proof and browser proof passed
+  after moving expanded missing-data detail to API/domain labels and keeping
+  blocked-claim detail condensed through API summaries.
 - Latest blocked-claim fallback proof: focused API fallback tests, marketer
   language guard and helper proof passed after central labels stopped exposing
   unknown raw technical claim values.

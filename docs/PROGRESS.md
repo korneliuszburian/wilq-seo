@@ -109,6 +109,8 @@ Date: 2026-06-28
 - Procesy cards and run summaries use API/domain source, evidence, action,
   missing-data and blocked-claim summary labels. Fresh `/workflows` loads no
   longer wait on hidden related-action data.
+- Procesy expanded details use API/domain missing-data detail labels and
+  condensed blocked-claim summaries instead of route-local label joins.
 - Szanse cards use API/domain evidence, source, action and knowledge summary
   labels instead of route-local count assembly or raw identifiers.
 - Shared `StatusBadge` does not own a product-language dictionary; touched
@@ -142,6 +144,22 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "workflows_are_decision_backed_operator_contracts or workflow_label_fallbacks_do_not_expose_raw_values" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/WorkflowPanels.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "workflow|Workflow|Procesy"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/workflows` returns
+  `missing_contract_detail_label="lokalne pozycje, wyniki profilu firmy, opinie"`
+  for `localo_visibility_review` and condensed
+  `blocked_claim_summary_label="2 zablokowane obietnice"`.
+- Browser proof: expanded `/workflows` process detail renders
+  `Brakujące dane: brak` and `Granice wniosków: 17 zablokowanych obietnic`
+  without raw workflow keys, payload wording, `ActionObject`, migration wording
+  or raw blocked-claim detail such as `werdykt zwrotu z reklam`.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_humanize_raw_unknown_enums or knowledge_operating_map_binds_sources_to_decisions" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/KnowledgePanels.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "knowledge|Knowledge"`

@@ -3019,6 +3019,7 @@ export const WorkflowSchema = z.object({
   missing_contracts: z.array(z.string()).default([]),
   missing_contract_labels: z.array(z.string()).default([]),
   missing_contract_summary_label: z.string().default(""),
+  missing_contract_detail_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high"]).default("low"),
   risk_label: z.string().nullable().optional()
 });

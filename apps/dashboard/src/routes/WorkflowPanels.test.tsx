@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { Workflow } from "../lib/api";
@@ -38,6 +39,7 @@ describe("WorkflowPanels", () => {
             missing_contracts: ["local_ranking_rows"],
             missing_contract_labels: ["lokalne pozycje"],
             missing_contract_summary_label: "1 brakujący zakres danych",
+            missing_contract_detail_label: "lokalne pozycje",
             risk: "medium",
             risk_label: "średnie ryzyko"
           } satisfies Workflow
@@ -56,8 +58,14 @@ describe("WorkflowPanels", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pokaż opis procesu" }));
 
     expect(screen.getByText("Brakujące dane: lokalne pozycje")).toBeInTheDocument();
-    expect(screen.getByText("Granice wniosków: obietnica do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getAllByText("Granice wniosków: 1 zablokowana obietnica").length).toBeGreaterThan(0);
     expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
     expect(screen.queryByText(/local_ranking_uplift_claim/)).not.toBeInTheDocument();
+
+    const routeSource = readFileSync("src/routes/WorkflowPanels.tsx", "utf8");
+    expect(routeSource).toContain("workflow.missing_contract_detail_label");
+    expect(routeSource).toContain("workflow.blocked_claim_summary_label");
+    expect(routeSource).not.toContain("workflow.missing_contract_labels.join");
+    expect(routeSource).not.toContain("workflow.blocked_claim_labels.join");
   });
 });

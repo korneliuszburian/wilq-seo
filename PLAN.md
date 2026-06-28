@@ -279,6 +279,9 @@ Known cleanup already started:
   blocked-decision and blocked-claim summary labels. First-screen blocked-claim
   copy is condensed to count summaries; full blocked-claim lists stay in
   details.
+- Procesy expanded details now use API/domain missing-data detail labels and
+  condensed blocked-claim summaries; the route no longer joins label arrays in
+  React for visible process detail copy.
 - Primary dashboard navigation and touched route headings now use Polish
   marketer-facing labels instead of mixed working names like `Command Center`,
   `Content` and `Ads Doctor`.

@@ -75,6 +75,7 @@ class Workflow(BaseModel):
     missing_contracts: list[str] = Field(default_factory=list)
     missing_contract_labels: list[str] = Field(default_factory=list)
     missing_contract_summary_label: str = ""
+    missing_contract_detail_label: str = ""
     risk: ActionRisk = ActionRisk.low
     risk_label: str | None = None
 
@@ -101,6 +102,10 @@ class Workflow(BaseModel):
         if not self.missing_contract_summary_label:
             self.missing_contract_summary_label = missing_contract_count_label(
                 self.missing_contracts
+            )
+        if not self.missing_contract_detail_label:
+            self.missing_contract_detail_label = (
+                ", ".join(self.missing_contract_labels) if self.missing_contract_labels else "brak"
             )
         return self
 

@@ -153,6 +153,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   stay in details.
 - Procesy cards and run summaries use API/domain summary labels and no longer
   block fresh `/workflows` loads on hidden related-action data.
+- Procesy expanded details use API/domain missing-data detail labels and
+  condensed blocked-claim summaries instead of route-local label joins.
 - Szanse cards use API/domain summary labels for evidence, sources, related
   actions and knowledge references instead of route-local raw counts.
 - Shared status, route, source, metric, risk, blocker and preview labels are

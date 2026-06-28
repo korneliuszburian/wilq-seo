@@ -7323,8 +7323,13 @@ function mockFetch() {
               evidence_ids: ["ev_refresh_refresh_google_ads_test"],
               action_ids: ["act_prepare_ads_campaign_review_queue"],
               blocked_claims: ["ocena zwrotu z reklam"],
+              blocked_claim_labels: ["werdykt zwrotu z reklam"],
+              blocked_claim_summary_label: "1 zablokowana obietnica",
               metric_tiles: { decyzje: 4, blokady: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
+              missing_contract_labels: [],
+              missing_contract_summary_label: "brak brakujących danych",
+              missing_contract_detail_label: "brak",
               risk: "low",
               risk_label: "niskie ryzyko"
             },
@@ -7343,8 +7348,13 @@ function mockFetch() {
               evidence_ids: [],
               action_ids: [],
               blocked_claims: ["poprawa lokalnych rankingów"],
+              blocked_claim_labels: ["poprawa widoczności lokalnej"],
+              blocked_claim_summary_label: "1 zablokowana obietnica",
               metric_tiles: {},
               missing_contracts: ["local_ranking_rows"],
+              missing_contract_labels: ["lokalne pozycje"],
+              missing_contract_summary_label: "1 brakujący zakres danych",
+              missing_contract_detail_label: "lokalne pozycje",
               risk: "medium",
               risk_label: "średnie ryzyko"
             }

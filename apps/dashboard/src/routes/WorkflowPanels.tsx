@@ -129,8 +129,8 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
             </div>
           ) : null}
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <div>Brakujące dane: {workflow.missing_contract_labels.join(", ") || "brak"}</div>
-            <div>Granice wniosków: {workflow.blocked_claim_labels.join(", ") || "brak"}</div>
+            <div>Brakujące dane: {workflow.missing_contract_detail_label}</div>
+            <div>Granice wniosków: {workflow.blocked_claim_summary_label}</div>
           </div>
         </div>
       ) : null}

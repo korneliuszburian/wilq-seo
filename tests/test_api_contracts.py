@@ -19042,6 +19042,8 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert daily_command["evidence_summary_label"]
     assert daily_command["action_summary_label"]
     assert daily_command["blocked_claim_summary_label"]
+    assert daily_command["missing_contract_summary_label"]
+    assert daily_command["missing_contract_detail_label"]
 
     ads_daily = workflow_by_id["ads_daily_check"]
     assert ads_daily["label"] == "Ocena Ads"
@@ -19064,6 +19066,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert "local_ranking_rows" in localo["missing_contracts"]
     assert "lokalne pozycje" in localo["missing_contract_labels"]
     assert localo["missing_contract_summary_label"] == "3 brakujące zakresy danych"
+    assert "lokalne pozycje" in localo["missing_contract_detail_label"]
     assert localo["blocked_claim_labels"]
     assert localo["blocked_claim_summary_label"] == "2 zablokowane obietnice"
 
