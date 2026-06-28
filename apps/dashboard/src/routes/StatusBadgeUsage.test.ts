@@ -18,6 +18,9 @@ describe("StatusBadge state usage", () => {
       expect(source).not.toMatch(
         /<StatusBadge\s+value=\{[^}]*\b(status_label|risk_label|validation_status_label)\}/
       );
+      expect(source).not.toMatch(
+        /<StatusBadge\s+value=\{[^}]*(source_connector_label|source_type_label|domain_label)[^}]*\}/
+      );
     }
   });
 });

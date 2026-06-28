@@ -137,8 +137,8 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
         {evidence.title_label}
       </h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={evidence.source_connector_label} />
-        <StatusBadge value={evidence.source_type_label} />
+        <NeutralLabelChip>{evidence.source_connector_label}</NeutralLabelChip>
+        <NeutralLabelChip>{evidence.source_type_label}</NeutralLabelChip>
         <StatusBadge value={evidence.freshness.state} label={evidence.freshness_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
@@ -171,7 +171,7 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-normal">{opportunity.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={opportunity.domain_label} />
+        <NeutralLabelChip>{opportunity.domain_label}</NeutralLabelChip>
         <StatusBadge value={opportunity.risk} label={opportunity.risk_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
@@ -221,6 +221,14 @@ function MetricTileSummary({ tiles }: { tiles: Record<string, string | number> }
         </span>
       ))}
     </div>
+  );
+}
+
+function NeutralLabelChip({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded border border-line bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700">
+      {children}
+    </span>
   );
 }
 

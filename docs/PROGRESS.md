@@ -163,6 +163,9 @@ Date: 2026-06-28
 - Workflow cards now use API/domain `missing_contract_labels` for expanded
   missing-data details, so raw workflow contract keys stay out of marketer
   copy.
+- Detail views now render source/domain labels as neutral chips instead of
+  using marketer labels as visual badge states. The shared status badge no
+  longer injects hidden punctuation into browser text output.
 - Google Sheets compact route copy now says safe export/testing language
   instead of export contract/UAT jargon.
 - Metric chips now use `zmiana:` and `Etykieta: wartość` formatting instead of
@@ -237,19 +240,15 @@ Date: 2026-06-28
 2. Continue raw fallback cleanup in active API/helper modules. Current scan is
    down to non-marketer connector normalization and title fallbacks; any new
    visible raw fallback must be fixed at typed API/schema/view-model source.
-3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
-   the caller can pass both visual state and API label.
-4. Add typed contract/vendor-enum label registries outside the already-cleaned
+3. Add typed contract/vendor-enum label registries outside the already-cleaned
    Ads diagnostics helper path so unknown read contracts and vendor enums do not
    fall back to raw snake_case or English values in marketer-facing copy.
-5. Continue moving repeated metric, dimension, source, blocker and evidence
+4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-6. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
+5. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
-7. The remaining dashboard StatusBadge label-as-value scan hits are source and
-   domain tags, not status/risk/validation state badges.
-8. Continue checking compacted context-packs after dashboard/API cleanup; the
+6. Continue checking compacted context-packs after dashboard/API cleanup; the
    content strategist context now preserves the current content preview labels.
 
 ## Latest Accepted Proof

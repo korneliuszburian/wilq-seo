@@ -28,7 +28,6 @@ export function StatusBadge({ value, label }: StatusBadgeProps) {
       }`}
     >
       {label ?? value}
-      <span className="sr-only">; </span>
     </span>
   );
 }

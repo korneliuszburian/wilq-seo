@@ -268,6 +268,9 @@ Known cleanup already started:
 - Touched Ads, Merchant, GA4 and tactical queue paths no longer show endpoint
   names, route wording, raw evidence/action link labels or `ID` evidence
   counters in normal marketer copy.
+- Detail views render source/domain labels as neutral text chips, not as visual
+  status values. The shared status badge no longer injects hidden punctuation
+  into browser text output.
 - Primary dashboard navigation and touched route headings now use Polish
   marketer-facing labels instead of mixed working names like `Command Center`,
   `Content` and `Ads Doctor`.
