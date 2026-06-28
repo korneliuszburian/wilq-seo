@@ -204,6 +204,8 @@ Date: 2026-06-28
 - Action review gate summaries now sanitize raw historical review notes before
   they reach Action Detail; legacy `candidate`, `source_type`, payload and
   blocked-claim fragments collapse to a neutral legacy-audit note.
+- Content refresh review gates now use Polish operator wording for intent
+  review; the Action Detail conditions no longer show `query/topic`.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -227,6 +229,9 @@ Date: 2026-06-28
    them out of copy paths.
 7. The remaining dashboard StatusBadge label-as-value scan hits are source and
    domain tags, not status/risk/validation state badges.
+8. A narrow context-pack regression run surfaced that compacted content brief
+   previews may omit `source_type_label`; verify whether this is active runtime
+   behavior before touching the context-pack.
 
 ## Latest Accepted Proof
 
@@ -245,6 +250,8 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_raw_audit_summary or action_review_gate_hides_raw_legacy_review_summary or action_review_records_human_outcome_without_apply" --maxfail=3`
 - `agent-browser` proof: `.local-lab/proof/action-detail-review-badge-state-clean.txt`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "content_refresh_review_gates_use_polish_operator_language or content_refresh_empty_state_uses_operator_source_language" --maxfail=3`
+- `agent-browser` proof: `.local-lab/proof/action-detail-content-review-gates-polish.txt`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics_exposes_marketer_decision or content_diagnostics_exposes_query_page_inventory_queue" --maxfail=3`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `agent-browser` proof: `.local-lab/proof/content-planner-selected-decision-api-viewmodel.txt`

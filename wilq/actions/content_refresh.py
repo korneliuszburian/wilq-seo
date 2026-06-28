@@ -242,7 +242,7 @@ def content_refresh_payload_from_metric_facts(
             "human_confirm_before_wordpress_write",
         ],
         "operator_review_gates": [
-            "sprawdź intencję query/topic",
+            "sprawdź intencję zapytania i tematu",
             "potwierdź dopasowanie w spisie treści WordPress",
             "potwierdź publiczny URL kanoniczny",
             "sprawdź duplikaty i kanibalizację",

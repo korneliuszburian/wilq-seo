@@ -194,6 +194,8 @@ use cleaned Polish operator language.
 - Action review gate summaries now sanitize raw historical review notes before
   they reach Action Detail; legacy candidate/source/payload/blocker fragments
   collapse to a neutral legacy-audit note.
+- Content refresh review gates now use Polish operator wording for intent
+  review; the Action Detail conditions no longer show `query/topic`.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
@@ -237,6 +239,9 @@ are resolved or explicitly deferred.
    normalizers used for equality matching, not visible operator labels.
 8. The remaining dashboard StatusBadge label-as-value scan hits are source and
    domain tags, not status/risk/validation state badges.
+9. A narrow context-pack regression run surfaced that compacted content brief
+   previews may omit `source_type_label`; verify whether this is active runtime
+   behavior before touching the context-pack.
 
 ## Execution Policy
 
