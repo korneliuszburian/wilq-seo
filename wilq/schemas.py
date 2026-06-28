@@ -3248,6 +3248,7 @@ class AdsDiagnosticsResponse(BaseModel):
     blocked_handoff: AdsBlockedHandoff | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
+    source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     blocker_count: int = 0
@@ -4071,6 +4072,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     sections: list[Ga4DiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
+    source_connector_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     blocker_count: int = 0

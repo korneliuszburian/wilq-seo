@@ -81,6 +81,9 @@ Date: 2026-06-29
 - Google Ads first-screen, condensed decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
+- Google Ads and GA4 diagnostics expose top-level API-owned
+  `source_connector_labels`, and the touched proof panels render those labels
+  instead of assembling source labels from nested sections or decisions.
 - Google Ads start-here, business-context, strategy-readiness and campaign
   triage panels use API/domain action summary labels instead of route-local
   action count formatting.
@@ -214,6 +217,20 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Ads/GA4 source-label cleanup: `/api/ads/diagnostics?view=summary` and
+  `/api/ga4/diagnostics` now expose top-level API-owned
+  `source_connector_labels`, and the touched proof panels render those labels
+  directly. The unused dashboard `connectorLabelsFromStatuses` helper was
+  removed instead of kept as stale translator code.
+  Verification:
+  - `rtk uv run pytest tests/test_api_contracts.py::test_ads_diagnostics_summary_view_compacts_heavy_payload tests/test_api_contracts.py::test_ga4_diagnostics_exposes_landing_quality_contract -q`
+  - `rtk pnpm --dir apps/dashboard typecheck`
+  - `rtk pnpm --dir apps/dashboard test -- OpportunitiesRoute --runInBand`
+  - live API proof after `rtk scripts/local_stack.sh restart`
+  - `agent-browser` DOM proof for `/ads-doctor` and `/ga4`
+
+Previous verified local slice:
 
 - Content source-label cleanup: connector refresh runs now expose
   API-owned `connector_label`, content diagnostics/preflight decision objects

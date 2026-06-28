@@ -328,6 +328,9 @@ def _ga4_response_with_marketer_labels(
                 _ga4_section_with_marketer_labels(section) for section in response.sections
             ],
             "evidence_summary_label": _ga4_evidence_summary_label(response.evidence_ids),
+            "source_connector_labels": _ga4_source_connector_labels(
+                response.operator_summary.source_connectors
+            ),
             "action_summary_label": _ga4_action_summary_label(response.action_ids),
         }
     )

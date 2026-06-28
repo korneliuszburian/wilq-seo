@@ -522,10 +522,6 @@ function Ga4DiagnosticProof({
 }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const visibleMetricFacts = metricFacts.slice(0, 4);
-  const sourceConnectorLabels = uniqueValues([
-    ...data.sections.flatMap((section) => section.source_connector_labels),
-    ...data.decision_queue.flatMap((decision) => decision.source_connector_labels)
-  ]);
   return (
     <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -548,7 +544,7 @@ function Ga4DiagnosticProof({
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.label)} />
         <TraceLine label="Dowody" values={[data.evidence_summary_label]} />
-        <TraceLine label="Źródła" values={sourceConnectorLabels} empty="brak" />
+        <TraceLine label="Źródła" values={data.source_connector_labels} empty="brak" />
         <TraceLine label="Akcje" values={[data.action_summary_label]} />
         <TraceLine
           label="Nie wolno twierdzić"

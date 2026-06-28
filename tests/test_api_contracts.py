@@ -5203,6 +5203,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert payload["freshness_assessment"]["requires_refresh"] is False
     assert payload["freshness_assessment"]["stale_after_hours"] == 48
     assert "GA4" in payload["freshness_assessment"]["summary"]
+    assert payload["source_connector_labels"]
+    assert "GA4" in payload["source_connector_labels"]
+    assert not any("_" in label for label in payload["source_connector_labels"])
     assert "act_review_ga4_tracking_quality" in payload["action_ids"]
     decision_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert decision_by_id
@@ -13130,8 +13133,13 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert summary_bytes < full_bytes
     assert summary_payload["operator_summary"] == full_payload["operator_summary"]
     assert summary_payload["evidence_summary_label"] == full_payload["evidence_summary_label"]
+    assert summary_payload["source_connector_labels"] == full_payload[
+        "source_connector_labels"
+    ]
+    assert summary_payload["source_connector_labels"] == ["Google Ads"]
     assert summary_payload["action_summary_label"] == full_payload["action_summary_label"]
     assert summary_payload["evidence_summary_label"]
+    assert summary_payload["source_connector_labels"]
     assert summary_payload["action_summary_label"]
     assert summary_payload["business_context_read_contract"]["target_interpretation"][
         "action_summary_label"

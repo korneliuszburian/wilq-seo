@@ -11,7 +11,10 @@ const opportunities = [
     title: "Przejrzyj kolejki Ads do oceny bez zapisu zmian",
     domain: "google_ads",
     source_connectors: ["google_ads"],
+    source_connector_labels: ["Google Ads"],
+    source_connector_summary_label: "Google Ads",
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    evidence_summary_label: "1 dowód źródłowy",
     metric_tiles: {
       kampanie: 18,
       zapytania: 50,
@@ -45,8 +48,10 @@ const opportunities = [
       "act_prepare_ads_campaign_review_queue",
       "act_prepare_google_ads_recommendation_review_queue"
     ],
+    action_summary_label: "2 akcje do sprawdzenia",
     expert_rule_ids: [],
     playbook_ids: ["wilq-ads-doctor"],
+    knowledge_summary_label: "1 playbook",
     is_fixture: false
   }
 ];
@@ -141,8 +146,8 @@ describe("Opportunities route", () => {
       expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez zapisu zmian")).toBeInTheDocument()
     );
     expect(screen.getByText("Decyzja z dowodami i bezpiecznym następnym krokiem.")).toBeInTheDocument();
-    expect(screen.getByText("Źródła danych: 1 źródło")).toBeInTheDocument();
-    expect(screen.getByText("Akcje do sprawdzenia: 2")).toBeInTheDocument();
+    expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do sprawdzenia: 2 akcje do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText(/google_ads \/ google_ads_review_queue/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Brak opportunities/)).not.toBeInTheDocument();

@@ -1841,6 +1841,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
+  source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocker_count: z.number()
@@ -2495,6 +2496,7 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   sections: z.array(Ga4DiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
+  source_connector_labels: z.array(z.string()).default([]),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocker_count: z.number(),

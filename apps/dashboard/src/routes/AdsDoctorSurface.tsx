@@ -285,9 +285,6 @@ function AdsCondensedDecisionPanel({
     ? primaryDecision.evidence_summary_label
     : summary.evidence_summary_label;
   const actionSummary = primaryDecision?.action_summary_label ?? summary.action_summary_label;
-  const sourceConnectors = primaryDecision
-    ? primaryDecision.source_connector_labels
-    : summary.source_connector_labels;
 
   return (
     <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
@@ -336,7 +333,7 @@ function AdsCondensedDecisionPanel({
           <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine label="Dowody" values={[evidenceSummary]} />
-            <TraceLine label="Źródła" values={sourceConnectors} />
+            <TraceLine label="Źródła" values={data.source_connector_labels} />
             <TraceLine
               label="Stan danych"
               values={[

@@ -126,6 +126,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads first-screen, condensed decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
+- Google Ads and GA4 diagnostics expose top-level API-owned
+  `source_connector_labels`, and touched proof panels use those labels instead
+  of reconstructing source labels from nested route data.
 - Google Ads start-here, business-context, strategy-readiness and campaign
   triage panels use API/domain action summary labels instead of route-local
   action count formatting.
@@ -240,9 +243,9 @@ are resolved or explicitly deferred.
    copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-   Latest done slice: Content refresh runs and content diagnostics/preflight
-   decisions now expose source labels from API contracts, and Content Planner no
-   longer maps connector IDs in React.
+   Latest done slice: Ads and GA4 diagnostics now expose top-level
+   `source_connector_labels`, and touched proof panels consume that API-owned
+   field directly.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
    have typed-preview-card coverage.
