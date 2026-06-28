@@ -231,6 +231,19 @@ def credential_source_count_label(sources: Iterable[str]) -> str:
     return f"{count} źródeł"
 
 
+def reported_issue_occurrence_count_label(count: int) -> str:
+    absolute = abs(count)
+    last_two = absolute % 100
+    last = absolute % 10
+    if absolute == 0:
+        return "brak zgłoszeń problemu"
+    if absolute == 1:
+        return "1 zgłoszenie problemu"
+    if last >= 2 and last <= 4 and not (last_two >= 12 and last_two <= 14):
+        return f"{count} zgłoszenia problemu"
+    return f"{count} zgłoszeń problemu"
+
+
 def mapped_action_type_count_label(action_types: Iterable[str]) -> str:
     count = len(list(action_types))
     if count == 0:

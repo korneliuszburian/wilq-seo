@@ -587,6 +587,10 @@ WILQ is complete for this long-range goal when:
   summary labels instead of route-local credential/source count formatting.
   Live API proof confirmed `/api/connectors`; browser proof confirmed
   `/settings`.
+- 2026-06-28: Merchant issue-cluster cards and decision summaries now consume
+  API/domain reported issue summary labels instead of route-local issue count
+  formatting or broken Polish count forms. Live API proof confirmed
+  `/api/merchant/diagnostics`; browser proof confirmed `/merchant`.
 - 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
   instead of using confidence text as a visual status state.
 - 2026-06-28: Knowledge first-screen decision and card summaries now use

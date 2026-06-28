@@ -1835,6 +1835,7 @@ export const MerchantIssueClusterSchema = z.object({
   reporting_context: z.string().nullable().optional(),
   reporting_context_label: z.string(),
   product_count: z.number(),
+  reported_issue_summary_label: z.string().default(""),
   count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   sample_product_ids: z.array(z.string()),
   sample_titles: z.array(z.string()),

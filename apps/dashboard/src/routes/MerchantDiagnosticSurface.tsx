@@ -493,14 +493,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   <StatusBadge value={cluster.risk} label={cluster.risk_label} />
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-700">
-                  Raport pokazuje{" "}
-                  {formatPolishCount(
-                    cluster.product_count,
-                    "zgłoszenie",
-                    "zgłoszenia",
-                    "zgłoszeń"
-                  )}{" "}
-                  tego problemu
+                  Raport pokazuje {cluster.reported_issue_summary_label}
                   {cluster.country ? ` w kraju ${cluster.country}` : ""}
                   {` / ${cluster.reporting_context_label}`}.
                 </p>
@@ -917,23 +910,6 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       </div>
     </article>
   );
-}
-
-function formatPolishCount(count: number, one: string, few: string, many: string) {
-  const absolute = Math.abs(count);
-  const lastDigit = absolute % 10;
-  const lastTwoDigits = absolute % 100;
-  if (absolute === 1) {
-    return `${count} ${one}`;
-  }
-  if (
-    lastDigit >= 2 &&
-    lastDigit <= 4 &&
-    !(lastTwoDigits >= 12 && lastTwoDigits <= 14)
-  ) {
-    return `${count} ${few}`;
-  }
-  return `${count} ${many}`;
 }
 
 function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }) {

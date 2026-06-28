@@ -21,6 +21,7 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import reported_issue_occurrence_count_label
 from wilq.schemas import (
     ActionObject,
     ActionPreviewCardViewModel,
@@ -2663,6 +2664,7 @@ def _merchant_decision_from_cluster_group(
     ]
     max_reported_count = max(cluster.product_count for cluster in clusters)
     reported_occurrences = sum(cluster.product_count for cluster in clusters)
+    max_reported_label = reported_issue_occurrence_count_label(max_reported_count)
     group_facts = _facts_for_cluster_group(facts, clusters)
     return MerchantDecisionItem(
         id=(
@@ -2677,7 +2679,7 @@ def _merchant_decision_from_cluster_group(
         summary=(
             f"Ten sam problem Merchant występuje w {len(clusters)} raportach: "
             f"{', '.join(context_labels)}. Największy raport pokazuje "
-            f"{max_reported_count} zgłoszeń, a suma wystąpień raportowych to "
+            f"{max_reported_label}, a suma wystąpień raportowych to "
             f"{reported_occurrences}; to nie jest liczba unikalnych produktów."
         ),
         cluster_id=primary_cluster.id,
@@ -2783,7 +2785,7 @@ def _merchant_decision_from_cluster(
         status="ready",
         title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
         summary=(
-            f"{cluster.product_count} zgłoszeń problemu "
+            f"{cluster.reported_issue_summary_label} "
             f"{cluster.severity_label or _merchant_severity_label(cluster.severity)}"
             f" / {cluster.resolution_label or _merchant_resolution_label(cluster.resolution)} "
             f"dla {cluster.country or 'global'}"

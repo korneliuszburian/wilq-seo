@@ -15,6 +15,7 @@ from wilq.operator_labels import (
     evidence_count_label,
     knowledge_reference_count_label,
     mapped_action_type_count_label,
+    reported_issue_occurrence_count_label,
     required_evidence_count_label,
     source_connector_summary_label,
     source_lineage_count_label,
@@ -2948,6 +2949,7 @@ class MerchantIssueCluster(BaseModel):
     reporting_context: str | None = None
     reporting_context_label: str
     product_count: int = 0
+    reported_issue_summary_label: str = ""
     count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     sample_product_ids: list[str] = Field(default_factory=list)
     sample_titles: list[str] = Field(default_factory=list)
@@ -2959,6 +2961,14 @@ class MerchantIssueCluster(BaseModel):
     risk: ActionRisk = ActionRisk.low
     risk_label: str = ""
     next_step: str
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> MerchantIssueCluster:
+        if not self.reported_issue_summary_label:
+            self.reported_issue_summary_label = reported_issue_occurrence_count_label(
+                self.product_count
+            )
+        return self
 
 
 class MerchantDecisionItem(BaseModel):

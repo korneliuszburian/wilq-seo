@@ -122,6 +122,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   evidence count formatting.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
+- Merchant issue-cluster cards and decision summaries use API/domain reported
+  issue summary labels instead of route-local issue count formatting or broken
+  Polish count forms.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms.

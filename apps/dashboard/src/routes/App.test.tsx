@@ -4942,6 +4942,7 @@ const merchantDiagnostics = {
       reporting_context: "SHOPPING_ADS",
       reporting_context_label: "reklamy produktowe",
       product_count: 23,
+      reported_issue_summary_label: "23 zgłoszenia problemu",
       count_semantics: "reported_issue_occurrences",
       sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
       sample_titles: ["Sorbent chemiczny 10 kg"],
@@ -4964,7 +4965,7 @@ const merchantDiagnostics = {
       status_label: "gotowe",
       title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
       summary:
-        "23 zgłoszeń problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
+        "23 zgłoszenia problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
       cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
       issue_type: "availability_updated",
@@ -7926,7 +7927,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/przegląd problemu feedu/)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /23 zgłoszeń problemu bez wpływu \/ wymaga działania po stronie Merchant dla PL \/ reklamy produktowe/
+        /23 zgłoszenia problemu bez wpływu \/ wymaga działania po stronie Merchant dla PL \/ reklamy produktowe/
       )
     ).toBeInTheDocument();
     expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
@@ -8004,7 +8005,10 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("summary.action_summary_label");
     expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("primaryDecision.action_summary_label");
+    expect(routeSource).toContain("cluster.reported_issue_summary_label");
     expect(routeSource).not.toContain("formatMerchantIdCount");
+    expect(routeSource).not.toContain("function formatPolishCount");
+    expect(routeSource).not.toContain("cluster.product_count,");
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(
       screen.queryByText("Przygotuj kolejkę przeglądu feedu Merchant Center")

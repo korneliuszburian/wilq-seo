@@ -75,6 +75,9 @@ Date: 2026-06-28
   evidence count formatting.
 - Connector settings cards use API/domain credential summary labels instead of
   route-local credential/source count formatting.
+- Merchant issue-cluster cards and decision summaries use API/domain reported
+  issue summary labels instead of route-local issue count formatting or broken
+  Polish count forms.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms instead
@@ -122,6 +125,23 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision" --maxfail=2`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Backend model proof: `MerchantIssueCluster` hydrates
+  `reported_issue_summary_label` with Polish count forms.
+- Live API proof: `/api/merchant/diagnostics` returns
+  `reported_issue_summary_label` and decision summaries with
+  `3 zgłoszenia problemu`.
+- Browser proof: `/merchant` expanded Merchant review renders
+  `Największy raport pokazuje 3 zgłoszenia problemu` without raw issue keys,
+  action internals or payload wording.
+
+Previous verified local slice:
 
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir packages/shared-schemas test`
