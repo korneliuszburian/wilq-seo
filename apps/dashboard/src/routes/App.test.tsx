@@ -521,6 +521,58 @@ const actions = [
       ],
       destructive: false
     },
+    preview_cards: [
+      {
+        id: "content_brief_preview_0",
+        kind: "content_brief_review",
+        title_label: "Plan treści do sprawdzenia",
+        subtitle_label: "brief bez pisania i bez publikacji",
+        status_label: "zapis zmian zablokowany",
+        rows: [
+          { label: "Temat", value: "zielony ład" },
+          { label: "Tryb", value: "odśwież istniejącą treść" },
+          {
+            label: "URL publiczny",
+            value: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+          },
+          {
+            label: "Cel planu treści",
+            value:
+              "Przygotuj plan odświeżenia albo scalenia istniejącej treści pod temat `zielony ład`."
+          },
+          { label: "Metryki", value: "kliknięcia: 12, wyświetlenia: 120, CTR: 10%" },
+          {
+            label: "Warunki sprawdzenia",
+            value:
+              "istniejący URL potwierdzony w WordPress, sprawdzenie zapytań i URL-i z GSC"
+          }
+        ],
+        apply_state_label: "zapis zmian zablokowany",
+        system_readiness_label: "wymaga kontroli"
+      },
+      {
+        id: "wordpress_draft_payload_preview_0",
+        kind: "wordpress_draft_payload_review",
+        title_label: "Szkic WordPress do sprawdzenia",
+        subtitle_label: "szkic bez publikacji",
+        status_label: "zapis zmian zablokowany",
+        rows: [
+          { label: "Temat", value: "zielony ład" },
+          { label: "Status wpisu", value: "szkic" },
+          { label: "Tytuł szkicu", value: "Odświeżenie: zielony ład" },
+          {
+            label: "URL publiczny",
+            value: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+          },
+          {
+            label: "Pomiar po publikacji",
+            value: "status: zablokowany do publikacji i danych po publikacji"
+          }
+        ],
+        apply_state_label: "zapis zmian zablokowany",
+        system_readiness_label: "wymaga kontroli"
+      }
+    ],
     audit_events: []
   },
   {
@@ -8066,14 +8118,10 @@ describe("WILQ dashboard", () => {
     expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż plany treści" }));
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
+    expect(screen.getByText("Plan treści do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie planu treści" })[0]);
-    await waitFor(() =>
-      expect(
-        screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
-      ).toBeInTheDocument()
-    );
+    expect(screen.getAllByRole("link", { name: "Otwórz akcję do sprawdzenia" }).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
@@ -8081,6 +8129,9 @@ describe("WILQ dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("poprawna")).toBeInTheDocument();
+    const routeSource = readFileSync("src/routes/ContentDiagnosticSurface.tsx", "utf8");
+    expect(routeSource).toContain("action.preview_cards");
+    expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
   });
 
   it("localo route renders workflow-specific blockers and clean metric labels", async () => {
@@ -8209,14 +8260,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Szkic WordPress po sprawdzeniu")).toBeInTheDocument();
     expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
     expect(screen.getByText("Odświeżenie: zielony ład")).toBeInTheDocument();
-    expect(screen.getByText("wersja robocza istniejącej treści / szkic")).toBeInTheDocument();
+    expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz sprawdzenie planu treści" })[0]);
-    await waitFor(() =>
-      expect(
-        screen.getByText(/Zapisano sprawdzenie: Przegląd operatora zapisany/)
-      ).toBeInTheDocument()
-    );
     fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")

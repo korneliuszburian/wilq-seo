@@ -560,6 +560,9 @@ WILQ is complete for this long-range goal when:
   and Merchant tactical labels now fall back to neutral Polish operator labels.
   The remaining raw fallback scan is limited to non-marketer connector
   normalization and title fallback paths.
+- 2026-06-28: Content Planner's expandable plan/draft panel now renders
+  API-owned action preview cards instead of constructing marketer-facing cards
+  from content/WordPress payload arrays.
 
 ## Discoveries
 
@@ -641,6 +644,9 @@ WILQ is complete for this long-range goal when:
   only emits known values, fallback paths must be neutral Polish copy because
   vendor contracts drift and tests should prove the drift does not leak raw
   keys to the marketer.
+- A dashboard panel that needs action preview semantics should render
+  `ActionObject.preview_cards`; reading action payload arrays is temporary debt
+  only when a domain-specific selected-decision view-model does not yet exist.
 
 ## Decision Log
 
@@ -694,6 +700,9 @@ WILQ is complete for this long-range goal when:
   Do not add or preserve route-local translators as cleanup strategy.
 - Unknown vendor/domain values in API-owned labels must use neutral Polish
   operator copy. Do not fall back to raw enum/source values in visible labels.
+- Content Planner plan/draft cards are action preview semantics. They must stay
+  on `ActionObject.preview_cards`; do not restore route-local content/WordPress
+  payload card renderers.
 
 ## Outcomes & Retrospective
 
@@ -715,3 +724,6 @@ WILQ is complete for this long-range goal when:
 - Latest fallback cleanup proof: focused API fallback tests, marketer language
   guard and `git diff --check` passed for Knowledge, Localo, GA4, Demand Gen,
   opportunity domain and Merchant tactical fallback labels.
+- Latest Content Planner proof: focused route test, dashboard typecheck,
+  marketer language guard and browser text proof passed after moving the
+  expandable plan/draft panel to API-owned preview cards.

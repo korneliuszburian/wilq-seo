@@ -193,6 +193,9 @@ Date: 2026-06-28
   contracts, Demand Gen conditions, opportunity domains and Merchant tactical
   issue labels now fall back to neutral Polish operator labels instead of raw
   enum/source values.
+- Content Planner's expandable plan/draft panel now renders API-owned
+  `ActionObject.preview_cards` for content brief and WordPress draft previews
+  instead of building marketer-facing cards from raw action payload arrays.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -211,10 +214,13 @@ Date: 2026-06-28
    fall back to raw snake_case or English values in marketer-facing copy.
 5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-6. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
+6. Content selected-decision metrics still read the content brief payload for
+   a primary decision snapshot. Migrate that into a typed content view-model in
+   a separate slice.
+7. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
-7. The remaining dashboard StatusBadge label-as-value scan hits are source and
+8. The remaining dashboard StatusBadge label-as-value scan hits are source and
    domain tags, not status/risk/validation state badges.
 
 ## Latest Accepted Proof
@@ -229,6 +235,9 @@ Date: 2026-06-28
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks or route_label_fallbacks or tactical_queue" --maxfail=3`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk git diff --check`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `agent-browser` proof: `.local-lab/proof/content-planner-preview-cards-clean.txt`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "knowledge_operating_map or content_diagnostics or tactical_queue or action_preview or operator_label_fallbacks" --maxfail=3`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_brief" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/BriefWorkflowSurface.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`

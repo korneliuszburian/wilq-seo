@@ -1,18 +1,17 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCheck, RefreshCw, ShieldAlert } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ShieldAlert } from "lucide-react";
 
 import {
   ActionObject,
-  ActionReviewRequest,
   ContentDiagnosticsResponse,
   ContentPreflightResponse,
   ConnectorStatus,
   getActions,
   getContentDiagnostics,
   getContentPreflight,
-  reviewAction
 } from "../lib/api";
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { connectorLabelsFromStatuses } from "../lib/connectorLabels";
 import { formatContentMetricValue } from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
@@ -125,8 +124,11 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
 function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
   const [showBriefs, setShowBriefs] = useState(false);
-  const briefCount = contentBriefPreviewItemsFromActions(actions).length;
-  const draftCount = wordpressDraftPayloadPreviewItemsFromActions(actions).length;
+  const briefCount = contentActionPreviewCardsFromActions(actions, "content_brief_review").length;
+  const draftCount = contentActionPreviewCardsFromActions(
+    actions,
+    "wordpress_draft_payload_review"
+  ).length;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -428,9 +430,12 @@ type ContentBriefPreviewItem = {
 };
 
 function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
-  const previews = contentBriefPreviewItemsFromActions(actions).slice(0, 4);
-  const draftPreviews = wordpressDraftPayloadPreviewItemsFromActions(actions).slice(0, 4);
-  if (previews.length === 0) return null;
+  const previews = contentActionPreviewCardsFromActions(actions, "content_brief_review").slice(0, 4);
+  const draftPreviews = contentActionPreviewCardsFromActions(
+    actions,
+    "wordpress_draft_payload_review"
+  ).slice(0, 4);
+  if (previews.length === 0 && draftPreviews.length === 0) return null;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -452,16 +457,18 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
           <MetricTile label="Podglądy" value={previews.length} />
           <MetricTile
             label="Zapis zmian"
-            value={previews.some((preview) => preview.apply_allowed) ? "otwarte" : "zablokowane"}
+            value="zablokowane"
           />
         </div>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        {previews.map((preview) => (
-          <ContentBriefPreviewCard
-            key={`${preview.action_id}-${preview.candidate_id}`}
-            preview={preview}
-          />
+        {previews.map(({ actionId, card }) => (
+          <div key={`${actionId}-${card.id}`} className="grid gap-2">
+            <ActionPreviewCard card={card} />
+            <a className="text-xs font-medium text-ink underline" href={`/actions/${actionId}`}>
+              Otwórz akcję do sprawdzenia
+            </a>
+          </div>
         ))}
       </div>
       {draftPreviews.length > 0 ? (
@@ -479,357 +486,19 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
             </p>
           </div>
           <div className="grid gap-3 lg:grid-cols-2">
-            {draftPreviews.map((preview) => (
-              <WordPressDraftPayloadPreviewCard
-                key={`${preview.action_id}-${preview.candidate_id}`}
-                preview={preview}
-              />
+            {draftPreviews.map(({ actionId, card }) => (
+              <div key={`${actionId}-${card.id}`} className="grid gap-2">
+                <ActionPreviewCard card={card} />
+                <a className="text-xs font-medium text-ink underline" href={`/actions/${actionId}`}>
+                  Otwórz akcję do sprawdzenia
+                </a>
+              </div>
             ))}
           </div>
         </div>
       ) : null}
     </section>
   );
-}
-
-function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem }) {
-  const queryClient = useQueryClient();
-  const reviewMutation = useMutation({
-    mutationFn: () => reviewAction(preview.action_id, contentBriefReviewRequest(preview)),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
-      void queryClient.invalidateQueries({ queryKey: ["content-diagnostics"] });
-      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
-    }
-  });
-
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-ink">{preview.topic}</h3>
-          <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-            {preview.source_type_label} / {preview.mode_label}
-          </p>
-        </div>
-        <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
-      </div>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
-      <div className="mt-3 grid gap-2 rounded-md border border-line bg-white p-3 text-xs leading-5 text-slate-600">
-        {preview.intent ? <div>Intencja: {preview.intent}</div> : null}
-        {preview.content_angle ? <div>Kąt treści: {preview.content_angle}</div> : null}
-        {preview.audience ? <div>Odbiorca: {preview.audience}</div> : null}
-        {preview.h1_direction ? <div>H1: {preview.h1_direction}</div> : null}
-        {preview.seo_title_direction ? <div>Title: {preview.seo_title_direction}</div> : null}
-        {preview.meta_description_direction ? (
-          <div>Meta: {preview.meta_description_direction}</div>
-        ) : null}
-        {preview.cta_direction ? <div>CTA: {preview.cta_direction}</div> : null}
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-        {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
-          <MetricTile
-            key={`${preview.candidate_id}-${label}`}
-            label={preview.metric_snapshot_labels?.[label] ?? label}
-            value={contentBriefMetricValue(label, value)}
-          />
-        ))}
-      </div>
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Obiekcje" values={(preview.key_objections ?? []).slice(0, 3)} />
-        <TraceLine label="H2" values={(preview.h2_direction ?? []).slice(0, 4)} />
-        <TraceLine label="FAQ" values={(preview.faq_direction ?? []).slice(0, 4)} />
-        <TraceLine label="Schema" values={preview.schema_direction ? [preview.schema_direction] : []} />
-        <TraceLine
-          label="Adresy"
-          values={contentAddressValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Status publikacji"
-          values={preview.publication_readiness_status_label ? [preview.publication_readiness_status_label] : []}
-          empty="brak"
-        />
-        <TraceLine
-          label="Blokady publikacji"
-          values={(preview.publication_blocker_labels ?? []).slice(0, 6)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Kontrola prawna"
-          values={(preview.legal_review_notes ?? []).slice(0, 4)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Ton marki"
-          values={(preview.brand_voice_notes ?? []).slice(0, 4)}
-          empty="brak"
-        />
-        <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
-        <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
-        <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
-        <TraceLine
-          label="Warunki sprawdzenia"
-          values={(preview.required_validation_labels ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Nie wolno obiecać"
-          values={(preview.blocked_claim_labels ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Dowody"
-          values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
-          empty="brak"
-        />
-        <TraceLine label="Akcja" values={["1 akcja"]} />
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => reviewMutation.mutate()}
-          disabled={reviewMutation.isPending}
-          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {reviewMutation.isPending ? (
-            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
-          ) : (
-            <ClipboardCheck aria-hidden="true" size={15} />
-          )}
-          {reviewMutation.isPending ? "Zapisuję sprawdzenie" : "Zapisz sprawdzenie planu treści"}
-        </button>
-        <span className="text-xs text-slate-600">
-          Zapisuje wybór planu treści do sprawdzenia. Nie publikuje i nie zapisuje zmian.
-        </span>
-      </div>
-      {reviewMutation.data ? (
-        <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
-          Zapisano sprawdzenie: {reviewMutation.data.audit_event.event_type_label}. Zapis zmian nadal:{" "}
-          {reviewMutation.data.review_gate.apply_allowed ? "otwarte" : "zablokowane"}.
-        </p>
-      ) : null}
-      {reviewMutation.error instanceof Error ? (
-        <p className="mt-2 text-xs leading-5 text-risk">
-          Nie udało się zapisać sprawdzenia: {reviewMutation.error.message}
-        </p>
-      ) : null}
-    </article>
-  );
-}
-
-type WordPressDraftPayloadPreviewItem = {
-  action_id: string;
-  preview_contract: string;
-  candidate_id: string;
-  operation_type: string;
-  post_status: string;
-  topic: string;
-  intent?: string | null;
-  source_public_url?: string | null;
-  preview_url?: string | null;
-  intended_final_url?: string | null;
-  final_canonical_url?: string | null;
-  inventory_gate_status?: string | null;
-  canonical_gate_status?: string | null;
-  duplicate_gate_status?: string | null;
-  content_gate_summary?: string | null;
-  content_gate_status_summary?: string[];
-  draft_generation_status?: string | null;
-  draft_blockers?: string[];
-  draft_blocker_labels?: string[];
-  draft_generation_contract?: {
-    contract_version?: string;
-    language?: string;
-    status?: string;
-    allowed_output_kind?: string;
-    blocked_until?: string[];
-    requires_passed_gates?: string[];
-    output_must_include?: string[];
-    forbidden_outputs?: string[];
-  };
-  draft_generation_summary?: string[];
-  draft_readiness_review_contract?: {
-    contract_version?: string;
-    scope?: string;
-    allowed_outcomes?: string[];
-    required_fields?: string[];
-    blocked_outputs?: string[];
-  };
-  draft_readiness_review_contract_summary?: string[];
-  draft_readiness_review_recorded_outcome?: string | null;
-  canonical_review_recorded_outcome?: string | null;
-  duplicate_review_recorded_outcome?: string | null;
-  legal_factual_review_recorded_outcome?: string | null;
-  human_review_recorded_outcome?: string | null;
-  draft_readiness_review_notes?: string | null;
-  draft_readiness_review_summary?: string[];
-  wordpress_draft_handoff_status?: string | null;
-  wordpress_draft_handoff_blockers?: string[];
-  wordpress_draft_handoff_blocker_labels?: string[];
-  wordpress_draft_handoff_summary?: string[];
-  wordpress_draft_handoff_contract?: {
-    contract_version?: string;
-    scope?: string;
-    final_canonical_url?: string | null;
-    status?: string;
-    blocked_until?: string[];
-    requires_passed_gates?: string[];
-    required_next_action_contract?: string;
-    blocked_outputs?: string[];
-  };
-  wordpress_draft_handoff_contract_summary?: string[];
-  post_publication_measurement_plan?: {
-    contract_version?: string;
-    scope?: string;
-    final_canonical_url?: string | null;
-    status?: string;
-    baseline_window?: string;
-    followup_windows?: string[];
-    required_source_connectors?: string[];
-    required_metric_groups?: string[];
-    requires_before_claims?: string[];
-    blocked_outputs?: string[];
-  };
-  post_publication_measurement_summary?: string[];
-  draft_payload: {
-    post_status?: string;
-    post_status_label?: string;
-    post_title?: string;
-    post_excerpt_direction?: string;
-    content_blocks?: Array<{ section: string; section_label?: string; instruction: string }>;
-  };
-  required_validation: string[];
-  required_validation_labels?: string[];
-  blocked_claims: string[];
-  blocked_claim_labels: string[];
-  operation_type_label: string;
-  post_status_label: string;
-  draft_generation_status_label?: string | null;
-  evidence_ids: string[];
-  mutation_allowed: boolean;
-  apply_allowed: boolean;
-  api_mutation_ready: boolean;
-};
-
-function WordPressDraftPayloadPreviewCard({
-  preview
-}: {
-  preview: WordPressDraftPayloadPreviewItem;
-}) {
-  return (
-    <article className="rounded-md border border-line bg-slate-50 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h4 className="text-sm font-semibold text-ink">
-            {preview.draft_payload.post_title ?? `Szkic: ${preview.topic}`}
-          </h4>
-          <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-            {preview.operation_type_label} / {preview.post_status_label}
-          </p>
-        </div>
-        <StatusBadge value={preview.mutation_allowed ? "ready" : "blocked"} />
-      </div>
-      {preview.draft_generation_status ? (
-        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs font-medium text-ink">
-          Status szkicu: {preview.draft_generation_status_label ?? preview.draft_generation_status}
-        </p>
-      ) : null}
-      <p className="mt-2 text-xs leading-5 text-slate-600">
-        {preview.draft_payload.post_excerpt_direction ??
-          "Szkic zmian do sprawdzenia. Nie publikuje i nie zapisuje zmian."}
-      </p>
-      {preview.intent ? (
-        <p className="mt-2 text-xs text-slate-600">Intencja szkicu: {preview.intent}</p>
-      ) : null}
-      {preview.final_canonical_url ?? preview.intended_final_url ?? preview.source_public_url ? (
-        <p className="mt-2 text-xs text-slate-600">
-          URL:{" "}
-          {shortPath(preview.final_canonical_url ?? preview.intended_final_url ?? preview.source_public_url ?? "")}
-        </p>
-      ) : null}
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine
-          label="Adresy"
-          values={contentAddressValues(preview)}
-          empty="brak"
-        />
-        <TraceLine label="Kontrole treści" values={contentDraftGateValues(preview)} empty="brak" />
-        <TraceLine
-          label="Co blokuje szkic"
-          values={(preview.draft_blocker_labels ?? []).slice(0, 6)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Warunki szkicu"
-          values={contentDraftContractValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Gotowość do sprawdzenia"
-          values={contentDraftReadinessReviewValues(preview)}
-          empty="brak zapisu"
-        />
-        <TraceLine
-          label="Kontrola szkicu"
-          values={contentDraftReadinessContractValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Szkic WordPress"
-          values={contentWordPressDraftHandoffValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Warunki szkicu WordPress"
-          values={contentWordPressDraftHandoffContractValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Pomiar po publikacji"
-          values={contentPostPublicationMeasurementValues(preview)}
-          empty="brak"
-        />
-        <TraceLine
-          label="Bloki"
-          values={(preview.draft_payload.content_blocks ?? [])
-            .slice(0, 4)
-            .map((block) => block.section_label ?? block.section)}
-        />
-        <TraceLine
-          label="Warunki sprawdzenia"
-          values={(preview.required_validation_labels ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Nie wolno obiecać"
-          values={(preview.blocked_claim_labels ?? []).slice(0, 4)}
-        />
-        <TraceLine
-          label="Dowody"
-          values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
-          empty="brak"
-        />
-        <TraceLine label="Akcja" values={["1 akcja"]} />
-      </div>
-    </article>
-  );
-}
-
-function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionReviewRequest {
-  return {
-    outcome: "approved_for_prepare",
-    reviewed_by: "operator_local_dashboard",
-    notes: `Wybrano propozycję planu treści ${preview.candidate_id} (${preview.topic}) do dalszego przeglądu. Ten zapis nie publikuje treści i nie zapisuje zmian.`,
-    checked_items: uniqueValues([
-      `candidate:${preview.candidate_id}`,
-      `source_type:${preview.source_type}`,
-      `mode:${preview.mode}`,
-      ...preview.required_validation.slice(0, 5)
-    ]),
-    blockers: uniqueValues([
-      "payload_apply_allowed_false",
-      "wordpress_write_not_requested",
-      ...preview.blocked_claims.slice(0, 5).map((claim) => `blocked_claim:${claim}`)
-    ])
-  };
 }
 
 function ContentSelectedDecisionPanel({
@@ -1350,6 +1019,14 @@ function contentDecisionTitle(decision: ContentDecisionItem) {
 
 type ContentBriefPreviewPayload = Omit<ContentBriefPreviewItem, "action_id">;
 
+function contentActionPreviewCardsFromActions(actions: ActionObject[], kind: string) {
+  return actions.flatMap((action) =>
+    action.preview_cards
+      .filter((card) => card.kind === kind)
+      .map((card) => ({ actionId: action.id, card }))
+  );
+}
+
 function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBriefPreviewItem[] {
   return actions.flatMap((action) => {
     const rows = action.payload.content_brief_preview;
@@ -1420,18 +1097,6 @@ function contentSelectedMeasurementPlan(preview: ContentBriefPreviewItem | undef
   ].join(" ");
 }
 
-function wordpressDraftPayloadPreviewItemsFromActions(
-  actions: ActionObject[]
-): WordPressDraftPayloadPreviewItem[] {
-  return actions.flatMap((action) => {
-    const rows = action.payload.wordpress_draft_payload_preview;
-    if (!Array.isArray(rows)) return [];
-    return rows
-      .filter(isWordPressDraftPayloadPreviewItem)
-      .map((row) => ({ ...row, action_id: action.id }));
-  });
-}
-
 function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewPayload {
   if (!isPlainObject(value)) return false;
   return (
@@ -1446,98 +1111,6 @@ function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreview
     Array.isArray(value.evidence_ids) &&
     typeof value.apply_allowed === "boolean" &&
     typeof value.api_mutation_ready === "boolean"
-  );
-}
-
-function isWordPressDraftPayloadPreviewItem(
-  value: unknown
-): value is Omit<WordPressDraftPayloadPreviewItem, "action_id"> {
-  if (!isPlainObject(value)) return false;
-  return (
-    typeof value.preview_contract === "string" &&
-    typeof value.candidate_id === "string" &&
-    typeof value.operation_type === "string" &&
-    typeof value.post_status === "string" &&
-    typeof value.topic === "string" &&
-    isPlainObject(value.draft_payload) &&
-    Array.isArray(value.required_validation) &&
-    Array.isArray(value.blocked_claims) &&
-    Array.isArray(value.evidence_ids) &&
-    typeof value.mutation_allowed === "boolean" &&
-    typeof value.apply_allowed === "boolean" &&
-    typeof value.api_mutation_ready === "boolean"
-  );
-}
-
-
-function contentAddressValues(
-  preview: Pick<
-    ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
-    | "source_public_url"
-    | "preview_url"
-    | "intended_final_url"
-    | "final_canonical_url"
-  >
-) {
-  const values: string[] = [];
-  const canonicalUrl = preview.final_canonical_url ?? preview.intended_final_url;
-  if (preview.source_public_url) {
-    values.push(`źródło: ${shortPath(preview.source_public_url)}`);
-  }
-  if (canonicalUrl) {
-    values.push(`kanoniczny: ${shortPath(canonicalUrl)}`);
-  }
-  if (preview.preview_url) {
-    values.push(`podgląd opcjonalny: ${shortPath(preview.preview_url)}`);
-  }
-  return values;
-}
-
-function contentDraftGateValues(
-  item: Pick<WordPressDraftPayloadPreviewItem, "content_gate_status_summary">
-): string[] {
-  return (item.content_gate_status_summary ?? []).filter((value) => value.trim().length > 0);
-}
-
-function contentDraftContractValues(
-  item: WordPressDraftPayloadPreviewItem
-): string[] {
-  return (item.draft_generation_summary ?? []).filter((value) => value.trim().length > 0);
-}
-
-function contentDraftReadinessReviewValues(
-  item: WordPressDraftPayloadPreviewItem
-): string[] {
-  return (item.draft_readiness_review_summary ?? []).filter(
-    (value) => value.trim().length > 0
-  );
-}
-
-function contentDraftReadinessContractValues(
-  item: WordPressDraftPayloadPreviewItem
-): string[] {
-  return (item.draft_readiness_review_contract_summary ?? []).filter(
-    (value) => value.trim().length > 0
-  );
-}
-
-function contentWordPressDraftHandoffValues(item: WordPressDraftPayloadPreviewItem): string[] {
-  return (item.wordpress_draft_handoff_summary ?? []).filter((value) => value.trim().length > 0);
-}
-
-function contentWordPressDraftHandoffContractValues(
-  item: WordPressDraftPayloadPreviewItem
-): string[] {
-  return (item.wordpress_draft_handoff_contract_summary ?? []).filter(
-    (value) => value.trim().length > 0
-  );
-}
-
-function contentPostPublicationMeasurementValues(
-  item: WordPressDraftPayloadPreviewItem
-): string[] {
-  return (item.post_publication_measurement_summary ?? []).filter(
-    (value) => value.trim().length > 0
   );
 }
 
