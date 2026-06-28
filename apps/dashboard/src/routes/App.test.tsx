@@ -167,6 +167,7 @@ const actions = [
         "podgląd zmian nie pozwala na zapis",
         "potwierdzenie człowieka przed zapisem"
       ],
+      apply_blocker_summary_label: "4 blokady",
       confirmation_required: true,
       apply_allowed: false,
       last_mutation_audit_id: "mutation_act_review_merchant_feed_issues_test",
@@ -178,6 +179,7 @@ const actions = [
       last_mutation_attempted: false,
       last_mutation_adapter: null,
       last_mutation_audit_event_id: "audit_act_review_merchant_feed_issues_apply_test",
+      last_mutation_blocker_summary_label: "1 blokada",
       last_mutation_blockers: ["vendor_mutation_adapter_required"],
       last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"]
     },
@@ -8085,11 +8087,11 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Zapis zmian:/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
-    expect(screen.getByText(/wymagane sprawdzenie w WILQ/)).toBeInTheDocument();
-    expect(screen.getByText(/podgląd zmian nie pozwala na zapis/)).toBeInTheDocument();
+    expect(screen.queryByText(/wymagane sprawdzenie w WILQ/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/podgląd zmian nie pozwala na zapis/)).not.toBeInTheDocument();
     expect(screen.getByText("Ostatni zapis bezpieczeństwa")).toBeInTheDocument();
     expect(screen.getByText("Zapisano kontrolę bezpieczeństwa bez zmian w zewnętrznych systemach.")).toBeInTheDocument();
-    expect(screen.getByText(/brak bezpiecznej ścieżki zapisu w zewnętrznym systemie/)).toBeInTheDocument();
+    expect(screen.queryByText(/brak bezpiecznej ścieżki zapisu w zewnętrznym systemie/)).not.toBeInTheDocument();
     expect(screen.queryByText("Ostatni audyt zmiany")).not.toBeInTheDocument();
     expect(screen.queryByText(/Adapter:/)).not.toBeInTheDocument();
     expect(screen.getByText("Wynik przeglądu człowieka")).toBeInTheDocument();

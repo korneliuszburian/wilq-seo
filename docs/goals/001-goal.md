@@ -94,6 +94,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   panels. Full blocker lists stay in technical detail.
 - Action-detail effect checks use plain before/after comparison wording from
   API/domain labels, including historical stored summaries.
+- Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
+  wording such as `dowody techniczne`, `techniczne warunki akcji` and
+  `techniczne potwierdzenie`. Technical detail drawers remain allowed.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label

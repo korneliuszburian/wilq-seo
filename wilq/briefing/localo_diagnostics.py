@@ -363,7 +363,7 @@ def _localo_sections(
         title="Localo: status dostępu do danych",
         status="ready" if access_ready else "blocked",
         summary=(
-            "Dostęp do danych Localo jest gotowy; techniczne potwierdzenie "
+            "Dostęp do danych Localo jest gotowy; potwierdzenie dostępu "
             "i dowody są dostępne w szczegółach."
             if access_ready
             else access_probe.summary

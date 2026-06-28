@@ -278,6 +278,30 @@ FORBIDDEN_PHRASES = (
         "Use Dowody w WILQ.",
     ),
     ForbiddenPhrase(
+        "dowody techniczne",
+        "Use dowody w WILQ or źródła danych; technical evidence wording is not marketer-first.",
+    ),
+    ForbiddenPhrase(
+        "techniczne warunki akcji",
+        "Use warunki zapisu akcji or warunki sprawdzenia.",
+    ),
+    ForbiddenPhrase(
+        "techniczne potwierdzenie",
+        "Use potwierdzenie dostępu or potwierdzenie odczytu.",
+    ),
+    ForbiddenPhrase(
+        "skrót technicznych",
+        "Use skrót źródeł danych / skrót blokad.",
+    ),
+    ForbiddenPhrase(
+        "Szczegóły techniczne zostają niżej",
+        "Use pełne warunki i dowody; technical detail belongs behind explicit drawers.",
+    ),
+    ForbiddenPhrase(
+        "przykłady dostępne w szczegółach technicznych",
+        "Use examples available in the full review.",
+    ),
+    ForbiddenPhrase(
         "Blockery",
         "Use Blokady in marketer-facing labels and fixtures.",
     ),

@@ -186,7 +186,7 @@ function AdsExpandableActionsPanel({
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             WILQ ma {actionSummaryLabel} dla Google Ads. Otwórz je dopiero wtedy, gdy
             chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
-            sprawdzić techniczne warunki akcji.
+            sprawdzić warunki zapisu akcji.
           </p>
         </div>
         <MetricTile label="Akcje" value={actionSummaryLabel} />
@@ -1528,8 +1528,8 @@ function AdsRecommendationRowsPanel({
                   {row.recommendation_type_label}
                 </div>
                 <div className="mt-1 text-xs leading-5 text-slate-600">
-                  Zakres: {row.campaign_count ?? 0} kampanii. Szczegóły techniczne
-                  powiązania są dostępne w danych akcji.
+                  Zakres: {row.campaign_count ?? 0} kampanii. Pełne powiązania
+                  są dostępne w danych akcji.
                 </div>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">

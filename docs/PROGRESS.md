@@ -42,6 +42,9 @@ Date: 2026-06-28
   panels. Full blocker lists stay in technical detail.
 - Action-detail effect checks use plain before/after comparison wording from
   API/domain labels, including historical stored summaries.
+- Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
+  wording such as `dowody techniczne`, `techniczne warunki akcji` and
+  `techniczne potwierdzenie`. Technical detail drawers remain allowed.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -159,6 +162,21 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "localo_diagnostics_shows_access_ready_without_visibility_claims or localo_diagnostics_exposes_partial_visibility_contracts" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "localo|merchant|content|ads doctor|safety record"`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- Live API proof: `/api/localo/diagnostics` has no
+  `techniczne potwierdzenie`, `dowody techniczne`, `techniczne warunki akcji`
+  or `skrót technicznych` in Localo access/section/operator summaries.
+- Browser proof: `/content-planner`, `/merchant`, `/ads-doctor` and `/localo`
+  have zero visible hits for the technical-evidence wording guarded in this
+  slice. `agent-browser` was also invoked for `/merchant`, but in this session
+  it returned only the app title, so Playwright DOM proof is the useful text
+  evidence.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "action_impact_check or context_pack_exposes_action_contracts" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "safety record|effect checks|Merchant|action detail labels"`

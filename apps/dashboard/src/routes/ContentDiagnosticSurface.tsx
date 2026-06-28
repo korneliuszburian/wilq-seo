@@ -176,7 +176,7 @@ function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsRespon
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Rozwiń pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, status
-            WordPress/GSC/Ahrefs, dowody techniczne i bramę bezpieczeństwa treści.
+            WordPress/GSC/Ahrefs, dowody w WILQ i bramę bezpieczeństwa treści.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">

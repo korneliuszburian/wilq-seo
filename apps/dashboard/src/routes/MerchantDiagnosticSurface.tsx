@@ -133,7 +133,7 @@ function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResp
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Pierwszy ekran pokazuje status i najważniejszy problem feedu. Rozwiń
             pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, gotowość próbek,
-            powiązanie produktów z Ads/GA4, ograniczenia i dowody techniczne.
+            powiązanie produktów z Ads/GA4, ograniczenia i dowody w WILQ.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -282,7 +282,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             {primaryDecision.title}. To jest skrót pierwszej decyzji z kolejki Merchant:
             najpierw ręczny przegląd problemu, potem podgląd zmian i dopiero później
-            ewentualna sprawdzona zmiana. Szczegóły techniczne zostają niżej.
+            ewentualna sprawdzona zmiana. Pełne warunki i dowody zostają niżej.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
@@ -875,7 +875,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         {decision.sample_product_ids.length || decision.sample_titles.length ? (
           <div className="rounded border border-line bg-white p-2">
             <p className="font-medium text-ink">Przykładowe produkty do sprawdzenia</p>
-            <TraceLine label="Próbki" values={["przykłady dostępne w szczegółach technicznych"]} />
+            <TraceLine label="Próbki" values={["przykłady dostępne w pełnym przeglądzie"]} />
             <TraceLine
               label="Tytuły"
               values={decision.sample_titles.slice(0, 4)}
@@ -925,7 +925,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
             Dowody i warunki przeglądu Merchant
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            To jest skrót technicznych źródeł i blokad w WILQ. Pełna kolejka pracy
+            To jest skrót źródeł danych i blokad w WILQ. Pełna kolejka pracy
             jest powyżej; tutaj widać, z jakich sekcji i dowodów wynika przegląd.
           </p>
         </div>

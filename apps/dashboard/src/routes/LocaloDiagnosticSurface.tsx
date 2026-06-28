@@ -144,8 +144,8 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
           Aktualny odczyt lokalnej widoczności
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          To jest marketerowy skrót z danych Localo dostępnych w WILQ. Szczegóły
-          techniczne są niżej, a lokalne obietnice pozostają
+          To jest marketerowy skrót z danych Localo dostępnych w WILQ. Pełne
+          warunki sprawdzenia są niżej, a lokalne obietnice pozostają
           zablokowane, jeśli brakuje danych o rankingach, profilu firmy w Google albo opiniach.
         </p>
       </div>
@@ -286,7 +286,7 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
             Dowody i warunki diagnozy Localo
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            WILQ pokazuje techniczne potwierdzenie dostępu osobno od danych lokalnych.
+            WILQ pokazuje potwierdzenie dostępu osobno od danych lokalnych.
             Brak danych oznacza brak diagnozy rankingów, nie zaproszenie do zgadywania.
           </p>
         </div>
