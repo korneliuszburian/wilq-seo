@@ -118,6 +118,7 @@ from wilq.operator_labels import (
     blocked_claim_label,
     blocked_claim_labels,
     connector_refresh_status_label,
+    impact_comparison_summary_label,
     knowledge_reference_count_label,
     missing_contract_labels,
     opportunity_domain_label,
@@ -1422,6 +1423,17 @@ def test_action_operator_labels_are_specific(
         walk(action.id, action.model_dump(mode="json"))
 
     assert leaks == []
+
+
+def test_impact_comparison_summary_label_handles_legacy_copy_without_string_rewrite() -> None:
+    legacy_summary = "Okno przed zmianą: 7 dni. Okno po zmianie: 14 dni."
+
+    assert impact_comparison_summary_label(legacy_summary) == (
+        "Porównanie sprzed zmiany: 7 dni. Porównanie po zmianie: 14 dni."
+    )
+    source = Path("wilq/operator_labels.py").read_text(encoding="utf-8")
+    assert '.replace("Okno przed zmianą"' not in source
+    assert '.replace("Okno po zmianie"' not in source
 
 
 def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:

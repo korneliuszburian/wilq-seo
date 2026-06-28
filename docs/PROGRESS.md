@@ -42,6 +42,9 @@ Date: 2026-06-28
   panels. Full blocker lists stay in technical detail.
 - Action-detail effect checks use plain before/after comparison wording from
   API/domain labels, including historical stored summaries.
+- Impact-check label handling no longer rewrites old window wording with
+  string replacement; historical summaries are normalized through typed
+  prefix labels.
 - Content, Merchant, Ads and Localo normal route copy avoids technical-evidence
   wording such as `dowody techniczne`, `techniczne warunki akcji` and
   `techniczne potwierdzenie`. Technical detail drawers remain allowed.
@@ -177,16 +180,12 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Expanded route language audit: 14 core routes/action details were checked
-  after opening non-technical details and product accordions.
-- Proof artifact: `.local-lab/proof/expanded-route-language-audit.json`
-- Current verification for this browser-audit slice:
+- Impact-check copy cleanup: historical before/after comparison summaries now
+  use typed prefix labels instead of string replacement of old wording.
+- Current verification for this API/domain-label slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "impact_comparison_summary_label or action_impact_check" --maxfail=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
-  - Playwright DOM audit result: `routes=14`, `failures=[]`
-  - `agent-browser read` was attempted for `/content-planner`, but this Vite app
-    returned an empty text artifact in the current session; Playwright DOM text
-    is the useful proof.
 
 ## Older Proof History
 

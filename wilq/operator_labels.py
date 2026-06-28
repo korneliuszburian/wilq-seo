@@ -416,17 +416,21 @@ def blocker_count_label(blockers: Iterable[object]) -> str:
 def impact_comparison_summary_label(summary: str | None) -> str | None:
     if not summary:
         return summary
-    parts = []
+    parts: list[str] = []
     for part in summary.split(". "):
-        cleaned = part.strip()
-        if cleaned.startswith("Okno przed zmianą"):
-            cleaned = cleaned.replace(
-                "Okno przed zmianą", "Porównanie sprzed zmiany", 1
-            )
-        elif cleaned.startswith("Okno po zmianie"):
-            cleaned = cleaned.replace("Okno po zmianie", "Porównanie po zmianie", 1)
-        parts.append(cleaned)
+        parts.append(_impact_comparison_summary_part_label(part.strip()))
     return ". ".join(parts)
+
+
+def _impact_comparison_summary_part_label(part: str) -> str:
+    prefix_labels = {
+        "Okno przed zmianą": "Porównanie sprzed zmiany",
+        "Okno po zmianie": "Porównanie po zmianie",
+    }
+    for prefix, label in prefix_labels.items():
+        if part.startswith(prefix):
+            return f"{label}{part[len(prefix):]}"
+    return part
 
 
 def freshness_state_label(state: str | None) -> str:
