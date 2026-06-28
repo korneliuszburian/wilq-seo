@@ -49,12 +49,12 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
                   <span>Tryb pracy: {action.mode_label}</span>
                 </div>
               </div>
-              <StatusBadge value={action.validation_status_label} />
+              <StatusBadge value={action.validation_status} label={action.validation_status_label} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge value={action.status_label} />
-              <StatusBadge value={action.risk_label} />
+              <StatusBadge value={action.status} label={action.status_label} />
+              <StatusBadge value={action.risk} label={action.risk_label} />
             </div>
             {action.mode !== "apply" ? (
             <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
@@ -320,7 +320,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           </div>
           <p className="mt-1 leading-5 text-slate-600">{actionReviewGateSummary(gate)}</p>
         </div>
-        <StatusBadge value={gate.status_label} />
+        <StatusBadge value={gate.status} label={gate.status_label} />
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <TraceLine

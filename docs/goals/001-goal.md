@@ -173,6 +173,9 @@ use cleaned Polish operator language.
 - Content draft handoff, post-publication measurement and tactical WordPress
   match summaries now use `stan ...` wording instead of `status:` prefixes in
   marketer-facing summaries.
+- Dashboard StatusBadge usage now passes raw state values with API labels for
+  Knowledge, Action, GA4 and Merchant status/risk/validation badges instead of
+  using the visible label as the visual state.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
@@ -214,6 +217,8 @@ are resolved or explicitly deferred.
    workflow/registry counters and remaining content/ads payload-derived panels.
 7. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
+8. The remaining dashboard StatusBadge label-as-value scan hits are source and
+   domain tags, not status/risk/validation state badges.
 
 ## Execution Policy
 

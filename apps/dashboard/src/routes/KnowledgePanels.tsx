@@ -43,8 +43,8 @@ export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingM
                 <p className="mt-1 text-xs text-slate-500">{binding.route_label || "powiązany widok"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <StatusBadge value={binding.status_label} />
-                <StatusBadge value={binding.risk_label} />
+                <StatusBadge value={binding.status} label={binding.status_label} />
+                <StatusBadge value={binding.risk} label={binding.risk_label} />
               </div>
             </div>
             <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-sm leading-6 text-wait">
@@ -184,8 +184,8 @@ function KnowledgeDecisionBindingCard({ binding }: { binding: KnowledgeDecisionB
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <StatusBadge value={binding.status_label} />
-          <StatusBadge value={binding.risk_label} />
+          <StatusBadge value={binding.status} label={binding.status_label} />
+          <StatusBadge value={binding.risk} label={binding.risk_label} />
         </div>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{binding.summary}</p>

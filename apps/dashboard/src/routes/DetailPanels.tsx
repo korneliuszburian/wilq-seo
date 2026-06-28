@@ -52,9 +52,9 @@ function ActionDetail({ action }: { action: ActionObject }) {
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-normal">{action.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
-        <StatusBadge value={action.status_label} />
-        <StatusBadge value={action.validation_status_label} />
-        <StatusBadge value={action.risk_label} />
+        <StatusBadge value={action.status} label={action.status_label} />
+        <StatusBadge value={action.validation_status} label={action.validation_status_label} />
+        <StatusBadge value={action.risk} label={action.risk_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Dowody i diagnoza" />
@@ -139,7 +139,7 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <StatusBadge value={evidence.source_connector_label} />
         <StatusBadge value={evidence.source_type_label} />
-        <StatusBadge value={evidence.freshness_label} />
+        <StatusBadge value={evidence.freshness.state} label={evidence.freshness_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podsumowanie dowodu" />

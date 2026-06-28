@@ -828,7 +828,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
             {decision.priority_label}
           </p>
         </div>
-        <StatusBadge value={decision.risk_label} />
+        <StatusBadge value={decision.risk} label={decision.risk_label} />
       </div>
       {decision.summary ? (
         <p className="mt-2 text-sm leading-6 text-slate-700">

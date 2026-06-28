@@ -441,8 +441,8 @@ function Ga4DecisionCard({
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <StatusBadge value={decision.status_label} />
-          <StatusBadge value={decision.risk_label} />
+          <StatusBadge value={decision.status} label={decision.status_label} />
+          <StatusBadge value={decision.risk} label={decision.risk_label} />
         </div>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
