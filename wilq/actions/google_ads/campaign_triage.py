@@ -251,7 +251,7 @@ def _campaign_channel_label(channel_type: object) -> str:
         "UNSPECIFIED": "kanał nieokreślony",
     }
     value = str(channel_type)
-    return labels.get(value, value)
+    return labels.get(value, "kanał kampanii do sprawdzenia")
 
 
 def _unique(values: list[str]) -> list[str]:

@@ -170,7 +170,7 @@ def _operation_type_label(value: str) -> str:
     labels = {
         "tracking_quality_review": "ocena jakości pomiaru",
     }
-    return labels.get(value, value)
+    return labels.get(value, "typ sprawdzenia GA4 do weryfikacji")
 
 
 def _tracking_dimension_gap_label(value: str) -> str:
@@ -179,7 +179,7 @@ def _tracking_dimension_gap_label(value: str) -> str:
         "source_medium": "źródło i medium ruchu",
         "campaign_name": "kampania",
     }
-    return labels.get(value, value)
+    return labels.get(value, "wymiar GA4 do sprawdzenia")
 
 
 def _metric_snapshot(facts: list[MetricFact]) -> dict[str, float | int | str]:
@@ -210,7 +210,7 @@ def _validation_label(value: str) -> str:
         "review_conversion_or_key_event_mapping": "sprawdź konwersje i zdarzenia kluczowe",
         "human_confirm_before_tracking_change": "potwierdź sprawdzenie przez człowieka",
     }
-    return labels.get(value, value)
+    return labels.get(value, "warunek GA4 do sprawdzenia")
 
 
 def _blocked_claim_label(value: str) -> str:
@@ -218,7 +218,7 @@ def _blocked_claim_label(value: str) -> str:
         "conversion_rate": "współczynnik konwersji",
         "roas": "zwrot z reklam",
     }
-    return labels.get(value, value)
+    return labels.get(value, "wniosek GA4 do sprawdzenia")
 
 
 def _evidence_summary_label(evidence_ids: Iterable[str]) -> str:

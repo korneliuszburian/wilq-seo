@@ -1470,7 +1470,7 @@ def _wordpress_match_note(wordpress_match: WordPressMatch) -> str:
     return (
         "Spis treści WordPress potwierdza istniejący obiekt "
         f"typu {dimensions.get('content_type', 'content')}, "
-        f"status: {_wordpress_status_label(dimensions.get('status'))}, "
+        f"stan wpisu: {_wordpress_status_label(dimensions.get('status'))}, "
         f"dopasowanie: {_wordpress_match_confidence_label(wordpress_match.confidence)}."
     )
 

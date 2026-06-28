@@ -1110,7 +1110,7 @@ def _draft_readiness_review_summary(review: Mapping[str, Any]) -> list[str]:
 
 def _wordpress_draft_handoff_summary(status: str, blockers: Iterable[str]) -> list[str]:
     return [
-        f"status: {_content_wordpress_draft_handoff_status_label(status)}",
+        f"stan przekazania do WordPress: {_content_wordpress_draft_handoff_status_label(status)}",
         *_prefixed_labels("blokada", list(blockers)[:5]),
     ]
 
@@ -1132,7 +1132,7 @@ def _post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
     values: list[str] = []
     status = plan.get("status")
     if isinstance(status, str) and status:
-        values.append(f"status: {_post_publication_measurement_status_label(status)}")
+        values.append(f"stan pomiaru efektu: {_post_publication_measurement_status_label(status)}")
     blocked_outputs = _prioritized_content_contract_values(
         _string_list(plan.get("blocked_outputs")),
         [

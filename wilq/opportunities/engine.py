@@ -462,7 +462,7 @@ def _risk_label(risk: ActionRisk | str) -> str:
         "high": "wysokie ryzyko",
         "critical": "krytyczne ryzyko",
     }
-    return labels.get(value, value)
+    return labels.get(value, "ryzyko szansy do sprawdzenia")
 
 
 def _opportunity_metrics(

@@ -17,8 +17,15 @@ from wilq.actions.google_ads.business_context import (
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
 from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
+from wilq.actions.google_ads.campaign_triage import _campaign_channel_label
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
+from wilq.actions.ga4.tracking_quality import (
+    _blocked_claim_label as _ga4_tracking_blocked_claim_label,
+    _operation_type_label as _ga4_tracking_operation_type_label,
+    _tracking_dimension_gap_label as _ga4_tracking_dimension_gap_label,
+    _validation_label as _ga4_tracking_validation_label,
+)
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import (
     _ads_recommendation_type_label,
@@ -112,6 +119,7 @@ from wilq.operator_labels import (
     source_connector_labels,
 )
 from wilq.knowledge.operating_map import _operator_missing_contract_labels
+from wilq.opportunities.engine import _risk_label as _opportunity_risk_label
 from wilq.workflows.models import _workflow_run_status_label
 from wilq.workflows.registry import _risk_label as _workflow_risk_label
 from wilq.workflows.registry import _status_label as _workflow_status_label
@@ -1463,6 +1471,12 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         _merchant_freshness_label(raw_value),
         _merchant_status_label(raw_value),
         _merchant_risk_label(raw_value),
+        _campaign_channel_label(raw_value),
+        _ga4_tracking_operation_type_label(raw_value),
+        _ga4_tracking_dimension_gap_label(raw_value),
+        _ga4_tracking_validation_label(raw_value),
+        _ga4_tracking_blocked_claim_label(raw_value),
+        _opportunity_risk_label(raw_value),
     ]
 
     assert labels == [
@@ -1501,6 +1515,12 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "świeżość danych do sprawdzenia",
         "status sekcji do sprawdzenia",
         "ryzyko do sprawdzenia",
+        "kanał kampanii do sprawdzenia",
+        "typ sprawdzenia GA4 do weryfikacji",
+        "wymiar GA4 do sprawdzenia",
+        "warunek GA4 do sprawdzenia",
+        "wniosek GA4 do sprawdzenia",
+        "ryzyko szansy do sprawdzenia",
     ]
     assert all(raw_value not in label for label in labels)
     assert all("new VENDOR raw value" not in label for label in labels)
@@ -3990,8 +4010,14 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert first_wordpress_draft_preview["canonical_gate_status_label"]
             assert first_wordpress_draft_preview["duplicate_gate_status_label"]
             assert (
-                "status: zablokowany do przejścia kontroli szkicu"
+                "stan przekazania do WordPress: zablokowany do przejścia kontroli szkicu"
                 in first_wordpress_draft_preview["wordpress_draft_handoff_summary"]
+            )
+            assert "status:" not in " ".join(
+                [
+                    *first_wordpress_draft_preview["wordpress_draft_handoff_summary"],
+                    *first_wordpress_draft_preview["post_publication_measurement_summary"],
+                ]
             )
             assert (
                 first_wordpress_draft_preview["required_next_action_label"]
@@ -7695,6 +7721,9 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
     )
     assert item["intent"] in {"content_refresh", "content_merge"}
     assert "ev_refresh_wordpress_ekologus_target_inventory_test" in item["evidence_ids"]
+    serialized_item = json.dumps(item, ensure_ascii=False)
+    assert "stan wpisu:" in serialized_item
+    assert "status:" not in serialized_item
 
 
 def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(

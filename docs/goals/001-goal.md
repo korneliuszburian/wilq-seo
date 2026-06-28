@@ -167,6 +167,12 @@ use cleaned Polish operator language.
   of exposing raw enum values or `status: ...` strings.
 - Workflow registry and workflow-run labels now use neutral Polish fallback
   labels for unknown process statuses and risks instead of exposing raw values.
+- GA4 tracking-quality actions, Ads campaign triage and Opportunities now use
+  neutral Polish fallback labels for unknown operation types, dimensions,
+  validation gates, channels and risks.
+- Content draft handoff, post-publication measurement and tactical WordPress
+  match summaries now use `stan ...` wording instead of `status:` prefixes in
+  marketer-facing summaries.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no
@@ -206,6 +212,8 @@ are resolved or explicitly deferred.
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 6. Dashboard still needs focused cleanup for Knowledge first-screen summaries,
    workflow/registry counters and remaining content/ads payload-derived panels.
+7. The remaining active `replace("_", " ")` scan hits are Merchant attribute-key
+   normalizers used for equality matching, not visible operator labels.
 
 ## Execution Policy
 
