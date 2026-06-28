@@ -345,10 +345,12 @@ def _compact_tactical_diagnosis(
         metrics = ", ".join(
             metric
             for metric in (
-                None if clicks is None else f"clicks={_format_compact_number(clicks)}",
+                None
+                if clicks is None
+                else f"kliknięcia: {_format_compact_number(clicks)}",
                 None
                 if impressions is None
-                else f"impressions={_format_compact_number(impressions)}",
+                else f"wyświetlenia: {_format_compact_number(impressions)}",
             )
             if metric is not None
         )
@@ -1358,10 +1360,10 @@ def _gsc_diagnosis(
     wordpress_note = _wordpress_match_note(wordpress_match)
     return (
         f"Zapytanie `{query}` prowadzi do `{page}`. Metryki GSC: "
-        f"clicks={_metric_or_missing(clicks)}, "
-        f"impressions={_metric_or_missing(impressions)}, "
-        f"ctr={_metric_or_missing(ctr)}, "
-        f"average_position={_metric_or_missing(position)}. "
+        f"kliknięcia: {_metric_or_missing(clicks)}, "
+        f"wyświetlenia: {_metric_or_missing(impressions)}, "
+        f"CTR: {_metric_or_missing(ctr)}, "
+        f"średnia pozycja: {_metric_or_missing(position)}. "
         f"{wordpress_note}"
     )
 

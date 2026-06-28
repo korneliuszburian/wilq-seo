@@ -4452,6 +4452,10 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     ]
     assert gsc_groups
     assert any("powiązanych zapytań" in group["diagnosis"] for group in gsc_groups)
+    assert all("clicks=" not in group["diagnosis"] for group in gsc_groups)
+    assert all("impressions=" not in group["diagnosis"] for group in gsc_groups)
+    assert any("kliknięcia:" in group["diagnosis"] for group in gsc_groups)
+    assert any("wyświetlenia:" in group["diagnosis"] for group in gsc_groups)
     assert all(group["evidence_ids"] for group in queue["compact_groups"])
     assert all(group["blocked_claims"] for group in queue["compact_groups"])
     assert all(group["priority_label"] for group in queue["compact_groups"])
@@ -4461,6 +4465,9 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert all(group["blocked_claim_labels"] for group in queue["compact_groups"])
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
+    assert all("clicks=" not in item["diagnosis"] for item in content_items)
+    assert all("average_position=" not in item["diagnosis"] for item in content_items)
+    assert any("kliknięcia:" in item["diagnosis"] for item in content_items)
     assert any(
         item["dimensions"]["wordpress_match_confidence"] == "exact_url"
         for item in content_items

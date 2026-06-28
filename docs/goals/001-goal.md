@@ -123,6 +123,8 @@ use cleaned Polish operator language.
   marketer-facing context.
 - Content source facts use Polish operator labels instead of raw GSC
   key-value strings, and the Content status heading uses `Stan danych treści`.
+- Tactical queue GSC diagnoses use Polish metric labels instead of raw
+  `clicks=` / `impressions=` key-value strings.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

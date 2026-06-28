@@ -105,7 +105,7 @@ const queue: TacticalQueueResponse = {
       title: "SEO: zweryfikuj treść /europejski-zielony-lad-co-to-takiego/ (2 query)",
       meta: "SEO / nowa treść / najpierw",
       diagnosis:
-        "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: clicks=70, impressions=1666.",
+        "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: kliknięcia: 70, wyświetlenia: 1666.",
       next_step: "Najpierw sprawdź duplikaty w WordPress.",
       priority: 17,
       priority_label: "wysoki priorytet",

@@ -4582,7 +4582,7 @@ const tacticalQueue = {
       title: "SEO: odśwież /europejski-zielony-lad-co-to-takiego/ (2 query)",
       meta: "SEO / odświeżenie treści / najpierw",
       diagnosis:
-        "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: clicks=12, impressions=120.",
+        "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: kliknięcia: 12, wyświetlenia: 120.",
       next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
       priority: 26,
       risk: "low",

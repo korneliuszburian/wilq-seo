@@ -136,6 +136,9 @@ Date: 2026-06-28
 - Content source facts now use Polish operator labels such as `Strona z GSC`
   and `Kliknięcia GSC` instead of `GSC page=` / `queries=` key-value strings,
   and the Content status heading now reads `Stan danych treści`.
+- Tactical queue GSC diagnoses now use Polish metric labels such as
+  `kliknięcia:` and `wyświetlenia:` instead of `clicks=` /
+  `impressions=` key-value strings.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -189,6 +192,9 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec vitest run src/components/MetricFactChips.test.tsx src/routes/TacticalQueuePanel.test.tsx --reporter=verbose --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_action_preview" --maxfail=3`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "marketing_tactical_queue_uses_dimensioned_metric_facts" --maxfail=3`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `agent-browser` proof: `.local-lab/proof/content-planner-tactical-metrics-clean.txt`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.
