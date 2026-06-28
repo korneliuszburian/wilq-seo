@@ -914,25 +914,44 @@ def _compact_tactical_queue_for_skill_context(
 
 def _compact_metric_fact_for_context(fact: dict[str, Any]) -> dict[str, Any]:
     return {
-        "name": fact.get("name"),
+        "metric_label": fact.get("metric_label"),
         "value": fact.get("value"),
         "unit": fact.get("unit"),
         "period": fact.get("period"),
         "source_connector": fact.get("source_connector"),
         "evidence_id": fact.get("evidence_id"),
-        "dimensions": _compact_dimensions_for_context(fact.get("dimensions")),
+        "dimensions": _compact_dimensions_for_context(
+            fact.get("dimensions"),
+            dimension_labels=fact.get("dimension_labels"),
+            dimension_value_labels=fact.get("dimension_value_labels"),
+        ),
         "freshness_label": fact.get("freshness_label"),
         "trend": fact.get("trend"),
     }
 
 
-def _compact_dimensions_for_context(dimensions: Any) -> dict[str, str]:
+def _compact_dimensions_for_context(
+    dimensions: Any,
+    *,
+    dimension_labels: Any = None,
+    dimension_value_labels: Any = None,
+) -> dict[str, str]:
     if not isinstance(dimensions, dict):
         return {}
+    labels = dimension_labels if isinstance(dimension_labels, dict) else {}
+    value_labels = dimension_value_labels if isinstance(dimension_value_labels, dict) else {}
     compact: dict[str, str] = {}
     for key, value in list(dimensions.items())[:8]:
-        text = str(value)
-        compact[str(key)] = text if len(text) <= 160 else f"{text[:157]}..."
+        label = str(labels.get(key) or "wymiar")
+        value_label = str(value_labels.get(key) or "wartość wymiaru do sprawdzenia")
+        compact_label = label
+        suffix = 2
+        while compact_label in compact:
+            compact_label = f"{label} {suffix}"
+            suffix += 1
+        compact[compact_label] = (
+            value_label if len(value_label) <= 160 else f"{value_label[:157]}..."
+        )
     return compact
 
 

@@ -109,6 +109,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   those terms.
 - Daily and content-strategist context-pack tests now scan string values for
   old working route names, stale content URL terms and technical jargon.
+- Daily context-pack metric facts now use API/schema-owned `metric_label`,
+  `dimension_labels` and `dimension_value_labels`, so Codex skills do not get
+  raw metric keys or raw vendor dimension enums in compact top metric facts.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
@@ -229,6 +232,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Metric facts hydrate Polish `metric_label` values at the shared backend
   schema boundary, and live contract smoke now prevents empty or raw snake_case
   metric labels from returning in metric fact contracts.
+- Compact context-pack metric facts use those labels and no longer expose raw
+  metric names or vendor dimension enums when Polish operator labels exist.
 - Google Ads campaign rows hydrate Polish campaign status and channel labels at
   the shared backend schema boundary, and live contract smoke now prevents empty
   or raw visible `*_label` fields in checked API payloads.
@@ -250,9 +255,9 @@ are resolved or explicitly deferred.
    copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-   Latest done slice: Ads and GA4 diagnostics now expose top-level
-   `source_connector_labels`, and touched proof panels consume that API-owned
-   field directly.
+   Latest done slice: compact daily context-pack metric facts now consume
+   `MetricFact.metric_label`, `dimension_labels` and `dimension_value_labels`
+   instead of raw metric keys or vendor dimension enums.
 5. Dashboard still needs focused cleanup for any newly found content/ads
    payload-derived panels. Active actions with operator preview payloads now
    have typed-preview-card coverage. Action validation errors for Ads, GA4 and

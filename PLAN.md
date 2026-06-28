@@ -330,6 +330,10 @@ Known cleanup already started:
 - `wilq-daily-command` reaches the live WILQ API and the daily context-pack
   smoke passes after capping embedded evidence summaries at 32. Keep watching
   context-pack size as live evidence grows.
+- Daily context-pack metric facts use `MetricFact.metric_label`,
+  `dimension_labels` and `dimension_value_labels`. Do not expose raw metric
+  keys or vendor dimension enums to Codex skills when a Polish operator label
+  exists.
 - Merchant, Treści and Ahrefs browser proof now passes the targeted
   stale-term scan for visible `ID` proof-count and product-ID wording.
 

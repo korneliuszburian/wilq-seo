@@ -255,7 +255,7 @@ class MetricFact(BaseModel):
             }
         if not self.dimension_value_labels:
             self.dimension_value_labels = {
-                key: _metric_dimension_value_label(value)
+                key: _metric_dimension_value_label(key, value)
                 for key, value in self.dimensions.items()
             }
         return self
@@ -265,17 +265,27 @@ def _metric_dimension_label(value: str) -> str:
     labels = {
         "affected_attribute": "atrybut",
         "campaign_name": "kampania",
+        "changed_field": "zmienione pole",
+        "changed_resource": "zmieniony zasób",
+        "connector_id": "źródło danych",
+        "content_type": "typ treści",
         "competitor_domain": "konkurent",
         "contract": "obszar",
         "country": "kraj",
         "gap_type": "typ luki",
         "issue_type": "problem",
         "keyword": "fraza",
+        "keyword_match_type": "dopasowanie frazy",
+        "keyword_negative": "wykluczenie frazy",
         "landing_page": "strona wejścia",
         "metric_bucket": "zakres",
         "page": "strona",
         "query": "zapytanie",
+        "reporting_context": "kontekst",
+        "resolution": "rozwiązanie",
         "scope": "zakres",
+        "severity": "status",
+        "site_kind": "typ serwisu",
         "source_medium": "źródło",
         "source_url": "URL źródłowy",
         "target_domain": "domena docelowa",
@@ -283,16 +293,35 @@ def _metric_dimension_label(value: str) -> str:
     return labels.get(value, "wymiar")
 
 
-def _metric_dimension_value_label(value: str) -> str:
+def _metric_dimension_value_label(key: str, value: str) -> str:
     labels = {
         "active_places": "aktywne miejsca",
         "authority_summary": "autorytet domeny",
+        "BROAD": "dopasowanie szerokie",
         "competitor_visibility": "widoczność konkurencji",
+        "competitor_page": "strona konkurencji",
+        "false": "nie",
+        "FREE_LISTINGS": "bezpłatne wyniki produktowe",
         "gbp_visibility": "profil firmy w Google",
         "local_rankings": "lokalne pozycje",
+        "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
+        "missing_potentially_required_attribute": (
+            "brak potencjalnie wymaganego atrybutu"
+        ),
+        "n:availability": "dostępność",
+        "n:unit_pricing_measure": "miara ceny jednostkowej",
+        "NOT_IMPACTED": "bez wpływu",
+        "pages": "strony",
         "place_inventory": "spis miejsc",
+        "posts": "wpisy",
+        "primary": "ekologus.pl",
         "reviews": "opinie",
+        "shop": "sklep",
+        "SHOPPING_ADS": "reklamy produktowe",
+        "true": "tak",
     }
+    if key == "connector_id":
+        return source_connector_label(value)
     return labels.get(value, "wartość wymiaru do sprawdzenia")
 
 

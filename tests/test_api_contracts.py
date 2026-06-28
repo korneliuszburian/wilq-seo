@@ -10,7 +10,11 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from apps.api.wilq_api.main import app, _compact_refresh_run_for_operator_context
+from apps.api.wilq_api.main import (
+    app,
+    _compact_metric_fact_for_context,
+    _compact_refresh_run_for_operator_context,
+)
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -17213,6 +17217,43 @@ def _assert_context_pack_operator_strings_clean(context: dict[str, Any]) -> None
     )
     for forbidden_term in forbidden_terms:
         assert forbidden_term not in context_text
+
+
+def test_compact_metric_fact_context_uses_dimension_labels() -> None:
+    fact = MetricFact(
+        name="issue_product_count",
+        value=12,
+        period="test",
+        source_connector="google_merchant_center",
+        evidence_id="ev_metric_fact_dimension_context",
+        dimensions={
+            "affected_attribute": "n:unit_pricing_measure",
+            "issue_type": "missing_potentially_required_attribute",
+            "reporting_context": "FREE_LISTINGS",
+            "resolution": "MERCHANT_ACTION",
+            "severity": "NOT_IMPACTED",
+        },
+    )
+
+    compact = _compact_metric_fact_for_context(fact.model_dump(mode="json"))
+    serialized = json.dumps(compact, ensure_ascii=False)
+
+    assert compact["metric_label"] == "zgłoszenia problemów"
+    assert compact["dimensions"]["atrybut"] == "miara ceny jednostkowej"
+    assert compact["dimensions"]["problem"] == "brak potencjalnie wymaganego atrybutu"
+    assert compact["dimensions"]["kontekst"] == "bezpłatne wyniki produktowe"
+    assert compact["dimensions"]["rozwiązanie"] == "wymaga działania po stronie Merchant"
+    assert compact["dimensions"]["status"] == "bez wpływu"
+    for raw_value in (
+        "issue_product_count",
+        "affected_attribute",
+        "missing_potentially_required_attribute",
+        "FREE_LISTINGS",
+        "MERCHANT_ACTION",
+        "NOT_IMPACTED",
+        "n:unit_pricing_measure",
+    ):
+        assert raw_value not in serialized
 
 
 def test_marketing_brief_dedupes_command_center_blockers() -> None:

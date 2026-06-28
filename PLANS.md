@@ -810,6 +810,9 @@ WILQ is complete for this long-range goal when:
   key/value labels must come from `MetricFact.dimension_labels` and
   `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries
   for metric semantics.
+- Compact context-pack metric facts must use those same metric and dimension
+  labels. Do not feed Codex skills raw metric keys or raw vendor dimension
+  enums when a Polish operator label exists.
 - Merchant metric labels belong in `merchant_labels.py` and the Merchant API
   view-model, not in `MerchantDiagnosticSurface`.
 - GA4 metric labels belong in the GA4 diagnostics API/domain view-model, not

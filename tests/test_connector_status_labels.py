@@ -105,6 +105,18 @@ def test_metric_fact_unknown_raw_name_uses_neutral_polish_label() -> None:
     assert fact.metric_label == "metryka źródłowa"
 
 
+def test_metric_fact_hydrates_known_ahrefs_metric_label() -> None:
+    fact = MetricFact(
+        name="ahrefs_competitor_page_count",
+        value=5,
+        period="connector_refresh",
+        source_connector="ahrefs",
+        evidence_id="ev_metric_fact_ahrefs_label",
+    )
+
+    assert fact.metric_label == "strony konkurencji"
+
+
 def test_ads_campaign_rows_hydrate_operator_enum_labels() -> None:
     metric_row = AdsCampaignMetricRow(
         campaign_name="Brand Search",

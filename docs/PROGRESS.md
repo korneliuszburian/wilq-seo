@@ -34,6 +34,11 @@ Date: 2026-06-29
   `status_label`, freshness labels and operator-safe summaries. It no longer
   exposes empty freshness labels or summaries like `status configured` to
   Codex skills.
+- Daily context-pack metric facts now carry Polish `metric_label` plus
+  labelled metric dimensions from `dimension_labels` and
+  `dimension_value_labels`. Compact skill context no longer exposes raw metric
+  keys such as `issue_product_count` or raw vendor dimension enums such as
+  `MERCHANT_ACTION`, `FREE_LISTINGS` and `competitor_page`.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -228,6 +233,22 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Daily context-pack metric-dimension cleanup: compact marketing brief metric
+  facts now use `MetricFact.metric_label`, `dimension_labels` and
+  `dimension_value_labels`, and known Ahrefs cross-surface metrics hydrate a
+  Polish label before reaching Codex skills. Live `POST /api/codex/context-pack`
+  proof showed 8 top metric facts and 0 raw metric/vendor-dimension failures
+  for the guarded terms.
+  Verification:
+  - `rtk uv run pytest tests/test_api_contracts.py::test_compact_metric_fact_context_uses_dimension_labels tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract tests/test_api_contracts.py::test_daily_context_pack_uses_daily_decisions_for_action_summaries tests/test_api_contracts.py::test_codex_context_pack_scopes_merchant_payload_preview -q`
+  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_metric_store_and_cli.py -q`
+  - `rtk scripts/local_stack.sh restart`
+  - live `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` metric-dimension scan
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - `rtk git diff --check`
+
+Previous verified local slice:
 
 - Daily context-pack connector-status cleanup: compact connector status now
   exposes Polish `status_label`, freshness labels, last successful read time

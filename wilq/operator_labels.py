@@ -60,6 +60,7 @@ COMMON_METRIC_FACT_LABELS: dict[str, str] = {
 CONNECTOR_METRIC_FACT_LABELS: dict[str, dict[str, str]] = {
     "ahrefs": {
         "ahrefs_backlink_gap_count": "luki linków",
+        "ahrefs_competitor_page_count": "strony konkurencji",
         "ahrefs_content_gap_count": "luki treści",
         "ahrefs_organic_keyword_gap_count": "luki fraz organicznych",
         "blokady": "blokady",
