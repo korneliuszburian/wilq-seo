@@ -29,6 +29,8 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
     DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
+    demand_gen_campaign_status_label,
+    demand_gen_channel_label,
     demand_gen_channel_labels,
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
@@ -1733,7 +1735,11 @@ def _compact_campaign_row_for_demand_gen(row: dict[str, Any]) -> AdsCampaignMetr
         campaign_id=row.get("campaign_id"),
         campaign_name=row.get("campaign_name") or "campaign",
         campaign_status=row.get("campaign_status"),
+        campaign_status_label=demand_gen_campaign_status_label(row.get("campaign_status")),
         advertising_channel_type=row.get("advertising_channel_type"),
+        advertising_channel_type_label=demand_gen_channel_label(
+            row.get("advertising_channel_type")
+        ),
         clicks=row.get("clicks"),
         impressions=row.get("impressions"),
         cost_micros=row.get("cost_micros"),

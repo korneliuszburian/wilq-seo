@@ -18091,8 +18091,14 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert data["demand_gen_campaign_mode_review_rows"][0]["campaign_name"] == (
         "Demand Gen Test"
     )
+    assert data["demand_gen_campaign_rows"][0]["advertising_channel_type_label"] == (
+        "Demand Gen"
+    )
+    assert data["demand_gen_campaign_rows"][0]["campaign_status_label"] == "wstrzymana"
     campaign_mode_review_row = data["demand_gen_campaign_mode_review_rows"][0]
     assert "transition_candidate" not in campaign_mode_review_row
+    assert campaign_mode_review_row["advertising_channel_type_label"] == "Demand Gen"
+    assert campaign_mode_review_row["campaign_status_label"] == "wstrzymana"
     assert campaign_mode_review_row["review_required"] is False
     assert campaign_mode_review_row["review_status_label"] == "bez zmiany trybu"
     assert "already_demand_gen" in campaign_mode_review_row["reason"]

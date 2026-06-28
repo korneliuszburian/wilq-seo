@@ -1182,7 +1182,9 @@ class AdsCampaignMetricRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str = ""
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str = ""
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
@@ -2521,7 +2523,9 @@ class DemandGenCampaignModeReviewRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     campaign_status: str | None = None
+    campaign_status_label: str = ""
     advertising_channel_type: str | None = None
+    advertising_channel_type_label: str = ""
     review_required: bool = False
     review_status_label: str = ""
     reason: str

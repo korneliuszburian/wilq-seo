@@ -7682,7 +7682,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Źródła danych: Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Akcje do sprawdzenia: 1 akcja")).toBeInTheDocument();
-    expect(screen.getByText("Zakazane obietnice: werdykt przepalonego budżetu")).toBeInTheDocument();
+    expect(screen.getByText("Zakazane obietnice: ocena zmarnowanego budżetu")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełną mapę wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż źródła wiedzy" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż zasady pracy" })).toBeInTheDocument();
@@ -8335,7 +8335,12 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/DemandGenDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("data.preview_cards");
+    expect(routeSource).toContain("row.advertising_channel_type_label");
+    expect(routeSource).toContain("row.campaign_status_label");
     expect(routeSource).not.toContain("data.payload_preview[0]");
+    expect(routeSource).not.toContain("row.advertising_channel_type ??");
+    expect(routeSource).not.toContain("row.campaign_status ??");
+    expect(routeSource).not.toContain("row.reason_label ?? row.reason");
     expect(routeSource).not.toContain("Record<string, unknown>");
     expect(routeSource).not.toContain("stringArray(");
   });

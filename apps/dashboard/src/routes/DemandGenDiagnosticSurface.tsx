@@ -98,7 +98,8 @@ export function DemandGenDiagnosticSurface() {
                   <div>
                     <h3 className="text-sm font-semibold text-ink">{row.campaign_name}</h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      {row.advertising_channel_type} / {row.campaign_status}
+                      {row.advertising_channel_type_label || "kanał do sprawdzenia"} /{" "}
+                      {row.campaign_status_label || "status do sprawdzenia"}
                     </p>
                   </div>
                   <StatusBadge value="do sprawdzenia" />
@@ -194,15 +195,15 @@ export function DemandGenDiagnosticSurface() {
                 </div>
                 <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
                 <p className="mt-1 text-xs text-slate-500">
-                  {row.advertising_channel_type ?? "brak kanału"} /{" "}
-                  {row.campaign_status ?? "brak statusu"}
+                  {row.advertising_channel_type_label || "kanał do sprawdzenia"} /{" "}
+                  {row.campaign_status_label || "status do sprawdzenia"}
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <MetricTile
                     label="Ocena"
                     value={row.review_status_label}
                   />
-                  <MetricTile label="Powód" value={row.reason_label ?? row.reason} />
+                  <MetricTile label="Powód" value={row.reason_label || "powód do sprawdzenia"} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine

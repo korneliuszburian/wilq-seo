@@ -125,6 +125,8 @@ Date: 2026-06-28
 - Merchant label helpers no longer turn unknown internal keys into prettified
   operator labels; known Merchant claims stay explicit and unknown values use
   safe Polish fallback labels.
+- Demand Gen campaign and campaign-mode rows now expose API-owned channel/status
+  labels, and the dashboard renders those labels instead of raw Ads enums.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.

@@ -73,14 +73,26 @@ DEMAND_GEN_CHANNEL_LABELS = {
     "SEARCH": "Search",
     "UNKNOWN": "nieznany kanał",
 }
+DEMAND_GEN_CAMPAIGN_STATUS_LABELS = {
+    "ENABLED": "aktywna",
+    "PAUSED": "wstrzymana",
+    "REMOVED": "usunięta",
+    "UNKNOWN": "status do sprawdzenia",
+}
 
 
 def demand_gen_contract_labels(values: Iterable[str]) -> list[str]:
     return [DEMAND_GEN_CONTRACT_LABELS.get(str(value), str(value)) for value in values]
 
 
-def demand_gen_channel_label(value: str) -> str:
-    return DEMAND_GEN_CHANNEL_LABELS.get(value, value)
+def demand_gen_campaign_status_label(value: object) -> str:
+    status = str(value or "").strip().upper() or "UNKNOWN"
+    return DEMAND_GEN_CAMPAIGN_STATUS_LABELS.get(status, "status kampanii do sprawdzenia")
+
+
+def demand_gen_channel_label(value: object) -> str:
+    channel = str(value or "").strip().upper() or "UNKNOWN"
+    return DEMAND_GEN_CHANNEL_LABELS.get(channel, "kanał kampanii do sprawdzenia")
 
 
 def demand_gen_channel_labels(channel_counts: dict[str, int]) -> dict[str, str]:
@@ -363,7 +375,13 @@ def demand_gen_campaign_mode_review_rows_from_campaigns(
                 campaign_id=campaign.get("campaign_id"),
                 campaign_name=campaign_name,
                 campaign_status=campaign.get("campaign_status"),
+                campaign_status_label=demand_gen_campaign_status_label(
+                    campaign.get("campaign_status")
+                ),
                 advertising_channel_type=campaign.get("advertising_channel_type"),
+                advertising_channel_type_label=demand_gen_channel_label(
+                    campaign.get("advertising_channel_type")
+                ),
                 review_required=review_required,
                 review_status_label=_demand_gen_review_status_label(review_required),
                 reason=reason,
