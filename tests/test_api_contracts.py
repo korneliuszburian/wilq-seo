@@ -1495,6 +1495,17 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
 def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     raw_value = "new_VENDOR_raw_value"
 
+    assert merchant_display_label("n:certification") == "certyfikacja"
+    assert merchant_display_label("liczba unikalnych produktów") == (
+        "liczba unikalnych produktów"
+    )
+    assert merchant_display_label("skalowanie produktu w reklamach produktowych i Performance Max") == (
+        "skalowanie produktu w reklamach produktowych i Performance Max"
+    )
+    assert merchant_display_label("opłacalność produktu") == "opłacalność produktu"
+    assert merchant_display_label("nadpisanie głównego feedu") == "nadpisanie głównego feedu"
+    assert merchant_display_label("zmiana danych produktu") == "zmiana danych produktu"
+
     labels = [
         *missing_contract_labels([raw_value]),
         blocked_claim_label(raw_value),
@@ -13601,7 +13612,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_reports_product_view_issue_filter",
     ]
     assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
-    assert "products.list" in sample_readiness["next_step"]
+    assert "dokładniejszy odczyt produktów z problemami" in sample_readiness["next_step"]
+    assert "products.list" not in sample_readiness["summary"]
+    assert "products.list" not in sample_readiness["next_step"]
+    assert "product_view" not in sample_readiness["next_step"]
     assert "zapis do feedu" in sample_readiness["blocked_claims"]
     assert "zapis do feedu" in sample_readiness["blocked_claim_labels"]
     performance_readiness = payload["product_performance_readiness"]
@@ -13762,6 +13776,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_preview_card["apply_state_label"] == "Zapis zmian jest zablokowany."
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert "ponowne zatwierdzenie produktu" in decision["blocked_claim_labels"]
+    assert "wartość Merchant do sprawdzenia" not in decision["blocked_claim_labels"]
     assert decision["risk_label"] == "średnie ryzyko"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert decision["action_summary_label"] == "1 akcja do sprawdzenia"
@@ -13777,7 +13792,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "wymaga działania po stronie Merchant"
     )
     assert decision_metric["dimension_value_labels"]["severity"] == "bez wpływu"
-    assert "zgłoszeń problemu" in decision["summary"]
+    assert "zgłoszenia problemu" in decision["summary"]
     assert "wystąpienia problemu" in decision["rationale"]
     assert "act_review_merchant_feed_issues" not in decision["next_step"]
     assert "akcję do sprawdzenia" in decision["next_step"]
@@ -13798,11 +13813,15 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert feed_section["label"] == "Metryki produktów"
     assert feed_section["status_label"] == "gotowe"
     assert "ponowne zatwierdzenie produktu" in feed_section["blocked_claim_labels"]
+    assert "twierdzenie o odzyskanym przychodzie" in feed_section["blocked_claim_labels"]
+    assert "twierdzenie o wzroście zysku" in feed_section["blocked_claim_labels"]
+    assert "wartość Merchant do sprawdzenia" not in feed_section["blocked_claim_labels"]
     assert feed_section["risk_label"] == "średnie ryzyko"
     assert feed_section["evidence_summary_label"]
     assert feed_section["action_summary_label"] == "1 akcja do sprawdzenia"
-    assert feed_section["summary"].startswith("Metryki Merchant:")
-    assert "total_products=10900" in feed_section["summary"]
+    assert feed_section["summary"].startswith("Najważniejsze metryki Merchant:")
+    assert "produkty w feedzie: 10900" in feed_section["summary"]
+    assert "total_products=10900" not in feed_section["summary"]
     issue_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_issue_queue"
     )
@@ -13813,6 +13832,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert issue_section["risk_label"] == "średnie ryzyko"
     assert issue_section["evidence_summary_label"]
     assert issue_section["action_summary_label"] == "1 akcja do sprawdzenia"
+    assert "act_review_merchant_feed_issues" not in issue_section["next_step"]
     assert "problemów feedu" in issue_section["summary"]
     assert "wystąpieniami problemu" in issue_section["summary"]
     assert issue_section["tactical_items"]

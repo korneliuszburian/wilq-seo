@@ -21,6 +21,8 @@ MERCHANT_ATTRIBUTE_LABELS = {
     "image_link": "link zdjęcia",
     "image link": "link zdjęcia",
     "n:image_link": "link zdjęcia",
+    "n:certification": "certyfikacja",
+    "certification": "certyfikacja",
     "n:unit_pricing_measure": "miara ceny jednostkowej",
     "atrybut": "atrybut",
     "atrybut nieznany": "atrybut nieznany",
@@ -83,11 +85,21 @@ MERCHANT_PREVIEW_CONTRACT_LABELS = {
 
 MERCHANT_CLAIM_LABELS = {
     "automatyczna zmiana feedu": "automatyczna zmiana feedu",
+    "automatyczna naprawa zatwierdzenia": "automatyczna naprawa zatwierdzenia",
     "efekt naprawy produktu": "efekt naprawy produktu",
+    "liczba unikalnych produktów": "liczba unikalnych produktów",
+    "nadpisanie głównego feedu": "nadpisanie głównego feedu",
+    "odzyskany przychód": "twierdzenie o odzyskanym przychodzie",
     "odzyskany przychód produktu": "odzyskany przychód produktu",
+    "opłacalność produktu": "opłacalność produktu",
     "ponowne zatwierdzenie produktu": "ponowne zatwierdzenie produktu",
+    "skalowanie produktu w reklamach produktowych i Performance Max": (
+        "skalowanie produktu w reklamach produktowych i Performance Max"
+    ),
+    "wzrost zysku": "twierdzenie o wzroście zysku",
     "wpływ zmiany ceny": "wpływ zmiany ceny",
     "zapis do feedu": "zapis do feedu",
+    "zmiana danych produktu": "zmiana danych produktu",
     "zwrot z reklam na poziomie produktu": "zwrot z reklam na poziomie produktu",
 }
 

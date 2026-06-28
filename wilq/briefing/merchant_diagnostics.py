@@ -882,11 +882,11 @@ def _merchant_product_sample_readiness(
             source_endpoint="aggregateProductStatuses",
             summary=(
                 "Odczyt Merchant zwraca przykładowe produkty dla części problemów. "
-                "Tytuły są dostępne tylko wtedy, gdy wzbogacenie products.list je zwróci."
+                "Tytuły są dostępne tylko wtedy, gdy odczyt produktów je potwierdzi."
             ),
             next_step=(
-                "Użyj próbek do sprawdzenia. Dla tytułów/SKU/statusów dodaj odczyt "
-                "products.list/productStatus albo reports.search product_view."
+                "Użyj próbek do sprawdzenia. Dla tytułów, SKU i statusów dodaj "
+                "dokładniejszy odczyt produktów z problemami."
             ),
             blocked_claims=["zapis do feedu", "automatyczna zmiana feedu"],
         )
@@ -906,8 +906,7 @@ def _merchant_product_sample_readiness(
                 "zwraca konkretnych produktów, SKU ani tytułów do pracy produkt-po-produkcie."
             ),
             next_step=(
-                "Dodać osobny kontrakt odczytu przez products.list/productStatus "
-                "albo reports.search product_view z filtrem issue, zanim WILQ pokaże "
+                "Dodać osobny odczyt produktów z problemami, zanim WILQ pokaże "
                 "konkretne produkty do poprawy."
             ),
             blocked_claims=[
@@ -1896,8 +1895,7 @@ def _issue_queue_section(
             "surowych list produktów."
         ),
         next_step=(
-            "Otwórz akcję `act_review_merchant_feed_issues` i przygotuj "
-            "kolejkę przeglądu."
+            "Otwórz akcję do sprawdzenia i przygotuj kolejkę przeglądu."
         ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_unique(
@@ -3045,8 +3043,8 @@ def _merchant_aggregate_feed_status_decision(
             "produkt został naprawiony."
         ),
         next_step=(
-            "Otwórz `act_review_merchant_feed_issues`, sprawdź podgląd zmian i "
-            "zatrzymaj zapis zmian do czasu sprawdzenia w WILQ."
+            "Otwórz akcję do sprawdzenia, sprawdź podgląd zmian i zatrzymaj "
+            "zapis zmian do czasu sprawdzenia w WILQ."
         ),
         risk=ActionRisk.medium,
     )
@@ -3301,8 +3299,10 @@ def _refresh_or_connector_evidence_ids(latest_refresh: ConnectorRefreshRun | Non
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:
-    samples = ", ".join(f"{fact.name}={fact.value}" for fact in facts[:6])
-    return f"Metryki Merchant: {samples}."
+    samples = ", ".join(
+        f"{merchant_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:6]
+    )
+    return f"Najważniejsze metryki Merchant: {samples}."
 
 
 def _pl_count(count: int, one: str, few: str, many: str) -> str:

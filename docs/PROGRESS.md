@@ -95,6 +95,10 @@ Date: 2026-06-28
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
+- Merchant feed summaries, product-sample next steps and visible blocked-claim
+  labels use API/domain Polish wording. Live `/merchant` proof no longer shows
+  raw Merchant metric keys, vendor endpoint names, action IDs or generic
+  Merchant fallback labels in normal copy.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Ahrefs gap-contract metric tiles use API/domain missing-data and
@@ -185,11 +189,14 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Connector proof: GSC, GA4 and Merchant Center completed fresh `vendor_read`
-  refreshes on 2026-06-28 with `vendor_data_collected=true`; live
-  `/api/connectors/refresh-runs` returns `status_label="odczyt zakończony"`.
-- Current verification for this API/schema slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "operator_label_fallbacks_do_not_expose_raw_connector_ids or connector" --maxfail=1`
+- Merchant copy cleanup proof: live `/api/merchant/diagnostics` normal copy
+  has no `Metryki Merchant:`, raw metric key, vendor endpoint, action ID or
+  generic Merchant fallback leaks; browser proof for `/merchant` shows
+  marketer-readable feed summaries and blocked claims.
+- Current verification for this API/dashboard slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or merchant or operator_label_fallbacks_do_not_humanize_raw_unknown_enums" --maxfail=1`
+  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics"`
+  - `rtk pnpm --dir apps/dashboard typecheck`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
 

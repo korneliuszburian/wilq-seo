@@ -5041,7 +5041,8 @@ const merchantDiagnostics = {
       title: "Merchant Center: stan produktów i feedu",
       status: "ready",
       status_label: "gotowe",
-      summary: "Metryki Merchant: total_products=10900, item_level_issue_count=23.",
+      summary:
+        "Najważniejsze metryki Merchant: produkty w feedzie: 10900, zgłoszenia problemów: 23.",
       diagnosis: "WILQ ma metryki Merchant z odczytu i może ocenić skalę feedu.",
       next_step: "Przejdź do kolejki problemów i grupuj je po typie.",
       source_connectors: ["google_merchant_center"],
@@ -5065,7 +5066,7 @@ const merchantDiagnostics = {
       summary:
         "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
       diagnosis: "Najbezpieczniejsza praca to przegląd problemów po typie.",
-      next_step: "Otwórz akcję `act_review_merchant_feed_issues`.",
+      next_step: "Otwórz akcję do sprawdzenia.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       evidence_summary_label: "1 dowód źródłowy",
