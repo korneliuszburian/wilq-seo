@@ -8,6 +8,29 @@ UNKNOWN_ROUTE_LABEL = "widok do sprawdzenia"
 UNKNOWN_MISSING_CONTRACT_LABEL = "brakujące dane do sprawdzenia"
 UNKNOWN_BLOCKED_CLAIM_LABEL = "obietnica do sprawdzenia"
 UNKNOWN_METRIC_FACT_LABEL = "metryka źródłowa"
+UNKNOWN_ADS_CAMPAIGN_STATUS_LABEL = "status kampanii do sprawdzenia"
+UNKNOWN_ADS_CHANNEL_TYPE_LABEL = "kanał kampanii do sprawdzenia"
+
+ADS_CAMPAIGN_STATUS_LABELS: dict[str, str] = {
+    "ENABLED": "aktywna",
+    "PAUSED": "wstrzymana",
+    "REMOVED": "usunięta",
+    "UNKNOWN": "status nieznany",
+    "UNSPECIFIED": "status nieokreślony",
+}
+
+ADS_CHANNEL_TYPE_LABELS: dict[str, str] = {
+    "SEARCH": "sieć wyszukiwania",
+    "PERFORMANCE_MAX": "Performance Max",
+    "SHOPPING": "Zakupy Google",
+    "DISPLAY": "sieć reklamowa",
+    "DEMAND_GEN": "Demand Gen",
+    "VIDEO": "wideo",
+    "LOCAL": "lokalna",
+    "SMART": "Smart",
+    "UNKNOWN": "kanał nieznany",
+    "UNSPECIFIED": "kanał nieokreślony",
+}
 
 COMMON_METRIC_FACT_LABELS: dict[str, str] = {
     "active_users": "aktywni użytkownicy",
@@ -276,6 +299,20 @@ def metric_fact_label(name: object, source_connector: object | None = None) -> s
     if _looks_like_raw_operator_value(metric_name):
         return UNKNOWN_METRIC_FACT_LABEL
     return metric_name
+
+
+def ads_campaign_status_label(status: object | None) -> str:
+    value = str(status or "").strip().upper()
+    if not value:
+        return "status: brak"
+    return ADS_CAMPAIGN_STATUS_LABELS.get(value, UNKNOWN_ADS_CAMPAIGN_STATUS_LABEL)
+
+
+def ads_channel_type_label(channel_type: object | None) -> str:
+    value = str(channel_type or "").strip().upper()
+    if not value:
+        return "kanał: brak"
+    return ADS_CHANNEL_TYPE_LABELS.get(value, UNKNOWN_ADS_CHANNEL_TYPE_LABEL)
 
 
 def blocked_claim_summary_label(claims: Iterable[str]) -> str:

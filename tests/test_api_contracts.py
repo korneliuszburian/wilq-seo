@@ -10736,15 +10736,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_id": "101",
             "campaign_name": "Brand Search",
             "campaign_status": "ENABLED",
-            "campaign_status_label": "",
+            "campaign_status_label": "aktywna",
             "advertising_channel_type": "SEARCH",
-            "advertising_channel_type_label": "",
+            "advertising_channel_type_label": "sieć wyszukiwania",
             "clicks": 9,
             "impressions": 90,
             "cost_micros": 12000000,
             "conversions": 2.5,
             "conversion_value": 450.75,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
@@ -10970,7 +10971,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "ctr": 0.1,
             "average_cpc_micros": 1333333.333333,
             "conversion_rate": 0.277778,
-            "cost_per_conversion_micros": 4800000,
+            "cost_per_conversion_micros": 4800000.0,
             "roas": 37.5625,
             "value_per_conversion": 180.3,
             "target_roas": None,
@@ -11001,6 +11002,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmarnowany budżet",
                 "zapis rekomendacji",
             ],
+            "blocked_claim_summary_label": "4 zablokowane obietnice",
         }
     ]
     live_section = next(
@@ -11483,7 +11485,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "has_budget_apply_preview": True,
             "has_recommendation_apply_preview": True,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "action_ids": ["act_prepare_ads_campaign_review_queue"],
+            "action_summary_label": "1 akcja do sprawdzenia",
             "source_metric_names": campaign_triage_contract["triage_rows"][0][
                 "source_metric_names"
             ],
@@ -11501,6 +11505,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "docelowy zwrot z reklam albo koszt pozyskania celu",
                 "ocena strategii przez człowieka",
             ],
+            "missing_read_contract_summary_label": "2 brakujące zakresy danych",
             "blocked_claims": [
                 "zmarnowany budżet",
                 "opłacalność",
@@ -11517,6 +11522,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zapis rekomendacji",
                 "zapis zmian kampanii",
             ],
+            "blocked_claim_summary_label": "6 zablokowanych obietnic",
             "human_review_gates": [
                 "review_campaign_goal",
                 "review_conversion_quality",
@@ -11541,6 +11547,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "sprawdzenie celu biznesowego",
                 "bezpieczeństwo zmiany budżetu",
             ],
+            "human_review_gate_summary_label": "10 wymaganych sprawdzeń",
         }
         ]
     assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0][
@@ -11600,11 +11607,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "change_resource_id": "101",
             "change_resource_type": "CAMPAIGN",
             "change_resource_type_label": "kampania",
+            "change_resource_label": (
+                "zasób zmiany do sprawdzenia w szczegółach technicznych"
+            ),
             "resource_change_operation": "UPDATE",
             "resource_change_operation_label": "zmiana",
             "client_type": "GOOGLE_ADS_WEB_CLIENT",
             "client_type_label": "panel Google Ads",
             "campaign_id": "101",
+            "campaign_label": "kampania do sprawdzenia w szczegółach technicznych",
             "changed_field_count": 2,
             "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
             "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
@@ -11673,8 +11684,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_impact_contract["readiness_rows"] == [
         {
             "change_event_id": "change-1",
+            "change_event_label": "zmiana do sprawdzenia w szczegółach technicznych",
             "campaign_id": "101",
             "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
             "change_date_time": "2026-06-18 12:30:00.000000",
             "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
             "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
@@ -11698,6 +11711,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "ręczna ocena wpływu zmian",
                 "podgląd zmian",
             ],
+            "missing_read_contract_summary_label": "1 brakujący zakres danych",
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "blocked_claims": [
                 "wpływ zmian",
@@ -11713,6 +11727,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "zmiana budżetu",
                 "zapis zmian kampanii",
             ],
+            "blocked_claim_summary_label": "5 zablokowanych obietnic",
         }
     ]
     assert optimizer_items_by_id["change_history_impact_review"][
@@ -11774,8 +11789,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "search_term": "bdo rejestracja",
             "campaign_id": "101",
             "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
             "ad_group_id": "201",
             "ad_group_name": "BDO",
+            "ad_group_label": "BDO",
             "search_term_status": "ADDED",
             "clicks": 4,
             "impressions": 40,
@@ -11783,6 +11800,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "conversions": 1.0,
             "conversion_value": 120.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "metric_facts": search_terms_contract["search_term_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
@@ -11796,8 +11814,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "search_term": "odpady cena",
             "campaign_id": "101",
             "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
             "ad_group_id": "202",
             "ad_group_name": "Odpady",
+            "ad_group_label": "Odpady",
             "search_term_status": "NONE",
             "clicks": 6,
             "impressions": 60,
@@ -11805,6 +11825,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "conversions": 0.0,
             "conversion_value": 0.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "metric_facts": search_terms_contract["search_term_rows"][1]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
@@ -11830,6 +11851,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         {
             "campaign_id": "101",
             "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
             "search_term_count": 2,
             "zero_conversion_search_term_count": 1,
             "clicks": 10,
@@ -11837,6 +11859,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "cost_micros": 12000000,
             "conversions": 1.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "blocked_claims": [
                 "marnowanie budżetu na zapytaniach",
                 "dodanie wykluczających słów kluczowych",
@@ -11953,8 +11976,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "search_term": "odpady cena",
             "campaign_id": "101",
             "campaign_name": "Brand Search",
+            "campaign_label": "Brand Search",
             "ad_group_id": "202",
             "ad_group_name": "Odpady",
+            "ad_group_label": "Odpady",
             "search_term_status": "NONE",
             "clicks_90d": 10,
             "impressions_90d": 120,
@@ -11962,6 +11987,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "conversions_90d": 0.0,
             "conversion_value_90d": 0.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "evidence_summary_label": "1 dowód źródłowy",
             "metric_facts": search_term_safety_contract["safety_rows"][0][
                 "metric_facts"
             ],

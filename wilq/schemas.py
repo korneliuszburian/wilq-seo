@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from wilq.operator_labels import (
     action_count_label,
+    ads_campaign_status_label,
+    ads_channel_type_label,
     blocker_count_label,
     blocked_claim_label,
     blocked_claim_count_label,
@@ -1427,6 +1429,12 @@ class AdsCampaignMetricRow(BaseModel):
 
     @model_validator(mode="after")
     def fill_summary_labels(self) -> "AdsCampaignMetricRow":
+        if not self.campaign_status_label:
+            self.campaign_status_label = ads_campaign_status_label(self.campaign_status)
+        if not self.advertising_channel_type_label:
+            self.advertising_channel_type_label = ads_channel_type_label(
+                self.advertising_channel_type
+            )
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.blocked_claim_labels:
@@ -2000,6 +2008,12 @@ class AdsCampaignTriageRow(BaseModel):
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> AdsCampaignTriageRow:
+        if not self.campaign_status_label:
+            self.campaign_status_label = ads_campaign_status_label(self.campaign_status)
+        if not self.advertising_channel_type_label:
+            self.advertising_channel_type_label = ads_channel_type_label(
+                self.advertising_channel_type
+            )
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:

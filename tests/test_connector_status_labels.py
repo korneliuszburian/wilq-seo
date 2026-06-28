@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from wilq.schemas import (
+    AdsCampaignMetricRow,
+    AdsCampaignTriageRow,
     ConnectorCapability,
     ConnectorStatus,
     ConnectorStatusValue,
@@ -56,3 +58,23 @@ def test_metric_fact_unknown_raw_name_uses_neutral_polish_label() -> None:
     )
 
     assert fact.metric_label == "metryka źródłowa"
+
+
+def test_ads_campaign_rows_hydrate_operator_enum_labels() -> None:
+    metric_row = AdsCampaignMetricRow(
+        campaign_name="Brand Search",
+        campaign_status="ENABLED",
+        advertising_channel_type="SEARCH",
+    )
+    triage_row = AdsCampaignTriageRow(
+        campaign_name="Brand Search",
+        campaign_status="PAUSED",
+        advertising_channel_type="DEMAND_GEN",
+        review_reason="Do sprawdzenia.",
+        next_step="Sprawdź kampanię.",
+    )
+
+    assert metric_row.campaign_status_label == "aktywna"
+    assert metric_row.advertising_channel_type_label == "sieć wyszukiwania"
+    assert triage_row.campaign_status_label == "wstrzymana"
+    assert triage_row.advertising_channel_type_label == "Demand Gen"

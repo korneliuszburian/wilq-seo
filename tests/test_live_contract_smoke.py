@@ -77,6 +77,17 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
         "ads_diagnostics": {
             "language": "pl-PL",
             "evidence_ids": ["ev_refresh_refresh_google_ads_123"],
+            "campaign_read_contract": {
+                "campaign_rows": [
+                    {
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "campaign_status_label": "aktywna",
+                        "advertising_channel_type": "SEARCH",
+                        "advertising_channel_type_label": "sieć wyszukiwania",
+                    }
+                ]
+            },
             "decision_queue": [
                 {
                     "id": "ads_review_campaign_activity",
@@ -170,5 +181,20 @@ def test_live_contract_smoke_rejects_raw_metric_label() -> None:
 
     assert (
         "command_center.daily_decisions[0].metric_facts[0].metric_label must be marketer-readable"
+        in errors
+    )
+
+
+def test_live_contract_smoke_rejects_empty_operator_label() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    payloads["ads_diagnostics"]["campaign_read_contract"]["campaign_rows"][0][
+        "campaign_status_label"
+    ] = ""
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert (
+        "ads_diagnostics.campaign_read_contract.campaign_rows[0].campaign_status_label must not be empty"
         in errors
     )

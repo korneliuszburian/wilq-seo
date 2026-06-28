@@ -178,6 +178,9 @@ Date: 2026-06-29
 - Metric facts now hydrate Polish `metric_label` values at the shared backend
   schema boundary, and live contract smoke fails if a metric fact exposes an
   empty or raw snake_case metric label.
+- Google Ads campaign rows now hydrate Polish campaign status and channel labels
+  at the shared schema boundary, and live contract smoke rejects empty or raw
+  visible `*_label` fields across checked API payloads.
 - Current proof artifacts live in `.local-lab/proof/`; detailed history lives
   in git commits.
 
@@ -188,9 +191,10 @@ Date: 2026-06-29
    artifacts.
 2. Continue raw fallback cleanup in active API/helper modules. Any new visible
    raw fallback must be fixed at typed API/schema/view-model source.
-3. Add typed contract/vendor-enum label registries outside the already-cleaned
-   Ads diagnostics helper path so unknown read contracts and vendor enums do not
-   fall back to raw snake_case or English values in marketer-facing copy.
+3. Continue typed contract/vendor-enum label registries outside the already
+   cleaned Ads campaign status/channel path so unknown read contracts and vendor
+   enums do not fall back to raw snake_case or English values in marketer-facing
+   copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 5. Dashboard still needs focused cleanup for remaining payload-derived panels.
@@ -211,15 +215,22 @@ Date: 2026-06-29
 
 Most recent verified local slice:
 
+- Ads enum-label cleanup: Google Ads campaign rows hydrate Polish campaign
+  status/channel labels, live API scans across core endpoints found no empty or
+  raw visible `*_label` fields, and `live_contract_smoke.py` now guards visible
+  operator labels.
+  Verification:
+  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_live_contract_smoke.py tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts -q`
+  - `rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000`
+  - `rtk uv run python scripts/marketer_language_guard.py`
+  - live `*_label` scan across core API endpoints
+  - `rtk git diff --check`
+
+Previous verified local slice:
+
 - Metric label cleanup: `MetricFact` hydrates Polish metric labels, live API
   scans across core diagnostics/actions/opportunities found no empty or raw
   metric labels, and `live_contract_smoke.py` now guards this contract.
-  Verification:
-  - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_metric_store_and_cli.py::test_metrics_api_exposes_metric_store_status_and_facts tests/test_live_contract_smoke.py -q`
-  - `rtk uv run python scripts/live_contract_smoke.py --api-base http://127.0.0.1:8000`
-  - `rtk uv run python scripts/marketer_language_guard.py`
-  - live metric-label scan across core API endpoints
-  - `rtk git diff --check`
 
 Previous verified local slice:
 

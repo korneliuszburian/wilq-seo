@@ -943,3 +943,7 @@ WILQ is complete for this long-range goal when:
   marketer language guard, live API metric-label scan and `git diff --check`
   passed after moving metric fact labels to the shared backend schema boundary
   and guarding against empty/raw metric labels.
+- Latest Ads enum-label proof: focused API/schema tests, live contract smoke,
+  marketer language guard, live API `*_label` scan and `git diff --check`
+  passed after hydrating campaign status/channel labels at the shared schema
+  boundary and guarding against empty/raw visible operator labels.

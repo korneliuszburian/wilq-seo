@@ -96,6 +96,7 @@ def evaluate_contracts(payloads: dict[str, Any]) -> list[str]:
         _check_diagnostics_shape(diagnostics, name, errors)
 
     for name, payload in payloads.items():
+        _check_operator_labels(payload, name, errors)
         _check_metric_labels(payload, name, errors)
 
     return errors
@@ -186,6 +187,26 @@ def _check_metric_labels(value: Any, path: str, errors: list[str]) -> None:
     if isinstance(value, list):
         for index, child in enumerate(value):
             _check_metric_labels(child, f"{path}[{index}]", errors)
+
+
+def _check_operator_labels(value: Any, path: str, errors: list[str]) -> None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_path = f"{path}.{key}"
+            if key.endswith("_label"):
+                if child is None:
+                    continue
+                if not isinstance(child, str):
+                    errors.append(f"{child_path} must be a string label")
+                elif not child.strip():
+                    errors.append(f"{child_path} must not be empty")
+                elif _looks_like_raw_operator_value(child):
+                    errors.append(f"{child_path} must be marketer-readable")
+            _check_operator_labels(child, child_path, errors)
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _check_operator_labels(child, f"{path}[{index}]", errors)
 
 
 def _looks_like_metric_fact(value: dict[str, Any]) -> bool:

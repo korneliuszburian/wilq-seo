@@ -219,6 +219,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Metric facts hydrate Polish `metric_label` values at the shared backend
   schema boundary, and live contract smoke now prevents empty or raw snake_case
   metric labels from returning in metric fact contracts.
+- Google Ads campaign rows hydrate Polish campaign status and channel labels at
+  the shared backend schema boundary, and live contract smoke now prevents empty
+  or raw visible `*_label` fields in checked API payloads.
 - Current proof artifacts live in `.local-lab/proof/`; detailed implementation
   history lives in git commits, not in this file.
 
@@ -231,9 +234,10 @@ are resolved or explicitly deferred.
    aligned.
 2. Continue raw fallback cleanup in active API/helper modules. Any new visible
    raw fallback must be fixed at typed API/schema/view-model source.
-3. Add typed contract/vendor-enum label registries outside the already-cleaned
-   Ads diagnostics helper path so unknown read contracts and vendor enums do not
-   fall back to raw snake_case or English values in marketer-facing copy.
+3. Continue typed contract/vendor-enum label registries outside the already
+   cleaned Ads campaign status/channel path so unknown read contracts and vendor
+   enums do not fall back to raw snake_case or English values in marketer-facing
+   copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 5. Dashboard still needs focused cleanup for any newly found content/ads
