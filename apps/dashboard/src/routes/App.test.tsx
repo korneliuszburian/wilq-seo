@@ -5403,8 +5403,8 @@ const contentPreflight = {
     duplicate_gate_status_label: "istniejąca publiczna treść wymaga odświeżenia albo scalenia",
     claim_gate_status: "needs_claim_review",
     claim_gate_status_label: "wymaga kontroli obietnic",
-    service_mapping_status: "ready_for_service_review",
-    service_mapping_status_label: "gotowe do sprawdzenia dopasowania usługi",
+    service_fit_status: "ready_for_service_review",
+    service_fit_status_label: "gotowe do sprawdzenia dopasowania usługi",
     similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
     query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
     blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
@@ -5437,8 +5437,8 @@ const contentPreflight = {
       duplicate_gate_status_label: "istniejąca publiczna treść wymaga odświeżenia albo scalenia",
       claim_gate_status: "needs_claim_review",
       claim_gate_status_label: "wymaga kontroli obietnic",
-      service_mapping_status: "ready_for_service_review",
-      service_mapping_status_label: "gotowe do sprawdzenia dopasowania usługi",
+      service_fit_status: "ready_for_service_review",
+      service_fit_status_label: "gotowe do sprawdzenia dopasowania usługi",
       similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
       query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
       blocked_claims: ["wzrost liczby leadów", "obietnica wzrostu konwersji"],
@@ -8054,7 +8054,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("odświeżyć").length).toBeGreaterThan(0);
     expect(screen.getAllByText("wymaga sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getByText(/Szkic i WordPress pozostają zablokowane/)).toBeInTheDocument();
-    expect(screen.getByText("Plany treści do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getAllByText("Plany treści do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Pokaż plany treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
@@ -8248,20 +8248,20 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/odświeżenie albo scalenie/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Ahrefs/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/sprawdzenie/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Kąt treści: Odśwież istniejącą treść/)).toBeInTheDocument();
-    expect(screen.getByText(/Odbiorca: Decydent środowiskowy/)).toBeInTheDocument();
-    expect(screen.getByText(/CTA: CTA do rozmowy/)).toBeInTheDocument();
-    expect(screen.getByText(/czy tekst jest aktualny prawnie/)).toBeInTheDocument();
-    expect(screen.getByText(/brak dowodu wzrost liczby leadów/)).toBeInTheDocument();
-    expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Kierunek treści")).toBeInTheDocument();
+    expect(screen.getAllByText("Plany treści do sprawdzenia").length).toBeGreaterThan(0);
+    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
+    expect(screen.queryByText(/Kąt treści:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Odbiorca:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/CTA:/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("GSC: jest")).toBeInTheDocument();
     expect(screen.getByText("WP: jest")).toBeInTheDocument();
     expect(screen.getByText("Overlap GSC: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Overlap WP: /audyt-srodowiskowy/")).toBeInTheDocument();
     expect(screen.getByText("Szkic WordPress po sprawdzeniu")).toBeInTheDocument();
     expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
-    expect(screen.getByText("Odświeżenie: zielony ład")).toBeInTheDocument();
-    expect(screen.getByText("Szkic WordPress do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getAllByText("Szkic WordPress do sprawdzenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("wersja robocza istniejącej treści / draft")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(

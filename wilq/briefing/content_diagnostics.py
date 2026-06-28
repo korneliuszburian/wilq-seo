@@ -535,7 +535,7 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
     claim_gate_status = (
         "needs_claim_review" if decision.blocked_claims else "ready_for_claim_review"
     )
-    service_mapping_status = (
+    service_fit_status = (
         "needs_service_review"
         if decision.decision_type in {"review_ahrefs_gap_records", "inventory_check_before_create"}
         else "ready_for_service_review"
@@ -564,8 +564,8 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
         duplicate_gate_status_label=_content_gate_label(decision.duplicate_gate_status),
         claim_gate_status=claim_gate_status,
         claim_gate_status_label=content_contract_label(claim_gate_status),
-        service_mapping_status=service_mapping_status,
-        service_mapping_status_label=content_contract_label(service_mapping_status),
+        service_fit_status=service_fit_status,
+        service_fit_status_label=content_contract_label(service_fit_status),
         similar_existing_urls=_content_preflight_similar_urls(decision),
         query_overlap_summary=_content_preflight_query_overlap(decision),
         blocked_claims=_content_marketer_blocked_claims(decision.blocked_claims),
@@ -2367,7 +2367,7 @@ def _content_decision_summary(
     if decision_type == "merge_create_after_inventory_check":
         return (
             f"{metric_sentence} WordPress nie potwierdza strony dla tego klastra, "
-            "więc najpierw trzeba sprawdzić mapowanie i duplikaty."
+            "więc najpierw trzeba sprawdzić publiczny URL, spis treści i ryzyko duplikatu."
         )
     match_label = "nie potwierdza" if wordpress_match == "missing" else "nie daje pewności"
     return (

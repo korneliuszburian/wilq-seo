@@ -14680,6 +14680,17 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
     assert "odświeżenie albo scalenie" in first_decision["content_gate_summary"]
     assert "nowy artykuł" in first_decision["content_gate_summary"]
+    active_content_copy = json.dumps(
+        {
+            "operator_summary": operator_summary,
+            "marketer_decision": marketer_decision,
+            "decision_queue": payload["decision_queue"],
+            "preflight": preflight_payload,
+        },
+        ensure_ascii=False,
+    )
+    assert "mapowanie" not in active_content_copy
+    assert "mapping" not in active_content_copy
     assert first_decision["normalized_page_path"] == (
         "/europejski-zielony-lad-co-to-takiego"
     )
@@ -14725,7 +14736,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "istniejąca publiczna treść wymaga odświeżenia albo scalenia"
     )
     assert preflight_item["claim_gate_status_label"]
-    assert preflight_item["service_mapping_status_label"]
+    assert preflight_item["service_fit_status_label"]
     assert preflight_item["similar_existing_urls"] == [
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     ]

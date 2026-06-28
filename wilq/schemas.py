@@ -3030,8 +3030,8 @@ class ContentPreflightItem(BaseModel):
     duplicate_gate_status_label: str | None = None
     claim_gate_status: str
     claim_gate_status_label: str = ""
-    service_mapping_status: str
-    service_mapping_status_label: str = ""
+    service_fit_status: str
+    service_fit_status_label: str = ""
     similar_existing_urls: list[str] = Field(default_factory=list)
     query_overlap_summary: str
     blocked_claims: list[str] = Field(default_factory=list)

@@ -78,6 +78,9 @@ Date: 2026-06-28
   marketer-facing preview cards.
 - Content URL semantics now use public/final wording in active gates. Active
   content diagnostics/actions no longer use dev-site placement semantics.
+- Content preflight now uses the `service_fit_status` contract, and active
+  content diagnostics no longer tell the marketer to review old URL-assignment
+  wording; live API and browser proof cover the current Treści surface.
 - Social source inputs no longer depend on a hardcoded dev-preview host filter;
   content objects need a public/final/canonical URL before they can drive that
   workflow.

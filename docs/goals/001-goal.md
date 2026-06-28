@@ -101,6 +101,9 @@ use cleaned Polish operator language.
   marketer-facing cards.
 - Content URL semantics now use public/final wording in active gates. Active
   content diagnostics/actions no longer expose dev-site placement semantics.
+- Content preflight now uses the `service_fit_status` contract, and active
+  content decision summaries no longer expose old URL-assignment review wording
+  to the marketer.
 - Social source inputs no longer use a hardcoded dev-preview host filter.
   Content objects must expose a public/final/canonical URL before they can drive
   that workflow.

@@ -169,7 +169,7 @@ describe("ContentPreflightResponseSchema", () => {
       canonical_gate_status: "public_canonical_confirmed",
       duplicate_gate_status: "existing_public_content_requires_refresh_or_merge",
       claim_gate_status: "needs_claim_review",
-      service_mapping_status: "ready_for_service_review",
+      service_fit_status: "ready_for_service_review",
       similar_existing_urls: ["https://www.ekologus.pl/bdo/"],
       query_overlap_summary: "1 zapytań z GSC; główne zapytanie: bdo.",
       blocked_claims: ["ranking guarantee"],
