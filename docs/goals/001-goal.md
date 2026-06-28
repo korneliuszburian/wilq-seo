@@ -135,6 +135,8 @@ use cleaned Polish operator language.
 - Dashboard e2e proof now checks current marketer labels such as `Centrum
   pracy`, `Treści` and `Google Ads`, and no longer expects raw Ads evidence IDs
   in the primary Ads proof panel.
+- Google Ads OAuth repair and blocked Merchant feed diagnostics now use Polish
+  operator wording instead of raw OAuth/credential/vendor-read jargon.
 - Dashboard proof sections now use action-oriented `Dowody i warunki ...`
   wording, and touched routes/tests no longer expose low-value proof/audit
   jargon in primary marketer copy.

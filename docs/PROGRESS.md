@@ -149,6 +149,8 @@ Date: 2026-06-28
 - Dashboard e2e proof now checks current marketer labels such as `Centrum
   pracy`, `Treści` and `Google Ads`, and no longer expects raw Ads evidence IDs
   in the primary Ads proof panel.
+- Google Ads OAuth repair and blocked Merchant feed diagnostics now use Polish
+  operator wording instead of raw OAuth/credential/vendor-read jargon.
 - Workflow cards now say `Brakujące dane` and `Granice wniosków` instead of
   low-value process jargon, and workflow test fixtures no longer preserve raw
   `queued` / old verdict wording as visible labels.
@@ -213,6 +215,7 @@ Date: 2026-06-28
 - `rtk pnpm --dir apps/dashboard exec playwright test e2e/dashboard-api.spec.ts --workers=1 --grep "command center|ads doctor|seo and content"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "google_ads_oauth_repair_action_is_explicit_and_redacted or merchant_blocked_feed_section_uses_operator_read_wording" --maxfail=3`
 
 Detailed historical proof belongs in git commits and `.local-lab/proof/`
 artifacts, not in this recovery ledger.

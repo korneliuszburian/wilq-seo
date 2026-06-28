@@ -132,7 +132,7 @@ def seed_static_actions() -> dict[str, ActionObject]:
     actions = seed_core_prepare_actions()
     action = ActionObject(
         id="act_configure_google_ads_env",
-        title="Odnow Google Ads OAuth refresh token",
+        title="Odnow dostęp Google Ads",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -140,12 +140,13 @@ def seed_static_actions() -> dict[str, ActionObject]:
         status=ActionStatus.needs_validation,
         evidence_ids=[connector_evidence_id("google_ads")],
         human_diagnosis=(
-            "Google Ads credentials are present, but the current refresh token is rejected "
-            "by Google's OAuth endpoint with oauth_error=invalid_grant for the adwords scope."
+            "WILQ ma ustawienia dostępu Google Ads, ale obecny token odświeżania "
+            "został odrzucony przez Google. Bez ponownej zgody WILQ nie może "
+            "odczytać kampanii, wyszukiwanych haseł ani rekomendacji."
         ),
         recommended_reason=(
-            "A fresh marketing@rekurencja.com consent flow is required before WILQ can "
-            "collect real Google Ads campaign, search-term and recommendation evidence."
+            "Uruchom ponowną zgodę dla marketing@rekurencja.com, potem odśwież "
+            "dane Google Ads w WILQ."
         ),
         payload={
             "action_type": "repair_google_ads_oauth",

@@ -55,6 +55,7 @@ from wilq.briefing.tactical_queue import _merchant_dimension_label
 from wilq.briefing.merchant_diagnostics import (
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
+    build_merchant_diagnostics,
 )
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import (
@@ -3005,15 +3006,37 @@ def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
     action = response.json()
     serialized = json.dumps(action)
 
-    assert action["title"] == "Odnow Google Ads OAuth refresh token"
+    assert action["title"] == "Odnow dostęp Google Ads"
     assert action["payload"]["action_type"] == "repair_google_ads_oauth"
     assert action["payload"]["oauth_scope"] == "https://www.googleapis.com/auth/adwords"
-    assert "oauth_error=invalid_grant" in action["human_diagnosis"]
+    assert "token odświeżania" in action["human_diagnosis"]
+    assert "oauth_error=invalid_grant" not in action["human_diagnosis"]
+    assert "credentials" not in action["human_diagnosis"]
+    assert "refresh token" not in action["human_diagnosis"]
     assert "client_secret" in action["payload"]["oauth_client_json_path"]
     assert "GOOGLE_ADS_REFRESH_TOKEN" in action["payload"]["required_env"]
     assert "ya29." not in serialized
     assert "refresh-token" not in serialized.lower()
     assert "client-secret-test" not in serialized
+
+
+def test_merchant_blocked_feed_section_uses_operator_read_wording(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_blocked_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_blocked_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+
+    diagnostics = build_merchant_diagnostics()
+    feed_section = next(
+        section for section in diagnostics.sections if section.id == "merchant_feed_health"
+    )
+
+    assert feed_section.status == "blocked"
+    assert "Uruchom odczyt danych Merchant" in feed_section.next_step
+    assert "vendor_read" not in feed_section.next_step
 
 
 def test_google_ads_business_context_action_is_review_only(

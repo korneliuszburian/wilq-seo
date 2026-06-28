@@ -1782,7 +1782,7 @@ def _feed_health_section(
                 "liczby produktów, liczby zgłoszeń problemów ani stanu feedu."
             ),
             next_step=(
-                "Uruchom odczyt Merchant w trybie vendor_read i dopiero potem "
+                "Uruchom odczyt danych Merchant i dopiero potem "
                 "twórz kolejkę feedu."
             ),
             source_connectors=[MERCHANT_CONNECTOR_ID],
