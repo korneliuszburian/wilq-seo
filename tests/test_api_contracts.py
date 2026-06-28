@@ -17523,6 +17523,13 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert "operator_brief" not in context_payload["command_center"]
     assert "action_plan" not in context_payload["command_center"]
     assert "demo_script" not in context_payload["command_center"]
+    for connector in context_payload["connector_status"]:
+        assert connector["status_label"]
+        assert connector["status_label"] != connector["status"]
+        assert connector["freshness"]["label"]
+        assert connector["freshness"]["label"] != connector["freshness"]["state"]
+        assert "status configured" not in connector["summary"]
+        assert connector["status"] not in connector["summary"]
     for action in context_payload["active_action_objects"]:
         assert "metrics" not in action
         assert "payload" not in action

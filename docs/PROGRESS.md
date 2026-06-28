@@ -30,6 +30,10 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Daily context-pack connector status now carries API-owned Polish
+  `status_label`, freshness labels and operator-safe summaries. It no longer
+  exposes empty freshness labels or summaries like `status configured` to
+  Codex skills.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:04-23:05Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -224,6 +228,17 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Daily context-pack connector-status cleanup: compact connector status now
+  exposes Polish `status_label`, freshness labels, last successful read time
+  and operator-safe summaries. Live `POST /api/codex/context-pack` proof showed
+  8 connector statuses and 0 raw/empty label failures after stack restart.
+  Verification:
+  - `rtk uv run pytest tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract -q`
+  - live `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` label scan
+  - `rtk scripts/local_stack.sh restart`
+
+Previous verified local slice:
 
 - Connector freshness cleanup: live GSC, GA4 and Merchant vendor reads
   completed with external calls and `vendor_data_collected=true`; connector

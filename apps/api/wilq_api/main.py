@@ -153,6 +153,7 @@ from wilq.schemas import (
     MetricFact,
     Opportunity,
     TacticalQueueResponse,
+    connector_status_label,
     utc_now,
 )
 from wilq.security.redaction import redact_mapping
@@ -537,20 +538,32 @@ def _compact_connector_status_for_operator_context(
     freshness = dumped.get("freshness")
     compact_freshness: Any
     if isinstance(freshness, dict):
+        freshness_state = freshness.get("state") or "unknown"
         compact_freshness = {
-            "state": freshness.get("state"),
-            "label": freshness.get("label"),
+            "state": freshness_state,
+            "label": freshness_state_label(str(freshness_state)),
             "checked_at": freshness.get("checked_at"),
+            "last_success_at": freshness.get("last_success_at"),
+            "notes": freshness.get("notes"),
         }
     else:
         compact_freshness = freshness
     capabilities = dumped.get("capabilities")
     supported_actions = dumped.get("supported_actions")
     missing_credentials = dumped.get("missing_credentials")
+    status_label = dumped.get("status_label") or connector_status_label(
+        str(dumped.get("status") or "unknown")
+    )
+    freshness_label = (
+        compact_freshness.get("label")
+        if isinstance(compact_freshness, dict)
+        else freshness_state_label(None)
+    )
     return {
         "id": dumped.get("id"),
         "label": dumped.get("label"),
         "status": dumped.get("status"),
+        "status_label": status_label,
         "configured": dumped.get("configured"),
         "freshness": compact_freshness,
         "last_success_at": dumped.get("last_success_at"),
@@ -563,7 +576,7 @@ def _compact_connector_status_for_operator_context(
         ),
         "summary": (
             f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
-            f"status {dumped.get('status') or 'unknown'}."
+            f"{status_label}; {freshness_label}."
         ),
     }
 

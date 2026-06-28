@@ -543,6 +543,10 @@ WILQ is complete for this long-range goal when:
 
 ## Progress
 
+- 2026-06-29: Daily context-pack connector statuses now carry API-owned Polish
+  status/freshness labels and operator-safe summaries. Skill context no longer
+  receives empty freshness labels or `status configured` summaries for
+  connector readiness.
 - 2026-06-29: Connector status freshness now uses the latest successful
   `vendor_read` instead of only credential-presence state. Live GSC, GA4 and
   Merchant refreshes completed with `vendor_data_collected=true`; `/api/connectors`
@@ -782,6 +786,9 @@ WILQ is complete for this long-range goal when:
 - Default skill contexts are operator contracts. Full raw context stays behind
   explicit `full_context: true`; default skill calls must remain condensed and
   free of unnecessary raw vendor values.
+- Default skill context connector status must carry Polish status and freshness
+  labels from API/domain helpers. Do not expose raw status enums or empty
+  freshness labels in compact context-pack summaries.
 - Merchant labels belong in one domain label source. Tactical queue and
   Merchant diagnostics must share those labels instead of carrying separate
   local maps or exposing vendor enum strings.

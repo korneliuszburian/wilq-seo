@@ -219,6 +219,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Connector status now reuses the latest successful vendor read for freshness
   and `last_success_at`. GSC, GA4 and Merchant live refreshes on
   2026-06-28T23:04-23:05Z completed with `vendor_data_collected=true`.
+- Daily context-pack connector status uses API-owned Polish status and
+  freshness labels, includes the latest successful read time where available,
+  and no longer exposes empty freshness labels or `status configured`
+  summaries to Codex skills.
 - Connector status objects hydrate Polish `status_label` values at the shared
   backend schema boundary, and Treści diagnostics expose API-owned
   `live_data_status_label` for GSC/WordPress readiness.
