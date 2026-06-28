@@ -137,6 +137,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Action priority cards, action registry cards and connector refresh run cards
   use API/domain evidence summary labels instead of route-local evidence count
   formatting.
+- WordPress handoff action review gates use operator-safe check keys and labels;
+  normal `/actions` proof no longer exposes technical checklist jargon.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
@@ -178,6 +180,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms.
+- Knowledge seed cards use Polish marketer-facing summaries instead of English
+  wording about evidence identifiers.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels.
 - Knowledge playbook cards use API/domain evidence and action-type summary

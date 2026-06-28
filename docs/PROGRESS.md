@@ -92,6 +92,8 @@ Date: 2026-06-28
 - Action priority cards, action registry cards and connector refresh run cards
   use API/domain evidence summary labels instead of route-local evidence count
   formatting.
+- WordPress handoff action review gates use operator-safe check keys and labels;
+  normal `/actions` proof no longer exposes technical checklist jargon.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
@@ -132,6 +134,8 @@ Date: 2026-06-28
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms instead
   of raw connector IDs.
+- Knowledge seed cards use Polish marketer-facing summaries instead of English
+  wording about evidence identifiers.
 - Knowledge first-screen decision and card summaries use API/domain source,
   action, evidence, knowledge and lineage summary labels instead of route-local
   count assembly.
@@ -189,14 +193,12 @@ Date: 2026-06-28
 
 Most recent verified local slice:
 
-- Merchant copy cleanup proof: live `/api/merchant/diagnostics` normal copy
-  has no `Metryki Merchant:`, raw metric key, vendor endpoint, action ID or
-  generic Merchant fallback leaks; browser proof for `/merchant` shows
-  marketer-readable feed summaries and blocked claims.
-- Current verification for this API/dashboard slice:
-  - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_diagnostics or merchant or operator_label_fallbacks_do_not_humanize_raw_unknown_enums" --maxfail=1`
-  - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics"`
-  - `rtk pnpm --dir apps/dashboard typecheck`
+- Action/knowledge copy cleanup proof: live scans for `/api/actions` and
+  `/api/knowledge/cards` have no visible technical checklist jargon or English
+  evidence wording; browser proof for `/actions` and `/knowledge` shows
+  marketer-readable action and knowledge summaries.
+- Current verification for this API/browser slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "wordpress_handoff_review_gate_avoids_payload_jargon or content_refresh_review_gates_use_polish_operator_language or knowledge_compiler" --maxfail=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
 

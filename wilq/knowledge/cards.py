@@ -21,9 +21,9 @@ def seed_cards() -> list[KnowledgeCard]:
         KnowledgeCard(
             id="card_goal_001_rules",
             card_type="voice_rule",
-            title="No invented metrics",
+            title="Bez zmyślonych metryk",
             summary=(
-                "Marketing recommendations must use WILQ API evidence IDs and source connectors."
+                "Rekomendacje marketingowe muszą opierać się na dowodach i źródłach danych z WILQ API."
             ),
             source_type="repo_goal",
             source_id="docs/goals/001-goal.md",

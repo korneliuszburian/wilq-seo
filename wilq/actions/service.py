@@ -1837,7 +1837,7 @@ def _wordpress_draft_handoff_action(
                 "duplicate_or_cannibalization_check",
                 "legal_factual_review",
                 "content_draft_readiness_review",
-                "wordpress_draft_payload_preview",
+                "wordpress_draft_preview_review",
                 "human_confirm_before_wordpress_write",
             ],
             "blocked_claims": [
@@ -4860,6 +4860,7 @@ def _action_gate_label(value: str) -> str | None:
         "legal_factual_review_outcome": "wynik kontroli prawnej i faktograficznej",
         "content_draft_readiness_review": "kontrola gotowości szkicu",
         "wordpress_draft_payload_preview": "podgląd wpisu WordPress",
+        "wordpress_draft_preview_review": "podgląd wpisu WordPress",
         "human_confirm_before_wordpress_write": "potwierdzenie człowieka przed zapisem WordPress",
         "gsc_query_page_check": "sprawdzenie zapytań i URL-i z GSC",
         "wordpress_inventory_check": "sprawdzenie spisu treści WordPress",
