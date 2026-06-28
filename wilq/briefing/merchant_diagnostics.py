@@ -23,6 +23,8 @@ from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
+    ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -221,7 +223,10 @@ def build_merchant_diagnostics(
             "payload_preview": [
                 _merchant_payload_preview_with_operator_labels(preview)
                 for preview in price_impact_readiness.payload_preview
-            ]
+            ],
+            "preview_cards": _merchant_preview_cards(
+                price_impact_readiness.payload_preview
+            ),
         }
     )
     decision_queue = _merchant_decisions_with_product_state_review(
@@ -2231,6 +2236,7 @@ def _merchant_decisions_with_lineage(
                     _merchant_payload_preview_with_operator_labels(preview)
                     for preview in decision.payload_preview
                 ],
+                "preview_cards": _merchant_preview_cards(decision.payload_preview),
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
                 ),
@@ -2261,6 +2267,106 @@ def _merchant_payload_preview_with_operator_labels(
         ),
         "required_validation_labels": labels,
     }
+
+
+def _merchant_preview_cards(
+    previews: list[dict[str, object]],
+) -> list[ActionPreviewCardViewModel]:
+    return [
+        _merchant_preview_card(_merchant_payload_preview_with_operator_labels(preview))
+        for preview in previews
+    ]
+
+
+def _merchant_preview_card(
+    preview: dict[str, object],
+) -> ActionPreviewCardViewModel:
+    preview_id = str(preview.get("id") or "merchant_preview")
+    contract_label = str(
+        preview.get("preview_contract_label")
+        or merchant_preview_contract_label(preview.get("preview_contract"))
+    )
+    rows = [
+        ActionPreviewRowViewModel(label="Typ sprawdzenia", value=contract_label),
+        ActionPreviewRowViewModel(
+            label="Zakres",
+            value=_merchant_preview_scope_label(preview),
+        ),
+        ActionPreviewRowViewModel(
+            label="Warunki sprawdzenia",
+            value=_merchant_preview_required_validation_label(preview),
+        ),
+    ]
+    missing_read_contracts = preview.get("missing_read_contracts")
+    if isinstance(missing_read_contracts, list) and missing_read_contracts:
+        rows.append(
+            ActionPreviewRowViewModel(
+                label="Brakujące dane",
+                value=_merchant_count_label(len(missing_read_contracts), "kontrakt", "kontrakty"),
+            )
+        )
+    return ActionPreviewCardViewModel(
+        id=preview_id,
+        kind="merchant_review_preview",
+        title_label="Podgląd sprawdzenia Merchant",
+        subtitle_label=contract_label,
+        status_label="do sprawdzenia",
+        rows=rows,
+        apply_state_label=_merchant_preview_apply_state_label(preview),
+        system_readiness_label=_merchant_preview_system_readiness_label(preview),
+    )
+
+
+def _merchant_preview_scope_label(preview: dict[str, object]) -> str:
+    for key in ("products", "candidates"):
+        rows = preview.get(key)
+        if isinstance(rows, list) and rows:
+            return _merchant_count_label(len(rows), "wiersz", "wiersze")
+    metric_snapshot = preview.get("metric_snapshot")
+    if isinstance(metric_snapshot, dict) and metric_snapshot:
+        labels = _merchant_metric_snapshot_labels(
+            {
+                str(key): value
+                for key, value in metric_snapshot.items()
+                if isinstance(value, int)
+            }
+        )
+        if labels:
+            return ", ".join(labels.values())
+    reported = preview.get("reported_issue_occurrences")
+    if isinstance(reported, int) and reported > 0:
+        return _merchant_count_label(reported, "zgłoszenie", "zgłoszenia")
+    return "zakres do ustalenia w review"
+
+
+def _merchant_preview_required_validation_label(preview: dict[str, object]) -> str:
+    labels = preview.get("required_validation_labels")
+    if isinstance(labels, list):
+        clean_labels = [str(label) for label in labels if str(label).strip()]
+        if clean_labels:
+            return ", ".join(clean_labels[:4])
+    checks = preview.get("required_validation")
+    if isinstance(checks, list) and checks:
+        return _merchant_count_label(len(checks), "warunek", "warunki")
+    return "brak dodatkowych warunków"
+
+
+def _merchant_preview_apply_state_label(preview: dict[str, object]) -> str:
+    if preview.get("apply_allowed") is True:
+        return "Zapis możliwy dopiero po potwierdzeniu człowieka."
+    return "Zapis zmian jest zablokowany."
+
+
+def _merchant_preview_system_readiness_label(preview: dict[str, object]) -> str:
+    if preview.get("api_mutation_ready") is True:
+        return "System ma gotowy kontrakt przygotowania zapisu."
+    return "System nie ma gotowego kontraktu zapisu dla tej akcji."
+
+
+def _merchant_count_label(count: int, one: str, few_or_many: str) -> str:
+    if count == 1:
+        return f"1 {one}"
+    return f"{count} {few_or_many}"
 
 
 def _merchant_price_impact_review_decision(

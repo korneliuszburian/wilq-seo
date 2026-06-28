@@ -106,6 +106,9 @@ use the cleaned language.
 - Merchant product samples and product performance rows now expose API-owned
   display labels. The dashboard route no longer shows raw product sample IDs,
   raw Ads product status enums or raw Ads cost micros in those panels.
+- Merchant decision and price-impact previews now expose API-owned preview
+  cards. The dashboard route no longer parses raw `payload_preview` for those
+  marketer-facing cards.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -118,7 +121,12 @@ are resolved or explicitly deferred.
    aligned.
 2. Remove scattered raw fallback paths in registry/workflow and knowledge
    routes by adding typed API/schema/view-model labels.
-3. Continue moving repeated metric, dimension, source, blocker and evidence
+3. Remove active content URL leftovers: no `preview_url` primary fallback, no
+   dev-preview host as product filter, and no old gate-state names where
+   public/final URL wording is the real model.
+4. Remove shared dashboard raw status fallbacks in `StatusBadge`,
+   registry/workflow cards, Content fallbacks and Ads ID fallbacks.
+5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
 ## Execution Policy

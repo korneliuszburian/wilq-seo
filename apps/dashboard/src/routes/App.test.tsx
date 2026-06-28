@@ -4791,6 +4791,22 @@ const merchantDiagnostics = {
       "google_ads_or_ga4_product_performance_window"
     ],
     payload_preview: [],
+    preview_cards: [
+      {
+        id: "merchant_price_impact_readiness_preview",
+        kind: "merchant_review_preview",
+        title_label: "Podgląd sprawdzenia Merchant",
+        subtitle_label: "sprawdzenie wpływu ceny",
+        status_label: "do sprawdzenia",
+        rows: [
+          { label: "Typ sprawdzenia", value: "sprawdzenie wpływu ceny" },
+          { label: "Zakres", value: "zakres do ustalenia w review" },
+          { label: "Warunki sprawdzenia", value: "potwierdź historię ceny" }
+        ],
+        apply_state_label: "Zapis zmian jest zablokowany.",
+        system_readiness_label: "System nie ma gotowego kontraktu zapisu dla tej akcji."
+      }
+    ],
     source_connectors: ["google_merchant_center"],
     source_connector_labels: ["Merchant Center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
@@ -4900,6 +4916,25 @@ const merchantDiagnostics = {
       },
       sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
       sample_titles: ["Sorbent chemiczny 10 kg"],
+      preview_cards: [
+        {
+          id: "merchant_feed_issue_review_merchant_issue_pl_not_impacted_availability_updated_n_availability",
+          kind: "merchant_review_preview",
+          title_label: "Podgląd sprawdzenia Merchant",
+          subtitle_label: "sprawdzenie problemów feedu",
+          status_label: "do sprawdzenia",
+          rows: [
+            { label: "Typ sprawdzenia", value: "sprawdzenie problemów feedu" },
+            { label: "Zakres", value: "23 zgłoszenia" },
+            {
+              label: "Warunki sprawdzenia",
+              value: "sprawdź typ problemu i atrybut, sprawdź kontekst raportowania"
+            }
+          ],
+          apply_state_label: "Zapis zmian jest zablokowany.",
+          system_readiness_label: "System nie ma gotowego kontraktu zapisu dla tej akcji."
+        }
+      ],
       source_connectors: ["google_merchant_center"],
       source_connector_labels: ["Merchant Center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
@@ -7768,6 +7803,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("wpływ ceny zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Zmiany ceny")).toBeInTheDocument();
     expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
+    expect(screen.getAllByText("Podgląd sprawdzenia Merchant").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/MerchantProductStateReview/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/MerchantSupplementalFeedCandidateReview/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/MerchantPriceImpactReadinessReview/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/merchant_product_state_review_preview_v1/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/merchant_supplemental_feed_review_preview_v1/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/merchant_price_impact_readiness_preview_v1/)).not.toBeInTheDocument();
     expect(screen.queryByText(/google_ads_shopping_product_price_history/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 dowód źródłowy/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/werdykt zwrotu z reklam na poziomie produktu/).length).toBeGreaterThan(0);

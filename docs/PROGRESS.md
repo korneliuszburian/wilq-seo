@@ -78,6 +78,9 @@ Date: 2026-06-28
   sample summaries, product references, Ads status labels, price labels and
   missing metric labels. The Merchant route no longer renders raw sample product
   IDs, Ads product status enums or raw Ads cost micros in those panels.
+- Merchant decision and price-impact previews now expose API-owned preview
+  cards. The Merchant route no longer parses raw `payload_preview` to build
+  marketer-facing preview cards.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -88,7 +91,13 @@ Date: 2026-06-28
    artifacts.
 2. Remove scattered raw fallback paths in registry/workflow and knowledge
    routes by adding API/schema/view-model labels.
-3. Continue moving repeated metric, dimension, source, blocker and evidence
+3. Remove active content URL leftovers found by audit: `preview_url` must not
+   fall back as the primary URL, dev-preview hosts must not drive social/source
+   filtering, and old gate-state names should move to public/final URL wording.
+4. Remove shared dashboard raw status fallbacks: `StatusBadge`,
+   registry/workflow cards, Content fallbacks and Ads ID fallbacks should use
+   API labels or add missing API labels.
+5. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
 
 ## Proof
@@ -110,6 +119,13 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_recommendation_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_budget_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_product_performance_readiness_blocks_state_only_product_join or merchant_diagnostics_promotes_ads_product_state_review_decision" --maxfail=1`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
+- `agent-browser` live `/merchant` proof after expanding full review: preview
+  cards render and visible DOM contains no `MerchantProductStateReview`,
+  `MerchantSupplementalFeedCandidateReview`,
+  `MerchantPriceImpactReadinessReview`, `merchant_product_state_review_preview_v1`,
+  `merchant_supplemental_feed_review_preview_v1`,
+  `merchant_price_impact_readiness_preview_v1` or raw product-ID samples.
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

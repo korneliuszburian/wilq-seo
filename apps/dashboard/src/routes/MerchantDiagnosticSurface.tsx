@@ -11,6 +11,7 @@ import {
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
+import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { ActionObjectFocus } from "./ActionObjectPanels";
 import { tacticalContextPairs } from "./TacticalQueuePanel";
 
@@ -241,9 +242,10 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
     );
   }
 
-  const firstPreview = primaryDecision.payload_preview[0];
-  const requiredValidationLabels = merchantLabelValues(firstPreview);
-  const sampleUnavailableReason = merchantString(firstPreview?.sample_unavailable_reason);
+  const primaryPreviewCard = primaryDecision.preview_cards[0];
+  const requiredValidationSummary = primaryPreviewCard?.rows.find(
+    (row) => row.label === "Warunki sprawdzenia"
+  )?.value;
   const measurementPlan = merchantMerchantMeasurementPlan(primaryDecision);
   const reportedIssueCount =
     primaryDecision.issue_count ??
@@ -376,9 +378,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           />
           <TraceLine
             label="Brakujące wejścia"
-            values={
-              sampleUnavailableReason ? [sampleUnavailableReason] : requiredValidationLabels
-            }
+            values={requiredValidationSummary ? [requiredValidationSummary] : []}
             empty="brak"
           />
         </div>
@@ -770,8 +770,6 @@ function MerchantProductPerformanceRowCard({
 
 function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
   const readiness = data.price_impact_readiness;
-  const preview = readiness.payload_preview[0];
-  const previewProducts = merchantUnknownArray(preview?.products);
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -808,22 +806,11 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
           values={readiness.blocked_claim_labels}
         />
       </div>
-      {preview ? (
-        <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-600">
-          <p className="font-medium text-ink">Podgląd wpływu ceny</p>
-          <TraceLine
-            label="Typ sprawdzenia"
-            values={[merchantString(preview.preview_contract_label) || "typ sprawdzenia bez etykiety"]}
-          />
-          <TraceLine
-            label="Produkty"
-            values={[
-              previewProducts.length
-                ? formatMerchantIdCount(previewProducts.length, "wiersz", "wiersze")
-                : "bez wierszy"
-            ]}
-          />
-          <TraceLine label="Zapis zmian" values={merchantWriteReadinessValues(preview)} />
+      {readiness.preview_cards.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {readiness.preview_cards.map((card) => (
+            <ActionPreviewCard key={card.id} card={card} />
+          ))}
         </div>
       ) : null}
     </section>
@@ -898,7 +885,13 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
             </p>
           </div>
         ) : null}
-        <MerchantDecisionPreview previews={decision.payload_preview} />
+        {decision.preview_cards.length > 0 ? (
+          <div className="grid gap-2">
+            {decision.preview_cards.map((card) => (
+              <ActionPreviewCard key={card.id} card={card} />
+            ))}
+          </div>
+        ) : null}
         <TraceLine
           label="Dowody"
           values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
@@ -918,84 +911,6 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       </div>
     </article>
   );
-}
-
-function MerchantDecisionPreview({
-  previews
-}: {
-  previews: MerchantDecisionItem["payload_preview"];
-}) {
-  if (!previews.length) return null;
-  return (
-    <div className="rounded border border-line bg-white p-2">
-      <p className="font-medium text-ink">Podgląd sprawdzenia</p>
-      <div className="mt-1 grid gap-1.5">
-        {previews.map((preview, index) => {
-          const candidates = merchantUnknownArray(preview.candidates);
-          const products = merchantUnknownArray(preview.products);
-          const rowCount = candidates.length || products.length;
-          return (
-            <div
-              key={`${merchantString(preview.preview_contract) || "preview"}-${index}`}
-              className="rounded border border-line bg-slate-50 px-2 py-1.5"
-            >
-              <TraceLine
-                label="Typ sprawdzenia"
-                values={[merchantString(preview.preview_contract_label) || "typ sprawdzenia bez etykiety"]}
-              />
-              <TraceLine
-                label="Zakres"
-                values={[
-                  rowCount
-                    ? formatMerchantIdCount(rowCount, "wiersz", "wiersze")
-                    : "bez wierszy"
-                ]}
-              />
-              <TraceLine label="Zapis zmian" values={merchantWriteReadinessValues(preview)} />
-              <TraceLine
-                label="Warunki sprawdzenia"
-                values={merchantLabelValues(preview)}
-                empty="brak"
-              />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function merchantUnknownArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function merchantString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
-function merchantLabelValues(preview: Record<string, unknown> | undefined): string[] {
-  if (!preview) return [];
-  const labels = merchantUnknownArray(preview.required_validation_labels)
-    .map(merchantString)
-    .filter((value): value is string => Boolean(value));
-  if (labels.length) return labels;
-  const rawCount = merchantUnknownArray(preview.required_validation).length;
-  return rawCount ? [formatMerchantIdCount(rawCount, "warunek", "warunki")] : [];
-}
-
-function merchantWriteReadinessValues(preview: Record<string, unknown>) {
-  const values: string[] = [];
-  values.push(
-    preview.apply_allowed === true
-      ? "zapis możliwy po potwierdzeniu"
-      : "zapis zmian zablokowany"
-  );
-  values.push(
-    preview.api_mutation_ready === true
-      ? "system gotowy do przygotowania zapisu"
-      : "system nie jest gotowy do przygotowania zapisu"
-  );
-  return values;
 }
 
 function formatPolishCount(count: number, one: string, few: string, many: string) {

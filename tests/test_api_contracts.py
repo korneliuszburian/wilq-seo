@@ -12701,6 +12701,24 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_preview["apply_allowed"] is False
     assert decision_preview["api_mutation_ready"] is False
     assert decision_preview["destructive"] is False
+    assert decision["preview_cards"]
+    decision_preview_card = decision["preview_cards"][0]
+    assert decision_preview_card["title_label"] == "Podgląd sprawdzenia Merchant"
+    assert decision_preview_card["subtitle_label"] == "sprawdzenie problemów feedu"
+    assert decision_preview_card["status_label"] == "do sprawdzenia"
+    assert {
+        "label": "Typ sprawdzenia",
+        "value": "sprawdzenie problemów feedu",
+    } in decision_preview_card["rows"]
+    assert any(
+        row["label"] == "Zakres" and "zgłoszenia" in row["value"]
+        for row in decision_preview_card["rows"]
+    )
+    assert not any(
+        "online~pl~PL~SKU" in row["value"] or "MerchantIssueClusterReview" in row["value"]
+        for row in decision_preview_card["rows"]
+    )
+    assert decision_preview_card["apply_state_label"] == "Zapis zmian jest zablokowany."
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert "ponowne zatwierdzenie produktu" in decision["blocked_claim_labels"]
     assert decision["risk_label"] == "średnie ryzyko"
@@ -13349,6 +13367,15 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert supplemental_preview["candidates"][0]["candidate_status"] == (
         "requires_human_value_confirmation"
     )
+    assert decision["preview_cards"]
+    assert len(decision["preview_cards"]) == len(decision["payload_preview"])
+    assert not any(
+        "online~pl~PL~SKU" in row["value"]
+        or "MerchantProductStateReview" in row["value"]
+        or "MerchantSupplementalFeedCandidateReview" in row["value"]
+        for card in decision["preview_cards"]
+        for row in card["rows"]
+    )
     price_readiness = payload["price_impact_readiness"]
     assert price_readiness["status"] == "blocked"
     assert price_readiness["products_with_current_price"] == 1
@@ -13377,6 +13404,19 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert price_preview["products"][0]["has_price_change"] is True
     assert price_preview["products"][0]["price_delta_micros"] == 3450000
     assert price_preview["products"][0]["has_product_performance_metrics"] is False
+    assert price_readiness["preview_cards"]
+    price_preview_card = price_readiness["preview_cards"][0]
+    assert price_preview_card["title_label"] == "Podgląd sprawdzenia Merchant"
+    assert price_preview_card["subtitle_label"] == "sprawdzenie wpływu ceny"
+    assert {
+        "label": "Typ sprawdzenia",
+        "value": "sprawdzenie wpływu ceny",
+    } in price_preview_card["rows"]
+    assert not any(
+        "online~pl~PL~SKU" in row["value"]
+        or "MerchantPriceImpactReadinessReview" in row["value"]
+        for row in price_preview_card["rows"]
+    )
     price_decision = next(
         item
         for item in payload["decision_queue"]
@@ -13391,6 +13431,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "performance": 0,
     }
     assert price_decision["payload_preview"] == price_readiness["payload_preview"]
+    assert price_decision["preview_cards"] == price_readiness["preview_cards"]
     assert price_decision["source_connectors"] == price_readiness["source_connectors"]
     assert price_decision["evidence_ids"] == price_readiness["evidence_ids"]
     assert price_decision["blocked_claims"] == price_readiness["blocked_claims"]
