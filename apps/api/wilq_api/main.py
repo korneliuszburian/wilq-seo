@@ -3408,7 +3408,9 @@ def _compact_content_brief_preview_for_context(
     keep_keys = {
         "candidate_id",
         "source_type",
+        "source_type_label",
         "mode",
+        "mode_label",
         "topic",
         "source_public_url",
         "preview_url",
@@ -3439,6 +3441,7 @@ def _compact_content_brief_preview_for_context(
         "legal_review_notes",
         "brand_voice_notes",
         "publication_readiness_status",
+        "publication_readiness_status_label",
         "publication_blockers",
         "publication_blocker_labels",
         "source_facts",
@@ -3476,10 +3479,23 @@ def _compact_content_brief_preview_for_context(
             ):
                 value = compact_item.get(key)
                 if isinstance(value, list):
-                    compact_item[key] = value[:limit]
+                    values = value[:limit]
+                    if key == "source_facts":
+                        values = _compact_content_source_facts_for_context(values)
+                    compact_item[key] = values
                     compact_item[f"{key}_total"] = len(value)
             compact_items.append(compact_item)
     return compact_items
+
+
+def _compact_content_source_facts_for_context(values: list[Any]) -> list[Any]:
+    compact_values: list[Any] = []
+    for value in values:
+        if isinstance(value, str) and value.startswith("Strona z GSC:"):
+            compact_values.append("Strona z GSC: publiczny URL w polu source_public_url")
+        else:
+            compact_values.append(value)
+    return compact_values
 
 
 def _compact_wordpress_draft_payload_preview_for_context(
@@ -3491,9 +3507,13 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "source_preview_contract",
         "candidate_id",
         "source_type",
+        "source_type_label",
         "mode",
+        "mode_label",
         "operation_type",
+        "operation_type_label",
         "post_status",
+        "post_status_label",
         "topic",
         "intent",
         "source_public_url",
@@ -3501,10 +3521,14 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "intended_final_url",
         "final_canonical_url",
         "inventory_gate_status",
+        "inventory_gate_status_label",
         "canonical_gate_status",
+        "canonical_gate_status_label",
         "duplicate_gate_status",
+        "duplicate_gate_status_label",
         "content_gate_summary",
         "draft_generation_status",
+        "draft_generation_status_label",
         "draft_blockers",
         "draft_blocker_labels",
         "draft_generation_summary",
