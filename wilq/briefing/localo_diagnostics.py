@@ -12,6 +12,7 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import source_connector_label
 from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
@@ -886,7 +887,10 @@ def _localo_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
     labels = {
         LOCALO_CONNECTOR_ID: "Localo",
     }
-    return _unique(labels.get(connector_id, connector_id) for connector_id in connector_ids)
+    return _unique(
+        labels.get(connector_id, source_connector_label(connector_id))
+        for connector_id in connector_ids
+    )
 
 
 def _localo_evidence_summary_label(evidence_ids: Iterable[str]) -> str:

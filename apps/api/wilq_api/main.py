@@ -104,6 +104,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
 )
 from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.operator_labels import (
+    connector_refresh_status_label,
     evidence_count_label,
     evidence_source_type_label,
     freshness_state_label,
@@ -493,16 +494,19 @@ def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, 
     )
     metric_summary = run.get("metric_summary")
     metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
-    source_label = run.get("connector_id") or "źródło danych"
+    source_label = source_connector_label(str(run.get("connector_id") or ""))
+    status_label = connector_refresh_status_label(run.get("status"))
     summary = (
         f"Odczyt danych {source_label}: "
-        f"status {run.get('status') or 'unknown'}, dowody {len(evidence_ids)}, "
+        f"{status_label}, dowody {len(evidence_ids)}, "
         f"braki dostępu {len(missing_credentials)}."
     )
     return {
         "id": run.get("id"),
         "connector_id": run.get("connector_id"),
         "status": run.get("status"),
+        "status_label": status_label,
+        "connector_label": source_label,
         "started_at": run.get("started_at"),
         "completed_at": run.get("completed_at"),
         "summary": summary,

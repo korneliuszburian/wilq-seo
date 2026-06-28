@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+UNKNOWN_SOURCE_CONNECTOR_LABEL = "źródło danych do sprawdzenia"
+UNKNOWN_REFRESH_STATUS_LABEL = "status odczytu do sprawdzenia"
+
 
 def source_connector_label(connector_id: str) -> str:
     labels = {
@@ -16,7 +19,7 @@ def source_connector_label(connector_id: str) -> str:
         "wordpress_ekologus": "WordPress ekologus.pl",
         "wordpress_sklep": "WordPress sklep.ekologus.pl",
     }
-    return labels.get(connector_id, connector_id)
+    return labels.get(connector_id, UNKNOWN_SOURCE_CONNECTOR_LABEL)
 
 
 def source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
@@ -70,6 +73,19 @@ def evidence_source_type_label(source_type: str) -> str:
         "metric_fact_store": "metryka z odczytu",
     }
     return labels.get(source_type, "dowód źródłowy")
+
+
+def connector_refresh_status_label(status: object) -> str:
+    value = getattr(status, "value", status)
+    labels = {
+        "completed": "odczyt zakończony",
+        "failed": "odczyt nieudany",
+        "missing_credentials": "brak dostępu",
+        "pending": "odczyt w kolejce",
+        "running": "odczyt trwa",
+        "skipped": "odczyt pominięty",
+    }
+    return labels.get(str(value or ""), UNKNOWN_REFRESH_STATUS_LABEL)
 
 
 def opportunity_domain_label(domain: object) -> str:

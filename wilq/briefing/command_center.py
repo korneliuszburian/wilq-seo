@@ -45,7 +45,7 @@ from wilq.schemas import (
     TacticalQueueResponse,
     utc_now,
 )
-from wilq.operator_labels import freshness_state_label
+from wilq.operator_labels import freshness_state_label, source_connector_label
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
@@ -492,7 +492,7 @@ def _connector_label_map(connectors: list[ConnectorStatus]) -> dict[str, str]:
 
 
 def _connector_label(connector_id: str, labels: dict[str, str]) -> str:
-    return labels.get(connector_id) or connector_id.replace("_", " ")
+    return labels.get(connector_id) or source_connector_label(connector_id)
 
 
 def _route_label(route: str) -> str:

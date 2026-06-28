@@ -8,6 +8,7 @@ from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import source_connector_label
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -977,7 +978,7 @@ def _is_probe_only_fact(fact: MetricFact) -> bool:
 
 
 def _connector_label(connector_id: str) -> str:
-    return CONNECTOR_LABELS.get(connector_id, connector_id)
+    return CONNECTOR_LABELS.get(connector_id, source_connector_label(connector_id))
 
 
 def _unique(items: Iterable[str]) -> list[str]:

@@ -9,6 +9,7 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import source_connector_label
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -436,7 +437,10 @@ def _ga4_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
         "wordpress_ekologus": "WordPress ekologus.pl",
         "google_search_console": "Google Search Console",
     }
-    return _unique(labels.get(connector_id, connector_id) for connector_id in connector_ids)
+    return _unique(
+        labels.get(connector_id, source_connector_label(connector_id))
+        for connector_id in connector_ids
+    )
 
 
 def _ga4_evidence_summary_label(evidence_ids: Iterable[str]) -> str:

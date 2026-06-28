@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from apps.api.wilq_api.main import app
+from apps.api.wilq_api.main import app, _compact_refresh_run_for_operator_context
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -58,6 +58,11 @@ from wilq.connectors.localo.client import (
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
+from wilq.operator_labels import (
+    connector_refresh_status_label,
+    source_connector_label,
+    source_connector_labels,
+)
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
@@ -1304,6 +1309,30 @@ def test_action_operator_labels_are_specific(
         walk(action.id, action.model_dump(mode="json"))
 
     assert leaks == []
+
+
+def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
+    unknown_connector = "new_vendor_connector"
+
+    assert source_connector_label(unknown_connector) == "źródło danych do sprawdzenia"
+    assert source_connector_labels([unknown_connector]) == ["źródło danych do sprawdzenia"]
+    assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
+
+    compact = _compact_refresh_run_for_operator_context(
+        {
+            "id": "refresh_unknown_vendor",
+            "connector_id": unknown_connector,
+            "status": "new_raw_status",
+            "evidence_ids": ["ev_unknown"],
+            "missing_credentials": ["UNKNOWN_VENDOR_TOKEN"],
+            "metric_summary": {"row_count": 1},
+        }
+    )
+
+    assert compact["connector_label"] == "źródło danych do sprawdzenia"
+    assert compact["status_label"] == "status odczytu do sprawdzenia"
+    assert unknown_connector not in compact["summary"]
+    assert "new_raw_status" not in compact["summary"]
 
 
 def test_action_review_records_human_outcome_without_apply(
@@ -12867,6 +12896,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
         affected_attribute="n:availability",
         country="PL",
         reporting_context="SHOPPING_ADS",
+        reporting_context_label="reklamy produktowe",
         product_count=23,
         sample_product_ids=[product_id],
         sample_titles=["Sorbent chemiczny 10 kg"],
