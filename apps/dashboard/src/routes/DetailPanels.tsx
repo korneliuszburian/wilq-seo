@@ -172,7 +172,7 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
       <h1 className="text-2xl font-semibold tracking-normal">{opportunity.title}</h1>
       <div className="mt-3 flex flex-wrap gap-2">
         <StatusBadge value={opportunity.domain_label} />
-        <StatusBadge value={opportunity.risk} />
+        <StatusBadge value={opportunity.risk} label={opportunity.risk_label} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Diagnoza" />

@@ -90,6 +90,13 @@ Date: 2026-06-28
   content objects need a public/final/canonical URL before they can drive that
   workflow.
 - Content primary URL labels no longer fall back to `preview_url`.
+- Shared `StatusBadge` no longer owns a product-language dictionary. Registry,
+  workflow, Opportunities, tactical queue, marketing brief, Custom Segments,
+  Demand Gen, Merchant and Content status/risk badges now render API/domain
+  `*_label` fields.
+- Opportunity, workflow run, marketing brief, tactical queue, Merchant issue
+  cluster, Custom Segments read contracts and Demand Gen readiness contracts now
+  expose the missing status/risk labels through typed API/shared schemas.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -98,11 +105,10 @@ Date: 2026-06-28
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and
    `docs/goals/001-goal.md` short and aligned. History belongs in git and proof
    artifacts.
-2. Remove scattered raw fallback paths in registry/workflow and knowledge
-   routes by adding API/schema/view-model labels.
-3. Remove shared dashboard raw status fallbacks: `StatusBadge`,
-   registry/workflow cards, Content fallbacks and Ads ID fallbacks should use
-   API labels or add missing API labels.
+2. Remove remaining scattered raw fallback paths in knowledge and Ads detail
+   corners by adding API/schema/view-model labels.
+3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
+   the caller can pass both visual state and API label.
 4. Remove remaining stale product terms where they are active contracts, for
    example Demand Gen `transition_candidate` wording if it still leaks into
    marketer-facing decisions.
@@ -129,8 +135,11 @@ Recent focused proof used during the cleanup:
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "test_ads_budget_row_exposes_marketer_preview_card" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "merchant_product_performance_readiness_blocks_state_only_product_join or merchant_diagnostics_promotes_ads_product_state_review_decision" --maxfail=1`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics or wordpress_draft or social_draft_actions_exclude_dev_site_inventory_inputs" --maxfail=1`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "opportunity or workflow or tactical_queue or marketing_brief or custom_segments or demand_gen or merchant_diagnostics" --maxfail=1`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "merchant route renders dedicated feed diagnostics"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "content route renders condensed selected decision"`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/TacticalQueuePanel.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/OpportunitiesRoute.test.tsx src/routes/TacticalQueuePanel.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "registry|opportunit|tactical|custom segments route|demand gen route|merchant route|content route"`
 - `agent-browser` live `/merchant` proof after expanding full review: preview
   cards render and visible DOM contains no `MerchantProductStateReview`,
   `MerchantSupplementalFeedCandidateReview`,
@@ -142,6 +151,10 @@ Recent focused proof used during the cleanup:
   `preview_url_as_final_canonical`, `selected_target_url`, `target_site`,
   `target_url` or `ekologus.dev.proudsite.pl`; required public/final gate
   labels are present.
+- Live API proof after stack restart on `/api/opportunities`,
+  `/api/workflow-runs`, `/api/ads/diagnostics`, `/api/demand-gen/diagnostics`,
+  `/api/merchant/diagnostics`, `/api/marketing/tactical-queue` and
+  `/api/marketing/brief`: required status/risk label fields are present.
 - `rtk pnpm --dir packages/shared-schemas test -- --runInBand`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "custom segments route"`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`

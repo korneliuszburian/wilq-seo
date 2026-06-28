@@ -1983,6 +1983,9 @@ def _merchant_issue_clusters(
                 ],
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
+                risk_label=_merchant_risk_label(
+                    _merchant_cluster_risk(severity, resolution)
+                ),
                 next_step=(
                     "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; "
                     "najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."

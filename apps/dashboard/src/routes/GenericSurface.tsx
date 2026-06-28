@@ -331,7 +331,7 @@ function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] 
           <article key={connector.id} className="rounded-md border border-line bg-white p-4">
             <div className="flex items-start justify-between gap-3">
               <h3 className="text-sm font-semibold">{connector.label}</h3>
-              <StatusBadge value={connector.status} />
+              <StatusBadge value={connector.status} label={connector.status_label} />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {connector.missing_credentials.length > 0

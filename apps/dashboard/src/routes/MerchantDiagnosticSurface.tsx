@@ -482,7 +482,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                       {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}
                     </p>
                   </div>
-                  <StatusBadge value={cluster.risk} />
+                  <StatusBadge value={cluster.risk} label={cluster.risk_label} />
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-700">
                   Raport pokazuje{" "}
@@ -537,7 +537,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                       {item.intent_label} / {item.priority_label}
                     </p>
                   </div>
-                  <StatusBadge value={item.risk} />
+                  <StatusBadge value={item.risk} label={item.risk_label} />
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
                 <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>

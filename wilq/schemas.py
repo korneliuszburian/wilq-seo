@@ -235,6 +235,7 @@ class Opportunity(BaseModel):
     human_diagnosis: str = Field(min_length=1)
     recommended_action: str
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     expert_rule_ids: list[str] = Field(default_factory=list)
     playbook_ids: list[str] = Field(default_factory=list)
@@ -815,6 +816,7 @@ class MarketingBriefItem(BaseModel):
     summary: str
     next_step: str
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
     blocker_reason: str | None = None
 
     @model_validator(mode="after")
@@ -834,6 +836,8 @@ class MarketingBriefItem(BaseModel):
             self.action_summary_label = _marketing_brief_action_count_label(
                 len(self.action_ids)
             )
+        if not self.risk_label:
+            self.risk_label = _marketing_risk_label(self.risk)
         return self
 
 
@@ -881,6 +885,17 @@ def _marketing_priority_label(priority: int) -> str:
     if priority <= 45:
         return "do sprawdzenia"
     return "niżej w kolejce"
+
+
+def _marketing_risk_label(risk: ActionRisk | str) -> str:
+    value = risk.value if isinstance(risk, ActionRisk) else risk
+    labels = {
+        "low": "niskie ryzyko",
+        "medium": "średnie ryzyko",
+        "high": "wysokie ryzyko",
+        "critical": "krytyczne ryzyko",
+    }
+    return labels.get(value, value)
 
 
 def _tactical_domain_label(domain: OpportunityDomain) -> str:
@@ -1003,6 +1018,7 @@ class TacticalQueueItem(BaseModel):
     priority: int = Field(ge=1, le=100)
     priority_label: str = ""
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
     source_connectors: list[str] = Field(min_length=1)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
@@ -1032,6 +1048,8 @@ class TacticalQueueItem(BaseModel):
             self.intent_label = _tactical_intent_label(self.intent)
         if not self.priority_label:
             self.priority_label = _marketing_priority_label(self.priority)
+        if not self.risk_label:
+            self.risk_label = _marketing_risk_label(self.risk)
         if not self.source_connector_labels:
             self.source_connector_labels = [
                 _marketing_brief_connector_label(connector_id)
@@ -1065,6 +1083,7 @@ class TacticalQueueGroup(BaseModel):
     priority: int = Field(ge=1, le=100)
     priority_label: str = ""
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
     source_connectors: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -1078,6 +1097,8 @@ class TacticalQueueGroup(BaseModel):
     def fill_operator_labels(self) -> TacticalQueueGroup:
         if not self.priority_label:
             self.priority_label = _marketing_priority_label(self.priority)
+        if not self.risk_label:
+            self.risk_label = _marketing_risk_label(self.risk)
         if not self.source_connector_labels:
             self.source_connector_labels = [
                 _marketing_brief_connector_label(connector_id)
@@ -2053,6 +2074,7 @@ class AdsCustomSegmentAudienceForecastRow(BaseModel):
 class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     id: str = "ads_custom_segment_audience_forecast_read_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     checked_candidate_count: int = 0
@@ -2069,6 +2091,12 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> "AdsCustomSegmentAudienceForecastReadContract":
+        if not self.status_label:
+            self.status_label = _ads_read_contract_status_label(self.status)
+        return self
 
 
 def default_ads_custom_segment_audience_forecast_contract() -> (
@@ -2106,6 +2134,7 @@ class AdsKeywordPlannerIdeaRow(BaseModel):
 class AdsKeywordPlannerReadContract(BaseModel):
     id: str = "ads_keyword_planner_read_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
@@ -2117,6 +2146,12 @@ class AdsKeywordPlannerReadContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     idea_rows: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> "AdsKeywordPlannerReadContract":
+        if not self.status_label:
+            self.status_label = _ads_read_contract_status_label(self.status)
+        return self
 
 
 class AdsCustomSegmentSourceQuality(BaseModel):
@@ -2164,6 +2199,7 @@ class AdsCustomSegmentCandidate(BaseModel):
 class AdsCustomSegmentsReadContract(BaseModel):
     id: str = "ads_custom_segments_read_contract"
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
@@ -2181,6 +2217,20 @@ class AdsCustomSegmentsReadContract(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> "AdsCustomSegmentsReadContract":
+        if not self.status_label:
+            self.status_label = _ads_read_contract_status_label(self.status)
+        return self
+
+
+def _ads_read_contract_status_label(status: str) -> str:
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+    }
+    return labels.get(status, status)
 
 
 class AdsNegativeKeywordPayloadPreview(BaseModel):
@@ -2515,6 +2565,7 @@ class MerchantIssueCluster(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     action_id: str | None = None
     risk: ActionRisk = ActionRisk.low
+    risk_label: str = ""
     next_step: str
 
 
@@ -3539,6 +3590,7 @@ class CommandCenterResponse(BaseModel):
 
 class DemandGenReadinessContract(BaseModel):
     status: Literal["ready", "blocked"]
+    status_label: str = ""
     title: str
     summary: str
     metric_tiles: dict[str, str | int | float] = Field(default_factory=dict)
@@ -3572,3 +3624,20 @@ class DemandGenReadinessContract(BaseModel):
     )
     next_step: str
     risk: ActionRisk = ActionRisk.medium
+    risk_label: str = ""
+
+    @model_validator(mode="after")
+    def fill_operator_labels(self) -> "DemandGenReadinessContract":
+        if not self.status_label:
+            self.status_label = _demand_gen_status_label(self.status)
+        if not self.risk_label:
+            self.risk_label = _marketing_risk_label(self.risk)
+        return self
+
+
+def _demand_gen_status_label(status: str) -> str:
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+    }
+    return labels.get(status, status)

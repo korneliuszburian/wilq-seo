@@ -118,6 +118,12 @@ use the cleaned language.
   Content objects must expose a public/final/canonical URL before they can drive
   that workflow.
 - Content primary URL labels no longer fall back to `preview_url`.
+- Shared `StatusBadge` no longer owns a product-language dictionary. Registry,
+  workflow, Opportunities, tactical queue, marketing brief, Custom Segments,
+  Demand Gen, Merchant and Content badges use API/domain `*_label` fields.
+- Opportunity, workflow run, marketing brief, tactical queue, Merchant issue
+  cluster, Custom Segments read contracts and Demand Gen readiness contracts now
+  expose the missing status/risk labels through typed API/shared schemas.
 - Recovery docs are being kept short because append-only progress logs made the
   active goal harder to resume.
 
@@ -128,10 +134,10 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Remove scattered raw fallback paths in registry/workflow and knowledge
-   routes by adding typed API/schema/view-model labels.
-3. Remove shared dashboard raw status fallbacks in `StatusBadge`,
-   registry/workflow cards, Content fallbacks and Ads ID fallbacks.
+2. Remove remaining scattered raw fallback paths in knowledge and Ads detail
+   corners by adding typed API/schema/view-model labels.
+3. Remove remaining status/risk label-as-value calls in dashboard surfaces when
+   the caller can pass both visual state and API label.
 4. Remove remaining stale product terms where they are active contracts, for
    example Demand Gen `transition_candidate` wording if it still leaks into
    marketer-facing decisions.

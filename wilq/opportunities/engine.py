@@ -442,8 +442,20 @@ def _label_opportunity(opportunity: Opportunity) -> Opportunity:
                 opportunity.source_connectors
             ),
             "evidence_summary_label": evidence_count_label(opportunity.evidence_ids),
+            "risk_label": _risk_label(opportunity.risk),
         }
     )
+
+
+def _risk_label(risk: ActionRisk | str) -> str:
+    value = risk.value if isinstance(risk, ActionRisk) else risk
+    labels = {
+        "low": "niskie ryzyko",
+        "medium": "średnie ryzyko",
+        "high": "wysokie ryzyko",
+        "critical": "krytyczne ryzyko",
+    }
+    return labels.get(value, value)
 
 
 def _opportunity_metrics(

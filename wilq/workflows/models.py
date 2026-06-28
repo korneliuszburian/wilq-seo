@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from wilq.schemas import ActionRisk, utc_now
 
@@ -51,10 +51,17 @@ class WorkflowRun(BaseModel):
     id: str
     workflow_id: str
     status: Literal["queued", "running", "completed", "failed", "blocked"]
+    status_label: str = ""
     started_at: datetime = Field(default_factory=utc_now)
     completed_at: datetime | None = None
     input: WorkflowInput = Field(default_factory=WorkflowInput)
     output: WorkflowOutput = Field(default_factory=WorkflowOutput)
+
+    @model_validator(mode="after")
+    def hydrate_labels(self) -> "WorkflowRun":
+        if not self.status_label:
+            self.status_label = _workflow_run_status_label(self.status)
+        return self
 
 
 class WorkflowRunCreateRequest(BaseModel):
@@ -70,3 +77,14 @@ class WorkflowEvidence(BaseModel):
 class WorkflowActionObject(BaseModel):
     workflow_run_id: str
     action_ids: list[str] = Field(default_factory=list)
+
+
+def _workflow_run_status_label(status: str) -> str:
+    labels = {
+        "queued": "czeka na uruchomienie",
+        "running": "w trakcie",
+        "completed": "zakończone",
+        "failed": "błąd",
+        "blocked": "zablokowane",
+    }
+    return labels.get(status, status)

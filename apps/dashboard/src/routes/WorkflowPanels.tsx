@@ -26,7 +26,7 @@ export function WorkflowRunList({
                 {workflowLabelsById.get(run.workflow_id) ?? "Proces WILQ"}
               </h3>
             </div>
-            <StatusBadge value={run.status} />
+            <StatusBadge value={run.status} label={run.status_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
             <div>Dowody: {run.output.evidence_ids.length}</div>
@@ -84,8 +84,8 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <StatusBadge value={workflow.status_label ?? workflow.status} />
-          <StatusBadge value={workflow.risk_label ?? workflow.risk} />
+          <StatusBadge value={workflow.status} label={workflow.status_label} />
+          <StatusBadge value={workflow.risk} label={workflow.risk_label} />
         </div>
       </div>
       {workflow.safe_next_step ? (

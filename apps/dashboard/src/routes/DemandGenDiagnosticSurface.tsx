@@ -58,8 +58,8 @@ export function DemandGenDiagnosticSurface() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <StatusBadge value={data.status === "blocked" ? "zablokowane" : "gotowe"} />
-            <StatusBadge value={data.risk} />
+            <StatusBadge value={data.status} label={data.status_label} />
+            <StatusBadge value={data.risk} label={data.risk_label} />
           </div>
         </div>
       </section>

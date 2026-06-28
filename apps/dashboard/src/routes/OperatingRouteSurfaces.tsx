@@ -223,14 +223,14 @@ function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
                 Sprawdzenie przed zapisem zmian. Szczegóły techniczne są dostępne po otwarciu akcji.
               </p>
             </div>
-            <StatusBadge value={action.validation_status} />
+            <StatusBadge value={action.validation_status} label={action.validation_status_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">
             {action.recommended_reason}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <StatusBadge value={action.status} />
-            <StatusBadge value={action.risk} />
+            <StatusBadge value={action.status} label={action.status_label} />
+            <StatusBadge value={action.risk} label={action.risk_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>

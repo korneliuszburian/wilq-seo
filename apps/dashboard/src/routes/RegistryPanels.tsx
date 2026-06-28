@@ -25,7 +25,7 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
                 Źródło danych sprawdzane przez WILQ.
               </p>
             </div>
-            <StatusBadge value={connector.status} />
+            <StatusBadge value={connector.status} label={connector.status_label} />
           </div>
           <div className="mt-4 text-xs text-slate-600">
             {connector.missing_credentials.length > 0 ? (
@@ -75,7 +75,7 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
                 Decyzja z dowodami i bezpiecznym następnym krokiem.
               </p>
             </div>
-            <StatusBadge value={opportunity.risk} />
+            <StatusBadge value={opportunity.risk} label={opportunity.risk_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
           {Object.keys(opportunity.metric_tiles).length > 0 ? (
@@ -125,7 +125,7 @@ export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
                 Zebrany fakt użyty do decyzji. Pełne identyfikatory zostają w śladzie audytu.
               </p>
             </div>
-            <StatusBadge value={evidence.freshness.state} />
+            <StatusBadge value={evidence.freshness.state} label={evidence.freshness_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{evidence.summary}</p>
         </article>
@@ -150,7 +150,7 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
                 Skrót ostatniego pobrania danych. Pełny ślad techniczny zostaje w audycie.
               </p>
             </div>
-            <StatusBadge value={run.status} />
+            <StatusBadge value={run.status} label={run.status_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{run.summary}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
@@ -185,14 +185,14 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
                 Otwórz akcję, żeby sprawdzić warunki i bezpieczny zapis zmian.
               </p>
             </div>
-            <StatusBadge value={action.status} />
+            <StatusBadge value={action.status} label={action.status_label} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">
             {action.human_diagnosis}
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <StatusBadge value={action.validation_status} />
-            <StatusBadge value={action.risk} />
+            <StatusBadge value={action.validation_status} label={action.validation_status_label} />
+            <StatusBadge value={action.risk} label={action.risk_label} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>

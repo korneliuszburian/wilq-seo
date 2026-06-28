@@ -125,7 +125,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
             {item.kind} / {item.priority_label}
           </p>
         </div>
-        <StatusBadge value={item.risk} />
+        <StatusBadge value={item.risk} label={item.risk_label} />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>

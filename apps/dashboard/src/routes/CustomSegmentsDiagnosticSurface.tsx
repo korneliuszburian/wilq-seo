@@ -250,14 +250,9 @@ export function CustomSegmentsDiagnosticSurface() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
-            <StatusBadge value={contract.status === "ready" ? "do oceny" : "zablokowane"} />
-            <StatusBadge
-              value={keywordPlanner.status === "ready" ? "Keyword Planner gotowy" : "Keyword Planner zablokowany"}
-            />
-            <StatusBadge
-              value={audienceForecast.status === "ready" ? "prognoza gotowa" : "prognoza zablokowana"}
-            />
+            <StatusBadge value={contract.status} label={contract.status_label} />
+            <StatusBadge value={keywordPlanner.status} label={keywordPlanner.status_label} />
+            <StatusBadge value={audienceForecast.status} label={audienceForecast.status_label} />
           </div>
         </div>
         <p className="mt-3 text-sm font-medium text-ink">{contract.next_step}</p>

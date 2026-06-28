@@ -1134,7 +1134,7 @@ function ContentDecisionCard({
             {decision.decision_type_label || decision.decision_type}
           </p>
         </div>
-        <StatusBadge value={decision.status} />
+        <StatusBadge value={decision.status} label={decision.status_label} />
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">
         {decision.summary ?? decision.rationale}

@@ -106,6 +106,7 @@ export const OpportunitySchema = z.object({
   human_diagnosis: z.string().min(1),
   recommended_action: z.string(),
   risk: z.string(),
+  risk_label: z.string().default(""),
   action_ids: z.array(z.string()),
   expert_rule_ids: z.array(z.string()),
   playbook_ids: z.array(z.string()),
@@ -358,6 +359,7 @@ export const MarketingBriefItemSchema = z.object({
   summary: z.string(),
   next_step: z.string(),
   risk: z.string(),
+  risk_label: z.string().default(""),
   blocker_reason: z.string().nullable().optional()
 });
 
@@ -400,6 +402,7 @@ export const TacticalQueueItemSchema = z.object({
   priority: z.number(),
   priority_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default(""),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
@@ -424,6 +427,7 @@ export const TacticalQueueGroupSchema = z.object({
   priority: z.number(),
   priority_label: z.string().default(""),
   risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default(""),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
@@ -1384,6 +1388,7 @@ export const AdsCustomSegmentAudienceForecastRowSchema = z.object({
 export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   checked_candidate_count: z.number().int().nonnegative(),
@@ -1417,6 +1422,7 @@ export const AdsKeywordPlannerIdeaRowSchema = z.object({
 export const AdsKeywordPlannerReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   allowed_metrics: z.array(z.string()),
@@ -1480,6 +1486,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
 export const AdsCustomSegmentsReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   candidates: z.array(AdsCustomSegmentCandidateSchema),
@@ -1782,6 +1789,7 @@ export const MerchantIssueClusterSchema = z.object({
   blocked_claims: z.array(z.string()),
   action_id: z.string().nullable().optional(),
   risk: z.enum(["low", "medium", "high", "critical"]),
+  risk_label: z.string().default(""),
   next_step: z.string()
 });
 
@@ -2894,6 +2902,7 @@ export const WorkflowSchema = z.object({
 
 export const DemandGenReadinessContractSchema = z.object({
   status: z.enum(["ready", "blocked"]),
+  status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
@@ -2957,7 +2966,8 @@ export const DemandGenReadinessContractSchema = z.object({
     evidence_ids: z.array(z.string()).default([])
   })).default([]),
   next_step: z.string(),
-  risk: z.enum(["low", "medium", "high"])
+  risk: z.enum(["low", "medium", "high"]),
+  risk_label: z.string().default("")
 });
 
 export const WorkflowInputSchema = z.object({
@@ -2975,6 +2985,7 @@ export const WorkflowRunSchema = z.object({
   id: z.string(),
   workflow_id: z.string(),
   status: z.enum(["queued", "running", "completed", "failed", "blocked"]),
+  status_label: z.string().default(""),
   started_at: z.string(),
   completed_at: z.string().nullable().optional(),
   input: WorkflowInputSchema,

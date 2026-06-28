@@ -110,7 +110,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
           <h3 className="text-sm font-semibold">{group.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">{group.meta}</p>
         </div>
-        <StatusBadge value={group.risk} />
+        <StatusBadge value={group.risk} label={group.risk_label} />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{group.next_step}</p>
@@ -147,7 +147,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
             {item.domain_label} / {item.intent_label} / {item.priority_label}
           </p>
         </div>
-        <StatusBadge value={item.risk} />
+        <StatusBadge value={item.risk} label={item.risk_label} />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
