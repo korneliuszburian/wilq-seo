@@ -189,6 +189,11 @@ use cleaned Polish operator language.
 - Content Planner's selected-decision first screen now uses API-owned
   `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
   source facts instead of reading `action.payload.content_brief_preview`.
+- Action review badges now keep visual state separate from visible review copy;
+  the last-review label is not used as a `StatusBadge` state value.
+- Action review gate summaries now sanitize raw historical review notes before
+  they reach Action Detail; legacy candidate/source/payload/blocker fragments
+  collapse to a neutral legacy-audit note.
 - Tactical queue cards show evidence/action summaries first and keep linked
   trace IDs inside `Szczegóły techniczne`.
 - Workflow cards use `Brakujące dane` and `Granice wniosków`; focused tests no

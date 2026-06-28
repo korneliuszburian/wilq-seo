@@ -133,6 +133,14 @@ describe("ActionObjectPanels", () => {
     const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
     expect(source).not.toContain("{action.connector_label} / {action.mode_label}");
   });
+
+  it("keeps review badge state separate from visible review copy", () => {
+    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    expect(source).toContain(
+      'value={action.review_gate.status} label={lastReviewLabel ?? "brak przeglądu"}'
+    );
+    expect(source).not.toContain('value={lastReviewLabel ?? "brak przeglądu"}');
+  });
 });
 
 function renderWithQueryClient(ui: ReactElement) {

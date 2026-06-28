@@ -251,7 +251,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
             Zapisuje lokalne zdarzenie audytu. Nie zapisuje zmian w zewnętrznych systemach.
           </p>
         </div>
-        <StatusBadge value={lastReviewLabel ?? "brak przeglądu"} />
+        <StatusBadge value={action.review_gate.status} label={lastReviewLabel ?? "brak przeglądu"} />
       </div>
       {action.review_gate.last_review_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">

@@ -199,6 +199,11 @@ Date: 2026-06-28
 - Content Planner's selected-decision first screen now uses API-owned
   `marketer_decision` fields for metrics, content angle, H1/H2/FAQ/CTA and
   source facts instead of reading `action.payload.content_brief_preview`.
+- Action review badges now keep visual state separate from visible review copy;
+  the last-review label is not used as a `StatusBadge` state value.
+- Action review gate summaries now sanitize raw historical review notes before
+  they reach Action Detail; legacy `candidate`, `source_type`, payload and
+  blocked-claim fragments collapse to a neutral legacy-audit note.
 - Recent guardrails cover tactical, Ads, Knowledge, action detail, Content
   Planner and marketer-language presentation contracts.
 
@@ -237,6 +242,9 @@ Date: 2026-06-28
 - `rtk git diff --check`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx -t "content route renders condensed selected decision with expandable detail" --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
 - `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/ActionObjectPanels.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "legacy_raw_audit_summary or action_review_gate_hides_raw_legacy_review_summary or action_review_records_human_outcome_without_apply" --maxfail=3`
+- `agent-browser` proof: `.local-lab/proof/action-detail-review-badge-state-clean.txt`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_diagnostics_exposes_marketer_decision or content_diagnostics_exposes_query_page_inventory_queue" --maxfail=3`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `agent-browser` proof: `.local-lab/proof/content-planner-selected-decision-api-viewmodel.txt`

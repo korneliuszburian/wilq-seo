@@ -3950,7 +3950,9 @@ def _action_review_gate(
         last_review_outcome=_review_outcome_from_event(last_review),
         last_reviewed_by=last_review.actor if last_review is not None else None,
         last_reviewed_at=last_review.created_at if last_review is not None else None,
-        last_review_summary=last_review.summary if last_review is not None else None,
+        last_review_summary=_operator_audit_summary_text(last_review.summary)
+        if last_review is not None
+        else None,
         last_confirmation_by=last_confirmation.actor if last_confirmation is not None else None,
         last_confirmation_at=last_confirmation.created_at
         if last_confirmation is not None
