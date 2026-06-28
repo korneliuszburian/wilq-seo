@@ -103,6 +103,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   those terms.
 - Daily and content-strategist context-pack tests now scan string values for
   old working route names, stale content URL terms and technical jargon.
+- Active actions with operator preview payloads now have a focused guard that
+  requires typed preview cards, so new preview payloads do not fall back to raw
+  shape-derived rows.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
@@ -197,8 +200,9 @@ are resolved or explicitly deferred.
    fall back to raw snake_case or English values in marketer-facing copy.
 4. Continue moving repeated metric, dimension, source, blocker and evidence
    naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for remaining content/ads
-   payload-derived panels.
+5. Dashboard still needs focused cleanup for any newly found content/ads
+   payload-derived panels. Active actions with operator preview payloads now
+   have typed-preview-card coverage.
 6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
    normalizers used for equality matching, not visible operator labels.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily

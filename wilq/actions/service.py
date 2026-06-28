@@ -221,6 +221,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 "action_type": "google_ads_recommendation_review",
                 "connector": "google_ads",
                 "mode": "prepare_only",
+                "preview_contract": "recommendation_apply_preview_v1",
                 "source_metric_names": ["connector_status"],
                 "recommendations": [
                     {

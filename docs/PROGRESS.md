@@ -52,6 +52,8 @@ Date: 2026-06-28
 - Daily and content-strategist context-pack tests now scan string values for
   old working route names, stale content URL terms and technical jargon so
   compacted prompt context cannot quietly reintroduce the cleaned language.
+- Active actions with operator preview payloads are guarded to expose typed
+  preview cards, preventing fallback rows assembled from raw preview shape.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
@@ -173,9 +175,12 @@ Most recent verified local slice:
 
 - Recovery ledger pruning: removed long historical proof lists from this file.
 - History now lives in git commits and `.local-lab/proof/`.
-- Current verification for this docs slice:
+- Current verification for this recovery/API-guard slice:
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "actions_with_operator_preview_data_expose_typed_preview_cards or ads_recommendation" --maxfail=1`
   - `rtk uv run python scripts/marketer_language_guard.py`
   - `rtk git diff --check`
+  - Live API proof: `/api/actions` returns 16 actions and no action with
+    operator preview payload missing typed preview cards.
   - `docs/PROGRESS.md` scan has no stale route names, stale URL terms or
     action-model jargon outside current summaries. The canonical forbidden-term
     list remains in `docs/goals/001-goal.md` by design.
