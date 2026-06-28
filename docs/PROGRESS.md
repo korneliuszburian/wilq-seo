@@ -189,6 +189,9 @@ Date: 2026-06-28
 - Dashboard StatusBadge usage now passes raw state values with API labels for
   Knowledge, Action, GA4 and Merchant status/risk/validation badges instead of
   using the visible label as the visual state.
+- Knowledge cards now render confidence as a neutral Polish label instead of
+  using confidence text as a status state; browser proof covers the expanded
+  knowledge-source panel.
 - Dashboard e2e proof for Action Detail and Merchant no longer expects raw
   evidence IDs in the primary surface; trace IDs stay reachable through
   technical detail after using marketer-facing `dowód 1` links.

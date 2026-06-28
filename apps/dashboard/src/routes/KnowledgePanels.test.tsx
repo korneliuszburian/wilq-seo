@@ -35,6 +35,7 @@ describe("KnowledgePanels", () => {
 
     expect(screen.getByText(/wzorzec Ads \/ zasada pracy/)).toBeInTheDocument();
     expect(screen.getByText("Źródło: zasada pracy")).toBeInTheDocument();
+    expect(screen.getByText("Pewność 90%")).toBeInTheDocument();
     expect(screen.queryByText(/playbook marketingowy/i)).not.toBeInTheDocument();
   });
 
@@ -79,6 +80,36 @@ describe("KnowledgePanels", () => {
 
     expect(screen.getByText("Brak skompilowanych zasad pracy.")).toBeInTheDocument();
     expect(screen.queryByText(/playbook/i)).not.toBeInTheDocument();
+  });
+
+  it("renders card confidence as a neutral label instead of a status value", () => {
+    render(
+      <KnowledgeCardList
+        cards={[
+          ({
+            id: "card_content_quality",
+            source_id: "content_quality",
+            title: "Content quality",
+            display_title: "Jakość treści",
+            summary: "Jak sprawdzać jakość treści bez zmyślania efektu.",
+            card_type: "content_pattern_card",
+            card_type_label: "wzorzec treści",
+            source_type: "marketing_playbook",
+            source_type_label: "zasada pracy",
+            source_url_or_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
+            extracted_at: "2026-06-17T10:00:00Z",
+            last_seen_at: "2026-06-17T10:00:00Z",
+            source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml"],
+            confidence: 0.82
+          } satisfies KnowledgeCard)
+        ]}
+      />
+    );
+
+    const confidence = screen.getByText("Pewność 82%");
+    expect(confidence).toBeInTheDocument();
+    expect(confidence.className).not.toContain("text-signal");
+    expect(confidence.className).not.toContain("text-risk");
   });
 
   it("operating map uses API labels for status, risk and route", () => {

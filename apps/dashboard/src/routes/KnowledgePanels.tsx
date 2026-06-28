@@ -260,7 +260,9 @@ function KnowledgeCardItem({ card }: { card: KnowledgeCard }) {
             {card.card_type_label} / {card.source_type_label}
           </p>
         </div>
-        <StatusBadge value={`pewność ${Math.round(card.confidence * 100)}%`} />
+        <span className="inline-flex min-h-7 items-center rounded border border-line bg-white px-2 text-xs font-medium text-ink">
+          Pewność {Math.round(card.confidence * 100)}%
+        </span>
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <div>Ślady źródłowe: {formatCount(card.source_lineage.length, "element")}</div>

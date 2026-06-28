@@ -566,6 +566,8 @@ WILQ is complete for this long-range goal when:
 - 2026-06-28: Content Planner's selected-decision first screen now renders
   API-owned `marketer_decision` fields instead of parsing content action
   payload previews.
+- 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
+  instead of using confidence text as a visual status state.
 
 ## Discoveries
 
@@ -739,3 +741,6 @@ WILQ is complete for this long-range goal when:
 - Latest Content Planner proof: focused API test, route test, dashboard
   typecheck, marketer language guard and browser text proof passed after moving
   the selected-decision snapshot to API-owned `marketer_decision`.
+- Latest Knowledge proof: focused Knowledge/StatusBadge tests, dashboard
+  typecheck, marketer language guard and browser text proof passed after
+  separating confidence copy from status badge state.
