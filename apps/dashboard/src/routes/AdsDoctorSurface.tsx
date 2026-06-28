@@ -1144,7 +1144,7 @@ function AdsCampaignRowsTable({
                 {row.review_reason}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {formatAdsEvidenceCount(row.evidence_ids.length)}
+                {row.evidence_summary_label}
               </td>
             </tr>
           ))}
@@ -1245,7 +1245,7 @@ function AdsCampaignTriageRowsPanel({
               />
               <TraceLine
                 label="Dowody"
-                values={[formatTraceIdCount(row.evidence_ids.length)]}
+                values={[row.evidence_summary_label]}
                 empty="brak"
               />
               <TraceLine
@@ -1983,7 +1983,7 @@ function AdsSearchTermRowsTable({
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {formatAdsEvidenceCount(row.evidence_ids.length)}
+                {row.evidence_summary_label}
               </td>
             </tr>
           ))}
@@ -2045,7 +2045,7 @@ function AdsSearchTermNgramRowsTable({
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {formatAdsEvidenceCount(row.evidence_ids.length)}
+                {row.evidence_summary_label}
               </td>
             </tr>
           ))}
@@ -2103,7 +2103,7 @@ function AdsSearchTermSafetyRowsTable({
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions_90d)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {formatAdsEvidenceCount(row.evidence_ids.length)}
+                {row.evidence_summary_label}
               </td>
             </tr>
           ))}
@@ -2153,7 +2153,7 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
                 {row.ad_group_label || "brak grupy reklam w odczycie"}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
-                {formatAdsEvidenceCount(row.evidence_ids.length)}
+                {row.evidence_summary_label}
               </td>
             </tr>
           ))}
@@ -2391,11 +2391,6 @@ function adsPercent(value: number | null | undefined) {
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
     value * 100
   )}%`;
-}
-
-function formatAdsEvidenceCount(count: number) {
-  if (count === 1) return "1 dowód";
-  return `${count} dowodów`;
 }
 
 function uniqueValues(values: string[]) {

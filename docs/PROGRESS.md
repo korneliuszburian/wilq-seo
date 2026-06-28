@@ -70,6 +70,9 @@ Date: 2026-06-28
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
+- Google Ads campaign triage, search-term, n-gram, 90-day safety and keyword
+  context rows use API/domain evidence summary labels instead of route-local
+  evidence count formatting.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms instead
@@ -117,6 +120,20 @@ Date: 2026-06-28
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- `rtk uv run pytest tests/test_api_contracts.py -q -k "ads_diagnostics_summary_view_compacts_heavy_payload or ads_search_terms" --maxfail=2`
+- `rtk pnpm --dir apps/dashboard exec vitest run src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "ads doctor route renders live metric-backed diagnostics"`
+- `rtk pnpm --dir packages/shared-schemas test`
+- `rtk pnpm --dir apps/dashboard typecheck`
+- `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk git diff --check`
+- Live API proof: `/api/ads/diagnostics?view=summary` returns evidence
+  summary labels for Ads campaign triage, search-term, n-gram, safety and
+  keyword context rows.
+- Browser proof: `/ads-doctor` renders Ads evidence summary labels without raw
+  payloads, `ActionObject` wording, raw connector IDs or the old route label.
+
+Previous verified local slice:
 
 - `rtk uv run pytest tests/test_api_contracts.py -q -k "tactical_queue_uses_short_ttl_cache or tactical_queue_uses_latest_metric_fact_batch_for_speed" --maxfail=2`
 - `rtk pnpm --dir apps/dashboard exec vitest run src/routes/RegistryPanels.test.tsx src/routes/App.test.tsx --pool=threads --poolOptions.threads.singleThread=true --testTimeout=30000 -t "connector refresh|ads doctor route renders live metric-backed diagnostics"`

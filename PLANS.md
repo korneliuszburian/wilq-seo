@@ -600,6 +600,10 @@ WILQ is complete for this long-range goal when:
   event and changed resource context instead of visible raw IDs. Live API proof
   confirmed label fields on `/api/ads/diagnostics?view=summary`; browser proof
   lives at `.local-lab/proof/ads-display-labels-clean.txt`.
+- 2026-06-28: Google Ads campaign triage, search-term, n-gram, 90-day safety
+  and keyword context rows now use API/domain `evidence_summary_label` instead
+  of route-local evidence count formatting. Live API proof confirmed
+  `/api/ads/diagnostics?view=summary`; browser proof confirmed `/ads-doctor`.
 - 2026-06-28: Treści expanded decision and Ahrefs review cards now use API
   labels or neutral Polish operator fallbacks instead of visible raw enum/status
   keys. Browser proof lives at

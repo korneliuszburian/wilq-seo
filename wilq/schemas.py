@@ -1749,6 +1749,7 @@ class AdsCampaignTriageRow(BaseModel):
     has_budget_apply_preview: bool = False
     has_recommendation_apply_preview: bool = False
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     action_ids: list[str] = Field(default_factory=list)
     action_summary_label: str = ""
     source_metric_names: list[str] = Field(default_factory=list)
@@ -1758,6 +1759,14 @@ class AdsCampaignTriageRow(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
     human_review_gates: list[str] = Field(default_factory=list)
     human_review_gate_labels: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> AdsCampaignTriageRow:
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.action_summary_label:
+            self.action_summary_label = action_count_label(self.action_ids)
+        return self
 
 
 class AdsCampaignTriageReadContract(BaseModel):
@@ -1998,6 +2007,7 @@ class AdsSearchTermMetricRow(BaseModel):
     conversions: float | None = None
     conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2014,6 +2024,8 @@ class AdsSearchTermMetricRow(BaseModel):
                 self.ad_group_name,
                 self.ad_group_id,
             )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 
@@ -2048,6 +2060,7 @@ class AdsSearchTermReviewRow(BaseModel):
     cost_micros: int | None = None
     conversions: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -2062,6 +2075,8 @@ class AdsSearchTermReviewRow(BaseModel):
                 self.ad_group_name,
                 self.ad_group_id,
             )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 
@@ -2076,6 +2091,7 @@ class AdsSearchTermCampaignReviewRow(BaseModel):
     cost_micros: int = 0
     conversions: float = 0.0
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -2085,6 +2101,8 @@ class AdsSearchTermCampaignReviewRow(BaseModel):
                 self.campaign_name,
                 self.campaign_id,
             )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 
@@ -2125,9 +2143,16 @@ class AdsSearchTermNgramRow(BaseModel):
     conversions: float | None = None
     conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> AdsSearchTermNgramRow:
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        return self
 
 
 class AdsSearchTermNgramReadContract(BaseModel):
@@ -2162,6 +2187,7 @@ class AdsSearchTermSafetyRow(BaseModel):
     conversions_90d: float | None = None
     conversion_value_90d: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
@@ -2178,6 +2204,8 @@ class AdsSearchTermSafetyRow(BaseModel):
                 self.ad_group_name,
                 self.ad_group_id,
             )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 
@@ -2213,6 +2241,7 @@ class AdsKeywordMatchContextRow(BaseModel):
     ad_group_name: str | None = None
     ad_group_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
+    evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
 
@@ -2228,6 +2257,8 @@ class AdsKeywordMatchContextRow(BaseModel):
                 self.ad_group_name,
                 self.ad_group_id,
             )
+        if not self.evidence_summary_label:
+            self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
 
 

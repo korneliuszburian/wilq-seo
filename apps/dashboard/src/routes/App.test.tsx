@@ -7710,6 +7710,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("interpretation.action_ids.length");
     expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
+    expect(routeSource).not.toContain("formatAdsEvidenceCount");
+    expect(routeSource).not.toContain("formatTraceIdCount(row.evidence_ids.length)");
     expect(readFileSync("src/routes/OperatingRouteSurfaces.tsx", "utf8")).not.toContain(
       "formatEvidenceCount(action.evidence_ids.length)"
     );

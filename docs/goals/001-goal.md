@@ -117,6 +117,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads search-term, negative-keyword and change-history surfaces use
   API/schema display labels for campaign, ad group, change event and changed
   resource context instead of visible raw IDs.
+- Google Ads campaign triage, search-term, n-gram, 90-day safety and keyword
+  context rows use API/domain evidence summary labels instead of route-local
+  evidence count formatting.
 - Treści expanded decision and Ahrefs review cards use API labels or neutral
   Polish operator fallbacks instead of visible raw enum/status keys.
 - Knowledge details use API-owned source labels and Polish count forms.

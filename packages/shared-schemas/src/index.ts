@@ -979,6 +979,7 @@ export const AdsCampaignTriageRowSchema = z.object({
   has_budget_apply_preview: z.boolean().default(false),
   has_recommendation_apply_preview: z.boolean().default(false),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().optional().default(""),
   source_metric_names: z.array(z.string()),
@@ -1164,6 +1165,7 @@ export const AdsSearchTermMetricRowSchema = z.object({
   conversions: z.number().nullable().optional(),
   conversion_value: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string())
@@ -1200,6 +1202,7 @@ export const AdsSearchTermReviewRowSchema = z.object({
   cost_micros: z.number().nullable().optional(),
   conversions: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string())
 });
 
@@ -1214,6 +1217,7 @@ export const AdsSearchTermCampaignReviewRowSchema = z.object({
   cost_micros: z.number().int().nonnegative(),
   conversions: z.number(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string())
 });
 
@@ -1252,6 +1256,7 @@ export const AdsSearchTermNgramRowSchema = z.object({
   conversions: z.number().nullable().optional(),
   conversion_value: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string())
@@ -1289,6 +1294,7 @@ export const AdsSearchTermSafetyRowSchema = z.object({
   conversions_90d: z.number().nullable().optional(),
   conversion_value_90d: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string())
@@ -1326,6 +1332,7 @@ export const AdsKeywordMatchContextRowSchema = z.object({
   ad_group_name: z.string().nullable().optional(),
   ad_group_label: z.string().optional().default(""),
   evidence_ids: z.array(z.string()),
+  evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
   blocked_claims: z.array(z.string())
 });
