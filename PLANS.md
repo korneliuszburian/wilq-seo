@@ -565,6 +565,9 @@ Future tracks:
      confirmation, audit and rollback/recovery notes.
    - Do not add GTM writes until read-only audit, preview and version checks
      exist.
+   - Operator-facing copy must call this measurement safety/checking, not a
+     low-level tag registry. Technical tag, trigger, variable, workspace and
+     version IDs stay in details.
 
 2. Google Ads API v24.2 / PMax Intelligence
    - Track support for PMax placement segmentation by network before claiming
@@ -572,14 +575,31 @@ Future tracks:
    - Add future readiness checks for asset-only PMax service campaigns:
      text, images, video, search themes, AI improvements off by default and
      campaign paused by default.
-   - Add future review contracts for PMax image assets, search themes,
-     final URL expansion experiments and campaign mix experiments.
+   - Add future review contracts for PMax image assets, image performance,
+     search themes, final URL expansion experiments, campaign mix experiments
+     and brand-channel YouTube links.
    - Track AI transparency fields for generated creative assets. WILQ should
      store attestation status and block unlabelled synthetic creative claims.
    - Multi-party approvals must be represented as an account-safety blocker,
      not as a missing credential.
+   - Treat Smart Bidding Exploration, Promotion mode, AI Max defaults and
+     DSA-to-AI-Max dates as freshness-bound knowledge cards. They can create
+     readiness checks and review tasks, not automatic campaign changes.
 
-3. GA4 Source Hygiene And Local Intent
+3. Unified Safe Change Flow
+   - WILQ should have one operator path for every account change: explain,
+     validate, preview, require confirmation, apply only when supported, audit
+     and measure later.
+   - Domain-specific skills can prepare the context, but they must all hand
+     off to the same safe-change contract instead of inventing separate
+     mutation flows.
+   - Operator UI should say `zmiana do sprawdzenia`, `podgląd zmian`,
+     `zatwierdzenie` and `historia zmian`. Internal action IDs and mutation
+     model names stay in technical details.
+   - No hardcoded label replacement layer is allowed. Copy comes from typed
+     API/domain view-models, workspace profiles or structured knowledge.
+
+4. GA4 Source Hygiene And Local Intent
    - Track GA4 Source Group availability before replacing source/medium
      normalization rules.
    - Add hostname-filter readiness: approved hostnames, excluded spam/copy
@@ -589,20 +609,28 @@ Future tracks:
      where available.
    - Do not treat GA4/GBP integration as available until WILQ API has a typed
      read contract and evidence IDs.
+   - Source grouping must improve decision quality for the marketer; it must
+     not become another raw dimension table on the first screen.
 
-4. Lead Quality Loop
+5. Lead Quality Loop
    - Track Google Ads lead management/API availability.
    - Future WILQ should distinguish raw lead volume from qualified lead value,
      follow-up speed and high-value conversion feedback.
    - No bidding-quality recommendation is allowed until lead statuses,
      conversion mapping and value feedback are read through typed contracts.
+   - If Google exposes lead stages through API, WILQ should connect them to
+     value-based bidding readiness, follow-up workflow and quality feedback,
+     not only lead-count reporting.
 
-5. Bidding And Campaign Change Watchlist
+6. Bidding And Campaign Change Watchlist
    - Smart Bidding Exploration, Promotion mode, AI Max defaults and DSA to
      AI Max timelines should become knowledge cards with freshness and source
      lineage.
    - WILQ must expose them as readiness/checklist items first, not as automatic
      campaign changes.
+   - Any default-on Google automation must be shown as a risk/readiness check:
+     what is enabled, what evidence supports it, what the safe next step is,
+     and which claims are blocked until performance windows exist.
 
 ## Final Completion Definition
 

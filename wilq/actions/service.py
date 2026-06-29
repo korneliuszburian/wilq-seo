@@ -860,7 +860,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "danych produktu."
             ),
             recommended_reason=(
-                "Na /merchant pokaż grupy problemów jako kolejkę przygotowawczą: "
+                "W widoku Merchant pokaż grupy problemów jako kolejkę przygotowawczą: "
                 "sprawdź typ problemu, atrybut, kraj, podgląd zmian i sprawdzenie "
                 "przed jakąkolwiek zmianą feedu."
             ),
@@ -915,7 +915,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 f"{_metric_sentence(ga4_action_metrics)}."
             ),
             recommended_reason=(
-                "Na /ga4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
+                "W widoku GA4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
                 "zestawienie strony wejścia, źródła ruchu i kampanii, "
                 "sprawdź propozycję w WILQ i nie "
                 "oceniaj kampanii bez kontraktu konwersji."
@@ -953,7 +953,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 f"{_metric_sentence(content_facts)}."
             ),
             recommended_reason=(
-                "Na /content-planner przygotuj kolejkę zachowania, odświeżenia, scalenia, "
+                "W widoku Treści przygotuj kolejkę zachowania, odświeżenia, scalenia, "
                 "nowej treści albo blokady. "
                 "Traktuj plan treści jako materiał do sprawdzenia: GSC/WordPress może dać "
                 "odświeżenie albo scalenie, a Ahrefs tylko tematy do oceny po "
@@ -1040,7 +1040,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "i modelu wartości."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj kampanie z największym kosztem i ruchem. "
+                "W widoku Google Ads przejrzyj kampanie z największym kosztem i ruchem. "
                 "Traktuj podgląd jako materiał do sprawdzenia: bez pauzowania, "
                 "skalowania budżetu ani obietnic rentowności."
             ),
@@ -1085,7 +1085,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "i audytu."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj typ rekomendacji, podgląd wpływu i "
+                "W widoku Google Ads przejrzyj typ rekomendacji, podgląd wpływu i "
                 "powiązane kampanie. Traktuj podgląd jako materiał do decyzji, "
                 "nie zgodę na zapis zmian."
             ),
@@ -1125,7 +1125,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "okna przed/po i ręcznej oceny."
             ),
             recommended_reason=(
-                "Na /ads-doctor sprawdź co zmieniono, na jakim zasobie i które "
+                "W widoku Google Ads sprawdź co zmieniono, na jakim zasobie i które "
                 "pola ruszono. Traktuj podgląd jako materiał do sprawdzenia: bez "
                 "zapisu zmian, bez skalowania i bez obietnic poprawy wyniku."
             ),
@@ -1168,7 +1168,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "zmarnowanego budżetu bez sprawdzenia."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj n-gramy z kosztem, kliknięciami i "
+                "W widoku Google Ads przejrzyj n-gramy z kosztem, kliknięciami i "
                 "przykładowymi wyszukiwanymi hasłami. Dopiero po ręcznej ocenie intencji wróć "
                 "do kolejki sprawdzenia wykluczeń."
             ),
@@ -1203,7 +1203,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "dodatkowych kontraktów."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj hasła źródłowe, odrzuć brandowe i "
+                "W widoku Google Ads przejrzyj hasła źródłowe, odrzuć brandowe i "
                 "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i sprawdź w WILQ "
                 "podgląd zmian przed zapisem zmian."
             ),
@@ -1238,7 +1238,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "90-dniowej kontroli bezpieczeństwa i ręcznej sprawdzenia."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj terminy z kosztem/kliknięciami i zerową "
+                "W widoku Google Ads przejrzyj terminy z kosztem/kliknięciami i zerową "
                 "konwersją w bieżącym evidence, ale potraktuj je wyłącznie jako "
                 "kolejkę oceny przed 90-dniową kontrolą bezpieczeństwa."
             ),
@@ -1276,7 +1276,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "widoczności, ale nie do twierdzeń o GBP, konkurencji ani poprawie wyniku."
             ),
             recommended_reason=(
-                "Na /localo przygotuj przegląd agregatów i zostaw wyniki profilu firmy, "
+                "W widoku Localo przygotuj przegląd agregatów i zostaw wyniki profilu firmy, "
                 "zapis zmian i poprawę widoczności zablokowane do czasu osobnych kontraktów Localo."
             ),
             payload=localo_visibility_payload,
@@ -1427,9 +1427,9 @@ def _demand_gen_readiness_review_action(
             "stron wejścia i kontroli trybu kampanii."
         ),
         recommended_reason=(
-            "Na /ads-doctor/demand-gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
+            "W widoku Demand Gen sprawdź w WILQ materiał do sprawdzenia, sprawdź "
             "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
-            "kampanii ani zmiany trybu kampanii bez kolejnych read contracts."
+            "kampanii ani zmiany trybu kampanii bez kolejnych kontraktów odczytu."
         ),
         payload=payload,
         validation_status="not_validated",
@@ -1998,7 +1998,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
                 "blokuje publikację, ale nie blokuje przygotowania materiału do oceny."
             ),
             recommended_reason=(
-                "Na /social-publisher pokaż tylko propozycje szkiców z dowodami. "
+                "W procesie social pokaż tylko propozycje szkiców z dowodami. "
                 "Nie publikuj, nie planuj wysyłki i nie dopisuj obietnic bez metryk."
             ),
             payload={

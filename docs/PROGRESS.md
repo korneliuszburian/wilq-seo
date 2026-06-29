@@ -30,6 +30,15 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Action recommended reasons no longer expose route slugs such as `/merchant`,
+  `/content-planner`, `/ads-doctor`, `/ga4`, `/localo` or
+  `/social-publisher` in operator-facing copy. The cleanup happened in the API
+  action source, with a regression test guarding the route-slug leak.
+- `PLANS.md` now expands the long-range BDOS benchmark watchlist with a
+  unified safe-change flow, stronger PMax asset/search-theme/readiness tracks,
+  GTM measurement-safety copy boundaries, GA4 source hygiene, lead-quality loop
+  and Google automation readiness checks. These remain future capability
+  tracks, not active Goal 001 scope.
 - Daily context-pack connector status now carries API-owned Polish
   `status_label`, freshness labels and operator-safe summaries. It no longer
   exposes empty freshness labels or summaries like `status configured` to
