@@ -8,7 +8,7 @@ from wilq.briefing.localo_labels import localo_metric_fact_label
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import source_connector_label
+from wilq.operator_labels import connector_refresh_status_label, source_connector_label
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
@@ -902,7 +902,10 @@ def _blocker_summary(
             "jeszcze zakończonego dostępu do danych lokalnej widoczności."
         )
     if run:
-        return f"Ostatni odczyt zakończył się statusem {run.status}. Powód: {reason}"
+        return (
+            "Ostatni odczyt zakończył się statusem "
+            f"{connector_refresh_status_label(run.status)}. Powód: {reason}"
+        )
     return (
         f"{_connector_label(connector.id)} nie może dostarczyć dowodów źródłowych. Powód: {reason}"
     )

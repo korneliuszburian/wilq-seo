@@ -607,8 +607,8 @@ def _ga4_freshness_assessment(
             stale_after_hours=GA4_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary=(
-                "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk, "
-                f"tylko {latest_refresh.status.value}."
+                "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. "
+                f"Status odczytu: {_ga4_refresh_status_label(latest_refresh.status)}."
             ),
             next_step=(
                 "Napraw blocker odczytu i uruchom ponownie odczyt danych GA4 przed "

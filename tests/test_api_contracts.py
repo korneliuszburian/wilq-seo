@@ -62,6 +62,7 @@ from wilq.briefing.ahrefs_diagnostics import (
     _ahrefs_connector_status_label,
     _ahrefs_refresh_status_label,
     _ahrefs_status_label,
+    _missing_authority_summary,
 )
 from wilq.briefing.content_diagnostics import (
     _content_marketer_blocked_claims,
@@ -71,6 +72,7 @@ from wilq.briefing.content_diagnostics import (
 from wilq.briefing.ga4_diagnostics import (
     _ga4_connector_status_label,
     _ga4_decision_with_marketer_labels,
+    _ga4_freshness_assessment,
     _ga4_freshness_label,
     _ga4_optional_label,
     _ga4_read_contract_labels,
@@ -89,10 +91,11 @@ from wilq.briefing.localo_diagnostics import (
     _localo_section_status_label,
 )
 from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fact_label
-from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.marketing_brief import _blocker_summary, build_marketing_brief
 from wilq.briefing.merchant_diagnostics import (
     _merchant_attribute_key as _diagnostic_merchant_attribute_key,
     _merchant_connector_status_label,
+    _merchant_freshness_assessment,
     _merchant_freshness_label,
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
@@ -5076,6 +5079,52 @@ def test_marketing_brief_does_not_turn_successful_reads_into_blockers() -> None:
     blockers = next(section for section in brief.sections if section.id == "what_blocks_us").items
     assert blockers == []
     assert brief.blocker_count == 0
+
+
+def test_blocked_refresh_summaries_use_operator_status_labels() -> None:
+    blocked_run = ConnectorRefreshRun(
+        id="refresh_blocked_operator_status",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.blocked,
+        completed_at=datetime.now(UTC),
+        evidence_ids=[],
+        external_call_attempted=True,
+        vendor_data_collected=False,
+        summary="Blocked test read.",
+    )
+    connector = ConnectorStatus(
+        id="google_merchant_center",
+        label="Merchant Center",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state="fresh"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="configured",
+    )
+
+    marketing_summary = _blocker_summary(connector, blocked_run, "testowy blocker")
+    merchant_freshness = _merchant_freshness_assessment(blocked_run)
+    ga4_freshness = _ga4_freshness_assessment(blocked_run, [])
+    ahrefs_summary = _missing_authority_summary([], blocked_run)
+
+    summaries = [
+        marketing_summary,
+        merchant_freshness.summary,
+        ga4_freshness.summary,
+        ahrefs_summary,
+    ]
+    assert summaries == [
+        "Ostatni odczyt zakończył się statusem odczyt zablokowany. Powód: testowy blocker",
+        "Ostatni odczyt Merchant nie zakończył się poprawnie. Status odczytu: zablokowany.",
+        "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. Status odczytu: zablokowany.",
+        "Ostatni odczyt Ahrefs zakończył się statusem zablokowany.",
+    ]
+    for summary in summaries:
+        assert "ConnectorRefreshStatus" not in summary
+        assert "status.value" not in summary
+        assert " completed" not in summary
+        assert " blocked" not in summary
 
 
 def test_marketing_brief_exposes_metric_backed_prepare_actions(

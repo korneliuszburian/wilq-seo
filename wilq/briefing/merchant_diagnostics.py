@@ -704,8 +704,8 @@ def _merchant_freshness_assessment(
             stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary=(
-                "Ostatni odczyt Merchant nie zakończył się statusem completed, "
-                f"tylko {latest_refresh.status.value}."
+                "Ostatni odczyt Merchant nie zakończył się poprawnie. "
+                f"Status odczytu: {_merchant_refresh_status_label(latest_refresh.status)}."
             ),
             next_step=(
                 "Napraw blocker odczytu i uruchom ponownie odczyt danych Merchant przed "

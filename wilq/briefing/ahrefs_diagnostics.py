@@ -1321,7 +1321,10 @@ def _missing_authority_summary(
     if connector_missing:
         return f"Ahrefs ma braki dostępu: {len(connector_missing)}."
     if latest_refresh and latest_refresh.status != ConnectorRefreshStatus.completed:
-        return f"Ostatni Ahrefs refresh zakończył się statusem {latest_refresh.status.value}."
+        return (
+            "Ostatni odczyt Ahrefs zakończył się statusem "
+            f"{_ahrefs_refresh_status_label(latest_refresh.status)}."
+        )
     return "WILQ nie ma świeżych danych autorytetu Ahrefs."
 
 

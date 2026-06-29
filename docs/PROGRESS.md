@@ -118,6 +118,8 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Marketing brief, Merchant, GA4 and Ahrefs blocked-read summaries use Polish
+  operator status labels instead of raw refresh status enum values.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -160,6 +162,7 @@ API status later contradicts this state.
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
 - `rtk uv run pytest tests/test_operator_endpoint_language_guard.py -q`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'blocked_refresh_summaries or operator_label_fallbacks'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
