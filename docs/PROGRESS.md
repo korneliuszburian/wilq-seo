@@ -67,6 +67,10 @@ Date: 2026-06-29
   from the UAT handoff. Stale alias fields such as `defer_uat`, `date`,
   `owner`, `safe_to_show` and `blocked_claims` are rejected instead of silently
   normalized.
+- Filled marketer UAT result input now also uses one canonical Polish JSON
+  shape. Stale English packet fields and `pass`/`fail`/`yes` route/result
+  values are rejected instead of normalized, while the human markdown report
+  renders Polish route and readiness labels.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

@@ -14,12 +14,14 @@ ROUTE_LABELS = {
     "ads": "Google Ads",
     "ga4": "GA4",
 }
-POLISH_RESULT_KEYS = {
+POLISH_INPUT_FIELDS = {
     "date": "data",
     "person": "osoba",
     "command_center": "centrum_pracy",
+    "merchant": "merchant",
     "content": "treści",
     "ads": "google_ads",
+    "ga4": "ga4",
     "biggest_real_boost": "największy_realny_zysk",
     "biggest_confusion": "największa_niejasność",
     "new_tasks": "nowe_zadania",
@@ -30,16 +32,16 @@ POLISH_RESULT_KEYS = {
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Validate and summarize a filled Ekologus marketer UAT result. "
-            "This records feedback and task candidates; it does not run UAT."
+            "Sprawdza i podsumowuje wypełniony wynik UAT marketera Ekologus. "
+            "Zapisuje feedback i kandydatów zadań; nie uruchamia UAT."
         )
     )
-    parser.add_argument("input", help="Path to a filled UAT result JSON file")
+    parser.add_argument("input", help="Ścieżka do wypełnionego pliku JSON z wynikiem UAT")
     parser.add_argument(
         "--format",
         choices=("json", "markdown"),
         default="markdown",
-        help="Output format for the validated UAT result summary.",
+        help="Format wyjścia dla sprawdzonego podsumowania UAT.",
     )
     args = parser.parse_args()
 
@@ -72,20 +74,20 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
-    payload = normalize_uat_payload_keys(payload)
+    parsed_payload = parse_polish_uat_payload(payload)
     errors = validate_uat_payload(payload)
     if errors:
-        raise RuntimeError("Invalid UAT result:\n- " + "\n- ".join(errors))
+        raise RuntimeError("Niepoprawny wynik UAT:\n- " + "\n- ".join(errors))
 
-    route_results = [normalize_route_result(key, payload.get(key)) for key in ROUTE_KEYS]
+    route_results = [normalize_route_result(key, parsed_payload.get(key)) for key in ROUTE_KEYS]
     failed_routes = [result for result in route_results if result["result"] == "fail"]
-    task_candidates = build_task_candidates(payload, route_results)
-    ready_without_developer = normalize_ready(payload.get("ready_without_developer"))
+    task_candidates = build_task_candidates(parsed_payload, route_results)
+    ready_without_developer = normalize_ready(parsed_payload.get("ready_without_developer"))
 
     return {
         "report_type": "ekologus_marketer_uat_result_v1",
-        "date": payload.get("date"),
-        "person": payload.get("person"),
+        "date": parsed_payload.get("date"),
+        "person": parsed_payload.get("person"),
         "ready_without_developer": ready_without_developer,
         "overall_status": (
             "ready_for_demo_without_developer"
@@ -93,8 +95,8 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
             else "needs_tasks_before_unassisted_demo"
         ),
         "route_results": route_results,
-        "biggest_real_boost": str(payload.get("biggest_real_boost") or "").strip(),
-        "biggest_confusion": str(payload.get("biggest_confusion") or "").strip(),
+        "biggest_real_boost": str(parsed_payload.get("biggest_real_boost") or "").strip(),
+        "biggest_confusion": str(parsed_payload.get("biggest_confusion") or "").strip(),
         "task_candidates": task_candidates,
         "safety_note": (
             "Ten raport zapisuje feedback UAT. Nie odblokowuje publikacji ani "
@@ -105,42 +107,36 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_uat_payload(payload: dict[str, Any]) -> list[str]:
-    payload = normalize_uat_payload_keys(payload)
+    parsed_payload = parse_polish_uat_payload(payload)
     errors: list[str] = []
     for key in ["date", "person", "ready_without_developer"]:
-        if is_blank_or_placeholder(payload.get(key)):
-            errors.append(f"Missing or placeholder field: {key}")
+        if is_blank_or_placeholder(parsed_payload.get(key)):
+            errors.append(f"Brak pola UAT albo placeholder: {POLISH_INPUT_FIELDS[key]}")
     for key in ROUTE_KEYS:
-        if is_blank_or_placeholder(payload.get(key)):
-            errors.append(f"Missing or placeholder route result: {key}")
+        if is_blank_or_placeholder(parsed_payload.get(key)):
+            errors.append(f"Brak wyniku UAT dla widoku: {POLISH_INPUT_FIELDS[key]}")
             continue
-        route_result = normalize_route_result(key, payload.get(key))
+        route_result = normalize_route_result(key, parsed_payload.get(key))
         if route_result["result"] not in {"pass", "fail"}:
-            errors.append(f"Route {key} must start with pass or fail")
-    if normalize_ready(payload.get("ready_without_developer")) not in {"yes", "no"}:
-        errors.append("ready_without_developer must be yes or no")
+            errors.append(f"Wynik widoku {POLISH_INPUT_FIELDS[key]} musi zaczynać się od zaliczone albo niezaliczone")
+    if normalize_ready(parsed_payload.get("ready_without_developer")) not in {"yes", "no"}:
+        errors.append("gotowe_bez_developera musi mieć wartość tak albo nie")
     return errors
 
 
 def normalize_route_result(key: str, value: Any) -> dict[str, str]:
     label = ROUTE_LABELS[key]
     if isinstance(value, dict):
-        raw_result = str(value.get("result") or value.get("wynik") or "").strip().lower()
-        note = str(
-            value.get("note")
-            or value.get("confusion")
-            or value.get("notatka")
-            or value.get("niejasność")
-            or ""
-        ).strip()
+        raw_result = str(value.get("wynik") or "").strip().lower()
+        note = str(value.get("notatka") or value.get("niejasność") or "").strip()
     else:
         raw = str(value or "").strip()
         first, _, rest = raw.partition(" ")
         raw_result = first.strip().lower()
         note = rest.strip()
-    if raw_result.startswith("pass") or raw_result.startswith("zaliczone"):
+    if raw_result.startswith("zaliczone"):
         result = "pass"
-    elif raw_result.startswith("fail") or raw_result.startswith("niezaliczone"):
+    elif raw_result.startswith("niezaliczone"):
         result = "fail"
     else:
         result = "unknown"
@@ -175,7 +171,7 @@ def build_task_candidates(
             {
                 "category": "demo_ux",
                 "source": "biggest_confusion",
-                "task": f"Resolve biggest UAT confusion: {biggest_confusion}",
+                "task": f"Wyjaśnij największą niejasność UAT: {biggest_confusion}",
             }
         )
     if normalize_ready(payload.get("ready_without_developer")) == "no":
@@ -208,8 +204,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Typ: `{report.get('report_type')}`",
         f"- Data: `{report.get('date')}`",
         f"- Osoba: `{report.get('person')}`",
-        f"- Status: `{report.get('overall_status')}`",
-        f"- Gotowe bez developera: `{report.get('ready_without_developer')}`",
+        f"- Status: {visible_overall_status(report.get('overall_status'))}",
+        f"- Gotowe bez developera: {visible_ready(report.get('ready_without_developer'))}",
         "",
         report.get("safety_note") or "",
         "",
@@ -219,7 +215,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     for route in list_payload(report.get("route_results")):
         route = mapping(route)
         lines.append(
-            f"- `{route.get('result')}` {route.get('label')}: {route.get('note') or 'brak notatki'}"
+            f"- `{visible_route_result(route.get('result'))}` "
+            f"{route.get('label')}: {route.get('note') or 'brak notatki'}"
         )
     lines.extend(
         [
@@ -237,7 +234,10 @@ def render_markdown(report: dict[str, Any]) -> str:
     if task_candidates:
         for task in task_candidates:
             task = mapping(task)
-            lines.append(f"- `{task.get('category')}` z `{task.get('source')}`: {task.get('task')}")
+            lines.append(
+                f"- {visible_task_category(task.get('category'))} / "
+                f"{visible_task_source(task.get('source'))}: {task.get('task')}"
+            )
     else:
         lines.append("- brak")
     return "\n".join(lines).rstrip() + "\n"
@@ -245,19 +245,65 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 def normalize_ready(value: Any) -> str:
     lowered = str(value or "").strip().lower()
-    if lowered in {"yes", "tak"}:
+    if lowered == "tak":
         return "yes"
-    if lowered in {"no", "nie"}:
+    if lowered == "nie":
         return "no"
-    return lowered
+    return "unknown"
 
 
-def normalize_uat_payload_keys(payload: dict[str, Any]) -> dict[str, Any]:
-    normalized = dict(payload)
-    for canonical, polish in POLISH_RESULT_KEYS.items():
-        if canonical not in normalized and polish in normalized:
-            normalized[canonical] = normalized[polish]
-    return normalized
+def visible_route_result(value: Any) -> str:
+    if value == "pass":
+        return "zaliczone"
+    if value == "fail":
+        return "niezaliczone"
+    return "nieznane"
+
+
+def visible_ready(value: Any) -> str:
+    if value == "yes":
+        return "tak"
+    if value == "no":
+        return "nie"
+    return "nieznane"
+
+
+def visible_overall_status(value: Any) -> str:
+    if value == "ready_for_demo_without_developer":
+        return "gotowe do demo bez developera"
+    if value == "needs_tasks_before_unassisted_demo":
+        return "wymaga poprawek przed demo bez developera"
+    return "nieznane"
+
+
+def visible_task_category(value: Any) -> str:
+    if value == "demo_ux":
+        return "niejasność demo"
+    if value == "demo_readiness":
+        return "gotowość demo"
+    if value == "marketer_feedback":
+        return "feedback marketera"
+    return "zadanie"
+
+
+def visible_task_source(value: Any) -> str:
+    route_label = ROUTE_LABELS.get(str(value or ""))
+    if route_label:
+        return route_label
+    if value == "biggest_confusion":
+        return "największa niejasność"
+    if value == "ready_without_developer":
+        return "gotowość bez developera"
+    if value == "new_tasks":
+        return "nowe zadania"
+    return "źródło UAT"
+
+
+def parse_polish_uat_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        canonical: payload.get(polish)
+        for canonical, polish in POLISH_INPUT_FIELDS.items()
+    }
 
 
 def is_blank_or_placeholder(value: Any) -> bool:

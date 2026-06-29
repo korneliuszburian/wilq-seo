@@ -10,20 +10,20 @@ from scripts.record_marketer_uat_result import (
 
 def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
     payload = {
-        "date": "2026-06-25",
-        "person": "Marketer Ekologus",
-        "command_center": "pass wiem, że mam zacząć od Merchant",
+        "data": "2026-06-25",
+        "osoba": "Marketer Ekologus",
+        "centrum_pracy": "zaliczone wiem, że mam zacząć od Merchant",
         "merchant": {
-            "result": "fail",
-            "note": "Nie było jasne, że zgłoszenia nie są unikalnymi SKU.",
+            "wynik": "niezaliczone",
+            "notatka": "Nie było jasne, że zgłoszenia nie są unikalnymi SKU.",
         },
-        "content": "pass widzę BDO jako odświeżenie albo scalenie",
-        "ads": "pass rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane",
-        "ga4": "fail (not set) wyglądało jak zła kampania",
-        "biggest_real_boost": "Widok treści daje gotowy brief do review.",
-        "biggest_confusion": "Merchant count semantics",
-        "new_tasks": ["Dodać tooltip przy liczbie zgłoszeń Merchant"],
-        "ready_without_developer": "no",
+        "treści": "zaliczone widzę BDO jako odświeżenie albo scalenie",
+        "google_ads": "zaliczone rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane",
+        "ga4": "niezaliczone (not set) wyglądało jak zła kampania",
+        "największy_realny_zysk": "Widok treści daje gotowy brief do review.",
+        "największa_niejasność": "Merchant count semantics",
+        "nowe_zadania": ["Dodać tooltip przy liczbie zgłoszeń Merchant"],
+        "gotowe_bez_developera": "nie",
     }
 
     report = build_uat_result_report(payload)
@@ -60,23 +60,23 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
 
 def test_uat_result_report_rejects_placeholders() -> None:
     payload = {
-        "date": "<YYYY-MM-DD>",
-        "person": "<marketer>",
-        "command_center": "<pass|fail + note>",
-        "merchant": "pass ok",
-        "content": "pass ok",
-        "ads": "pass ok",
-        "ga4": "pass ok",
-        "ready_without_developer": "<yes|no>",
+        "data": "<YYYY-MM-DD>",
+        "osoba": "<marketer>",
+        "centrum_pracy": "<zaliczone|niezaliczone + notatka>",
+        "merchant": "zaliczone ok",
+        "treści": "zaliczone ok",
+        "google_ads": "zaliczone ok",
+        "ga4": "zaliczone ok",
+        "gotowe_bez_developera": "<tak|nie>",
     }
 
     with pytest.raises(RuntimeError) as error:
         build_uat_result_report(payload)
 
     message = str(error.value)
-    assert "Missing or placeholder field: date" in message
-    assert "Missing or placeholder route result: command_center" in message
-    assert "ready_without_developer must be yes or no" in message
+    assert "Brak pola UAT albo placeholder: data" in message
+    assert "Brak wyniku UAT dla widoku: centrum_pracy" in message
+    assert "gotowe_bez_developera musi mieć wartość tak albo nie" in message
 
 
 def test_uat_result_markdown_lists_task_candidates() -> None:
@@ -108,9 +108,10 @@ def test_uat_result_markdown_lists_task_candidates() -> None:
     markdown = render_markdown(report)
 
     assert "# Wynik UAT marketera Ekologus" in markdown
-    assert "`fail` Merchant" in markdown
-    assert "`demo_ux` z `merchant`" in markdown
+    assert "`niezaliczone` Merchant" in markdown
+    assert "niejasność demo / Merchant" in markdown
     assert "Doprecyzować licznik zgłoszeń Merchant." in markdown
+    assert "`demo_ux`" not in markdown
     assert "Route Results" not in markdown
     assert "Task Candidates" not in markdown
     assert "Feedback" not in markdown
@@ -144,3 +145,47 @@ def test_uat_result_report_accepts_polish_packet_template_keys() -> None:
         "pass",
     ]
     assert any(task["source"] == "merchant" for task in report["task_candidates"])
+
+
+def test_uat_result_report_rejects_stale_english_packet_keys() -> None:
+    payload = {
+        "date": "2026-06-25",
+        "person": "Marketer Ekologus",
+        "command_center": "pass wiem, co zrobić dalej",
+        "merchant": {"result": "pass", "note": "ok"},
+        "content": "pass ok",
+        "ads": "pass ok",
+        "ga4": "pass ok",
+        "ready_without_developer": "yes",
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_uat_result_report(payload)
+
+    message = str(error.value)
+    assert "Brak pola UAT albo placeholder: data" in message
+    assert "Brak wyniku UAT dla widoku: centrum_pracy" in message
+
+
+def test_uat_result_report_rejects_stale_english_result_values() -> None:
+    payload = {
+        "data": "2026-06-25",
+        "osoba": "Marketer Ekologus",
+        "centrum_pracy": "pass wiem, co zrobić dalej",
+        "merchant": {"wynik": "pass", "notatka": "ok"},
+        "treści": "zaliczone ok",
+        "google_ads": "zaliczone ok",
+        "ga4": "zaliczone ok",
+        "największy_realny_zysk": "Treści",
+        "największa_niejasność": "brak",
+        "nowe_zadania": [],
+        "gotowe_bez_developera": "yes",
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_uat_result_report(payload)
+
+    message = str(error.value)
+    assert "Wynik widoku centrum_pracy musi zaczynać się od zaliczone albo niezaliczone" in message
+    assert "Wynik widoku merchant musi zaczynać się od zaliczone albo niezaliczone" in message
+    assert "gotowe_bez_developera musi mieć wartość tak albo nie" in message
