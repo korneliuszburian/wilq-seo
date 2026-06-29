@@ -100,7 +100,7 @@ export function LocaloDiagnosticSurface() {
           <TraceLine
             label="Dowody"
             values={[data.operator_summary.evidence_summary_label]}
-            empty="brak"
+            empty="brak dowodów źródłowych"
           />
           <TraceLine label="Źródła" values={data.operator_summary.source_connector_labels} />
           <TraceLine
@@ -267,7 +267,7 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
       </div>
       {decision.metric_facts.length > 0 ? (

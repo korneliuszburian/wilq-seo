@@ -129,6 +129,9 @@ API status later contradicts this state.
   decision sources, evidence, actions, source connectors or missing metrics.
   Focused Merchant route tests, dashboard typecheck/lint, language guards and
   browser proof passed.
+- Localo and Ahrefs dashboard evidence traces no longer use generic `brak`
+  empty states. Focused route tests, dashboard typecheck/lint, language guards
+  and browser proofs passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

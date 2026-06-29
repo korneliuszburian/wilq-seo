@@ -8521,6 +8521,7 @@ describe("WILQ dashboard", () => {
     ).toBe(false);
     const routeSource = readFileSync("src/routes/LocaloDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("data.operator_summary.missing_read_contract_summary_label");
+    expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain("Localo / {decision.decision_type_label} / {decision.priority_label}");
     expect(routeSource).not.toContain("data.operator_summary.missing_read_contracts.length");
   });
@@ -8677,6 +8678,7 @@ describe("WILQ dashboard", () => {
     const routeSource = readFileSync("src/routes/AhrefsDiagnosticSurface.tsx", "utf8");
     expect(routeSource).toContain("contract.missing_read_contract_summary_label");
     expect(routeSource).toContain("contract.blocked_claim_summary_label");
+    expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain(
       'Ahrefs / {decision.decision_type_label || "decyzja"} / {decision.priority_label}'
     );
