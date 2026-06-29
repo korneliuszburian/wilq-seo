@@ -100,9 +100,9 @@ def main() -> int:
             raise SystemExit(
                 f"Context pack merchant price_impact_readiness differs on {key}"
             )
-    endpoint_preview = endpoint_price_impact.get("payload_preview")
+    endpoint_preview = endpoint_price_impact.get("change_preview")
     if isinstance(endpoint_preview, list) and packed_price_impact.get(
-        "payload_preview_total"
+        "change_preview_total"
     ) != len(endpoint_preview):
         raise SystemExit("Context pack merchant price preview total differs from endpoint")
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
@@ -177,7 +177,7 @@ def main() -> int:
     }.issubset(required_price_contracts):
         raise SystemExit("Merchant price_impact_readiness must name price readiness read contracts")
     price_status = price_impact_readiness.get("status")
-    price_preview = price_impact_readiness.get("payload_preview") or []
+    price_preview = price_impact_readiness.get("change_preview") or []
     if price_status == "ready":
         if price_impact_readiness.get("products_with_current_price", 0) <= 0:
             raise SystemExit("Ready price_impact_readiness must include current prices")
@@ -265,9 +265,9 @@ def main() -> int:
                 )
             if price_decision.get("status") != price_status:
                 raise SystemExit(f"{surface_name} price decision status must match price readiness")
-            decision_preview = price_decision.get("payload_preview") or []
+            decision_preview = price_decision.get("change_preview") or []
             if not decision_preview:
-                raise SystemExit(f"{surface_name} price decision must expose payload_preview")
+                raise SystemExit(f"{surface_name} price decision must expose change_preview")
             if (
                 decision_preview[0].get("preview_contract")
                 != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT

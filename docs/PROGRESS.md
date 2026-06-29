@@ -107,13 +107,18 @@ API status later contradicts this state.
 - `tests/test_operator_endpoint_language_guard.py` now guards the main
   operator endpoints against stale route names, dev-preview/migration
   semantics and action-model jargon in serialized API output.
+- Merchant diagnostics active API contract now uses `change_preview` instead
+  of `payload_preview`; `/api/merchant/diagnostics`, the Merchant context pack
+  compaction and the Merchant skill smoke no longer expose `payload` wording.
 
 ## Current Blockers And Deferred Work
 
 - Real marketer UAT with Wilku/Ekologus is still not complete. This is the main
   non-technical blocker before claiming the current cockpit is done for humans.
 - Major JS dependency migrations are separate product-safe slices, not cleanup
-  drive-by changes.
+  drive-by changes. JS workspace dependencies are currently up to date; future
+  vendor API updates such as Google Ads release changes should land as explicit
+  contract slices with focused proof.
 - Full Marketing OS layers remain later milestones unless explicitly promoted:
   workspace contracts, full content preflight, sales brief, claim review, human
   review, WordPress draft handoff, measurement loop, broader write/apply
@@ -143,8 +148,11 @@ API status later contradicts this state.
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
 - `rtk uv run pytest tests/test_operator_endpoint_language_guard.py -q`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
+- `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
+- `rtk pnpm outdated -r`
 - browser proof with `agent-browser` for touched routes
 - `rtk git diff --check`
 

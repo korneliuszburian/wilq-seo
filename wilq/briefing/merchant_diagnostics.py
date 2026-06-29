@@ -214,11 +214,11 @@ def build_merchant_diagnostics(
     price_impact_readiness = _merchant_price_impact_readiness(product_performance_readiness)
     price_impact_readiness = price_impact_readiness.model_copy(
         update={
-            "payload_preview": [
-                _merchant_payload_preview_with_operator_labels(preview)
-                for preview in price_impact_readiness.payload_preview
+            "change_preview": [
+                _merchant_change_preview_with_operator_labels(preview)
+                for preview in price_impact_readiness.change_preview
             ],
-            "preview_cards": _merchant_preview_cards(price_impact_readiness.payload_preview),
+            "preview_cards": _merchant_preview_cards(price_impact_readiness.change_preview),
         }
     )
     decision_queue = _merchant_decisions_with_product_state_review(
@@ -1232,8 +1232,8 @@ def _merchant_price_impact_readiness(
         current_read_contracts=current_read_contracts,
         required_read_contracts=MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS,
         missing_read_contracts=missing_read_contracts,
-        payload_preview=[
-            _merchant_price_impact_payload_preview(
+        change_preview=[
+            _merchant_price_impact_change_preview(
                 rows=rows_with_current_price[:8],
                 evidence_ids=product_performance_readiness.evidence_ids,
                 missing_read_contracts=missing_read_contracts,
@@ -1311,7 +1311,7 @@ def _merchant_price_impact_summary(
     )
 
 
-def _merchant_price_impact_payload_preview(
+def _merchant_price_impact_change_preview(
     *,
     rows: list[MerchantProductPerformanceRow],
     evidence_ids: list[str],
@@ -2184,11 +2184,11 @@ def _merchant_decisions_with_lineage(
     return [
         decision.model_copy(
             update={
-                "payload_preview": [
-                    _merchant_payload_preview_with_operator_labels(preview)
-                    for preview in decision.payload_preview
+                "change_preview": [
+                    _merchant_change_preview_with_operator_labels(preview)
+                    for preview in decision.change_preview
                 ],
-                "preview_cards": _merchant_preview_cards(decision.payload_preview),
+                "preview_cards": _merchant_preview_cards(decision.change_preview),
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
                 ),
@@ -2199,7 +2199,7 @@ def _merchant_decisions_with_lineage(
     ]
 
 
-def _merchant_payload_preview_with_operator_labels(
+def _merchant_change_preview_with_operator_labels(
     preview: dict[str, object],
 ) -> dict[str, object]:
     checks = preview.get("required_validation")
@@ -2221,7 +2221,7 @@ def _merchant_preview_cards(
     previews: list[dict[str, object]],
 ) -> list[ActionPreviewCardViewModel]:
     return [
-        _merchant_preview_card(_merchant_payload_preview_with_operator_labels(preview))
+        _merchant_preview_card(_merchant_change_preview_with_operator_labels(preview))
         for preview in previews
     ]
 
@@ -2332,7 +2332,7 @@ def _merchant_price_impact_review_decision(
                 "performance": (price_impact_readiness.products_with_performance_metrics),
             }
         ),
-        payload_preview=price_impact_readiness.payload_preview,
+        change_preview=price_impact_readiness.change_preview,
         source_connectors=price_impact_readiness.source_connectors,
         evidence_ids=price_impact_readiness.evidence_ids,
         action_ids=action_ids,
@@ -2389,12 +2389,12 @@ def _merchant_product_state_review_decision(
             for title in [row.sample_title or row.ads_product_title]
             if title
         ),
-        payload_preview=[
-            _merchant_product_state_review_payload_preview(
+        change_preview=[
+            _merchant_product_state_review_change_preview(
                 visible_rows,
                 product_performance_readiness.evidence_ids,
             ),
-            _merchant_supplemental_feed_review_payload_preview(
+            _merchant_supplemental_feed_review_change_preview(
                 visible_rows,
                 product_performance_readiness.evidence_ids,
             ),
@@ -2418,7 +2418,7 @@ def _merchant_product_state_review_decision(
     )
 
 
-def _merchant_product_state_review_payload_preview(
+def _merchant_product_state_review_change_preview(
     rows: list[MerchantProductPerformanceRow],
     evidence_ids: list[str],
 ) -> dict[str, object]:
@@ -2462,7 +2462,7 @@ def _merchant_product_state_review_payload_preview(
     }
 
 
-def _merchant_supplemental_feed_review_payload_preview(
+def _merchant_supplemental_feed_review_change_preview(
     rows: list[MerchantProductPerformanceRow],
     evidence_ids: list[str],
 ) -> dict[str, object]:
@@ -2641,8 +2641,8 @@ def _merchant_decision_from_cluster_group(
         sample_titles=_unique(title for cluster in clusters for title in cluster.sample_titles)[
             :10
         ],
-        payload_preview=[
-            _merchant_decision_payload_preview(
+        change_preview=[
+            _merchant_decision_change_preview(
                 cluster=primary_cluster,
                 product_count=max_reported_count,
                 reported_issue_occurrences=reported_occurrences,
@@ -2734,8 +2734,8 @@ def _merchant_decision_from_cluster(
         metric_tiles={"zgłoszenia": cluster.product_count},
         sample_product_ids=cluster.sample_product_ids,
         sample_titles=cluster.sample_titles,
-        payload_preview=[
-            _merchant_decision_payload_preview(
+        change_preview=[
+            _merchant_decision_change_preview(
                 cluster=cluster,
                 product_count=cluster.product_count,
                 metric_snapshot={"issue_product_count": cluster.product_count},
@@ -2806,7 +2806,7 @@ def _merchant_decision_from_tactical_item(
     )
 
 
-def _merchant_decision_payload_preview(
+def _merchant_decision_change_preview(
     *,
     cluster: MerchantIssueCluster,
     product_count: int,

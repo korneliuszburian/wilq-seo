@@ -2051,15 +2051,15 @@ def _compact_merchant_diagnostics_for_context(
             product_performance["performance_rows_included"] = 0
     price_impact = compact.get("price_impact_readiness")
     if isinstance(price_impact, dict):
-        payload_preview = price_impact.get("payload_preview")
-        if isinstance(payload_preview, list):
-            price_impact["payload_preview_total"] = len(payload_preview)
-            price_impact["payload_preview"] = [
+        change_preview = price_impact.get("change_preview")
+        if isinstance(change_preview, list):
+            price_impact["change_preview_total"] = len(change_preview)
+            price_impact["change_preview"] = [
                 _compact_merchant_price_impact_preview_for_context(preview)
-                for preview in payload_preview[:2]
+                for preview in change_preview[:2]
                 if isinstance(preview, dict)
             ]
-            price_impact["payload_preview_included"] = len(price_impact["payload_preview"])
+            price_impact["change_preview_included"] = len(price_impact["change_preview"])
     operator_summary = compact.get("operator_summary")
     if isinstance(operator_summary, dict):
         operator_summary.pop("top_decision_ids", None)
@@ -2118,7 +2118,7 @@ def _compact_merchant_decision_queue_for_context(value: Any) -> list[dict[str, A
     for index, decision in enumerate(selected_decisions, start=1):
         if not isinstance(decision, dict):
             continue
-        payload_preview = decision.get("payload_preview")
+        change_preview = decision.get("change_preview")
         compact_decision = {
             "decision_ref": f"merchant_decision_{index}",
             "decision_type": decision.get("decision_type"),
@@ -2130,11 +2130,11 @@ def _compact_merchant_decision_queue_for_context(value: Any) -> list[dict[str, A
             "summary": _context_pack_text(decision.get("summary"), limit=220),
             "next_step": _context_pack_text(decision.get("next_step"), limit=200),
             "metric_tiles": decision.get("metric_tiles") or {},
-            "payload_preview_total": (
-                len(payload_preview) if isinstance(payload_preview, list) else 0
+            "change_preview_total": (
+                len(change_preview) if isinstance(change_preview, list) else 0
             ),
-            "payload_preview": _compact_merchant_issue_preview_for_context(
-                payload_preview if isinstance(payload_preview, list) else []
+            "change_preview": _compact_merchant_issue_preview_for_context(
+                change_preview if isinstance(change_preview, list) else []
             ),
             "evidence_ids": (decision.get("evidence_ids") or [])[:4],
             "source_connectors": decision.get("source_connectors") or [],

@@ -13665,10 +13665,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "online~pl~PL~SKU-002",
     ]
     assert decision["sample_titles"] == ["Sorbent chemiczny 10 kg"]
-    assert decision["payload_preview"][0]["preview_contract"] == (
+    assert decision["change_preview"][0]["preview_contract"] == (
         "merchant_feed_issue_review_preview_v1"
     )
-    decision_preview = decision["payload_preview"][0]
+    decision_preview = decision["change_preview"][0]
     assert decision_preview["preview_contract_label"] == "sprawdzenie problemów pliku produktowego"
     assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
     assert decision_preview["cluster_id"] == cluster["id"]
@@ -14337,14 +14337,14 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert "NOT_ELIGIBLE" not in decision["metric_tiles"]
     assert "OUT_OF_STOCK" not in decision["metric_tiles"]
     assert "zwrot z reklam na poziomie produktu" in decision["blocked_claims"]
-    assert decision["payload_preview"][0]["preview_contract"] == (
+    assert decision["change_preview"][0]["preview_contract"] == (
         "merchant_product_state_review_preview_v1"
     )
-    assert decision["payload_preview"][0]["products"][0]["product_id"] == ("online~pl~PL~SKU-001")
-    assert decision["payload_preview"][0]["products"][0]["ads_product_status"] == ("NOT_ELIGIBLE")
+    assert decision["change_preview"][0]["products"][0]["product_id"] == ("online~pl~PL~SKU-001")
+    assert decision["change_preview"][0]["products"][0]["ads_product_status"] == ("NOT_ELIGIBLE")
     supplemental_preview = next(
         preview
-        for preview in decision["payload_preview"]
+        for preview in decision["change_preview"]
         if preview["preview_contract"] == "merchant_supplemental_feed_review_preview_v1"
     )
     assert supplemental_preview["apply_allowed"] is False
@@ -14359,7 +14359,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "requires_human_value_confirmation"
     )
     assert decision["preview_cards"]
-    assert len(decision["preview_cards"]) == len(decision["payload_preview"])
+    assert len(decision["preview_cards"]) == len(decision["change_preview"])
     assert not any(
         "online~pl~PL~SKU" in row["value"]
         or "MerchantProductStateReview" in row["value"]
@@ -14377,7 +14377,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert price_readiness["missing_read_contracts"] == [
         "google_ads_or_ga4_product_performance_window"
     ]
-    price_preview = price_readiness["payload_preview"][0]
+    price_preview = price_readiness["change_preview"][0]
     assert price_preview["preview_contract"] == "merchant_price_impact_readiness_preview_v1"
     assert price_preview["preview_contract_label"] == "sprawdzenie wpływu ceny"
     assert price_preview["products"][0]["current_price_micros"] == 123450000
@@ -14420,7 +14420,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "zmiany ceny": 1,
         "performance": 0,
     }
-    assert price_decision["payload_preview"] == price_readiness["payload_preview"]
+    assert price_decision["change_preview"] == price_readiness["change_preview"]
     assert price_decision["preview_cards"] == price_readiness["preview_cards"]
     assert price_decision["source_connectors"] == price_readiness["source_connectors"]
     assert price_decision["evidence_ids"] == price_readiness["evidence_ids"]
@@ -14495,7 +14495,7 @@ def test_merchant_price_impact_blocks_snapshot_history_without_price_change() ->
     assert "merchant_price_change_event_or_snapshot" not in readiness.current_read_contracts
     assert "merchant_price_change_event_or_snapshot" in readiness.missing_read_contracts
     assert "bez wykrytej zmiany ceny" in readiness.summary
-    preview_product = readiness.payload_preview[0]["products"][0]
+    preview_product = readiness.change_preview[0]["products"][0]
     assert preview_product["has_price_snapshot_history"] is True
     assert preview_product["has_price_change"] is False
 
@@ -14586,7 +14586,7 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
     }
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert len(decision["metric_facts"]) == 3
-    decision_preview = decision["payload_preview"][0]
+    decision_preview = decision["change_preview"][0]
     assert decision_preview["metric_snapshot"] == {
         "max_issue_product_count": 892,
         "reported_issue_occurrences": 1784,
@@ -18288,7 +18288,7 @@ def test_codex_context_pack_scopes_gsc_content_doctor_without_ahrefs_decisions()
     assert content["context_pack_compaction"]["ahrefs_decisions_removed"] is True
 
 
-def test_codex_context_pack_scopes_merchant_payload_preview(
+def test_codex_context_pack_scopes_merchant_change_preview(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:

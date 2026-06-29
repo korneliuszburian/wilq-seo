@@ -46,3 +46,12 @@ def test_operator_endpoints_do_not_expose_stale_or_technical_language() -> None:
                 problems.append(f"{endpoint}: {term}")
 
     assert problems == []
+
+
+def test_merchant_diagnostics_uses_change_preview_not_payload_preview() -> None:
+    response = client.get("/api/merchant/diagnostics")
+
+    assert response.status_code == 200
+    serialized = json.dumps(response.json(), ensure_ascii=False)
+    assert "payload" not in serialized
+    assert "change_preview" in serialized
