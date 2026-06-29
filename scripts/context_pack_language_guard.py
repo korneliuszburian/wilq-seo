@@ -87,6 +87,8 @@ def main() -> int:
             )
             continue
         checked.append(skill)
+        for path, term, value in _context_pack_structure_errors(payload):
+            errors.append({"skill": skill, "path": path, "term": term, "value": value})
         for path, value in _walk_string_values(payload):
             for term in FORBIDDEN_VALUE_TERMS:
                 if term in value:
@@ -126,6 +128,23 @@ def _fetch_context_pack(api_base: str, skill: str, *, timeout: float) -> dict[st
     if not isinstance(payload, dict):
         raise RuntimeError(f"context pack for {skill} was not a JSON object")
     return payload
+
+
+def _context_pack_structure_errors(payload: Mapping[str, Any]) -> list[tuple[str, str, str]]:
+    errors: list[tuple[str, str, str]] = []
+    actions = payload.get("active_action_objects")
+    if not isinstance(actions, Sequence) or isinstance(actions, (str, bytes, bytearray)):
+        return errors
+    for index, action in enumerate(actions):
+        if isinstance(action, Mapping) and "payload" in action:
+            errors.append(
+                (
+                    f"$.active_action_objects[{index}].payload",
+                    "action_payload_key",
+                    "Use action_plan in skill context packs; keep payload on action detail endpoints.",
+                )
+            )
+    return errors
 
 
 def _walk_string_values(value: Any, path: str = "$"):

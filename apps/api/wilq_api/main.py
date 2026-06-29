@@ -3207,6 +3207,8 @@ def _compact_action_dump_for_context(action: dict[str, Any], *, skill: str) -> d
                 payload,
                 action_id=str(compact.get("id") or ""),
             )
+            compact["action_plan"] = payload
+            compact.pop("payload", None)
         else:
             compact.pop("payload", None)
     compact["api_endpoint_template"] = "/api/actions/{action_id}"
