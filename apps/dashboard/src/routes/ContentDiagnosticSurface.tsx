@@ -287,8 +287,8 @@ function ContentPreflightPanel({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          <MetricTile label="Tryb" value={item ? item.recommended_mode_label : "brak"} />
-          <MetricTile label="Status" value={item ? item.status_label : "brak"} />
+          <MetricTile label="Tryb" value={item ? item.recommended_mode_label : "nie pisz"} />
+          <MetricTile label="Status" value={item ? item.status_label : "bramka niedostępna"} />
           <MetricTile label="Blokady" value={data?.blocker_count ?? 0} />
           <MetricTile label="Plan treści" value={item?.sales_brief_allowed ? "możliwy" : "zablokowany"} />
         </div>

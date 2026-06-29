@@ -183,6 +183,11 @@ API status later contradicts this state.
   a list of actions, when a process is not executed automation, and when source
   status must be refreshed before judging readiness. Focused dashboard tests,
   typecheck/lint, marketer language guard and `git diff --check` passed.
+- Content Planner preflight tiles and compact utility-route blockers no longer
+  use bare `brak` wording for unavailable states. Missing content preflight now
+  says `nie pisz` / `bramka niedostępna`, while utility routes explain what must
+  not be done from that view. Focused route tests, dashboard typecheck/lint,
+  marketer language guard and `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

@@ -362,7 +362,7 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     nextStep: "Przejdź do widoku treści i sprawdź kolejkę zachowania, odświeżenia, scalenia albo blokady.",
     blockers: [
       "pełny spis treści nie jest jeszcze gotowy",
-      "brak finalnego sprawdzenia duplikatów i adresów kanonicznych"
+      "nie ma finalnego sprawdzenia duplikatów i adresów kanonicznych; nie używaj tego widoku do decyzji o pisaniu"
     ],
     safeRoute: "/content-planner"
   },
@@ -374,8 +374,8 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     nextStep:
       "Najpierw wybierz konkretny zakres eksportu: pakiet testowy, lista decyzji, kolejka treści albo dowody do sprawdzenia.",
     blockers: [
-      "brak zatwierdzonego zakresu eksportu",
-      "brak reguł, które pola mogą trafić do arkusza bez sekretów i technicznych śladów"
+      "nie ma zatwierdzonego zakresu eksportu; nie wysyłaj danych poza WILQ",
+      "nie ma reguł, które pola mogą trafić do arkusza bez sekretów i technicznych śladów"
     ],
     safeRoute: "/command-center"
   },
@@ -387,8 +387,8 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     nextStep:
       "Sprawdź ostatni zapis postępu, jeśli potrzebujesz potwierdzenia ostatniego przebiegu.",
     blockers: [
-      "brak osobnego widoku historii uruchomień z oczyszczonymi poleceniami roboczymi",
-      "brak finalnego podziału na potwierdzenie dla marketera i widok techniczny operatora"
+      "nie ma osobnego widoku historii uruchomień z oczyszczonymi poleceniami roboczymi",
+      "nie ma finalnego podziału na potwierdzenie dla marketera i widok techniczny operatora"
     ]
   },
   "/security": {
@@ -399,8 +399,8 @@ const COMPACT_ROUTE_CONFIGS: Record<string, CompactRouteConfig> = {
     nextStep:
       "Do weryfikacji użyj aktualnych testów języka, blokad zapisu zmian i zapisanego postępu.",
     blockers: [
-      "brak pełnego dashboardu bezpieczeństwa",
-      "brak produkcyjnych ról i uprawnień"
+      "nie ma pełnego dashboardu bezpieczeństwa; traktuj ten widok jako skrót zasad",
+      "nie ma produkcyjnych ról i uprawnień; nie traktuj tego jako modelu dostępu"
     ]
   }
 };
