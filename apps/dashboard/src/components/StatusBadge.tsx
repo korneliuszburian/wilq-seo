@@ -3,6 +3,8 @@ type StatusBadgeProps = {
   label?: string | null;
 };
 
+const missingLabel = "brak etykiety z WILQ";
+
 const palette: Record<string, string> = {
   configured: "border-signal/30 bg-signal/10 text-signal",
   ready: "border-signal/30 bg-signal/10 text-signal",
@@ -21,13 +23,15 @@ const palette: Record<string, string> = {
 };
 
 export function StatusBadge({ value, label }: StatusBadgeProps) {
+  const visibleLabel = label?.trim() || missingLabel;
+
   return (
     <span
       className={`inline-flex min-h-7 items-center rounded border px-2 text-xs font-medium ${
         palette[value] ?? "border-line bg-white text-ink"
       }`}
     >
-      {label ?? value}
+      {visibleLabel}
     </span>
   );
 }

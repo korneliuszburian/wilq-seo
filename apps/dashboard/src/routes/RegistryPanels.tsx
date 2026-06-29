@@ -242,7 +242,9 @@ function ExpertRuleCard({ rule }: { rule: ExpertRule }) {
             Reguła decyzji używana tylko z dowodami i źródłami danych.
           </p>
         </div>
-        {rule.requires_evidence ? <StatusBadge value="wymaga dowodów" /> : null}
+        {rule.requires_evidence ? (
+          <StatusBadge value="needs_validation" label="wymaga dowodów" />
+        ) : null}
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{rule.output_contract}</p>
       <button

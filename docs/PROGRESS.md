@@ -108,6 +108,10 @@ Date: 2026-06-29
   the route-local fallback `liczba akcji do sprawdzenia`. If the API label is
   missing, the dashboard now shows the explicit failure signal
   `brak etykiety akcji z WILQ`, and `App.test.tsx` guards that behavior.
+- Shared dashboard status badges no longer fall back to raw status values when
+  an API label is missing. The visible UI shows `brak etykiety z WILQ` so
+  missing view-model copy is caught as a source-of-truth defect instead of
+  leaking enum text to the marketer.
 - Demand Gen landing-quality cards no longer join landing page and traffic
   source with slash copy. They render API-owned `landing_page_label` and
   `source_medium_label` as separate labelled lines, with a dashboard test

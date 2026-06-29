@@ -102,7 +102,7 @@ export function DemandGenDiagnosticSurface() {
                       {row.campaign_status_label || "status do sprawdzenia"}
                     </p>
                   </div>
-                  <StatusBadge value="do sprawdzenia" />
+                  <StatusBadge value="needs_validation" label="do sprawdzenia" />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <MetricTile label="Kliknięcia" value={row.clicks ?? "brak"} />
