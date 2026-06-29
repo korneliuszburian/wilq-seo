@@ -60,8 +60,13 @@ Date: 2026-06-29
   wording, blocker jargon or mixed query/page wording.
   `scripts/marketer_language_guard.py` now guards that class of phrases in
   active skill/docs/test contracts.
+- `docs/CONTEXT.md` current-boundary rules now use Polish WILQ operating
+  language instead of old English formulas. `scripts/marketer_language_guard.py`
+  guards that recovery file together with the active plan files.
 - Connector status now uses the latest successful `vendor_read` when available.
-  On 2026-06-29T00:20-00:43Z, GSC, GA4, Merchant, Google Ads, Ahrefs, Localo,
+  On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
+  `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,
+  Ahrefs, Localo,
   WordPress ekologus.pl and WordPress sklep.ekologus.pl were refreshed live and
   `/api/connectors` reported all configured first-party/source connectors as
   fresh. Merchant refresh retries transient `ReadTimeout` responses. LinkedIn

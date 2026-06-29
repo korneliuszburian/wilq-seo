@@ -32,6 +32,7 @@ ACTIVE_PLAN_FILES = (
     Path("PLANS.md"),
     Path("docs/PROGRESS.md"),
     Path("docs/goals/001-goal.md"),
+    Path("docs/CONTEXT.md"),
 )
 
 ACTIVE_GOAL_DIR = Path("docs/goals")
@@ -695,6 +696,8 @@ FORBIDDEN_PHRASES = (
 )
 
 FORBIDDEN_PLAN_RULE_PHRASES = (
+    "No recommendation without",
+    "No write/apply without",
     "No evidence ID",
     "No source connector",
     "No preflight verdict",

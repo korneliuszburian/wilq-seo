@@ -79,11 +79,12 @@ Active gaps live in:
 
 ## Current Important Boundaries
 
-- No recommendation without evidence IDs and source connectors.
-- No write/apply without validated ActionObject, preview, confirmation and
-  audit.
-- Do not fix product behavior in skill references. Implement typed API/schema/
-  view-model/eval first, then make skills consume it.
+- Brak dowodu w WILQ i źródła danych oznacza brak rekomendacji.
+- Brak sprawdzonej akcji, podglądu, potwierdzenia i audytu oznacza brak zapisu
+  zmian.
+- Nie naprawiaj zachowania produktu w opisach skilli. Najpierw popraw typowany
+  kontrakt API, schemat, view-model albo eval, a dopiero potem każ skillowi
+  używać nowego pola.
 - Exact live metric values are not release assertions. Exact clicks, costs,
   rankings, reviews and issue counts belong in fixtures or proof notes.
 - Live smokes assert contract shape, freshness, nonempty expected facts and
