@@ -4980,7 +4980,7 @@ const merchantDiagnostics = {
       status_label: "gotowe",
       title: "Merchant: problem z atrybutem: dostępność - zmiana dostępności",
       summary:
-        "23 zgłoszenia problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
+        "23 zgłoszenia problemu. Status: bez wpływu. Zalecenie: wymaga działania po stronie Merchant. Zakres: dla kraju PL; kontekst: reklamy produktowe.",
       cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
       issue_type: "availability_updated",
@@ -8041,8 +8041,11 @@ describe("WILQ dashboard", () => {
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/act_/)).not.toBeInTheDocument();
     expect(screen.getByText(/przegląd problemu pliku produktowego/)).toBeInTheDocument();
     expect(
+      screen.queryByText(/przegląd problemu pliku produktowego \/ najpierw/i)
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByText(
-        /23 zgłoszenia problemu bez wpływu \/ wymaga działania po stronie Merchant dla PL \/ reklamy produktowe/
+        /23 zgłoszenia problemu\. Status: bez wpływu\. Zalecenie: wymaga działania po stronie Merchant\. Zakres: dla kraju PL; kontekst: reklamy produktowe/
       )
     ).toBeInTheDocument();
     expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
@@ -8094,6 +8097,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
     expect(screen.getByText("Przykładowe produkty do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/surowy opis techniczny|techniczny model akcji/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("audit zmiany")).not.toBeInTheDocument();
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/automatyczna zmiana pliku produktowego/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Sprawdź w WILQ" })).toHaveAttribute(
@@ -8120,6 +8124,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("primaryDecision.action_summary_label");
     expect(routeSource).toContain("cluster.reported_issue_summary_label");
+    expect(routeSource).not.toContain("{decision.decision_type_label} /");
+    expect(routeSource).not.toContain(" / ${cluster.reporting_context_label}");
     expect(routeSource).not.toContain("formatMerchantIdCount");
     expect(routeSource).not.toContain("function formatPolishCount");
     expect(routeSource).not.toContain("cluster.product_count,");

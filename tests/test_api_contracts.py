@@ -13645,6 +13645,10 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["status"] == "ready"
     assert decision["status_label"] == "gotowe"
     assert decision["title"] == ("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
+    assert " / " not in decision["summary"]
+    assert "Status: bez wpływu." in decision["summary"]
+    assert "Zalecenie: wymaga działania po stronie Merchant." in decision["summary"]
+    assert "kontekst: reklamy produktowe" in decision["summary"]
     assert decision["issue_type"] == "availability_updated"
     assert decision["issue_type_label"] == "zmiana dostępności"
     assert decision["affected_attribute"] == "n:availability"

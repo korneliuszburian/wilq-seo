@@ -2699,17 +2699,17 @@ def _merchant_decision_from_cluster(
     display_issue_type = _merchant_display_label(issue_type)
     display_attribute = _merchant_display_label(attribute)
     cluster_facts = _facts_for_cluster(facts, cluster)
+    country_label = f"dla kraju {cluster.country}" if cluster.country else "globalnie"
     return MerchantDecisionItem(
         id=f"merchant_decision_{cluster.id}",
         decision_type="review_issue_cluster",
         status="ready",
         title=_merchant_issue_decision_title(display_issue_type, display_attribute),
         summary=(
-            f"{cluster.reported_issue_summary_label} "
-            f"{cluster.severity_label or _merchant_severity_label(cluster.severity)}"
-            f" / {cluster.resolution_label or _merchant_resolution_label(cluster.resolution)} "
-            f"dla {cluster.country or 'global'}"
-            f" / {context}."
+            f"{cluster.reported_issue_summary_label}. "
+            f"Status: {cluster.severity_label or _merchant_severity_label(cluster.severity)}. "
+            f"Zalecenie: {cluster.resolution_label or _merchant_resolution_label(cluster.resolution)}. "
+            f"Zakres: {country_label}; kontekst: {context}."
         ),
         cluster_id=cluster.id,
         issue_cluster_ids=[cluster.id],

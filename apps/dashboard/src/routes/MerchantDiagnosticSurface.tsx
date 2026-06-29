@@ -398,7 +398,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
             label="Warunki pomiaru"
             values={[
               "ponowny odczyt Merchant",
-              "audit zmiany",
+              "audyt zmiany",
               "porównanie statusów problemu",
               "brak obietnic przychodu albo zwrotu z reklam bez danych po zmianie"
             ]}
@@ -482,12 +482,14 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   <div>
                     <h3 className="text-sm font-semibold text-ink">
                       {cluster.issue_type_label ?? "problem pliku produktowego"}
-                      {cluster.affected_attribute_label ? ` / ${cluster.affected_attribute_label}` : ""}
-                      {` / ${cluster.reporting_context_label}`}
+                      {cluster.affected_attribute_label
+                        ? `; atrybut: ${cluster.affected_attribute_label}`
+                        : ""}
+                      {`; kontekst: ${cluster.reporting_context_label}`}
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {cluster.severity_label ?? "status nieznany"} /{" "}
-                      {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}
+                      {cluster.severity_label ?? "status nieznany"}.{" "}
+                      {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}.
                     </p>
                   </div>
                   <StatusBadge value={cluster.risk} label={cluster.risk_label} />
@@ -495,7 +497,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <p className="mt-2 text-sm leading-6 text-slate-700">
                   Raport pokazuje {cluster.reported_issue_summary_label}
                   {cluster.country ? ` w kraju ${cluster.country}` : ""}
-                  {` / ${cluster.reporting_context_label}`}.
+                  {`; kontekst: ${cluster.reporting_context_label}`}.
                 </p>
                 {cluster.sample_unavailable_reason ? (
                   <p className="mt-2 text-xs leading-5 text-slate-600">
@@ -828,10 +830,13 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {decision.decision_type_label} /{" "}
-            {decision.priority_label}
-          </p>
+          <LabelChipRow
+            className="mt-1"
+            chips={[
+              { label: "Typ", value: decision.decision_type_label },
+              { label: "Priorytet", value: decision.priority_label }
+            ]}
+          />
         </div>
         <StatusBadge value={decision.risk} label={decision.risk_label} />
       </div>
