@@ -126,13 +126,15 @@ Date: 2026-06-29
   `.local-lab/proof/actions-technical-drawer-20260629.txt`.
 - Ads live-data diagnostics and evidence detail now use Polish proof wording
   instead of `ID dowodu`; connector-status evidence summaries no longer expose
-  English credential wording. Browser proof:
+  angielskie opisy pól dostępu. Dowód w przeglądarce:
   `.local-lab/proof/evidence-detail-no-id-wording-20260629.txt` and
   `.local-lab/proof/evidence-detail-expanded-no-id-wording-20260629.txt`.
 - Codex context-pack product rules and strict instruction now use Polish WILQ
-  operating language instead of English `No evidence ID` / `must not invent
-  metrics` wording. Live context-pack guard covers daily, content, Merchant,
-  Ads, GA4, Localo and Ahrefs skills.
+  operating language instead of old English rule wording. Live context-pack
+  guard covers daily, content, Merchant, Ads, GA4, Localo and Ahrefs skills.
+- Active plan/recovery docs now use Polish WILQ operating rules instead of old
+  English rule formulas; `scripts/marketer_language_guard.py` guards those
+  active plan files.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
 - Localo top metric tiles use API/domain missing-data summary labels instead

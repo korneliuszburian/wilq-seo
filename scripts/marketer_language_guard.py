@@ -27,6 +27,13 @@ ACTIVE_CONTRACT_FILES = (
     Path("tests/test_codex_skill_eval_cases.py"),
 )
 
+ACTIVE_PLAN_FILES = (
+    Path("PLAN.md"),
+    Path("PLANS.md"),
+    Path("docs/PROGRESS.md"),
+    Path("docs/goals/001-goal.md"),
+)
+
 ACTIVE_GOAL_DIR = Path("docs/goals")
 ONLY_ACTIVE_GOAL_FILE = Path("docs/goals/001-goal.md")
 
@@ -687,10 +694,22 @@ FORBIDDEN_PHRASES = (
     ),
 )
 
+FORBIDDEN_PLAN_RULE_PHRASES = (
+    "No evidence ID",
+    "No source connector",
+    "No preflight verdict",
+    "No sales brief",
+    "No claim review",
+    "No audit",
+    "No measurement window",
+    "must not invent metrics",
+)
+
 
 def main() -> None:
     errors: list[str] = []
     errors.extend(_active_goal_file_errors())
+    errors.extend(_active_plan_rule_errors())
     for path in _iter_active_files():
         text = path.read_text(encoding="utf-8", errors="replace")
         for forbidden in FORBIDDEN_PHRASES:
@@ -717,6 +736,24 @@ def _active_goal_file_errors() -> list[str]:
             f"{path.as_posix()}: archived or future goals must live under "
             "docs/goals/archive/. docs/goals/001-goal.md is the only active goal file."
         )
+    return errors
+
+
+def _active_plan_rule_errors() -> list[str]:
+    errors: list[str] = []
+    for path in ACTIVE_PLAN_FILES:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for phrase in FORBIDDEN_PLAN_RULE_PHRASES:
+            if phrase not in text:
+                continue
+            for line_number, line in _matching_lines(text, phrase):
+                errors.append(
+                    f"{path.as_posix()}:{line_number}: old English rule wording "
+                    f"{phrase!r} is forbidden in active plan/recovery docs. "
+                    f"Use Polish WILQ operating language. Line: {line.strip()}"
+                )
     return errors
 
 

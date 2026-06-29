@@ -24,22 +24,22 @@ inspect it without reading technical internals.
 
 ## Product Rules
 
-- No evidence ID -> no recommendation.
-- No source connector -> no recommendation.
-- No preflight verdict -> no writing.
-- No sales brief -> no draft.
-- No claim review -> no publish-ready language.
-- Brak sprawdzenia przez człowieka -> brak WordPress draft handoff.
-- No audit -> no zapis zmian.
-- No measurement window -> no success/failure claim.
-- No business logic in prompts or skill references.
-- No React/UI translator functions, `replaceAll` helpers or route-local
-  dictionaries for product semantics.
-- No compatibility aliases or deprecated active fields when direct migration is
-  feasible.
-- Remove stale target/dev/migration semantics from active contracts.
-- Dirty marketer-facing copy must be fixed in typed API/schema/view-model/domain
-  source.
+- Brak dowodu w WILQ -> brak rekomendacji.
+- Brak źródła danych -> brak rekomendacji.
+- Brak sprawdzenia treści przed pisaniem -> brak pisania.
+- Brak briefu sprzedażowego -> brak szkicu.
+- Brak sprawdzenia ryzykownych obietnic -> brak języka gotowego do publikacji.
+- Brak sprawdzenia przez człowieka -> brak przekazania szkicu do WordPress.
+- Brak audytu -> brak zapisu zmian.
+- Brak okna pomiarowego -> brak twierdzeń o sukcesie albo porażce.
+- Brak logiki biznesowej w promptach albo opisach skilli.
+- Brak translatorów React/UI, helperów `replaceAll` i słowników w route'ach
+  dla semantyki produktu.
+- Brak aliasów zgodności i przestarzałych aktywnych pól, gdy bezpośrednia
+  migracja jest wykonalna.
+- Usuń stare semantyki target/dev/migration z aktywnych kontraktów.
+- Brudny tekst widoczny dla marketera naprawiaj w źródłowym kontrakcie API,
+  schemacie, view-modelu albo warstwie domenowej.
 - Raw IDs may appear in technical panels, audit detail and trace views only.
 - Every repeated issue becomes a typed API/schema/view-model field or a test
   guard.
@@ -158,10 +158,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   first screen; raw action data remains behind the explicit technical toggle.
 - Ads live-data diagnostics and evidence detail no longer expose `ID dowodu`
   wording, and connector-status evidence summaries use Polish operator copy
-  instead of English credential wording.
+  instead of angielskich opisów pól dostępu.
 - Codex context-pack product rules and strict instruction now use Polish WILQ
-  operating language instead of English `No evidence ID` / `must not invent
-  metrics` wording.
+  operating language instead of the old English rule wording.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Google Ads first-screen, condensed decision, proof and action panels use
@@ -390,13 +389,14 @@ Goal 001 is complete when:
   out-of-scope internal utilities.
 - Deprecated active fields and compatibility aliases are removed where direct
   migration is feasible.
-- Focused API/dashboard/skill checks pass for all touched slices.
-- Browser proof verifies touched marketer routes.
-- Remaining historical mentions are archived or explicitly tracked as removal
-  debt.
-- Real marketer UAT is captured or explicitly deferred by the owner.
+- Ukierunkowane kontrole API/dashboard/skill przechodzą dla każdego dotkniętego
+  zakresu.
+- Dowód w przeglądarce potwierdza dotknięte ścieżki marketera.
+- Pozostałe historyczne wzmianki są zarchiwizowane albo jawnie śledzone jako
+  dług do usunięcia.
+- Realny UAT marketera jest zapisany albo jawnie odroczony przez ownera.
 
-The final WILQ Marketing Operating System remains a later goal. It still
-requires ContentPreflight, sales brief, claim ledger, sprawdzenie przez
-człowieka, WordPress draft handoff, measurement loop, workspace profiles,
-knowledge lifecycle and safe execution gates.
+Finalny WILQ Marketing Operating System pozostaje późniejszym celem. Nadal
+wymaga ContentPreflight, briefu sprzedażowego, rejestru ryzykownych obietnic,
+sprawdzenia przez człowieka, przekazania szkicu do WordPress, pomiaru efektu,
+profili przestrzeni klienta, cyklu życia wiedzy i bramek bezpiecznego zapisu.

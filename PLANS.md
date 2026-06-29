@@ -126,27 +126,28 @@ WILQ is an API-first Marketing Operating System:
 
 ## Permanent Invariants
 
-- No evidence ID -> no recommendation.
-- No source connector -> no recommendation.
-- No preflight verdict -> no writing.
-- No sales brief -> no draft.
-- No claim review -> no publish-ready language.
-- Brak sprawdzenia przez człowieka -> brak WordPress draft handoff.
-- No audit -> no zapis zmian.
-- No measurement window -> no success/failure claim.
-- Existing content is preserve-first.
-- Dev/staging/design URLs are optional context only, never default source of
-  truth, final canonical or blocker.
-- Skills consume API; they do not invent product logic.
-- Dashboard renders typed view-models; it does not rewrite business meaning.
-- No UI string translators, `replaceAll` masking helpers or hardcoded cleanup
-  dictionaries.
-- No deprecated active fields, compatibility aliases or stale
-  target/dev/migration semantics when direct migration is feasible.
-- Primary marketer language uses `Centrum pracy`, `Treści`, `Google Ads`,
-  `blokady` and WILQ-described evidence instead of working names and raw IDs.
-- Client-specific service, claim, tone and conversion rules live in workspace
-  layers, not reusable core.
+- Brak dowodu w WILQ -> brak rekomendacji.
+- Brak źródła danych -> brak rekomendacji.
+- Brak sprawdzenia treści przed pisaniem -> brak pisania.
+- Brak briefu sprzedażowego -> brak szkicu.
+- Brak sprawdzenia ryzykownych obietnic -> brak języka gotowego do publikacji.
+- Brak sprawdzenia przez człowieka -> brak przekazania szkicu do WordPress.
+- Brak audytu -> brak zapisu zmian.
+- Brak okna pomiarowego -> brak twierdzeń o sukcesie albo porażce.
+- Istniejące treści są domyślnie zachowywane.
+- Adresy dev/staging/design są tylko opcjonalnym kontekstem, nigdy domyślnym
+  źródłem prawdy, finalnym adresem kanonicznym ani blokadą.
+- Skille korzystają z API; nie wymyślają logiki produktu.
+- Dashboard renderuje typowane view-modele; nie przepisuje znaczenia
+  biznesowego.
+- Brak translatorów tekstu w UI, helperów maskujących `replaceAll` i
+  hardcodowanych słowników sprzątających.
+- Brak przestarzałych aktywnych pól, aliasów zgodności i starych semantyk
+  target/dev/migration, gdy bezpośrednia migracja jest wykonalna.
+- Główny język marketera używa `Centrum pracy`, `Treści`, `Google Ads`,
+  `blokady` i dowodów opisanych przez WILQ zamiast nazw roboczych i surowych ID.
+- Reguły usług, obietnic, tonu i konwersji konkretnego klienta żyją w warstwach
+  workspace, nie w reusable core.
 
 ## Target Product Graph
 
@@ -532,8 +533,9 @@ WILQ is complete for this long-range goal when:
 
 - Ekologus works deeply as a real marketer cockpit.
 - Core architecture is workspace-ready.
-- Content preflight, inventory, sales brief, claim ledger, sprawdzenie przez człowieka, draft
-  handoff and measurement loop are implemented.
+- Sprawdzenie treści przed pisaniem, spis treści, brief sprzedażowy, rejestr
+  ryzykownych obietnic, sprawdzenie przez człowieka, przekazanie szkicu i
+  pomiar efektu są zaimplementowane.
 - Ads, Merchant, GA4, Localo and Social follow the same evidence/review/audit
   pattern.
 - Skills, hooks and evals enforce the same contracts.
@@ -666,16 +668,16 @@ WILQ is complete for this long-range goal when:
   confirmed expanded `/ads-doctor` diagnostic tables.
 - 2026-06-28: Treści expanded decision and Ahrefs review cards now use API
   labels or neutral Polish operator fallbacks instead of visible raw enum/status
-  keys. Browser proof lives at
+  keys. Dowód w przeglądarce:
   `.local-lab/proof/content-enum-labels-clean.txt`.
 - 2026-06-28: Demand Gen now uses API/domain `action_summary_label` and
   campaign-channel labels instead of route-local action count formatting or raw
   channel fallbacks. Live API proof confirmed
-  `/api/demand-gen/diagnostics`; browser proof lives at
+  `/api/demand-gen/diagnostics`; dowód w przeglądarce:
   `.local-lab/proof/demand-gen-summary-labels-clean.txt`.
 - 2026-06-28: Demand Gen campaign, landing-quality and mode-review rows now use
   API/domain `evidence_summary_label` instead of route-local evidence count
-  formatting. Focused API/dashboard tests and browser proof passed.
+  formatting. Ukierunkowane testy API/dashboard i dowód w przeglądarce przeszły.
 - 2026-06-28: Merchant response, operator summary, decisions and sections now
   expose evidence/action summary labels in API/shared schemas. The Merchant
   route consumes those labels instead of route-local count formatting; live API
@@ -772,9 +774,10 @@ WILQ is complete for this long-range goal when:
   labels: connector status, refresh status, section blockers and metric names
   are API/domain semantics. React may format numbers, but it must not own the
   meaning of those fields.
-- Browser proof caught a Polish pluralization issue in Merchant preview card
-  copy. Keep browser text proof in every marketer-route cleanup slice because
-  API/unit checks do not catch all readability failures.
+- Dowód w przeglądarce złapał problem polskiej odmiany w karcie podglądu
+  Merchant. Utrzymuj tekstowy dowód z przeglądarki w każdym slice sprzątania
+  ścieżek marketera, bo testy API/unit nie łapią wszystkich problemów
+  czytelności.
 - Showing "Metryka bez etykiety" in the dashboard is useful as a failure
   signal. Do not hide missing API labels with React dictionaries; fix the
   producing domain contract and add a test.
@@ -1040,3 +1043,6 @@ WILQ is complete for this long-range goal when:
   live context-pack guard and direct WILQ API proof passed after moving
   context-pack product rules and strict instruction to Polish WILQ operating
   language.
+- Latest active-plan language proof: active plan/recovery rules were moved to
+  Polish WILQ operating language, and `scripts/marketer_language_guard.py`
+  now blocks the old English rule formulas in active plan files.

@@ -50,30 +50,32 @@ Forbidden URL semantics:
 
 ## 3. Non-Negotiable Engineering Rules
 
-- No evidence ID -> no recommendation.
-- No source connector -> no recommendation.
-- No preflight verdict -> no writing.
-- No sales brief -> no draft.
-- No claim review -> no publish-ready language.
-- Brak sprawdzenia przez człowieka -> brak WordPress draft handoff.
-- No audit -> no zapis zmian.
-- No measurement window -> no success/failure claim.
-- Do not invent metrics, facts, rankings, costs, ROAS, revenue or impact.
-- Do not fix product behavior in skill references.
-- Do not fix copy or semantics with React string replacement.
-- Do not add route-local translators, `replaceAll` helpers, enum remappers,
-  legacy label dictionaries or hardcoded cleanup functions.
-- If marketer-facing copy is wrong, fix typed API/schema/view-model/domain
-  source first.
-- Dashboard route components render clean view-models; they do not invent
-  business meaning.
-- Technical IDs may exist in schemas, audit logs and technical drawers, but not
-  in the marketer's primary decision surface.
-- Do not keep deprecated active fields, compatibility aliases or stale
-  target/dev/migration semantics when touched consumers can be migrated
-  directly.
-- Every changed line must trace to this plan or an explicit owner request.
-- Avoid broad refactors until active inconsistencies are removed and verified.
+- Brak dowodu w WILQ -> brak rekomendacji.
+- Brak źródła danych -> brak rekomendacji.
+- Brak sprawdzenia treści przed pisaniem -> brak pisania.
+- Brak briefu sprzedażowego -> brak szkicu.
+- Brak sprawdzenia ryzykownych obietnic -> brak języka gotowego do publikacji.
+- Brak sprawdzenia przez człowieka -> brak przekazania szkicu do WordPress.
+- Brak audytu -> brak zapisu zmian.
+- Brak okna pomiarowego -> brak twierdzeń o sukcesie albo porażce.
+- Nie zmyślaj metryk, faktów, rankingów, kosztów, zwrotu z reklam, przychodu
+  ani wpływu.
+- Nie naprawiaj zachowania produktu w opisach skilli.
+- Nie naprawiaj języka ani semantyki przez podmiany tekstu w React.
+- Nie dodawaj translatorów w route'ach, helperów `replaceAll`, remapperów enumów,
+  starych słowników etykiet ani hardcodowanych funkcji sprzątających.
+- Jeżeli tekst widoczny dla marketera jest zły, napraw źródło typed
+  API/schema/view-model/domain.
+- Komponenty route'ów dashboardu renderują czyste view-modele; nie wymyślają
+  znaczenia biznesowego.
+- Techniczne identyfikatory mogą istnieć w schematach, logach audytu i
+  technicznych szczegółach, ale nie w głównej powierzchni decyzji marketera.
+- Nie utrzymuj przestarzałych aktywnych pól, aliasów zgodności ani starych
+  semantyk target/dev/migration, gdy dotkniętych konsumentów da się migrować
+  bezpośrednio.
+- Każda zmieniona linia musi wynikać z tego planu albo jawnej prośby ownera.
+- Unikaj szerokich refaktorów, dopóki aktywne niespójności nie są usunięte i
+  zweryfikowane.
 
 ## 4. Marketer Language Rules
 
@@ -250,9 +252,9 @@ Known cleanup already started:
 - Social draft action details now have typed API preview cards without raw
   source connector IDs or metric keys in primary card copy, and the old
   `source_inputs` payload fallback was removed from Action Detail.
-- WordPress draft handoff action details now have typed API preview cards
-  without raw candidate IDs, preview-contract names or operation names in
-  primary card copy.
+- Szczegóły przekazania szkicu do WordPress mają teraz typowane karty podglądu
+  z API bez surowych ID propozycji, nazw kontraktów podglądu i nazw operacji w
+  głównej treści kart.
 - Content refresh action details now have typed API preview cards for content
   brief review and WordPress draft payload review. The primary card copy uses
   public/final URL semantics and no longer depends on stale dev-preview URL
@@ -350,10 +352,10 @@ Known cleanup already started:
   technical-detail wording on the first screen.
 - Ads live-data diagnostics and evidence detail now use Polish proof wording:
   `dowód w WILQ` / `Klucz dowodu w WILQ`, not `ID dowodu`; connector-status
-  evidence summaries no longer expose English credential wording.
+  evidence summaries no longer expose angielskie opisy pól dostępu.
 - Codex context-pack product rules and strict instruction now use Polish WILQ
-  operating language instead of English `No evidence ID` / `must not invent
-  metrics` wording; the live context-pack guard blocks those regressions.
+  operating language instead of the old English rule wording; the live
+  context-pack guard blocks those regressions.
 
 ## 9. Current Goal
 
@@ -474,11 +476,12 @@ Tasks:
 Acceptance:
 
 - A marketer can understand the first screen without knowing internal models.
-- Browser proof for touched routes has no forbidden visible terms.
+- Dowód w przeglądarce dla dotkniętych ścieżek nie ma zakazanych widocznych
+  terminów.
 
 Verification:
 
-- Dashboard route tests.
+- Testy dotkniętych ścieżek dashboardu.
 - `rtk pnpm --dir apps/dashboard typecheck`.
 - `agent-browser` snapshots for touched routes.
 
@@ -491,8 +494,9 @@ The following layers remain real product work, but they are deferred to
 `PLANS.md` until this cleanup goal is green:
 
 - Content operating loop: ContentPreflight, preserve-first mode, richer content
-  inventory, duplicate/canonical/cannibalization checks, sales brief, claim
-  ledger, sprawdzenie przez człowieka, WordPress draft handoff and measurement.
+  inventory, duplicate/canonical/cannibalization checks, brief sprzedażowy,
+  rejestr ryzykownych obietnic, sprawdzenie przez człowieka, przekazanie
+  szkicu do WordPress i pomiar efektu.
 - Workspace-ready core: ClientWorkspace, SiteProfile, BrandProfile, ServiceMap,
   ClaimPolicy, ConnectorProfile, MeasurementProfile and KnowledgeNamespace.
 - Knowledge and memory lifecycle: source registry, freshness, confidence,
@@ -512,7 +516,7 @@ Use focused checks first:
 - API/action/schema: focused `rtk uv run pytest ...`.
 - Dashboard: touched route tests plus `rtk pnpm --dir apps/dashboard typecheck`.
 - Skills: deterministic smoke and targeted eval when behavior changes.
-- Browser: `agent-browser` proof for touched marketer routes.
+- Przeglądarka: dowód z `agent-browser` dla dotkniętych ścieżek marketera.
 - Broad final: `rtk scripts/verify.sh`.
 
 Do not claim completion from a screenshot, shape smoke or internal eval alone.
@@ -528,14 +532,16 @@ This cleanup goal is complete when:
   on marketer paths.
 - Primary dashboard surfaces no longer show forbidden visible terms.
 - UI translators/string replacement cleanup helpers are removed.
-- Focused API/dashboard/skill checks pass.
-- Browser proof confirms touched routes are readable and free from old jargon.
+- Ukierunkowane kontrole API/dashboard/skill przechodzą.
+- Dowód w przeglądarce potwierdza, że dotknięte ścieżki są czytelne i wolne
+  od starego żargonu.
 - Remaining historical mentions are either archived or recorded as explicit
   removal debt with owner-visible status.
 
 The final WILQ product is not complete until ContentPreflight, sales brief,
-claim ledger, sprawdzenie przez człowieka, WordPress draft handoff, measurement loop,
-workspace contracts, knowledge lifecycle and safe execution gates are done.
+rejestr ryzykownych obietnic, sprawdzenie przez człowieka, przekazanie szkicu
+do WordPress, pomiar efektu, kontrakty workspace, cykl życia wiedzy i bramki
+bezpiecznego zapisu są gotowe.
 
 ## 16. Current `/goal` Prompt
 
@@ -599,19 +605,21 @@ Critical correction:
   compatibility strategy. Migrate touched active consumers directly.
 
 Engineering constraints:
-- Do not implement before recovery and repo search.
-- Keep `PLANS.md` long-running sections current: `Progress`,
+- Nie implementuj przed recovery i repo search.
+- Utrzymuj aktualne sekcje zadań długich w `PLANS.md`: `Progress`,
   `Surprises & Discoveries`, `Decision Log`, `Outcomes & Retrospective`.
-- Do not add UI string translators, `replaceAll` cleanup helpers, route-local
-  business dictionaries or hardcoded label replacement functions.
-- If marketer copy is wrong, fix typed API/schema/view-model/domain source.
-- Do not patch business logic in skills.
-- Do not invent metrics or claims.
-- Every recommendation needs evidence IDs and source connectors.
-- Every write path needs typed payload, preview, confirmation and audit.
-- Every repeated issue must become a durable self-improving guardrail.
-- Every vague task must be rewritten into observable behavior, files to inspect,
-  commands to run, acceptance criteria and proof before implementation.
+- Nie dodawaj translatorów tekstu w UI, helperów `replaceAll`, słowników
+  biznesowych w route'ach ani hardcodowanych funkcji podmiany etykiet.
+- Jeżeli tekst dla marketera jest zły, napraw źródłowy kontrakt API, schemat,
+  view-model albo warstwę domenową.
+- Nie łataj logiki biznesowej w skillach.
+- Nie zmyślaj metryk ani obietnic.
+- Każda rekomendacja wymaga dowodów w WILQ i źródeł danych.
+- Każda ścieżka zapisu wymaga ustrukturyzowanego pakietu zmian, podglądu,
+  potwierdzenia i audytu.
+- Każdy powtarzalny problem musi zostać trwałą regułą samodoskonalącą.
+- Każde niejasne zadanie musi zostać rozpisane na obserwowalne zachowanie,
+  pliki do sprawdzenia, komendy, kryteria akceptacji i dowód przed implementacją.
 
 Recovery:
 - Run `rtk git status --branch --short`.

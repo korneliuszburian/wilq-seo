@@ -24,7 +24,7 @@ Build an API-first marketing operating system, not a prompt pack, static report 
 
 ## Runtime model
 
-Dashboard, Codex skills, hooks, workflows, expert rules, opportunities, and action execution must use the same WILQ API contracts. Codex may reason and operate, but it must not invent metrics.
+Dashboard, Codex skills, hooks, workflows, expert rules, opportunities, and action execution must use the same WILQ API contracts. Codex może rozumować i działać, ale nie może zmyślać metryk.
 
 The Ekologus marketer is a Polish operator. Operator-facing Codex skill responses, dashboard labels intended for the marketer, handoff summaries and action explanations should be written in Polish with Polish diacritics. Keep API endpoint paths, schema fields, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs and enum values unchanged.
 
