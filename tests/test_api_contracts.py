@@ -124,7 +124,11 @@ from wilq.connectors.localo.client import (
 )
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
-from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
+from wilq.evidence.registry import (
+    connector_evidence_id,
+    list_evidence_by_ids,
+    refresh_run_evidence_id,
+)
 from wilq.operator_labels import (
     blocked_claim_label,
     blocked_claim_labels,
@@ -10897,6 +10901,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_live_data_status"
     )
     assert live_section["status"] == "ready"
+    assert "wskazać dowód w WILQ" in live_section["diagnosis"]
+    assert "ID dowodu" not in live_section["diagnosis"]
     campaign_section = next(
         section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
     )
@@ -17328,6 +17334,27 @@ def test_list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan(
     assert evidence[0].source_connector == "google_search_console"
     assert evidence[0].source_type == "metric_fact_store"
     assert "clicks" in evidence[0].summary
+
+
+def test_connector_evidence_summary_uses_operator_language(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "connector_evidence.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "connector_evidence.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456789")
+
+    evidence = list_evidence_by_ids(
+        [connector_evidence_id("google_merchant_center")]
+    )
+
+    assert len(evidence) == 1
+    assert evidence[0].summary.startswith("Merchant Center:")
+    assert "brak dostępu" in evidence[0].summary or "dostęp skonfigurowany" in evidence[0].summary
+    assert "Connector " not in evidence[0].summary
+    assert "credential names" not in evidence[0].summary
 
 
 def test_daily_runtime_reuses_preloaded_daily_inputs(

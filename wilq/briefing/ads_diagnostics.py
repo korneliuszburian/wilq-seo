@@ -1123,7 +1123,7 @@ def _oauth_or_live_section(
             summary="WILQ ma zapisane metryki z odczytu danych Google Ads.",
             diagnosis=(
                 "Można przejść do diagnozy kampanii, ale nadal każda rekomendacja musi "
-                "wskazać ID dowodu, metryki źródłowe i bezpieczną akcję."
+                "wskazać dowód w WILQ, metryki źródłowe i bezpieczną akcję."
             ),
             next_step=(
                 "Użyj wierszy kampanii i zapytań do sprawdzenia. Następnie dodaj "

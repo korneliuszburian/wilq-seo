@@ -348,6 +348,9 @@ Known cleanup already started:
 - `/actions` priority cards now describe the safe operating step and keep raw
   action data behind the explicit technical toggle instead of showing
   technical-detail wording on the first screen.
+- Ads live-data diagnostics and evidence detail now use Polish proof wording:
+  `dowód w WILQ` / `Klucz dowodu w WILQ`, not `ID dowodu`; connector-status
+  evidence summaries no longer expose English credential wording.
 
 ## 9. Current Goal
 

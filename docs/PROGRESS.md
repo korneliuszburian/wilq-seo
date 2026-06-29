@@ -124,6 +124,11 @@ Date: 2026-06-29
   instead of pointing at technical details. Raw action data remains behind the
   explicit technical toggle; proof:
   `.local-lab/proof/actions-technical-drawer-20260629.txt`.
+- Ads live-data diagnostics and evidence detail now use Polish proof wording
+  instead of `ID dowodu`; connector-status evidence summaries no longer expose
+  English credential wording. Browser proof:
+  `.local-lab/proof/evidence-detail-no-id-wording-20260629.txt` and
+  `.local-lab/proof/evidence-detail-expanded-no-id-wording-20260629.txt`.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
 - Localo top metric tiles use API/domain missing-data summary labels instead

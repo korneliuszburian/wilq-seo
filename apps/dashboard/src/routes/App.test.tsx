@@ -8646,5 +8646,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Świeżość: świeże dane")).toBeInTheDocument();
     expect(screen.queryByText("Źródło: google_merchant_center")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "ev_refresh_merchant_feed" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/ID dowodu/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły techniczne dowodu" }));
+
+    expect(screen.getByText(/Klucz dowodu w WILQ:/)).toBeInTheDocument();
+    expect(screen.queryByText(/ID dowodu/)).not.toBeInTheDocument();
   });
 });

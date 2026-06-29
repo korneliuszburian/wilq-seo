@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from wilq.connectors.registry import list_connector_statuses
+from wilq.operator_labels import source_connector_labels
 from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
@@ -118,14 +119,21 @@ def _connector_summary(
     configured: bool,
     missing_credentials: list[str],
 ) -> str:
+    connector_label = source_connector_labels([connector_id])[0]
     if configured:
         return (
-            f"Connector {connector_id} has required credential names available. "
-            "No external API refresh has been run yet."
+            f"{connector_label}: dostęp skonfigurowany. "
+            "Jeżeli nie ma jeszcze świeżego odczytu, WILQ pokaże to w stanie źródła danych."
         )
+    missing_count = len(missing_credentials)
+    missing_label = (
+        "1 brak dostępu"
+        if missing_count == 1
+        else f"{missing_count} braki dostępu"
+    )
     return (
-        f"Connector {connector_id} is missing credential names: "
-        f"{', '.join(missing_credentials)}. No secret values are exposed."
+        f"{connector_label}: {missing_label}. "
+        "Nazwy pól dostępu pozostają w technicznym sprawdzeniu, bez wartości sekretów."
     )
 
 

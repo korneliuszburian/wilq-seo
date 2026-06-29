@@ -1032,3 +1032,7 @@ WILQ is complete for this long-range goal when:
   guards and browser snapshot proof passed after removing first-screen
   technical-detail wording from `/actions` priority cards and keeping raw
   action data behind the technical toggle.
+- Latest evidence-language proof: focused API/dashboard/context-guard tests,
+  live API proof and browser proof passed after replacing `ID dowodu` with
+  Polish proof wording and moving connector-status evidence summaries away
+  from English credential phrasing.

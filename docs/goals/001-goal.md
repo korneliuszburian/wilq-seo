@@ -156,6 +156,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   blocked-claim copy uses Polish wording for missing GSC/WordPress checks.
 - `/actions` priority cards no longer put technical-detail wording on the
   first screen; raw action data remains behind the explicit technical toggle.
+- Ads live-data diagnostics and evidence detail no longer expose `ID dowodu`
+  wording, and connector-status evidence summaries use Polish operator copy
+  instead of English credential wording.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Google Ads first-screen, condensed decision, proof and action panels use

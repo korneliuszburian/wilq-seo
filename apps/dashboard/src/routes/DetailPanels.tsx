@@ -156,8 +156,8 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
           closeLabel="Ukryj szczegóły techniczne dowodu"
         >
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <div>ID dowodu: {evidence.id}</div>
-            <div>ID źródła: {evidence.source_id}</div>
+            <div>Klucz dowodu w WILQ: {evidence.id}</div>
+            <div>Klucz źródła: {evidence.source_id}</div>
             <div>Referencja źródłowa: {evidence.raw_ref ?? "brak"}</div>
           </div>
         </TechnicalDetailsPanel>

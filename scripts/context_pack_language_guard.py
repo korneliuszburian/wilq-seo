@@ -29,6 +29,7 @@ FORBIDDEN_VALUE_TERMS = (
     "payload",
     "payload_apply_allowed_false",
     "evidence IDs",
+    "ID dowodu",
     "blockers",
     "blockery",
     "source_public_url",

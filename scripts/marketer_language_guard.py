@@ -169,6 +169,10 @@ FORBIDDEN_PHRASES = (
         "Use action IDs only in technical contracts; do not promote ActionObject wording.",
     ),
     ForbiddenPhrase(
+        "ID dowodu",
+        "Use dowód w WILQ or dowody źródłowe in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
         "debugowaniu",
         "Use plain audit/sprawdzenie language instead of debug wording in marketer-facing UI.",
     ),
