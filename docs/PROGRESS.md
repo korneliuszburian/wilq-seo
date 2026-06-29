@@ -140,6 +140,11 @@ API status later contradicts this state.
   `brak` empty states for evidence, human review, audience forecasts or action
   availability. Focused dashboard tests, typecheck/lint and language guard
   passed.
+- Google Ads dashboard traces no longer use generic `brak` empty states for
+  evidence, blocked claims, missing data, actions, review gates or source
+  conditions. Shared trace rows also no longer default to context-free `brak`.
+  Focused Ads route tests, dashboard typecheck/lint, language guard and browser
+  proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

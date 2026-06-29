@@ -7738,6 +7738,9 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    const traceLineSource = readFileSync("src/components/TraceLine.tsx", "utf8");
+    expect(routeSource).not.toContain('empty="brak"');
+    expect(traceLineSource).not.toContain('empty = "brak"');
     expect(routeSource).toContain("data.evidence_summary_label");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");

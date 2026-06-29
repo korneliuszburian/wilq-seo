@@ -114,7 +114,7 @@ export function AdsDoctorSurface() {
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
           <MetricTile label="Blokady" value={blockedDecisionCount} />
           <MetricTile label="Dowody" value={data.evidence_summary_label} />
-          <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
+          <MetricTile label="Waluta" value={currencyCode ?? "waluta do potwierdzenia"} />
         </div>
       </div>
 
@@ -377,7 +377,7 @@ function AdsMarketSnapshot({
             sprawdzenia w WILQ oraz uzupełnienia brakujących danych.
           </p>
         </div>
-        <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
+        <MetricTile label="Waluta" value={currencyCode ?? "waluta do potwierdzenia"} />
       </div>
       <div className="mb-3 text-xs font-semibold uppercase tracking-normal text-slate-600">
         Wartości Ads
@@ -404,12 +404,12 @@ function AdsMarketSnapshot({
         <TraceLine
           label="Brakujące dane"
           values={[summary.missing_read_contract_summary_label]}
-          empty="brak"
+          empty="dane kompletne"
         />
         <TraceLine
           label="Nie wolno twierdzić"
           values={[summary.blocked_claim_summary_label]}
-          empty="brak"
+          empty="brak zablokowanych obietnic"
         />
       </div>
     </section>
@@ -497,25 +497,37 @@ function AdsOperatorSummary({
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb Ads</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Metryki dostępne" values={allowedMetrics} empty="brak" />
+            <TraceLine
+              label="Metryki dostępne"
+              values={allowedMetrics}
+              empty="brak metryk do pokazania"
+            />
             <TraceLine
               label="Waluta konta"
-              values={[data.account_currency_read_contract.currency_code ?? "brak"]}
-              empty="brak"
+              values={[data.account_currency_read_contract.currency_code ?? "waluta do potwierdzenia"]}
+              empty="waluta do potwierdzenia"
             />
-            <TraceLine label="Brakujące dane" values={[missingReadContractSummary]} empty="brak" />
-            <TraceLine label="Wymagana ocena" values={[operatorReviewGateSummary]} empty="brak" />
+            <TraceLine label="Brakujące dane" values={[missingReadContractSummary]} empty="dane kompletne" />
+            <TraceLine
+              label="Wymagana ocena"
+              values={[operatorReviewGateSummary]}
+              empty="brak wymaganej oceny"
+            />
             <TraceLine
               label="Dowody"
               values={[summary.evidence_summary_label]}
-              empty="brak"
+              empty="brak dowodów źródłowych"
             />
             <TraceLine
               label="Akcje do sprawdzenia"
               values={[summary.action_summary_label]}
-              empty="brak"
+              empty="brak akcji do sprawdzenia"
             />
-            <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} empty="brak" />
+            <TraceLine
+              label="Nie wolno twierdzić"
+              values={[blockedClaimSummary]}
+              empty="brak zablokowanych obietnic"
+            />
           </div>
         </div>
       </div>
@@ -572,12 +584,12 @@ function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
               <TraceLine
                 label="Akcje"
                 values={[decision.action_summary_label]}
-                empty="brak"
+                empty="brak akcji do sprawdzenia"
               />
               <TraceLine
                 label="Nie wolno"
                 values={[decision.blocked_claim_summary_label]}
-                empty="brak"
+                empty="brak zablokowanych obietnic"
               />
             </div>
           </article>
@@ -632,22 +644,22 @@ function AdsOptimizerReadinessPanel({
         <TraceLine
           label="Brakujące dane"
           values={[contract.missing_read_contract_summary_label]}
-          empty="brak"
+          empty="dane kompletne"
         />
         <TraceLine
           label="Nie wolno twierdzić"
           values={[contract.blocked_claim_summary_label]}
-          empty="brak"
+          empty="brak zablokowanych obietnic"
         />
         <TraceLine
           label="Dowody"
           values={[contract.evidence_summary_label]}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[contract.action_summary_label]}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
       </div>
     </div>
@@ -701,17 +713,17 @@ function AdsOptimizerReadinessGroup({
               <TraceLine
                 label="Warunki źródłowe"
                 values={[item.source_contract_summary_label]}
-                empty="brak"
+                empty="brak warunków źródłowych"
               />
               <TraceLine
                 label="Braki"
                 values={[item.missing_read_contract_summary_label]}
-                empty="brak"
+                empty="dane kompletne"
               />
               <TraceLine
                 label="Blokady"
                 values={[item.blocked_claim_summary_label]}
-                empty="brak"
+                empty="brak zablokowanych obietnic"
               />
             </div>
           </article>
@@ -793,13 +805,13 @@ function AdsDecisionCard({
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[decision.action_summary_label]}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
         {decision.operator_review_gates.length > 0 ? (
           <TraceLine
@@ -873,7 +885,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Słowa kluczowe" value={keywordContextRows.length} />
           <MetricTile label="Ocena wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
-          <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
+          <MetricTile label="Waluta" value={currencyCode ?? "waluta do potwierdzenia"} />
           <MetricTile
             label="Biznes"
             value={data.business_context_read_contract.status_label}
@@ -955,12 +967,17 @@ function AdsMetricEvidencePanel({
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Brakujące dane" values={[missingReadContractSummary]} />
-        <TraceLine label="Wymaga oceny" values={[operatorReviewGateSummary]} empty="brak" />
+        <TraceLine
+          label="Wymaga oceny"
+          values={[operatorReviewGateSummary]}
+          empty="brak wymaganej oceny"
+        />
         <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} />
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
           label="Sekcje źródłowe"
           values={data.sections.map((section) => section.title)}
+          empty="brak sekcji źródłowych do pokazania"
         />
       </div>
     </section>
@@ -989,27 +1006,27 @@ function AdsBusinessTargetInterpretationPanel({
         <TraceLine
           label="Wolno użyć jako"
           values={interpretation.allowed_use_labels}
-          empty="brak"
+          empty="brak dozwolonego użycia"
         />
         <TraceLine
           label="Zablokowane użycia"
           values={interpretation.blocked_use_labels}
-          empty="brak"
+          empty="brak zablokowanych użyć"
         />
         <TraceLine
           label="Braki"
           values={interpretation.missing_requirement_labels}
-          empty="brak"
+          empty="brak brakujących wymagań"
         />
         <TraceLine
           label="Polityki"
           values={[interpretation.policy_summary_label]}
-          empty="brak"
+          empty="brak polityki oceny"
         />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[interpretation.action_summary_label]}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
       </div>
       <div className="mt-3 rounded-md border border-line bg-white p-3">
@@ -1050,22 +1067,22 @@ function AdsBusinessTargetInterpretationPanel({
           <TraceLine
             label="Wymagane sprawdzenie"
             values={[strategyReadiness.required_validation_summary_label]}
-            empty="brak"
+            empty="brak wymaganego sprawdzenia"
           />
           <TraceLine
             label="Braki"
             values={[strategyReadiness.missing_read_contract_summary_label]}
-            empty="brak"
+            empty="dane kompletne"
           />
           <TraceLine
             label="Nie wolno twierdzić"
             values={[strategyReadiness.blocked_claim_summary_label]}
-            empty="brak"
+            empty="brak zablokowanych obietnic"
           />
           <TraceLine
             label="Akcje do sprawdzenia"
             values={[strategyReadiness.action_summary_label]}
-            empty="brak"
+            empty="brak akcji do sprawdzenia"
           />
         </div>
       </div>
@@ -1227,22 +1244,22 @@ function AdsCampaignTriageRowsPanel({
               <TraceLine
                 label="Wymagana ocena"
                 values={[row.human_review_gate_summary_label]}
-                empty="brak"
+                empty="brak wymaganej oceny"
               />
               <TraceLine
                 label="Braki"
                 values={[row.missing_read_contract_summary_label]}
-                empty="brak"
+                empty="dane kompletne"
               />
               <TraceLine
                 label="Dowody"
                 values={[row.evidence_summary_label]}
-                empty="brak"
+                empty="brak dowodów źródłowych"
               />
               <TraceLine
                 label="Akcje do sprawdzenia"
                 values={[row.action_summary_label]}
-                empty="brak"
+                empty="brak akcji do sprawdzenia"
               />
             </div>
           </article>
@@ -1382,7 +1399,7 @@ function AdsBudgetPacingRowsTable({
               <td className="py-2 pr-4 text-slate-700">
                 {row.has_recommended_budget
                   ? adsCost(row.recommended_budget_amount_micros, currencyCode)
-                  : "brak"}
+                  : "brak rekomendowanego budżetu"}
               </td>
               <td className="min-w-48 py-2 pr-4 text-xs text-slate-600">
                 {row.preview_card ? (
@@ -1390,7 +1407,7 @@ function AdsBudgetPacingRowsTable({
                     <ActionPreviewCard card={row.preview_card} />
                   </div>
                 ) : (
-                  "brak"
+                  "brak podglądu zmian"
                 )}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
@@ -1589,7 +1606,7 @@ function AdsRecommendationRowsPanel({
             <TraceLine
               label="Ocena człowieka"
               values={[row.human_review_gate_summary_label]}
-              empty="brak"
+              empty="brak oceny człowieka"
             />
             <TraceLine
               label="Nie wolno twierdzić"
@@ -1694,10 +1711,10 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
                 {row.change_resource_label || "zasób zmiany do sprawdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.resource_change_operation_label || "operacja: brak"}
+                {row.resource_change_operation_label || "operacja do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.client_type_label || "źródło zmiany: brak"}
+                {row.client_type_label || "źródło zmiany do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.campaign_label || "brak kampanii w odczycie"}
@@ -1758,23 +1775,23 @@ function AdsChangeImpactReadinessPanel({
         <TraceLine
           label="Metryki dostępne"
           values={contract.allowed_metric_labels}
-          empty="brak"
+          empty="brak metryk do pokazania"
         />
         <TraceLine
           label="Brakujące dane"
           values={[contract.missing_read_contract_summary_label]}
-          empty="brak"
+          empty="dane kompletne"
         />
         <TraceLine
           label="Nie wolno twierdzić"
           values={[contract.blocked_claim_summary_label]}
-          empty="brak"
+          empty="brak zablokowanych obietnic"
         />
         <LinkedTraceLine
           label="Dowody"
           values={contract.evidence_ids.slice(0, 6)}
           kind="evidence"
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
       </div>
     </div>
@@ -1820,14 +1837,19 @@ function AdsChangeImpactReadinessCard({
         <TraceLine
           label="Braki"
           values={[row.missing_read_contract_summary_label]}
-          empty="brak"
+          empty="dane kompletne"
         />
         <TraceLine
           label="Blokady"
           values={[row.blocked_claim_summary_label]}
-          empty="brak"
+          empty="brak zablokowanych obietnic"
         />
-        <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" empty="brak" />
+        <LinkedTraceLine
+          label="Dowody"
+          values={row.evidence_ids}
+          kind="evidence"
+          empty="brak dowodów źródłowych"
+        />
       </div>
     </article>
   );
@@ -2144,10 +2166,10 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.keyword_text}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.match_type_label || "typ dopasowania: brak"}
+                {row.match_type_label || "typ dopasowania do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.negative_label || row.criterion_status_label || "status: brak"}
+                {row.negative_label || row.criterion_status_label || "status do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.campaign_label || "brak kampanii w odczycie"}
@@ -2265,7 +2287,7 @@ function AdsNegativeKeywordCandidatesPanel({
               <TraceLine
                 label="Ocena człowieka"
                 values={candidate.human_review_gate_labels}
-                empty="brak"
+                empty="brak oceny człowieka"
               />
               <TraceLine label="Wymagane kontrole" values={candidate.required_check_labels} />
               <LinkedTraceLine
@@ -2331,7 +2353,7 @@ function AdsBlockedHandoffPanel({
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[handoff.action_summary_label]}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
         <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claim_labels} />
       </div>
@@ -2340,18 +2362,18 @@ function AdsBlockedHandoffPanel({
 }
 
 function adsStrategyContextValue(value: unknown) {
-  if (value === null || value === undefined || value === "") return "brak";
+  if (value === null || value === undefined || value === "") return "wartość do potwierdzenia";
   if (typeof value === "number") return adsNumber(value);
   return String(value);
 }
 
 function adsNumber(value: number | null | undefined) {
-  if (value === null || value === undefined) return "brak";
+  if (value === null || value === undefined) return "wartość do potwierdzenia";
   return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 4 }).format(value);
 }
 
 function adsCost(value: number | null | undefined, currencyCode?: string) {
-  if (value === null || value === undefined) return "brak";
+  if (value === null || value === undefined) return "koszt do potwierdzenia";
   const accountUnits = value / 1_000_000;
   if (currencyCode) {
     return new Intl.NumberFormat("pl-PL", {
@@ -2366,7 +2388,7 @@ function adsCost(value: number | null | undefined, currencyCode?: string) {
 }
 
 function adsSignedCost(value: number | null | undefined, currencyCode?: string) {
-  if (value === null || value === undefined) return "brak";
+  if (value === null || value === undefined) return "zmiana kosztu do potwierdzenia";
   const formatted = adsCost(Math.abs(value), currencyCode);
   if (value > 0) return `+${formatted}`;
   if (value < 0) return `-${formatted}`;
@@ -2374,7 +2396,7 @@ function adsSignedCost(value: number | null | undefined, currencyCode?: string) 
 }
 
 function adsSignedNumber(value: number | null | undefined) {
-  if (value === null || value === undefined) return "brak";
+  if (value === null || value === undefined) return "zmiana do potwierdzenia";
   if (value > 0) return `+${adsNumber(value)}`;
   return adsNumber(value);
 }
@@ -2394,7 +2416,7 @@ function adsTargetStatusClass(status: string | null | undefined) {
 }
 
 function adsPercent(value: number | null | undefined) {
-  if (value === null || value === undefined) return "brak";
+  if (value === null || value === undefined) return "udział do potwierdzenia";
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
     value * 100
   )}%`;

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 export function TraceLine({
   label,
   values,
-  empty = "brak"
+  empty = "brak pozycji do pokazania"
 }: {
   label: string;
   values: string[];
@@ -20,7 +20,7 @@ export function LinkedTraceLine({
   label,
   values,
   kind,
-  empty = "brak"
+  empty = "brak pozycji do pokazania"
 }: {
   label: string;
   values: string[];
