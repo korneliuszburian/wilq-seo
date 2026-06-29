@@ -52,8 +52,9 @@ Date: 2026-06-29
   GA4, Localo and Ahrefs context packs returned zero hits for the guarded
   technical terms.
 - `scripts/context_pack_language_guard.py` now makes that live context-pack
-  stale-language scan repeatable and `scripts/verify.sh` runs it against the
-  temporary skill API before skill smokes.
+  stale-language scan repeatable. `scripts/verify.sh` runs it against the
+  temporary skill API before skill smokes, and `scripts/pre_demo_gate.sh` runs
+  it against the managed local API before dashboard/skill demo checks.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:52Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -240,7 +241,8 @@ Date: 2026-06-29
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs have focused tests, and
    `scripts/context_pack_language_guard.py` now guards live compact skill
-   contexts across the core skill set.
+   contexts across the core skill set in both `verify.sh` and the pre-demo
+   gate.
 8. Continue focused browser audits when touched routes change. The latest
    expanded audit of core routes and action details is clean; any future long
    blocker/review list must be condensed at API/domain source, not trimmed in

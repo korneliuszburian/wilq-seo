@@ -338,7 +338,8 @@ Known cleanup already started:
   keys or vendor dimension enums to Codex skills when a Polish operator label
   exists.
 - Live compact context-pack language checks are now repeatable through
-  `scripts/context_pack_language_guard.py` and run from `scripts/verify.sh`.
+  `scripts/context_pack_language_guard.py` and run from `scripts/verify.sh`
+  plus `scripts/pre_demo_gate.sh`.
 - Marketer-useful metric dimensions such as query, landing page, campaign,
   source and country should keep meaningful Polish/free-text values instead of
   collapsing to generic "wartość wymiaru do sprawdzenia".

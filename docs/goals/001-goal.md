@@ -124,7 +124,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   raw Merchant issue-type values. Live daily, content, Merchant, Ads, GA4,
   Localo and Ahrefs context-pack scans are clean for the guarded terms.
 - `scripts/context_pack_language_guard.py` now makes the live context-pack scan
-  repeatable, and `scripts/verify.sh` runs it against the temporary skill API.
+  repeatable. `scripts/verify.sh` runs it against the temporary skill API, and
+  `scripts/pre_demo_gate.sh` runs it against the managed local API before
+  dashboard/skill demo checks.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
@@ -286,7 +288,8 @@ are resolved or explicitly deferred.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs have focused tests, and
    `scripts/context_pack_language_guard.py` now guards live compact skill
-   contexts across the core skill set.
+   contexts across the core skill set in both `verify.sh` and the pre-demo
+   gate.
 8. Continue focused browser audits when touched routes change or a new visible
    copy risk is found. The latest expanded audit across core routes/action
    details is clean; any future long blocker/review list must be condensed at
