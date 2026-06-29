@@ -568,6 +568,9 @@ WILQ is complete for this long-range goal when:
   after the current context/action/dashboard cleanup slice. Live WILQ API
   status confirms GSC, GA4 and Merchant are configured, fresh and not missing
   credential names; optional LinkedIn/Facebook social credentials remain open.
+- 2026-06-29: Live UAT packet export was cleaned for marketer use: visible
+  snapshots now use Polish operator fields, and the result recorder accepts the
+  matching Polish filled-result format. Real marketer UAT remains open.
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
@@ -874,6 +877,10 @@ WILQ is complete for this long-range goal when:
   Playwright route smoke and dashboard build. This proves the cleanup gate is
   green for the touched product surfaces, while real marketer UAT remains the
   usefulness proof.
+- Latest UAT-prep proof: focused UAT packet/result tests, marketer language
+  guard, packet stale-key scan and current browser reads passed after removing
+  raw UAT snapshot keys from the marketer packet. This reduces UAT friction but
+  still does not replace Wilku/marketer feedback.
 - Latest self-improving guardrail: `scripts/context_pack_language_guard.py`
   checks the core skill context packs for stale route names, raw payload
   wording, dev/migration terms and raw vendor/action values. `verify.sh` runs

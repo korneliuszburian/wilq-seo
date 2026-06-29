@@ -258,6 +258,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   credential names after the 2026-06-29T02:30Z refreshes. LinkedIn/Facebook
   remain optional missing-credential social connectors; Google Sheets remains
   disabled by scope.
+- Live UAT packet export is prepared for real marketer review and uses Polish
+  operator snapshot fields instead of raw `decision_type`, `status`,
+  route-check or URL-contract keys. This prepares the required UAT step but
+  does not count as completed UAT.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`

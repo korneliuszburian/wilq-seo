@@ -14,6 +14,17 @@ ROUTE_LABELS = {
     "ads": "Google Ads",
     "ga4": "GA4",
 }
+POLISH_RESULT_KEYS = {
+    "date": "data",
+    "person": "osoba",
+    "command_center": "centrum_pracy",
+    "content": "treści",
+    "ads": "google_ads",
+    "biggest_real_boost": "największy_realny_zysk",
+    "biggest_confusion": "największa_niejasność",
+    "new_tasks": "nowe_zadania",
+    "ready_without_developer": "gotowe_bez_developera",
+}
 
 
 def main() -> int:
@@ -61,6 +72,7 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
+    payload = normalize_uat_payload_keys(payload)
     errors = validate_uat_payload(payload)
     if errors:
         raise RuntimeError("Invalid UAT result:\n- " + "\n- ".join(errors))
@@ -93,6 +105,7 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_uat_payload(payload: dict[str, Any]) -> list[str]:
+    payload = normalize_uat_payload_keys(payload)
     errors: list[str] = []
     for key in ["date", "person", "ready_without_developer"]:
         if is_blank_or_placeholder(payload.get(key)):
@@ -112,16 +125,22 @@ def validate_uat_payload(payload: dict[str, Any]) -> list[str]:
 def normalize_route_result(key: str, value: Any) -> dict[str, str]:
     label = ROUTE_LABELS[key]
     if isinstance(value, dict):
-        raw_result = str(value.get("result") or "").strip().lower()
-        note = str(value.get("note") or value.get("confusion") or "").strip()
+        raw_result = str(value.get("result") or value.get("wynik") or "").strip().lower()
+        note = str(
+            value.get("note")
+            or value.get("confusion")
+            or value.get("notatka")
+            or value.get("niejasność")
+            or ""
+        ).strip()
     else:
         raw = str(value or "").strip()
         first, _, rest = raw.partition(" ")
         raw_result = first.strip().lower()
         note = rest.strip()
-    if raw_result.startswith("pass"):
+    if raw_result.startswith("pass") or raw_result.startswith("zaliczone"):
         result = "pass"
-    elif raw_result.startswith("fail"):
+    elif raw_result.startswith("fail") or raw_result.startswith("niezaliczone"):
         result = "fail"
     else:
         result = "unknown"
@@ -231,6 +250,14 @@ def normalize_ready(value: Any) -> str:
     if lowered in {"no", "nie"}:
         return "no"
     return lowered
+
+
+def normalize_uat_payload_keys(payload: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(payload)
+    for canonical, polish in POLISH_RESULT_KEYS.items():
+        if canonical not in normalized and polish in normalized:
+            normalized[canonical] = normalized[polish]
+    return normalized
 
 
 def is_blank_or_placeholder(value: Any) -> bool:

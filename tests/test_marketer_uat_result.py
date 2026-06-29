@@ -114,3 +114,33 @@ def test_uat_result_markdown_lists_task_candidates() -> None:
     assert "Route Results" not in markdown
     assert "Task Candidates" not in markdown
     assert "Feedback" not in markdown
+
+
+def test_uat_result_report_accepts_polish_packet_template_keys() -> None:
+    payload = {
+        "data": "2026-06-29",
+        "osoba": "Wilku",
+        "centrum_pracy": "zaliczone wiem, co zrobić dalej",
+        "merchant": {"wynik": "niezaliczone", "niejasność": "Licznik był niejasny."},
+        "treści": "zaliczone widzę publiczny URL",
+        "google_ads": "zaliczone rozumiem blokady kosztu pozyskania celu",
+        "ga4": "zaliczone rozumiem problem pomiaru",
+        "największy_realny_zysk": "Treści",
+        "największa_niejasność": "Merchant",
+        "nowe_zadania": ["Doprecyzować licznik Merchant"],
+        "gotowe_bez_developera": "nie",
+    }
+
+    report = build_uat_result_report(payload)
+
+    assert report["date"] == "2026-06-29"
+    assert report["person"] == "Wilku"
+    assert report["ready_without_developer"] == "no"
+    assert [item["result"] for item in report["route_results"]] == [
+        "pass",
+        "fail",
+        "pass",
+        "pass",
+        "pass",
+    ]
+    assert any(task["source"] == "merchant" for task in report["task_candidates"])
