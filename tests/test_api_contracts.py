@@ -182,6 +182,7 @@ from wilq.schemas import (
     MetricFact,
     Opportunity,
     OpportunityDomain,
+    TacticalQueueItem,
     TacticalQueueResponse,
 )
 from wilq.security.redaction import redact_mapping
@@ -16971,6 +16972,75 @@ def test_compact_metric_fact_context_omits_generic_dimension_placeholders() -> N
     assert "wartość wymiaru do sprawdzenia" not in serialized
     assert "hidden-noise.example" not in serialized
     assert "opaque-value" not in serialized
+
+
+def test_metric_fact_google_ads_dimensions_use_operator_labels() -> None:
+    fact = MetricFact(
+        name="campaign_cost_micros",
+        value=123,
+        period="test",
+        source_connector="google_ads",
+        evidence_id="ev_google_ads_metric_dimension_labels",
+        dimensions={
+            "campaign_id": "23848569273",
+            "ad_group_name": "Grupa reklam 1",
+            "advertising_channel_type": "PERFORMANCE_MAX",
+            "campaign_status": "PAUSED",
+            "search_term": "alba czeladź",
+            "budget_period": "DAILY",
+            "budget_status": "ENABLED",
+        },
+    )
+
+    assert fact.dimension_labels["campaign_id"] == "identyfikator kampanii"
+    assert fact.dimension_value_labels["campaign_id"] == (
+        "dostępny w szczegółach technicznych"
+    )
+    assert fact.dimension_labels["ad_group_name"] == "grupa reklam"
+    assert fact.dimension_value_labels["ad_group_name"] == "Grupa reklam 1"
+    assert fact.dimension_value_labels["advertising_channel_type"] == "Performance Max"
+    assert fact.dimension_value_labels["campaign_status"] == "wstrzymane"
+    assert fact.dimension_value_labels["search_term"] == "alba czeladź"
+    assert fact.dimension_value_labels["budget_period"] == "dziennie"
+    assert fact.dimension_value_labels["budget_status"] == "aktywne"
+    serialized = json.dumps(fact.model_dump(mode="json"), ensure_ascii=False)
+    assert "wymiar" not in serialized
+    assert "wartość wymiaru do sprawdzenia" not in serialized
+
+
+def test_tactical_queue_wordpress_dimensions_use_operator_labels() -> None:
+    item = TacticalQueueItem(
+        id="tq_wordpress_dimension_labels",
+        title="Treść do sprawdzenia",
+        domain=OpportunityDomain.content,
+        intent="content_refresh",
+        priority=20,
+        risk=ActionRisk.low,
+        source_connectors=["wordpress_ekologus"],
+        evidence_ids=["ev_wordpress_dimension_labels"],
+        dimensions={
+            "wordpress_connector": "wordpress_ekologus",
+            "wordpress_content_type": "sitemap",
+            "wordpress_status": "indexed",
+            "wordpress_content_url": "https://www.ekologus.pl/",
+            "wordpress_host_alias_applied": "false",
+            "target_mode": "subdomains",
+        },
+        diagnosis="WILQ ma spis treści WordPress.",
+        next_step="Sprawdź istniejącą treść przed pisaniem.",
+    )
+
+    assert item.dimension_labels["wordpress_connector"] == "źródło WordPress"
+    assert item.dimension_value_labels["wordpress_connector"] == "WordPress ekologus.pl"
+    assert item.dimension_labels["wordpress_content_type"] == "typ treści WordPress"
+    assert item.dimension_value_labels["wordpress_content_type"] == "mapa strony"
+    assert item.dimension_value_labels["wordpress_status"] == "w indeksie"
+    assert item.dimension_value_labels["wordpress_content_url"] == "https://www.ekologus.pl/"
+    assert item.dimension_value_labels["wordpress_host_alias_applied"] == "nie"
+    assert item.dimension_value_labels["target_mode"] == "subdomeny"
+    serialized = json.dumps(item.model_dump(mode="json"), ensure_ascii=False)
+    assert "wymiar do sprawdzenia" not in serialized
+    assert "wartość do sprawdzenia" not in serialized
 
 
 def test_marketing_brief_dedupes_command_center_blockers() -> None:

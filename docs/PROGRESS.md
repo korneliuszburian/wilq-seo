@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Full action and Centrum pracy API responses no longer expose generic metric
+  dimension placeholders such as `wymiar`, `wymiar do sprawdzenia`,
+  `wartość wymiaru do sprawdzenia` or `wartość do sprawdzenia`. Shared metric
+  schemas now label common Google Ads, Ahrefs, content inventory and WordPress
+  dimensions at the API/source level, with technical IDs described as available
+  only in technical detail.
 - Action recommended reasons no longer expose route slugs such as `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4`, `/localo` or
   `/social-publisher` in operator-facing copy. The cleanup happened in the API

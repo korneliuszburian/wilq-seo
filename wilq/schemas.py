@@ -262,31 +262,86 @@ class MetricFact(BaseModel):
 def _metric_dimension_label(value: str) -> str:
     labels = {
         "affected_attribute": "atrybut",
+        "ad_group_id": "identyfikator grupy reklam",
+        "ad_group_name": "grupa reklam",
+        "advertising_channel_type": "typ kampanii",
+        "best_position": "najlepsza pozycja",
+        "best_position_url": "adres z najlepszą pozycją",
+        "budget_id": "identyfikator budżetu",
+        "budget_name": "budżet",
+        "budget_period": "okres budżetu",
+        "budget_status": "status budżetu",
+        "campaign_budget_id": "identyfikator budżetu kampanii",
+        "campaign_id": "identyfikator kampanii",
         "campaign_name": "kampania",
+        "campaign_status": "status kampanii",
         "changed_field": "zmienione pole",
         "changed_resource": "zmieniony zasób",
         "connector_id": "źródło danych",
         "content_type": "typ treści",
+        "content_url": "adres treści",
         "competitor_domain": "konkurent",
+        "competitor_target_mode": "tryb porównania konkurencji",
         "contract": "obszar",
         "country": "kraj",
+        "cpc": "koszt kliknięcia",
+        "criterion_id": "identyfikator kryterium",
+        "criterion_status": "status kryterium",
         "gap_type": "typ luki",
+        "gsc_page_query_count": "liczba zapytań GSC",
+        "inventory_source": "źródło spisu treści",
+        "dismissed": "czy odrzucona",
+        "is_branded": "czy brandowe",
+        "is_commercial": "czy komercyjne",
+        "is_informational": "czy informacyjne",
+        "is_local": "czy lokalne",
+        "is_transactional": "czy transakcyjne",
         "issue_type": "problem",
         "keyword": "fraza",
+        "keyword_difficulty": "trudność frazy",
         "keyword_match_type": "dopasowanie frazy",
         "keyword_negative": "wykluczenie frazy",
+        "keyword_text": "słowo kluczowe",
         "landing_page": "strona wejścia",
         "metric_bucket": "zakres",
+        "modified_gmt": "data zmiany",
         "page": "strona",
         "query": "zapytanie",
+        "recommendation_campaign_count": "liczba kampanii",
+        "recommendation_id": "identyfikator rekomendacji",
+        "recommendation_resource_name": "zasób rekomendacji",
+        "recommendation_type": "typ rekomendacji",
         "reporting_context": "kontekst",
         "resolution": "rozwiązanie",
         "scope": "zakres",
+        "search_term": "wyszukiwane hasło",
+        "search_term_status": "status wyszukiwanego hasła",
         "severity": "status",
         "site_kind": "typ serwisu",
         "source_medium": "źródło",
         "source_url": "URL źródłowy",
+        "status": "status",
+        "sum_traffic": "ruch według Ahrefs",
+        "canonical_url": "adres kanoniczny",
         "target_domain": "domena docelowa",
+        "target_keyword_limit": "limit fraz",
+        "target_keyword_sample_size": "próbka fraz",
+        "target_mode": "zakres domen",
+        "title_or_h1": "tytuł albo H1",
+        "volume": "wolumen",
+        "wordpress_connector": "źródło WordPress",
+        "wordpress_content_host": "host treści",
+        "wordpress_content_type": "typ treści WordPress",
+        "wordpress_content_url": "adres treści WordPress",
+        "wordpress_host_alias_applied": "dopasowanie aliasu hosta",
+        "wordpress_inventory_source": "źródło spisu WordPress",
+        "wordpress_match_confidence": "pewność dopasowania WordPress",
+        "wordpress_matched_path": "dopasowana ścieżka WordPress",
+        "wordpress_matched_url_key": "dopasowany adres WordPress",
+        "wordpress_modified_gmt": "data zmiany w WordPress",
+        "wordpress_requested_path": "sprawdzana ścieżka WordPress",
+        "wordpress_requested_url_key": "sprawdzany adres WordPress",
+        "wordpress_status": "status WordPress",
     }
     return labels.get(value, "wymiar")
 
@@ -299,29 +354,64 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         "BROAD": "dopasowanie szerokie",
         "competitor_visibility": "widoczność konkurencji",
         "competitor_page": "strona konkurencji",
+        "DAILY": "dziennie",
+        "DISABLED": "wyłączone",
+        "ENABLED": "aktywne",
+        "DISPLAY_EXPANSION_OPT_IN": "włączenie rozszerzenia na sieć reklamową",
+        "DYNAMIC_IMAGE_EXTENSION_OPT_IN": "dynamiczne rozszerzenie obrazów",
+        "exact": "dokładne porównanie",
         "false": "nie",
+        "False": "nie",
         "FREE_LISTINGS": "bezpłatne wyniki produktowe",
         "gbp_visibility": "profil firmy w Google",
+        "indexed": "w indeksie",
         "local_rankings": "lokalne pozycje",
         "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
+        "content_gap": "luka treści",
         "missing_potentially_required_attribute": ("brak potencjalnie wymaganego atrybutu"),
+        "n:certification": "certyfikacja",
+        "n:image_link": "link do grafiki",
         "n:availability": "dostępność",
         "n:unit_pricing_measure": "miara ceny jednostkowej",
+        "NONE": "brak dodatkowego statusu",
         "NOT_IMPACTED": "bez wpływu",
+        "organic_keyword_gap": "luka fraz organicznych",
         "pages": "strony",
+        "path_fallback": "dopasowanie po ścieżce",
+        "PAUSED": "wstrzymane",
+        "PERFORMANCE_MAX": "Performance Max",
         "place_inventory": "spis miejsc",
         "posts": "wpisy",
         "primary": "ekologus.pl",
+        "public_sitemap": "publiczna mapa strony",
         "reviews": "opinie",
+        "SEARCH": "kampania w wyszukiwarce",
+        "SEARCH_PARTNERS_OPT_IN": "włączenie partnerów wyszukiwania",
         "shop": "sklep",
         "SHOPPING_ADS": "reklamy produktowe",
+        "sitemap": "mapa strony",
+        "subdomains": "subdomeny",
         "true": "tak",
+        "True": "tak",
+        "availability_updated": "zaktualizowana dostępność",
+        "image_too_small_for_high_resolution": "grafika za mała do wysokiej rozdzielczości",
+        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH": "poprawa siły zasobów Performance Max",
     }
     if key == "connector_id":
         return source_connector_label(value)
+    if key == "wordpress_connector":
+        return source_connector_label(value)
+    if (
+        key.endswith("_id")
+        or key
+        in {
+            "recommendation_resource_name",
+        }
+    ):
+        return "dostępny w szczegółach technicznych"
     if text in labels:
         return labels[text]
-    if text == "PL":
+    if text.upper() == "PL":
         return "Polska"
     if text == "(not set)":
         return "brak wartości w danych źródłowych"
@@ -331,14 +421,39 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         key
         in {
             "campaign_name",
+            "ad_group_name",
+            "best_position",
+            "budget_name",
+            "canonical_url",
+            "content_url",
             "competitor_domain",
+            "competitor_target_mode",
+            "cpc",
             "keyword",
+            "keyword_difficulty",
+            "keyword_text",
             "landing_page",
+            "modified_gmt",
             "page",
             "query",
+            "recommendation_campaign_count",
+            "search_term",
             "source_medium",
             "source_url",
+            "sum_traffic",
             "target_domain",
+            "target_keyword_limit",
+            "target_keyword_sample_size",
+            "title_or_h1",
+            "volume",
+            "best_position_url",
+            "wordpress_content_host",
+            "wordpress_content_url",
+            "wordpress_matched_path",
+            "wordpress_matched_url_key",
+            "wordpress_modified_gmt",
+            "wordpress_requested_path",
+            "wordpress_requested_url_key",
         }
         and text
     ):
@@ -1208,6 +1323,19 @@ def _tactical_dimension_label(value: str) -> str:
         "wordpress_match": "WordPress",
         "wordpress_match_confidence": "pewność dopasowania",
         "gsc_page_query_count": "liczba zapytań GSC",
+        "target_mode": "zakres domen",
+        "wordpress_connector": "źródło WordPress",
+        "wordpress_content_host": "host treści",
+        "wordpress_content_type": "typ treści WordPress",
+        "wordpress_content_url": "adres treści WordPress",
+        "wordpress_host_alias_applied": "dopasowanie aliasu hosta",
+        "wordpress_inventory_source": "źródło spisu WordPress",
+        "wordpress_matched_path": "dopasowana ścieżka WordPress",
+        "wordpress_matched_url_key": "dopasowany adres WordPress",
+        "wordpress_modified_gmt": "data zmiany w WordPress",
+        "wordpress_requested_path": "sprawdzana ścieżka WordPress",
+        "wordpress_requested_url_key": "sprawdzany adres WordPress",
+        "wordpress_status": "status WordPress",
     }
     return labels.get(value, "wymiar do sprawdzenia")
 
@@ -1230,9 +1358,58 @@ def _tactical_dimension_value_label(key: str, value: str) -> str:
         },
         "country": {
             "PL": "Polska",
+            "pl": "Polska",
+        },
+        "target_mode": {
+            "subdomains": "subdomeny",
+        },
+        "wordpress_connector": {
+            "wordpress_ekologus": "WordPress ekologus.pl",
+            "wordpress_sklep": "WordPress sklep.ekologus.pl",
+        },
+        "wordpress_content_type": {
+            "sitemap": "mapa strony",
+            "post": "wpis",
+            "page": "strona",
+        },
+        "wordpress_status": {
+            "indexed": "w indeksie",
+            "publish": "opublikowane",
+            "draft": "szkic",
+        },
+        "wordpress_host_alias_applied": {
+            "false": "nie",
+            "False": "nie",
+            "true": "tak",
+            "True": "tak",
+        },
+        "wordpress_inventory_source": {
+            "public_sitemap": "publiczna mapa strony",
         },
     }
-    return labels_by_key.get(key, {}).get(value, "wartość do sprawdzenia")
+    text = str(value or "").strip()
+    if key in labels_by_key and text in labels_by_key[key]:
+        return labels_by_key[key][text]
+    if (
+        key
+        in {
+            "campaign_name",
+            "landing_page",
+            "page",
+            "query",
+            "source_medium",
+            "wordpress_content_host",
+            "wordpress_content_url",
+            "wordpress_matched_path",
+            "wordpress_matched_url_key",
+            "wordpress_modified_gmt",
+            "wordpress_requested_path",
+            "wordpress_requested_url_key",
+        }
+        and text
+    ):
+        return text
+    return "wartość do sprawdzenia"
 
 
 def _blocked_claim_label(value: str) -> str:
