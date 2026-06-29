@@ -1800,6 +1800,36 @@ def _ahrefs_gap_record_decisions(
         "rekordy",
         "rekordów",
     )
+    ahrefs_gap_record_label = _polish_count_word(
+        len(gap_facts),
+        "rekord luk",
+        "rekordy luk",
+        "rekordów luk",
+    )
+    content_gap_label = _polish_count_word(
+        gap_counts["content_gap"],
+        "luka treści",
+        "luki treści",
+        "luk treści",
+    )
+    organic_keyword_gap_label = _polish_count_word(
+        gap_counts["organic_keyword_gap"],
+        "luka w słowach organicznych",
+        "luki w słowach organicznych",
+        "luk w słowach organicznych",
+    )
+    top_page_gap_label = _polish_count_word(
+        gap_counts["top_page_gap"],
+        "luka w najlepszych stronach konkurencji",
+        "luki w najlepszych stronach konkurencji",
+        "luk w najlepszych stronach konkurencji",
+    )
+    backlink_gap_label = _polish_count_word(
+        gap_counts["backlink_gap"],
+        "luka linków zwrotnych",
+        "luki linków zwrotnych",
+        "luk linków zwrotnych",
+    )
     return [
         ContentDecisionItem(
             id="content_decision_ahrefs_gap_records_review",
@@ -1807,11 +1837,11 @@ def _ahrefs_gap_record_decisions(
             status=decision_status,
             title="Ahrefs: zweryfikuj luki SEO przed planem treści",
             summary=(
-                f"WILQ ma {len(gap_facts)} rekordów luk Ahrefs: "
-                f"{gap_counts['content_gap']} luk treści, "
-                f"{gap_counts['organic_keyword_gap']} luk słów organicznych, "
-                f"{gap_counts['top_page_gap']} luk najlepszych stron konkurencji i "
-                f"{gap_counts['backlink_gap']} luk linków zwrotnych. Ocena jakości wskazuje "
+                f"WILQ ma {len(gap_facts)} {ahrefs_gap_record_label} Ahrefs: "
+                f"{gap_counts['content_gap']} {content_gap_label}, "
+                f"{gap_counts['organic_keyword_gap']} {organic_keyword_gap_label}, "
+                f"{gap_counts['top_page_gap']} {top_page_gap_label} i "
+                f"{gap_counts['backlink_gap']} {backlink_gap_label}. Ocena jakości wskazuje "
                 f"{len(relevant_scores)} {relevant_label}, "
                 f"{len(review_scores)} {review_label} do ręcznej oceny i "
                 f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "

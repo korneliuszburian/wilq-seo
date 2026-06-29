@@ -122,6 +122,10 @@ API status later contradicts this state.
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof
   for `/localo` passed.
+- Ahrefs gap summaries now use correct Polish count wording and condense
+  repeated record-level facts into readable signal counts instead of repeating
+  the same gap phrase. Focused Ahrefs/content API tests, dashboard route tests,
+  language guards and browser proof for `/ahrefs` passed.
 - Action detail now hides legacy English apply/audit summaries from the
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;

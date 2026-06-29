@@ -415,7 +415,7 @@ def _ahrefs_gap_read_contract(
         status="ready" if gap_records and not missing_contracts else "blocked",
         title="Luki SEO z Ahrefs",
         summary=(
-            f"WILQ ma {len(gap_records)} rekordów luk z Ahrefs. "
+            f"WILQ ma {_ahrefs_gap_record_count_label(len(gap_records))} z Ahrefs. "
             f"Brakujące dane: {_missing_gap_contracts_summary(missing_contracts)}."
         ),
         available_read_contracts=available_contracts,
@@ -581,7 +581,7 @@ def _ahrefs_gap_record(
         gap_type_label=_gap_type_label(gap_type),
         title=title,
         summary=(
-            f"{title}. Dane Ahrefs: {_gap_fact_summary(facts)}. "
+            f"{title}. Dane Ahrefs: {_gap_fact_summary(gap_type, facts)}. "
             "To jest materiał do sprawdzenia, nie obietnica wzrostu ruchu."
         ),
         source_url=source_url,
@@ -668,9 +668,50 @@ def _gap_record_title(
     return f"{labels[gap_type]}: {anchor}"
 
 
-def _gap_fact_summary(facts: list[MetricFact]) -> str:
+def _gap_fact_summary(gap_type: AhrefsGapType, facts: list[MetricFact]) -> str:
     sorted_facts = sorted(facts, key=lambda fact: fact.name)
-    return ", ".join(f"{_gap_fact_label(fact.name)}={fact.value}" for fact in sorted_facts)
+    if len(sorted_facts) > 1:
+        signal_label = _ahrefs_count_word(len(sorted_facts), "sygnał", "sygnały", "sygnałów")
+        return f"{len(sorted_facts)} {signal_label} Ahrefs typu {_gap_type_label(gap_type)}"
+    return ", ".join(_gap_fact_value_label(fact) for fact in sorted_facts)
+
+
+def _gap_fact_value_label(fact: MetricFact) -> str:
+    if isinstance(fact.value, int | float):
+        count = int(fact.value)
+        count_labels = {
+            "ahrefs_competitor_page_count": (
+                "strona konkurencji",
+                "strony konkurencji",
+                "stron konkurencji",
+            ),
+            "ahrefs_content_gap_count": ("luka treści", "luki treści", "luk treści"),
+            "ahrefs_backlink_gap_count": (
+                "luka linków zwrotnych",
+                "luki linków zwrotnych",
+                "luk linków zwrotnych",
+            ),
+            "ahrefs_referring_domain_gap_count": (
+                "luka domen linkujących",
+                "luki domen linkujących",
+                "luk domen linkujących",
+            ),
+            "ahrefs_organic_keyword_gap_count": (
+                "luka w słowach organicznych",
+                "luki w słowach organicznych",
+                "luk w słowach organicznych",
+            ),
+            "ahrefs_top_page_gap_count": (
+                "luka w najlepszych stronach konkurencji",
+                "luki w najlepszych stronach konkurencji",
+                "luk w najlepszych stronach konkurencji",
+            ),
+        }
+        if fact.name in count_labels:
+            one, few, many = count_labels[fact.name]
+            return f"{count} {_ahrefs_count_word(count, one, few, many)}"
+
+    return f"{_gap_fact_label(fact.name)}: {fact.value}"
 
 
 def _gap_fact_label(name: str) -> str:
@@ -681,6 +722,19 @@ def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
     if not missing_contracts:
         return "brak"
     return ", ".join(_missing_gap_contract_label(contract) for contract in missing_contracts)
+
+
+def _ahrefs_gap_record_count_label(count: int) -> str:
+    return f"{count} {_ahrefs_count_word(count, 'rekord luk', 'rekordy luk', 'rekordów luk')}"
+
+
+def _ahrefs_count_word(count: int, one: str, few: str, many: str) -> str:
+    absolute = abs(count)
+    if absolute == 1:
+        return one
+    if 2 <= absolute % 10 <= 4 and absolute % 100 not in {12, 13, 14}:
+        return few
+    return many
 
 
 def _missing_gap_contract_label(contract: str) -> str:
@@ -1000,14 +1054,15 @@ def _ahrefs_sections(
     )
 
     missing_gap_contracts = _missing_gap_contracts(gap_facts)
+    gap_records = _ahrefs_gap_records(gap_facts)
     gap_section = AhrefsDiagnosticSection(
         id="ahrefs_gap_contract",
         title="Ahrefs: rekordy luk SEO",
-        status="ready" if gap_facts else "blocked",
+        status="ready" if gap_records else "blocked",
         summary=(
-            f"WILQ ma {len(gap_facts)} rekordów luk z Ahrefs. Brakujące dane: "
+            f"WILQ ma {_ahrefs_gap_record_count_label(len(gap_records))} z Ahrefs. Brakujące dane: "
             f"{_missing_gap_contracts_summary(missing_gap_contracts)}."
-            if gap_facts
+            if gap_records
             else (
                 "WILQ nie ma jeszcze rekordów luk konkurencji, treści "
                 "ani linków zwrotnych z Ahrefs."
@@ -1016,7 +1071,7 @@ def _ahrefs_sections(
         diagnosis=(
             "Rekordy luk można połączyć z GSC i spisem treści WordPress, ale tylko w zakresie "
             "konkretnych danych z dowodami."
-            if gap_facts
+            if gap_records
             else (
                 "To jest brak danych, nie brak promptu. DR/rank nie mówi, "
                 "gdzie konkurencja ma przewagę ani które linki/treści trzeba zbudować."
@@ -1025,7 +1080,7 @@ def _ahrefs_sections(
         next_step=(
             "Połącz rekordy luk z GSC i WordPress, "
             "potem przygotuj kolejkę sprawdzenia treści i linków."
-            if gap_facts
+            if gap_records
             else ("Dodaj odczyt danych Ahrefs dla stron konkurencji, luk treści i luk linków.")
         ),
         source_connectors=[AHREFS_CONNECTOR_ID],
@@ -1033,7 +1088,7 @@ def _ahrefs_sections(
         metric_facts=gap_facts[:12],
         metric_fact_labels=_metric_fact_labels_for_facts(gap_facts),
         blocked_claims=_blocked_claims_for_missing_contracts(missing_gap_contracts),
-        risk=ActionRisk.low if gap_facts else ActionRisk.medium,
+        risk=ActionRisk.low if gap_records else ActionRisk.medium,
     )
 
     safety_section = AhrefsDiagnosticSection(
@@ -1185,7 +1240,7 @@ def _ahrefs_decision_queue(
                 decision_type_label=_ahrefs_decision_type_label("review_gap_records"),
                 title="Przejrzyj rekordy luk Ahrefs",
                 summary=(
-                    f"WILQ ma {len(gap_records)} rekordów luk z Ahrefs. "
+                    f"WILQ ma {_ahrefs_gap_record_count_label(len(gap_records))} z Ahrefs. "
                     f"Brakujące dane: {_missing_gap_contracts_summary(missing_gap_contracts)}."
                 ),
                 rationale=(

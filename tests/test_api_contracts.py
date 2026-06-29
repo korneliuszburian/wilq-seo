@@ -7911,7 +7911,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert content_record["keyword"] == "bdo szkolenie"
     assert content_record["referenced_public_url"] == "https://www.ekologus.pl/bdo/"
     assert content_record["competitor_domain"] == "example.pl"
-    assert "2 luk treści" in content_record["summary"]
+    assert "2 luki treści" in content_record["summary"]
     assert content_record["metric_fact_labels"]["ahrefs_content_gap_count"] == "luki treści"
     assert "wzrost ruchu" in content_record["blocked_claims"]
 

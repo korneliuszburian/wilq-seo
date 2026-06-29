@@ -5298,7 +5298,7 @@ const contentDiagnostics = {
       status: "ready",
       title: "Ahrefs: zweryfikuj luki SEO przed planem treści",
       summary:
-        "WILQ ma 1 rekord luk Ahrefs: 1 luk treści, 0 luk słów organicznych, 0 luk najlepszych stron konkurencji i 0 luk linków zwrotnych. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu.",
+        "WILQ ma 1 rekord luk Ahrefs: 1 luka treści, 0 luk w słowach organicznych, 0 luk w najlepszych stronach konkurencji i 0 luk linków zwrotnych. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznej oceny i 0 rekordów poza zakresem. To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
       metric_tiles: {
         "rekordy Ahrefs": 1,
@@ -6038,7 +6038,7 @@ const ahrefsDiagnostics = {
     status: "ready",
     status_label: "gotowe",
     title: "Luki SEO z Ahrefs",
-    summary: "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
+    summary: "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: brak.",
     available_read_contracts: [
       "ahrefs_authority_summary",
       "ahrefs_gap_metric_facts",
@@ -6364,7 +6364,7 @@ const ahrefsDiagnostics = {
       decision_type_label: "sprawdzenie luk",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
-        "WILQ ma 2 rekordów luk z Ahrefs. Brakujące dane: brak.",
+        "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: brak.",
       rationale:
         "To są konkretne rekordy z dowodami Ahrefs, więc mogą wejść do sprawdzenia SEO i treści.",
       next_step:
