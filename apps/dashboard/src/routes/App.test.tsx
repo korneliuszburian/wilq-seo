@@ -1061,9 +1061,9 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     metric_tiles: {
-      marża: "brak",
-      "cel biznesowy": "brak",
-      "cel budżetu": "brak"
+      marża: "marża niepodana",
+      "cel biznesowy": "cel niepotwierdzony",
+      "cel budżetu": "cel budżetu niepotwierdzony"
     },
     next_step:
       "Uzupełnij nie-sekretne wartości w repo-local .env: WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS."

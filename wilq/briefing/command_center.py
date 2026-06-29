@@ -1125,8 +1125,8 @@ def _ads_business_context_item_from_facts(
         action_ids=action_ids,
         metric_tiles={
             "braki": 5,
-            "marża": "brak",
-            "cel biznesowy": "brak",
+            "marża": "marża niepodana",
+            "cel biznesowy": "cel niepotwierdzony",
         },
         blocked_claims=[
             "opłacalność",

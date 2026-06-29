@@ -6372,8 +6372,8 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["priority"] == 18
     assert "kontekstu biznesowego" in ads_business_item["title"]
     assert ads_business_item["metric_tiles"]["braki"] == 5
-    assert ads_business_item["metric_tiles"]["marża"] == "brak"
-    assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
+    assert ads_business_item["metric_tiles"]["marża"] == "marża niepodana"
+    assert ads_business_item["metric_tiles"]["cel biznesowy"] == "cel niepotwierdzony"
     assert "opłacalność" in ads_business_item["blocked_claims"]
     assert "zmarnowany budżet" in ads_business_item["blocked_claims"]
     assert ads_business_item["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
@@ -10971,10 +10971,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "advertising_channel_type": "SEARCH",
             "advertising_channel_type_label": "sieć wyszukiwania",
             "clicks": 9,
+            "clicks_label": "9",
             "impressions": 90,
+            "impressions_label": "90",
             "cost_micros": 12000000,
+            "cost_label": "12 jedn. konta",
             "conversions": 2.5,
+            "conversions_label": "2,5",
             "conversion_value": 450.75,
+            "conversion_value_label": "450,75",
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "evidence_summary_label": "1 dowód źródłowy",
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
@@ -11142,7 +11147,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert "skalowanie budżetu" in business_context_contract["blocked_claims"]
-    assert business_context_contract["metric_tiles"]["marża"] == "brak"
+    assert business_context_contract["metric_tiles"]["marża"] == "marża niepodana"
     business_context_section = next(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
     )

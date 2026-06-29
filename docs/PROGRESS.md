@@ -393,6 +393,9 @@ API status later contradicts this state.
   missing-data placeholders.
 - Knowledge operating map now explains complete missing-data detail labels as
   a full operator sentence instead of a bare missing-state fallback.
+- Ads business-context metric tiles now explain missing margin, business goal,
+  budget goal and strategy review states as concrete operator states instead of
+  bare missing placeholders.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,

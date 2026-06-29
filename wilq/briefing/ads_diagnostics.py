@@ -1486,9 +1486,11 @@ def _business_context_read_contract(
     )
     metric_tiles = _clean_metric_tiles(
         {
-            "marża": _format_ratio_percent(profit_margin) if profit_margin is not None else "brak",
-            "cel biznesowy": business_goal or "brak",
-            "cel budżetu": budget_goal or "brak",
+            "marża": _format_ratio_percent(profit_margin)
+            if profit_margin is not None
+            else "marża niepodana",
+            "cel biznesowy": business_goal or "cel niepotwierdzony",
+            "cel budżetu": budget_goal or "cel budżetu niepotwierdzony",
             "docelowy zwrot z reklam": target_roas,
             "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
             "źródło celu": "potwierdzone" if target_confirmation is not None else None,
@@ -6260,7 +6262,7 @@ def _format_ratio_percent(value: float | None) -> str | None:
 
 def _strategy_review_label(status: str) -> str:
     labels = {
-        "missing": "brak",
+        "missing": "ocena strategii nieprzeprowadzona",
         "approved_for_prepare": "zatwierdzone",
         "needs_changes": "wymaga poprawek",
         "rejected": "odrzucone",
