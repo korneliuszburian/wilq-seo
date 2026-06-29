@@ -3,7 +3,7 @@ type StatusBadgeProps = {
   label?: string | null;
 };
 
-const missingLabel = "brak etykiety z WILQ";
+const missingLabel = "WILQ nie podał etykiety statusu; sprawdź szczegóły przed decyzją";
 
 const palette: Record<string, string> = {
   configured: "border-signal/30 bg-signal/10 text-signal",

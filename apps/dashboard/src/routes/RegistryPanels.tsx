@@ -100,7 +100,11 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
 
 export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
   if (evidenceItems.length === 0) {
-    return <p className="text-sm text-slate-600">Brak zapisanych dowodów w WILQ.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma zapisanych dowodów w WILQ; dashboard nie powinien budować rekomendacji z tego widoku.
+      </p>
+    );
   }
 
   return (
@@ -125,7 +129,11 @@ export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
 
 export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
   if (runs.length === 0) {
-    return <p className="text-sm text-slate-600">Brak zapisanych odczytów źródeł danych.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma zapisanych odczytów źródeł danych; najpierw odśwież źródła w WILQ.
+      </p>
+    );
   }
 
   return (
@@ -160,7 +168,11 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
 
 export function ActionList({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
-    return <p className="text-sm text-slate-600">Brak akcji dla tej powierzchni.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma akcji dla tej powierzchni; WILQ nie powinien sugerować zapisu zmian.
+      </p>
+    );
   }
 
   return (
@@ -218,7 +230,11 @@ function formatMetricCount(metricSummary: Record<string, unknown>) {
 
 export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
   if (rules.length === 0) {
-    return <p className="text-sm text-slate-600">Brak reguł eksperckich dla tej powierzchni.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma reguł eksperckich dla tej powierzchni; decyzja zostaje przy dowodach i ręcznej ocenie.
+      </p>
+    );
   }
 
   return (

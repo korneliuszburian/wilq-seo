@@ -95,7 +95,11 @@ describe("KnowledgePanels", () => {
   it("empty playbook list uses plain Polish", () => {
     render(<PlaybookList playbooks={[]} />);
 
-    expect(screen.getByText("Brak skompilowanych zasad pracy.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Nie ma skompilowanych zasad pracy; WILQ nie powinien zamieniać ich w rekomendacje."
+      )
+    ).toBeInTheDocument();
     expect(screen.queryByText(/playbook/i)).not.toBeInTheDocument();
   });
 

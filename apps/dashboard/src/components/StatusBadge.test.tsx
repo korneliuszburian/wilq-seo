@@ -14,7 +14,9 @@ describe("StatusBadge", () => {
   it("does not expose raw status values when the label is missing", () => {
     render(<StatusBadge value="validated_prepare_only" />);
 
-    expect(screen.getByText("brak etykiety z WILQ")).toBeInTheDocument();
+    expect(
+      screen.getByText("WILQ nie podał etykiety statusu; sprawdź szczegóły przed decyzją")
+    ).toBeInTheDocument();
     expect(screen.queryByText("validated_prepare_only")).not.toBeInTheDocument();
   });
 });

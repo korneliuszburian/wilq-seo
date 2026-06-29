@@ -82,7 +82,9 @@ function ActionDetail({ action }: { action: ActionObject }) {
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Historia audytu" />
         {action.audit_events.length === 0 ? (
-          <p className="text-sm text-slate-600">Brak zapisanych zdarzeń audytu.</p>
+          <p className="text-sm text-slate-600">
+            Nie ma zapisanych zdarzeń audytu; nie traktuj akcji jako wykonanej.
+          </p>
         ) : (
           <div className="grid gap-3">
             {hiddenAuditEventCount > 0 ? (
@@ -189,7 +191,9 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Metryki z dowodów" />
         {opportunity.metrics.length === 0 ? (
-          <p className="text-sm text-slate-600">Brak realnych metryk z dowodami.</p>
+          <p className="text-sm text-slate-600">
+            Nie ma realnych metryk z dowodami; nie oceniaj wpływu tej szansy.
+          </p>
         ) : (
           <>
             <MetricTileSummary tiles={opportunity.metric_tiles} />

@@ -7249,7 +7249,10 @@ function mockActionPreview(url: string) {
             preview_items_total: 0,
             omitted_items: 0,
             blockers: ["payload_preview_missing", "action_validation_required"],
-            blocker_labels: ["brak pozycji do pokazania w podglądzie", "wymagane sprawdzenie w WILQ"],
+            blocker_labels: [
+              "WILQ nie podał pozycji podglądu; nie traktuj podglądu jako gotowego",
+              "wymagane sprawdzenie w WILQ"
+            ],
             audit_event: {
               id: `audit_${actionId}_preview_test`,
               action_id: actionId,

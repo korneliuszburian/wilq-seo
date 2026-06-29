@@ -124,6 +124,11 @@ API status later contradicts this state.
   summaries tell the marketer whether the item is safe to treat as a
   recommendation. Focused API/dashboard tests, marketer/context-pack language
   guards, dashboard typecheck/lint and `git diff --check` passed.
+- Shared dashboard fallbacks now defend themselves: missing status labels,
+  empty trace rows, empty registry lists, action audit history, opportunity
+  metrics and knowledge/playbook lists explain what remains unsafe instead of
+  serving a bare missing-state label. Focused dashboard tests, dashboard
+  typecheck/lint, marketer language guard and `git diff --check` passed.
 - Demand Gen metric rows now expose self-defending marketer labels from the
   typed API/schema contract. The dashboard no longer renders generic `brak`
   fallbacks or local Ads cost/GA4 percent formatters for Demand Gen metrics.

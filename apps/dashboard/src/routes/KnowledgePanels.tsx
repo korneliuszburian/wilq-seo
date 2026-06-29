@@ -63,7 +63,11 @@ export function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
   const [showAll, setShowAll] = useState(false);
 
   if (cards.length === 0) {
-    return <p className="text-sm text-slate-600">Brak skompilowanych kart wiedzy.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma skompilowanych kart wiedzy; WILQ nie powinien używać wiedzy bez źródeł i przeglądu.
+      </p>
+    );
   }
 
   const visibleCards = showAll ? cards : cards.slice(0, 4);
@@ -93,7 +97,11 @@ export function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) 
   const [showAll, setShowAll] = useState(false);
 
   if (playbooks.length === 0) {
-    return <p className="text-sm text-slate-600">Brak skompilowanych zasad pracy.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma skompilowanych zasad pracy; WILQ nie powinien zamieniać ich w rekomendacje.
+      </p>
+    );
   }
 
   const visiblePlaybooks = showAll ? playbooks : playbooks.slice(0, 4);

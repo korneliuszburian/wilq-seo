@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 export function TraceLine({
   label,
   values,
-  empty = "brak pozycji do pokazania"
+  empty = "WILQ nie podał pozycji; sprawdź źródło danych przed decyzją"
 }: {
   label: string;
   values: string[];
@@ -20,7 +20,7 @@ export function LinkedTraceLine({
   label,
   values,
   kind,
-  empty = "brak pozycji do pokazania"
+  empty = "WILQ nie podał pozycji; sprawdź źródło danych przed decyzją"
 }: {
   label: string;
   values: string[];
