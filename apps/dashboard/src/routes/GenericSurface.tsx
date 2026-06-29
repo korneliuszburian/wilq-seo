@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, FileJson, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
@@ -9,7 +9,12 @@ import {
   getKnowledgePlaybooks,
   getWorkflowRuns,
   getWorkflows,
-  type ConnectorStatus
+  type ConnectorStatus,
+  type KnowledgeCard,
+  type KnowledgeOperatingMapResponse,
+  type MarketingPlaybook,
+  type Workflow,
+  type WorkflowRun
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
@@ -23,189 +28,319 @@ import { ConnectorGrid } from "./RegistryPanels";
 import { WorkflowRunList } from "./WorkflowPanels";
 
 export function GenericSurface({ routeName }: { routeName: string }) {
-  const isKnowledgeRoute = routeName.startsWith("/knowledge");
-  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
-  const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
-  const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
-  const [showConnectorDetails, setShowConnectorDetails] = useState(false);
-  const isWorkflowRoute = routeName.startsWith("/workflows");
-  const isSettingsRoute = routeName.startsWith("/settings");
   const compactRoute = compactRouteConfig(routeName);
-  const shouldLoadConnectorStatus = isSettingsRoute;
+  const routeKind = genericRouteKind(routeName, compactRoute);
   const connectors = useQuery({
     queryKey: ["connectors"],
     queryFn: getConnectors,
-    enabled: shouldLoadConnectorStatus
+    enabled: routeKind === "settings"
   });
   const workflows = useQuery({
     queryKey: ["workflows"],
     queryFn: getWorkflows,
-    enabled: isWorkflowRoute
+    enabled: routeKind === "workflow"
   });
   const workflowRuns = useQuery({
     queryKey: ["workflow-runs"],
     queryFn: getWorkflowRuns,
-    enabled: isWorkflowRoute
+    enabled: routeKind === "workflow"
   });
   const knowledgeMap = useQuery({
     queryKey: ["knowledge-operating-map"],
     queryFn: getKnowledgeOperatingMap,
-    enabled: isKnowledgeRoute
+    enabled: routeKind === "knowledge"
   });
   const knowledgeCards = useQuery({
     queryKey: ["knowledge-cards"],
     queryFn: getKnowledgeCards,
-    enabled: isKnowledgeRoute
+    enabled: routeKind === "knowledge"
   });
   const playbooks = useQuery({
     queryKey: ["knowledge-playbooks"],
     queryFn: getKnowledgePlaybooks,
-    enabled: isKnowledgeRoute
+    enabled: routeKind === "knowledge"
   });
-  const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
-  const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
-  if (
-    connectors.isLoading ||
-    isWorkflowLoading
-  ) {
+  if (isGenericSurfaceLoading(routeKind, connectors, workflows, workflowRuns)) {
     return <LoadingBand />;
   }
-  if (
-    connectors.error ||
-    hasWorkflowError
-  ) {
+  if (hasGenericSurfaceError(routeKind, connectors, workflows, workflowRuns)) {
     return <ErrorState />;
   }
 
-  const title = isKnowledgeRoute
-    ? "Baza wiedzy WILQ"
-    : isSettingsRoute
-      ? "Ustawienia"
-      : compactRoute
-        ? compactRoute.title
-        : "Widok WILQ";
+  const header = genericSurfaceHeader(routeKind, compactRoute);
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">{title || "Centrum pracy"}</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {isKnowledgeRoute
-              ? "Wiedza używana tylko wtedy, gdy wpływa na decyzję, blokadę albo następny bezpieczny krok."
-              : isSettingsRoute
-                ? "Status dostępu do źródeł WILQ. Braki dostępu pokazujemy bez wartości sekretów."
-              : "Powierzchnia WILQ z dowodami, źródłami danych i stanem akcji."}
-          </p>
-        </div>
-        <FileJson aria-hidden="true" className="text-action" size={28} />
-      </div>
-      <div className="grid gap-6">
-        {isWorkflowRoute ? (
-          <>
-            <section>
-              <SectionHeading title="Procesy decyzyjne" />
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {(workflows.data ?? []).map((workflow) => (
-                  <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
-                    <h3 className="text-sm font-semibold">{workflow.label}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">{workflow.description}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-            <section>
-              <SectionHeading title="Ostatnie uruchomienia" />
-              <WorkflowRunList runs={workflowRuns.data ?? []} />
-            </section>
-          </>
-        ) : null}
-        {isKnowledgeRoute ? (
-          <>
-            <section>
-              <SectionHeading title="Co ta wiedza zmienia w decyzjach" />
-              {knowledgeMap.isLoading ? (
-                <LoadingBand />
-              ) : knowledgeMap.error ? (
-                <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />
-              ) : !knowledgeMap.data ? (
-                <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />
-              ) : (
-                <KnowledgeDecisionImpactPanel map={knowledgeMap.data} />
-              )}
-            </section>
-            <section>
-              <DetailToggle
-                expanded={showKnowledgeMap}
-                label="Pokaż pełną mapę wiedzy"
-                onClick={() => setShowKnowledgeMap((value) => !value)}
-              />
-              {showKnowledgeMap ? (
-                knowledgeMap.isLoading ? (
-                  <LoadingBand />
-                ) : knowledgeMap.error ? (
-                  <InlineErrorState message="Nie udało się pobrać pełnej mapy wiedzy." />
-                ) : !knowledgeMap.data ? (
-                  <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />
-                ) : (
-                  <KnowledgeOperatingMapPanel map={knowledgeMap.data} />
-                )
-              ) : null}
-            </section>
-            <section>
-              <DetailToggle
-                expanded={showKnowledgeCards}
-                label="Pokaż źródła wiedzy"
-                onClick={() => setShowKnowledgeCards((value) => !value)}
-              />
-              {showKnowledgeCards ? (
-                knowledgeCards.isLoading ? (
-                  <LoadingBand />
-                ) : knowledgeCards.error ? (
-                  <InlineErrorState message="Nie udało się pobrać kart wiedzy." />
-                ) : (
-                  <KnowledgeCardList cards={knowledgeCards.data ?? []} />
-                )
-              ) : null}
-            </section>
-            <section>
-              <DetailToggle
-                expanded={showKnowledgePlaybooks}
-                label="Pokaż zasady pracy"
-                onClick={() => setShowKnowledgePlaybooks((value) => !value)}
-              />
-              {showKnowledgePlaybooks ? (
-                playbooks.isLoading ? (
-                  <LoadingBand />
-                ) : playbooks.error ? (
-                  <InlineErrorState message="Nie udało się pobrać playbooków wiedzy." />
-                ) : (
-                  <PlaybookList playbooks={playbooks.data ?? []} />
-                )
-              ) : null}
-            </section>
-          </>
-        ) : null}
-        {isSettingsRoute ? (
-          <section>
-            <SectionHeading title="Dostęp do źródeł danych" />
-            <ConnectorAccessSummary connectors={connectors.data ?? []} />
-            <div className="mt-4">
-              <DetailToggle
-                expanded={showConnectorDetails}
-                label="Pokaż stan dostępu"
-                onClick={() => setShowConnectorDetails((value) => !value)}
-              />
-              {showConnectorDetails ? (
-                <div className="mt-3">
-                  <ConnectorGrid connectors={connectors.data ?? []} />
-                </div>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
-        {compactRoute ? <CompactRoutePanel config={compactRoute} /> : null}
-      </div>
+      <SurfaceHeader title={header.title} description={header.description} />
+      <GenericSurfaceSections
+        routeKind={routeKind}
+        compactRoute={compactRoute}
+        connectors={connectors.data ?? []}
+        workflows={workflows.data ?? []}
+        workflowRuns={workflowRuns.data ?? []}
+        knowledgeMap={knowledgeMap}
+        knowledgeCards={knowledgeCards}
+        playbooks={playbooks}
+      />
     </main>
+  );
+}
+
+type GenericRouteKind = "knowledge" | "workflow" | "settings" | "compact" | "generic";
+
+function genericRouteKind(
+  routeName: string,
+  compactRoute: CompactRouteConfig | undefined
+): GenericRouteKind {
+  if (routeName.startsWith("/knowledge")) return "knowledge";
+  if (routeName.startsWith("/workflows")) return "workflow";
+  if (routeName.startsWith("/settings")) return "settings";
+  if (compactRoute) return "compact";
+  return "generic";
+}
+
+function isGenericSurfaceLoading(
+  routeKind: GenericRouteKind,
+  connectors: UseQueryResult<ConnectorStatus[]>,
+  workflows: UseQueryResult<Workflow[]>,
+  workflowRuns: UseQueryResult<WorkflowRun[]>
+) {
+  if (routeKind === "settings") return connectors.isLoading;
+  if (routeKind === "workflow") return workflows.isLoading || workflowRuns.isLoading;
+  return false;
+}
+
+function hasGenericSurfaceError(
+  routeKind: GenericRouteKind,
+  connectors: UseQueryResult<ConnectorStatus[]>,
+  workflows: UseQueryResult<Workflow[]>,
+  workflowRuns: UseQueryResult<WorkflowRun[]>
+) {
+  if (routeKind === "settings") return Boolean(connectors.error);
+  if (routeKind === "workflow") return Boolean(workflows.error || workflowRuns.error);
+  return false;
+}
+
+function genericSurfaceHeader(
+  routeKind: GenericRouteKind,
+  compactRoute: CompactRouteConfig | undefined
+) {
+  if (routeKind === "knowledge") {
+    return {
+      title: "Baza wiedzy WILQ",
+      description:
+        "Wiedza używana tylko wtedy, gdy wpływa na decyzję, blokadę albo następny bezpieczny krok."
+    };
+  }
+  if (routeKind === "settings") {
+    return {
+      title: "Ustawienia",
+      description: "Status dostępu do źródeł WILQ. Braki dostępu pokazujemy bez wartości sekretów."
+    };
+  }
+  return {
+    title: compactRoute?.title ?? "Widok WILQ",
+    description: "Powierzchnia WILQ z dowodami, źródłami danych i stanem akcji."
+  };
+}
+
+function GenericSurfaceSections({
+  routeKind,
+  compactRoute,
+  connectors,
+  workflows,
+  workflowRuns,
+  knowledgeMap,
+  knowledgeCards,
+  playbooks
+}: {
+  routeKind: GenericRouteKind;
+  compactRoute: CompactRouteConfig | undefined;
+  connectors: ConnectorStatus[];
+  workflows: Workflow[];
+  workflowRuns: WorkflowRun[];
+  knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
+  knowledgeCards: UseQueryResult<KnowledgeCard[]>;
+  playbooks: UseQueryResult<MarketingPlaybook[]>;
+}) {
+  return (
+    <div className="grid gap-6">
+      {routeKind === "workflow" ? (
+        <WorkflowSurfaceSections workflows={workflows} workflowRuns={workflowRuns} />
+      ) : null}
+      {routeKind === "knowledge" ? (
+        <KnowledgeSurfaceSections
+          knowledgeMap={knowledgeMap}
+          knowledgeCards={knowledgeCards}
+          playbooks={playbooks}
+        />
+      ) : null}
+      {routeKind === "settings" ? <SettingsSurfaceSections connectors={connectors} /> : null}
+      {compactRoute ? <CompactRoutePanel config={compactRoute} /> : null}
+    </div>
+  );
+}
+
+function SurfaceHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
+        <p className="mt-1 text-sm text-slate-600">{description}</p>
+      </div>
+      <FileJson aria-hidden="true" className="text-action" size={28} />
+    </div>
+  );
+}
+
+function WorkflowSurfaceSections({
+  workflows,
+  workflowRuns
+}: {
+  workflows: Workflow[];
+  workflowRuns: WorkflowRun[];
+}) {
+  return (
+    <>
+      <section>
+        <SectionHeading title="Procesy decyzyjne" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {workflows.map((workflow) => (
+            <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
+              <h3 className="text-sm font-semibold">{workflow.label}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{workflow.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section>
+        <SectionHeading title="Ostatnie uruchomienia" />
+        <WorkflowRunList runs={workflowRuns} />
+      </section>
+    </>
+  );
+}
+
+function KnowledgeSurfaceSections({
+  knowledgeMap,
+  knowledgeCards,
+  playbooks
+}: {
+  knowledgeMap: UseQueryResult<KnowledgeOperatingMapResponse>;
+  knowledgeCards: UseQueryResult<KnowledgeCard[]>;
+  playbooks: UseQueryResult<MarketingPlaybook[]>;
+}) {
+  const [showKnowledgeMap, setShowKnowledgeMap] = useState(false);
+  const [showKnowledgeCards, setShowKnowledgeCards] = useState(false);
+  const [showKnowledgePlaybooks, setShowKnowledgePlaybooks] = useState(false);
+
+  return (
+    <>
+      <section>
+        <SectionHeading title="Co ta wiedza zmienia w decyzjach" />
+        <KnowledgeMapPreview mapQuery={knowledgeMap} />
+      </section>
+      <section>
+        <DetailToggle
+          expanded={showKnowledgeMap}
+          label="Pokaż pełną mapę wiedzy"
+          onClick={() => setShowKnowledgeMap((value) => !value)}
+        />
+        {showKnowledgeMap ? <KnowledgeMapDetails mapQuery={knowledgeMap} /> : null}
+      </section>
+      <section>
+        <DetailToggle
+          expanded={showKnowledgeCards}
+          label="Pokaż źródła wiedzy"
+          onClick={() => setShowKnowledgeCards((value) => !value)}
+        />
+        {showKnowledgeCards ? <KnowledgeCardsDetails cardsQuery={knowledgeCards} /> : null}
+      </section>
+      <section>
+        <DetailToggle
+          expanded={showKnowledgePlaybooks}
+          label="Pokaż zasady pracy"
+          onClick={() => setShowKnowledgePlaybooks((value) => !value)}
+        />
+        {showKnowledgePlaybooks ? <KnowledgePlaybooksDetails playbooksQuery={playbooks} /> : null}
+      </section>
+    </>
+  );
+}
+
+function KnowledgeMapPreview({
+  mapQuery
+}: {
+  mapQuery: UseQueryResult<KnowledgeOperatingMapResponse>;
+}) {
+  if (mapQuery.isLoading) return <LoadingBand />;
+  if (mapQuery.error) {
+    return <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />;
+  }
+  if (!mapQuery.data) {
+    return <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />;
+  }
+  return <KnowledgeDecisionImpactPanel map={mapQuery.data} />;
+}
+
+function KnowledgeMapDetails({
+  mapQuery
+}: {
+  mapQuery: UseQueryResult<KnowledgeOperatingMapResponse>;
+}) {
+  if (mapQuery.isLoading) return <LoadingBand />;
+  if (mapQuery.error) {
+    return <InlineErrorState message="Nie udało się pobrać pełnej mapy wiedzy." />;
+  }
+  if (!mapQuery.data) {
+    return <InlineErrorState message="Mapa wiedzy nie zwróciła danych do pokazania." />;
+  }
+  return <KnowledgeOperatingMapPanel map={mapQuery.data} />;
+}
+
+function KnowledgeCardsDetails({
+  cardsQuery
+}: {
+  cardsQuery: UseQueryResult<KnowledgeCard[]>;
+}) {
+  if (cardsQuery.isLoading) return <LoadingBand />;
+  if (cardsQuery.error) {
+    return <InlineErrorState message="Nie udało się pobrać kart wiedzy." />;
+  }
+  return <KnowledgeCardList cards={cardsQuery.data ?? []} />;
+}
+
+function KnowledgePlaybooksDetails({
+  playbooksQuery
+}: {
+  playbooksQuery: UseQueryResult<MarketingPlaybook[]>;
+}) {
+  if (playbooksQuery.isLoading) return <LoadingBand />;
+  if (playbooksQuery.error) {
+    return <InlineErrorState message="Nie udało się pobrać playbooków wiedzy." />;
+  }
+  return <PlaybookList playbooks={playbooksQuery.data ?? []} />;
+}
+
+function SettingsSurfaceSections({ connectors }: { connectors: ConnectorStatus[] }) {
+  const [showConnectorDetails, setShowConnectorDetails] = useState(false);
+
+  return (
+    <section>
+      <SectionHeading title="Dostęp do źródeł danych" />
+      <ConnectorAccessSummary connectors={connectors} />
+      <div className="mt-4">
+        <DetailToggle
+          expanded={showConnectorDetails}
+          label="Pokaż stan dostępu"
+          onClick={() => setShowConnectorDetails((value) => !value)}
+        />
+        {showConnectorDetails ? (
+          <div className="mt-3">
+            <ConnectorGrid connectors={connectors} />
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

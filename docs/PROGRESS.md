@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- `GenericSurface.tsx` was split into focused header, workflow, knowledge,
+  settings and compact-route sections without changing operator copy. Fallow
+  no longer lists it as a refactoring target; remaining high-confidence targets
+  are `OperatingRouteSurfaces.tsx` and the monolithic `App.test.tsx`.
+  Typecheck, focused dashboard tests, Fallow audit/health, language guards and
+  `/security` browser proof passed.
 - Dashboard lint tooling now uses current compatible releases:
   `eslint@10.6.0`, `@eslint/js@10.0.1`,
   `typescript-eslint@8.62.0` and

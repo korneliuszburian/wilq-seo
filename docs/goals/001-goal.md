@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- `GenericSurface.tsx` has been split into focused renderer sections, removing
+  it from Fallow's refactoring-target list without changing visible operator
+  copy. The remaining high-confidence JS/TS cleanup targets are
+  `OperatingRouteSurfaces.tsx` and the monolithic `App.test.tsx`.
 - Dashboard lint tooling is on current compatible releases:
   `eslint@10.6.0`, `@eslint/js@10.0.1`,
   `typescript-eslint@8.62.0` and
