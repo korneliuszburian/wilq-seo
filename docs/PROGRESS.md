@@ -110,6 +110,10 @@ API status later contradicts this state.
 - Merchant diagnostics active API contract now uses `change_preview` instead
   of `payload_preview`; `/api/merchant/diagnostics`, the Merchant context pack
   compaction and the Merchant skill smoke no longer expose `payload` wording.
+- Google Ads connector versioning now documents why the REST endpoint stays on
+  the major `v24` path while v24.2 capabilities enter WILQ as explicit read or
+  review contracts. A focused contract test prevents accidental `v24.2`/`v24_2`
+  endpoint churn.
 
 ## Current Blockers And Deferred Work
 

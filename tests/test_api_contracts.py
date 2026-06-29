@@ -110,6 +110,7 @@ from wilq.briefing.merchant_labels import (
 from wilq.briefing.tactical_queue import _merchant_dimension_label, _merchant_feed_items
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import (
+    GOOGLE_ADS_API_VERSION,
     _fetch_optional_shopping_product_performance,
     refresh_google_ads_campaign_summary,
 )
@@ -8491,6 +8492,12 @@ def test_connector_refresh_run_persists_redacted_evidence(
     assert context_response.status_code == 200
     context_runs = {item["id"] for item in context_response.json()["connector_refresh_runs"]}
     assert run["id"] in context_runs
+
+
+def test_google_ads_connector_uses_major_endpoint_for_minor_releases() -> None:
+    assert GOOGLE_ADS_API_VERSION == "v24"
+    assert "." not in GOOGLE_ADS_API_VERSION
+    assert "_" not in GOOGLE_ADS_API_VERSION
 
 
 def test_google_ads_vendor_read_uses_oauth_and_search_stream(

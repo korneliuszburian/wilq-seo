@@ -12,6 +12,9 @@ from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
+# Google Ads minor releases such as v24.2 automatically update the existing
+# major REST endpoint. Keep the connector on the major endpoint and add new
+# fields/features through explicit WILQ read contracts.
 GOOGLE_ADS_API_VERSION = "v24"
 OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
 GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
