@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/fallow/config-schema.json",
+  "workspaces": {
+    "patterns": ["apps/dashboard", "packages/shared-schemas"]
+  },
+  "ignorePatterns": [
+    ".git/**",
+    ".local-lab/**",
+    ".mypy_cache/**",
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    ".venv/**",
+    "apps/__pycache__/**",
+    "apps/dashboard/dist/**",
+    "apps/dashboard/node_modules/**",
+    "node_modules/**"
+  ],
+  "audit": {
+    "gate": "new-only"
+  }
+}

@@ -80,6 +80,16 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Fallow JS/TS scanning is wired with `.fallowrc.json` and root package
+  scripts. Current full scan exposes inherited dashboard debt rather than a
+  green repo: unused exports/dependencies, high route duplication and
+  complexity hotspots in `GenericSurface.tsx`, `OperatingRouteSurfaces.tsx` and
+  the monolithic `App.test.tsx`. Use `fallow:audit` as the changed-file gate
+  while cleaning the full backlog in focused slices.
+- Merchant review cards now show labelled Polish decision type, priority,
+  issue/context summaries and `audyt zmiany` wording instead of slash-combined
+  fragments or the stale `audit zmiany` copy. Focused API/dashboard tests, both
+  language guards and browser proof on expanded `/merchant` guard the cleanup.
 - Tactical queue API copy now emits labelled Polish metadata and titles instead
   of slash-combined group, GA4 and Merchant fragments. Focused API/dashboard
   tests, both language guards, live tactical-queue proof and `/command-center`

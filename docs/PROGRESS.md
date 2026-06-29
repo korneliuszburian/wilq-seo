@@ -30,6 +30,21 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Fallow is now wired as the repo's JS/TS structure scanner through
+  `.fallowrc.json` and root package scripts. Full scan currently reports
+  existing dashboard debt: 7 unused exports, 1 unused dependency, 2 unlisted
+  dependencies, 83 duplicate clone groups, 22.8% duplicated lines and 18
+  functions over complexity thresholds. The highest-priority cleanup targets
+  are `GenericSurface.tsx`, `OperatingRouteSurfaces.tsx`, the monolithic
+  `App.test.tsx`, and repeated dashboard route panels. `fallow:audit` is the
+  practical changed-file gate for now; full `fallow:summary` is intentionally
+  red until the inherited debt is cleaned.
+- Merchant review cards no longer expose slash-combined decision type,
+  priority, issue/context summaries or the stale `audit zmiany` wording. The
+  producing API now emits labelled Polish decision summaries, dashboard cards
+  render separate labelled chips, focused API/dashboard tests and both language
+  guards passed, and `/merchant` browser proof after expanding the full review
+  returned zero guarded stale fragments.
 - Tactical queue source copy no longer joins compact group meta, GA4 titles or
   Merchant titles with slash shorthand. The API now emits labelled Polish
   wording such as `Obszar`, `Zadanie`, `Priorytet`, `źródło ruchu` and
