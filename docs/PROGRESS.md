@@ -137,6 +137,10 @@ API status later contradicts this state.
   negative phrasing such as `brak brakujących danych` or `Brakujące dane:
   brak`; focused API/dashboard tests, language guards and Ahrefs browser/API
   proof passed.
+- GA4 conversion-readiness now carries an API-owned missing-data summary label,
+  so `/ga4` shows `Brakujące dane: dane kompletne` when conversion/key-event
+  data is present instead of relying on a route fallback. Focused GA4 API,
+  dashboard, shared-schema, language-guard and browser proof passed.
 - `AGENTS.md` now codifies the marketer-content rule: first-screen summaries,
   decision cards and empty states must be understandable without developer
   translation and must state the decision, reason, proof, blocker or next safe

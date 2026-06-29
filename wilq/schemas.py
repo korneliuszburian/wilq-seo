@@ -4189,6 +4189,7 @@ class Ga4ConversionReadinessContract(BaseModel):
     available_read_contract_labels: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
+    missing_read_contract_summary_label: str = ""
     conversion_like_metric_count: int = 0
     dimensioned_behavior_metric_count: int = 0
     landing_group_count: int = 0
@@ -4201,6 +4202,14 @@ class Ga4ConversionReadinessContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
     risk: ActionRisk = ActionRisk.medium
+
+    @model_validator(mode="after")
+    def hydrate_operator_labels(self) -> "Ga4ConversionReadinessContract":
+        if not self.missing_read_contract_summary_label:
+            self.missing_read_contract_summary_label = missing_contract_count_label(
+                self.missing_read_contracts
+            )
+        return self
 
 
 class Ga4FreshnessAssessment(BaseModel):

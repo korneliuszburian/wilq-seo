@@ -5521,6 +5521,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert readiness_contract["missing_read_contract_labels"] == [
         "powiązanie konwersji i zdarzeń kluczowych"
     ]
+    assert readiness_contract["missing_read_contract_summary_label"] == (
+        "1 brakujący zakres danych"
+    )
     assert "powiązanie konwersji" in readiness_contract["next_step"]
     assert "mapowanie konwersji" not in json.dumps(payload, ensure_ascii=False)
     assert {
@@ -5662,6 +5665,11 @@ def test_ga4_operator_summary_uses_conversion_ready_copy(
 
     assert payload.conversion_readiness_contract.status == "ready"
     assert payload.conversion_readiness_contract.conversion_like_metric_count == 2
+    assert payload.conversion_readiness_contract.missing_read_contracts == []
+    assert (
+        payload.conversion_readiness_contract.missing_read_contract_summary_label
+        == "dane kompletne"
+    )
     assert "Brak metryk konwersji" not in payload.operator_summary.summary
     assert "metryki konwersji" in payload.operator_summary.summary
     assert "zwrot z reklam" in payload.operator_summary.blocked_claims

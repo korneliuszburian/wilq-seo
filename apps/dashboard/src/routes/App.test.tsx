@@ -5579,6 +5579,7 @@ const ga4Diagnostics = {
     available_read_contract_labels: [],
     missing_read_contracts: ["conversion_or_key_event_mapping"],
     missing_read_contract_labels: ["powiązanie konwersji i zdarzeń kluczowych"],
+    missing_read_contract_summary_label: "1 brakujący zakres danych",
     conversion_like_metric_count: 0,
     dimensioned_behavior_metric_count: 1,
     landing_group_count: 1,
@@ -8250,6 +8251,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Konwersje i zdarzenia kluczowe/)).toBeInTheDocument();
     expect(screen.getByText(/blokuje wnioski o konwersjach/)).toBeInTheDocument();
     expect(screen.getByText(/powiązanie konwersji i zdarzeń kluczowych/)).toBeInTheDocument();
+    expect(screen.queryByText(/Brakujące dane: brak/)).not.toBeInTheDocument();
     expect(screen.getByText("Sprawdź stronę wejścia: /oferta/")).toBeInTheDocument();
     expect(screen.queryByText(/mapowanie konwersji/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Sprawdź mapowanie strony wejścia/)).not.toBeInTheDocument();
@@ -8314,7 +8316,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("action.preview_cards");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("data.evidence_summary_label");
+    expect(routeSource).toContain("conversionReadiness.missing_read_contract_summary_label");
     expect(routeSource).toContain("brak etykiety akcji z WILQ");
+    expect(routeSource).not.toContain("values={conversionReadiness.missing_read_contract_labels}");
     expect(routeSource).not.toContain("liczba akcji do sprawdzenia");
     expect(routeSource).not.toContain("action.payload.payload_preview");
     expect(routeSource).not.toContain("function formatGa4EvidenceCount");

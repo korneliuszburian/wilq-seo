@@ -2451,6 +2451,7 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   available_read_contract_labels: z.array(z.string()).optional().default([]),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).optional().default([]),
+  missing_read_contract_summary_label: z.string().optional().default(""),
   conversion_like_metric_count: z.number(),
   dimensioned_behavior_metric_count: z.number(),
   landing_group_count: z.number(),

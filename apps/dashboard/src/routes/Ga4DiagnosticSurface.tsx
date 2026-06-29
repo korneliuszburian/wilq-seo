@@ -315,10 +315,14 @@ function Ga4OperatorSummary({
     .filter(
       (decision): decision is Ga4DecisionItem =>
         decision !== undefined && decision.decision_type !== "fix_measurement"
-    );
+  );
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
   const actionIds = summary.action_ids;
+  const conversionMissingDataLabels =
+    conversionReadiness.missing_read_contract_labels.length > 0
+      ? conversionReadiness.missing_read_contract_labels
+      : [conversionReadiness.missing_read_contract_summary_label || "dane kompletne"];
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -383,8 +387,8 @@ function Ga4OperatorSummary({
             />
             <TraceLine
               label="Brakujące dane"
-              values={conversionReadiness.missing_read_contract_labels}
-              empty="brak"
+              values={conversionMissingDataLabels}
+              empty="dane kompletne"
             />
             <TraceLine
               label="Dowody w WILQ"
