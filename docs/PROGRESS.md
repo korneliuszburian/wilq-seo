@@ -96,6 +96,10 @@ Date: 2026-06-29
   prop. The drawer remains visible as `dane techniczne akcji`, and
   `ActionObjectPanels.test.tsx` guards against reintroducing the old
   payload-preview component naming.
+- Action Detail preview-card renderer is now named around change preview, not
+  payload preview. `ActionDetailRoute.test.tsx` guards against restoring the
+  old `ActionPayloadPreviewSummary` function name while the normal panel keeps
+  rendering `ActionObject.preview_cards`.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

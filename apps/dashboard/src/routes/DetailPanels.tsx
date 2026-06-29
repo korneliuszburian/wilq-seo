@@ -69,7 +69,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd zmian" />
-        <ActionPayloadPreviewSummary action={action} />
+        <ActionChangePreviewSummary action={action} />
         <TechnicalDetailsPanel
           openLabel="Pokaż dane techniczne akcji"
           closeLabel="Ukryj dane techniczne akcji"
@@ -105,7 +105,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
   );
 }
 
-function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
+function ActionChangePreviewSummary({ action }: { action: ActionObject }) {
   if (action.preview_cards.length > 0) {
     return (
       <div className="mb-4 grid gap-3">
