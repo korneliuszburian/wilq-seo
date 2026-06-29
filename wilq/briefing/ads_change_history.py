@@ -175,7 +175,7 @@ def _change_history_row_sort_key(row: AdsChangeHistoryRow) -> tuple[str, str]:
 
 def _change_resource_type_label(value: object | None) -> str:
     if value is None or str(value) == "":
-        return "typ zasobu: brak"
+        return "typ zasobu zmiany niepotwierdzony"
     labels = {
         "CAMPAIGN": "kampania",
         "CAMPAIGN_BUDGET": "budżet kampanii",
@@ -194,7 +194,7 @@ def _change_resource_type_label(value: object | None) -> str:
 
 def _resource_change_operation_label(value: object | None) -> str:
     if value is None or str(value) == "":
-        return "operacja: brak"
+        return "operacja zmiany niepotwierdzona"
     labels = {
         "CREATE": "utworzenie",
         "UPDATE": "zmiana",

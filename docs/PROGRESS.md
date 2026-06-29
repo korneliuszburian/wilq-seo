@@ -227,6 +227,11 @@ API status later contradicts this state.
   keyword status explain that the state is unconfirmed. Focused pytest, App route
   test, ruff import/name checks, marketer language guard and browser proof for
   `/ads-doctor` passed.
+- Ads change-history resource, operation and change-source fallbacks now explain
+  unconfirmed state from API/domain labels instead of context-free missing
+  placeholders. Focused Ads API tests, ruff import/name checks, marketer and
+  context-pack language guards, live Ads diagnostics proof and `git diff --check`
+  passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

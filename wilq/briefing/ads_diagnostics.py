@@ -7119,7 +7119,7 @@ def _ads_recommendation_type_label(recommendation_type: object) -> str:
 
 def _ads_change_resource_type_label(value: object | None) -> str:
     if value is None or str(value) == "":
-        return "typ zasobu: brak"
+        return "typ zasobu zmiany niepotwierdzony"
     labels = {
         "CAMPAIGN": "kampania",
         "CAMPAIGN_BUDGET": "budżet kampanii",
@@ -7138,7 +7138,7 @@ def _ads_change_resource_type_label(value: object | None) -> str:
 
 def _ads_resource_change_operation_label(value: object | None) -> str:
     if value is None or str(value) == "":
-        return "operacja: brak"
+        return "operacja zmiany niepotwierdzona"
     labels = {
         "CREATE": "utworzenie",
         "UPDATE": "zmiana",
@@ -7152,7 +7152,7 @@ def _ads_resource_change_operation_label(value: object | None) -> str:
 
 def _ads_client_type_label(value: object | None) -> str:
     if value is None or str(value) == "":
-        return "źródło zmiany: brak"
+        return "źródło zmiany niepotwierdzone"
     labels = {
         "GOOGLE_ADS_WEB_CLIENT": "panel Google Ads",
         "GOOGLE_ADS_API": "Google Ads API",

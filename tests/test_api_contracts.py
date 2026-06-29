@@ -1866,6 +1866,9 @@ def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
     assert _ads_campaign_status_label(None) == "status kampanii niepotwierdzony"
     assert _ads_channel_type_label(None) == "typ kampanii niepotwierdzony"
     assert _ads_keyword_criterion_status_label(None) == "status słowa niepotwierdzony"
+    assert _ads_change_resource_type_label(None) == "typ zasobu zmiany niepotwierdzony"
+    assert _ads_resource_change_operation_label(None) == "operacja zmiany niepotwierdzona"
+    assert _ads_client_type_label(None) == "źródło zmiany niepotwierdzone"
 
 
 def test_ads_entity_display_labels_do_not_expose_raw_ids() -> None:
@@ -1977,6 +1980,8 @@ def test_ads_helper_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
         "custom conversion",
     ):
         assert forbidden not in joined
+    assert _change_resource_type_label(None) == "typ zasobu zmiany niepotwierdzony"
+    assert _resource_change_operation_label(None) == "operacja zmiany niepotwierdzona"
 
 
 def test_action_review_records_human_outcome_without_apply(
