@@ -47,9 +47,9 @@ Date: 2026-06-29
   high-confidence JS/TS cleanup target is the monolithic `App.test.tsx`.
   Dashboard typecheck, focused route tests, lint, Fallow audit/health,
   marketer/context-pack language guards and `/opportunities` browser proof
-  passed. Live `/workflows` still stays on the loading band in agent-browser
-  even though `/api/workflows` and `/api/workflow-runs` respond; keep that as a
-  separate live UI investigation.
+  passed. `/workflows` now renders the main process decision surface while
+  process-run history loads as a section-level detail, so the marketer no
+  longer waits on secondary process history before seeing the first screen.
 - `GenericSurface.tsx` was split into focused header, workflow, knowledge,
   settings and compact-route sections without changing operator copy. Fallow
   no longer lists it as a refactoring target; the remaining high-confidence

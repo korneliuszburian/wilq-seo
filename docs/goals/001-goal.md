@@ -91,9 +91,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   action, workflow, outcome and expandable-detail sections, removing it from
   Fallow's refactoring-target list without changing visible operator copy. The
   remaining high-confidence JS/TS cleanup target is the monolithic
-  `App.test.tsx`. Live `/workflows` still needs a separate UI investigation
-  because agent-browser remains on the loading band even though the workflows
-  API endpoints respond.
+  `App.test.tsx`. Live `/workflows` now renders the main process decision
+  surface before secondary process-run history is required.
 - `GenericSurface.tsx` has been split into focused renderer sections, removing
   it from Fallow's refactoring-target list without changing visible operator
   copy. The remaining high-confidence JS/TS cleanup target is the monolithic

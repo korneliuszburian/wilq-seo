@@ -304,10 +304,10 @@ export function WorkflowsSurface() {
     enabled: showRelatedActions
   });
 
-  if (workflows.isLoading || workflowRuns.isLoading || (showRelatedActions && actions.isLoading)) {
+  if (workflows.isLoading) {
     return <LoadingBand />;
   }
-  if (workflows.error || workflowRuns.error || (showRelatedActions && actions.error)) {
+  if (workflows.error) {
     return <ErrorState />;
   }
 
@@ -345,6 +345,8 @@ export function WorkflowsSurface() {
         <WorkflowRunsSection
           runs={runs}
           workflowLabelsById={workflowLabelsById}
+          isLoading={workflowRuns.isLoading}
+          error={workflowRuns.error}
           expanded={showWorkflowRuns}
           onToggle={() => setShowWorkflowRuns((value) => !value)}
         />
@@ -419,11 +421,15 @@ function MutedExpandableText({ children }: { children: ReactNode }) {
 function WorkflowRunsSection({
   runs,
   workflowLabelsById,
+  isLoading,
+  error,
   expanded,
   onToggle
 }: {
   runs: WorkflowRun[];
   workflowLabelsById: Map<string, string>;
+  isLoading: boolean;
+  error: unknown;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -431,11 +437,17 @@ function WorkflowRunsSection({
     <section>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SectionHeading title="Ostatnie uruchomienia" />
-        <ToggleButton onClick={onToggle}>
-          {expanded ? "Ukryj uruchomienia" : `Pokaż uruchomienia (${runs.length})`}
-        </ToggleButton>
+        {!isLoading && !error ? (
+          <ToggleButton onClick={onToggle}>
+            {expanded ? "Ukryj uruchomienia" : `Pokaż uruchomienia (${runs.length})`}
+          </ToggleButton>
+        ) : null}
       </div>
-      {expanded ? (
+      {isLoading ? (
+        <LoadingBand />
+      ) : error ? (
+        <InlineErrorState message="Nie udało się pobrać historii uruchomień." />
+      ) : expanded ? (
         <WorkflowRunList runs={runs} workflowLabelsById={workflowLabelsById} />
       ) : (
         <MutedExpandableText>
