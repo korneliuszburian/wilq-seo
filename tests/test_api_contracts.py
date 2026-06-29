@@ -18680,7 +18680,14 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert "Kolejność oceny kampanii" in campaign_candidate["review_reason"]
     assert campaign_candidate["review_reason"] == full_campaign_candidate["review_reason"]
     assert campaign_candidate["human_review_gates"] == full_campaign_candidate["human_review_gates"]
-    assert campaign_candidate["target_context"] == full_campaign_candidate["target_context"]
+    assert campaign_candidate["target_context"]["target_status"] == (
+        full_campaign_candidate["target_context"]["target_status"]
+    )
+    assert campaign_candidate["target_context"]["target_status_label"] == (
+        full_campaign_candidate["target_context"]["target_status_label"]
+    )
+    assert "target_cpa_micros" not in campaign_candidate["target_context"]
+    assert "cost_per_conversion_micros" not in campaign_candidate["target_context"]
     assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
     assert campaign_candidate["apply_status_label"] == "zablokowane do sprawdzenia"
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8

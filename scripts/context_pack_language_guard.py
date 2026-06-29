@@ -181,7 +181,7 @@ def _context_pack_structure_errors(payload: Mapping[str, Any]) -> list[tuple[str
         if isinstance(action_plan, Mapping):
             action_plan_path = f"$.active_action_objects[{index}].action_plan"
             for path, key in _walk_mapping_keys(action_plan, action_plan_path):
-                if key in FORBIDDEN_ACTION_PLAN_KEYS:
+                if key in FORBIDDEN_ACTION_PLAN_KEYS or key.endswith("_micros"):
                     errors.append(
                         (
                             path,
