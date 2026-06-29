@@ -5258,6 +5258,13 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     )
     assert "GSC" in ahrefs_audit_item["next_step"]
     assert "WordPress" in ahrefs_audit_item["next_step"]
+    assert "Ahrefs wskazuje: luka treści dla tematu audyt środowiskowy." in (
+        ahrefs_audit_item["diagnosis"]
+    )
+    assert "`content_gap`" not in ahrefs_audit_item["diagnosis"]
+    assert "competitor_domain=" not in ahrefs_audit_item["diagnosis"]
+    assert "source_url=" not in ahrefs_audit_item["diagnosis"]
+    assert "referenced_public_url=" not in ahrefs_audit_item["diagnosis"]
     ahrefs_beczka_item = next(
         item for item in ahrefs_items if item["dimensions"].get("keyword") == "beczka"
     )

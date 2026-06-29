@@ -72,6 +72,13 @@ AHREFS_GAP_FACT_NAMES = {
     "ahrefs_organic_keyword_gap_count",
     "ahrefs_top_page_gap_count",
 }
+AHREFS_GAP_TYPE_LABELS = {
+    "competitor_page": "strona konkurencji",
+    "content_gap": "luka treści",
+    "backlink_gap": "luka linków",
+    "organic_keyword_gap": "luka słów organicznych",
+    "top_page_gap": "luka najlepszych stron konkurencji",
+}
 AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS = {
     "cuk.pl",
     "ltesty.pl",
@@ -906,6 +913,10 @@ def _ahrefs_gap_type_for_fact(name: str) -> str:
     return "content_gap"
 
 
+def _ahrefs_gap_type_label(gap_type: str) -> str:
+    return AHREFS_GAP_TYPE_LABELS.get(gap_type, "rekord Ahrefs do sprawdzenia")
+
+
 def _ahrefs_content_intent(gap_type: str) -> TacticalIntent:
     if gap_type == "backlink_gap":
         return "content_block"
@@ -963,16 +974,18 @@ def _ahrefs_gap_diagnosis(
     context = ", ".join(
         part
         for part in (
-            f"competitor_domain={competitor_domain}" if competitor_domain else None,
-            f"source_url={source_url}" if source_url else None,
-            f"referenced_public_url={referenced_public_url}" if referenced_public_url else None,
+            f"konkurent: {competitor_domain}" if competitor_domain else None,
+            f"adres źródłowy: {_short_path(source_url)}" if source_url else None,
+            f"publiczny adres: {_short_path(referenced_public_url)}"
+            if referenced_public_url
+            else None,
         )
         if part is not None
     )
     context_text = f" Kontekst: {context}." if context else ""
     confirmation_text = _ahrefs_confirmation_text(confirmation)
     return (
-        f"Ahrefs wskazuje rekord `{gap_type}` dla tematu `{topic}`. "
+        f"Ahrefs wskazuje: {_ahrefs_gap_type_label(gap_type)} dla tematu {topic}. "
         f"Fakty: {_ahrefs_fact_summary(facts)}.{context_text} "
         f"{confirmation_text} To jest sygnał do sprawdzenia contentu, "
         "nie samodzielna rekomendacja SEO."

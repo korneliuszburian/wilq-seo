@@ -122,6 +122,8 @@ API status later contradicts this state.
   operator status labels instead of raw refresh status enum values.
 - Command Center decision freshness notes use Polish source and freshness
   labels instead of raw `connector_id=state` pairs.
+- Tactical queue Ahrefs diagnoses use Polish gap/context labels instead of raw
+  `gap_type` values, backticks or `key=value` URL context.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -164,6 +166,7 @@ API status later contradicts this state.
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
 - `rtk uv run pytest tests/test_operator_endpoint_language_guard.py -q`
+- `rtk uv run pytest tests/test_api_contracts.py::test_marketing_tactical_queue_uses_dimensioned_metric_facts -q`
 - `rtk uv run pytest tests/test_api_contracts.py::test_command_center_exposes_polish_operator_brief -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'blocked_refresh_summaries or operator_label_fallbacks'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks'`
