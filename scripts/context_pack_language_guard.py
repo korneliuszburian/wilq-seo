@@ -19,6 +19,23 @@ DEFAULT_SKILLS = (
     "wilq-ahrefs-gap-finder",
 )
 
+FORBIDDEN_ACTION_PLAN_KEYS = (
+    "payload_preview",
+    "budget_payload_preview",
+    "custom_segment_payload_preview",
+    "negative_keyword_payload_preview",
+    "content_brief_preview",
+    "wordpress_draft_payload_preview",
+    "preview_contract",
+    "source_preview_contract",
+    "preview_contract_label",
+    "required_validation",
+    "required_validation_labels",
+    "api_mutation_ready",
+    "apply_allowed",
+    "destructive",
+)
+
 FORBIDDEN_VALUE_TERMS = (
     "Command Center",
     "Content Planner",
@@ -143,9 +160,24 @@ def _context_pack_structure_errors(payload: Mapping[str, Any]) -> list[tuple[str
                 (
                     f"$.active_action_objects[{index}].payload",
                     "action_payload_key",
-                    "Use action_plan in skill context packs; keep payload on action detail endpoints.",
+                    (
+                        "Use action_plan in skill context packs; keep payload on action "
+                        "detail endpoints."
+                    ),
                 )
             )
+        action_plan = action.get("action_plan")
+        if isinstance(action_plan, Mapping):
+            action_plan_path = f"$.active_action_objects[{index}].action_plan"
+            for path, key in _walk_mapping_keys(action_plan, action_plan_path):
+                if key in FORBIDDEN_ACTION_PLAN_KEYS:
+                    errors.append(
+                        (
+                            path,
+                            "technical_action_plan_key",
+                            f"Use marketer-readable compact action plan keys instead of {key}.",
+                        )
+                    )
     capabilities = payload.get("expert_capabilities")
     if not isinstance(capabilities, Sequence) or isinstance(
         capabilities, (str, bytes, bytearray)
@@ -174,6 +206,18 @@ def _walk_string_values(value: Any, path: str = "$"):
     if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):
         for index, child in enumerate(value):
             yield from _walk_string_values(child, f"{path}[{index}]")
+
+
+def _walk_mapping_keys(value: Any, path: str = "$"):
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            key_path = f"{path}.{key}"
+            yield key_path, str(key)
+            yield from _walk_mapping_keys(child, key_path)
+        return
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for index, child in enumerate(value):
+            yield from _walk_mapping_keys(child, f"{path}[{index}]")
 
 
 if __name__ == "__main__":

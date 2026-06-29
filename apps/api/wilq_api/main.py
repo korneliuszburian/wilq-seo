@@ -3248,6 +3248,7 @@ def _compact_action_payload_for_context(payload: dict[str, Any], *, action_id: s
     _compact_preview_list_for_context(payload, "negative_keyword_payload_preview")
     _compact_preview_list_for_context(payload, "ngram_preview")
     _compact_content_action_payload_for_context(payload)
+    _label_action_plan_for_context(payload)
 
 
 def _compact_action_row_list_for_context(
@@ -3316,6 +3317,74 @@ def _compact_content_action_payload_for_context(payload: dict[str, Any]) -> None
         if isinstance(value, list):
             payload.setdefault(f"{key}_total", len(value))
             payload.setdefault(f"{key}_included", len(value))
+
+
+ACTION_PLAN_LIST_KEY_LABELS = {
+    "payload_preview": "preview_items",
+    "budget_payload_preview": "budget_preview_items",
+    "custom_segment_payload_preview": "custom_segment_preview_items",
+    "negative_keyword_payload_preview": "negative_keyword_preview_items",
+    "content_brief_preview": "content_plan_items",
+    "wordpress_draft_payload_preview": "wordpress_draft_preview_items",
+}
+
+
+def _label_action_plan_for_context(value: Any) -> None:
+    if isinstance(value, dict):
+        _rename_action_plan_list_keys(value)
+        _label_action_plan_status_fields(value)
+        for child in list(value.values()):
+            _label_action_plan_for_context(child)
+        return
+    if isinstance(value, list):
+        for item in value:
+            _label_action_plan_for_context(item)
+
+
+def _rename_action_plan_list_keys(value: dict[str, Any]) -> None:
+    for old_key, new_key in ACTION_PLAN_LIST_KEY_LABELS.items():
+        if old_key in value:
+            value[new_key] = value.pop(old_key)
+        total_key = f"{old_key}_total"
+        if total_key in value:
+            value[f"{new_key}_total"] = value.pop(total_key)
+        included_key = f"{old_key}_included"
+        if included_key in value:
+            value[f"{new_key}_included"] = value.pop(included_key)
+
+
+def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
+    preview_contract_label = value.pop("preview_contract_label", None)
+    if isinstance(preview_contract_label, str) and preview_contract_label:
+        value.setdefault("review_type_label", preview_contract_label)
+    value.pop("preview_contract", None)
+    value.pop("source_preview_contract", None)
+
+    required_validation_labels = value.pop("required_validation_labels", None)
+    if isinstance(required_validation_labels, list):
+        value.setdefault("required_check_labels", required_validation_labels)
+    value.pop("required_validation", None)
+
+    apply_allowed = value.pop("apply_allowed", None)
+    if isinstance(apply_allowed, bool):
+        value.setdefault(
+            "apply_status_label",
+            "gotowe do potwierdzenia" if apply_allowed else "zablokowane do sprawdzenia",
+        )
+
+    api_mutation_ready = value.pop("api_mutation_ready", None)
+    if isinstance(api_mutation_ready, bool):
+        value.setdefault(
+            "write_status_label",
+            "gotowe do zapisu" if api_mutation_ready else "bez zapisu automatycznego",
+        )
+
+    destructive = value.pop("destructive", None)
+    if isinstance(destructive, bool):
+        value.setdefault(
+            "change_risk_label",
+            "zmiana destrukcyjna" if destructive else "bezpieczny podgląd",
+        )
 
 
 def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:

@@ -5563,11 +5563,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "payload" not in context_action_by_id["act_review_ga4_tracking_quality"]
     assert "action_plan" in context_action_by_id["act_review_ga4_tracking_quality"]
     context_preview = context_action_by_id["act_review_ga4_tracking_quality"]["action_plan"][
-        "payload_preview"
+        "preview_items"
     ][0]
-    assert context_preview["preview_contract"] == "ga4_tracking_quality_review_v1"
     assert context_preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
-    assert context_preview["apply_allowed"] is False
+    assert context_preview["apply_status_label"] == "zablokowane do sprawdzenia"
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
 
@@ -7258,13 +7257,10 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     localo_context_action = context_actions_by_id[LOCALO_VISIBILITY_REVIEW_ACTION_ID]
     assert "payload" not in localo_context_action
     assert "action_plan" in localo_context_action
-    assert localo_context_action["action_plan"]["payload_preview_included"] == 1
-    assert localo_context_action["action_plan"]["payload_preview_total"] == 1
-    assert localo_context_action["action_plan"]["payload_preview"][0]["preview_contract"] == (
-        "local_visibility_review_preview_v1"
-    )
+    assert localo_context_action["action_plan"]["preview_items_included"] == 1
+    assert localo_context_action["action_plan"]["preview_items_total"] == 1
     assert (
-        localo_context_action["action_plan"]["payload_preview"][0]["metric_snapshot"][
+        localo_context_action["action_plan"]["preview_items"][0]["metric_snapshot"][
             "localo_active_place_count"
         ]
         == 4
@@ -18637,11 +18633,11 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         action_plan = action.get("action_plan") or {}
         for rows_key in (
             "campaign_candidates",
-            "budget_payload_preview",
+            "budget_preview_items",
             "recommendations",
             "terms",
             "source_terms",
-            "payload_preview",
+            "preview_items",
             "keyword_match_context",
         ):
             rows = action_plan.get(rows_key)
@@ -18651,14 +18647,16 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
                 ):
                     assert 0 < len(rows) <= 3
                     assert action_plan[f"{rows_key}_included"] == len(rows)
-                elif rows_key == "payload_preview" and action["id"] == (
+                elif rows_key == "preview_items" and action["id"] == (
                     "act_prepare_custom_segments_from_search_terms"
                 ):
                     assert len(rows) == 1
                     assert rows[0]["safety_review"]["safety_contract"] == (
                         "custom_segment_apply_safety_v1"
                     )
-                    assert rows[0]["safety_review"]["apply_allowed"] is False
+                    assert rows[0]["safety_review"]["apply_status_label"] == (
+                        "zablokowane do sprawdzenia"
+                    )
                     assert action_plan[f"{rows_key}_included"] == 1
                 else:
                     assert rows == []
@@ -18682,7 +18680,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert campaign_candidate["human_review_gates"] == full_campaign_candidate["human_review_gates"]
     assert campaign_candidate["target_context"] == full_campaign_candidate["target_context"]
     assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
-    assert campaign_candidate["apply_allowed"] is False
+    assert campaign_candidate["apply_status_label"] == "zablokowane do sprawdzenia"
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
     assert len(ads_context["search_term_ngram_read_contract"]["ngram_rows"]) <= 8
     assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
@@ -18816,11 +18814,11 @@ def test_codex_context_pack_scopes_custom_segments_payload(
     assert context_safety_review["audit_required"] is True
     assert "forecast_or_audience_size" in context_safety_review["missing_requirements"]
     assert "google_ads_mutation_audit" in context_safety_review["missing_requirements"]
-    action_safety_review = data["active_action_objects"][0]["action_plan"]["payload_preview"][0][
+    action_safety_review = data["active_action_objects"][0]["action_plan"]["preview_items"][0][
         "safety_review"
     ]
     assert action_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
-    assert action_safety_review["apply_allowed"] is False
+    assert action_safety_review["apply_status_label"] == "zablokowane do sprawdzenia"
     assert ads_context["custom_segments_read_contract"]["audience_forecast_read_contract"][
         "forecast_rows"
     ]
@@ -18839,18 +18837,18 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         assert action["metrics_included"] <= 3
         assert action["metrics_total"] >= action["metrics_included"]
         action_plan = action.get("action_plan") or {}
-        rows = action_plan.get("payload_preview")
+        rows = action_plan.get("preview_items")
         if isinstance(rows, list):
             if action["id"] == "act_prepare_custom_segments_from_search_terms":
                 assert len(rows) == 1
                 assert rows[0]["safety_review"]["safety_contract"] == (
                     "custom_segment_apply_safety_v1"
                 )
-                assert action_plan["payload_preview_included"] == 1
+                assert action_plan["preview_items_included"] == 1
             else:
                 assert rows == []
-                assert action_plan["payload_preview_included"] == 0
-            assert action_plan["payload_preview_total"] >= 0
+                assert action_plan["preview_items_included"] == 0
+            assert action_plan["preview_items_total"] >= 0
 
 
 def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
@@ -18929,10 +18927,9 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert [action["id"] for action in data["active_action_objects"]] == [
         "act_review_demand_gen_readiness"
     ]
-    assert data["active_action_objects"][0]["action_plan"]["preview_contract"] == (
-        "demand_gen_readiness_review_preview_v1"
+    assert data["active_action_objects"][0]["action_plan"]["apply_status_label"] == (
+        "zablokowane do sprawdzenia"
     )
-    assert data["active_action_objects"][0]["action_plan"]["apply_allowed"] is False
     assert data["ads_diagnostics"]["action_ids"] == []
     readiness = data["demand_gen_readiness"]
     assert readiness["status"] == "blocked"
