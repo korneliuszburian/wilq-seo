@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "wilq_seo",
+  "project_id": "9a888141-050a-4336-a0b0-d7c2d1b4826d"
+}
