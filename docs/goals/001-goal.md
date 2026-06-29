@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Live contract smoke now guards content diagnostics URL semantics. It fails
+  if `/api/content/diagnostics` exposes `ekologus.dev.proudsite.pl`,
+  `target_site`, `mapping_review` or migration-map terms, and the latest run
+  against the local API passed.
 - Merchant skill contracts now point at the canonical
   `product_sample_readiness` field, and skill hygiene blocks the stale
   `product_sample_gotowość` hybrid name from returning. Localo skill allowed

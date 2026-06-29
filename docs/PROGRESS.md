@@ -30,6 +30,10 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- `scripts/live_contract_smoke.py` now checks live `/api/content/diagnostics`
+  for stale dev-preview URL semantics. The smoke fails if content diagnostics
+  expose `ekologus.dev.proudsite.pl`, `target_site`, `mapping_review` or
+  migration-map terms, and the latest live run passed.
 - Merchant skill contracts now use the canonical
   `product_sample_readiness` field instead of the stale
   `product_sample_gotowość` hybrid name. Localo skill allowed endpoints now

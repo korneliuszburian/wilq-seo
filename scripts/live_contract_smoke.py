@@ -94,6 +94,8 @@ def evaluate_contracts(payloads: dict[str, Any]) -> list[str]:
     ):
         diagnostics = _mapping(payloads.get(name))
         _check_diagnostics_shape(diagnostics, name, errors)
+        if name == "content_diagnostics":
+            _check_content_url_semantics(diagnostics, errors)
 
     for name, payload in payloads.items():
         _check_operator_labels(payload, name, errors)
@@ -159,6 +161,32 @@ def _check_diagnostics_shape(
         or _list(diagnostics.get("action_ids"))
     ):
         errors.append(f"{label} must expose decision_queue, tactical_items or action_ids")
+
+
+def _check_content_url_semantics(diagnostics: dict[str, Any], errors: list[str]) -> None:
+    serialized = json.dumps(diagnostics, ensure_ascii=False)
+    for stale_fragment in (
+        "ekologus.dev.proudsite.pl",
+        "target_site",
+        "mapping_review",
+        "migration-map",
+        "migration_map",
+    ):
+        if stale_fragment in serialized:
+            errors.append(f"content_diagnostics must not expose stale URL semantics: {stale_fragment}")
+    for index, decision in enumerate(_list(diagnostics.get("decision_queue"))):
+        if not isinstance(decision, dict):
+            continue
+        stale_keys = [
+            key
+            for key in decision
+            if key.startswith("target_site_") or key.startswith("mapping_review_")
+        ]
+        if stale_keys:
+            errors.append(
+                "content_diagnostics.decision_queue"
+                f"[{index}] exposes stale URL fields: {', '.join(stale_keys)}"
+            )
 
 
 def _require_nonempty_list(
