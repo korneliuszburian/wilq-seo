@@ -27,10 +27,16 @@ export function MetricTile({
 }) {
   return (
     <div className="min-w-24 rounded-md border border-line bg-white px-3 py-2">
-      <div className="text-lg font-semibold">{value}</div>
+      <div className="text-lg font-semibold">{formatMetricTileValue(value)}</div>
       <div className="text-slate-500">{label}</div>
     </div>
   );
+}
+
+function formatMetricTileValue(value: number | string) {
+  if (typeof value !== "number") return value;
+
+  return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(value);
 }
 
 export function LabelChipRow({

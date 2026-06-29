@@ -63,7 +63,11 @@ function metricFactLabel(fact: MetricFact) {
 
 function formatMetricFactValue(fact: MetricFact) {
   const suffix = fact.unit ? ` ${fact.unit}` : "";
-  return `${fact.value}${suffix}`;
+  const value =
+    typeof fact.value === "number"
+      ? new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(fact.value)
+      : fact.value;
+  return `${value}${suffix}`;
 }
 
 function formatMetricDelta(fact: MetricFact) {

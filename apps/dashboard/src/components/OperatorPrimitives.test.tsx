@@ -1,7 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { LabelChipRow, PlainChipRow } from "./OperatorPrimitives";
+import { LabelChipRow, MetricTile, PlainChipRow } from "./OperatorPrimitives";
+
+describe("MetricTile", () => {
+  it("formats decimal numbers for Polish marketer-facing tiles", () => {
+    const { container } = render(<MetricTile label="średnia widoczność" value={54.2609} />);
+
+    expect(screen.getByText("54,26")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("54.2609");
+    expect(container.textContent).not.toContain("54.26");
+  });
+});
 
 describe("LabelChipRow", () => {
   it("separates adjacent labelled chips in readable text", () => {

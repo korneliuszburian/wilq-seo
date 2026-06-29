@@ -400,7 +400,7 @@ def _localo_sections(
         status="ready" if visibility_facts else "missing",
         summary=(
             (
-                f"WILQ ma {len(visibility_facts)} agregatów Localo dla danych: "
+                f"WILQ ma {_localo_aggregate_count_label(len(visibility_facts))} dla danych: "
                 f"{_localo_contracts_phrase(present_contracts)}. Nadal brakuje: "
                 f"{_localo_contracts_phrase(missing_contracts) if missing_contracts else 'brak'}."
             )
@@ -483,7 +483,7 @@ def _localo_decision_queue(
                 status="ready",
                 title="Przejrzyj agregaty widoczności lokalnej z Localo",
                 summary=(
-                    f"WILQ ma {len(visibility_facts)} agregatów Localo: "
+                    f"WILQ ma {_localo_aggregate_count_label(len(visibility_facts))}: "
                     f"{_localo_contracts_phrase(present_contracts)}."
                 ),
                 rationale=(
@@ -1092,8 +1092,16 @@ def _int_fact_value(visibility_facts: list[MetricFact], name: str) -> int:
 def _float_fact_value(visibility_facts: list[MetricFact], name: str) -> float:
     value = _fact_value(visibility_facts, name)
     if isinstance(value, int | float):
-        return round(float(value), 4)
+        return round(float(value), 2)
     return 0.0
+
+
+def _localo_aggregate_count_label(count: int) -> str:
+    if count == 1:
+        return "1 agregat Localo"
+    if 2 <= count % 10 <= 4 and count % 100 not in {12, 13, 14}:
+        return f"{count} agregaty Localo"
+    return f"{count} agregatów Localo"
 
 
 def _fact_value(visibility_facts: list[MetricFact], name: str) -> int | float | str | None:

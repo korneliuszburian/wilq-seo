@@ -151,4 +151,32 @@ describe("MetricFactChips", () => {
     expect(container.textContent).not.toContain("3obszar");
     expect(container.textContent).not.toContain("miejscaDane");
   });
+
+  it("formats decimal metric values for marketer readability", () => {
+    const { container } = render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "localo_avg_visibility_current",
+            metric_label: "średnia widoczność",
+            value: 52.8261,
+            period: "localo_mcp_read",
+            source_connector: "localo",
+            evidence_id: "ev_refresh_localo_test",
+            dimensions: {},
+            dimension_labels: {},
+            dimension_value_labels: {},
+            unit: null,
+            delta: null,
+            delta_percent: null,
+            trend: "unknown",
+            freshness_label: ""
+          }
+        ]}
+      />
+    );
+
+    expect(within(container).getByText("średnia widoczność: 52,83")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("52.8261");
+  });
 });

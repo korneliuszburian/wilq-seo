@@ -201,7 +201,7 @@ describe("CommandCenter route", () => {
     expect(screen.queryByText(/Najpierw sprawdź dopasowania WordPress/)).not.toBeInTheDocument();
     expect(screen.getByText("120 wyświetleń może uzasadniać sprawdzenie treści."))
       .toBeInTheDocument();
-    expect(screen.getByText("10900")).toBeInTheDocument();
+    expect(screen.getByText("10 900")).toBeInTheDocument();
     expect(screen.getByText("zapytania i adresy z GSC")).toBeInTheDocument();
     expect(screen.getByText("dopasowania WordPress")).toBeInTheDocument();
     expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();

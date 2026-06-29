@@ -118,6 +118,10 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Localo marketer-facing summaries now use correct Polish aggregate-count
+  wording and all shared metric tiles render decimal values with Polish number
+  formatting. Focused API/dashboard tests, language guards and browser proof
+  for `/localo` passed.
 - Action detail now hides legacy English apply/audit summaries from the
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;

@@ -7141,7 +7141,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert review_decision["read_contract_statuses"] == payload["read_contract_statuses"]
     assert review_decision["metric_tiles"]["miejsca"] == 4
     assert review_decision["metric_tiles"]["frazy"] == 23
-    assert review_decision["metric_tiles"]["średnia widoczność"] == 52.8261
+    assert review_decision["metric_tiles"]["średnia widoczność"] == 52.83
     assert review_decision["metric_tiles"]["recenzje"] == 793
     assert "lokalne rankingi" not in review_decision["blocked_claims"]
     assert "wyniki profilu firmy w Google" in review_decision["blocked_claims"]
@@ -7154,6 +7154,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     operator_summary = payload["operator_summary"]
     assert operator_summary["visibility_fact_count"] == 4
     assert "agregaty widoczności" in operator_summary["summary"]
+    assert "4 agregatów Localo" not in review_decision["summary"]
     assert "Przejrzyj agregaty Localo" in operator_summary["next_step"]
     assert (
         "dopóki odczyt danych Localo nie dostarczy danych widoczności"
@@ -7172,6 +7173,8 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
         LOCALO_VISIBILITY_REVIEW_ACTION_ID
     ]
     assert section_by_id["localo_visibility_contract"]["status_label"] == "gotowe"
+    assert "4 agregaty Localo" in section_by_id["localo_visibility_contract"]["summary"]
+    assert "4 agregatów Localo" not in section_by_id["localo_visibility_contract"]["summary"]
     assert all(fact["source_connector"] == "localo" for fact in review_decision["metric_facts"])
     metric_labels_by_name = {
         fact["name"]: fact["metric_label"] for fact in review_decision["metric_facts"]
