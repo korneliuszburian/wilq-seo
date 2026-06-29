@@ -115,8 +115,9 @@ API status later contradicts this state.
   review contracts. A focused contract test prevents accidental `v24.2`/`v24_2`
   endpoint churn.
 - Codex context-pack compaction no longer builds operator-facing evidence
-  summaries or knowledge-card titles from raw connector/source/card types.
-  Focused API contract coverage guards those fallbacks.
+  summaries, knowledge-card titles or audit summaries from raw connector,
+  source, card or event types. Focused API contract coverage guards those
+  fallbacks.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,

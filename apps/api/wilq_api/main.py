@@ -43,6 +43,7 @@ from wilq.actions.google_ads.demand_gen import (
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
+    _action_audit_event_label,
     apply_action,
     confirm_action,
     demand_gen_readiness_preview_cards,
@@ -688,14 +689,17 @@ def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
 def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
     if event is None:
         return None
+    event_type = event.get("event_type") or "unknown"
+    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
     summary = (
-        f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
-        "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+        f"Ślad bezpieczeństwa: {event_type_label}. "
+        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
     )
     return {
         "id": event.get("id"),
         "action_id": event.get("action_id"),
-        "event_type": event.get("event_type"),
+        "event_type": event_type,
+        "event_type_label": event_type_label,
         "actor": event.get("actor"),
         "created_at": event.get("created_at"),
         "summary": summary,
@@ -705,15 +709,18 @@ def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict
 def _compact_audit_event_for_skill_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
     if event is None:
         return None
+    event_type = event.get("event_type") or "unknown"
+    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
     return {
         "id": event.get("id"),
         "action_id": event.get("action_id"),
-        "event_type": event.get("event_type"),
+        "event_type": event_type,
+        "event_type_label": event_type_label,
         "actor": event.get("actor"),
         "created_at": event.get("created_at"),
         "summary": (
-            f"Zdarzenie audytu {event.get('event_type') or 'unknown'}; "
-            "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+            f"Ślad bezpieczeństwa: {event_type_label}. "
+            "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
         ),
     }
 

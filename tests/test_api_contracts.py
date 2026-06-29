@@ -11,6 +11,8 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import (
+    _compact_audit_event_for_daily_context,
+    _compact_audit_event_for_skill_context,
     _compact_evidence_for_operator_context,
     _compact_knowledge_card_for_operator_context,
     _compact_metric_fact_for_context,
@@ -1708,6 +1710,26 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert raw_value not in compact_card["title"]
     assert raw_value not in compact_card["card_type_label"]
     assert raw_value not in compact_card["source_type_label"]
+
+    raw_audit_event = {
+        "id": "audit_unknown_operator_label",
+        "action_id": "act_unknown_operator_label",
+        "event_type": raw_value,
+        "actor": "operator_test",
+        "created_at": "2026-06-29T12:00:00Z",
+    }
+    daily_audit = _compact_audit_event_for_daily_context(raw_audit_event)
+    skill_audit = _compact_audit_event_for_skill_context(raw_audit_event)
+    assert daily_audit is not None
+    assert skill_audit is not None
+    assert daily_audit["event_type_label"] == "Zdarzenie audytu"
+    assert skill_audit["event_type_label"] == "Zdarzenie audytu"
+    assert raw_value not in daily_audit["summary"]
+    assert raw_value not in skill_audit["summary"]
+    assert daily_audit["summary"] == (
+        "Ślad bezpieczeństwa: Zdarzenie audytu. "
+        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+    )
 
     merchant_items = _merchant_feed_items(
         [
