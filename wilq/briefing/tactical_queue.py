@@ -399,10 +399,10 @@ def _priority_label(priority: int) -> str:
 
 def _tactical_domain_label(domain: OpportunityDomain) -> str:
     labels = {
-        OpportunityDomain.gsc_seo: "Content / GSC",
+        OpportunityDomain.gsc_seo: "Treści i GSC",
         OpportunityDomain.ga4: "GA4",
         OpportunityDomain.merchant: "Merchant",
-        OpportunityDomain.content: "Content",
+        OpportunityDomain.content: "Treści",
     }
     return labels.get(domain, domain.value)
 
@@ -805,7 +805,7 @@ def _ahrefs_gap_items(
                     "wzrost autorytetu",
                     "gwarancja pozycji",
                     "wzrost liczby leadów",
-                    "content brief without GSC/WordPress check",
+                    "plan treści bez sprawdzenia GSC i WordPress",
                 ],
                 action_ids=action_ids_by_connector.get("ahrefs", []),
             )

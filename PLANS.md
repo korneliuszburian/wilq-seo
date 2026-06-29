@@ -1024,3 +1024,7 @@ WILQ is complete for this long-range goal when:
   language guard, live context-pack guard, WILQ API connector/Ads diagnostics
   proof, browser text scan and `git diff --check` passed after removing raw
   budget identifier wording from the normal shared-budget panel.
+- Latest tactical queue label proof: focused API/dashboard tests, live
+  tactical-queue API scan, context-pack guard, browser text proof and
+  `git diff --check` passed after moving tactical domain labels to Polish
+  `Treści` wording and replacing the remaining English Ahrefs blocked claim.

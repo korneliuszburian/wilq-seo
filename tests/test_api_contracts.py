@@ -5055,6 +5055,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert all(group["evidence_summary_label"] for group in queue["compact_groups"])
     assert all(group["action_summary_label"] for group in queue["compact_groups"])
     assert all(group["blocked_claim_labels"] for group in queue["compact_groups"])
+    assert all("Content /" not in group["meta"] for group in queue["compact_groups"])
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
     assert all("clicks=" not in item["diagnosis"] for item in content_items)
@@ -5100,9 +5101,15 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert ahrefs_beczka_item["dimensions"]["wordpress_overlap_urls"] == ""
     assert all(item["domain"] == "content" for item in ahrefs_items)
     assert all("wzrost ruchu" in item["blocked_claims"] for item in ahrefs_items)
+    assert all(
+        "plan treści bez sprawdzenia GSC i WordPress" in item["blocked_claims"]
+        for item in ahrefs_items
+    )
+    assert all("content brief without" not in " ".join(item["blocked_claims"]) for item in ahrefs_items)
     assert all(item["dimensions"].get("competitor_domain") != "cuk.pl" for item in ahrefs_items)
     for item in queue["items"]:
         assert item["domain_label"]
+        assert "Content /" not in item["domain_label"]
         assert item["intent_label"]
         assert item["priority_label"]
         assert item["source_connector_labels"]

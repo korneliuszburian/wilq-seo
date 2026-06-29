@@ -152,6 +152,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   instead of assembling action-count copy from action IDs.
 - Treści preflight, summary, decision, proof and action panels use API/domain
   evidence and action summary labels instead of route-local count formatting.
+- Tactical queue labels no longer expose old mixed content wording; Ahrefs
+  blocked-claim copy uses Polish wording for missing GSC/WordPress checks.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Google Ads first-screen, condensed decision, proof and action panels use

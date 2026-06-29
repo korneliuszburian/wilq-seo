@@ -1172,10 +1172,10 @@ def _marketing_risk_label(risk: ActionRisk | str) -> str:
 
 def _tactical_domain_label(domain: OpportunityDomain) -> str:
     labels = {
-        OpportunityDomain.gsc_seo: "Content / GSC",
+        OpportunityDomain.gsc_seo: "Treści i GSC",
         OpportunityDomain.ga4: "GA4",
         OpportunityDomain.merchant: "Merchant",
-        OpportunityDomain.content: "Content",
+        OpportunityDomain.content: "Treści",
     }
     return labels.get(domain, "powiązany obszar")
 

@@ -117,6 +117,9 @@ Date: 2026-06-29
   instead of assembling action-count copy from action IDs.
 - Treści preflight, summary, decision, proof and action panels use API/domain
   evidence and action summary labels instead of route-local count formatting.
+- Tactical queue API now uses Polish `Treści i GSC` / `Treści` labels instead
+  of old mixed content labels, and Ahrefs blocked-claim copy now uses Polish
+  wording for missing GSC/WordPress checks.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
 - Localo top metric tiles use API/domain missing-data summary labels instead
