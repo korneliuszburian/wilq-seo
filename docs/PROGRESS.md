@@ -94,12 +94,16 @@ Date: 2026-06-29
 - Action panel technical drawer code no longer uses the old
   `ActionPayloadPreviewToggle` component name or `payload={action.payload}`
   prop. The drawer remains visible as `dane techniczne akcji`, and
-  `ActionObjectPanels.test.tsx` guards against reintroducing the old
+  `ActionPanels.test.tsx` guards against reintroducing the old
   payload-preview component naming.
 - Action Detail preview-card renderer is now named around change preview, not
   payload preview. `ActionDetailRoute.test.tsx` guards against restoring the
   old `ActionPayloadPreviewSummary` function name while the normal panel keeps
-  rendering `ActionObject.preview_cards`.
+  rendering typowane karty podglądu akcji.
+- Dashboard action panels now live in `ActionPanels.tsx` and export
+  `ActionFocus` / `ActionIdFocus`. The UI layer no longer names this shared
+  action surface after the technical `ActionObject` model, while the API type
+  remains unchanged at the contract boundary.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

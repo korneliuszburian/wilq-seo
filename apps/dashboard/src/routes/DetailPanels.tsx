@@ -18,7 +18,7 @@ import {
   ActionPreviewControls,
   ActionReviewGatePanel,
   ActionValidationControls
-} from "./ActionObjectPanels";
+} from "./ActionPanels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
   const action = useQuery({

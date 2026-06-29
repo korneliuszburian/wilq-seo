@@ -5,7 +5,7 @@ import type { ReactElement, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ActionObject } from "../lib/api";
-import { ActionObjectFocus, ActionReviewGatePanel } from "./ActionObjectPanels";
+import { ActionFocus, ActionReviewGatePanel } from "./ActionPanels";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -21,7 +21,7 @@ vi.mock("@tanstack/react-router", () => ({
   }
 }));
 
-describe("ActionObjectPanels", () => {
+describe("ActionPanels", () => {
   afterEach(() => {
     cleanup();
   });
@@ -70,9 +70,9 @@ describe("ActionObjectPanels", () => {
     expect(screen.queryByText(/Próba zmiany:/)).not.toBeInTheDocument();
   });
 
-  it("uses the ActionObject evidence summary as visible proof context", () => {
+  it("uses the action evidence summary as visible proof context", () => {
     renderWithQueryClient(
-      <ActionObjectFocus
+      <ActionFocus
         actions={[
           {
             id: "action_merchant_feed_review",
@@ -142,12 +142,12 @@ describe("ActionObjectPanels", () => {
   });
 
   it("does not join action metadata with slash copy", () => {
-    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).not.toContain("{action.connector_label} / {action.mode_label}");
   });
 
   it("keeps raw action data drawer named as technical detail, not payload preview", () => {
-    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).toContain("ActionTechnicalDataToggle");
     expect(source).toContain("technicalData={action.payload}");
     expect(source).not.toContain("ActionPayloadPreviewToggle");
@@ -155,7 +155,7 @@ describe("ActionObjectPanels", () => {
   });
 
   it("keeps review badge state separate from visible review copy", () => {
-    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).toContain(
       'value={action.review_gate.status} label={lastReviewLabel ?? "brak przeglądu"}'
     );
@@ -163,14 +163,14 @@ describe("ActionObjectPanels", () => {
   });
 
   it("does not assemble action count copy from action IDs", () => {
-    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).toContain("actionSummaryLabel");
     expect(source).not.toContain("actionIds.length === 1");
     expect(source).not.toContain("`${actionIds.length} akcji do sprawdzenia`");
   });
 
   it("keeps effect checks in plain comparison language", () => {
-    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).toContain("porównanie wyników sprzed zmiany i po zmianie");
     expect(source).not.toContain("okno efektu");
     expect(source).not.toContain("Zapisuje okno");

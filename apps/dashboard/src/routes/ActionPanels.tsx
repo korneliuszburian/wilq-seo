@@ -28,7 +28,7 @@ import { BlockerNotice } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 
-export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
+export function ActionFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
       <BlockerNotice message="Brak akcji dla tego procesu. WILQ może pokazać dowody, ale nie powinien sugerować zapisu zmian bez podglądu." />
@@ -191,7 +191,7 @@ function ActionPreviewResultPanel({
   );
 }
 
-export function ActionObjectIdFocus({
+export function ActionIdFocus({
   actionIds,
   actionSummaryLabel,
   note

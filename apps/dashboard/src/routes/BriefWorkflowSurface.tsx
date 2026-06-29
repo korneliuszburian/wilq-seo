@@ -11,7 +11,7 @@ import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
-import { ActionObjectFocus } from "./ActionObjectPanels";
+import { ActionFocus } from "./ActionPanels";
 import { TacticalQueuePanel } from "./TacticalQueuePanel";
 
 export type BriefSurfaceConfig = {
@@ -227,7 +227,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
           </section>
         )}
 
-        {routeActionIds.length > 0 ? <ActionObjectFocus actions={routeActions} /> : null}
+        {routeActionIds.length > 0 ? <ActionFocus actions={routeActions} /> : null}
 
         {config.showTacticalQueue === false ? null : (
           <TacticalQueuePanel

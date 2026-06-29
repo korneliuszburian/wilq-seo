@@ -605,7 +605,7 @@ WILQ is complete for this long-range goal when:
   payload previews.
 - 2026-06-28: Treści loading/error action fallback now consumes the API-owned
   `action_summary_label` instead of assembling action-count copy from action
-  IDs in `ActionObjectPanels`.
+  IDs in `ActionPanels`.
 - 2026-06-28: Treści diagnostics and preflight now expose evidence/action
   summary labels in API/shared schemas. The route consumes those labels instead
   of route-local count formatting; live API proof and browser proof live in
@@ -792,9 +792,9 @@ WILQ is complete for this long-range goal when:
   only emits known values, fallback paths must be neutral Polish copy because
   vendor contracts drift and tests should prove the drift does not leak raw
   keys to the marketer.
-- A dashboard panel that needs action preview semantics should render
-  `ActionObject.preview_cards`; reading action payload arrays is temporary debt
-  only when a domain-specific selected-decision view-model does not yet exist.
+- A dashboard panel that needs action preview semantics should render typed
+  action preview cards. Reading raw action payload arrays is temporary debt only
+  when a domain-specific selected-decision view-model does not yet exist.
 - A dashboard's selected-decision first screen should use a domain view-model
   such as `marketer_decision`; action preview cards are for expandable action
   details, not for reconstructing the primary decision.
@@ -833,10 +833,10 @@ WILQ is complete for this long-range goal when:
 - Active Centrum pracy daily-decision labels are API-owned. Do not reintroduce
   route-local dictionaries for decision copy, source labels, metric labels,
   blocked promises, CTA labels or skill labels.
-- Action detail first-screen preview cards must come from typed
-  `ActionObject.preview_cards`. Raw action payload inspection is allowed only
-  inside technical detail or as a short-lived blocker for unmigrated action
-  kinds; do not preserve old payload fallbacks once a typed card exists.
+- Action detail first-screen preview cards must come from typed action preview
+  cards. Raw action payload inspection is allowed only inside technical detail
+  or as a short-lived blocker for unmigrated action kinds; do not preserve old
+  payload fallbacks once a typed card exists.
 - Metric chip names must come from `MetricFact.metric_label`. Dimension
   key/value labels must come from `MetricFact.dimension_labels` and
   `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries
@@ -863,9 +863,9 @@ WILQ is complete for this long-range goal when:
   Do not add or preserve route-local translators as cleanup strategy.
 - Unknown vendor/domain values in API-owned labels must use neutral Polish
   operator copy. Do not fall back to raw enum/source values in visible labels.
-- Treści plan/draft cards are action preview semantics. They must stay
-  on `ActionObject.preview_cards`; do not restore route-local content/WordPress
-  payload card renderers.
+- Treści plan/draft cards are action preview semantics. They must stay on typed
+  action preview cards; do not restore route-local content/WordPress payload
+  card renderers.
 - Treści selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
   snapshot belong to `marketer_decision`; do not restore
   `action.payload.content_brief_preview` parsing in the route.
@@ -980,7 +980,7 @@ WILQ is complete for this long-range goal when:
   API/domain labels.
 - Latest Treści action-fallback proof: focused dashboard tests, dashboard
   typecheck, marketer language guard, live API proof and browser proof passed
-  after removing local action-count copy from `ActionObjectIdFocus`.
+  after removing local action-count copy from `ActionIdFocus`.
 - Latest Google Ads proof: focused API/shared-schema/dashboard tests,
   dashboard typecheck, marketer language guard, live API proof and browser
   proof passed after moving Google Ads response evidence/action summaries to

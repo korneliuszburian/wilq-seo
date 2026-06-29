@@ -12,7 +12,7 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
-import { ActionObjectFocus } from "./ActionObjectPanels";
+import { ActionFocus } from "./ActionPanels";
 import { tacticalContextPairs } from "./TacticalQueuePanel";
 
 type MerchantDecisionItem = MerchantDiagnosticsResponse["decision_queue"][number];
@@ -201,7 +201,7 @@ function MerchantExpandableActionsPanel({
 
       {showActions ? (
         <div className="mt-4">
-          <ActionObjectFocus actions={actions} />
+          <ActionFocus actions={actions} />
         </div>
       ) : null}
     </section>

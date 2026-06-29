@@ -16,9 +16,9 @@ import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPr
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import {
-  ActionObjectFocus,
-  ActionObjectIdFocus,
-} from "./ActionObjectPanels";
+  ActionFocus,
+  ActionIdFocus,
+} from "./ActionPanels";
 import { shortPath } from "./TacticalQueuePanel";
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
@@ -244,19 +244,19 @@ function ContentExpandableActionsPanel({
       {showActions ? (
         <div className="mt-4">
           {isLoading ? (
-            <ActionObjectIdFocus
+            <ActionIdFocus
               actionIds={actionIds}
               actionSummaryLabel={actionSummaryLabel}
               note="Ładuję szczegóły akcji; decyzje contentowe powyżej są już oparte o dane WILQ."
             />
           ) : isError ? (
-            <ActionObjectIdFocus
+            <ActionIdFocus
               actionIds={actionIds}
               actionSummaryLabel={actionSummaryLabel}
               note="Nie udało się odczytać pełnych akcji. Linki do sprawdzenia zostają widoczne, ale podgląd zmian wymaga danych akcji."
             />
           ) : (
-            <ActionObjectFocus actions={actions} />
+            <ActionFocus actions={actions} />
           )}
         </div>
       ) : null}

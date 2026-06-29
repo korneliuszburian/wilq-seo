@@ -14,7 +14,7 @@ import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
-import { ActionObjectFocus } from "./ActionObjectPanels";
+import { ActionFocus } from "./ActionPanels";
 
 type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
 type Ga4MetricFact = Ga4DiagnosticsResponse["sections"][number]["metric_facts"][number];
@@ -269,7 +269,7 @@ function Ga4ExpandableActionsPanel({
 
       {showActions ? (
         <div className="mt-4">
-          <ActionObjectFocus actions={actions} />
+          <ActionFocus actions={actions} />
         </div>
       ) : null}
     </section>

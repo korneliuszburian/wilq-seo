@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 describe("StatusBadge state usage", () => {
   it("keeps API labels as labels, not visual state values", () => {
     const routeSources = [
-      "src/routes/ActionObjectPanels.tsx",
+      "src/routes/ActionPanels.tsx",
       "src/routes/DetailPanels.tsx",
       "src/routes/Ga4DiagnosticSurface.tsx",
       "src/routes/KnowledgePanels.tsx",

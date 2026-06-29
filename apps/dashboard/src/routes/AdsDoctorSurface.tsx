@@ -10,7 +10,7 @@ import {
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import { ActionObjectFocus } from "./ActionObjectPanels";
+import { ActionFocus } from "./ActionPanels";
 import {
   AdsCustomSegmentAudienceForecastPanel,
   AdsCustomSegmentCandidatesPanel
@@ -200,7 +200,7 @@ function AdsExpandableActionsPanel({
 
       {showActions ? (
         <div className="mt-4">
-          <ActionObjectFocus actions={actions} />
+          <ActionFocus actions={actions} />
         </div>
       ) : null}
     </section>
