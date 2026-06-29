@@ -232,11 +232,13 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Shared status, route, source, metric, risk, blocker and preview labels are
   increasingly centralized in API/domain helpers.
 - Connector refresh runs hydrate Polish status labels at the shared schema
-  boundary; fresh GSC, GA4 and Merchant reads on 2026-06-28 completed with
+  boundary; fresh GSC, GA4 and Merchant reads on 2026-06-29 completed with
   vendor data collected.
 - Connector status now reuses the latest successful vendor read for freshness
   and `last_success_at`. GSC, GA4 and Merchant live refreshes on
-  2026-06-28T23:52Z completed with `vendor_data_collected=true`.
+  2026-06-29T00:20-00:22Z completed with `vendor_data_collected=true`.
+  Merchant refresh retries transient `ReadTimeout` responses after a live
+  `aggregateProductStatuses` timeout was reproduced.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`

@@ -56,8 +56,10 @@ Date: 2026-06-29
   temporary skill API before skill smokes, and `scripts/pre_demo_gate.sh` runs
   it against the managed local API before dashboard/skill demo checks.
 - Connector status now uses the latest successful `vendor_read` when available.
-  GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:52Z, and
-  `/api/connectors` now reports fresh `last_success_at` values for all three.
+  GSC, GA4 and Merchant were refreshed live on 2026-06-29T00:20-00:22Z, and
+  `/api/connectors` reports fresh `last_success_at` values for all three.
+  Merchant refresh now retries transient `ReadTimeout` responses and the latest
+  live proof completed with `vendor_data_collected=true`.
 - Action validation errors for Ads, GA4 and Localo now use source-owned Polish
   operator copy instead of English/technical `payload`, `requires`,
   `apply_allowed` or mutation-readiness wording. Focused tests guard this

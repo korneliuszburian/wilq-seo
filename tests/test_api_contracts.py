@@ -16215,6 +16215,52 @@ def test_merchant_vendor_read_uses_products_list_for_issue_samples(
     assert sample_title.dimensions == sample_id.dimensions
 
 
+def test_merchant_vendor_read_retries_transient_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456")
+    monkeypatch.setattr(
+        "wilq.connectors.google_merchant_center.client.google_access_token",
+        lambda scopes: "merchant-access-token",
+    )
+
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ReadTimeout("temporary Merchant timeout", request=request)
+        assert request.url.path == (
+            "/issueresolution/v1/accounts/123456/aggregateProductStatuses"
+        )
+        return httpx.Response(
+            200,
+            json={
+                "aggregateProductStatuses": [
+                    {
+                        "reportingContext": "SHOPPING_ADS",
+                        "country": "PL",
+                        "stats": {"activeCount": "8"},
+                    }
+                ]
+            },
+        )
+
+    result = refresh_merchant_product_status_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert attempts == 2
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["active_products"] == 8
+
+
 def test_merchant_vendor_read_routes_through_refresh_endpoint(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

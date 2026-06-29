@@ -13,6 +13,8 @@ MERCHANT_API_SCOPE = "https://www.googleapis.com/auth/content"
 MERCHANT_ISSUE_RESOLUTION_BASE = "https://merchantapi.googleapis.com/issueresolution/v1"
 MERCHANT_PRODUCTS_BASE = "https://merchantapi.googleapis.com/products/v1"
 MERCHANT_PRODUCT_SAMPLE_LIMIT = 20
+MERCHANT_REQUEST_TIMEOUT_SECONDS = 90.0
+MERCHANT_TRANSIENT_RETRIES = 2
 
 
 def refresh_merchant_product_status_summary(
@@ -41,7 +43,7 @@ def refresh_merchant_product_status_summary(
         )
 
     owns_client = http_client is None
-    client = http_client or httpx.Client(timeout=30)
+    client = http_client or httpx.Client(timeout=MERCHANT_REQUEST_TIMEOUT_SECONDS)
     try:
         metric_summary, metric_facts = _fetch_product_status_summary(
             client,
@@ -81,7 +83,8 @@ def _fetch_product_status_summary(
     account_id: str,
     access_token: str,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    response = client.get(
+    response = _get_with_transient_retry(
+        client,
         f"{MERCHANT_ISSUE_RESOLUTION_BASE}/accounts/{account_id}/aggregateProductStatuses",
         headers={"Authorization": f"Bearer {access_token}"},
         params={"pageSize": 100},
@@ -123,7 +126,8 @@ def _fetch_product_issue_samples(
         }
         if page_token:
             params["pageToken"] = page_token
-        response = client.get(
+        response = _get_with_transient_retry(
+            client,
             f"{MERCHANT_PRODUCTS_BASE}/accounts/{account_id}/products",
             headers={"Authorization": f"Bearer {access_token}"},
             params=params,
@@ -147,6 +151,24 @@ def _fetch_product_issue_samples(
         if not page_token:
             break
     return metric_facts
+
+
+def _get_with_transient_retry(
+    client: httpx.Client,
+    url: str,
+    *,
+    headers: dict[str, str],
+    params: dict[str, str | int],
+) -> httpx.Response:
+    last_timeout: httpx.ReadTimeout | None = None
+    for _attempt in range(MERCHANT_TRANSIENT_RETRIES + 1):
+        try:
+            return client.get(url, headers=headers, params=params)
+        except httpx.ReadTimeout as exc:
+            last_timeout = exc
+    if last_timeout is not None:
+        raise last_timeout
+    raise RuntimeError("Merchant retry loop exited without response or timeout.")
 
 
 def _product_issue_sample_facts(
