@@ -269,6 +269,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Completion proof is machine-guarded by
   `scripts/goal_001_completion_check.py`. Without `--uat-result` or
   `--owner-defer`, the expected status is `blocked_missing_uat_proof`.
+- Compact content action context now removes raw URL review contracts and field
+  names from skill context values. `scripts/context_pack_language_guard.py`
+  blocks `ActionObject`, `dry-run`, raw URL-field names and stale mapping terms
+  in live context-pack string values.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`

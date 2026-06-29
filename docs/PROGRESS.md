@@ -233,6 +233,10 @@ Date: 2026-06-29
   `scripts/goal_001_completion_check.py`. Running it without `--uat-result` or
   `--owner-defer` must return `blocked_missing_uat_proof`; that is the honest
   current state until UAT/defer evidence exists.
+- Live context-pack language guard now also blocks `ActionObject`, `dry-run`,
+  raw URL-field names and related blockers in compact skill context values.
+  The content action compact context no longer sends the raw
+  `content_url_review_contract` or source facts that name `source_public_url`.
 - Fresh first-party Google reads are healthy after the latest stack restart:
   GSC, GA4 and Merchant are `configured`, have no missing credentials and have
   fresh `last_success_at` values from 2026-06-29T02:30Z. LinkedIn and Facebook
@@ -289,6 +293,19 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Compact content action context cleanup: content strategist and GA4 skill
+  context packs no longer expose raw URL review contract values such as
+  `source_public_url`, `final_canonical_url` or
+  `confirm_final_canonical_url` as string values. The full action detail
+  remains available through `/api/actions/{action_id}`.
+  Verification:
+  - `rtk uv run pytest tests/test_context_pack_language_guard.py tests/test_api_contracts.py::test_codex_context_pack_scopes_content_strategist_payload tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract -q`
+  - `rtk scripts/local_stack.sh restart`
+  - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
+  - `rtk uv run python scripts/marketer_language_guard.py`
+
+Previous verified local slice:
 
 - Completion guard for UAT/defer: `scripts/goal_001_completion_check.py`
   validates either a filled real UAT result or an explicit owner defer note.

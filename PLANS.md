@@ -575,6 +575,10 @@ WILQ is complete for this long-range goal when:
   001 completion unless a filled real marketer UAT result or explicit owner
   defer note is provided. This keeps technical cleanup proof separate from
   human usefulness proof.
+- 2026-06-29: Extended live context-pack language guard and compacted content
+  action context so skills no longer receive raw URL review contract values
+  such as `source_public_url`, `final_canonical_url` or
+  `confirm_final_canonical_url` as string values.
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from

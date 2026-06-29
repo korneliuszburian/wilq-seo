@@ -17235,6 +17235,9 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     for forbidden_term in (
         "target_site",
         "mapping_review",
+        "content_url_review_contract",
+        "confirm_final_canonical_url",
+        "Strona z GSC: publiczny URL w polu",
         "vendor_read",
         "Read-only",
         "read-only",

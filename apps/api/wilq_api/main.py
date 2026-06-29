@@ -3242,6 +3242,20 @@ def _compact_preview_list_for_context(
 
 
 def _compact_content_action_payload_for_context(payload: dict[str, Any]) -> None:
+    url_contract = payload.pop("content_url_review_contract", None)
+    if isinstance(url_contract, dict):
+        required_fields = url_contract.get("required_fields")
+        allowed_outcomes = url_contract.get("allowed_outcomes")
+        payload["content_url_review_summary"] = {
+            "required_fields_total": (
+                len(required_fields) if isinstance(required_fields, list) else 0
+            ),
+            "allowed_outcomes_total": (
+                len(allowed_outcomes) if isinstance(allowed_outcomes, list) else 0
+            ),
+            "next_step": "Sprawdź publiczny i kanoniczny URL przed pisaniem.",
+        }
+
     content_preview = payload.get("content_brief_preview")
     if isinstance(content_preview, list):
         payload["content_brief_preview_total"] = len(content_preview)
@@ -3600,7 +3614,7 @@ def _compact_content_source_facts_for_context(values: list[Any]) -> list[Any]:
     compact_values: list[Any] = []
     for value in values:
         if isinstance(value, str) and value.startswith("Strona z GSC:"):
-            compact_values.append("Strona z GSC: publiczny URL w polu source_public_url")
+            compact_values.append("Strona z GSC: publiczny adres strony")
         else:
             compact_values.append(value)
     return compact_values
