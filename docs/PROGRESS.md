@@ -376,6 +376,9 @@ API status later contradicts this state.
   endpoints retain the technical GA4 breakdown contract for validation/review.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
+- Marketer language guard now blocks bare Ads missing status/channel
+  placeholders, so future cleanup cannot reintroduce unexplained first-screen
+  missing-state copy.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -437,6 +440,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`
+- `rtk uv run pytest tests/test_marketer_language_guard.py -q`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
 - `rtk pnpm outdated -r`
 - browser proof with `agent-browser` for touched routes

@@ -228,6 +228,14 @@ FORBIDDEN_PHRASES = (
         "Use Merchant Center or plik produktowy language in marketer-facing skill labels.",
     ),
     ForbiddenPhrase(
+        "status: " + "brak",
+        "Use an API/domain label that explains the status is unconfirmed.",
+    ),
+    ForbiddenPhrase(
+        "kanał: " + "brak",
+        "Use an API/domain label that explains the campaign/channel type is unconfirmed.",
+    ),
+    ForbiddenPhrase(
         "GA4 Analyst",
         "Use Analityka GA4 in marketer-facing skill labels.",
     ),
