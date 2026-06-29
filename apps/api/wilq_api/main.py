@@ -3381,6 +3381,7 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
 
     if "blocked_claim_labels" in value:
         value.pop("blocked_claims", None)
+        value.pop("forbidden_claims", None)
     if "missing_read_contract_labels" in value:
         value.pop("missing_read_contracts", None)
     if "allowed_contract_labels" in value:
@@ -3389,6 +3390,12 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("available_read_contracts", None)
     if "operator_review_gate_labels" in value:
         value.pop("operator_review_gates", None)
+    if "source_type_label" in value:
+        value.pop("source_type", None)
+    if "publication_readiness_status_label" in value:
+        value.pop("publication_readiness_status", None)
+    if "publication_blocker_labels" in value:
+        value.pop("publication_blockers", None)
     _label_action_plan_metric_snapshot(value)
 
     apply_allowed = value.pop("apply_allowed", None)

@@ -98,6 +98,52 @@ def test_context_pack_guard_blocks_raw_contract_and_review_gate_keys() -> None:
     ]
 
 
+def test_context_pack_guard_blocks_raw_content_status_keys() -> None:
+    payload = {
+        "active_action_objects": [
+            {
+                "id": "act_bad",
+                "action_plan": {
+                    "content_plan_items": [
+                        {
+                            "source_type": "gsc_query_page",
+                            "publication_readiness_status": "blocked_until_review",
+                            "publication_blockers": ["canonical_review"],
+                            "forbidden_claims": ["ranking_guarantee"],
+                        }
+                    ]
+                },
+            }
+        ]
+    }
+
+    assert _context_pack_structure_errors(payload) == [
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].source_type",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of source_type.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].publication_readiness_status",
+            "technical_action_plan_key",
+            (
+                "Use marketer-readable compact action plan keys instead of "
+                "publication_readiness_status."
+            ),
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].publication_blockers",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of publication_blockers.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].forbidden_claims",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of forbidden_claims.",
+        ),
+    ]
+
+
 def test_context_pack_guard_blocks_required_mapping_key() -> None:
     payload = {
         "expert_capabilities": [

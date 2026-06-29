@@ -152,6 +152,10 @@ API status later contradicts this state.
   only. Raw `allowed_contracts`, `available_read_contracts` and
   `operator_review_gates` are removed from compact skill context when their
   marketer-readable label fields exist.
+- Content skill plan items now keep labeled source, publication-readiness,
+  blocker and risky-claim fields only. Raw `source_type`,
+  `publication_readiness_status`, `publication_blockers` and `forbidden_claims`
+  stay out of compact skill context when label fields exist.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
