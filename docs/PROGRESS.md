@@ -161,6 +161,11 @@ API status later contradicts this state.
   `human_review_gates`, `target_status` and safety `missing_requirements` stay
   out of compact skill context when label fields exist, while the budget preview
   keeps its reason and marketer-readable safety checks.
+- Compact Ads and custom-segment skill plans no longer expose technical preview
+  identifiers or internal safety contract names such as campaign IDs, budget
+  IDs, custom-segment preview IDs, `safety_contract`, `target_scope`,
+  `member_type` or `audit_required`; full action endpoints retain technical
+  payload details for validation/review.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

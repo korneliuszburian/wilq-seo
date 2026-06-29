@@ -3376,12 +3376,20 @@ def _rename_action_plan_list_keys(value: dict[str, Any]) -> None:
 
 
 def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
+    value.pop("id", None)
     value.pop("action_type", None)
     value.pop("connector", None)
     value.pop("mode", None)
 
     value.pop("operation_type", None)
     value.pop("source_metric_names", None)
+    value.pop("campaign_id", None)
+    value.pop("campaign_budget_id", None)
+    value.pop("custom_segment_preview_id", None)
+    value.pop("budget_preview_id", None)
+    value.pop("safety_contract", None)
+    value.pop("target_scope", None)
+    value.pop("audit_required", None)
     for key in list(value):
         if key.endswith("_micros"):
             value.pop(key, None)
@@ -3417,6 +3425,10 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("campaign_status", None)
     if "advertising_channel_type_label" in value:
         value.pop("advertising_channel_type", None)
+    if "member_type_label" in value:
+        value.pop("member_type", None)
+    if "status_label" in value:
+        value.pop("status", None)
     if "target_status_label" in value:
         value.pop("target_status", None)
     if "missing_requirement_labels" in value:

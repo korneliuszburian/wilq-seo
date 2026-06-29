@@ -18653,12 +18653,11 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
                     "act_prepare_custom_segments_from_search_terms"
                 ):
                     assert len(rows) == 1
-                    assert rows[0]["safety_review"]["safety_contract"] == (
-                        "custom_segment_apply_safety_v1"
-                    )
+                    assert "safety_contract" not in rows[0]["safety_review"]
                     assert rows[0]["safety_review"]["apply_status_label"] == (
                         "zablokowane do sprawdzenia"
                     )
+                    assert rows[0]["safety_review"]["required_check_labels"]
                     assert action_plan[f"{rows_key}_included"] == 1
                 else:
                     assert rows == []

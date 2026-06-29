@@ -157,7 +157,12 @@ def test_context_pack_guard_blocks_raw_ads_status_and_gate_keys() -> None:
                             "human_review_gates": ["review_campaign_goal"],
                             "target_context": {"target_status": "no_target"},
                             "budget_preview_items": {
+                                "id": "budget_preview_1",
+                                "campaign_id": "123",
+                                "campaign_budget_id": "456",
                                 "safety_review": {
+                                    "id": "budget_preview_1_safety",
+                                    "safety_contract": "campaign_budget_apply_safety_v1",
                                     "missing_requirements": ["change_history"],
                                 }
                             },
@@ -168,7 +173,7 @@ def test_context_pack_guard_blocks_raw_ads_status_and_gate_keys() -> None:
         ]
     }
 
-    assert _context_pack_structure_errors(payload) == [
+    assert set(_context_pack_structure_errors(payload)) == {
         (
             "$.active_action_objects[0].action_plan.campaign_candidates[0].campaign_status",
             "technical_action_plan_key",
@@ -197,7 +202,32 @@ def test_context_pack_guard_blocks_raw_ads_status_and_gate_keys() -> None:
             "technical_action_plan_key",
             "Use marketer-readable compact action plan keys instead of missing_requirements.",
         ),
-    ]
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.id",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of id.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.campaign_id",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of campaign_id.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.campaign_budget_id",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of campaign_budget_id.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.safety_review.id",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of id.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.safety_review.safety_contract",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of safety_contract.",
+        ),
+    }
 
 
 def test_context_pack_guard_blocks_required_mapping_key() -> None:

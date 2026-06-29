@@ -20,11 +20,19 @@ DEFAULT_SKILLS = (
 )
 
 FORBIDDEN_ACTION_PLAN_KEYS = (
+    "id",
     "action_type",
     "connector",
     "mode",
     "operation_type",
     "source_metric_names",
+    "campaign_id",
+    "campaign_budget_id",
+    "custom_segment_preview_id",
+    "budget_preview_id",
+    "safety_contract",
+    "target_scope",
+    "audit_required",
     "blocked_claims",
     "forbidden_claims",
     "missing_read_contracts",
@@ -34,6 +42,8 @@ FORBIDDEN_ACTION_PLAN_KEYS = (
     "human_review_gates",
     "campaign_status",
     "advertising_channel_type",
+    "member_type",
+    "status",
     "target_status",
     "missing_requirements",
     "source_type",
