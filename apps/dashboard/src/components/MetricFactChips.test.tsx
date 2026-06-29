@@ -179,4 +179,32 @@ describe("MetricFactChips", () => {
     expect(within(container).getByText("średnia widoczność: 52,83")).toBeInTheDocument();
     expect(container.textContent).not.toContain("52.8261");
   });
+
+  it("explains delta with unknown trend instead of showing a bare missing state", () => {
+    const { container } = render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "ga4_engaged_sessions",
+            metric_label: "sesje z zaangażowaniem",
+            value: 14,
+            period: "last_28d",
+            source_connector: "google_analytics_4",
+            evidence_id: "ev_refresh_ga4_test",
+            dimensions: {},
+            dimension_labels: {},
+            dimension_value_labels: {},
+            unit: null,
+            delta: 3,
+            delta_percent: null,
+            trend: "unknown",
+            freshness_label: ""
+          }
+        ]}
+      />
+    );
+
+    expect(within(container).getByText("zmiana: kierunek niepotwierdzony")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("zmiana: brak");
+  });
 });

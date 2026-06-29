@@ -208,6 +208,10 @@ API status later contradicts this state.
   route continues to explain actual blockers and next safe steps in the page
   flow. Focused content dashboard tests, marketer language guard,
   `git diff --check` and browser proof for `/content-planner` passed.
+- Shared metric chips no longer say `zmiana: brak` when a delta exists but the
+  trend direction is not confirmed. They explain `zmiana: kierunek
+  niepotwierdzony`, with a focused component test and browser proof that Localo
+  metric chips still render correctly in the live dashboard.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

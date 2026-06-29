@@ -71,8 +71,11 @@ function formatMetricFactValue(fact: MetricFact) {
 }
 
 function formatMetricDelta(fact: MetricFact) {
-  if (fact.delta === null || fact.delta === undefined || !fact.trend || fact.trend === "unknown") {
-    return "zmiana: brak";
+  if (fact.delta === null || fact.delta === undefined) {
+    return "zmiana niepotwierdzona";
+  }
+  if (!fact.trend || fact.trend === "unknown") {
+    return "zmiana: kierunek niepotwierdzony";
   }
   const sign = fact.delta > 0 ? "+" : "";
   const percent =
