@@ -161,7 +161,7 @@ CONTENT_CONTRACT_LABELS = {
     "blocked_until_relevance_review": "zablokowane do sprawdzenia dopasowania",
     "create_blocked_until_duplicate_check": "utworzenie zablokowane do kontroli duplikacji",
     "manual_merge_or_create_review": "ręcznie rozstrzygnij scalenie albo utworzenie",
-    "missing": "brak",
+    "missing": "zakres treści niepotwierdzony",
     "not_applicable": "nie dotyczy",
     "28d_before_publish": "28 dni przed publikacją",
     "7d_after_publish": "7 dni po publikacji",
@@ -1903,7 +1903,7 @@ def _metric_sum(facts: list[MetricFact], metric_name: str) -> float:
 def _metric_sum_or_missing(facts: list[MetricFact], metric_name: str) -> int | float | str:
     value = _metric_sum(facts, metric_name)
     if value == 0 and not any(fact.name == metric_name for fact in facts):
-        return "brak danych"
+        return "metryka GSC niepotwierdzona"
     return int(value) if value.is_integer() else value
 
 
@@ -1912,7 +1912,7 @@ def _first_metric_or_missing(facts: list[MetricFact], metric_name: str) -> int |
         if fact.name == metric_name and isinstance(fact.value, int | float):
             value = float(fact.value)
             return int(value) if value.is_integer() else value
-    return "brak danych"
+    return "metryka GSC niepotwierdzona"
 
 
 def _normalized_path(value: str) -> str:

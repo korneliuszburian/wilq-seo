@@ -19,7 +19,12 @@ from apps.api.wilq_api.main import (
     _compact_refresh_run_for_operator_context,
     app,
 )
-from wilq.actions.content_refresh import _draft_content_block_label, content_contract_label
+from wilq.actions.content_refresh import (
+    _draft_content_block_label,
+    _first_metric_or_missing,
+    _metric_sum_or_missing,
+    content_contract_label,
+)
 from wilq.actions.ga4.tracking_quality import (
     _blocked_claim_label as _ga4_tracking_blocked_claim_label,
 )
@@ -2061,6 +2066,12 @@ def test_missing_domain_statuses_explain_unconfirmed_data_scope() -> None:
     assert _ads_status_label("missing") == "zakres danych Ads niepotwierdzony"
     assert _ahrefs_status_label("missing") == "dane Ahrefs niepotwierdzone"
     assert _merchant_status_label("missing") == "zakres danych Merchant niepotwierdzony"
+
+
+def test_content_action_missing_labels_explain_unconfirmed_source_data() -> None:
+    assert content_contract_label("missing") == "zakres treści niepotwierdzony"
+    assert _metric_sum_or_missing([], "clicks") == "metryka GSC niepotwierdzona"
+    assert _first_metric_or_missing([], "ctr") == "metryka GSC niepotwierdzona"
 
 
 def test_validated_ready_action_copy_does_not_claim_human_review(
@@ -6188,8 +6199,8 @@ def test_command_center_exposes_polish_operator_brief(
         "gotowe",
         "do odświeżenia",
         "zablokowane",
-        "brak danych",
-        "nieznane",
+        "dane niepotwierdzone",
+        "status niepotwierdzony",
     }
     assert merchant_decision["route_label"] == "Merchant Center"
     assert merchant_decision["cta_label"] == "Otwórz Merchant Center"

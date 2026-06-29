@@ -399,6 +399,8 @@ API status later contradicts this state.
 - Daily, Ads, Ahrefs and Merchant missing-status labels now describe
   unconfirmed data scopes instead of returning bare missing-data copy in active
   briefing contracts.
+- Content action labels now describe missing content contracts and unavailable
+  GSC metrics as unconfirmed source data instead of bare missing placeholders.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
