@@ -8365,6 +8365,7 @@ describe("WILQ dashboard", () => {
       "decision.duplicate_gate_status_label ?? decision.duplicate_gate_status"
     );
     expect(routeSource).not.toContain("candidate.gap_type_label || candidate.gap_type");
+    expect(routeSource).not.toContain('"} / score{"');
     expect(routeSource).not.toContain(
       "candidate.relevance_status_label || candidate.relevance_status"
     );

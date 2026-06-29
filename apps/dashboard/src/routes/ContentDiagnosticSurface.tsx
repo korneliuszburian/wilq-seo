@@ -814,10 +814,16 @@ function ContentDecisionCard({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="text-sm font-semibold text-ink">{candidate.topic}</div>
-                    <div className="mt-0.5 text-xs text-slate-500">
-                      {candidate.gap_type_label || "typ luki do sprawdzenia"} /{" "}
-                      {candidate.relevance_status_label || "trafność do sprawdzenia"} / score{" "}
-                      {candidate.relevance_score}
+                    <div className="mt-1 flex flex-wrap gap-1 text-xs text-slate-600">
+                      <span className="rounded border border-line bg-white px-2 py-1">
+                        Typ: {candidate.gap_type_label || "typ luki do sprawdzenia"}
+                      </span>
+                      <span className="rounded border border-line bg-white px-2 py-1">
+                        Trafność: {candidate.relevance_status_label || "trafność do sprawdzenia"}
+                      </span>
+                      <span className="rounded border border-line bg-white px-2 py-1">
+                        Ocena WILQ: {candidate.relevance_score}
+                      </span>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 text-xs">
