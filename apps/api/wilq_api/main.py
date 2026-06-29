@@ -3380,6 +3380,7 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("blocked_claims", None)
     if "missing_read_contract_labels" in value:
         value.pop("missing_read_contracts", None)
+    _label_action_plan_metric_snapshot(value)
 
     apply_allowed = value.pop("apply_allowed", None)
     if isinstance(apply_allowed, bool):
@@ -3401,6 +3402,23 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
             "change_risk_label",
             "zmiana destrukcyjna" if destructive else "bezpieczny podgląd",
         )
+
+
+def _label_action_plan_metric_snapshot(value: dict[str, Any]) -> None:
+    metric_snapshot = value.get("metric_snapshot")
+    metric_snapshot_labels = value.get("metric_snapshot_labels")
+    if not isinstance(metric_snapshot, dict) or not isinstance(metric_snapshot_labels, dict):
+        return
+
+    metric_tiles: dict[str, Any] = {}
+    for metric_name, metric_value in metric_snapshot.items():
+        metric_label = metric_snapshot_labels.get(metric_name)
+        if isinstance(metric_label, str) and metric_label:
+            metric_tiles[metric_label] = metric_value
+    if metric_tiles:
+        value["metric_tiles"] = metric_tiles
+        value.pop("metric_snapshot", None)
+        value.pop("metric_snapshot_labels", None)
 
 
 def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:

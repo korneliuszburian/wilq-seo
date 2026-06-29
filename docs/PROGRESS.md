@@ -142,6 +142,9 @@ API status later contradicts this state.
   `ngram_preview`, and validation counters use required-check naming. Raw
   blocked-claim and missing-contract lists are removed from compact action
   plans when marketer-readable labels are present.
+- Skill context-pack `action_plan` metric snapshots are condensed into
+  `metric_tiles` keyed by marketer-readable labels; raw metric field names stay
+  out of compact skill action context.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

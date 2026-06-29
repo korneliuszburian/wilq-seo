@@ -27,6 +27,8 @@ FORBIDDEN_ACTION_PLAN_KEYS = (
     "source_metric_names",
     "blocked_claims",
     "missing_read_contracts",
+    "metric_snapshot",
+    "metric_snapshot_labels",
     "ngram_preview",
     "payload_preview",
     "budget_payload_preview",

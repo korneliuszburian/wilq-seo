@@ -3069,7 +3069,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert all("queries=" not in fact for fact in brief_preview["source_facts"])
     assert any("Strona z GSC:" in fact for fact in brief_preview["source_facts"])
     assert brief_preview["missing_evidence"]
-    assert brief_preview["metric_snapshot_labels"]["clicks"] == "kliknięcia"
+    assert brief_preview["metric_tiles"]["kliknięcia"] == 3
     assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
     assert brief_preview["source_public_url"]
     assert brief_preview["final_canonical_url"]
@@ -5565,7 +5565,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     context_preview = context_action_by_id["act_review_ga4_tracking_quality"]["action_plan"][
         "preview_items"
     ][0]
-    assert context_preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
+    assert context_preview["metric_tiles"]["aktywni użytkownicy"] == preview["metric_snapshot"][
+        "active_users"
+    ]
     assert context_preview["apply_status_label"] == "zablokowane do sprawdzenia"
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
@@ -7260,8 +7262,8 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert localo_context_action["action_plan"]["preview_items_included"] == 1
     assert localo_context_action["action_plan"]["preview_items_total"] == 1
     assert (
-        localo_context_action["action_plan"]["preview_items"][0]["metric_snapshot"][
-            "localo_active_place_count"
+        localo_context_action["action_plan"]["preview_items"][0]["metric_tiles"][
+            "aktywne lokalizacje"
         ]
         == 4
     )
