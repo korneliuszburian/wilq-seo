@@ -18,21 +18,13 @@ REQUIRED_DOCS = [
     Path("docs/handoffs/2026-06-29-marketer-uat-ready.md"),
 ]
 
-OWNER_DEFER_ALIASES = {
-    "defer_real_marketer_uat": [
-        "defer_real_marketer_uat",
-        "defer_uat",
-        "odroczenie_realnego_uat",
-    ],
-    "date": ["date", "data"],
-    "owner": ["owner", "osoba", "kto"],
-    "reason": ["reason", "powód", "dlaczego"],
-    "safe_to_show": ["safe_to_show", "co_można_pokazać", "bezpieczny_zakres"],
-    "blocked_claims": [
-        "blocked_claims",
-        "zablokowane_obietnice",
-        "zablokowane_claimy",
-    ],
+OWNER_DEFER_FIELDS = {
+    "flag": "odroczenie_realnego_uat",
+    "date": "data",
+    "owner": "osoba",
+    "reason": "powód",
+    "safe_to_show": "co_można_pokazać",
+    "blocked_claims": "zablokowane_obietnice",
 }
 
 
@@ -141,39 +133,29 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
     except RuntimeError as error:
         return {"valid": False, "errors": str(error).splitlines()}
 
-    normalized = normalize_defer_payload(payload)
     errors: list[str] = []
-    if normalized.get("defer_real_marketer_uat") is not True:
-        errors.append("owner defer must set defer_real_marketer_uat to true")
+    if payload.get(OWNER_DEFER_FIELDS["flag"]) is not True:
+        errors.append("defer ownera musi ustawić odroczenie_realnego_uat na true")
     for key in ["date", "owner", "reason", "safe_to_show"]:
-        if is_blank(normalized.get(key)):
-            errors.append(f"missing owner defer field: {key}")
-    blocked_claims = normalized.get("blocked_claims")
+        field = OWNER_DEFER_FIELDS[key]
+        if is_blank(payload.get(field)):
+            errors.append(f"brak pola defer ownera: {field}")
+    blocked_claims = payload.get(OWNER_DEFER_FIELDS["blocked_claims"])
     if not isinstance(blocked_claims, list) or not blocked_claims:
-        errors.append("blocked_claims must be a non-empty list")
+        errors.append("zablokowane_obietnice musi być niepustą listą")
     elif any(is_blank(item) for item in blocked_claims):
-        errors.append("blocked_claims must not contain blank items")
+        errors.append("zablokowane_obietnice nie może zawierać pustych pozycji")
 
     if errors:
         return {"valid": False, "errors": errors}
     return {
         "valid": True,
-        "date": str(normalized["date"]).strip(),
-        "owner": str(normalized["owner"]).strip(),
-        "reason": str(normalized["reason"]).strip(),
-        "safe_to_show": str(normalized["safe_to_show"]).strip(),
+        "date": str(payload[OWNER_DEFER_FIELDS["date"]]).strip(),
+        "owner": str(payload[OWNER_DEFER_FIELDS["owner"]]).strip(),
+        "reason": str(payload[OWNER_DEFER_FIELDS["reason"]]).strip(),
+        "safe_to_show": str(payload[OWNER_DEFER_FIELDS["safe_to_show"]]).strip(),
         "blocked_claims": [str(item).strip() for item in blocked_claims],
     }
-
-
-def normalize_defer_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    normalized: dict[str, Any] = {}
-    for canonical, aliases in OWNER_DEFER_ALIASES.items():
-        for alias in aliases:
-            if alias in payload:
-                normalized[canonical] = payload[alias]
-                break
-    return normalized
 
 
 def blocked_report(*, missing_input: str, details: list[str]) -> dict[str, Any]:

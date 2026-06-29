@@ -63,6 +63,10 @@ Date: 2026-06-29
 - `docs/CONTEXT.md` current-boundary rules now use Polish WILQ operating
   language instead of old English formulas. `scripts/marketer_language_guard.py`
   guards that recovery file together with the active plan files.
+- Goal completion owner-defer proof now uses one canonical Polish JSON shape
+  from the UAT handoff. Stale alias fields such as `defer_uat`, `date`,
+  `owner`, `safe_to_show` and `blocked_claims` are rejected instead of silently
+  normalized.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

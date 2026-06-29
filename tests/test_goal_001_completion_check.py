@@ -77,12 +77,12 @@ def test_owner_defer_requires_explicit_blocked_claims(tmp_path: Path) -> None:
     defer_path.write_text(
         """
         {
-          "defer_real_marketer_uat": true,
-          "date": "2026-06-29",
-          "owner": "Owner",
-          "reason": "No marketer today.",
-          "safe_to_show": "Cleanup proof only.",
-          "blocked_claims": []
+          "odroczenie_realnego_uat": true,
+          "data": "2026-06-29",
+          "osoba": "Owner",
+          "powód": "Wilku nie jest dostępny dzisiaj.",
+          "co_można_pokazać": "Zweryfikowany cockpit i pakiet UAT.",
+          "zablokowane_obietnice": []
         }
         """,
         encoding="utf-8",
@@ -91,4 +91,29 @@ def test_owner_defer_requires_explicit_blocked_claims(tmp_path: Path) -> None:
     report = validate_owner_defer(defer_path)
 
     assert report["valid"] is False
-    assert "blocked_claims must be a non-empty list" in report["errors"]
+    assert "zablokowane_obietnice musi być niepustą listą" in report["errors"]
+
+
+def test_owner_defer_rejects_stale_alias_fields(tmp_path: Path) -> None:
+    defer_path = tmp_path / "owner-defer.json"
+    defer_path.write_text(
+        """
+        {
+          "defer_uat": true,
+          "date": "2026-06-29",
+          "owner": "Owner",
+          "reason": "No marketer today.",
+          "safe_to_show": "Cleanup proof only.",
+          "blocked_claims": [
+            "gotowość bez developera"
+          ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    report = validate_owner_defer(defer_path)
+
+    assert report["valid"] is False
+    assert "defer ownera musi ustawić odroczenie_realnego_uat na true" in report["errors"]
+    assert "brak pola defer ownera: data" in report["errors"]
