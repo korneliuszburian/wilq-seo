@@ -6695,8 +6695,11 @@ const demandGenDiagnostics = {
       source_medium: "google / cpc",
       source_medium_label: "google / cpc",
       active_users: 20,
+      active_users_label: "20",
       sessions: 30,
+      sessions_label: "30",
       engagement_rate: 0.125,
+      engagement_rate_label: "12,5%",
       evidence_ids: ["ev_refresh_refresh_ga4_test"],
       evidence_summary_label: "1 dowód źródłowy"
     }
@@ -8731,6 +8734,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/kontrola trybu kampanii/).length).toBeGreaterThan(0);
     expect(screen.getByText("Strona wejścia: /oferta/")).toBeInTheDocument();
     expect(screen.getByText("Źródło ruchu: google / cpc")).toBeInTheDocument();
+    expect(screen.getByText("12,5%")).toBeInTheDocument();
     expect(screen.queryByText("/oferta/ / google / cpc")).not.toBeInTheDocument();
     expect(screen.getAllByText(/Google Ads/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/GA4/).length).toBeGreaterThan(0);
@@ -8757,7 +8761,21 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.source_medium_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
+    expect(routeSource).toContain("row.clicks_label");
+    expect(routeSource).toContain("row.impressions_label");
+    expect(routeSource).toContain("row.cost_label");
+    expect(routeSource).toContain("row.conversions_label");
+    expect(routeSource).toContain("row.active_users_label");
+    expect(routeSource).toContain("row.sessions_label");
+    expect(routeSource).toContain("row.engagement_rate_label");
     expect(routeSource).not.toContain("{row.landing_page} / {row.source_medium");
+    expect(routeSource).not.toContain('row.clicks ?? "brak"');
+    expect(routeSource).not.toContain('row.impressions ?? "brak"');
+    expect(routeSource).not.toContain('row.conversions ?? "brak"');
+    expect(routeSource).not.toContain('row.active_users ?? "brak"');
+    expect(routeSource).not.toContain('row.sessions ?? "brak"');
+    expect(routeSource).not.toContain("function adsCost");
+    expect(routeSource).not.toContain("function adsPercent");
     expect(routeSource).not.toContain("data.campaign_channel_labels[channel] ?? channel");
     expect(routeSource).not.toContain("formatDemandGenIdCount");
     expect(routeSource).not.toContain("formatDemandGenEvidenceCount");

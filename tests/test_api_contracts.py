@@ -164,6 +164,7 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    AdsCampaignMetricRow,
     AdsChangeHistoryRow,
     AdsChangeImpactReadinessRow,
     AdsKeywordMatchContextRow,
@@ -185,6 +186,7 @@ from wilq.schemas import (
     ConnectorStatusValue,
     ConnectorSummary,
     DailyDecision,
+    DemandGenLandingQualityRow,
     Evidence,
     FreshnessState,
     Ga4DecisionItem,
@@ -19407,11 +19409,22 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
         "google / cpc"
     )
     assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
+    assert data["demand_gen_landing_quality_rows"][0]["active_users_label"] == "18"
     assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24
+    assert data["demand_gen_landing_quality_rows"][0]["sessions_label"] == "24"
     assert data["demand_gen_landing_quality_rows"][0]["engagement_rate"] == 0.75
+    assert data["demand_gen_landing_quality_rows"][0]["engagement_rate_label"] == "75%"
     assert data["demand_gen_campaign_mode_review_rows"][0]["campaign_name"] == ("Demand Gen Test")
     assert data["demand_gen_campaign_rows"][0]["advertising_channel_type_label"] == ("Demand Gen")
     assert data["demand_gen_campaign_rows"][0]["campaign_status_label"] == "wstrzymana"
+    assert data["demand_gen_campaign_rows"][0]["clicks_label"] == "12"
+    assert data["demand_gen_campaign_rows"][0]["impressions_label"] == (
+        "brak odczytu wyświetleń Ads"
+    )
+    assert data["demand_gen_campaign_rows"][0]["cost_label"] == "brak odczytu kosztu Ads"
+    assert data["demand_gen_campaign_rows"][0]["conversions_label"] == (
+        "brak odczytu konwersji Ads"
+    )
     assert data["demand_gen_campaign_rows"][0]["evidence_summary_label"] == ("1 dowód źródłowy")
     assert data["demand_gen_ad_group_ad_rows"][0]["evidence_summary_label"] == ("1 dowód źródłowy")
     assert data["demand_gen_creative_asset_rows"][0]["evidence_summary_label"] == (
@@ -19435,6 +19448,81 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert preview["demand_gen_campaign_mode_review_row_count"] == 1
     assert preview["apply_allowed"] is False
     assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
+
+
+def test_demand_gen_metric_rows_expose_self_defending_labels() -> None:
+    campaign_row = AdsCampaignMetricRow(
+        campaign_name="Demand Gen Test",
+        evidence_ids=["ev_ads_demand_gen"],
+    )
+    assert campaign_row.clicks_label == "brak odczytu kliknięć Ads"
+    assert campaign_row.impressions_label == "brak odczytu wyświetleń Ads"
+    assert campaign_row.cost_label == "brak odczytu kosztu Ads"
+    assert campaign_row.conversions_label == "brak odczytu konwersji Ads"
+    assert campaign_row.conversion_value_label == "brak odczytu wartości konwersji Ads"
+
+    labeled_campaign_row = AdsCampaignMetricRow(
+        campaign_name="Demand Gen Test",
+        clicks=1200,
+        impressions=34567,
+        cost_micros=12345678,
+        conversions=2.5,
+        conversion_value=320.25,
+        evidence_ids=["ev_ads_demand_gen"],
+    )
+    assert labeled_campaign_row.clicks_label == "1 200"
+    assert labeled_campaign_row.impressions_label == "34 567"
+    assert labeled_campaign_row.cost_label == "12,35 jedn. konta"
+    assert labeled_campaign_row.conversions_label == "2,5"
+    assert labeled_campaign_row.conversion_value_label == "320,25"
+
+    landing_row = DemandGenLandingQualityRow(
+        campaign_name="Demand Gen Test",
+        landing_page="/oferta/",
+        evidence_ids=["ev_ga4_demand_gen"],
+    )
+    assert landing_row.active_users_label == "brak odczytu aktywnych użytkowników GA4"
+    assert landing_row.sessions_label == "brak odczytu sesji GA4"
+    assert landing_row.engagement_rate_label == "brak odczytu zaangażowania GA4"
+
+    labeled_landing_row = DemandGenLandingQualityRow(
+        campaign_name="Demand Gen Test",
+        landing_page="/oferta/",
+        active_users=20,
+        sessions=30,
+        engagement_rate=0.125,
+        evidence_ids=["ev_ga4_demand_gen"],
+    )
+    assert labeled_landing_row.active_users_label == "20"
+    assert labeled_landing_row.sessions_label == "30"
+    assert labeled_landing_row.engagement_rate_label == "12,5%"
+
+
+def test_demand_gen_readiness_uses_ads_summary_view(monkeypatch: pytest.MonkeyPatch) -> None:
+    import apps.api.wilq_api.main as api_main
+
+    requested_views: list[str] = []
+
+    class FakeAdsDiagnostics:
+        def model_dump(self, *, mode: str) -> dict[str, Any]:
+            assert mode == "json"
+            return {}
+
+    def fake_build_ads_diagnostics(*, view: str = "full") -> FakeAdsDiagnostics:
+        requested_views.append(view)
+        return FakeAdsDiagnostics()
+
+    monkeypatch.setattr(api_main, "_demand_gen_google_ads_metric_facts", lambda: [])
+    monkeypatch.setattr(api_main, "_demand_gen_ga4_metric_facts", lambda: [])
+    monkeypatch.setattr(api_main, "build_ads_diagnostics", fake_build_ads_diagnostics)
+    monkeypatch.setattr(
+        api_main,
+        "_demand_gen_readiness_contract",
+        lambda ads, ga4, demand_gen_facts, ga4_facts: "demand_gen_contract",
+    )
+
+    assert api_main._build_demand_gen_readiness_contract() == "demand_gen_contract"
+    assert requested_views == ["summary"]
 
 
 def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:

@@ -105,10 +105,10 @@ export function DemandGenDiagnosticSurface() {
                   <StatusBadge value="needs_validation" label="do sprawdzenia" />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <MetricTile label="Kliknięcia" value={row.clicks ?? "brak"} />
-                  <MetricTile label="Wyświetlenia" value={row.impressions ?? "brak"} />
-                  <MetricTile label="Koszt" value={adsCost(row.cost_micros)} />
-                  <MetricTile label="Konwersje" value={row.conversions ?? "brak"} />
+                  <MetricTile label="Kliknięcia" value={row.clicks_label} />
+                  <MetricTile label="Wyświetlenia" value={row.impressions_label} />
+                  <MetricTile label="Koszt" value={row.cost_label} />
+                  <MetricTile label="Konwersje" value={row.conversions_label} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
@@ -163,9 +163,9 @@ export function DemandGenDiagnosticSurface() {
                   <span>Źródło ruchu: {row.source_medium_label}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2">
-                  <MetricTile label="Aktywni" value={row.active_users ?? "brak"} />
-                  <MetricTile label="Sesje" value={row.sessions ?? "brak"} />
-                  <MetricTile label="Zaangażowanie" value={adsPercent(row.engagement_rate)} />
+                  <MetricTile label="Aktywni" value={row.active_users_label} />
+                  <MetricTile label="Sesje" value={row.sessions_label} />
+                  <MetricTile label="Zaangażowanie" value={row.engagement_rate_label} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
                   <TraceLine
@@ -258,28 +258,6 @@ export function DemandGenDiagnosticSurface() {
       </section>
     </main>
   );
-}
-
-function adsCost(value: number | null | undefined, currencyCode?: string) {
-  if (value === null || value === undefined) return "brak";
-  const accountUnits = value / 1_000_000;
-  if (currencyCode) {
-    return new Intl.NumberFormat("pl-PL", {
-      currency: currencyCode,
-      maximumFractionDigits: 2,
-      style: "currency"
-    }).format(accountUnits);
-  }
-  return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
-    accountUnits
-  )} jedn. konta`;
-}
-
-function adsPercent(value: number | null | undefined) {
-  if (value === null || value === undefined) return "brak";
-  return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
-    value * 100
-  )}%`;
 }
 
 function DemandGenPreviewCard({ card }: { card: ActionPreviewCardViewModel }) {

@@ -118,6 +118,16 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Demand Gen metric rows now expose self-defending marketer labels from the
+  typed API/schema contract. The dashboard no longer renders generic `brak`
+  fallbacks or local Ads cost/GA4 percent formatters for Demand Gen metrics.
+  Focused API/dashboard/shared-schema tests, dashboard typecheck/lint,
+  marketer language guard and `git diff --check` passed.
+- Demand Gen readiness now builds from Ads summary diagnostics instead of the
+  full Ads cockpit. Direct/TestClient proof returns in about two seconds, but
+  the local uvicorn stack timed out on HTTP after repeated interrupted live
+  probes. Treat this as a runtime proof blocker for Demand Gen HTTP/browser
+  verification until the stack hang is isolated.
 - Action detail validation now uses self-explanatory empty states such as
   `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
   Focused dashboard tests, typecheck, lint, language guards, `git diff --check`

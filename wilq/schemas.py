@@ -1618,10 +1618,15 @@ class AdsCampaignMetricRow(BaseModel):
     advertising_channel_type: str | None = None
     advertising_channel_type_label: str = ""
     clicks: int | None = None
+    clicks_label: str = ""
     impressions: int | None = None
+    impressions_label: str = ""
     cost_micros: int | None = None
+    cost_label: str = ""
     conversions: float | None = None
+    conversions_label: str = ""
     conversion_value: float | None = None
+    conversion_value_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
     metric_facts: list[MetricFact] = Field(default_factory=list)
@@ -1654,6 +1659,31 @@ class AdsCampaignMetricRow(BaseModel):
             )
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
+        if not self.clicks_label:
+            self.clicks_label = _operator_number_label(
+                self.clicks,
+                missing_label="brak odczytu kliknięć Ads",
+            )
+        if not self.impressions_label:
+            self.impressions_label = _operator_number_label(
+                self.impressions,
+                missing_label="brak odczytu wyświetleń Ads",
+            )
+        if not self.cost_label:
+            self.cost_label = _operator_micros_label(
+                self.cost_micros,
+                missing_label="brak odczytu kosztu Ads",
+            )
+        if not self.conversions_label:
+            self.conversions_label = _operator_number_label(
+                self.conversions,
+                missing_label="brak odczytu konwersji Ads",
+            )
+        if not self.conversion_value_label:
+            self.conversion_value_label = _operator_number_label(
+                self.conversion_value,
+                missing_label="brak odczytu wartości konwersji Ads",
+            )
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1667,6 +1697,34 @@ class AdsCampaignMetricRow(BaseModel):
                 self.human_review_gate_labels or self.human_review_gates
             )
         return self
+
+
+def _operator_number_label(
+    value: int | float | None,
+    *,
+    missing_label: str,
+    max_fraction_digits: int = 2,
+) -> str:
+    if value is None:
+        return missing_label
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if isinstance(value, int):
+        return f"{value:,}".replace(",", " ")
+    text = f"{value:,.{max_fraction_digits}f}".rstrip("0").rstrip(".")
+    return text.replace(",", " ").replace(".", ",")
+
+
+def _operator_micros_label(value: int | float | None, *, missing_label: str) -> str:
+    if value is None:
+        return missing_label
+    return f"{_operator_number_label(value / 1_000_000, missing_label=missing_label)} jedn. konta"
+
+
+def _operator_percent_label(value: int | float | None, *, missing_label: str) -> str:
+    if value is None:
+        return missing_label
+    return f"{_operator_number_label(value * 100, missing_label=missing_label)}%"
 
 
 class AdsCampaignReadContract(BaseModel):
@@ -3482,8 +3540,11 @@ class DemandGenLandingQualityRow(BaseModel):
     source_medium: str | None = None
     source_medium_label: str = ""
     active_users: int | None = None
+    active_users_label: str = ""
     sessions: int | None = None
+    sessions_label: str = ""
     engagement_rate: float | None = None
+    engagement_rate_label: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     evidence_summary_label: str = ""
 
@@ -3493,6 +3554,21 @@ class DemandGenLandingQualityRow(BaseModel):
             self.landing_page_label = self.landing_page or "brak strony wejścia w raporcie"
         if not self.source_medium_label:
             self.source_medium_label = self.source_medium or "brak źródła ruchu"
+        if not self.active_users_label:
+            self.active_users_label = _operator_number_label(
+                self.active_users,
+                missing_label="brak odczytu aktywnych użytkowników GA4",
+            )
+        if not self.sessions_label:
+            self.sessions_label = _operator_number_label(
+                self.sessions,
+                missing_label="brak odczytu sesji GA4",
+            )
+        if not self.engagement_rate_label:
+            self.engagement_rate_label = _operator_percent_label(
+                self.engagement_rate,
+                missing_label="brak odczytu zaangażowania GA4",
+            )
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self

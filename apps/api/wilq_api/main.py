@@ -1513,7 +1513,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
 def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
     demand_gen_metric_facts = _demand_gen_google_ads_metric_facts()
     ga4_metric_facts = _demand_gen_ga4_metric_facts()
-    ads_diagnostics = build_ads_diagnostics().model_dump(mode="json")
+    ads_diagnostics = build_ads_diagnostics(view="summary").model_dump(mode="json")
     ga4_diagnostics = _demand_gen_ga4_diagnostics_from_metric_facts(ga4_metric_facts)
     return _demand_gen_readiness_contract(
         ads_diagnostics,
