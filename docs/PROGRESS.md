@@ -226,6 +226,9 @@ Date: 2026-06-29
   Polish operator keys in the visible WILQ snapshot instead of raw
   `decision_type`, `status`, URL-field or route-check keys. The packet still
   does not prove UAT happened; it is the input for a 15-minute human session.
+- Durable UAT handoff: `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
+  Next completion step is a filled real UAT result or an explicit owner defer
+  note; do not replace that with more technical proof.
 - Fresh first-party Google reads are healthy after the latest stack restart:
   GSC, GA4 and Merchant are `configured`, have no missing credentials and have
   fresh `last_success_at` values from 2026-06-29T02:30Z. LinkedIn and Facebook
@@ -274,7 +277,8 @@ Date: 2026-06-29
    blocker/review list must be condensed at API/domain source, not trimmed in
    React.
 9. Real marketer UAT is still required for a usefulness claim unless the owner
-   explicitly defers it.
+   explicitly defers it. Current handoff:
+   `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
 
 ## Latest Accepted Proof
 

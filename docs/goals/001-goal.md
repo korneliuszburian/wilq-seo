@@ -262,6 +262,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   operator snapshot fields instead of raw `decision_type`, `status`,
   route-check or URL-contract keys. This prepares the required UAT step but
   does not count as completed UAT.
+- Durable UAT handoff lives at
+  `docs/handoffs/2026-06-29-marketer-uat-ready.md`. Goal 001 still needs a
+  filled real marketer UAT result or explicit owner defer before completion can
+  be claimed.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`
@@ -320,7 +324,8 @@ are resolved or explicitly deferred.
    details is clean; any future long blocker/review list must be condensed at
    API/domain source, not trimmed in React.
 9. Real marketer UAT is still required for usefulness claims unless explicitly
-   deferred by the owner.
+   deferred by the owner. Use
+   `docs/handoffs/2026-06-29-marketer-uat-ready.md` as the current handoff.
 
 ## Execution Policy
 
