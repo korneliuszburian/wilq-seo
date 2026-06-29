@@ -10,5 +10,8 @@ describe("AdsDoctorSurface copy", () => {
     expect(source).toContain("nie traktuj tego jako rekomendacji Ads");
     expect(source).toContain("nie wykonuj zmiany bez review");
     expect(source).toContain("nie automatyzuj decyzji");
+    expect(source).toContain("bez ostatniego odczytu; nie oceniaj trendu");
+    expect(source).toContain("nie ma podglądu zmian; nie zapisuj zmiany");
+    expect(source).toContain("metryki kampanii niepotwierdzone; nie oceniaj wpływu");
   });
 });

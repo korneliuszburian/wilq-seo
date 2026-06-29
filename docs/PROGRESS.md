@@ -188,6 +188,12 @@ API status later contradicts this state.
   says `nie pisz` / `bramka niedostępna`, while utility routes explain what must
   not be done from that view. Focused route tests, dashboard typecheck/lint,
   marketer language guard and `git diff --check` passed.
+- Ads field-level fallbacks for missing latest read, campaign channel/status,
+  budget proposal, preview, date, campaign, ad group, change ID and campaign
+  metrics now say what the operator must not infer or do. The Ads route no
+  longer turns these missing fields into context-free missing-state answers in
+  the active surface. Focused Ads dashboard tests, typecheck/lint, marketer
+  language guard and `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

@@ -54,6 +54,17 @@ type AdsKeywordMatchContextRow =
 type AdsNegativeKeywordCandidate =
   AdsDiagnosticsResponse["negative_keywords_read_contract"]["candidates"][number];
 
+const adsMissingLatestReadLabel = "bez ostatniego odczytu; nie oceniaj trendu";
+const adsMissingChannelLabel = "kanał niepotwierdzony";
+const adsMissingCampaignStatusLabel = "status kampanii niepotwierdzony";
+const adsMissingRecommendedBudgetLabel = "nie ma propozycji budżetu; nie zmieniaj budżetu";
+const adsMissingPreviewLabel = "nie ma podglądu zmian; nie zapisuj zmiany";
+const adsMissingDateLabel = "data niepotwierdzona";
+const adsMissingCampaignLabel = "kampania niepotwierdzona w odczycie";
+const adsMissingAdGroupLabel = "grupa reklam niepotwierdzona w odczycie";
+const adsMissingChangeIdLabel = "identyfikator zmiany niepotwierdzony";
+const adsMissingCampaignMetricsLabel = "metryki kampanii niepotwierdzone; nie oceniaj wpływu";
+
 export function AdsDoctorSurface() {
   const diagnostics = useQuery({
     queryKey: ["ads-diagnostics", "summary"],
@@ -331,7 +342,7 @@ function AdsCondensedDecisionPanel({
                 data.live_data_status_label,
                 data.latest_refresh
                   ? `ostatni odczyt: ${data.latest_refresh_status_label}`
-                  : "brak odczytu"
+                  : adsMissingLatestReadLabel
               ]}
             />
           </div>
@@ -1209,8 +1220,8 @@ function AdsCampaignTriageRowsPanel({
                 <LabelChipRow
                   className="mt-1"
                   chips={[
-                    { label: "Kanał", value: row.advertising_channel_type_label ?? "brak danych" },
-                    { label: "Status", value: row.campaign_status_label ?? "brak danych" },
+                    { label: "Kanał", value: row.advertising_channel_type_label ?? adsMissingChannelLabel },
+                    { label: "Status", value: row.campaign_status_label ?? adsMissingCampaignStatusLabel },
                     { label: "Cel", value: row.target_status_label }
                   ]}
                 />
@@ -1399,7 +1410,7 @@ function AdsBudgetPacingRowsTable({
               <td className="py-2 pr-4 text-slate-700">
                 {row.has_recommended_budget
                   ? adsCost(row.recommended_budget_amount_micros, currencyCode)
-                  : "brak rekomendowanego budżetu"}
+                  : adsMissingRecommendedBudgetLabel}
               </td>
               <td className="min-w-48 py-2 pr-4 text-xs text-slate-600">
                 {row.preview_card ? (
@@ -1407,7 +1418,7 @@ function AdsBudgetPacingRowsTable({
                     <ActionPreviewCard card={row.preview_card} />
                   </div>
                 ) : (
-                  "brak podglądu zmian"
+                  adsMissingPreviewLabel
                 )}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
@@ -1705,7 +1716,7 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
           {rows.slice(0, 12).map((row) => (
             <tr key={`${row.change_event_id ?? "unknown"}-${row.change_date_time ?? "no-date"}`}>
               <td className="py-2 pl-3 pr-4 font-medium text-ink">
-                {row.change_date_time ?? "brak daty"}
+                {row.change_date_time ?? adsMissingDateLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.change_resource_label || "zasób zmiany do sprawdzenia"}
@@ -1717,7 +1728,7 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
                 {row.client_type_label || "źródło zmiany do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_label || "brak kampanii w odczycie"}
+                {row.campaign_label || adsMissingCampaignLabel}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.changed_field_summary_label}
@@ -1810,15 +1821,15 @@ function AdsChangeImpactReadinessCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h4 className="text-sm font-semibold text-ink">
-            {row.campaign_label || "brak kampanii w odczycie"}
+            {row.campaign_label || adsMissingCampaignLabel}
           </h4>
           <p className="mt-1 text-xs text-slate-500">
-            {row.change_event_label || "brak identyfikatora zmiany w odczycie"} /{" "}
-            {row.change_date_time ?? "brak daty"}
+            {row.change_event_label || adsMissingChangeIdLabel} /{" "}
+            {row.change_date_time ?? adsMissingDateLabel}
           </p>
         </div>
         <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-          {row.current_campaign_metrics_available ? "odczyt kampanii" : "brak odczytu"}
+          {row.current_campaign_metrics_available ? "odczyt kampanii" : adsMissingCampaignMetricsLabel}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
@@ -1903,7 +1914,7 @@ function AdsSearchTermReviewSummaryPanel({
                 {contract.campaign_review_rows.slice(0, 6).map((row) => (
                   <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name ?? "campaign"}`}>
                     <td className="py-2 pl-3 pr-3 font-medium text-ink">
-                      {row.campaign_label || "brak kampanii w odczycie"}
+                      {row.campaign_label || adsMissingCampaignLabel}
                     </td>
                     <td className="py-2 pr-3 text-slate-700">{row.search_term_count}</td>
                     <td className="py-2 pr-3 text-slate-700">
@@ -1935,7 +1946,7 @@ function AdsSearchTermReviewSummaryPanel({
                 <LabelChipRow
                   className="mt-1"
                   chips={[
-                    { label: "Kampania", value: row.campaign_label || "brak kampanii w odczycie" },
+                    { label: "Kampania", value: row.campaign_label || adsMissingCampaignLabel },
                     { label: "Koszt", value: adsCost(row.cost_micros, currencyCode) },
                     { label: "Konwersje", value: adsNumber(row.conversions) }
                   ]}
@@ -1996,10 +2007,10 @@ function AdsSearchTermRowsTable({
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.search_term}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_label || "brak kampanii w odczycie"}
+                {row.campaign_label || adsMissingCampaignLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_label || "brak grupy reklam w odczycie"}
+                {row.ad_group_label || adsMissingAdGroupLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
@@ -2116,10 +2127,10 @@ function AdsSearchTermSafetyRowsTable({
             >
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.search_term}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_label || "brak kampanii w odczycie"}
+                {row.campaign_label || adsMissingCampaignLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_label || "brak grupy reklam w odczycie"}
+                {row.ad_group_label || adsMissingAdGroupLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks_90d)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions_90d)}</td>
@@ -2172,10 +2183,10 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
                 {row.negative_label || row.criterion_status_label || "status do potwierdzenia"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.campaign_label || "brak kampanii w odczycie"}
+                {row.campaign_label || adsMissingCampaignLabel}
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.ad_group_label || "brak grupy reklam w odczycie"}
+                {row.ad_group_label || adsMissingAdGroupLabel}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.evidence_summary_label}
@@ -2225,8 +2236,8 @@ function AdsNegativeKeywordCandidatesPanel({
                 <LabelChipRow
                   className="mt-1"
                   chips={[
-                    { label: "Kampania", value: candidate.campaign_label || "brak kampanii w odczycie" },
-                    { label: "Grupa reklam", value: candidate.ad_group_label || "brak grupy reklam w odczycie" }
+                    { label: "Kampania", value: candidate.campaign_label || adsMissingCampaignLabel },
+                    { label: "Grupa reklam", value: candidate.ad_group_label || adsMissingAdGroupLabel }
                   ]}
                 />
               </div>
