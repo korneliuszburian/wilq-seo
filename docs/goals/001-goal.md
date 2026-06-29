@@ -119,6 +119,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   payload key lists, payload-preview field names and raw apply-blocker keys.
   Skills get typed preview cards, Polish blocker labels and
   `/api/actions/{action_id}` for drilldown.
+- Compact Codex skill context also strips raw Ahrefs read-contract keys,
+  raw Ahrefs metric-label dictionary keys, raw Merchant preview-card IDs and
+  raw Merchant issue-type values. Live daily, content, Merchant, Ads, GA4,
+  Localo and Ahrefs context-pack scans are clean for the guarded terms.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.

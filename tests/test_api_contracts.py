@@ -7564,6 +7564,11 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert context_payload["active_action_objects"] == []
     assert "marketing_brief" not in context_payload
     assert "content_diagnostics" not in context_payload
+    assert "available_read_contracts" not in context_gap_contract
+    assert "allowed_evidence" not in context_gap_contract
+    assert context_gap_contract["available_read_contract_labels"]
+    assert context_gap_contract["allowed_evidence_labels"]
+    assert "competitor_page" not in json.dumps(context_payload, ensure_ascii=False)
 
 
 def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
@@ -7870,6 +7875,11 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert context_gap_contract["gap_records_omitted"] is True
     assert context_gap_contract["gap_records_total"] == len(gap_contract["gap_records"])
     assert "gap_records" not in context_gap_contract
+    assert "available_read_contracts" not in context_gap_contract
+    assert "allowed_evidence" not in context_gap_contract
+    assert context_gap_contract["available_read_contract_labels"]
+    assert context_gap_contract["allowed_evidence_labels"]
+    assert "competitor_page" not in json.dumps(context_payload, ensure_ascii=False)
     assert context_payload["ahrefs_diagnostics"]["context_pack_compaction"][
         "full_endpoint"
     ] == "/api/ahrefs/diagnostics"
@@ -15430,9 +15440,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         for decision in context_payload["content_diagnostics"]["decision_queue"]
         if decision["decision_type"] == "review_ahrefs_gap_records"
     )
-    assert context_ahrefs_decision["ahrefs_candidate_rows"] == ahrefs_decision[
-        "ahrefs_candidate_rows"
-    ]
+    assert context_ahrefs_decision["ahrefs_candidate_rows_total"] == len(
+        ahrefs_decision["ahrefs_candidate_rows"]
+    )
+    assert context_ahrefs_decision["ahrefs_candidate_rows"]
+    context_candidate = context_ahrefs_decision["ahrefs_candidate_rows"][0]
+    assert "gap_type" not in context_candidate
+    assert "metric_name" not in context_candidate
+    assert "id" not in context_candidate
+    assert context_candidate["gap_type_label"]
+    assert "competitor_page" not in json.dumps(
+        context_ahrefs_decision["ahrefs_candidate_rows"], ensure_ascii=False
+    )
 
     gsc_context_response = client.post(
         "/api/codex/context-pack",
@@ -17215,6 +17234,12 @@ def _assert_context_pack_operator_strings_clean(context: dict[str, Any]) -> None
         "mapping" + "_review",
         "mapping" + "-review",
         "migration" + "-map",
+        "competitor" + "_page",
+        "MERCHANT" + "_ACTION",
+        "SHOPPING" + "_ADS",
+        "FREE" + "_LISTINGS",
+        "NOT" + "_IMPACTED",
+        "missing" + "_potentially_required_attribute",
         "wykonanie" + " zmian",
         "tylko do" + " sprawdzenia",
     )
@@ -18414,6 +18439,7 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     assert merchant_action["preview_cards_total"] >= 1
     assert merchant_action["preview_cards_included"] >= 1
     preview_card = merchant_action["preview_cards"][0]
+    assert "id" not in preview_card
     assert preview_card["kind"] == "merchant_feed_issue_review"
     assert preview_card["title_label"] == "Problem feedu do sprawdzenia"
     preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
@@ -18427,6 +18453,7 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     assert "landing_page_error" not in serialized
     assert "SHOPPING_ADS" not in serialized
     assert "MERCHANT_ACTION" not in serialized
+    assert "missing_potentially_required_attribute" not in serialized
     assert "command_center" not in data
     assert len(serialized.encode()) < 80_000
 

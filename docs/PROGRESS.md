@@ -46,6 +46,11 @@ Date: 2026-06-29
   bodies, payload key lists, payload-preview key names or raw blocker keys such
   as `payload_apply_allowed_false`. Skill contexts now use typed preview cards,
   Polish blocker labels and `/api/actions/{action_id}` for drilldown.
+- Compact Codex skill context now also removes raw Ahrefs read-contract keys,
+  raw Ahrefs metric-label dictionary keys, raw Merchant preview-card IDs and
+  raw Merchant issue-type values. Live scans for daily, content, Merchant, Ads,
+  GA4, Localo and Ahrefs context packs returned zero hits for the guarded
+  technical terms.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:52Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.

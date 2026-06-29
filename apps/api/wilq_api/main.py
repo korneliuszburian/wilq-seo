@@ -110,6 +110,7 @@ from wilq.operator_labels import (
     evidence_count_label,
     evidence_source_type_label,
     freshness_state_label,
+    metric_fact_label,
     source_connector_label,
     source_connector_labels,
 )
@@ -494,6 +495,11 @@ def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, 
     )
     metric_summary = run.get("metric_summary")
     metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
+    connector_id = str(run.get("connector_id") or "")
+    metric_labels = [
+        metric_fact_label(key, connector_id)
+        for key in metric_keys
+    ]
     source_label = source_connector_label(str(run.get("connector_id") or ""))
     status_label = connector_refresh_status_label(run.get("status"))
     summary = (
@@ -517,7 +523,8 @@ def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, 
         "vendor_data_collected": bool(run.get("vendor_data_collected")),
         "metric_summary": {
             "metric_key_count": len(metric_keys),
-            "metric_keys": ", ".join(metric_keys[:8]),
+            "metric_labels": metric_labels[:8],
+            "metric_labels_included": min(len(metric_labels), 8),
         },
         "errors": [],
         "redacted": True,
@@ -730,9 +737,27 @@ def _compact_command_center_for_daily_context(command: CommandCenterResponse) ->
         "primary_next_step": dumped["primary_next_step"],
         "blocker_count": dumped["blocker_count"],
         "tactical_item_count": dumped["tactical_item_count"],
-        "daily_decisions": dumped["daily_decisions"],
+        "daily_decisions": [
+            _compact_daily_decision_for_context(decision)
+            for decision in dumped["daily_decisions"]
+            if isinstance(decision, dict)
+        ],
         "connector_summary": dumped["connector_summary"],
     }
+
+
+def _compact_daily_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(decision)
+    metric_facts = compact.get("metric_facts")
+    if isinstance(metric_facts, list):
+        compact["metric_fact_count"] = len(metric_facts)
+        compact["metric_facts"] = [
+            _compact_metric_fact_for_context(fact)
+            for fact in metric_facts[:3]
+            if isinstance(fact, dict)
+        ]
+        compact["metric_facts_included"] = len(compact["metric_facts"])
+    return compact
 
 
 def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[str, Any]:
@@ -1785,6 +1810,13 @@ def _compact_content_diagnostics_for_context(
     content_diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
     compact = dict(_without_metric_facts(content_diagnostics))
+    decision_queue = compact.get("decision_queue")
+    if isinstance(decision_queue, list):
+        compact["decision_queue"] = [
+            _compact_content_decision_for_context(decision)
+            for decision in decision_queue
+            if isinstance(decision, dict)
+        ]
     sections = compact.pop("sections", [])
     connectors = compact.get("connectors")
     if isinstance(connectors, list):
@@ -1808,6 +1840,55 @@ def _compact_content_diagnostics_for_context(
         "latest_refreshes_compacted": True,
         "full_endpoint": "/api/content/diagnostics",
     }
+    return compact
+
+
+def _compact_content_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(decision)
+    ahrefs_rows = compact.get("ahrefs_candidate_rows")
+    if isinstance(ahrefs_rows, list):
+        compact["ahrefs_candidate_rows_total"] = len(ahrefs_rows)
+        compact["ahrefs_candidate_rows"] = [
+            _compact_content_ahrefs_candidate_row_for_context(row)
+            for row in ahrefs_rows[:4]
+            if isinstance(row, dict)
+        ]
+        compact["ahrefs_candidate_rows_included"] = len(compact["ahrefs_candidate_rows"])
+    return compact
+
+
+def _compact_content_ahrefs_candidate_row_for_context(
+    row: dict[str, Any],
+) -> dict[str, Any]:
+    keep_keys = {
+        "topic",
+        "gap_type_label",
+        "relevance_status_label",
+        "relevance_score",
+        "business_relevance_reason_labels",
+        "gsc_demand_label",
+        "wordpress_inventory_match_label",
+        "gsc_overlap_terms",
+        "wordpress_overlap_urls",
+        "keyword",
+        "competitor_domain",
+        "source_url",
+        "referenced_public_url",
+        "metric_value",
+        "evidence_ids",
+        "next_step",
+    }
+    compact = {key: row[key] for key in keep_keys if key in row}
+    for key, limit in (
+        ("business_relevance_reason_labels", 4),
+        ("gsc_overlap_terms", 4),
+        ("wordpress_overlap_urls", 3),
+        ("evidence_ids", 3),
+    ):
+        value = compact.get(key)
+        if isinstance(value, list):
+            compact[key] = value[:limit]
+            compact[f"{key}_total"] = len(value)
     return compact
 
 
@@ -1882,6 +1963,21 @@ def _compact_ahrefs_diagnostics_for_context(
         )
     gap_contract = compact.get("gap_read_contract")
     if isinstance(gap_contract, dict):
+        _compact_labelled_contract_list_for_context(
+            gap_contract,
+            raw_key="available_read_contracts",
+            label_key="available_read_contract_labels",
+        )
+        _compact_labelled_contract_list_for_context(
+            gap_contract,
+            raw_key="allowed_evidence",
+            label_key="allowed_evidence_labels",
+        )
+        _compact_labelled_contract_list_for_context(
+            gap_contract,
+            raw_key="missing_read_contracts",
+            label_key="missing_read_contract_labels",
+        )
         gap_records = gap_contract.pop("gap_records", [])
         gap_record_count = gap_contract.get("gap_record_count")
         if gap_record_count is None:
@@ -1892,6 +1988,25 @@ def _compact_ahrefs_diagnostics_for_context(
         gap_contract["gap_records_total"] = (
             len(gap_records) if isinstance(gap_records, list) else 0
         )
+    operator_summary = compact.get("operator_summary")
+    if isinstance(operator_summary, dict):
+        _compact_labelled_contract_list_for_context(
+            operator_summary,
+            raw_key="available_read_contracts",
+            label_key="available_read_contract_labels",
+        )
+        _compact_labelled_contract_list_for_context(
+            operator_summary,
+            raw_key="missing_read_contracts",
+            label_key="missing_read_contract_labels",
+        )
+    decision_queue = compact.get("decision_queue")
+    if isinstance(decision_queue, list):
+        compact["decision_queue"] = [
+            _compact_ahrefs_decision_for_context(decision)
+            for decision in decision_queue
+            if isinstance(decision, dict)
+        ]
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
         "sections_omitted": True,
@@ -1901,6 +2016,47 @@ def _compact_ahrefs_diagnostics_for_context(
         "full_endpoint": "/api/ahrefs/diagnostics",
     }
     return compact
+
+
+def _compact_ahrefs_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(decision)
+    _compact_labelled_contract_list_for_context(
+        compact,
+        raw_key="allowed_evidence",
+        label_key="allowed_evidence_labels",
+    )
+    _compact_labelled_contract_list_for_context(
+        compact,
+        raw_key="missing_read_contracts",
+        label_key="missing_read_contract_labels",
+    )
+    metric_fact_labels = compact.get("metric_fact_labels")
+    if isinstance(metric_fact_labels, dict):
+        labels = list(metric_fact_labels.values())
+        compact["metric_fact_labels_total"] = len(labels)
+        compact["metric_fact_labels"] = labels[:8]
+        compact["metric_fact_labels_included"] = len(compact["metric_fact_labels"])
+    return compact
+
+
+def _compact_labelled_contract_list_for_context(
+    payload: dict[str, Any],
+    *,
+    raw_key: str,
+    label_key: str,
+) -> None:
+    raw_values = payload.get(raw_key)
+    labels = payload.get(label_key)
+    raw_count = len(raw_values) if isinstance(raw_values, list) else 0
+    if isinstance(labels, list):
+        payload[f"{label_key}_total"] = len(labels)
+        payload[label_key] = labels[:6]
+        payload[f"{label_key}_included"] = len(payload[label_key])
+    elif raw_count:
+        payload[f"{label_key}_total"] = raw_count
+        payload[f"{label_key}_included"] = 0
+    payload[f"{raw_key}_total"] = raw_count
+    payload.pop(raw_key, None)
 
 
 def _compact_ga4_diagnostics_for_context(
@@ -1931,6 +2087,19 @@ def _compact_merchant_diagnostics_for_context(
             product_performance["performance_rows_total"] = len(performance_rows)
             product_performance["performance_rows"] = []
             product_performance["performance_rows_included"] = 0
+    price_impact = compact.get("price_impact_readiness")
+    if isinstance(price_impact, dict):
+        payload_preview = price_impact.get("payload_preview")
+        if isinstance(payload_preview, list):
+            price_impact["payload_preview_total"] = len(payload_preview)
+            price_impact["payload_preview"] = [
+                _compact_merchant_price_impact_preview_for_context(preview)
+                for preview in payload_preview[:2]
+                if isinstance(preview, dict)
+            ]
+            price_impact["payload_preview_included"] = len(
+                price_impact["payload_preview"]
+            )
     operator_summary = compact.get("operator_summary")
     if isinstance(operator_summary, dict):
         operator_summary.pop("top_decision_ids", None)
@@ -3057,7 +3226,11 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     preview_cards = compact.get("preview_cards")
     if isinstance(preview_cards, list):
         compact["preview_cards_total"] = len(preview_cards)
-        compact["preview_cards"] = preview_cards[:3]
+        compact["preview_cards"] = [
+            _compact_preview_card_for_skill_context(card)
+            for card in preview_cards[:3]
+            if isinstance(card, dict)
+        ]
         compact["preview_cards_included"] = len(compact["preview_cards"])
     compact.pop("payload", None)
     compact["api_endpoint_template"] = "/api/actions/{action_id}"
@@ -3118,6 +3291,17 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "last_mutation_blocker_labels": last_mutation_blocker_labels[:3],
         "last_mutation_blockers_included": min(len(last_mutation_blockers), 3),
     }
+
+
+def _compact_preview_card_for_skill_context(card: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(card)
+    compact.pop("id", None)
+    rows = compact.get("rows")
+    if isinstance(rows, list):
+        compact["rows_total"] = len(rows)
+        compact["rows"] = rows[:6]
+        compact["rows_included"] = len(compact["rows"])
+    return compact
 
 
 def _compact_ngram_preview_for_context(preview_items: list[Any]) -> list[dict[str, Any]]:
@@ -3264,6 +3448,35 @@ def _compact_merchant_issue_preview_for_context(
             compact_item["evidence_ids"] = evidence_ids[:3]
         compact_items.append(compact_item)
     return compact_items
+
+
+def _compact_merchant_price_impact_preview_for_context(
+    preview: dict[str, Any],
+) -> dict[str, Any]:
+    compact = {
+        "preview_contract": preview.get("preview_contract"),
+        "preview_contract_label": preview.get("preview_contract_label"),
+        "reason": _context_pack_text(preview.get("reason"), limit=180),
+        "api_mutation_ready": preview.get("api_mutation_ready"),
+        "apply_allowed": preview.get("apply_allowed"),
+        "destructive": preview.get("destructive"),
+    }
+    products = preview.get("products")
+    compact["products_total"] = len(products) if isinstance(products, list) else 0
+    missing_read_contracts = preview.get("missing_read_contracts")
+    if isinstance(missing_read_contracts, list):
+        compact["missing_read_contracts_total"] = len(missing_read_contracts)
+    required_validation = preview.get("required_validation_labels")
+    if isinstance(required_validation, list):
+        compact["required_validation_total"] = len(required_validation)
+        compact["required_validation_labels"] = required_validation[:4]
+    blocked_claims = preview.get("blocked_claims")
+    if isinstance(blocked_claims, list):
+        compact["blocked_claims"] = blocked_claims[:5]
+    evidence_ids = preview.get("evidence_ids")
+    if isinstance(evidence_ids, list):
+        compact["evidence_ids"] = evidence_ids[:3]
+    return compact
 
 
 def _compact_content_brief_preview_for_context(

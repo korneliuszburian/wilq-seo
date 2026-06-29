@@ -547,6 +547,11 @@ WILQ is complete for this long-range goal when:
   bodies, payload key lists, payload-preview field names and raw apply-blocker
   keys. Skills receive typed preview cards, Polish blocker labels and the full
   `/api/actions/{action_id}` drilldown instead.
+- 2026-06-29: Compact Codex skill context now removes raw Ahrefs
+  read-contract keys, raw Ahrefs metric-label dictionary keys, raw Merchant
+  preview-card IDs and raw Merchant issue-type values. Live context-pack scans
+  for daily, content, Merchant, Ads, GA4, Localo and Ahrefs returned zero hits
+  for the guarded technical terms.
 - 2026-06-29: Daily context-pack connector statuses now carry API-owned Polish
   status/freshness labels and operator-safe summaries. Skill context no longer
   receives empty freshness labels or `status configured` summaries for
@@ -853,8 +858,9 @@ WILQ is complete for this long-range goal when:
   Polglish and raw technical leakage, but it is not complete.
 - Latest accepted proof: focused context-pack tests, marketer language guard,
   `git diff --check` and live WILQ API context-pack scans passed after removing
-  raw active-action payloads, payload key lists and raw apply-blocker keys from
-  compact skill contexts.
+  raw active-action payloads, payload key lists, raw apply-blocker keys, raw
+  Ahrefs contract/metric keys and raw Merchant preview issue keys from compact
+  skill contexts.
 - Latest accepted proof: Merchant, Treści and Ahrefs no longer show
   targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
   and the focused API/dashboard checks plus language guard passed.
