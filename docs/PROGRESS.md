@@ -61,10 +61,13 @@ Date: 2026-06-29
   `scripts/marketer_language_guard.py` now guards that class of phrases in
   active skill/docs/test contracts.
 - Connector status now uses the latest successful `vendor_read` when available.
-  GSC, GA4 and Merchant were refreshed live on 2026-06-29T00:20-00:22Z, and
-  `/api/connectors` reports fresh `last_success_at` values for all three.
-  Merchant refresh now retries transient `ReadTimeout` responses and the latest
-  live proof completed with `vendor_data_collected=true`.
+  On 2026-06-29T00:20-00:43Z, GSC, GA4, Merchant, Google Ads, Ahrefs, Localo,
+  WordPress ekologus.pl and WordPress sklep.ekologus.pl were refreshed live and
+  `/api/connectors` reported all configured first-party/source connectors as
+  fresh. Merchant refresh retries transient `ReadTimeout` responses. LinkedIn
+  and Facebook remain missing-credential optional social connectors; Google
+  Sheets remains disabled by current scope. Google Ads Keyword Planner remains
+  blocked by developer-token approval, not by missing OAuth credentials.
 - Action validation errors for Ads, GA4 and Localo now use source-owned Polish
   operator copy instead of English/technical `payload`, `requires`,
   `apply_allowed` or mutation-readiness wording. Focused tests guard this
@@ -99,9 +102,12 @@ Date: 2026-06-29
   compacted prompt context cannot quietly reintroduce the cleaned language.
 - Active actions with operator preview payloads are guarded to expose typed
   preview cards, preventing fallback rows assembled from raw preview shape.
-- Expanded DOM audit across core marketer routes and action details has no
-  visible hits for old route names, stale content URL terms or technical
-  action-model jargon outside technical drawers.
+- Expanded DOM/browser audit across core marketer routes and action details has
+  no visible hits for old route names, stale content URL terms or technical
+  action-model jargon outside technical drawers. Fresh `agent-browser` proof on
+  2026-06-29 covered `command-center`, `merchant`, `content-planner`,
+  `ads-doctor`, `ga4`, `localo`, `ahrefs`, `knowledge`, `actions` and
+  `workflows`.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.

@@ -127,6 +127,13 @@ action IDs and audit fields may stay in technical contracts or drawers.
   repeatable. `scripts/verify.sh` runs it against the temporary skill API, and
   `scripts/pre_demo_gate.sh` runs it against the managed local API before
   dashboard/skill demo checks.
+- On 2026-06-29T00:20-00:43Z, GSC, GA4, Merchant, Google Ads, Ahrefs, Localo,
+  WordPress ekologus.pl and WordPress sklep.ekologus.pl refreshed live with
+  `vendor_data_collected=true`, and `/api/connectors` reported every configured
+  first-party/source connector as fresh. LinkedIn and Facebook remain
+  missing-credential optional social connectors; Google Sheets remains disabled
+  by current scope. Google Ads Keyword Planner remains blocked by
+  developer-token approval, not missing OAuth credentials.
 - Active skill interface names, prompts and response contracts now use Polish
   operator wording instead of old English working names, raw proof-ID wording
   or blocker phrasing. The marketer language guard now fails that class of
@@ -134,9 +141,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.
-- Expanded DOM audit across core marketer routes and action details is clean
-  for old route names, stale content URL terms and technical action-model
-  jargon outside technical drawers.
+- Expanded DOM/browser audit across core marketer routes and action details is
+  clean for old route names, stale content URL terms and technical action-model
+  jargon outside technical drawers. Fresh `agent-browser` proof on 2026-06-29
+  covered `command-center`, `merchant`, `content-planner`, `ads-doctor`, `ga4`,
+  `localo`, `ahrefs`, `knowledge`, `actions` and `workflows`.
 - Treści selected-decision and preview panels use API-owned view-models
   instead of parsing raw action payload shape.
 - Treści loading/error action fallback uses the API-owned action summary label
