@@ -112,6 +112,10 @@ Date: 2026-06-29
   an API label is missing. The visible UI shows `brak etykiety z WILQ` so
   missing view-model copy is caught as a source-of-truth defect instead of
   leaking enum text to the marketer.
+- Action review panels now use the API-owned review-gate status label instead
+  of a route-local fallback. Operator-facing audit history also strips raw
+  audit identifiers and old preview-audit reference copy from summaries, while
+  technical audit IDs remain available only through API/audit detail.
 - Demand Gen landing-quality cards no longer join landing page and traffic
   source with slash copy. They render API-owned `landing_page_label` and
   `source_medium_label` as separate labelled lines, with a dashboard test

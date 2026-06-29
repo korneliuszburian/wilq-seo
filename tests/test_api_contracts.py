@@ -3098,6 +3098,27 @@ def test_legacy_raw_audit_summary_is_not_rewritten_with_string_labels() -> None:
     assert "blocked_claim:" not in cleaned
 
 
+def test_operator_audit_summary_hides_raw_audit_identifiers() -> None:
+    summary = (
+        "Potwierdzenie podglądu zapisane. "
+        "Audyt podglądu: audit_act_review_merchant_feed_issues_preview_123abc. "
+        "Notatka: Operator potwierdza podgląd. Ten krok nie zapisuje zmian.. "
+        "Ten krok nie zapisuje zmian w zewnętrznych systemach."
+    )
+
+    cleaned = _operator_audit_summary_text(summary)
+
+    assert "Potwierdzenie podglądu zapisane" in cleaned
+    assert "Notatka: Operator potwierdza podgląd" in cleaned
+    assert "Audyt podglądu" not in cleaned
+    assert "audit_" not in cleaned
+    assert ".." not in cleaned
+    assert (
+        "Ten krok nie zapisuje zmian. Ten krok nie zapisuje zmian w zewnętrznych systemach."
+        not in cleaned
+    )
+
+
 def test_action_review_gate_hides_raw_legacy_review_summary(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -3236,6 +3257,13 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     assert confirmation["blocker_labels"] == []
     assert confirmation["audit_event"]["event_type"] == "action_apply_confirmed"
     assert confirmation["audit_event"]["actor"] == "operator_test"
+    assert "Potwierdzenie podglądu zapisane" in confirmation["audit_event"]["summary"]
+    assert "Audyt podglądu" not in confirmation["audit_event"]["summary"]
+    assert "audit_" not in confirmation["audit_event"]["summary"]
+    assert ".." not in confirmation["audit_event"]["summary"]
+    assert "Audyt podglądu" not in confirmation["review_gate"]["last_confirmation_summary"]
+    assert "audit_" not in confirmation["review_gate"]["last_confirmation_summary"]
+    assert ".." not in confirmation["review_gate"]["last_confirmation_summary"]
     assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
     assert confirmation["review_gate"]["apply_allowed"] is False
     assert "human_confirm_before_apply" not in confirmation["review_gate"]["apply_blockers"]

@@ -246,7 +246,8 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
-  const lastReviewLabel = action.review_gate.last_review_outcome_label ?? null;
+  const reviewStatusLabel =
+    action.review_gate.last_review_outcome_label ?? action.review_gate.status_label;
   const canSave = notes.trim().length > 0 && !reviewMutation.isPending;
 
   return (
@@ -260,7 +261,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
             Zapisuje lokalne zdarzenie audytu. Nie zapisuje zmian w zewnętrznych systemach.
           </p>
         </div>
-        <StatusBadge value={action.review_gate.status} label={lastReviewLabel ?? "brak przeglądu"} />
+        <StatusBadge value={action.review_gate.status} label={reviewStatusLabel} />
       </div>
       {action.review_gate.last_review_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">

@@ -157,8 +157,12 @@ describe("ActionPanels", () => {
   it("keeps review badge state separate from visible review copy", () => {
     const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
     expect(source).toContain(
-      'value={action.review_gate.status} label={lastReviewLabel ?? "brak przeglądu"}'
+      "action.review_gate.last_review_outcome_label ?? action.review_gate.status_label"
     );
+    expect(source).toContain(
+      "value={action.review_gate.status} label={reviewStatusLabel}"
+    );
+    expect(source).not.toContain('"brak przeglądu"');
     expect(source).not.toContain('value={lastReviewLabel ?? "brak przeglądu"}');
   });
 

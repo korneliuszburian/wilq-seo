@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collections.abc import Iterable
 from contextlib import suppress
 from typing import Any, Literal, cast
@@ -3981,7 +3983,7 @@ def _action_review_gate(
         last_confirmation_at=last_confirmation.created_at
         if last_confirmation is not None
         else None,
-        last_confirmation_summary=last_confirmation.summary
+        last_confirmation_summary=_action_audit_summary_for_operator(last_confirmation)
         if last_confirmation is not None
         else None,
         last_impact_check_status=_impact_status_from_event(last_impact_check),
@@ -4271,13 +4273,12 @@ def _action_confirmation_summary(
         return (
             "Potwierdzenie zapisu zmian zablokowane: "
             f"{', '.join(_action_gate_labels(blockers))}. "
-            f"Notatka: {request.notes}. "
+            f"{_operator_note_sentence(request.notes)}"
             "Ten krok nie zapisuje zmian w zewnętrznych systemach."
         )
-    preview_ref = latest_preview.id if latest_preview is not None else "missing"
     return (
-        f"Potwierdzenie podglądu zapisane. Audyt podglądu: {preview_ref}. "
-        f"Notatka: {request.notes}. "
+        "Potwierdzenie podglądu zapisane. "
+        f"{_operator_note_sentence(request.notes)}"
         "Ten krok nie zapisuje zmian w zewnętrznych systemach."
     )
 
@@ -4581,7 +4582,47 @@ def _operator_audit_summary_text(summary: str) -> str:
     clean_summary = str(summary or "").strip()
     if _contains_raw_audit_contract_text(clean_summary):
         return "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
-    return clean_summary
+    clean_summary = _remove_raw_audit_identifiers(clean_summary)
+    return _normalize_operator_summary_text(clean_summary)
+
+
+RAW_AUDIT_IDENTIFIER_RE = re.compile(r"\baudit_[A-Za-z0-9_:-]+\b")
+RAW_AUDIT_REFERENCE_CLAUSE_RE = re.compile(
+    r"\s*(Audyt podglądu|ID audytu|Ślad audytu):\s*audit_[A-Za-z0-9_:-]+\.?\s*",
+    flags=re.IGNORECASE,
+)
+
+
+def _remove_raw_audit_identifiers(summary: str) -> str:
+    if not RAW_AUDIT_IDENTIFIER_RE.search(summary):
+        return summary
+    without_reference_clause = RAW_AUDIT_REFERENCE_CLAUSE_RE.sub(" ", summary)
+    if RAW_AUDIT_IDENTIFIER_RE.search(without_reference_clause):
+        return "Zdarzenie audytu zapisane. Szczegóły techniczne są dostępne w audycie."
+    return " ".join(without_reference_clause.split())
+
+
+def _operator_note_sentence(notes: str) -> str:
+    note = str(notes or "").strip().rstrip(".")
+    note = re.sub(
+        r"\s*Ten krok nie zapisuje zmian(?: w zewnętrznych systemach)?\.?$",
+        "",
+        note,
+        flags=re.IGNORECASE,
+    ).strip()
+    if not note:
+        return ""
+    return f"Notatka: {note}. "
+
+
+def _normalize_operator_summary_text(summary: str) -> str:
+    compact = " ".join(str(summary or "").split())
+    compact = re.sub(r"\.{2,}", ".", compact)
+    return re.sub(
+        r"Ten krok nie zapisuje zmian\. (?=Ten krok nie zapisuje zmian w zewnętrznych systemach\.)",
+        "",
+        compact,
+    )
 
 
 def _audit_event_has_raw_contract_text(event: AuditEvent) -> bool:
