@@ -90,9 +90,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
   focused cleanup.
 - Dashboard patch/minor dependencies are current where they do not require a
   framework migration: `@tanstack/react-query`, `@playwright/test`, `postcss`
-  and `autoprefixer`. Remaining outdated JS packages are major migrations and
-  must be handled as separate verified slices, not mixed into marketer-copy or
-  route cleanup.
+  and `autoprefixer`. Independent dependency slices have also upgraded
+  `lucide-react`, `jsdom`, `@types/node`, `typescript` and `zod` with focused
+  verification. Remaining outdated JS packages are major migrations and must be
+  handled as separate verified slices, not mixed into marketer-copy or route
+  cleanup.
 - Live connector status on 2026-06-29 confirms Google Search Console, GA4 and
   Merchant Center are configured and fresh.
 - `OperatingRouteSurfaces.tsx` has been split into focused opportunity,

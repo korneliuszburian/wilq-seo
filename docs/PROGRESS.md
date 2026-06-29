@@ -74,9 +74,15 @@ API status later contradicts this state.
   dashboard test suite, lint, production build, Fallow changed-file audit,
   marketer/context-pack language guards and browser proof for `/command-center`
   passed after the upgrade.
+- `zod` has been upgraded to `4.4.3`. Shared schemas now use explicit
+  `z.record(z.string(), valueSchema)` contracts required by Zod 4, the action
+  review gate has an explicit default state, and live shared-schema smoke uses
+  a realistic timeout for heavier WILQ API endpoints. Workspace typecheck,
+  shared-schema tests, live shared-schema smoke, full dashboard tests, lint,
+  production build, Fallow changed-file audit, marketer/context-pack language
+  guards and browser proof for `/command-center` passed after the upgrade.
 - The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest, Zod, Tailwind and
-  `@vitejs/plugin-react`.
+  as separate verified slices: Vite, Vitest, Tailwind and `@vitejs/plugin-react`.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
   dashboard duplication and complexity debt.

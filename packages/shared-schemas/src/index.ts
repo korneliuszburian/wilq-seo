@@ -33,9 +33,9 @@ export const MetricFactSchema = z.object({
   period: z.string(),
   source_connector: z.string(),
   evidence_id: z.string(),
-  dimensions: z.record(z.string()).optional().default({}),
-  dimension_labels: z.record(z.string()).optional().default({}),
-  dimension_value_labels: z.record(z.string()).optional().default({}),
+  dimensions: z.record(z.string(), z.string()).optional().default({}),
+  dimension_labels: z.record(z.string(), z.string()).optional().default({}),
+  dimension_value_labels: z.record(z.string(), z.string()).optional().default({}),
   unit: z.string().nullable().optional(),
   collected_at: z.string().nullable().optional(),
   previous_value: z.union([z.string(), z.number()]).nullable().optional(),
@@ -89,7 +89,7 @@ export const ConnectorRefreshRunSchema = z.object({
   checked_credentials: z.array(z.string()),
   external_call_attempted: z.boolean(),
   vendor_data_collected: z.boolean(),
-  metric_summary: z.record(z.union([z.string(), z.number()])),
+  metric_summary: z.record(z.string(), z.union([z.string(), z.number()])),
   summary: z.string(),
   errors: z.array(z.string()),
   redacted: z.boolean()
@@ -105,7 +105,7 @@ export const OpportunitySchema = z.object({
   source_connector_labels: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()).min(1),
   evidence_summary_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string().min(1),
   recommended_action: z.string(),
@@ -188,6 +188,24 @@ export const ActionReviewGateSchema = z.object({
   last_mutation_blocker_summary_label: z.string().optional().default("")
 });
 
+const DEFAULT_ACTION_REVIEW_GATE = {
+  status: "pending_validation",
+  status_label: "",
+  summary: "Wymaga sprawdzenia w WILQ przed kolejnym krokiem.",
+  required_checks: [],
+  required_check_labels: [],
+  operator_checklist: [],
+  operator_checklist_labels: [],
+  apply_blockers: [],
+  apply_blocker_labels: [],
+  apply_blocker_summary_label: "",
+  confirmation_required: true,
+  apply_allowed: false,
+  last_mutation_blockers: [],
+  last_mutation_blocker_labels: [],
+  last_mutation_blocker_summary_label: ""
+} satisfies z.input<typeof ActionReviewGateSchema>;
+
 export const ActionPreviewRowViewModelSchema = z.object({
   label: z.string(),
   value: z.string()
@@ -230,9 +248,9 @@ export const ActionObjectSchema = z.object({
   recommended_reason: z.string(),
   validation_status: z.string(),
   validation_status_label: z.string().default(""),
-  review_gate: ActionReviewGateSchema.optional().default({}),
+  review_gate: ActionReviewGateSchema.optional().default(DEFAULT_ACTION_REVIEW_GATE),
   preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   audit_events: z.array(AuditEventSchema)
 });
 
@@ -370,7 +388,7 @@ export const MarketingBriefItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   summary: z.string(),
@@ -425,9 +443,9 @@ export const TacticalQueueItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  dimensions: z.record(z.string()).optional().default({}),
-  dimension_labels: z.record(z.string()).optional().default({}),
-  dimension_value_labels: z.record(z.string()).optional().default({}),
+  dimensions: z.record(z.string(), z.string()).optional().default({}),
+  dimension_labels: z.record(z.string(), z.string()).optional().default({}),
+  dimension_value_labels: z.record(z.string(), z.string()).optional().default({}),
   diagnosis: z.string(),
   next_step: z.string(),
   blocked_claims: z.array(z.string()),
@@ -479,7 +497,7 @@ export const AdsDiagnosticSectionSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   knowledge_card_ids: z.array(z.string()).optional().default([]),
@@ -617,6 +635,7 @@ export const AdsStrategyReviewReadinessContractSchema = z.object({
   reviewed_by: z.string().nullable().optional(),
   reviewed_at: z.string().nullable().optional(),
   current_context: z.record(
+    z.string(),
     z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])
   ),
   required_validation: z.array(z.string()),
@@ -666,7 +685,7 @@ export const AdsBusinessContextReadContractSchema = z.object({
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   next_step: z.string()
 });
 
@@ -1713,7 +1732,7 @@ export const AdsDecisionItemSchema = z.object({
   next_step: z.string(),
   priority: z.number().default(50),
   priority_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   missing_read_contract_labels: z.array(z.string()).default([]),
@@ -1930,10 +1949,10 @@ export const MerchantDecisionItemSchema = z.object({
   count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   priority: z.number(),
   priority_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   sample_product_ids: z.array(z.string()).default([]),
   sample_titles: z.array(z.string()).default([]),
-  payload_preview: z.array(z.record(z.unknown())).default([]),
+  payload_preview: z.array(z.record(z.string(), z.unknown())).default([]),
   preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
@@ -1976,7 +1995,7 @@ export const MerchantOperatorSummarySchema = z.object({
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({})
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({})
 });
 
 export const MerchantFreshnessAssessmentSchema = z.object({
@@ -2097,7 +2116,7 @@ export const MerchantPriceImpactReadinessSchema = z.object({
   current_read_contracts: z.array(z.string()),
   required_read_contracts: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
-  payload_preview: z.array(z.record(z.unknown())).default([]),
+  payload_preview: z.array(z.record(z.string(), z.unknown())).default([]),
   preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   source_connectors: z.array(z.string()),
   source_connector_labels: z.array(z.string()).default([]),
@@ -2173,7 +2192,7 @@ export const ContentDecisionItemSchema = z.object({
   title: z.string(),
   summary: z.string().nullable().optional(),
   priority: z.number(),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   page: z.string().nullable().optional(),
   normalized_page_path: z.string().nullable().optional(),
   queries: z.array(z.string()),
@@ -2259,7 +2278,7 @@ export const ContentOperatorSummarySchema = z.object({
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
   blocked_claim_labels: z.array(z.string()).default([]),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({})
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({})
 });
 
 export const ContentMarketerDecisionSchema = z.object({
@@ -2270,7 +2289,7 @@ export const ContentMarketerDecisionSchema = z.object({
   mode_label: z.string(),
   why_it_matters: z.string(),
   safe_next_action: z.string(),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   content_angle: z.string().nullable().optional(),
   h1_direction: z.string().nullable().optional(),
   h2_direction: z.array(z.string()).default([]),
@@ -2394,7 +2413,7 @@ export const Ga4DecisionItemSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   status_label: z.string().default(""),
   priority: z.number(),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   landing_page: z.string().nullable().optional(),
   landing_page_label: z.string().default(""),
   source_medium: z.string().nullable().optional(),
@@ -2558,7 +2577,7 @@ export const LocaloReadContractStatusSchema = z.object({
   status_label: z.string().default(""),
   evidence_kind: z.string(),
   metric_fact_names: z.array(z.string()).default([]),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   blocked_claims: z.array(z.string()).default([]),
   blocked_claim_labels: z.array(z.string()).default([]),
   next_step: z.string()
@@ -2583,7 +2602,7 @@ export const LocaloDecisionItemSchema = z.object({
   access_status_label: z.string().default(""),
   priority: z.number(),
   priority_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   allowed_evidence: z.array(z.string()),
   allowed_evidence_labels: z.array(z.string()).default([]),
   missing_read_contracts: z.array(z.string()),
@@ -2594,7 +2613,7 @@ export const LocaloDecisionItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   action_ids: z.array(z.string()),
   knowledge_card_ids: z.array(z.string()).default([]),
   expert_rule_ids: z.array(z.string()).default([]),
@@ -2657,7 +2676,7 @@ export const AhrefsDiagnosticSectionSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
@@ -2682,7 +2701,7 @@ export const AhrefsDecisionItemSchema = z.object({
   next_step: z.string(),
   priority: z.number(),
   priority_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   allowed_evidence: z.array(z.string()),
   allowed_evidence_labels: z.array(z.string()).default([]),
   missing_read_contracts: z.array(z.string()),
@@ -2691,7 +2710,7 @@ export const AhrefsDecisionItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   evidence_summary_label: z.string().default(""),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
@@ -2716,7 +2735,7 @@ export const AhrefsGapRecordSchema = z.object({
   competitor_domain: z.string().nullable().optional(),
   keyword: z.string().nullable().optional(),
   metric_facts: z.array(MetricFactSchema),
-  metric_fact_labels: z.record(z.string()).default({}),
+  metric_fact_labels: z.record(z.string(), z.string()).default({}),
   evidence_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   next_step: z.string(),
@@ -2900,7 +2919,7 @@ export const KnowledgeDecisionBindingSchema = z.object({
   evidence_summary_label: z.string().default(""),
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   knowledge_card_ids: z.array(z.string()),
   playbook_ids: z.array(z.string()),
   expert_rule_ids: z.array(z.string()),
@@ -2946,7 +2965,7 @@ export const CommandCenterBriefItemSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   blocked_claims: z.array(z.string()),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
@@ -2997,7 +3016,7 @@ export const DailyDecisionSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),
   priority_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])),
   metric_facts: z.array(MetricFactSchema).default([]),
   co_widzimy: z.string(),
   dlaczego_to_ma_znaczenie: z.string(),
@@ -3031,10 +3050,10 @@ export const CommandCenterResponseSchema = z.object({
   demo_script: z.array(CommandCenterDemoStepSchema),
   action_plan: z.array(CommandCenterActionPlanItemSchema),
   connector_summary: ConnectorSummarySchema,
-  sections: z.record(z.array(OpportunitySchema)),
+  sections: z.record(z.string(), z.array(OpportunitySchema)),
   active_actions: z.array(ActionObjectSchema),
   connector_health: z.array(ConnectorStatusSchema),
-  codex_operator_status: z.record(z.unknown())
+  codex_operator_status: z.record(z.string(), z.unknown())
 });
 
 export const WorkflowSchema = z.object({
@@ -3067,7 +3086,7 @@ export const WorkflowSchema = z.object({
   blocked_claims: z.array(z.string()).default([]),
   blocked_claim_labels: z.array(z.string()).default([]),
   blocked_claim_summary_label: z.string().default(""),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   missing_contracts: z.array(z.string()).default([]),
   missing_contract_labels: z.array(z.string()).default([]),
   missing_contract_summary_label: z.string().default(""),
@@ -3081,7 +3100,7 @@ export const DemandGenReadinessContractSchema = z.object({
   status_label: z.string().default(""),
   title: z.string(),
   summary: z.string(),
-  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
   available_read_contracts: z.array(z.string()),
   available_read_contract_labels: z.array(z.string()).optional().default([]),
   missing_read_contracts: z.array(z.string()),
@@ -3095,11 +3114,11 @@ export const DemandGenReadinessContractSchema = z.object({
   action_summary_label: z.string().default(""),
   operator_review_gates: z.array(z.string()),
   operator_review_gate_labels: z.array(z.string()).optional().default([]),
-  payload_preview: z.array(z.record(z.unknown())).default([]),
+  payload_preview: z.array(z.record(z.string(), z.unknown())).default([]),
   preview_cards: z.array(ActionPreviewCardViewModelSchema).default([]),
   campaign_rows_evaluated: z.number(),
-  campaign_channel_counts: z.record(z.number()),
-  campaign_channel_labels: z.record(z.string()).optional().default({}),
+  campaign_channel_counts: z.record(z.string(), z.number()),
+  campaign_channel_labels: z.record(z.string(), z.string()).optional().default({}),
   demand_gen_campaign_rows: z.array(AdsCampaignMetricRowSchema),
   demand_gen_ad_group_ad_rows: z.array(z.object({
     campaign_id: z.string().nullable().optional(),
@@ -3158,7 +3177,7 @@ export const DemandGenReadinessContractSchema = z.object({
 
 export const WorkflowInputSchema = z.object({
   connector_ids: z.array(z.string()),
-  parameters: z.record(z.unknown())
+  parameters: z.record(z.string(), z.unknown())
 });
 
 export const WorkflowOutputSchema = z.object({

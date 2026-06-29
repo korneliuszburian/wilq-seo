@@ -84,7 +84,7 @@ describeLive("live WILQ API shared schema smoke", () => {
     const parsed = endpoint.schema.safeParse(payload);
 
     expect(parsed.success, formatParseFailure(endpoint, parsed)).toBe(true);
-  });
+  }, 20000);
 });
 
 async function fetchJson(path: string): Promise<unknown> {
