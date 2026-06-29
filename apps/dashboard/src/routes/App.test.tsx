@@ -5298,7 +5298,7 @@ const contentDiagnostics = {
       status: "ready",
       title: "Ahrefs: zweryfikuj luki SEO przed planem treści",
       summary:
-        "WILQ ma 1 rekord luk Ahrefs: luki treści=1, słowa organiczne=0, najlepsze strony=0, luki linków zwrotnych=0. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu.",
+        "WILQ ma 1 rekord luk Ahrefs: 1 luk treści, 0 luk słów organicznych, 0 luk najlepszych stron konkurencji i 0 luk linków zwrotnych. Ocena jakości wskazuje 1 pasujący rekord, 0 rekordów do ręcznego sprawdzenia i 0 rekordów poza tematem. To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
       metric_tiles: {
         "rekordy Ahrefs": 1,
@@ -6850,7 +6850,7 @@ function mockFetch() {
                   blokady: 0
                 },
                 co_widzimy:
-                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blokady=0. To jest kolejka ręcznego review pliku produktowego; WILQ nie twierdzi, że zatwierdzenie, twierdzenie o przychodzie albo dane produktu zostały już naprawione.",
+                  "Merchant Center ma 10900 produktów, 15 typów problemów, 1887 zgłoszeń problemów, 8 decyzji i 0 blokad. To jest kolejka ręcznego sprawdzenia pliku produktowego; WILQ nie twierdzi, że zatwierdzenie, twierdzenie o przychodzie albo dane produktu zostały już naprawione.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów pliku produktowego. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
@@ -6879,7 +6879,7 @@ function mockFetch() {
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
-                metric_tiles: { "zapytania/URL": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
+                metric_tiles: { "zapytania i adresy z GSC": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
                   "GSC i WordPress tworzą kolejkę treści: zapytania i URL-e=1, dopasowanie WordPress=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o zapytania, URL-e i spis treści, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
@@ -6909,7 +6909,7 @@ function mockFetch() {
                 priority: 16,
                 metric_tiles: { kampanie: 18, "listy wyszukiwanych haseł": 50 },
                 co_widzimy:
-                  "Google Ads ma kolejki do oceny: kampanie=18, listy wyszukiwanych haseł=50. To są kolejki budżetu, rekomendacji, wykluczeń i segmentów. Zapis zmian, ocena rentowności i werdykty o przepalonym budżecie pozostają zablokowane.",
+                  "Google Ads ma kolejki do oceny: 18 kampanii i 50 wyszukiwanych haseł. To są kolejki budżetu, rekomendacji, wykluczeń i segmentów. Zapis zmian, ocena rentowności i werdykty o przepalonym budżecie pozostają zablokowane.",
                 dlaczego_to_ma_znaczenie:
                   "Google Ads OAuth, MCC login i child customer działają.",
                 bezpieczny_next_step:
@@ -6948,7 +6948,7 @@ function mockFetch() {
                 status: "ready",
                 priority: 10,
                 summary:
-                  "Produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8. To jest kolejka do sprawdzenia.",
+                  "Merchant Center ma 10900 produktów, 15 typów problemów, 1887 zgłoszeń problemów i 8 decyzji do przejścia. To jest kolejka do sprawdzenia.",
                 next_step:
                   "Otwórz /merchant i przejrzyj decyzje pliku produktowego przed sprawdzeniem propozycji w WILQ.",
                 source_connectors: ["google_merchant_center"],
@@ -6980,7 +6980,7 @@ function mockFetch() {
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
-                metric_tiles: { "zapytania/URL": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
+                metric_tiles: { "zapytania i adresy z GSC": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 blocked_claims: ["wzrost liczby leadów", "gwarancja pozycji"],
                 risk: "low"
               },

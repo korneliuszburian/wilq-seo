@@ -5101,7 +5101,8 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         if "google_search_console" in group["source_connectors"]
     ]
     assert gsc_groups
-    assert any("powiązanych zapytań" in group["diagnosis"] for group in gsc_groups)
+    assert any("powiązane zapytanie" in group["diagnosis"] for group in gsc_groups)
+    assert all("Query:" not in group["diagnosis"] for group in gsc_groups)
     assert all("clicks=" not in group["diagnosis"] for group in gsc_groups)
     assert all("impressions=" not in group["diagnosis"] for group in gsc_groups)
     assert any("kliknięcia:" in group["diagnosis"] for group in gsc_groups)
@@ -5796,7 +5797,7 @@ def test_command_center_exposes_polish_operator_brief(
         "ev_refresh_refresh_ahrefs_action_test"
         in brief_by_id["daily_content_queue"]["evidence_ids"]
     )
-    assert brief_by_id["daily_content_queue"]["metric_tiles"]["zapytania/URL"] >= 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["zapytania i adresy z GSC"] >= 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 2
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["ocena Ahrefs"] == 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["luki Ahrefs"] == 1
@@ -5838,7 +5839,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_review_ga4_landing_quality"]["status"] == "blocked"
     assert "pomiar i jakość ruchu" in plan_by_id["plan_review_ga4_landing_quality"]["title"]
     assert (
-        "decyzji GA4 do sprawdzenia"
+        "decyzję GA4 do sprawdzenia"
         in plan_by_id["plan_review_ga4_landing_quality"]["why_it_matters"]
     )
     assert (
@@ -6017,7 +6018,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
-    assert "grup stron wejścia, źródeł ruchu i kampanii" in ga4_decision["co_widzimy"]
+    assert "stron wejścia, źródeł ruchu i kampanii" in ga4_decision["co_widzimy"]
     assert "Blokada oznacza" in ga4_decision["co_widzimy"]
     assert "Status blocked" not in ga4_decision["co_widzimy"]
     assert "brak kontraktu" not in ga4_decision["co_widzimy"]
@@ -6112,10 +6113,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["metric_tiles"]["wiersze kosztu pozyskania celu"] == 1
     assert ads_item["metric_tiles"]["wiersze zwrotu z reklam"] == 1
     assert "kolejki oceny" in ads_item["summary"]
-    assert "kliknięcia=12" in ads_item["summary"]
-    assert "koszt=12 PLN" in ads_item["summary"]
-    assert "konwersje=1" in ads_item["summary"]
-    assert "wskaźniki do sprawdzenia=1" in ads_item["summary"]
+    assert "12 kliknięć" in ads_item["summary"]
+    assert "koszt 12 PLN" in ads_item["summary"]
+    assert "1 konwersja" in ads_item["summary"]
+    assert "1 wiersz wskaźników kampanii" in ads_item["summary"]
     assert "Wskaźniki są sygnałem" in ads_item["summary"]
     assert "Zapis zmian wymaga sprawdzenia" in ads_item["next_step"]
     assert "apply" not in ads_item["next_step"]
@@ -6148,11 +6149,11 @@ def test_command_center_ads_plan_uses_live_review_queues(
     ads_plan = plan_by_id["plan_review_ads_campaign_metrics"]
     assert ads_plan["status"] == "ready"
     assert ads_plan["title"] == "Przejrzyj aktualny odczyt Ads bez zapisu zmian"
-    assert "kliknięcia=12" in ads_plan["why_it_matters"]
-    assert "koszt=12 PLN" in ads_plan["why_it_matters"]
-    assert "konwersje=1" in ads_plan["why_it_matters"]
-    assert "wartość konwersji=150 PLN" in ads_plan["why_it_matters"]
-    assert "wskaźniki do sprawdzenia=1" in ads_plan["why_it_matters"]
+    assert "12 kliknięć" in ads_plan["why_it_matters"]
+    assert "koszt 12 PLN" in ads_plan["why_it_matters"]
+    assert "1 konwersja" in ads_plan["why_it_matters"]
+    assert "wartość konwersji 150 PLN" in ads_plan["why_it_matters"]
+    assert "1 wiersz wskaźników kampanii" in ads_plan["why_it_matters"]
     assert "ocena opłacalności" in ads_plan["why_it_matters"]
     assert "aktualny odczyt" in ads_plan["operator_action"]
     assert "podgląd budżetów" in ads_plan["operator_action"]
@@ -6179,8 +6180,8 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["metric_tiles"]["wskaźniki do sprawdzenia"] == 1
     assert ads_decision["metric_tiles"]["wiersze kosztu pozyskania celu"] == 1
     assert ads_decision["metric_tiles"]["wiersze zwrotu z reklam"] == 1
-    assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
-    assert "wskaźniki do sprawdzenia=1" in ads_decision["co_widzimy"]
+    assert "1 budżet do sprawdzenia" in ads_decision["co_widzimy"]
+    assert "1 wiersz wskaźników kampanii" in ads_decision["co_widzimy"]
     assert "kolejki oceny" in ads_decision["co_widzimy"]
     assert (
         "kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu"
@@ -6323,8 +6324,8 @@ def test_command_center_ads_totals_use_latest_refresh_summary(
     assert ads_item["metric_tiles"]["wartość konwersji"] == "2 PLN"
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 18
     assert ads_item["metric_tiles"]["rekomendacje"] == 4
-    assert "kampanie=18" in ads_item["summary"]
-    assert "koszt=154.05 PLN" in ads_item["summary"]
+    assert "18 kampanii" in ads_item["summary"]
+    assert "koszt 154.05 PLN" in ads_item["summary"]
 
 
 def test_command_center_merchant_uses_latest_refresh_issue_facts(
@@ -6388,8 +6389,8 @@ def test_command_center_merchant_uses_latest_refresh_issue_facts(
     assert merchant_item["metric_tiles"]["produkty"] == 10900
     assert merchant_item["metric_tiles"]["zgłoszenia"] == 23
     assert merchant_item["metric_tiles"]["decyzje"] == 1
-    assert "zgłoszenia=23" in merchant_item["summary"]
-    assert "decyzje=1" in merchant_item["summary"]
+    assert "23 zgłoszenia problemów" in merchant_item["summary"]
+    assert "1 decyzja do przejścia" in merchant_item["summary"]
     assert "ev_refresh_refresh_google_merchant_center_latest" in merchant_item["evidence_ids"]
     assert "ev_refresh_refresh_google_merchant_center_older" not in merchant_item["evidence_ids"]
 
@@ -6531,8 +6532,8 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     assert ga4_item["metric_tiles"]["pomiar"] == 1
     assert ga4_item["metric_tiles"]["jakość ruchu"] == 1
     assert "GA4 ma 2 grup" in ga4_item["summary"]
-    assert "1 problemów pomiaru" in ga4_item["summary"]
-    assert "1 decyzji jakości ruchu" in ga4_item["summary"]
+    assert "1 problem pomiaru" in ga4_item["summary"]
+    assert "1 decyzję jakości ruchu" in ga4_item["summary"]
     assert (
         "ev_refresh_refresh_google_analytics_4_command_center_fallback" in ga4_item["evidence_ids"]
     )
@@ -6598,8 +6599,8 @@ def test_command_center_ga4_uses_visible_decision_cap(
     assert ga4_item["metric_tiles"]["decyzje"] == 6
     assert ga4_item["metric_tiles"]["pomiar"] == 2
     assert ga4_item["metric_tiles"]["jakość ruchu"] == 4
-    assert "2 problemów pomiaru" in ga4_item["summary"]
-    assert "4 decyzji jakości ruchu" in ga4_item["summary"]
+    assert "2 problemy pomiaru" in ga4_item["summary"]
+    assert "4 decyzje jakości ruchu" in ga4_item["summary"]
 
 
 def test_command_center_demotes_localo_access_ready_without_visibility_facts(
@@ -7706,7 +7707,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert content_record["keyword"] == "bdo szkolenie"
     assert content_record["referenced_public_url"] == "https://www.ekologus.pl/bdo/"
     assert content_record["competitor_domain"] == "example.pl"
-    assert "luki treści=2" in content_record["summary"]
+    assert "2 luk treści" in content_record["summary"]
     assert content_record["metric_fact_labels"]["ahrefs_content_gap_count"] == "luki treści"
     assert "wzrost ruchu" in content_record["blocked_claims"]
 
@@ -10783,7 +10784,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         ]
     )
     assert "koszt_micros=" not in marketer_text
-    assert "koszt=12 PLN" in marketer_text
+    assert "koszt 12 PLN" in marketer_text
     campaign_decision = next(
         decision
         for decision in payload["decision_queue"]

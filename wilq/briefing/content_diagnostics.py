@@ -1808,10 +1808,10 @@ def _ahrefs_gap_record_decisions(
             title="Ahrefs: zweryfikuj luki SEO przed planem treści",
             summary=(
                 f"WILQ ma {len(gap_facts)} rekordów luk Ahrefs: "
-                f"luki treści={gap_counts['content_gap']}, "
-                f"słowa organiczne={gap_counts['organic_keyword_gap']}, "
-                f"najlepsze strony konkurencji={gap_counts['top_page_gap']}, "
-                f"luki linków zwrotnych={gap_counts['backlink_gap']}. Ocena jakości wskazuje "
+                f"{gap_counts['content_gap']} luk treści, "
+                f"{gap_counts['organic_keyword_gap']} luk słów organicznych, "
+                f"{gap_counts['top_page_gap']} luk najlepszych stron konkurencji i "
+                f"{gap_counts['backlink_gap']} luk linków zwrotnych. Ocena jakości wskazuje "
                 f"{len(relevant_scores)} {relevant_label}, "
                 f"{len(review_scores)} {review_label} do ręcznej oceny i "
                 f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "

@@ -1312,11 +1312,11 @@ def _campaign_read_contract(
             status="ready",
             title="Google Ads: aktywność kampanii",
             summary=(
-                f"WILQ ma {len(rows)} wierszy kampanii: kliknięcia={total_clicks}, "
-                f"wyświetlenia={total_impressions}, "
-                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
-                f"konwersje={_format_float(total_conversions)}, "
-                f"wartość konwersji={_format_float(total_conversion_value)}."
+                f"WILQ ma {len(rows)} wierszy kampanii: {total_clicks} kliknięć, "
+                f"{total_impressions} wyświetleń, "
+                f"koszt {_format_money_micros(total_cost_micros, currency_code)}, "
+                f"{_format_float(total_conversions)} konwersji, "
+                f"wartość konwersji {_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "clicks",
@@ -3206,11 +3206,11 @@ def _search_terms_read_contract(
             status="ready",
             title="Google Ads: zapytania użytkowników",
             summary=(
-                f"WILQ ma {len(rows)} wierszy zapytań: kliknięcia={total_clicks}, "
-                f"wyświetlenia={total_impressions}, "
-                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
-                f"konwersje={_format_float(total_conversions)}, "
-                f"wartość konwersji={_format_float(total_conversion_value)}."
+                f"WILQ ma {len(rows)} wierszy zapytań: {total_clicks} kliknięć, "
+                f"{total_impressions} wyświetleń, "
+                f"koszt {_format_money_micros(total_cost_micros, currency_code)}, "
+                f"{_format_float(total_conversions)} konwersji, "
+                f"wartość konwersji {_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -3294,10 +3294,10 @@ def _search_term_review_summary_contract(
         title="Google Ads: kolejność oceny wyszukiwanych haseł",
         summary=(
             f"WILQ ma {len(rows)} wierszy wyszukiwanych haseł do ręcznej oceny: "
-            f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
-            f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
-            f"konwersje={_format_float(total_conversions)}, "
-            f"wiersze bez konwersji={zero_conversion_count}."
+            f"{total_clicks} kliknięć, {total_impressions} wyświetleń, "
+            f"koszt {_format_money_micros(total_cost_micros, currency_code)}, "
+            f"{_format_float(total_conversions)} konwersji, "
+            f"{zero_conversion_count} wierszy bez konwersji."
         ),
         allowed_metrics=search_terms_read_contract.allowed_metrics,
         missing_read_contracts=search_terms_read_contract.missing_read_contracts,
@@ -3483,8 +3483,8 @@ def _search_term_ngram_read_contract(
             title="Google Ads: n-gramy zapytań",
             summary=(
                 f"WILQ zgrupował {len(rows)} n-gramów z {total_terms} wystąpień "
-                f"wyszukiwanych haseł: kliknięcia={total_clicks}, "
-                f"koszt={_format_money_micros(total_cost_micros, currency_code)}."
+                f"wyszukiwanych haseł: {total_clicks} kliknięć, "
+                f"koszt {_format_money_micros(total_cost_micros, currency_code)}."
             ),
             allowed_metrics=[
                 "ngram",
@@ -3643,10 +3643,10 @@ def _search_term_safety_read_contract(
             title="Google Ads: 90-dniowy odczyt bezpieczeństwa zapytań",
             summary=(
                 f"WILQ ma 90-dniowy odczyt bezpieczeństwa dla {len(rows)} zapytań: "
-                f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
-                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
-                f"konwersje={_format_float(total_conversions)}, "
-                f"wartość konwersji={_format_float(total_conversion_value)}."
+                f"{total_clicks} kliknięć, {total_impressions} wyświetleń, "
+                f"koszt {_format_money_micros(total_cost_micros, currency_code)}, "
+                f"{_format_float(total_conversions)} konwersji, "
+                f"wartość konwersji {_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -4641,11 +4641,11 @@ def _custom_segment_review_reason(
     total_clicks = sum(row.clicks or 0 for row in rows)
     total_conversions = sum(row.conversions or 0 for row in rows)
     return (
-        f"Hasła źródłowe={len(source_terms)}, kliknięcia={total_clicks}, "
-        f"wyświetlenia={_search_term_impressions_review_value(rows)}, "
-        f"koszt={_search_term_cost_review_value(rows)}, "
-        f"konwersje={_format_float(float(total_conversions))}, "
-        f"odrzucone terminy={len(_unique(rejected_terms))}. "
+        f"{len(source_terms)} haseł źródłowych, {total_clicks} kliknięć, "
+        f"wyświetlenia {_search_term_impressions_review_value(rows)}, "
+        f"koszt {_search_term_cost_review_value(rows)}, "
+        f"{_format_float(float(total_conversions))} konwersji, "
+        f"{len(_unique(rejected_terms))} odrzuconych terminów. "
         "To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania "
         "reklam ani wpływu na kampanię."
     )
@@ -5045,19 +5045,19 @@ def _negative_keyword_review_reason(
     safety_conversions_value = safety_row.conversions_90d if safety_row is not None else 0
     safety_conversions = _format_float(float(safety_conversions_value or 0))
     safety_part = (
-        f"90 dni: kliknięcia={safety_row.clicks_90d or 0}, koszt={safety_cost or '0'}, "
-        f"konwersje={safety_conversions}"
+        f"90 dni: {safety_row.clicks_90d or 0} kliknięć, koszt {safety_cost or '0'}, "
+        f"{safety_conversions} konwersji"
         if safety_row is not None
         else "brak dopasowanego 90-dniowego odczytu bezpieczeństwa"
     )
     context_part = (
-        f"kontekst dopasowań słów kluczowych={len(keyword_context_rows)} wierszy"
+        f"{len(keyword_context_rows)} wierszy kontekstu dopasowań słów kluczowych"
         if keyword_context_rows
         else "brak kontekstu dopasowań słów kluczowych dla tej grupy"
     )
     return (
-        f"Bieżący odczyt: kliknięcia={row.clicks or 0}, koszt={current_cost or '0'}, "
-        f"konwersje={current_conversions}; {safety_part}; {context_part}. "
+        f"Bieżący odczyt: {row.clicks or 0} kliknięć, koszt {current_cost or '0'}, "
+        f"{current_conversions} konwersji; {safety_part}; {context_part}. "
         "To jest kolejność oceny, nie ocena zmarnowanego budżetu."
     )
 

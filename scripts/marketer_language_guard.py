@@ -296,6 +296,30 @@ FORBIDDEN_PHRASES = (
         "Use Zapytania i adresy z GSC in content copy.",
     ),
     ForbiddenPhrase(
+        "zapytania/URL",
+        "Use zapytania i adresy z GSC in content copy.",
+    ),
+    ForbiddenPhrase(
+        "produkty=",
+        "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
+        "zgłoszenia=",
+        "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
+        "kampanie=",
+        "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
+        "koszt=",
+        "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
+        "luki treści=",
+        "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
         "GSC↔WP",
         "Use Treści znalezione w WordPress or explicit GSC/WordPress wording.",
     ),

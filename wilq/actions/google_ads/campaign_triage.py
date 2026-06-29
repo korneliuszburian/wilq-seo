@@ -103,19 +103,19 @@ def campaign_review_reason(
         )
     signals: list[str] = []
     if (cost_micros or 0) > 0:
-        signals.append(f"koszt={_format_micros(cost_micros)}")
+        signals.append(f"koszt {_format_micros(cost_micros)}")
     if (clicks or 0) > 0:
-        signals.append(f"kliknięcia={clicks}")
+        signals.append(f"{clicks} kliknięć")
     if (impressions or 0) > 0:
-        signals.append(f"wyświetlenia={impressions}")
+        signals.append(f"{impressions} wyświetleń")
     if conversions is not None and conversions > 0:
-        signals.append(f"konwersje={_format_float(conversions)}")
+        signals.append(f"{_format_float(conversions)} konwersji")
     elif (cost_micros or 0) > 0:
         signals.append("koszt bez konwersji w bieżących dowodach")
     if advertising_channel_type:
-        signals.append(f"kanał={_campaign_channel_label(advertising_channel_type)}")
+        signals.append(f"kanał: {_campaign_channel_label(advertising_channel_type)}")
     if target_status != "no_target" and target_status_label:
-        signals.append(f"target={target_status_label}")
+        signals.append(f"cel: {target_status_label}")
     if is_draft_campaign_name(campaign_name):
         signals.append("nazwa wygląda jak draft/NIE URUCHAMIAĆ")
     signal_text = ", ".join(signals) or "brak aktywności w bieżących dowodach"

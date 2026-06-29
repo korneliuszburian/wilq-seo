@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Centrum pracy, powiązane action-plan summaries, tactical queue GSC/content
+  diagnoses and Ads/content diagnostic summaries no longer use report-style
+  equality metric copy, slash shorthand for GSC query/page counts or English
+  query labels. The producing API/domain sources now emit natural Polish metric
+  phrases with basic plural handling. Focused API tests, dashboard tests, live
+  `/api/dashboard/command-center`, browser proof and both language guards passed.
 - Knowledge operating map no longer marks the daily plan as unusable only
   because it contains blocked decisions. `Plan dnia WILQ` now reports
   `gotowe z blokadami`: the process is usable for the marketer, while blocked

@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Centrum pracy and the content/Ads summaries it consumes now use natural Polish
+  metric phrases instead of report-style equality copy. Guardrails block the
+  worst metric-format, GSC slash-shorthand and English query-label regressions
+  in active source surfaces.
 - Cleanup has moved many Ads, Merchant, GA4, Localo, Ahrefs, Knowledge,
   tactical queue, Procesy and action-detail labels from dashboard helpers into
   API/domain/shared-schema fields.

@@ -337,7 +337,7 @@ def _compact_tactical_diagnosis(
     group_size: int,
 ) -> str:
     if item.domain == OpportunityDomain.gsc_seo:
-        query_text = f" Query: {', '.join(queries[:4])}." if queries else ""
+        query_text = f" Zapytania: {', '.join(queries[:4])}." if queries else ""
         metrics = ", ".join(
             metric
             for metric in (
@@ -350,7 +350,7 @@ def _compact_tactical_diagnosis(
         )
         metrics_text = f" Suma widocznych metryk: {metrics}." if metrics else ""
         return (
-            f"{group_size} powiązanych zapytań prowadzi do tej samej strony."
+            f"{_polish_related_query_sentence(group_size)} do tej samej strony."
             f"{query_text}{metrics_text}"
         )
     return item.diagnosis
@@ -387,6 +387,14 @@ def _polish_query_label(count: int) -> str:
     if 2 <= count <= 4:
         return "zapytania"
     return "zapytań"
+
+
+def _polish_related_query_sentence(count: int) -> str:
+    if count == 1:
+        return "1 powiązane zapytanie prowadzi"
+    if 2 <= count <= 4:
+        return f"{count} powiązane zapytania prowadzą"
+    return f"{count} powiązanych zapytań prowadzi"
 
 
 def _priority_label(priority: int) -> str:

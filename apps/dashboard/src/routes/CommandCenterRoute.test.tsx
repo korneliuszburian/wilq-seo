@@ -94,7 +94,7 @@ const commandCenterFixture: CommandCenterResponse = {
       priority: 12,
       priority_label: "najpierw",
       metric_tiles: {
-        "zapytania/URL": 10,
+        "zapytania i adresy z GSC": 10,
         "dopasowania WordPress": 15,
         "ocena Ahrefs": 1,
         "luki linków": 9,
@@ -115,7 +115,7 @@ const commandCenterFixture: CommandCenterResponse = {
         }
       ],
       co_widzimy:
-        "WILQ ma dane treści: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
+        "WILQ ma dane treści: 10 zapytań i adresów z GSC, 15 dopasowań WordPress, 1 ocena Ahrefs, 9 luk linków.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać sprawdzenie treści.",
       bezpieczny_next_step:
         "Otwórz widok Treści i wybierz odświeżenie, scalenie, utworzenie albo blokadę.",
@@ -197,12 +197,12 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText("Merchant Center ma potwierdzone dane problemów pliku produktowego.")
     ).toBeInTheDocument();
-    expect(screen.getByText(/WILQ ma dane treści: zapytania\/URL=10/)).toBeInTheDocument();
+    expect(screen.getByText(/WILQ ma dane treści: 10 zapytań i adresów z GSC/)).toBeInTheDocument();
     expect(screen.queryByText(/Najpierw sprawdź dopasowania WordPress/)).not.toBeInTheDocument();
     expect(screen.getByText("120 wyświetleń może uzasadniać sprawdzenie treści."))
       .toBeInTheDocument();
     expect(screen.getByText("10900")).toBeInTheDocument();
-    expect(screen.getByText("zapytania/URL")).toBeInTheDocument();
+    expect(screen.getByText("zapytania i adresy z GSC")).toBeInTheDocument();
     expect(screen.getByText("dopasowania WordPress")).toBeInTheDocument();
     expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("luki linków")).toBeInTheDocument();
