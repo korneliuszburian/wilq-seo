@@ -206,7 +206,7 @@ from wilq.schemas import (
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
-from wilq.workflows.models import _workflow_run_status_label
+from wilq.workflows.models import Workflow, _workflow_run_status_label
 from wilq.workflows.registry import _risk_label as _workflow_risk_label
 from wilq.workflows.registry import _status_label as _workflow_status_label
 
@@ -19767,7 +19767,7 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     assert daily_command["label"] == "Plan dnia WILQ"
     assert daily_command["route"] == "/command-center"
     assert daily_command["route_label"] == "Centrum pracy"
-    assert daily_command["status_label"] in {"gotowe", "zablokowane"}
+    assert daily_command["status_label"] in {"gotowe", "gotowe z blokadami", "zablokowane"}
     assert daily_command["risk_label"] in {"niskie ryzyko", "średnie ryzyko"}
     assert daily_command["skill_id"] == "wilq-daily-command"
     assert daily_command["metric_tiles"]["decyzje"] >= 1
@@ -19836,6 +19836,19 @@ def test_workflow_label_fallbacks_do_not_expose_raw_values() -> None:
         "status uruchomienia do sprawdzenia",
     ]
     assert all(raw_value not in label for label in labels)
+
+
+def test_workflow_missing_contract_detail_fallback_explains_complete_process() -> None:
+    workflow = Workflow(
+        id="workflow_without_missing_contracts",
+        label="Proces bez braków",
+        description="Proces testowy bez brakujących zakresów danych.",
+        steps=[],
+    )
+
+    assert workflow.missing_contract_detail_label == "Dane kompletne dla tego procesu"
+    assert workflow.missing_contract_summary_label == "Dane kompletne dla tej decyzji"
+    assert workflow.missing_contract_detail_label != "brak"
 
 
 def test_workflow_run_persists_to_local_state_with_redaction(

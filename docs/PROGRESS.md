@@ -381,6 +381,8 @@ API status later contradicts this state.
   missing-state copy.
 - Workflow cards now explain when a process has no dedicated route instead of
   rendering bare missing-view fallback text.
+- Workflow API model now explains complete missing-data state for processes
+  instead of returning a bare missing-state fallback in process detail labels.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -444,6 +446,7 @@ API status later contradicts this state.
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_marketer_language_guard.py -q`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'workflow_label_fallbacks_do_not_expose_raw_values or workflow_missing_contract_detail_fallback_explains_complete_process or workflows_are_decision_backed_operator_contracts'`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
 - `rtk pnpm outdated -r`
 - browser proof with `agent-browser` for touched routes

@@ -103,7 +103,9 @@ class Workflow(BaseModel):
             )
         if not self.missing_contract_detail_label:
             self.missing_contract_detail_label = (
-                ", ".join(self.missing_contract_labels) if self.missing_contract_labels else "brak"
+                ", ".join(self.missing_contract_labels)
+                if self.missing_contract_labels
+                else "Dane kompletne dla tego procesu"
             )
         return self
 
