@@ -75,6 +75,12 @@ Date: 2026-06-29
   of raw JSON blocks. The machine JSON remains available through `--format json`
   for recording/completion checks, but the marketer handoff no longer leads
   with technical field names.
+- Latest live UAT packet was regenerated on 2026-06-29T05:18:19Z in
+  `.local-lab/proof/marketer-uat-packet-20260629T051819Z.{md,json}`.
+  The markdown packet has no guarded hits for old route names, stale content
+  URL terms or technical action-model jargon. `/api/connectors` was reachable
+  at the same slice: 12 connectors total, 9 configured, 2 missing-credential
+  optional social connectors and Google Sheets disabled by scope.
 - Skill smoke guardrails now validate the Polish WILQ instruction for metrics
   and source evidence instead of stale English proof wording. Content skill
   smoke accepts condensed context-pack preview cards for WordPress draft handoff
