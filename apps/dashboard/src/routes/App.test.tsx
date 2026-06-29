@@ -8227,8 +8227,10 @@ describe("WILQ dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("poprawna")).toBeInTheDocument();
-    expect(screen.getByText("Błędy: brak błędów")).toBeInTheDocument();
-    expect(screen.getByText("Ostrzeżenia: brak ostrzeżeń")).toBeInTheDocument();
+    expect(screen.getByText("Błędy: WILQ nie zgłosił błędów sprawdzenia.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ostrzeżenia: WILQ nie zgłosił ostrzeżeń sprawdzenia.")
+    ).toBeInTheDocument();
     expect(screen.queryByText("Błędy: brak")).not.toBeInTheDocument();
     expect(screen.queryByText("Ostrzeżenia: brak")).not.toBeInTheDocument();
     expect(

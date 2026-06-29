@@ -120,7 +120,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
         <TraceLine
           label="Akcje"
           values={group.action_summary_label ? [group.action_summary_label] : []}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji; ta grupa zostaje informacją do przeglądu."
         />
         <TraceLine label="Granice wniosków" values={group.blocked_claim_labels} />
       </div>
@@ -160,13 +160,13 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <TraceLine
           label="Dowody"
           values={item.evidence_summary_label ? [item.evidence_summary_label] : []}
-          empty="brak dowodów do pokazania"
+          empty="WILQ nie podał dowodów; nie traktuj tej pozycji jako rekomendacji."
         />
         <TraceLine label="Źródła" values={item.source_connector_labels} />
         <TraceLine
           label="Akcje"
           values={item.action_summary_label ? [item.action_summary_label] : []}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; następny krok musi pozostać ręczną oceną."
         />
         <TraceLine label="Granice wniosków" values={item.blocked_claim_labels} />
       </div>
@@ -179,7 +179,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
               label="Akcje do sprawdzenia"
               values={item.action_ids}
               kind="actions"
-              empty="brak akcji do sprawdzenia"
+              empty="WILQ nie podał akcji do sprawdzenia; brak linku do podglądu zmian."
             />
           </div>
         </details>

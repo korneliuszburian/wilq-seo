@@ -196,8 +196,15 @@ describe("ActionPanels", () => {
     expect(source).not.toContain('empty="brak etykiety dowodów z WILQ"');
     expect(source).not.toContain('empty="brak blokad podglądu"');
     expect(source).not.toContain('empty="brak dodatkowych warunków"');
+    expect(source).not.toContain('empty="brak błędów"');
+    expect(source).not.toContain('empty="brak ostrzeżeń"');
+    expect(source).not.toContain('empty="brak blokad potwierdzenia"');
+    expect(source).not.toContain('empty="brak źródeł danych"');
+    expect(source).not.toContain('"brak dowodów źródłowych"');
     expect(source).toContain("nie traktuj tej akcji jako gotowej rekomendacji");
     expect(source).toContain("WILQ nie zgłosił blokad podglądu");
+    expect(source).toContain("WILQ nie zgłosił błędów sprawdzenia");
+    expect(source).toContain("nie oceniaj efektu bez źródła");
   });
 });
 

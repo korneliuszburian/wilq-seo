@@ -214,7 +214,7 @@ export function ActionIdFocus({
           <TraceLine
             label="Akcje"
             values={actionIds.length > 0 ? [actionSummaryLabel] : []}
-            empty="brak akcji do sprawdzenia"
+            empty="WILQ nie podał akcji do sprawdzenia; pokazuj tylko notatkę procesu."
           />
         </div>
       </div>
@@ -346,7 +346,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
         <TraceLine
           label="Blokady zapisu zmian"
           values={[gate.apply_blocker_summary_label]}
-          empty="brak blokad zapisu zmian"
+          empty="WILQ nie zgłosił blokad zapisu zmian."
         />
       </div>
       <div className="mt-2 text-slate-600">
@@ -371,7 +371,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <TraceLine
             label="Co blokuje zapis"
             values={[gate.last_mutation_blocker_summary_label]}
-            empty="brak blokad zapisu"
+            empty="WILQ nie zgłosił dodatkowych blokad zapisu."
           />
         </div>
       ) : null}
@@ -494,11 +494,15 @@ function ActionValidationResultPanel({
       <div>
         Wynik: <span className="font-semibold">{validation.status_label}</span>
       </div>
-      <TraceLine label="Błędy" values={validation.errors} empty="brak błędów" />
+      <TraceLine
+        label="Błędy"
+        values={validation.errors}
+        empty="WILQ nie zgłosił błędów sprawdzenia."
+      />
       <TraceLine
         label="Ostrzeżenia"
         values={validation.warnings}
-        empty="brak ostrzeżeń"
+        empty="WILQ nie zgłosił ostrzeżeń sprawdzenia."
       />
     </div>
   );
@@ -529,7 +533,7 @@ function ActionConfirmResultPanel({
       <TraceLine
         label="Blokady potwierdzenia"
         values={result.blocker_labels}
-        empty="brak blokad potwierdzenia"
+        empty="WILQ nie zgłosił blokad potwierdzenia."
       />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>
@@ -619,13 +623,17 @@ function ActionImpactCheckResultPanel({
       <TraceLine
         label="Źródła"
         values={result.source_connector_labels}
-        empty="brak źródeł danych"
+        empty="WILQ nie podał źródeł danych; nie oceniaj efektu bez źródła."
       />
-      <div>Dowody: {result.evidence_summary_label || "brak dowodów źródłowych"}</div>
+      <div>
+        Dowody:{" "}
+        {result.evidence_summary_label ||
+          "WILQ nie podał dowodów źródłowych; sprawdzenie efektu nie uzasadnia wniosku."}
+      </div>
       <TraceLine
         label="Blokady sprawdzenia efektu"
         values={result.blocker_labels}
-        empty="brak blokad sprawdzenia efektu"
+        empty="WILQ nie zgłosił blokad sprawdzenia efektu."
       />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>

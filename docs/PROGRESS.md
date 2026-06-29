@@ -135,10 +135,15 @@ API status later contradicts this state.
   references explain what the missing state means instead of showing bare
   `brak` placeholders. Focused dashboard tests, dashboard typecheck/lint,
   marketer language guard and `git diff --check` passed.
-- Action detail validation now uses self-explanatory empty states such as
-  `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
-  Focused dashboard tests, typecheck, lint, language guards, `git diff --check`
-  and browser proof passed.
+- Action validation, confirmation, effect-check and Tactical Queue empty states
+  now explain the decision limit when errors, warnings, sources, evidence or
+  actions are missing. These panels no longer use context-free `brak błędów`,
+  `brak ostrzeżeń`, `brak dowodów do pokazania` or `brak akcji do sprawdzenia`
+  as the operator-facing answer. Focused dashboard tests, dashboard
+  typecheck/lint, marketer language guard and `git diff --check` passed.
+- Action detail validation no longer uses context-free `brak` answers. The
+  validation result now says that WILQ did not report errors or warnings, so the
+  positive empty state is tied to an actual check.
 - Action detail safety-record fields now use API-owned labels for mutation
   audit status, write attempt, external write path and audit trace. The review
   panel shows concrete states such as `nie próbowano zapisu w systemie
