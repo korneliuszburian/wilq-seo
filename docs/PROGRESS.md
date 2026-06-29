@@ -87,8 +87,14 @@ API status later contradicts this state.
   production build, Fallow changed-file audit, marketer/context-pack language
   guards, browser proof for `/command-center` and generated CSS proof for WILQ
   custom colors passed after the upgrade.
-- The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest and `@vitejs/plugin-react`.
+- `vite`, `vitest` and `@vitejs/plugin-react` have been upgraded to current
+  major versions (`vite@8.1.0`, `vitest@4.1.9`,
+  `@vitejs/plugin-react@6.0.3`). Shared schemas explicitly include Node types
+  for the live schema smoke environment. Workspace typecheck, workspace tests,
+  live shared-schema smoke, dashboard lint/build, Fallow changed-file audit,
+  marketer/context-pack language guards, `pnpm outdated` and browser proof for
+  `/command-center` passed after the upgrade.
+- JS workspace dependencies are current as of 2026-06-29.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
   dashboard duplication and complexity debt.
