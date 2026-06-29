@@ -113,6 +113,11 @@ API status later contradicts this state.
 - `tests/test_operator_endpoint_language_guard.py` now guards the main
   operator endpoints against stale route names, dev-preview/migration
   semantics and action-model jargon in serialized API output.
+- Active dev-preview/migration semantics audit is closed in Beads
+  (`wilq-seo-6rw.3`). Current active API/dashboard/schema/skill code no longer
+  exposes dev preview as a final/canonical content target; remaining matches are
+  guard/smoke tests or historical plan text. Focused operator endpoint/content
+  URL tests, marketer language guard and live contract smoke passed.
 - Merchant diagnostics active API contract now uses `change_preview` instead
   of `payload_preview`; `/api/merchant/diagnostics`, the Merchant context pack
   compaction and the Merchant skill smoke no longer expose `payload` wording.
