@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -146,6 +147,10 @@ describe("TacticalQueuePanel", () => {
 
     expect(section?.textContent).toContain("1 dowód źródłowy");
     expect(section?.textContent).toContain("1 akcja do sprawdzenia");
+    expect(section?.textContent).toContain("Obszar: Treści i GSC");
+    expect(section?.textContent).toContain("Zadanie: nowa treść");
+    expect(section?.textContent).toContain("Priorytet: wysoki priorytet");
+    expect(section?.textContent).not.toContain("Treści i GSC / nowa treść / wysoki priorytet");
     expect(scope.getAllByText("Szczegóły techniczne").length).toBeGreaterThan(0);
     expect(section?.textContent).toContain("Dowody źródłowe");
     expect(section?.textContent).toContain("Akcje do sprawdzenia");
@@ -180,5 +185,7 @@ describe("TacticalQueuePanel", () => {
     expect(section?.textContent).toContain("2 dowody źródłowe");
     expect(section?.textContent).toContain("Akcje");
     expect(section?.textContent).toContain("1 akcja do sprawdzenia");
+    const routeSource = readFileSync("src/routes/TacticalQueuePanel.tsx", "utf8");
+    expect(routeSource).not.toContain("{item.domain_label} / {item.intent_label} / {item.priority_label}");
   });
 });

@@ -534,9 +534,14 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
-                    <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {item.intent_label} / {item.priority_label}
-                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-600">
+                      <span className="rounded border border-line bg-white px-2 py-1">
+                        Zadanie: {item.intent_label}
+                      </span>
+                      <span className="rounded border border-line bg-white px-2 py-1">
+                        Priorytet: {item.priority_label}
+                      </span>
+                    </div>
                   </div>
                   <StatusBadge value={item.risk} label={item.risk_label} />
                 </div>

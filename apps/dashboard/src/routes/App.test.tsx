@@ -8103,6 +8103,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("formatMerchantIdCount");
     expect(routeSource).not.toContain("function formatPolishCount");
     expect(routeSource).not.toContain("cluster.product_count,");
+    expect(routeSource).not.toContain("{item.intent_label} / {item.priority_label}");
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(
       screen.queryByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")

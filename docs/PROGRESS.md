@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Tactical queue, Merchant fallback issue cards and workflow brief cards now
+  render metadata as labelled Polish chips instead of slash-combined fragments
+  such as `obszar / zadanie / priorytet` or `rodzaj / priorytet`. Focused
+  dashboard tests guard against those source patterns returning; live browser
+  proof after stack restart confirmed `/social-publisher` and `/merchant` did
+  not expose the guarded stale fragments.
 - Merchant issue decisions now use source labels such as
   `Merchant: problem z atrybutem: link produktu - błąd strony produktu`
   instead of slash-combined raw issue/attribute wording. Merchant action

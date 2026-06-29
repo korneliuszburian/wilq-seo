@@ -35,5 +35,6 @@ describe("BriefWorkflowSurface config", () => {
 
     expect(source).toContain("item.kind_label");
     expect(source).not.toContain("{item.kind} /");
+    expect(source).not.toContain("{item.kind_label} / {item.priority_label}");
   });
 });

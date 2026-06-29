@@ -86,6 +86,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   in active source surfaces.
 - Google Ads campaign triage now uses natural Polish priority phrases in the
   API-owned summary instead of report-style count formatting.
+- Tactical queue, Merchant fallback issue cards and workflow brief cards now
+  show labelled Polish metadata chips instead of slash-combined developer
+  fragments for area/task/priority or kind/priority.
 - Merchant issue decisions now use clean Polish issue and attribute wording,
   for example `Merchant: problem z atrybutem: link produktu - błąd strony produktu`.
   Merchant action preview cards avoid slash-combined issue/attribute labels,
