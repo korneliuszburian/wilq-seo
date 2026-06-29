@@ -336,7 +336,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Źródło decyzji"
             values={[summary.decision_source_label, summary.drilldown_source_label]}
-            empty="brak"
+            empty="brak źródła decyzji"
           />
           <TraceLine label="Znaczenie liczników" values={[summary.count_semantics_label]} />
         </div>
@@ -350,12 +350,12 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Źródła"
             values={primaryDecision.source_connector_labels}
-            empty="brak"
+            empty="brak źródeł danych"
           />
           <TraceLine
             label="Dowody"
             values={primaryDecision.evidence_summary_label ? [primaryDecision.evidence_summary_label] : []}
-            empty="brak"
+            empty="brak dowodów źródłowych"
           />
           {data.latest_refresh ? (
             <TraceLine
@@ -381,7 +381,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Brakujące wejścia"
             values={requiredValidationSummary ? [requiredValidationSummary] : []}
-            empty="brak"
+            empty="brak brakujących wejść"
           />
         </div>
 
@@ -559,16 +559,20 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb pracy</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Typy problemów" values={summary.issue_types} empty="brak" />
+            <TraceLine
+              label="Typy problemów"
+              values={summary.issue_types}
+              empty="brak typów problemów"
+            />
             <TraceLine
               label="Dowody"
               values={summary.evidence_summary_label ? [summary.evidence_summary_label] : []}
-              empty="brak"
+              empty="brak dowodów źródłowych"
             />
             <TraceLine
               label="Akcje"
               values={[summary.action_summary_label]}
-              empty="brak"
+              empty="brak akcji do sprawdzenia"
             />
             <TraceLine
               label="Nie wolno twierdzić"
@@ -695,11 +699,15 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
-        <TraceLine label="Źródła" values={readiness.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Źródła"
+          values={readiness.source_connector_labels}
+          empty="brak źródeł danych"
+        />
         <TraceLine
           label="Dowody"
           values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -753,13 +761,21 @@ function MerchantProductPerformanceRowCard({
           ].filter((value): value is string => Boolean(value))}
           empty="brak kontekstu problemu"
         />
-        <TraceLine label="Źródła" values={row.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Źródła"
+          values={row.source_connector_labels}
+          empty="brak źródeł danych"
+        />
         <TraceLine
           label="Dowody"
           values={row.evidence_summary_label ? [row.evidence_summary_label] : []}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
-        <TraceLine label="Brakujące metryki" values={row.missing_metric_labels} empty="brak" />
+        <TraceLine
+          label="Brakujące metryki"
+          values={row.missing_metric_labels}
+          empty="metryki kompletne"
+        />
         <TraceLine
           label="Nie wolno twierdzić"
           values={row.blocked_claim_labels}
@@ -796,11 +812,15 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
-        <TraceLine label="Źródła" values={readiness.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Źródła"
+          values={readiness.source_connector_labels}
+          empty="brak źródeł danych"
+        />
         <TraceLine
           label="Dowody"
           values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -899,12 +919,12 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <TraceLine
           label="Dowody"
           values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine
           label="Akcje"
           values={[decision.action_summary_label]}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
         <TraceLine
           label="Nie wolno twierdzić"

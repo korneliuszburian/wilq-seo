@@ -8166,6 +8166,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("primaryDecision.action_summary_label");
     expect(routeSource).toContain("cluster.reported_issue_summary_label");
+    expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain("{decision.decision_type_label} /");
     expect(routeSource).not.toContain(" / ${cluster.reporting_context_label}");
     expect(routeSource).not.toContain("formatMerchantIdCount");

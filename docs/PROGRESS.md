@@ -125,6 +125,10 @@ API status later contradicts this state.
 - GA4 dashboard trace lines no longer use generic `brak` empty states for
   measurement readiness, evidence or sources. Focused GA4 route tests,
   dashboard typecheck/lint, language guards and browser proof passed.
+- Merchant dashboard trace lines no longer use generic `brak` empty states for
+  decision sources, evidence, actions, source connectors or missing metrics.
+  Focused Merchant route tests, dashboard typecheck/lint, language guards and
+  browser proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof
