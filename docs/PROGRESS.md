@@ -148,6 +148,10 @@ API status later contradicts this state.
 - Google Ads monetary values in raw `*_micros` units are stripped from compact
   skill action plans; full action endpoints keep the technical payload when
   needed for validation/review.
+- Skill context-pack `action_plan` now keeps labeled contract/review-gate lists
+  only. Raw `allowed_contracts`, `available_read_contracts` and
+  `operator_review_gates` are removed from compact skill context when their
+  marketer-readable label fields exist.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
@@ -202,6 +206,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'expert_capabilities or expert_rule_summaries'`
 - `rtk uv run pytest tests/test_context_pack_language_guard.py -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`

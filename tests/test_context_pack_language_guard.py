@@ -65,6 +65,39 @@ def test_context_pack_guard_blocks_top_level_action_payload_key() -> None:
     ]
 
 
+def test_context_pack_guard_blocks_raw_contract_and_review_gate_keys() -> None:
+    payload = {
+        "active_action_objects": [
+            {
+                "id": "act_bad",
+                "action_plan": {
+                    "allowed_contracts": ["localo_rankings"],
+                    "available_read_contracts": ["demand_gen_campaign_rows"],
+                    "operator_review_gates": ["human_review"],
+                },
+            }
+        ]
+    }
+
+    assert _context_pack_structure_errors(payload) == [
+        (
+            "$.active_action_objects[0].action_plan.allowed_contracts",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of allowed_contracts.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.available_read_contracts",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of available_read_contracts.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.operator_review_gates",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of operator_review_gates.",
+        ),
+    ]
+
+
 def test_context_pack_guard_blocks_required_mapping_key() -> None:
     payload = {
         "expert_capabilities": [
