@@ -480,9 +480,9 @@ def _decision_state_label(state: DecisionState) -> str:
         "ready": "gotowe",
         "stale": "do odświeżenia",
         "blocked": "zablokowane",
-        "missing": "brak danych",
-        "unknown": "nieznane",
-    }.get(state, "nieznane")
+        "missing": "dane niepotwierdzone",
+        "unknown": "status niepotwierdzony",
+    }.get(state, "status niepotwierdzony")
 
 
 def _priority_label(priority: int) -> str:

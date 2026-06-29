@@ -396,6 +396,9 @@ API status later contradicts this state.
 - Ads business-context metric tiles now explain missing margin, business goal,
   budget goal and strategy review states as concrete operator states instead of
   bare missing placeholders.
+- Daily, Ads, Ahrefs and Merchant missing-status labels now describe
+  unconfirmed data scopes instead of returning bare missing-data copy in active
+  briefing contracts.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,

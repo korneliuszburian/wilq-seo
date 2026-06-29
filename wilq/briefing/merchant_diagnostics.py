@@ -553,7 +553,7 @@ def _merchant_status_label(status: object) -> str:
     labels = {
         "ready": "gotowe",
         "blocked": "zablokowane",
-        "missing": "brak danych",
+        "missing": "zakres danych Merchant niepotwierdzony",
     }
     return labels.get(normalized, "status sekcji do sprawdzenia")
 

@@ -5960,7 +5960,7 @@ const localoDiagnostics = {
       id: "localo_visibility_contract",
       title: "Localo: dane rankingów i profilu firmy w Google",
       status: "missing",
-      status_label: "brak danych",
+      status_label: "zakres danych niepodłączony",
       summary:
         "WILQ nie ma jeszcze rankingów, danych profilu firmy w Google, widoczności konkurencji ani recenzji z Localo.",
       diagnosis:

@@ -56,6 +56,7 @@ from wilq.actions.service import (
 )
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
+    _ads_status_label,
     _custom_segment_review_reason,
     _custom_segment_source_quality,
     build_ads_diagnostics,
@@ -66,6 +67,7 @@ from wilq.briefing.ahrefs_diagnostics import (
     _ahrefs_status_label,
     _missing_authority_summary,
 )
+from wilq.briefing.command_center import _decision_state_label
 from wilq.briefing.content_diagnostics import (
     _content_marketer_blocked_claims,
     build_content_diagnostics,
@@ -2052,6 +2054,13 @@ def test_localo_missing_statuses_explain_unconfirmed_contracts() -> None:
     assert _localo_bool_label(None) == "niepotwierdzone"
     assert _localo_token_presence_label(False) == "token nieobecny"
     assert _localo_token_presence_label(None) == "stan tokena niepotwierdzony"
+
+
+def test_missing_domain_statuses_explain_unconfirmed_data_scope() -> None:
+    assert _decision_state_label("missing") == "dane niepotwierdzone"
+    assert _ads_status_label("missing") == "zakres danych Ads niepotwierdzony"
+    assert _ahrefs_status_label("missing") == "dane Ahrefs niepotwierdzone"
+    assert _merchant_status_label("missing") == "zakres danych Merchant niepotwierdzony"
 
 
 def test_validated_ready_action_copy_does_not_claim_human_review(

@@ -7359,7 +7359,7 @@ def _ads_status_label(status: object) -> str:
         "ready": "gotowe",
         "preliminary": "wstępne",
         "blocked": "zablokowane",
-        "missing": "brak danych",
+        "missing": "zakres danych Ads niepotwierdzony",
     }
     return labels.get(value, "status Google Ads do sprawdzenia")
 

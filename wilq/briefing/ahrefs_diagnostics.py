@@ -790,7 +790,7 @@ def _ahrefs_status_label(status: str) -> str:
     labels = {
         "ready": "gotowe",
         "blocked": "zablokowane",
-        "missing": "brak danych",
+        "missing": "dane Ahrefs niepotwierdzone",
     }
     return labels.get(status, "status Ahrefs do sprawdzenia")
 
