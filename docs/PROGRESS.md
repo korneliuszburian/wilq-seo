@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- `App.test.tsx` mock API handler was split into focused endpoint handlers.
+  Fallow no longer reports high-confidence refactoring targets; changed-file
+  Fallow audit, dashboard typecheck, focused dashboard tests, lint,
+  marketer/context-pack language guards and `git diff --check` passed. The file
+  remains a historical hotspot because of size and churn, but it is no longer a
+  current Fallow refactoring target.
 - Dashboard patch/minor dependencies were updated without taking framework
   major migrations in the same slice: `@tanstack/react-query@5.101.2`,
   `@playwright/test@1.61.1`, `postcss@8.5.16` and

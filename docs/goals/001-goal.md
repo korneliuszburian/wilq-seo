@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- `App.test.tsx` mock API routing is split into focused endpoint handlers.
+  Fallow no longer reports high-confidence refactoring targets. `App.test.tsx`
+  remains a size/churn hotspot, but no current function-level target is blocking
+  focused cleanup.
 - Dashboard patch/minor dependencies are current where they do not require a
   framework migration: `@tanstack/react-query`, `@playwright/test`, `postcss`
   and `autoprefixer`. Remaining outdated JS packages are major migrations and
@@ -89,14 +93,12 @@ action IDs and audit fields may stay in technical contracts or drawers.
   Merchant Center are configured and fresh.
 - `OperatingRouteSurfaces.tsx` has been split into focused opportunity,
   action, workflow, outcome and expandable-detail sections, removing it from
-  Fallow's refactoring-target list without changing visible operator copy. The
-  remaining high-confidence JS/TS cleanup target is the monolithic
-  `App.test.tsx`. Live `/workflows` now renders the main process decision
-  surface before secondary process-run history is required.
+  Fallow's refactoring-target list without changing visible operator copy.
+  Live `/workflows` now renders the main process decision surface before
+  secondary process-run history is required.
 - `GenericSurface.tsx` has been split into focused renderer sections, removing
   it from Fallow's refactoring-target list without changing visible operator
-  copy. The remaining high-confidence JS/TS cleanup target is the monolithic
-  `App.test.tsx`.
+  copy.
 - Dashboard lint tooling is on current compatible releases:
   `eslint@10.6.0`, `@eslint/js@10.0.1`,
   `typescript-eslint@8.62.0` and

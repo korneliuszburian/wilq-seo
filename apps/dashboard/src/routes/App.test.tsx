@@ -6823,9 +6823,21 @@ const knowledgeOperatingMap = {
 };
 
 function mockFetch() {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn((url: string) => {
+  vi.stubGlobal("fetch", vi.fn(mockWilqApiFetch));
+}
+
+function mockWilqApiFetch(url: string) {
+  return (
+    mockDashboardApi(url) ??
+    mockDiagnosticApi(url) ??
+    mockActionApi(url) ??
+    mockEvidenceApi(url) ??
+    mockWorkflowAndKnowledgeApi(url) ??
+    Promise.resolve(Response.json({}))
+  );
+}
+
+function mockDashboardApi(url: string) {
       if (url.endsWith("/api/dashboard/command-center")) {
         return Promise.resolve(
           Response.json({
@@ -7114,41 +7126,44 @@ function mockFetch() {
           })
         );
       }
-      if (url.endsWith("/api/marketing/brief")) {
-        return Promise.resolve(Response.json(marketingBrief));
-      }
-      if (url.endsWith("/api/marketing/tactical-queue")) {
-        return Promise.resolve(Response.json(tacticalQueue));
-      }
-      if (url.includes("/api/ads/diagnostics")) {
-        return Promise.resolve(Response.json(adsDiagnostics));
-      }
-      if (url.endsWith("/api/merchant/diagnostics")) {
-        return Promise.resolve(Response.json(merchantDiagnostics));
-      }
-      if (url.endsWith("/api/content/diagnostics")) {
-        return Promise.resolve(Response.json(contentDiagnostics));
-      }
-      if (url.endsWith("/api/content/preflight")) {
-        return Promise.resolve(Response.json(contentPreflight));
-      }
-      if (url.endsWith("/api/ga4/diagnostics")) {
-        return Promise.resolve(Response.json(ga4Diagnostics));
-      }
-      if (url.endsWith("/api/localo/diagnostics")) {
-        return Promise.resolve(Response.json(localoDiagnostics));
-      }
-      if (url.endsWith("/api/ahrefs/diagnostics")) {
-        return Promise.resolve(Response.json(ahrefsDiagnostics));
-      }
-      if (url.endsWith("/api/demand-gen/diagnostics")) {
-        return Promise.resolve(Response.json(demandGenDiagnostics));
-      }
-      if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
-      if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
-      if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
-      if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
-      if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
+      return undefined;
+}
+
+function mockDiagnosticApi(url: string) {
+  const exactResponses: Array<[string, unknown]> = [
+    ["/api/marketing/brief", marketingBrief],
+    ["/api/marketing/tactical-queue", tacticalQueue],
+    ["/api/merchant/diagnostics", merchantDiagnostics],
+    ["/api/content/diagnostics", contentDiagnostics],
+    ["/api/content/preflight", contentPreflight],
+    ["/api/ga4/diagnostics", ga4Diagnostics],
+    ["/api/localo/diagnostics", localoDiagnostics],
+    ["/api/ahrefs/diagnostics", ahrefsDiagnostics],
+    ["/api/demand-gen/diagnostics", demandGenDiagnostics],
+    ["/api/connectors", connectors],
+    ["/api/metrics/status", metricStoreStatus],
+    ["/api/opportunities", opportunities],
+    ["/api/actions", actions]
+  ];
+  const exactResponse = exactResponses.find(([path]) => url.endsWith(path));
+  if (exactResponse) return Promise.resolve(Response.json(exactResponse[1]));
+  if (url.includes("/api/ads/diagnostics")) return Promise.resolve(Response.json(adsDiagnostics));
+  if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
+  return undefined;
+}
+
+function mockActionApi(url: string) {
+  return (
+    mockActionDetail(url) ??
+    mockActionValidation(url) ??
+    mockActionReview(url) ??
+    mockActionPreview(url) ??
+    mockActionConfirm(url) ??
+    mockActionImpactCheck(url)
+  );
+}
+
+function mockActionDetail(url: string) {
       if (url.includes("/api/actions/")) {
         const actionPath = url.split("/api/actions/")[1] ?? "";
         if (!actionPath.includes("/")) {
@@ -7158,6 +7173,10 @@ function mockFetch() {
             : Promise.resolve(Response.json({ detail: "Unknown action" }, { status: 404 }));
         }
       }
+      return undefined;
+}
+
+function mockActionValidation(url: string) {
       if (url.includes("/api/actions/") && url.endsWith("/validate")) {
         const actionId = url.split("/api/actions/")[1]?.replace("/validate", "") ?? "unknown";
         return Promise.resolve(
@@ -7172,6 +7191,10 @@ function mockFetch() {
           })
         );
       }
+      return undefined;
+}
+
+function mockActionReview(url: string) {
       if (url.includes("/api/actions/") && url.endsWith("/review")) {
         const actionId = url.split("/api/actions/")[1]?.replace("/review", "") ?? "unknown";
         return Promise.resolve(
@@ -7205,6 +7228,10 @@ function mockFetch() {
           })
         );
       }
+      return undefined;
+}
+
+function mockActionPreview(url: string) {
       if (url.includes("/api/actions/") && url.endsWith("/preview")) {
         const actionId = url.split("/api/actions/")[1]?.replace("/preview", "") ?? "unknown";
         return Promise.resolve(
@@ -7242,6 +7269,10 @@ function mockFetch() {
           })
         );
       }
+      return undefined;
+}
+
+function mockActionConfirm(url: string) {
       if (url.includes("/api/actions/") && url.endsWith("/confirm")) {
         const actionId = url.split("/api/actions/")[1]?.replace("/confirm", "") ?? "unknown";
         return Promise.resolve(
@@ -7277,6 +7308,10 @@ function mockFetch() {
           })
         );
       }
+      return undefined;
+}
+
+function mockActionImpactCheck(url: string) {
       if (url.includes("/api/actions/") && url.endsWith("/impact-check")) {
         const actionId = url.split("/api/actions/")[1]?.replace("/impact-check", "") ?? "unknown";
         return Promise.resolve(
@@ -7317,6 +7352,10 @@ function mockFetch() {
           })
         );
       }
+      return undefined;
+}
+
+function mockEvidenceApi(url: string) {
       if (url.includes("/api/evidence/")) {
         const evidenceId = decodeURIComponent(url.split("/api/evidence/")[1] ?? "");
         const evidenceItem = evidence.find((item) => item.id === evidenceId);
@@ -7328,6 +7367,10 @@ function mockFetch() {
         return Promise.resolve(Response.json(connectorRefreshRuns));
       }
       if (url.endsWith("/api/expert/rules")) return Promise.resolve(Response.json(expertRules));
+      return undefined;
+}
+
+function mockWorkflowAndKnowledgeApi(url: string) {
       if (url.endsWith("/api/workflows")) {
         return Promise.resolve(
           Response.json([
@@ -7397,9 +7440,7 @@ function mockFetch() {
         return Promise.resolve(Response.json(knowledgeOperatingMap));
       }
       if (url.endsWith("/api/knowledge/playbooks")) return Promise.resolve(Response.json(playbooks));
-      return Promise.resolve(Response.json({}));
-    })
-  );
+      return undefined;
 }
 
 describe("WILQ dashboard", () => {
