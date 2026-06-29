@@ -2577,7 +2577,7 @@ def _with_review_gate(
     review_gate_events = [
         event
         for event in action.audit_events
-        if not _is_legacy_content_migration_review_event(action.id, event)
+        if not _is_raw_content_review_audit_event(action.id, event)
     ]
     action.review_gate = _action_review_gate(
         action.model_copy(update={"audit_events": review_gate_events}),
@@ -2586,7 +2586,7 @@ def _with_review_gate(
     return _action_with_operator_labels(action)
 
 
-def _is_legacy_content_migration_review_event(action_id: str, event: AuditEvent) -> bool:
+def _is_raw_content_review_audit_event(action_id: str, event: AuditEvent) -> bool:
     if action_id != "act_prepare_content_refresh_queue":
         return False
     if not event.event_type.startswith("human_review_"):
@@ -4559,7 +4559,7 @@ def _action_preview_summary(
 
 def _action_audit_summary_for_operator(event: AuditEvent) -> str:
     if event.event_type == "action_preview_generated":
-        return _legacy_or_current_preview_summary(event.summary)
+        return _operator_preview_summary_from_audit(event.summary)
     if event.event_type in {"action_apply_confirmed", "action_apply_confirmation_confirmed"}:
         return _operator_audit_summary_text(event.summary) or (
             "Podgląd zmian potwierdzony. Nie zapisano zmian w zewnętrznych systemach."
@@ -4569,7 +4569,7 @@ def _action_audit_summary_for_operator(event: AuditEvent) -> str:
             "Potwierdzenie podglądu zablokowane. Nie zapisano zmian w zewnętrznych systemach."
         )
     if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
-        return _legacy_or_current_impact_summary(event.summary)
+        return _operator_impact_summary_from_audit(event.summary)
     if event.event_type == "action_apply_blocked":
         return "Zapis zmian zablokowany przez warunki bezpieczeństwa WILQ."
     if event.event_type == "action_apply_completed":
@@ -4620,7 +4620,7 @@ def _contains_raw_audit_contract_text(summary: str) -> bool:
     return any(fragment in summary for fragment in raw_fragments)
 
 
-def _legacy_or_current_preview_summary(summary: str) -> str:
+def _operator_preview_summary_from_audit(summary: str) -> str:
     item_summary = ""
     if "pozycje=" in summary:
         item_fragment = summary.split("pozycje=", 1)[1].split(",", 1)[0].split(".", 1)[0]
@@ -4634,7 +4634,7 @@ def _legacy_or_current_preview_summary(summary: str) -> str:
     return f"Podgląd zmian przygotowany.{item_summary} Nie zapisano zmian w zewnętrznych systemach."
 
 
-def _legacy_or_current_impact_summary(summary: str) -> str:
+def _operator_impact_summary_from_audit(summary: str) -> str:
     if "status=blocked" in summary or "zablok" in summary:
         prefix = "Sprawdzenie efektu zablokowane."
     else:

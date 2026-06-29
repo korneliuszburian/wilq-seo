@@ -87,6 +87,10 @@ Date: 2026-06-29
   while full payload contracts stay verified through API tests. Merchant
   Playwright proof now checks the current technical label `Klucz dowodu w WILQ`
   after opening evidence details.
+- Action review-gate helpers no longer use old migration-oriented function
+  names. Historical raw audit fragments are still sanitized before reaching
+  normal operator copy, but the active code path now names that behavior as raw
+  content review audit cleanup instead of content migration review.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,
