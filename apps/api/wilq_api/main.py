@@ -951,8 +951,13 @@ def _compact_dimensions_for_context(
     value_labels = dimension_value_labels if isinstance(dimension_value_labels, dict) else {}
     compact: dict[str, str] = {}
     for key, _value in list(dimensions.items())[:8]:
-        label = str(labels.get(key) or "wymiar")
-        value_label = str(value_labels.get(key) or "wartość wymiaru do sprawdzenia")
+        label = str(labels.get(key) or "").strip()
+        value_label = str(value_labels.get(key) or "").strip()
+        if label in {"", "wymiar"} or value_label in {
+            "",
+            "wartość wymiaru do sprawdzenia",
+        }:
+            continue
         compact_label = label
         suffix = 2
         while compact_label in compact:
@@ -1184,7 +1189,8 @@ def _skill_scoped_context_pack(
             if connector.id in scoped_connectors
         ],
         "top_opportunities": [
-            opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
+            _compact_opportunity_for_daily_context(opportunity)
+            for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
             _compact_action_dump_for_context(action.model_dump(mode="json"))

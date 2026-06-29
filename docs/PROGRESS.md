@@ -112,6 +112,14 @@ Date: 2026-06-29
   source with slash copy. They render API-owned `landing_page_label` and
   `source_medium_label` as separate labelled lines, with a dashboard test
   guarding against returning to `/oferta/ / google / cpc` copy.
+- Compact Codex skill context no longer exposes generic metric-dimension
+  placeholders like `wymiar` or `wartość wymiaru do sprawdzenia`. Metrics now
+  keep only dimensions with useful API-owned labels; live context-pack guard
+  covers daily, content strategist and Ahrefs packs for this regression.
+- `PLANS.md` now includes a long-range BDOS benchmark watchlist for GTM
+  measurement safety, Google Ads API v24.2/PMax tracks, GA4 source hygiene,
+  lead-quality loops and bidding/campaign-change readiness. These are future
+  capability tracks, not active Goal 001 scope.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

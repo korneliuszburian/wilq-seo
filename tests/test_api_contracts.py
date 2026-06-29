@@ -16921,6 +16921,30 @@ def test_compact_metric_fact_context_uses_dimension_labels() -> None:
         assert raw_value not in serialized
 
 
+def test_compact_metric_fact_context_omits_generic_dimension_placeholders() -> None:
+    fact = MetricFact(
+        name="competitor_pages",
+        value=123,
+        period="test",
+        source_connector="ahrefs",
+        evidence_id="ev_metric_fact_generic_dimension_context",
+        dimensions={
+            "competitor_domain": "lex.pl",
+            "competitor_page": "hidden-noise.example",
+            "opaque_dimension": "opaque-value",
+        },
+    )
+
+    compact = _compact_metric_fact_for_context(fact.model_dump(mode="json"))
+    serialized = json.dumps(compact, ensure_ascii=False)
+
+    assert compact["dimensions"] == {"konkurent": "lex.pl"}
+    assert "wymiar" not in serialized
+    assert "wartość wymiaru do sprawdzenia" not in serialized
+    assert "hidden-noise.example" not in serialized
+    assert "opaque-value" not in serialized
+
+
 def test_marketing_brief_dedupes_command_center_blockers() -> None:
     blocked_decision = DailyDecision(
         id="decision_review_ga4_landing_quality",

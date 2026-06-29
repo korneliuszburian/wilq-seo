@@ -53,6 +53,7 @@ FORBIDDEN_VALUE_TERMS = (
     "FREE_LISTINGS",
     "NOT_IMPACTED",
     "missing_potentially_required_attribute",
+    "wartość wymiaru do sprawdzenia",
 )
 
 

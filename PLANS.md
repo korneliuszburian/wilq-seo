@@ -527,6 +527,83 @@ Acceptance:
 - Every write is traceable and reversible or has an explicit failure story.
 - High-risk/destructive writes stay blocked until separately supported.
 
+## Future Capability Watchlist - BDOS Benchmark And Google Updates
+
+These tracks are not part of the current cleanup goal. They become eligible
+only after the marketer cockpit, content loop and safe action contracts are
+green.
+
+Source baseline:
+
+- Google Tag Manager API v2 supports Accounts, Containers, Workspaces,
+  Versions and publish flows. WILQ can later model GTM changes as reviewed
+  workspace changes, not direct live edits:
+  `https://developers.google.com/tag-platform/tag-manager/api/v2`
+- Google Tag Manager publishing/version docs describe review before publish,
+  version history and rollback-style recovery. WILQ must keep publish as a
+  separate explicit step:
+  `https://support.google.com/tagmanager/answer/6107163`
+- Google Ads API v24.2 release notes include multi-party approvals, AI
+  transparency fields, PMax reporting/experiments and related updates:
+  `https://developers.google.com/google-ads/api/docs/release-notes`
+- Google Ads developer blog announcement for v24.2 frames the update as
+  security, AI transparency, reporting and planning improvements:
+  `https://ads-developers.googleblog.com/2026/06/announcing-v242-of-google-ads-api.html`
+- Google Analytics update notes include Hostname filters in Admin Data
+  Filters:
+  `https://support.google.com/analytics/answer/9164320`
+
+Future tracks:
+
+1. GTM Measurement Safety
+   - Audit container state: tags without triggers, duplicate page views,
+     missing Conversion Linker, orphaned variables/triggers, unpublished
+     workspaces and stale versions.
+   - Prepare edits only in a fresh WILQ-owned workspace.
+   - Show exact tag/trigger/variable diff before creating a version.
+   - Publish is a separate high-risk action with live-warning copy,
+     confirmation, audit and rollback/recovery notes.
+   - Do not add GTM writes until read-only audit, preview and version checks
+     exist.
+
+2. Google Ads API v24.2 / PMax Intelligence
+   - Track support for PMax placement segmentation by network before claiming
+     channel-level PMax insight.
+   - Add future readiness checks for asset-only PMax service campaigns:
+     text, images, video, search themes, AI improvements off by default and
+     campaign paused by default.
+   - Add future review contracts for PMax image assets, search themes,
+     final URL expansion experiments and campaign mix experiments.
+   - Track AI transparency fields for generated creative assets. WILQ should
+     store attestation status and block unlabelled synthetic creative claims.
+   - Multi-party approvals must be represented as an account-safety blocker,
+     not as a missing credential.
+
+3. GA4 Source Hygiene And Local Intent
+   - Track GA4 Source Group availability before replacing source/medium
+     normalization rules.
+   - Add hostname-filter readiness: approved hostnames, excluded spam/copy
+     hosts and measurement-risk blockers.
+   - Track Google Business Profile integration metrics as future local-intent
+     evidence: calls, directions, website clicks, messages, reservations/menu
+     where available.
+   - Do not treat GA4/GBP integration as available until WILQ API has a typed
+     read contract and evidence IDs.
+
+4. Lead Quality Loop
+   - Track Google Ads lead management/API availability.
+   - Future WILQ should distinguish raw lead volume from qualified lead value,
+     follow-up speed and high-value conversion feedback.
+   - No bidding-quality recommendation is allowed until lead statuses,
+     conversion mapping and value feedback are read through typed contracts.
+
+5. Bidding And Campaign Change Watchlist
+   - Smart Bidding Exploration, Promotion mode, AI Max defaults and DSA to
+     AI Max timelines should become knowledge cards with freshness and source
+     lineage.
+   - WILQ must expose them as readiness/checklist items first, not as automatic
+     campaign changes.
+
 ## Final Completion Definition
 
 WILQ is complete for this long-range goal when:
