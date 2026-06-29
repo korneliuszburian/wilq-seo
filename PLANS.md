@@ -696,14 +696,12 @@ WILQ is complete for this long-range goal when:
   chips and action previews. Detailed proof is in git commits and
   `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
   accepted proof.
-- 2026-06-28: Current remaining cleanup work is label fallback hardening,
-  remaining content/ads payload-derived panels, context-pack copy and recovery-doc
-  pruning. Do not start deferred product layers until `PLAN.md` completion is
-  green or explicitly deferred.
-- 2026-06-28: Unknown Knowledge, Localo, GA4, Demand Gen, opportunity-domain
-  and Merchant tactical labels now fall back to neutral Polish operator labels.
-  The remaining raw fallback scan is limited to non-marketer connector
-  normalization and title fallback paths.
+- 2026-06-29: Active raw label/vendor enum/fallback cleanup is closed in Beads
+  (`wilq-seo-6rw.4`). Current touched marketer surfaces describe missing or
+  unknown data as decision limits, and live Command Center/context-pack scans
+  are clean for the guarded stale language. Remaining cleanup is not a broad
+  label sweep; continue only from fresh Fallow/browser/API evidence, recovery-doc
+  pruning or real UAT findings.
 - 2026-06-28: Treści expandable plan/draft panel now renders
   API-owned action preview cards instead of constructing marketer-facing cards
   from content/WordPress payload arrays.
@@ -983,8 +981,10 @@ WILQ is complete for this long-range goal when:
 
 ## Outcomes & Retrospective
 
-- Current outcome: the active cleanup is materially reducing dashboard/API
-  Polglish and raw technical leakage, but it is not complete.
+- Current outcome: the active cleanup has removed the known active
+  dev-preview/migration semantics and the known raw label/vendor enum fallback
+  leaks from touched marketer surfaces. Goal 001 is still not complete because
+  real marketer UAT, or explicit owner deferral, remains open.
 - Latest accepted proof: focused context-pack tests, marketer language guard,
   `git diff --check` and live WILQ API context-pack scans passed after removing
   raw active-action payloads, payload key lists, raw apply-blocker keys, raw
@@ -1012,14 +1012,15 @@ WILQ is complete for this long-range goal when:
   tests, typecheck, language guard, live API proof and `agent-browser read` for
   `/content-planner` passed.
 - Remaining risk: docs, dashboard routes and skill/context-pack fixtures can
-  drift back into append-only history or raw vendor terminology unless every
-  repeated issue becomes a focused guardrail.
+  drift back into append-only history or raw vendor terminology if future slices
+  skip focused guards. Use fresh evidence before reopening cleanup work.
 - Next improvement: keep `docs/PROGRESS.md` and `docs/goals/001-goal.md`
-  concise; move detailed history to git/proof artifacts and keep only active
-  gaps plus the next executable slice in recovery docs.
-- Latest fallback cleanup proof: focused API fallback tests, marketer language
-  guard and `git diff --check` passed for Knowledge, Localo, GA4, Demand Gen,
-  opportunity domain and Merchant tactical fallback labels.
+  concise; move detailed history to git/proof artifacts, keep only active gaps,
+  and use `bd ready --json` for the next executable slice.
+- Latest fallback cleanup proof: focused API/dashboard tests, ruff I/F,
+  marketer/context/operator language guards, live Command Center scan,
+  context-pack guard and `git diff --check` passed. Beads issue
+  `wilq-seo-6rw.4` is closed.
 - Latest Treści proof: focused route test, dashboard typecheck,
   marketer language guard and browser text proof passed after moving the
   expandable plan/draft panel to API-owned preview cards.

@@ -56,6 +56,10 @@ API status later contradicts this state.
   `brak danych`, `brak odczytu` or a false zero-cost impact. Live
   `/api/dashboard/command-center` scan is clean, and focused API/dashboard
   checks plus marketer/context/operator language guards passed.
+- `docs/goals/001-goal.md` has been pruned after closing Beads issue
+  `wilq-seo-6rw.4`; raw-label cleanup is no longer listed as an active broad
+  task. Future cleanup should start from fresh Fallow/browser/API evidence,
+  context-pack guard failures or UAT findings.
 - Action preview, Content, GA4 and tactical WordPress labels no longer use bare
   `brak`/`brak danych` fallbacks for missing review, URL, WordPress-match,
   percentage or Ads custom-segment values. They now describe the unconfirmed

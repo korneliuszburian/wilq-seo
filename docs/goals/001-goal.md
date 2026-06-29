@@ -102,6 +102,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Machine guardrails cover marketer language, context-pack language, content URL
   semantics, raw visible copy, schema label hydration, active goal count and
   Goal 001 completion status.
+- Active raw label/vendor enum/fallback cleanup is closed in Beads
+  (`wilq-seo-6rw.4`). Current touched marketer surfaces describe unknown or
+  missing data as an explicit decision limit instead of bare `brak` /
+  `brak danych`, and no React remapper or stale alias was added.
 - Durable UAT handoff lives at
   `docs/handoffs/2026-06-29-marketer-uat-ready.md`. Goal 001 remains active
   until real marketer UAT is recorded or the owner explicitly defers it.
@@ -113,28 +117,21 @@ are resolved or explicitly deferred.
 
 1. Keep `PLAN.md`, `PLANS.md`, `docs/PROGRESS.md` and this file short and
    aligned.
-2. Continue raw fallback cleanup in active API/helper modules. Any new visible
-   raw fallback must be fixed at typed API/schema/view-model source.
-3. Continue typed contract/vendor-enum label registries outside the already
-   cleaned Ads campaign status/channel path so unknown read contracts and vendor
-   enums do not fall back to raw snake_case or English values in marketer-facing
-   copy.
-4. Continue moving repeated metric, dimension, source, blocker and evidence
-   naming into API/domain labels. Pure numeric formatting can stay in UI.
-5. Dashboard still needs focused cleanup for any newly found content/ads
-   payload-derived panels.
-6. Merchant attribute-key matching now uses canonical comparison keys instead
-   of underscore-to-space label normalization. Do not reintroduce generic
-   underscore humanization as a compatibility layer.
-7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
+2. Continue focused surface audits only when a current Fallow/browser/API scan
+   exposes a marketer-facing usefulness, language or product-semantics risk.
+   Do not reopen broad raw-label cleanup without fresh evidence.
+3. Keep the guardrails that now prevent old raw label/vendor enum fallbacks from
+   returning. Any newly found visible fallback must be fixed at typed
+   API/schema/view-model source and covered by a focused check.
+4. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs have focused tests, and
    `scripts/context_pack_language_guard.py` now guards live compact skill
    contexts across the core skill set in both `verify.sh` and the pre-demo
    gate.
-8. Continue focused browser audits when touched routes change or a new visible
+5. Continue focused browser audits when touched routes change or a new visible
    copy risk is found. Any future long blocker/review list must be condensed at
    API/domain source, not trimmed in React.
-9. Real marketer UAT is still required for usefulness claims unless explicitly
+6. Real marketer UAT is still required for usefulness claims unless explicitly
    deferred by the owner. Use
    `docs/handoffs/2026-06-29-marketer-uat-ready.md` as the current handoff.
    Guard command:
