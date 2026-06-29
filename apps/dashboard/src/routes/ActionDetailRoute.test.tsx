@@ -179,7 +179,7 @@ const adsActionFixture: ActionObject = {
         },
         {
           label: "Propozycja",
-          value: "brak"
+          value: "brak proponowanej kwoty; WILQ pokazuje tylko obecny budżet i blokuje zapis"
         },
         {
           label: "Bezpieczeństwo",
@@ -1677,7 +1677,12 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
     expect(screen.getByText(/Budżet: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
     expect(screen.getByText(/Obecny budżet: 10.00 PLN/)).toBeInTheDocument();
-    expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Propozycja: brak proponowanej kwoty; WILQ pokazuje tylko obecny budżet i blokuje zapis/
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^Propozycja: brak$/)).not.toBeInTheDocument();
     expect(screen.getByText(/Bezpieczeństwo: zablokowane/)).toBeInTheDocument();
     expect(screen.queryByText(/23704710371/)).not.toBeInTheDocument();
     expect(screen.queryByText(/15473121355/)).not.toBeInTheDocument();

@@ -13584,6 +13584,74 @@ def test_ads_budget_row_exposes_marketer_preview_card() -> None:
     assert "701" not in dumped
 
 
+def test_ads_budget_preview_explains_missing_proposal() -> None:
+    from wilq.briefing.ads_diagnostics import _hydrate_budget_pacing_marketer_labels
+    from wilq.schemas import (
+        AdsBudgetApplyPreview,
+        AdsBudgetApplySafetyReview,
+        AdsBudgetPacingReadContract,
+        AdsBudgetPacingRow,
+    )
+
+    preview = AdsBudgetApplyPreview(
+        id="budget_apply_preview_missing_proposal",
+        campaign_id="101",
+        campaign_name="Brand Search",
+        campaign_budget_id="701",
+        campaign_budget_name="Brand budget",
+        operation_type="CampaignBudgetOperation",
+        current_budget_amount_micros=30000000,
+        proposed_budget_amount_micros=None,
+        proposed_budget_delta_micros=None,
+        reason=(
+            "Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił "
+            "rekomendowanego budżetu."
+        ),
+        required_validation=[
+            "review_campaign_activity",
+            "human_budget_goal",
+            "campaign_budget_apply_safety",
+        ],
+        blocked_claims=["zmiana budżetu"],
+        safety_review=AdsBudgetApplySafetyReview(
+            id="budget_apply_preview_missing_proposal_safety",
+            budget_preview_id="budget_apply_preview_missing_proposal",
+            reason="Zapis zmiany budżetu zablokowany: brak proponowanej kwoty.",
+            missing_requirements=["human_budget_goal", "recommended_budget_missing"],
+            blocked_claims=["zmiana budżetu"],
+        ),
+    )
+    contract = AdsBudgetPacingReadContract(
+        status="blocked",
+        title="Budżety kampanii",
+        summary="Budżety do sprawdzenia.",
+        budget_rows=[
+            AdsBudgetPacingRow(
+                campaign_id="101",
+                campaign_name="Brand Search",
+                budget_id="701",
+                budget_name="Brand budget",
+                payload_preview=preview,
+            )
+        ],
+        payload_preview=[preview],
+        next_step="Sprawdź budżet przed zapisem zmian.",
+    )
+
+    _hydrate_budget_pacing_marketer_labels(contract, "PLN")
+
+    card = contract.budget_rows[0].preview_card
+    assert card is not None
+    rows = {row.label: row.value for row in card.rows}
+    assert rows["Budżet teraz"] == "30 PLN"
+    assert (
+        rows["Propozycja do sprawdzenia"]
+        == "brak proponowanej kwoty; WILQ blokuje zapis budżetu"
+    )
+    assert rows["Propozycja do sprawdzenia"] != "brak danych"
+    assert "brak rekomendowanego budżetu z Google Ads" in rows["Braki bezpieczeństwa"]
+
+
 def test_ads_recommendation_row_exposes_marketer_preview_card() -> None:
     from wilq.briefing.ads_diagnostics import _hydrate_recommendations_marketer_labels
     from wilq.schemas import (

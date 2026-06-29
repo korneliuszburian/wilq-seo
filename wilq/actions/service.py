@@ -3072,7 +3072,13 @@ def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCard
             ),
             _preview_row(
                 "Propozycja",
-                _micros_money_label(item.get("proposed_budget_amount_micros")),
+                _micros_money_label(
+                    item.get("proposed_budget_amount_micros"),
+                    missing_label=(
+                        "brak proponowanej kwoty; WILQ pokazuje tylko obecny "
+                        "budżet i blokuje zapis"
+                    ),
+                ),
             ),
             _preview_row(
                 "Bezpieczeństwo",

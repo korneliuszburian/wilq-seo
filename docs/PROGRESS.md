@@ -166,6 +166,13 @@ API status later contradicts this state.
   conclusion WILQ therefore will not make. Focused target-guardrail API tests,
   action-detail route tests, dashboard typecheck/lint, marketer/context-pack
   language guards, live API proof and browser proof passed.
+- Google Ads budget preview cards no longer show context-free
+  `Propozycja: brak` or `Propozycja do sprawdzenia: brak danych`. The API
+  preview now explains that Google Ads did not provide a proposed amount and
+  WILQ therefore shows the current budget while blocking budget writes. Focused
+  Ads budget API tests, action-detail route test, dashboard typecheck/lint,
+  marketer/context-pack language guards, live Ads diagnostics proof and browser
+  proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

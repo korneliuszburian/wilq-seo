@@ -6539,7 +6539,7 @@ def _budget_preview_card(
                 preview.current_budget_amount_micros,
                 currency_code,
             )
-            or "brak danych",
+            or "brak kwoty obecnego budżetu w odczycie Google Ads",
         ),
         _ads_preview_row(
             "Propozycja do sprawdzenia",
@@ -6547,7 +6547,7 @@ def _budget_preview_card(
                 preview.proposed_budget_amount_micros,
                 currency_code,
             )
-            or "brak danych",
+            or "brak proponowanej kwoty; WILQ blokuje zapis budżetu",
         ),
         _ads_preview_row(
             "Operacja",
@@ -7311,6 +7311,7 @@ def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
         "change_history": "historia zmian",
         "budget_pacing": "tempo wydawania budżetu",
         "campaign_budget": "budżet kampanii",
+        "recommended_budget_missing": "brak rekomendowanego budżetu z Google Ads",
         "shared_budget_distribution": "podział wspólnego budżetu",
         "budget_target_or_seasonality": "cel budżetowy albo sezonowość",
         "business_goal": "cel biznesowy",
