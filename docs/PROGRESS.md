@@ -156,6 +156,11 @@ API status later contradicts this state.
   blocker and risky-claim fields only. Raw `source_type`,
   `publication_readiness_status`, `publication_blockers` and `forbidden_claims`
   stay out of compact skill context when label fields exist.
+- Ads skill campaign plans now use campaign/channel/review-gate labels in
+  compact context. Raw `campaign_status`, `advertising_channel_type`,
+  `human_review_gates`, `target_status` and safety `missing_requirements` stay
+  out of compact skill context when label fields exist, while the budget preview
+  keeps its reason and marketer-readable safety checks.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

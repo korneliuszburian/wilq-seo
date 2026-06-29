@@ -2929,11 +2929,14 @@ def _compact_budget_apply_preview_item(item: dict[str, Any]) -> dict[str, Any]:
             "campaign_name",
             "campaign_budget_id",
             "campaign_budget_name",
+            "reason",
             "operation_type",
             "current_budget_amount_micros",
             "proposed_budget_amount_micros",
             "proposed_budget_delta_micros",
             "evidence_ids",
+            "required_validation_labels",
+            "blocked_claim_labels",
             "api_mutation_ready",
             "apply_allowed",
             "destructive",
@@ -2959,10 +2962,14 @@ def _compact_budget_safety_review_item(item: dict[str, Any]) -> dict[str, Any]:
             "id",
             "safety_contract",
             "status",
+            "status_label",
             "reason",
             "max_allowed_delta_percent",
             "proposed_delta_percent",
             "missing_requirements",
+            "missing_requirement_labels",
+            "required_validation_labels",
+            "blocked_claim_labels",
             "api_mutation_ready",
             "apply_allowed",
             "destructive",
@@ -3235,10 +3242,9 @@ def _action_payload_should_survive_skill_context(action_id: str, *, skill: str) 
 
 def _compact_action_payload_for_context(payload: dict[str, Any], *, action_id: str) -> None:
     payload.pop("source_metric_names", None)
-    _compact_action_row_list_for_context(
+    _compact_campaign_candidate_list_for_context(
         payload,
-        "campaign_candidates",
-        keep_limit=3 if action_id == "act_prepare_ads_campaign_review_queue" else 0,
+        keep_items=action_id == "act_prepare_ads_campaign_review_queue",
     )
     for key in ("recommendations", "terms", "source_terms", "keyword_match_context"):
         _compact_action_row_list_for_context(payload, key, keep_limit=0)
@@ -3263,6 +3269,21 @@ def _compact_action_row_list_for_context(
     payload[f"{key}_total"] = len(value)
     payload[key] = value[:keep_limit]
     payload[f"{key}_included"] = len(payload[key])
+
+
+def _compact_campaign_candidate_list_for_context(
+    payload: dict[str, Any],
+    *,
+    keep_items: bool,
+) -> None:
+    value = payload.get("campaign_candidates")
+    if not isinstance(value, list):
+        return
+    payload["campaign_candidates_total"] = len(value)
+    payload["campaign_candidates"] = (
+        _compact_campaign_candidates_for_context(value) if keep_items else []
+    )
+    payload["campaign_candidates_included"] = len(payload["campaign_candidates"])
 
 
 def _compact_preview_list_for_context(
@@ -3390,6 +3411,16 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("available_read_contracts", None)
     if "operator_review_gate_labels" in value:
         value.pop("operator_review_gates", None)
+    if "human_review_gate_labels" in value:
+        value.pop("human_review_gates", None)
+    if "campaign_status_label" in value:
+        value.pop("campaign_status", None)
+    if "advertising_channel_type_label" in value:
+        value.pop("advertising_channel_type", None)
+    if "target_status_label" in value:
+        value.pop("target_status", None)
+    if "missing_requirement_labels" in value:
+        value.pop("missing_requirements", None)
     if "source_type_label" in value:
         value.pop("source_type", None)
     if "publication_readiness_status_label" in value:
@@ -3994,11 +4025,16 @@ def _compact_campaign_candidates_for_context(
                 "campaign_id": candidate.get("campaign_id"),
                 "campaign_name": candidate.get("campaign_name"),
                 "campaign_status": candidate.get("campaign_status"),
+                "campaign_status_label": candidate.get("campaign_status_label"),
                 "advertising_channel_type": candidate.get("advertising_channel_type"),
+                "advertising_channel_type_label": candidate.get(
+                    "advertising_channel_type_label"
+                ),
                 "review_priority": candidate.get("review_priority"),
                 "review_score": candidate.get("review_score"),
                 "review_reason": candidate.get("review_reason"),
                 "human_review_gates": human_review_gates,
+                "human_review_gate_labels": candidate.get("human_review_gate_labels"),
                 "target_context": candidate.get("target_context"),
                 "clicks": candidate.get("clicks"),
                 "impressions": candidate.get("impressions"),
@@ -4007,6 +4043,13 @@ def _compact_campaign_candidates_for_context(
                 "conversion_value": candidate.get("conversion_value"),
                 "derived_kpis": candidate.get("derived_kpis"),
                 "missing_metrics": missing_metrics,
+                "required_check_labels": candidate.get("required_check_labels"),
+                "blocked_claim_labels": candidate.get("blocked_claim_labels"),
+                "budget_preview_items": (
+                    _compact_budget_apply_preview_item(candidate["budget_payload_preview"])
+                    if isinstance(candidate.get("budget_payload_preview"), dict)
+                    else None
+                ),
                 "evidence_ids": evidence_ids[:4],
                 "evidence_ids_total": len(evidence_ids),
                 "apply_allowed": candidate.get("apply_allowed"),

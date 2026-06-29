@@ -18667,6 +18667,8 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     serialized_actions = json.dumps(data["active_action_objects"], ensure_ascii=False)
     assert "dimension_value_labels" not in serialized_actions
     assert "wartość wymiaru do sprawdzenia" not in serialized_actions
+    assert "ENABLED" not in serialized_actions
+    assert "PERFORMANCE_MAX" not in serialized_actions
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
     assert "act_review_demand_gen_readiness" not in actions_by_id
     campaign_review_action = actions_by_id["act_prepare_ads_campaign_review_queue"]
@@ -18679,16 +18681,15 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert campaign_candidate["review_score"] == full_campaign_candidate["review_score"]
     assert "Kolejność oceny kampanii" in campaign_candidate["review_reason"]
     assert campaign_candidate["review_reason"] == full_campaign_candidate["review_reason"]
-    assert campaign_candidate["human_review_gates"] == full_campaign_candidate["human_review_gates"]
-    assert campaign_candidate["target_context"]["target_status"] == (
-        full_campaign_candidate["target_context"]["target_status"]
+    assert campaign_candidate["human_review_gate_labels"] == (
+        full_campaign_candidate["human_review_gate_labels"]
     )
     assert campaign_candidate["target_context"]["target_status_label"] == (
         full_campaign_candidate["target_context"]["target_status_label"]
     )
     assert "target_cpa_micros" not in campaign_candidate["target_context"]
     assert "cost_per_conversion_micros" not in campaign_candidate["target_context"]
-    assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
+    assert "sprawdź cel kampanii" in campaign_candidate["human_review_gate_labels"]
     assert campaign_candidate["apply_status_label"] == "zablokowane do sprawdzenia"
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
     assert len(ads_context["search_term_ngram_read_contract"]["ngram_rows"]) <= 8

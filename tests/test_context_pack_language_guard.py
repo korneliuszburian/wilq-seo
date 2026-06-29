@@ -144,6 +144,62 @@ def test_context_pack_guard_blocks_raw_content_status_keys() -> None:
     ]
 
 
+def test_context_pack_guard_blocks_raw_ads_status_and_gate_keys() -> None:
+    payload = {
+        "active_action_objects": [
+            {
+                "id": "act_bad",
+                "action_plan": {
+                    "campaign_candidates": [
+                        {
+                            "campaign_status": "ENABLED",
+                            "advertising_channel_type": "PERFORMANCE_MAX",
+                            "human_review_gates": ["review_campaign_goal"],
+                            "target_context": {"target_status": "no_target"},
+                            "budget_preview_items": {
+                                "safety_review": {
+                                    "missing_requirements": ["change_history"],
+                                }
+                            },
+                        }
+                    ]
+                },
+            }
+        ]
+    }
+
+    assert _context_pack_structure_errors(payload) == [
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].campaign_status",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of campaign_status.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].advertising_channel_type",
+            "technical_action_plan_key",
+            (
+                "Use marketer-readable compact action plan keys instead of "
+                "advertising_channel_type."
+            ),
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].human_review_gates",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of human_review_gates.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].target_context.target_status",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of target_status.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.campaign_candidates[0].budget_preview_items.safety_review.missing_requirements",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of missing_requirements.",
+        ),
+    ]
+
+
 def test_context_pack_guard_blocks_required_mapping_key() -> None:
     payload = {
         "expert_capabilities": [
