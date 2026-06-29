@@ -212,6 +212,11 @@ API status later contradicts this state.
   trend direction is not confirmed. They explain `zmiana: kierunek
   niepotwierdzony`, with a focused component test and browser proof that Localo
   metric chips still render correctly in the live dashboard.
+- Merchant primary-surface fallbacks for report counts, problem resolution and
+  product samples no longer use bare `brak` copy. Missing counts and samples now
+  state what remains unconfirmed before product-file review. Focused Merchant
+  source/render tests, marketer language guard, `git diff --check` and browser
+  proof for `/merchant` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

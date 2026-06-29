@@ -253,15 +253,15 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
     primaryDecision.issue_count ??
     merchantMetricTileValue(primaryDecision, "raporty razem") ??
     primaryDecision.product_count ??
-    "brak";
+    "licznik niepotwierdzony";
   const maxReportCount =
     primaryDecision.product_count ??
     merchantMetricTileValue(primaryDecision, "max zgłoszeń") ??
-    "brak";
+    "licznik niepotwierdzony";
   const contextCount =
     merchantMetricTileValue(primaryDecision, "konteksty") ??
     (primaryDecision.issue_cluster_ids.length || null) ??
-    "brak";
+    "zakres niepotwierdzony";
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -483,7 +483,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                       {cluster.severity_label ?? "status nieznany"}.{" "}
-                      {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}.
+                      {cluster.resolution_label ?? "ścieżka rozwiązania niepotwierdzona w Merchant"}.
                     </p>
                   </div>
                   <StatusBadge value={cluster.risk} label={cluster.risk_label} />
@@ -513,7 +513,8 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   </span>
                   {cluster.resolution ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      rozwiązanie: {cluster.resolution_label ?? "brak wymaganej ścieżki rozwiązania"}
+                      rozwiązanie:{" "}
+                      {cluster.resolution_label ?? "ścieżka rozwiązania niepotwierdzona w Merchant"}
                     </span>
                   ) : null}
                   {cluster.action_id ? (
@@ -655,14 +656,17 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
         <TraceLine label="Stan danych" values={[readiness.summary, readiness.next_step]} />
         <TraceLine
           label="Przykładowe produkty"
-          values={[readiness.sample_summary_label || "brak próbek"]}
+          values={[
+            readiness.sample_summary_label ||
+              "WILQ nie podał próbek produktów; sprawdź Merchant przed edycją"
+          ]}
         />
         <TraceLine
           label="Przykładowe tytuły"
           values={
             readiness.sample_title_labels.length
               ? readiness.sample_title_labels
-              : ["brak tytułów"]
+              : ["WILQ nie podał tytułów próbek; identyfikuj produkt w Merchant przed oceną"]
           }
         />
         <TraceLine
