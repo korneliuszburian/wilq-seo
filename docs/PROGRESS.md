@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- GA4, Localo and Ahrefs status headings no longer use slash-combined first
+  screen copy such as `Status GA4 / pomiar i jakość ruchu`,
+  `Status Localo / widoczność lokalna` or `Status Ahrefs / dowody SEO`.
+  Dashboard tests and the marketer language guard now block those exact
+  regressions, and browser proof on `/ga4`, `/localo` and `/ahrefs` confirmed
+  the new Polish headings with zero stale hits.
 - Dashboard metadata chips now use one shared labelled-chip renderer with
   explicit readable separators. Localo, Ahrefs, Centrum pracy, tactical queue,
   workflow brief cards, Baza wiedzy, Merchant fallback issues and content

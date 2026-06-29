@@ -49,7 +49,7 @@ export function LocaloDiagnosticSurface() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Localo / widoczność lokalna
+              Status Localo i widoczność lokalna
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>

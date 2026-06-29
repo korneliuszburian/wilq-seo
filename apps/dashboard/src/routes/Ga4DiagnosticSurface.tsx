@@ -84,7 +84,7 @@ export function Ga4DiagnosticSurface() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status GA4 / pomiar i jakość ruchu
+              Status GA4: pomiar i jakość ruchu
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">

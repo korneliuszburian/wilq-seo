@@ -8158,7 +8158,8 @@ describe("WILQ dashboard", () => {
       () => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument(),
       { timeout: 5_000 }
     );
-    expect(screen.getByText("Status GA4 / pomiar i jakość ruchu")).toBeInTheDocument();
+    expect(screen.getByText("Status GA4: pomiar i jakość ruchu")).toBeInTheDocument();
+    expect(screen.queryByText("Status GA4 / pomiar i jakość ruchu")).not.toBeInTheDocument();
     expect(screen.getByText("dane świeże")).toBeInTheDocument();
     expect(screen.queryByText("status wymaga opisu")).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
@@ -8382,7 +8383,8 @@ describe("WILQ dashboard", () => {
       () => expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument(),
       { timeout: 10_000 }
     );
-    expect(screen.getByText("Status Localo / widoczność lokalna")).toBeInTheDocument();
+    expect(screen.getByText("Status Localo i widoczność lokalna")).toBeInTheDocument();
+    expect(screen.queryByText("Status Localo / widoczność lokalna")).not.toBeInTheDocument();
     expect(screen.getByText("Aktualny odczyt lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
     expect(screen.getByText("Dowody i warunki diagnozy Localo")).toBeInTheDocument();
@@ -8528,7 +8530,8 @@ describe("WILQ dashboard", () => {
       await screen.findByRole("heading", { name: "Ahrefs" }, { timeout: 5000 })
     ).toBeInTheDocument();
 
-    expect(screen.getByText("Status Ahrefs / dowody SEO")).toBeInTheDocument();
+    expect(screen.getByText("Status Ahrefs i dowody SEO")).toBeInTheDocument();
+    expect(screen.queryByText("Status Ahrefs / dowody SEO")).not.toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Luki SEO z Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Dowody i warunki analizy Ahrefs")).toBeInTheDocument();

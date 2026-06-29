@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- First-screen status headings in GA4, Localo and Ahrefs now use natural Polish
+  copy instead of slash shorthand. Focused tests, the marketer language guard
+  and browser proof guard against returning to `Status ... / ...` headings for
+  those active routes.
 - Shared dashboard labelled chips now render adjacent metadata with explicit
   readable separators. Localo, Ahrefs, Centrum pracy, tactical queue, workflow
   brief cards, Baza wiedzy, Merchant fallback issues and content Ahrefs

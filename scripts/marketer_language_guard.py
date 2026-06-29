@@ -352,6 +352,18 @@ FORBIDDEN_PHRASES = (
         "Use WordPress, GSC i Ahrefs without slash shorthand.",
     ),
     ForbiddenPhrase(
+        "Status GA4 / pomiar i jakość ruchu",
+        "Use a natural Polish status heading without slash shorthand.",
+    ),
+    ForbiddenPhrase(
+        "Status Localo / widoczność lokalna",
+        "Use a natural Polish status heading without slash shorthand.",
+    ),
+    ForbiddenPhrase(
+        "Status Ahrefs / dowody SEO",
+        "Use a natural Polish status heading without slash shorthand.",
+    ),
+    ForbiddenPhrase(
         "akcja WILQ",
         "Use akcja do sprawdzenia or sprawdzenie w WILQ.",
     ),
