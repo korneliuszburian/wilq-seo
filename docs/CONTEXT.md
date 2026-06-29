@@ -80,7 +80,7 @@ Active gaps live in:
 ## Current Important Boundaries
 
 - Brak dowodu w WILQ i źródła danych oznacza brak rekomendacji.
-- Brak sprawdzonej akcji, podglądu, potwierdzenia i audytu oznacza brak zapisu
+- Brak akcji do sprawdzenia, podglądu, potwierdzenia i audytu oznacza brak zapisu
   zmian.
 - Nie naprawiaj zachowania produktu w opisach skilli. Najpierw popraw typowany
   kontrakt API, schemat, view-model albo eval, a dopiero potem każ skillowi

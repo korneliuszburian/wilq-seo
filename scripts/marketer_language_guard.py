@@ -169,6 +169,10 @@ FORBIDDEN_PHRASES = (
         "Use gdy sprawdzenie w WILQ przejdzie.",
     ),
     ForbiddenPhrase(
+        "do sprawdzenia do sprawdzenia",
+        "Avoid duplicated review wording after copy migrations.",
+    ),
+    ForbiddenPhrase(
         "walidacja przejdzie",
         "Use sprawdzenie w WILQ przejdzie.",
     ),
@@ -279,6 +283,18 @@ FORBIDDEN_PHRASES = (
     ForbiddenPhrase(
         "akcji w WILQ",
         "Use propozycji w WILQ or akcji do sprawdzenia.",
+    ),
+    ForbiddenPhrase(
+        "akcje sprawdzone w WILQ",
+        "Distinguish system control from human review: use akcje do sprawdzenia w WILQ.",
+    ),
+    ForbiddenPhrase(
+        "akcji sprawdzonej w WILQ",
+        "Distinguish system control from human review: use akcji do sprawdzenia w WILQ.",
+    ),
+    ForbiddenPhrase(
+        "akcji sprawdzonych w WILQ",
+        "Distinguish system control from human review: use akcji do sprawdzenia w WILQ.",
     ),
     ForbiddenPhrase(
         "akcje w WILQ",

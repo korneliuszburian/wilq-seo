@@ -38,11 +38,11 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Wymagane źródło danych ma status `missing_credentials`, `disabled` albo niepowodzenie dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
 - `content_diagnostics.live_data_available=false`, a użytkownik prosi o rekomendacje treści zamiast stan gotowości albo blokady.
-- Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
+- Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów
 
-Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji sprawdzonej w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.
+Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji do sprawdzenia w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.
 
 ## Bezpieczeństwo treści
 

@@ -1760,7 +1760,7 @@ def _feed_health_section(
         diagnosis=(
             "WILQ ma metryki Merchant z odczytu. Można ocenić skalę feedu i liczbę "
             "zgłoszonych problemów, ale nie wolno twierdzić, że produkt został naprawiony bez "
-            "sprawdzonej akcji i audytu."
+            "akcji do sprawdzenia i audytu."
         ),
         next_step="Przejdź do kolejki problemów i grupuj je po typie oraz atrybucie.",
         source_connectors=[MERCHANT_CONNECTOR_ID],

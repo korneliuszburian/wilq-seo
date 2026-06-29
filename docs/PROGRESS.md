@@ -30,6 +30,13 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Active skill contracts, Ads/Merchant/Localo operator copy and the marketing
+  brief no longer use `akcje sprawdzone w WILQ` / `akcji sprawdzonej w WILQ`
+  wording. They now describe actions as `akcje do sprawdzenia w WILQ` and keep
+  system control separate from human review. `scripts/marketer_language_guard.py`
+  now blocks the stale phrasing and duplicated `do sprawdzenia do sprawdzenia`
+  copy. Live API and browser scans over Ads, Merchant, Localo and Procesy
+  returned zero hits for the guarded stale terms.
 - `/actions` no longer labels validated-but-still-reviewable actions as
   `sprawdzone w WILQ`. The action API now distinguishes contract validation
   from human review with `kontrola WILQ poprawna`, while the action status

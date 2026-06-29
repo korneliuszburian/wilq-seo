@@ -41,11 +41,11 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - `negative_keywords_read_contract` jest missing, blocked albo nie ma akcji do sprawdzenia, a użytkownik pyta o propozycje wykluczeń.
 - Użytkownik prosi o zapis zmian wykluczających słów kluczowych zanim `act_prepare_negative_keyword_review_queue` istnieje i jest sprawdzony w WILQ.
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
-- Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
+- Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów
 
-Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji sprawdzonej w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.
+Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji do sprawdzenia w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.
 
 ## Granica MCP
 

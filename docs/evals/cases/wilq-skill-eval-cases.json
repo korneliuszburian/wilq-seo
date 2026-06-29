@@ -340,7 +340,7 @@
   {
     "skill": "wilq-campaign-builder",
     "surface_path": "/ads-doctor",
-    "task_pl": "Oceń, czy można przygotować propozycję kampanii albo podgląd zmian. Nie proponuj zapisu zmian bez akcji sprawdzonej w WILQ.",
+    "task_pl": "Oceń, czy można przygotować propozycję kampanii albo podgląd zmian. Nie proponuj zapisu zmian bez akcji do sprawdzenia w WILQ.",
     "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
     "expected_terms_pl": [
       "Plan kampanii",

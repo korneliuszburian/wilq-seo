@@ -43,7 +43,7 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Wymagane źródło danych ma status `missing_credentials`, `disabled` albo niepowodzenie dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
 - Pakiet kontekstu skilla nie zawiera `content_landing_context` albo `ads_diagnostics`.
-- Użytkownik prosi o zapis zmian bez akcji sprawdzonej w WILQ i jawnej zgody.
+- Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów
 

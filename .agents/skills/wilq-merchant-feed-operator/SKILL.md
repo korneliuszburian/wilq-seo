@@ -1,6 +1,6 @@
 ---
 name: wilq-merchant-feed-operator
-description: Analizuje dowody Merchant Center dla produktów i feedu Ekologus przez WILQ API i przygotowuje bezpieczną kolejkę sprawdzenia problemów feedu. Użyj, gdy marketer pyta "czy feed produktowy jest OK?", "które produkty mają problemy?", "co blokuje Shopping/PMax produkty?", "sprawdź odrzucone produkty", "przygotuj kolejkę przeglądu problemów feedu", albo pyta o diagnostykę Merchant, ryzyka widoczności produktów, poprawki feedu, typy problemów, atrybuty, dostępność, ceny, GTIN/obrazy lub zatwierdzenia produktów. Nie wolno zmieniać danych produktu bez akcji sprawdzonych w WILQ i audytu.
+description: Analizuje dowody Merchant Center dla produktów i feedu Ekologus przez WILQ API i przygotowuje bezpieczną kolejkę sprawdzenia problemów feedu. Użyj, gdy marketer pyta "czy feed produktowy jest OK?", "które produkty mają problemy?", "co blokuje Shopping/PMax produkty?", "sprawdź odrzucone produkty", "przygotuj kolejkę przeglądu problemów feedu", albo pyta o diagnostykę Merchant, ryzyka widoczności produktów, poprawki feedu, typy problemów, atrybuty, dostępność, ceny, GTIN/obrazy lub zatwierdzenia produktów. Nie wolno zmieniać danych produktu bez akcji do sprawdzenia w WILQ i audytu.
 ---
 
 # WILQ Merchant Center
@@ -81,7 +81,7 @@ Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_gotowość
 
 <output_contract>
 
-Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje sprawdzone w WILQ, blokady i następne bezpieczne kroki.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
 
 Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

@@ -1387,7 +1387,7 @@ def _account_currency_read_contract(
             next_step=(
                 "Pokazuj koszt, koszt kliknięcia i koszt pozyskania celu "
                 "w walucie konta. Nadal nie oceniaj "
-                "rentowności bez marży, celu biznesowego i sprawdzonego podglądu zmian."
+                "rentowności bez marży, celu biznesowego i podglądu zmian po kontroli WILQ."
             ),
         )
     return AdsAccountCurrencyReadContract(
@@ -1528,7 +1528,7 @@ def _business_context_read_contract(
             )
             next_step = (
                 "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
-                "budżetu. Zapis zmian nadal wymaga akcji sprawdzonej w WILQ, podglądu zmian, "
+                "budżetu. Zapis zmian nadal wymaga akcji do sprawdzenia w WILQ, podglądu zmian, "
                 "potwierdzenia i audytu."
             )
     else:
@@ -1796,7 +1796,7 @@ def _business_target_interpretation(
             "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
             "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. "
             "Zapis zmian nadal wymaga "
-            "akcji sprawdzonej w WILQ, podglądu, potwierdzenia i audytu."
+            "akcji do sprawdzenia w WILQ, podglądu, potwierdzenia i audytu."
         )
         blocked_uses = [
             "budget_apply",
@@ -2489,7 +2489,7 @@ def _campaign_triage_row(
         ),
         next_step=(
             "Otwórz kampanię w widoku Google Ads, sprawdź cel, konwersje, budżet, "
-            "wyszukiwane hasła i rekomendacje. Nie zapisuj zmian bez akcji sprawdzonej w WILQ "
+            "wyszukiwane hasła i rekomendacje. Nie zapisuj zmian bez akcji do sprawdzenia w WILQ "
             "i potwierdzenia człowieka."
         ),
         target_status=campaign_row.target_status,
@@ -3232,7 +3232,7 @@ def _search_terms_read_contract(
             next_step=(
                 "Użyj wierszy zapytań jako przeglądu danych z reklam. Nie twórz "
                 "wykluczeń ani obietnic o marnowaniu budżetu bez kontekstu dopasowania, 90-dniowej "
-                "kontroli i sprawdzonej akcji."
+                "kontroli i akcji do sprawdzenia."
             ),
         )
 
@@ -3998,7 +3998,7 @@ def _search_terms_section(
             diagnosis=(
                 "WILQ ma wiersze zapytań z Google Ads. To jeszcze nie "
                 "odblokowuje wykluczeń: brakuje kontekstu dopasowania, 90-dniowego "
-                "kontroli bezpieczeństwa i sprawdzonej akcji."
+                "kontroli bezpieczeństwa i akcji do sprawdzenia."
             ),
             next_step=search_terms_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],

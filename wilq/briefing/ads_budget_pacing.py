@@ -88,7 +88,7 @@ def build_budget_pacing_read_contract(
                 "Użyj tego jako kontekstu oceny: które kampanie mają koszt względem "
                 "budżetu dziennego, czy dzielą wspólny budżet i czy Google pokazuje "
                 "rekomendowany budżet. Nie skaluj budżetu bez historii zmian, udziału "
-                "w wyświetleniach, celu biznesowego i akcji sprawdzonej w WILQ."
+                "w wyświetleniach, celu biznesowego i akcji do sprawdzenia w WILQ."
             ),
         )
 

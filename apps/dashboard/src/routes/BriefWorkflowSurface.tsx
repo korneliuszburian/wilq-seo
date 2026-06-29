@@ -103,7 +103,7 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/merchant": {
     title: "Merchant Center",
     description:
-      "Widok feedu i produktów oparty o WILQ. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo sprawdzonej akcji.",
+      "Widok feedu i produktów oparty o WILQ. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo akcji do sprawdzenia.",
     focusTitle: "Feed i produkty do sprawdzenia",
     emptyMessage:
       "Brak dowodów Merchant w WILQ. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",

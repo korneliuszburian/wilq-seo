@@ -738,8 +738,7 @@ def _recommendation_items(
                     "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
                 next_step=(
-                    "Użyj sprawdzonej akcji do sprawdzenia, "
-                    "żeby przywrócić odczyt Google Ads."
+                    "Użyj akcji do sprawdzenia, żeby przywrócić odczyt Google Ads."
                 ),
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,

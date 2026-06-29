@@ -94,7 +94,7 @@ export function LocaloDiagnosticSurface() {
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Sam dostęp do Localo potwierdza tylko możliwość odczytu danych. WILQ nie publikuje
               postów w profilu firmy w Google, nie zmienia profilu i nie obiecuje poprawy
-              widoczności bez danych rankingów i profilu firmy w Google, sprawdzonej akcji
+              widoczności bez danych rankingów i profilu firmy w Google, akcji do sprawdzenia
               oraz audytu.
             </p>
           </div>

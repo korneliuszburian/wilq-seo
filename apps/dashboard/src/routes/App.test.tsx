@@ -886,7 +886,7 @@ const adsDiagnostics = {
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     next_step:
-      "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i sprawdzonego podglądu."
+      "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i podglądu zmian po kontroli WILQ."
   },
   business_context_read_contract: {
     id: "ads_business_context_read_contract",
@@ -1461,7 +1461,7 @@ const adsDiagnostics = {
     ],
     action_ids: ["act_prepare_ads_campaign_review_queue"],
     next_step:
-      "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i sprawdzonej akcji."
+      "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i akcji do sprawdzenia."
   },
   recommendations_read_contract: {
     id: "ads_recommendations_read_contract",
