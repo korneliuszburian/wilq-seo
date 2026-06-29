@@ -146,6 +146,14 @@ describe("ActionObjectPanels", () => {
     expect(source).not.toContain("{action.connector_label} / {action.mode_label}");
   });
 
+  it("keeps raw action data drawer named as technical detail, not payload preview", () => {
+    const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
+    expect(source).toContain("ActionTechnicalDataToggle");
+    expect(source).toContain("technicalData={action.payload}");
+    expect(source).not.toContain("ActionPayloadPreviewToggle");
+    expect(source).not.toContain("payload={action.payload}");
+  });
+
   it("keeps review badge state separate from visible review copy", () => {
     const source = readFileSync("src/routes/ActionObjectPanels.tsx", "utf8");
     expect(source).toContain(

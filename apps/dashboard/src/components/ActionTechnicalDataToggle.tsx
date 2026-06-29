@@ -1,11 +1,11 @@
 import { useState } from "react";
 
-export function ActionPayloadPreviewToggle({
-  payload,
+export function ActionTechnicalDataToggle({
+  technicalData,
   intro,
   maxHeightClass = "max-h-56"
 }: {
-  payload: Record<string, unknown>;
+  technicalData: Record<string, unknown>;
   intro: string;
   maxHeightClass?: string;
 }) {
@@ -30,7 +30,7 @@ export function ActionPayloadPreviewToggle({
           <pre
             className={`mt-3 ${maxHeightClass} overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100`}
           >
-            {JSON.stringify(payload, null, 2)}
+            {JSON.stringify(technicalData, null, 2)}
           </pre>
         </div>
       ) : null}

@@ -91,6 +91,11 @@ Date: 2026-06-29
   names. Historical raw audit fragments are still sanitized before reaching
   normal operator copy, but the active code path now names that behavior as raw
   content review audit cleanup instead of content migration review.
+- Action panel technical drawer code no longer uses the old
+  `ActionPayloadPreviewToggle` component name or `payload={action.payload}`
+  prop. The drawer remains visible as `dane techniczne akcji`, and
+  `ActionObjectPanels.test.tsx` guards against reintroducing the old
+  payload-preview component naming.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

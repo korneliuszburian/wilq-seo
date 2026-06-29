@@ -22,7 +22,7 @@ import {
   reviewAction,
   validateAction
 } from "../lib/api";
-import { ActionPayloadPreviewToggle } from "../components/ActionPayloadPreviewToggle";
+import { ActionTechnicalDataToggle } from "../components/ActionTechnicalDataToggle";
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
@@ -71,8 +71,8 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             </div>
             {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
             <ActionValidationControls action={action} />
-            <ActionPayloadPreviewToggle
-              payload={action.payload}
+            <ActionTechnicalDataToggle
+              technicalData={action.payload}
               intro="Domyślnie schowany, żeby karta pokazywała decyzję i warunki przeglądu."
             />
           </article>
