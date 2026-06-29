@@ -70,9 +70,13 @@ API status later contradicts this state.
   dashboard test suite, lint, production build, Fallow changed-file audit,
   marketer/context-pack language guards and browser proof for `/command-center`
   passed after the upgrade.
+- `typescript` has been upgraded to `6.0.3`. Workspace typecheck, full
+  dashboard test suite, lint, production build, Fallow changed-file audit,
+  marketer/context-pack language guards and browser proof for `/command-center`
+  passed after the upgrade.
 - The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest, Zod, Tailwind,
-  `@vitejs/plugin-react` and TypeScript.
+  as separate verified slices: Vite, Vitest, Zod, Tailwind and
+  `@vitejs/plugin-react`.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
   dashboard duplication and complexity debt.
