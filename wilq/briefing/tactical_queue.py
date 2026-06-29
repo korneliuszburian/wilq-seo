@@ -323,7 +323,7 @@ def _compact_tactical_title(item: TacticalQueueItem, group_size: int) -> str:
     if item.domain == OpportunityDomain.merchant:
         return (
             "Merchant: sprawdź "
-            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem feedu'))} / "
+            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem pliku produktowego'))} / "
             f"{_merchant_dimension_label(item.dimensions.get('affected_attribute', 'atrybut'))}"
         )
     return item.title
@@ -415,7 +415,7 @@ def _tactical_intent_label(intent: TacticalIntent) -> str:
         "content_block": "blokada treści",
         "landing_page_quality": "jakość strony wejścia",
         "tracking_gap": "problem pomiaru",
-        "merchant_feed_triage": "kolejność oceny feedu",
+        "merchant_feed_triage": "kolejność oceny pliku produktowego",
         "traffic_quality_review": "jakość ruchu",
     }
     return labels[intent]
@@ -694,7 +694,7 @@ def _merchant_feed_items(
                     f"{severity_label}: {issue_label}; {resolution_label}; kraj {country}."
                 ),
                 next_step=(
-                    "Przygotuj kolejkę przeglądu problemów feedu i podgląd zmian. "
+                    "Przygotuj kolejkę przeglądu problemów pliku produktowego i podgląd zmian. "
                     "Nie zmieniaj danych produktu bez sprawdzenia propozycji "
                     "w WILQ i zgody operatora."
                 ),
@@ -727,13 +727,13 @@ def _merchant_feed_items(
                 metric_facts=group_facts[:6],
                 dimensions={"country": country, "reporting_context": reporting_context},
                 diagnosis=(
-                    f"Status feedu: disapproved_products={disapproved or 0}, "
+                    f"Status pliku produktowego: disapproved_products={disapproved or 0}, "
                     f"expiring_products={expiring or 0} dla {country}/{reporting_context}."
                 ),
                 next_step="Sprawdź statusy produktów i przygotuj kolejkę ręcznego sprawdzenia.",
                 blocked_claims=[
                     "ponowne zatwierdzenie produktu",
-                    "rozwiązany problem feedu",
+                    "rozwiązany problem pliku produktowego",
                 ],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),
             )

@@ -333,7 +333,7 @@ def _decision_workflow_label(workflow_id: str, decision: DailyDecision) -> str:
         "ads_daily_check": "Ocena Ads",
         "ga4_data_analyst": "Analiza GA4",
         "gsc_content_doctor": "Treści z GSC",
-        "merchant_feed_review": "Feed Merchant",
+        "merchant_feed_review": "Plik produktowy Merchant",
     }
     return labels.get(workflow_id, decision.title)
 

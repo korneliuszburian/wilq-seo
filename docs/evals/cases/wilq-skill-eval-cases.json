@@ -486,7 +486,7 @@
       "odzyskany przychód produktu",
       "wpływ zmiany ceny",
       "ponowne zatwierdzenie produktu",
-      "zapis do feedu"
+      "zapis do pliku produktowego"
     ],
     "expected_action_ids": ["act_review_merchant_feed_issues"],
     "expected_validated_action_ids": ["act_review_merchant_feed_issues"]

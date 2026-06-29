@@ -544,7 +544,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "odzyskany przychód produktu" in merchant_case["blocked_claim_terms"]
     assert "wpływ zmiany ceny" in merchant_case["blocked_claim_terms"]
     assert "ponowne zatwierdzenie produktu" in merchant_case["blocked_claim_terms"]
-    assert "zapis do feedu" in merchant_case["blocked_claim_terms"]
+    assert "zapis do pliku produktowego" in merchant_case["blocked_claim_terms"]
 
     for skill in (
         "wilq-content-strategist",

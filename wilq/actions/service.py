@@ -281,7 +281,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
         ),
         ActionObject(
             id="act_review_merchant_feed_issues",
-            title="Przygotuj kolejkę przeglądu feedu Merchant Center",
+            title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
             domain=OpportunityDomain.merchant,
             connector="google_merchant_center",
             mode=ActionMode.prepare,
@@ -291,11 +291,11 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
             human_diagnosis=(
                 "Merchant Center jest core workflow WILQ. W clean runtime WILQ może "
                 "przygotować tylko kolejkę bezpieczną do sprawdzenia, dopóki odczyt nie "
-                "dostarczy metryk problemów feedu."
+                "dostarczy metryk problemów pliku produktowego."
             ),
             recommended_reason=(
                 "Uruchom odczyt danych Merchant albo użyj istniejących evidence, "
-                "potem sprawdź w WILQ podgląd zmian przed jakąkolwiek zmianą feedu."
+                "potem sprawdź w WILQ podgląd zmian przed jakąkolwiek zmianą pliku produktowego."
             ),
             payload={
                 "action_type": "merchant_feed_issue",
@@ -311,7 +311,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 "blocked_claims": [
                     "ponowne zatwierdzenie produktu",
                     "odzyskany przychód",
-                    "automatyczna zmiana feedu",
+                    "automatyczna zmiana pliku produktowego",
                 ],
                 "destructive": False,
             },
@@ -845,7 +845,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         merchant_payload_preview = _merchant_issue_payload_preview(merchant_issue_clusters)
         action = ActionObject(
             id="act_review_merchant_feed_issues",
-            title="Przygotuj kolejkę przeglądu feedu Merchant Center",
+            title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
             domain=OpportunityDomain.merchant,
             connector="google_merchant_center",
             mode=ActionMode.prepare,
@@ -854,15 +854,15 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
             metrics=merchant_action_metrics,
             human_diagnosis=(
-                "Merchant Center ma dane o problemach feedu w WILQ. "
+                "Merchant Center ma dane o problemach pliku produktowego w WILQ. "
                 f"{_metric_sentence(merchant_action_metrics)}. To uzasadnia "
-                "kolejkę przeglądu problemów feedu, ale nie automatyczną zmianę "
+                "kolejkę przeglądu problemów pliku produktowego, ale nie automatyczną zmianę "
                 "danych produktu."
             ),
             recommended_reason=(
                 "W widoku Merchant pokaż grupy problemów jako kolejkę przygotowawczą: "
                 "sprawdź typ problemu, atrybut, kraj, podgląd zmian i sprawdzenie "
-                "przed jakąkolwiek zmianą feedu."
+                "przed jakąkolwiek zmianą pliku produktowego."
             ),
             payload={
                 "action_type": "merchant_feed_issue",
@@ -881,9 +881,9 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "blocked_claims": [
                     "ponowne zatwierdzenie produktu",
                     "odzyskany przychód",
-                    "automatyczna zmiana feedu",
-                    "nadpisanie głównego feedu",
-                    "zapis do feedu",
+                    "automatyczna zmiana pliku produktowego",
+                    "nadpisanie głównego pliku produktowego",
+                    "zapis do pliku produktowego",
                     "zmiana danych produktu",
                     "automatyczna naprawa zatwierdzenia",
                 ],
@@ -1655,8 +1655,8 @@ def _merchant_issue_payload_preview(
                     "wystąpień, ale nie zwraca przykładowych produktów ani tytułów."
                 ),
                 "reason": (
-                    "Podgląd klastra problemów feedu do sprawdzenia. WILQ może "
-                    "przygotować kolejkę przeglądu, ale nie może zmienić feedu ani "
+                    "Podgląd klastra problemów pliku produktowego do sprawdzenia. WILQ może "
+                    "przygotować kolejkę przeglądu, ale nie może zmienić pliku produktowego ani "
                     "obiecać przywrócenia zatwierdzenia bez osobnego kontraktu zapisu i audytu."
                 ),
                 "required_validation": [
@@ -1669,9 +1669,9 @@ def _merchant_issue_payload_preview(
                 "blocked_claims": [
                     "ponowne zatwierdzenie produktu",
                     "odzyskany przychód",
-                    "automatyczna zmiana feedu",
-                    "nadpisanie głównego feedu",
-                    "zapis do feedu",
+                    "automatyczna zmiana pliku produktowego",
+                    "nadpisanie głównego pliku produktowego",
+                    "zapis do pliku produktowego",
                     "zmiana danych produktu",
                     "automatyczna naprawa zatwierdzenia",
                 ],
@@ -3745,7 +3745,7 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
             ActionPreviewCardViewModel(
                 id=str(item.get("id") or f"merchant_preview_{index}"),
                 kind="merchant_feed_issue_review",
-                title_label="Problem feedu do sprawdzenia",
+                title_label="Problem pliku produktowego do sprawdzenia",
                 subtitle_label=(
                     f"{item.get('issue_type_label') or 'problem'} / "
                     f"{item.get('affected_attribute_label') or 'atrybut'}"
@@ -4900,14 +4900,14 @@ def _action_gate_label(value: str) -> str | None:
         "recommendations": "sprawdź rekomendacje Google Ads",
         "profit_margin_or_value_model": "sprawdź marżę albo model wartości",
         "google_ads_rmf_compliance_review": "sprawdź zgodność Google Ads",
-        "review_issue_type_and_attribute": "sprawdź typ problemu i atrybut feedu",
+        "review_issue_type_and_attribute": "sprawdź typ problemu i atrybut pliku produktowego",
         "review_reporting_context": "sprawdź kontekst raportowania",
         "group_issue_reasons": "pogrupuj powody problemów",
         "identify_disapproved_products": "ustal produkty i zgłoszenia do sprawdzenia",
         "mutation_audit_required": "wymagany ślad bezpieczeństwa",
         "mutation_audit": "ślad bezpieczeństwa zapisu",
         "negative_keyword_action_validation": "sprawdzenie w WILQ dla wykluczeń",
-        "prepare_feed_fix_preview": "przygotuj podgląd zmian feedu",
+        "prepare_feed_fix_preview": "przygotuj podgląd zmian pliku produktowego",
         "require_human_confirm_before_apply": "człowiek potwierdza przed zapisem",
         "require_human_confirm_before_any_write": "człowiek potwierdza przed każdym zapisem",
         "reject_brand_or_low_intent_terms": "odrzuć brandowe lub niskointencyjne frazy",
@@ -4940,7 +4940,7 @@ def _action_gate_label(value: str) -> str | None:
         "review_source_terms": "sprawdź źródłowe hasła",
         "review_target_fit": "sprawdź dopasowanie do celu",
         "review_conversion_tracking": "sprawdź pomiar konwersji",
-        "review_pmax_asset_feed_context": "sprawdź kontekst zasobów i feedu PMax",
+        "review_pmax_asset_feed_context": "sprawdź kontekst zasobów i pliku produktowego PMax",
         "check_existing_keywords_and_match_types": (
             "sprawdź istniejące słowa kluczowe i dopasowania"
         ),

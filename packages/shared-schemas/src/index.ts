@@ -1964,7 +1964,7 @@ export const MerchantOperatorSummarySchema = z.object({
   decision_source: z.literal("decision_queue").default("decision_queue"),
   decision_source_label: z.string().default("kolejka decyzji Merchant"),
   drilldown_source: z.literal("issue_clusters").default("issue_clusters"),
-  drilldown_source_label: z.string().default("grupy problemów feedu"),
+  drilldown_source_label: z.string().default("grupy problemów pliku produktowego"),
   count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   count_semantics_label: z.string().default("wystąpienia problemów w raportach"),
   issue_types: z.array(z.string()),

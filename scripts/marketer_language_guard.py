@@ -16,7 +16,10 @@ ACTIVE_SOURCE_ROOTS = (
     Path("apps/dashboard/src/routes"),
     Path("wilq/actions"),
     Path("wilq/briefing"),
+    Path("wilq/knowledge"),
+    Path("wilq/opportunities"),
     Path("wilq/schemas.py"),
+    Path("wilq/workflows"),
     Path(".agents/skills"),
 )
 
@@ -78,7 +81,7 @@ FORBIDDEN_PHRASES = (
     ),
     ForbiddenPhrase(
         "kandydat naprawy feedu",
-        "Use propozycja naprawy feedu.",
+        "Use propozycja naprawy pliku produktowego.",
     ),
     ForbiddenPhrase(
         "kandydat contentowy",
@@ -251,6 +254,38 @@ FORBIDDEN_PHRASES = (
     ForbiddenPhrase(
         "feed issues",
         "Use problemy pliku produktowego in Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "feedu",
+        "Use pliku produktowego in Merchant/product-file copy.",
+    ),
+    ForbiddenPhrase(
+        "feedzie",
+        "Use pliku produktowym in Merchant/product-file copy.",
+    ),
+    ForbiddenPhrase(
+        "feedem",
+        "Use plikiem produktowym in Merchant/product-file copy.",
+    ),
+    ForbiddenPhrase(
+        "feed triage",
+        "Use kolejka oceny pliku produktowego.",
+    ),
+    ForbiddenPhrase(
+        "Merchant/feed",
+        "Use Merchant i plik produktowy.",
+    ),
+    ForbiddenPhrase(
+        "primary feed",
+        "Use główny plik produktowy.",
+    ),
+    ForbiddenPhrase(
+        "supplemental feed",
+        "Use uzupełnienie pliku produktowego.",
+    ),
+    ForbiddenPhrase(
+        "aggregate product/feed",
+        "Use zagregowane fakty produktów i pliku produktowego.",
     ),
     ForbiddenPhrase(
         "query/page",

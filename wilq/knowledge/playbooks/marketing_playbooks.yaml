@@ -22,7 +22,7 @@ playbooks:
     expert_rule_ids:
       - ads_search_terms_v1
       - ads_diagnostics_v1
-    compact_playbook: Używaj realnych metryk wyszukiwanych haseł do rozdzielenia strat, kandydatów treści i kandydatów odbiorców. Nie rekomenduj wykluczeń, treści ani segmentów bez dowodów i zakresu kampanii.
+    compact_playbook: Używaj realnych metryk wyszukiwanych haseł do rozdzielenia strat, propozycji treści i propozycji odbiorców. Nie rekomenduj wykluczeń, treści ani segmentów bez dowodów i zakresu kampanii.
     refusal_rules:
       - Odmów klasyfikacji intencji bez dowodów z wyszukiwanych haseł.
       - Odmów rekomendacji zmiany wydatków wyłącznie na podstawie statusu źródła danych.
@@ -93,7 +93,7 @@ playbooks:
     required_evidence:
       - campaign_channel_state
       - asset_groups
-      - merchant_feed_status
+      - merchant_product_file_status
       - evidence_ids
     maps_to_opportunity_types:
       - pmax_retail_readiness_gap
@@ -104,11 +104,11 @@ playbooks:
     expert_rule_ids:
       - ads_capability_pack_v1
       - merchant_feed_rules_v1
-    compact_playbook: Łącz rekomendacje PMax ze zdrowiem Merchant/feedu i dowodami zasobów przed sugerowaniem zmian kampanii sprzedażowych.
+    compact_playbook: Łącz rekomendacje PMax ze zdrowiem Merchant i plik produktowyu i dowodami zasobów przed sugerowaniem zmian kampanii sprzedażowych.
     refusal_rules:
-      - Odmów optymalizacji produktów bez diagnostyki produktu i feedu.
+      - Odmów optymalizacji produktów bez diagnostyki produktu i pliku produktowego.
       - Odmów traktowania rekomendacji Google jako automatycznie dopasowanych biznesowo.
-    output_contract: Okazja gotowości sprzedaży produktowej powiązana z feedem i kandydatami akcji kampanii.
+    output_contract: Okazja gotowości sprzedaży produktowej powiązana z plikiem produktowym i akcjami kampanii do sprawdzenia.
 
   - id: google_ads_negative_keywords_playbook
     family: google_ads_negative_keywords_playbook
@@ -192,7 +192,7 @@ playbooks:
     refusal_rules:
       - Odmów nowej treści, jeśli istniejąca strona spełnia intencję.
       - Odmów diagnozy CTR albo spadku bez dowodów z GSC.
-    output_contract: Okazja SEO z dowodami zapytanie/strona i kandydatem akcji treściowej.
+    output_contract: Okazja SEO z dowodami zapytanie/strona i propozycją akcji treściowej.
 
   - id: ahrefs_content_gap_playbook
     family: ahrefs_content_gap_playbook
@@ -245,7 +245,7 @@ playbooks:
     refusal_rules:
       - Blokuj propozycje zapisu zmian w profilu firmy bez dowodu sprawdzenia.
       - Odmów diagnozy lokalnych pozycji bez kontekstu lokalizacji i konkurencji.
-    output_contract: Zadanie widoczności lokalnej albo kandydat odpowiedzi na opinię z dowodami źródłowymi.
+    output_contract: Zadanie widoczności lokalnej albo propozycja odpowiedzi na opinię z dowodami źródłowymi.
 
   - id: ga4_behavior_diagnostics_playbook
     family: ga4_behavior_diagnostics_playbook
@@ -277,14 +277,14 @@ playbooks:
 
   - id: merchant_feed_optimization_playbook
     family: merchant_feed_optimization_playbook
-    title: Diagnostyka feedu Merchant
+    title: Diagnostyka pliku produktowego Merchant
     card_type: service_card
     source_anchors:
       - Merchant API
-      - Product feed diagnostics
+      - Diagnostyka pliku produktowego
     required_evidence:
       - merchant_account
-      - feed_status
+      - product_file_status
       - product_status
       - product_data
       - evidence_ids
@@ -299,11 +299,11 @@ playbooks:
     expert_rule_ids:
       - merchant_feed_rules_v1
       - merchant_product_diagnostics_v1
-    compact_playbook: Przygotuj działania dla feedu i opisów produktów tylko z danych produktu oraz diagnostyki. Zachowaj faktyczne atrybuty i sprawdź propozycję przed każdym zapisem.
+    compact_playbook: Przygotuj działania dla pliku produktowego i opisów produktów tylko z danych produktu oraz diagnostyki. Zachowaj faktyczne atrybuty i sprawdź propozycję przed każdym zapisem.
     refusal_rules:
       - Odmów twierdzeń o produkcie, których nie ma w danych produktu.
-      - Odmów zapisu do feedu bez sprawdzenia i audytu.
-    output_contract: Akcja dla feedu lub opisu produktu z dowodami produktu.
+      - Odmów zapisu do pliku produktowego bez sprawdzenia i audytu.
+    output_contract: Akcja dla pliku produktowego lub opisu produktu z dowodami produktu.
 
   - id: linkedin_content_playbook
     family: linkedin_content_playbook
@@ -324,7 +324,7 @@ playbooks:
     expert_rule_ids:
       - linkedin_rules_v1
       - content_social_limits_v1
-    compact_playbook: Przygotuj kandydatów postów organizacji z treści źródłowej i stanu uprawnień. Publikacja wymaga uprawnień źródła danych i sprawdzenia przez człowieka.
+    compact_playbook: Przygotuj propozycje postów organizacji z treści źródłowej i stanu uprawnień. Publikacja wymaga uprawnień źródła danych i sprawdzenia przez człowieka.
     refusal_rules:
       - Odmów twierdzeń w publicznym poście bez treści źródłowej.
       - Odmów publikacji bez uprawnień organizacji.
@@ -349,7 +349,7 @@ playbooks:
     expert_rule_ids:
       - facebook_rules_v1
       - content_social_limits_v1
-    compact_playbook: Przygotuj kandydatów postów strony Facebook z treści opartej o źródła i stanu uprawnień strony. Publikacja pozostaje zwalidowaną akcją.
+    compact_playbook: Przygotuj propozycje postów strony Facebook z treści opartej o źródła i stanu uprawnień strony. Publikacja pozostaje akcją sprawdzoną przed zapisem.
     refusal_rules:
       - Odmów postów strony bez treści źródłowej i identyfikatora strony.
       - Odmów niewspartych obietnic promocyjnych.

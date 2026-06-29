@@ -114,7 +114,7 @@ const actions = [
   },
   {
     id: "act_review_merchant_feed_issues",
-    title: "Przygotuj kolejkę przeglądu feedu Merchant Center",
+    title: "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
     domain: "merchant",
     connector: "google_merchant_center",
     mode: "prepare",
@@ -146,7 +146,7 @@ const actions = [
       ],
       required_check_labels: [
         "rozpoznaj produkty odrzucone w Merchant Center",
-        "pogrupuj powody problemów feedu",
+        "pogrupuj powody problemów pliku produktowego",
         "potwierdzenie człowieka przed zapisem"
       ],
       operator_checklist: [
@@ -156,7 +156,7 @@ const actions = [
       ],
       operator_checklist_labels: [
         "rozpoznaj produkty odrzucone w Merchant Center",
-        "pogrupuj powody problemów feedu",
+        "pogrupuj powody problemów pliku produktowego",
         "potwierdzenie człowieka przed zapisem"
       ],
       apply_blockers: [
@@ -187,8 +187,8 @@ const actions = [
       last_mutation_blockers: ["vendor_mutation_adapter_required"],
       last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"]
     },
-    human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ.",
-    recommended_reason: "Przygotuj kolejkę problemów feedu z podglądem zmian.",
+    human_diagnosis: "Merchant Center ma realne metryki produktu/pliku produktowego w WILQ.",
+    recommended_reason: "Przygotuj kolejkę problemów pliku produktowego z podglądem zmian.",
     payload: {
       action_type: "merchant_feed_issue",
       connector: "google_merchant_center",
@@ -765,7 +765,7 @@ const evidence = [
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "fresh" },
     freshness_label: "świeże dane",
-    summary: "Merchant Center feed diagnostics collected sanitized product issue counters.",
+    summary: "Merchant Center product-file diagnostics collected sanitized product issue counters.",
     trace_summary_label: "Merchant Center: odczyt źródła danych, świeże dane",
     raw_ref: null
   }
@@ -4307,7 +4307,7 @@ const metricFacts = [
   },
   {
     name: "total_products",
-    metric_label: "produkty w feedzie",
+    metric_label: "produkty w pliku produktowym",
     value: 10900,
     period: "connector_refresh",
     source_connector: "google_merchant_center",
@@ -4531,7 +4531,7 @@ const marketingBrief = {
       items: [
         {
           id: "brief_focus_merchant_feed",
-          title: "Merchant Center: zacznij od kolejki problemów feedu",
+          title: "Merchant Center: zacznij od kolejki problemów pliku produktowego",
           kind: "recommendation",
           priority: 87,
           source_connectors: ["google_merchant_center"],
@@ -4539,7 +4539,7 @@ const marketingBrief = {
           metric_facts: [metricFacts[1]],
           action_ids: ["act_review_merchant_feed_issues"],
           summary:
-            "WILQ widzi Merchant metryki i kieruje operatora do sprawdzenia kolejki problemów feedu.",
+            "WILQ widzi Merchant metryki i kieruje operatora do sprawdzenia kolejki problemów pliku produktowego.",
           next_step:
             "Otwórz podgląd zmian dla akcji przed zmianą danych produktu.",
           risk: "medium",
@@ -4653,8 +4653,8 @@ const tacticalQueue = {
         affected_attribute: "n:availability"
       },
       diagnosis: "Merchant issue availability_updated dotyczy atrybutu n:availability.",
-      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego feedu.",
-      blocked_claims: ["automatyczna zmiana feedu", "ponowne zatwierdzenie produktu"],
+      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego pliku produktowego.",
+      blocked_claims: ["automatyczna zmiana pliku produktowego", "ponowne zatwierdzenie produktu"],
       action_ids: ["act_review_merchant_feed_issues"]
     }
   ],
@@ -4689,15 +4689,15 @@ const tacticalQueue = {
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
       title: "Merchant: sprawdź availability updated / n:availability",
-      meta: "Merchant / triage feedu / najpierw",
-      diagnosis: "1 problem feedu Merchant wymaga review.",
-      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego feedu.",
+      meta: "Merchant / triage pliku produktowego / najpierw",
+      diagnosis: "1 problem pliku produktowego Merchant wymaga review.",
+      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego pliku produktowego.",
       priority: 27,
       risk: "medium",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       action_ids: ["act_review_merchant_feed_issues"],
-      blocked_claims: ["automatyczna zmiana feedu", "ponowne zatwierdzenie produktu"]
+      blocked_claims: ["automatyczna zmiana pliku produktowego", "ponowne zatwierdzenie produktu"]
     }
   ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc", "ev_refresh_merchant_feed"],
@@ -4742,7 +4742,7 @@ const merchantDiagnostics = {
   },
   latest_refresh_status_label: "zakończony",
   live_data_available: true,
-  live_data_status_label: "metryki feedu dostępne",
+  live_data_status_label: "metryki pliku produktowego dostępne",
   product_count: 10900,
   issue_count: 23,
   freshness_assessment: {
@@ -4767,8 +4767,8 @@ const merchantDiagnostics = {
         "WILQ może przygotować kolejkę review po klastrach i pokazać próbki, ale nie wolno traktować sum raportowych jako unikalnych produktów.",
       next_step:
         "Użyj próbek do ręcznego review, a pełną listę produktów potwierdź w Merchant Center albo osobnym read contract.",
-      blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"],
-      blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
+      blocked_claims: ["naprawa pojedynczego produktu", "zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"],
+      blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"]
     },
     {
       id: "merchant_product_performance_join_missing",
@@ -4776,7 +4776,7 @@ const merchantDiagnostics = {
       reason:
         "Merchant diagnostics ma przykładowe produkty, ale brakuje dopasowanych faktów Ads/GA4 po product_id albo item_id.",
       impact:
-        "WILQ może prowadzić review feedu, ale nie może wskazać werdyktu zwrotu z reklam na poziomie produktu ani twierdzenia o wpływie naprawy na przychód.",
+        "WILQ może prowadzić review pliku produktowego, ale nie może wskazać werdyktu zwrotu z reklam na poziomie produktu ani twierdzenia o wpływie naprawy na przychód.",
       next_step:
         "Dodać skuteczność produktu dla Google Ads Shopping, Performance Max i GA4 ecommerce.",
       blocked_claims: ["werdykt zwrotu z reklam na poziomie produktu", "twierdzenie o odzyskanym przychodzie produktu", "efekt naprawy produktu"],
@@ -4801,9 +4801,9 @@ const merchantDiagnostics = {
     summary:
       "Merchant diagnostics ma przykładowe produkty do review, ale nie jest pełną listą SKU do edycji.",
     next_step:
-      "Użyj próbek jako punktu startu przeglądu i nie zapisuj zmian feedu bez podglądu zmian.",
-    blocked_claims: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"],
-    blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do feedu", "automatyczna zmiana feedu"]
+      "Użyj próbek jako punktu startu przeglądu i nie zapisuj zmian pliku produktowego bez podglądu zmian.",
+    blocked_claims: ["naprawa pojedynczego produktu", "zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"],
+    blocked_claim_labels: ["naprawa pojedynczego produktu", "zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"]
   },
   product_performance_readiness: {
     id: "merchant_product_performance_readiness",
@@ -4842,7 +4842,7 @@ const merchantDiagnostics = {
       "efekt naprawy produktu",
       "skalowanie produktu w reklamach produktowych i Performance Max",
       "ponowne zatwierdzenie produktu",
-      "zapis do feedu"
+      "zapis do pliku produktowego"
     ],
     blocked_claim_labels: [
       "werdykt zwrotu z reklam na poziomie produktu",
@@ -4850,7 +4850,7 @@ const merchantDiagnostics = {
       "efekt naprawy produktu",
       "skalowanie produktu w reklamach produktowych i Performance Max",
       "ponowne zatwierdzenie produktu",
-      "zapis do feedu"
+      "zapis do pliku produktowego"
     ]
   },
   price_impact_readiness: {
@@ -4905,11 +4905,11 @@ const merchantDiagnostics = {
   },
   operator_summary: {
     id: "merchant_operator_summary",
-    title: "Co marketer ma zrobić teraz z feedem",
+    title: "Co marketer ma zrobić teraz z plikiem produktowym",
     summary:
-      "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu.",
+      "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać pliku produktowego.",
     next_step:
-      "Przejdź przez top decyzje lub klastry problemów, przygotuj akcję do sprawdzenia i nie zapisuj zmian feedu bez sprawdzenia w WILQ oraz zgody operatora.",
+      "Przejdź przez top decyzje lub klastry problemów, przygotuj akcję do sprawdzenia i nie zapisuj zmian pliku produktowego bez sprawdzenia w WILQ oraz zgody operatora.",
     top_decision_ids: [
       "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability"
     ],
@@ -4919,7 +4919,7 @@ const merchantDiagnostics = {
     decision_source: "decision_queue",
     decision_source_label: "kolejka decyzji Merchant",
     drilldown_source: "issue_clusters",
-    drilldown_source_label: "grupy problemów feedu",
+    drilldown_source_label: "grupy problemów pliku produktowego",
     count_semantics: "reported_issue_occurrences",
     count_semantics_label: "wystąpienia problemów w raportach",
     issue_types: ["zmiana dostępności do sprawdzenia"],
@@ -4932,14 +4932,14 @@ const merchantDiagnostics = {
     blocked_claims: [
       "ponowne zatwierdzenie produktu",
       "twierdzenie o odzyskanym przychodzie",
-      "automatyczna zmiana feedu",
-      "nadpisanie głównego feedu"
+      "automatyczna zmiana pliku produktowego",
+      "nadpisanie głównego pliku produktowego"
     ],
     blocked_claim_labels: [
       "ponowne zatwierdzenie produktu",
       "twierdzenie o odzyskanym przychodzie",
-      "automatyczna zmiana feedu",
-      "nadpisanie głównego feedu"
+      "automatyczna zmiana pliku produktowego",
+      "nadpisanie głównego pliku produktowego"
     ]
   },
   issue_clusters: [
@@ -4964,18 +4964,18 @@ const merchantDiagnostics = {
       sample_unavailable_reason: null,
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
-      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana pliku produktowego"],
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
-        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."
+        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany pliku produktowego."
     }
   ],
   decision_queue: [
     {
       id: "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability",
       decision_type: "review_issue_cluster",
-      decision_type_label: "przegląd problemu feedu",
+      decision_type_label: "przegląd problemu pliku produktowego",
       status: "ready",
       status_label: "gotowe",
       title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
@@ -5008,10 +5008,10 @@ const merchantDiagnostics = {
           id: "merchant_feed_issue_review_merchant_issue_pl_not_impacted_availability_updated_n_availability",
           kind: "merchant_review_preview",
           title_label: "Podgląd sprawdzenia Merchant",
-          subtitle_label: "sprawdzenie problemów feedu",
+          subtitle_label: "sprawdzenie problemów pliku produktowego",
           status_label: "do sprawdzenia",
           rows: [
-            { label: "Typ sprawdzenia", value: "sprawdzenie problemów feedu" },
+            { label: "Typ sprawdzenia", value: "sprawdzenie problemów pliku produktowego" },
             { label: "Zakres", value: "23 zgłoszenia" },
             {
               label: "Warunki sprawdzenia",
@@ -5029,12 +5029,12 @@ const merchantDiagnostics = {
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
       action_summary_label: "1 akcja do sprawdzenia",
-      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
-      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana feedu"],
+      blocked_claims: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana pliku produktowego"],
+      blocked_claim_labels: ["ponowne zatwierdzenie produktu", "twierdzenie o odzyskanym przychodzie", "automatyczna zmiana pliku produktowego"],
       rationale:
-        "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
+        "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę pliku produktowego. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
-        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu.",
+        "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; najpierw przygotuj podgląd zmian, bez automatycznej zmiany pliku produktowego.",
       risk: "medium",
       risk_label: "średnie ryzyko"
     }
@@ -5043,12 +5043,12 @@ const merchantDiagnostics = {
     {
       id: "merchant_feed_health",
       label: "Metryki produktów",
-      title: "Merchant Center: stan produktów i feedu",
+      title: "Merchant Center: stan produktów i pliku produktowego",
       status: "ready",
       status_label: "gotowe",
       summary:
-        "Najważniejsze metryki Merchant: produkty w feedzie: 10900, zgłoszenia problemów: 23.",
-      diagnosis: "WILQ ma metryki Merchant z odczytu i może ocenić skalę feedu.",
+        "Najważniejsze metryki Merchant: produkty w pliku produktowym: 10900, zgłoszenia problemów: 23.",
+      diagnosis: "WILQ ma metryki Merchant z odczytu i może ocenić skalę pliku produktowego.",
       next_step: "Przejdź do kolejki problemów i grupuj je po typie.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
@@ -5064,12 +5064,12 @@ const merchantDiagnostics = {
     },
     {
       id: "merchant_issue_queue",
-      label: "Kolejka problemów feedu",
-      title: "Merchant Center: kolejka problemów feedu",
+      label: "Kolejka problemów pliku produktowego",
+      title: "Merchant Center: kolejka problemów pliku produktowego",
       status: "ready",
       status_label: "gotowe",
       summary:
-        "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
+        "WILQ ma 1 grupę problemów pliku produktowego, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
       diagnosis: "Najbezpieczniejsza praca to przegląd problemów po typie.",
       next_step: "Otwórz akcję do sprawdzenia.",
       source_connectors: ["google_merchant_center"],
@@ -5079,8 +5079,8 @@ const merchantDiagnostics = {
       tactical_items: [tacticalQueue.items[2]],
       action_ids: ["act_review_merchant_feed_issues"],
       action_summary_label: "1 akcja do sprawdzenia",
-      blocked_claims: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
-      blocked_claim_labels: ["automatyczna zmiana feedu", "nadpisanie głównego feedu"],
+      blocked_claims: ["automatyczna zmiana pliku produktowego", "nadpisanie głównego pliku produktowego"],
+      blocked_claim_labels: ["automatyczna zmiana pliku produktowego", "nadpisanie głównego pliku produktowego"],
       risk: "medium",
       risk_label: "średnie ryzyko"
     }
@@ -6832,7 +6832,7 @@ function mockFetch() {
             generated_at: "2026-06-17T10:00:00Z",
             strict_instruction: "WILQ pokazuje tylko metryki z danych źródłowych.",
             primary_next_step:
-              "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.",
+              "Najpierw otwórz /merchant i przejrzyj kolejkę problemów pliku produktowego.",
             blocker_count: 0,
             tactical_item_count: 3,
             daily_decisions: [
@@ -6850,27 +6850,27 @@ function mockFetch() {
                   blokady: 0
                 },
                 co_widzimy:
-                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blokady=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że zatwierdzenie, twierdzenie o przychodzie albo dane produktu zostały już naprawione.",
+                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blokady=0. To jest kolejka ręcznego review pliku produktowego; WILQ nie twierdzi, że zatwierdzenie, twierdzenie o przychodzie albo dane produktu zostały już naprawione.",
                 dlaczego_to_ma_znaczenie:
-                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów pliku produktowego. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
                   "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 why_it_matters:
-                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów pliku produktowego. To wymaga ręcznego review przed zmianami.",
                 operator_action:
                   "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief przeglądu problemów feedu z dowody opisane w WILQ.",
+                expected_codex_output: "Polski brief przeglądu problemów pliku produktowego z dowody opisane w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
                   "ev_refresh_merchant_issue_clusters"
                 ],
                 action_ids: ["act_review_merchant_feed_issues"],
-                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana pliku produktowego"],
                 risk: "medium"
               },
               {
@@ -6943,14 +6943,14 @@ function mockFetch() {
               },
               {
                 id: "daily_merchant_feed",
-                title: "Merchant: kolejka problemów feedu",
+                title: "Merchant: kolejka problemów pliku produktowego",
                 route: "/merchant",
                 status: "ready",
                 priority: 10,
                 summary:
                   "Produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8. To jest kolejka do sprawdzenia.",
                 next_step:
-                  "Otwórz /merchant i przejrzyj decyzje feedu przed sprawdzeniem propozycji w WILQ.",
+                  "Otwórz /merchant i przejrzyj decyzje pliku produktowego przed sprawdzeniem propozycji w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
@@ -6964,7 +6964,7 @@ function mockFetch() {
                   decyzje: 8,
                   blokady: 0
                 },
-                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana pliku produktowego"],
                 risk: "medium"
               },
               {
@@ -7023,12 +7023,12 @@ function mockFetch() {
               },
               {
                 id: "demo_daily_merchant_feed",
-                label: "Merchant Center: dowód feedu produktów",
+                label: "Merchant Center: dowód pliku produktowego produktów",
                 route: "/merchant",
                 status: "ready",
                 what_it_proves:
-                  "Merchant Center daje realne metryki product/feed i przegląd akcji.",
-                operator_prompt: "Otwórz /merchant i przejrzyj kolejkę problemów feedu.",
+                  "Merchant Center daje realne metryki produktów i pliku produktowego oraz przegląd akcji.",
+                operator_prompt: "Otwórz /merchant i przejrzyj kolejkę problemów pliku produktowego.",
                 source_item_ids: ["daily_merchant_feed"],
                 evidence_ids: ["ev_refresh_merchant_feed"],
                 action_ids: ["act_review_merchant_feed_issues"]
@@ -7043,21 +7043,21 @@ function mockFetch() {
                 priority: 10,
                 category: "Merchant Center",
                 why_it_matters:
-                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów pliku produktowego. To wymaga ręcznego review przed zmianami.",
                 operator_action:
                   "Otwórz /merchant, sprawdź kolejkę problemów i sprawdź propozycję w WILQ.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief przeglądu problemów feedu z dowody opisane w WILQ.",
+                expected_codex_output: "Polski brief przeglądu problemów pliku produktowego z dowody opisane w WILQ.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: [
                   "ev_refresh_merchant_feed",
                   "ev_refresh_merchant_issue_clusters"
                 ],
                 action_ids: ["act_review_merchant_feed_issues"],
-                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana feedu"],
+                blocked_claims: ["ponowne zatwierdzenie produktu", "automatyczna zmiana pliku produktowego"],
                 risk: "medium"
               },
               {
@@ -7504,7 +7504,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Najważniejsze na start")).toBeInTheDocument();
     expect(screen.getByText("Pozostałe akcje")).toBeInTheDocument();
     expect(screen.getByText(/Zacznij od sprawdzeń, które odpowiadają głównej ścieżce pracy/i)).toBeInTheDocument();
-    expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
     expect(screen.getAllByText(/Zanim cokolwiek zapiszesz, otwórz akcję/i).length).toBeGreaterThan(0);
@@ -7990,7 +7990,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Ładowanie stanu WILQ").length).toBe(1);
   });
 
-  it("merchant route renders dedicated feed diagnostics", async () => {
+  it("merchant route renders dedicated product-file diagnostics", async () => {
     renderApp("/merchant");
     await waitFor(() =>
       expect(
@@ -8000,13 +8000,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getByRole("heading", { name: "Pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" })).toBeInTheDocument();
     expect(screen.queryByText("Dowody i warunki przeglądu Merchant")).not.toBeInTheDocument();
-    expect(screen.queryByText("Czego nie wiemy o feedzie Merchant Center")).not.toBeInTheDocument();
+    expect(screen.queryByText("Czego nie wiemy o pliku produktowym Merchant Center")).not.toBeInTheDocument();
     expect(screen.queryByText("Gotowość próbek produktów")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }));
     expect(await screen.findByText("Dowody i warunki przeglądu Merchant")).toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: feed/product health")).not.toBeInTheDocument();
     expect(screen.queryByText("Merchant Center: kolejka feed/product issues")).not.toBeInTheDocument();
-    expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma zrobić teraz z plikiem produktowym")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
     expect(
@@ -8018,7 +8018,7 @@ describe("WILQ dashboard", () => {
     expect(merchantDecisionCard).not.toBeNull();
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/act_/)).not.toBeInTheDocument();
-    expect(screen.getByText(/przegląd problemu feedu/)).toBeInTheDocument();
+    expect(screen.getByText(/przegląd problemu pliku produktowego/)).toBeInTheDocument();
     expect(
       screen.getByText(
         /23 zgłoszenia problemu bez wpływu \/ wymaga działania po stronie Merchant dla PL \/ reklamy produktowe/
@@ -8037,7 +8037,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
     expect(screen.getByText("dane świeże")).toBeInTheDocument();
-    expect(screen.getByText("Czego nie wiemy o feedzie Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Czego nie wiemy o pliku produktowym Merchant Center")).toBeInTheDocument();
     expect(
       screen.getByText("Licznik problemów nie jest liczbą unikalnych produktów")
     ).toBeInTheDocument();
@@ -8068,20 +8068,20 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/1 dowód źródłowy/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/werdykt zwrotu z reklam na poziomie produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak połączenia produktów Merchant z Ads/GA4")).toBeInTheDocument();
-    expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
+    expect(screen.getByText("metryki pliku produktowego dostępne")).toBeInTheDocument();
     expect(screen.getAllByText("Dowody").length).toBeGreaterThan(0);
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
     expect(screen.getByText("Przykładowe produkty do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText(/surowy opis techniczny|techniczny model akcji/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/automatyczna zmiana feedu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/automatyczna zmiana pliku produktowego/).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "Sprawdź w WILQ" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
     expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
     expect(screen.queryByText(/total_products: 10900/)).not.toBeInTheDocument();
-    expect(screen.getByText("produkty w feedzie")).toBeInTheDocument();
+    expect(screen.getByText("produkty w pliku produktowym")).toBeInTheDocument();
     expect(screen.queryByText(/FREE_LISTINGS|SHOPPING_ADS|MERCHANT_ACTION|NOT_IMPACTED/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ev_refresh_merchant_feed/)).not.toBeInTheDocument();
     const merchantProofSection = screen
@@ -8105,11 +8105,11 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("cluster.product_count,");
     expect(screen.getByText("Akcje do sprawdzenia")).toBeInTheDocument();
     expect(
-      screen.queryByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
+      screen.queryByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }));
     expect(
-      screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
+      screen.getByText("Przygotuj kolejkę przeglądu pliku produktowego Merchant Center")
     ).toBeInTheDocument();
     expect(screen.getByText(/Zapis zmian:/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
@@ -8667,7 +8667,7 @@ describe("WILQ dashboard", () => {
       ).toBeInTheDocument()
     );
     expect(
-      screen.getByText("Merchant Center feed diagnostics collected sanitized product issue counters.")
+      screen.getByText("Merchant Center product-file diagnostics collected sanitized product issue counters.")
     ).toBeInTheDocument();
     expect(screen.getByText("Źródło: Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Typ źródła: odczyt źródła danych")).toBeInTheDocument();

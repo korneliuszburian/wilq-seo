@@ -11,7 +11,7 @@ MERCHANT_ISSUE_LABELS = {
     "missing_image": "brak zdjęcia produktu",
     "Missing image": "brak zdjęcia produktu",
     "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
-    "problem feedu": "problem feedu",
+    "problem pliku produktowego": "problem pliku produktowego",
     "violated_discovery_ads_policy_experiment2": "naruszenie zasad reklam Discovery do sprawdzenia",
 }
 
@@ -62,7 +62,7 @@ MERCHANT_METRIC_LABELS = {
     "reporting_contexts": "konteksty raportów",
     "sample_product_id": "produkt z przykładu",
     "sample_product_title": "nazwa produktu z przykładu",
-    "total_products": "produkty w feedzie",
+    "total_products": "produkty w pliku produktowym",
 }
 
 MERCHANT_DIMENSION_LABELS = {
@@ -78,19 +78,19 @@ MERCHANT_DIMENSION_LABELS = {
 }
 
 MERCHANT_PREVIEW_CONTRACT_LABELS = {
-    "merchant_feed_issue_review_preview_v1": "sprawdzenie problemów feedu",
+    "merchant_feed_issue_review_preview_v1": "sprawdzenie problemów pliku produktowego",
     "merchant_price_impact_readiness_preview_v1": "sprawdzenie wpływu ceny",
     "merchant_price_impact_review_preview_v1": "sprawdzenie wpływu ceny",
     "merchant_product_state_review_preview_v1": "sprawdzenie danych produktu",
-    "merchant_supplemental_feed_review_preview_v1": "sprawdzenie uzupełnienia feedu",
+    "merchant_supplemental_feed_review_preview_v1": "sprawdzenie uzupełnienia pliku produktowego",
 }
 
 MERCHANT_CLAIM_LABELS = {
-    "automatyczna zmiana feedu": "automatyczna zmiana feedu",
+    "automatyczna zmiana pliku produktowego": "automatyczna zmiana pliku produktowego",
     "automatyczna naprawa zatwierdzenia": "automatyczna naprawa zatwierdzenia",
     "efekt naprawy produktu": "efekt naprawy produktu",
     "liczba unikalnych produktów": "liczba unikalnych produktów",
-    "nadpisanie głównego feedu": "nadpisanie głównego feedu",
+    "nadpisanie głównego pliku produktowego": "nadpisanie głównego pliku produktowego",
     "odzyskany przychód": "twierdzenie o odzyskanym przychodzie",
     "odzyskany przychód produktu": "odzyskany przychód produktu",
     "opłacalność produktu": "opłacalność produktu",
@@ -100,7 +100,7 @@ MERCHANT_CLAIM_LABELS = {
     ),
     "wzrost zysku": "twierdzenie o wzroście zysku",
     "wpływ zmiany ceny": "wpływ zmiany ceny",
-    "zapis do feedu": "zapis do feedu",
+    "zapis do pliku produktowego": "zapis do pliku produktowego",
     "zmiana danych produktu": "zmiana danych produktu",
     "zwrot z reklam na poziomie produktu": "zwrot z reklam na poziomie produktu",
 }

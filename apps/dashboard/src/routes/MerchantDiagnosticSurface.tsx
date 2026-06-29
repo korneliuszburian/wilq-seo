@@ -33,7 +33,7 @@ export function MerchantDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Merchant. Ten widok nie może udawać wniosków o feedzie bez WILQ." />
+        <BlockerNotice message="Nie udało się odczytać danych Merchant. Ten widok nie może udawać wniosków o pliku produktowym bez WILQ." />
       </main>
     );
   }
@@ -55,9 +55,9 @@ export function MerchantDiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok feedu i produktów oparty o dane Merchant w WILQ.
+            Dedykowany widok pliku produktowego i produktów oparty o dane Merchant w WILQ.
             Pokazuje metryki produktów, kolejkę problemów i bezpieczne akcje
-            bez nieprzetworzonych danych produktów i bez obietnic naprawy feedu.
+            bez nieprzetworzonych danych produktów i bez obietnic naprawy pliku produktowego.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -131,7 +131,7 @@ function MerchantExpandableReviewPanel({ data }: { data: MerchantDiagnosticsResp
             Pełny przegląd Merchant
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Pierwszy ekran pokazuje status i najważniejszy problem feedu. Rozwiń
+            Pierwszy ekran pokazuje status i najważniejszy problem pliku produktowego. Rozwiń
             pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, gotowość próbek,
             powiązanie produktów z Ads/GA4, ograniczenia i dowody w WILQ.
           </p>
@@ -217,11 +217,11 @@ function MerchantFeedSafetyPanel({ data }: { data: MerchantDiagnosticsResponse }
           </div>
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Brama bezpieczeństwa feedu
+              Brama bezpieczeństwa pliku produktowego
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Merchant Center pozostaje w trybie przeglądu i przygotowania. WILQ może pokazać
-              kolejkę problemów, dowody i podgląd zmian, ale nie może zmienić feedu,
+              kolejkę problemów, dowody i podgląd zmian, ale nie może zmienić pliku produktowego,
               obiecać ponownego zatwierdzenia produktu ani zapisać zmiany bez sprawdzenia w WILQ i audytu.
             </p>
           </div>
@@ -245,7 +245,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
   if (!primaryDecision) {
     return (
       <section className="mb-6 rounded-md border border-line bg-white p-4">
-        <BlockerNotice message="Brak decyzji Merchant w WILQ. Nie pokazujemy rekomendacji feedu bez kolejki decyzji." />
+        <BlockerNotice message="Brak decyzji Merchant w WILQ. Nie pokazujemy rekomendacji pliku produktowego bez kolejki decyzji." />
       </section>
     );
   }
@@ -274,7 +274,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Problem feedu do sprawdzenia
+            Problem pliku produktowego do sprawdzenia
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal">
             Pierwszy problem Merchant do sprawdzenia
@@ -316,7 +316,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             Otwórz akcję do sprawdzenia, sprawdź dowody i przygotuj podgląd zmian.
-            Bez potwierdzenia operatora WILQ nie zmienia feedu ani danych produktu.
+            Bez potwierdzenia operatora WILQ nie zmienia pliku produktowego ani danych produktu.
           </p>
           <TraceLine
             label="Akcje"
@@ -337,7 +337,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <h3 className="text-sm font-semibold text-ink">Co oznaczają liczby</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">
             Zgłoszenia w raportach nie są liczbą unikalnych produktów ani SKU. Ten panel
-            pokazuje kolejkę sprawdzenia Merchant, a nie gotową listę zmian w feedzie.
+            pokazuje kolejkę sprawdzenia Merchant, a nie gotową listę zmian w pliku produktowym.
           </p>
           <TraceLine
             label="Źródło decyzji"
@@ -374,7 +374,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">
-            Nie ma zapisu do feedu ani automatycznej naprawy zatwierdzenia produktu.
+            Nie ma zapisu do pliku produktowego ani automatycznej naprawy zatwierdzenia produktu.
             Najpierw ręczny przegląd, podgląd zmian, zgoda operatora i audyt.
           </p>
           <TraceLine
@@ -421,7 +421,7 @@ function merchantMerchantMeasurementPlan(decision: MerchantDecisionItem) {
     return "Po ręcznym przeglądzie porównamy kolejne odczyty Merchant i stan produktów w Ads dla tych samych produktów. Bez pełnego okna po zmianie WILQ nie będzie obiecywał zwrotu z reklam, przychodu ani wpływu naprawy.";
   }
   if (decision.decision_type === "review_feed_status") {
-    return "Po zatwierdzonym działaniu sprawdzimy kolejny odczyt Merchant: status feedu, liczbę zgłoszeń i czy problem nadal występuje w tych samych kontekstach raportowania.";
+    return "Po zatwierdzonym działaniu sprawdzimy kolejny odczyt Merchant: status pliku produktowego, liczbę zgłoszeń i czy problem nadal występuje w tych samych kontekstach raportowania.";
   }
   return "Po ręcznym przeglądzie i ewentualnie zatwierdzonym podglądzie zmian sprawdzimy kolejny odczyt Merchant: czy ten sam typ problemu, atrybut i kontekst raportowania nadal występują. Nie obiecujemy odzyskanego zatwierdzenia ani wpływu na przychód bez audytu i danych po zmianie.";
 }
@@ -481,7 +481,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold text-ink">
-                      {cluster.issue_type_label ?? "problem feedu"}
+                      {cluster.issue_type_label ?? "problem pliku produktowego"}
                       {cluster.affected_attribute_label ? ` / ${cluster.affected_attribute_label}` : ""}
                       {` / ${cluster.reporting_context_label}`}
                     </h3>
@@ -596,10 +596,10 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Czego nie wiemy o feedzie Merchant Center
+            Czego nie wiemy o pliku produktowym Merchant Center
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Te ograniczenia blokują zbyt mocne wnioski i automatyczne zmiany feedu.
+            Te ograniczenia blokują zbyt mocne wnioski i automatyczne zmiany pliku produktowego.
             Kolejka decyzji jest źródłem decyzji, a grupy problemów są szczegółowym
             przeglądem.
           </p>
@@ -852,7 +852,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
         {decision.issue_type ? (
           <span className="rounded border border-line bg-white px-2 py-1">
-            problem: {decision.issue_type_label ?? "problem feedu"}
+            problem: {decision.issue_type_label ?? "problem pliku produktowego"}
           </span>
         ) : null}
         {decision.affected_attribute ? (
@@ -882,7 +882,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
               empty="brak tytułów"
             />
             <p className="mt-1 text-xs text-slate-500">
-              To są przykłady z odczytu Merchant, nie pełna lista SKU ani gotowa zmiana feedu.
+              To są przykłady z odczytu Merchant, nie pełna lista SKU ani gotowa zmiana pliku produktowego.
             </p>
           </div>
         ) : null}

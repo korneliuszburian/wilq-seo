@@ -157,7 +157,7 @@ def main() -> int:
             "zwrot z reklam na poziomie produktu",
             "odzyskany przychód produktu",
             "efekt naprawy produktu",
-            "zapis do feedu",
+            "zapis do pliku produktowego",
         }.issubset(blocked_claims):
             raise SystemExit(
                 "Blocked product_performance_readiness must block product "
@@ -193,7 +193,7 @@ def main() -> int:
             "wpływ zmiany ceny",
             "zwrot z reklam na poziomie produktu",
             "opłacalność produktu",
-            "zapis do feedu",
+            "zapis do pliku produktowego",
         }.issubset(blocked_claims):
             raise SystemExit(
                 "Blocked price_impact_readiness must block price/zwrot z reklam claims"
@@ -277,7 +277,7 @@ def main() -> int:
             if not {
                 "wpływ zmiany ceny",
                 "zwrot z reklam na poziomie produktu",
-                "zapis do feedu",
+                "zapis do pliku produktowego",
             }.issubset(decision_claims):
                 raise SystemExit(f"{surface_name} price decision must block price claims")
     merchant_action = next(

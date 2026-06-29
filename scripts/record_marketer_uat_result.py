@@ -100,7 +100,7 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
         "task_candidates": task_candidates,
         "safety_note": (
             "Ten raport zapisuje feedback UAT. Nie odblokowuje publikacji ani "
-            "zapisu zmian, automatycznej optymalizacji Ads, naprawy feedu, "
+            "zapisu zmian, automatycznej optymalizacji Ads, naprawy pliku produktowego, "
             "obietnic wzrostu Localo, CPA/ROAS ani twierdzeń o przychodach."
         ),
     }

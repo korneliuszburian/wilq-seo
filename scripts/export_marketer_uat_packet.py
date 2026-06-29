@@ -30,13 +30,13 @@ UAT_ROUTE_ORDER = [
         "key": "merchant",
         "label": "Merchant",
         "route": "/merchant",
-        "operator_task": "Wskaż jeden problem feedu albo blocker.",
+        "operator_task": "Wskaż jeden problem pliku produktowego albo blocker.",
         "pass_condition": (
             "Marketer rozumie, że zgłoszenia problemów nie są automatycznie "
-            "unikalnymi SKU i że zapis do feedu ani odzyskanie zatwierdzeń nie są obiecane."
+            "unikalnymi SKU i że zapis do pliku produktowego ani odzyskanie zatwierdzeń nie są obiecane."
         ),
         "fail_condition": (
-            "Marketer oczekuje automatycznej naprawy feedu albo odzyskania zatwierdzeń."
+            "Marketer oczekuje automatycznej naprawy pliku produktowego albo odzyskania zatwierdzeń."
         ),
     },
     {
@@ -188,7 +188,7 @@ def build_marketer_uat_packet(
             "Ten pakiet nie jest dowodem wykonanego UAT. Służy do zebrania "
             "realnej informacji zwrotnej marketera i zamiany niezrozumiałych miejsc na "
             "zadania. Nie odblokowuje publikacji ani zapisu zmian, automatycznej "
-            "optymalizacji Ads, naprawy feedu, obietnic wzrostu Localo, CPA/ROAS "
+            "optymalizacji Ads, naprawy pliku produktowego, obietnic wzrostu Localo, CPA/ROAS "
             "ani twierdzeń o przychodach."
         ),
     }
@@ -502,7 +502,7 @@ def _operator_decision_type_label(value: Any) -> str | None:
     labels = {
         "refresh_or_merge": "odświeżenie albo scalenie",
         "fix_measurement": "sprawdzenie pomiaru",
-        "review_issue_cluster": "przegląd problemu feedu",
+        "review_issue_cluster": "przegląd problemu pliku produktowego",
         "review_product_state_mapping": "sprawdzenie produktów",
         "review_price_impact_readiness": "sprawdzenie gotowości danych cenowych",
         "review_campaign_triage": "przegląd kampanii",

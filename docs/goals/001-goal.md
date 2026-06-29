@@ -185,10 +185,12 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Merchant overview, operator summary, decision, proof and action panels use
   API/domain evidence and action summary labels instead of route-local count
   formatting.
-- Merchant feed summaries, product-sample next steps and blocked-claim labels
+- Merchant product-file summaries, product-sample next steps and blocked-claim labels
   use API/domain Polish wording; fresh `/merchant` proof no longer exposes raw
-  Merchant metric keys, vendor endpoint names, action IDs or generic Merchant
-  fallback labels in normal copy.
+  Merchant metric keys, vendor endpoint names, action IDs, generic Merchant
+  fallback labels or old product-file jargon in normal copy. The active language
+  guard covers Merchant terms in API, dashboard, skills, knowledge, workflows
+  and plan docs.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Ahrefs gap-contract metric tiles use API/domain missing-data and

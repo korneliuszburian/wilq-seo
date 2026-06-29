@@ -19,7 +19,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - "Co dziś powinien zrobić marketer Ekologus?"
 - "Pokaż mi dzisiejszy plan działań z WILQ."
-- "Gdzie mamy największą przestrzeń do poprawy: Ads, content, feed czy lokal?"
+- "Gdzie mamy największą przestrzeń do poprawy: Ads, treści, plik produktowy czy lokal?"
 - "Zrób brief dnia dla ekologus.pl z realnych metryk."
 
 </triggers>

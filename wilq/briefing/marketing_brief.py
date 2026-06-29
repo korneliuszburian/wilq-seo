@@ -684,18 +684,18 @@ def _recommendation_items(
         items.append(
             MarketingBriefItem(
                 id="brief_focus_merchant_feed",
-                title="Merchant Center: zacznij od kolejki problemów feedu",
+                title="Merchant Center: zacznij od kolejki problemów pliku produktowego",
                 kind="recommendation",
                 priority=60,
                 source_connectors=["google_merchant_center"],
                 evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
                 metric_facts=merchant_facts[:6],
                 summary=(
-                    "Merchant ma realne metryki produktów i liczby problemów feedu. "
+                    "Merchant ma realne metryki produktów i liczby problemów pliku produktowego. "
                     "To jest najbardziej operacyjny obszar do kolejki sprawdzenia bez "
                     "automatycznej zmiany danych produktu."
                 ),
-                next_step="Otwórz /merchant i przygotuj kolejkę problemów feedu z podglądem zmian.",
+                next_step="Otwórz /merchant i przygotuj kolejkę problemów pliku produktowego z podglądem zmian.",
                 risk=ActionRisk.medium,
             )
         )
@@ -810,7 +810,7 @@ def _metric_summary_parts(facts: list[MetricFact]) -> list[str]:
 
 def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_merchant_center":
-        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę sprawdzenia feedu."
+        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę sprawdzenia pliku produktowego."
     if connector_id == "google_search_console":
         return (
             "Pobierz rozbicie zapytań i stron, a potem zbuduj kolejkę "

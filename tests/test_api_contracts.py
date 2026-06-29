@@ -1501,7 +1501,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "skalowanie produktu w reklamach produktowych i Performance Max"
     ) == ("skalowanie produktu w reklamach produktowych i Performance Max")
     assert merchant_display_label("opłacalność produktu") == "opłacalność produktu"
-    assert merchant_display_label("nadpisanie głównego feedu") == "nadpisanie głównego feedu"
+    assert merchant_display_label("nadpisanie głównego pliku produktowego") == "nadpisanie głównego pliku produktowego"
     assert merchant_display_label("zmiana danych produktu") == "zmiana danych produktu"
 
     labels = [
@@ -1898,7 +1898,7 @@ def test_action_review_records_human_outcome_without_apply(
         json={
             "outcome": "approved_for_prepare",
             "reviewed_by": "operator_test",
-            "notes": "Sprawdzono kolejkę feedu; można kontynuować przygotowanie.",
+            "notes": "Sprawdzono kolejkę pliku produktowego; można kontynuować przygotowanie.",
             "checked_items": ["group_issue_reasons", "prepare_feed_fix_preview"],
             "blockers": ["payload_apply_allowed_false"],
         },
@@ -5958,7 +5958,7 @@ def test_command_center_exposes_polish_operator_brief(
         merchant_decision["action_summary"].endswith("akcji do sprawdzenia")
     )
     assert merchant_decision["blocked_claim_labels"]
-    assert merchant_decision["skill_label"] == "feed Merchant"
+    assert merchant_decision["skill_label"] == "plik produktowy Merchant"
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
     assert merchant_decision["metric_tiles"]["decyzje"] >= 1
@@ -13494,7 +13494,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["live_data_available"] is True
     assert payload["connector_status_label"] == "dostęp skonfigurowany"
     assert payload["latest_refresh_status_label"] == "zakończony"
-    assert payload["live_data_status_label"] == "metryki feedu dostępne"
+    assert payload["live_data_status_label"] == "metryki pliku produktowego dostępne"
     assert payload["product_count"] == 10900
     assert payload["issue_count"] == 23
     assert payload["latest_refresh"]["status"] == "completed"
@@ -13522,8 +13522,8 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "products.list" not in sample_readiness["summary"]
     assert "products.list" not in sample_readiness["next_step"]
     assert "product_view" not in sample_readiness["next_step"]
-    assert "zapis do feedu" in sample_readiness["blocked_claims"]
-    assert "zapis do feedu" in sample_readiness["blocked_claim_labels"]
+    assert "zapis do pliku produktowego" in sample_readiness["blocked_claims"]
+    assert "zapis do pliku produktowego" in sample_readiness["blocked_claim_labels"]
     performance_readiness = payload["product_performance_readiness"]
     assert performance_readiness["id"] == "merchant_product_performance_readiness"
     assert performance_readiness["status"] == "blocked"
@@ -13584,7 +13584,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["decision_queue"]
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "merchant_operator_summary"
-    assert operator_summary["title"] == "Co marketer ma zrobić teraz z feedem"
+    assert operator_summary["title"] == "Co marketer ma zrobić teraz z plikiem produktowym"
     assert operator_summary["top_decision_ids"] == [
         decision["id"] for decision in payload["decision_queue"][:4]
     ]
@@ -13597,7 +13597,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["decision_source"] == "decision_queue"
     assert operator_summary["decision_source_label"] == "kolejka decyzji Merchant"
     assert operator_summary["drilldown_source"] == "issue_clusters"
-    assert operator_summary["drilldown_source_label"] == "grupy problemów feedu"
+    assert operator_summary["drilldown_source_label"] == "grupy problemów pliku produktowego"
     assert operator_summary["count_semantics"] == "reported_issue_occurrences"
     assert operator_summary["count_semantics_label"] == "wystąpienia problemów w raportach"
     assert "zmiana dostępności do sprawdzenia" in operator_summary["issue_types"]
@@ -13611,7 +13611,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["next_step"]
     decision = payload["decision_queue"][0]
     assert decision["decision_type"] == "review_issue_cluster"
-    assert decision["decision_type_label"] == "przegląd problemu feedu"
+    assert decision["decision_type_label"] == "przegląd problemu pliku produktowego"
     assert decision["status"] == "ready"
     assert decision["status_label"] == "gotowe"
     assert decision["title"] == ("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
@@ -13635,7 +13635,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_feed_issue_review_preview_v1"
     )
     decision_preview = decision["payload_preview"][0]
-    assert decision_preview["preview_contract_label"] == "sprawdzenie problemów feedu"
+    assert decision_preview["preview_contract_label"] == "sprawdzenie problemów pliku produktowego"
     assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
     assert decision_preview["cluster_id"] == cluster["id"]
     assert decision_preview["issue_type"] == "availability_updated"
@@ -13658,11 +13658,11 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["preview_cards"]
     decision_preview_card = decision["preview_cards"][0]
     assert decision_preview_card["title_label"] == "Podgląd sprawdzenia Merchant"
-    assert decision_preview_card["subtitle_label"] == "sprawdzenie problemów feedu"
+    assert decision_preview_card["subtitle_label"] == "sprawdzenie problemów pliku produktowego"
     assert decision_preview_card["status_label"] == "do sprawdzenia"
     assert {
         "label": "Typ sprawdzenia",
-        "value": "sprawdzenie problemów feedu",
+        "value": "sprawdzenie problemów pliku produktowego",
     } in decision_preview_card["rows"]
     assert any(
         row["label"] == "Zakres" and "zgłoszenia" in row["value"]
@@ -13717,20 +13717,20 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert feed_section["evidence_summary_label"]
     assert feed_section["action_summary_label"] == "1 akcja do sprawdzenia"
     assert feed_section["summary"].startswith("Najważniejsze metryki Merchant:")
-    assert "produkty w feedzie: 10900" in feed_section["summary"]
+    assert "produkty w pliku produktowym: 10900" in feed_section["summary"]
     assert "total_products=10900" not in feed_section["summary"]
     issue_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_issue_queue"
     )
     assert issue_section["status"] == "ready"
-    assert issue_section["label"] == "Kolejka problemów feedu"
+    assert issue_section["label"] == "Kolejka problemów pliku produktowego"
     assert issue_section["status_label"] == "gotowe"
-    assert "automatyczna zmiana feedu" in issue_section["blocked_claim_labels"]
+    assert "automatyczna zmiana pliku produktowego" in issue_section["blocked_claim_labels"]
     assert issue_section["risk_label"] == "średnie ryzyko"
     assert issue_section["evidence_summary_label"]
     assert issue_section["action_summary_label"] == "1 akcja do sprawdzenia"
     assert "act_review_merchant_feed_issues" not in issue_section["next_step"]
-    assert "problemów feedu" in issue_section["summary"]
+    assert "problemów pliku produktowego" in issue_section["summary"]
     assert "wystąpieniami problemu" in issue_section["summary"]
     assert issue_section["tactical_items"]
     assert operator_summary["top_tactical_item_ids"] == [
@@ -13751,7 +13751,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert merchant_action["preview_cards"]
     merchant_preview_card = merchant_action["preview_cards"][0]
     assert merchant_preview_card["kind"] == "merchant_feed_issue_review"
-    assert merchant_preview_card["title_label"] == "Problem feedu do sprawdzenia"
+    assert merchant_preview_card["title_label"] == "Problem pliku produktowego do sprawdzenia"
     assert merchant_preview_card["subtitle_label"] == (
         "zmiana dostępności do sprawdzenia / dostępność"
     )
@@ -13772,7 +13772,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_feed_issue_review_preview_v1"
     )
     merchant_preview = merchant_action["payload"]["payload_preview"][0]
-    assert merchant_preview["preview_contract_label"] == "sprawdzenie problemów feedu"
+    assert merchant_preview["preview_contract_label"] == "sprawdzenie problemów pliku produktowego"
     assert merchant_preview["operation_type"] == "MerchantIssueClusterReview"
     assert merchant_preview["cluster_id"] == cluster["id"]
     assert merchant_preview["issue_type"] == "availability_updated"
@@ -13943,7 +13943,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
     assert row.ga4_purchase_revenue == 410.0
     assert row.missing_metrics == []
     assert "efekt naprawy produktu" in row.blocked_claims
-    assert "zapis do feedu" in row.blocked_claims
+    assert "zapis do pliku produktowego" in row.blocked_claims
 
 
 def test_merchant_product_performance_readiness_reports_ready_ads_contract_without_rows(
@@ -17573,7 +17573,7 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     )
     action = ActionObject(
         id="act_review_merchant_feed_issues",
-        title="Przejrzyj problemy feedu",
+        title="Przejrzyj problemy pliku produktowego",
         domain=OpportunityDomain.merchant,
         connector="google_merchant_center",
         mode=ActionMode.prepare,
@@ -18284,7 +18284,7 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     preview_card = merchant_action["preview_cards"][0]
     assert "id" not in preview_card
     assert preview_card["kind"] == "merchant_feed_issue_review"
-    assert preview_card["title_label"] == "Problem feedu do sprawdzenia"
+    assert preview_card["title_label"] == "Problem pliku produktowego do sprawdzenia"
     preview_rows = {row["label"]: row["value"] for row in preview_card["rows"]}
     assert "Problem" in preview_rows
     assert "Zgłoszenia" in preview_rows

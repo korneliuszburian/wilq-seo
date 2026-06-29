@@ -525,7 +525,7 @@ def _skill_label(skill_id: str | None) -> str | None:
         "wilq-ga4-analyst": "analiza GA4",
         "wilq-gsc-content-doctor": "GSC i treści",
         "wilq-localo-operator": "widoczność lokalna",
-        "wilq-merchant-feed-operator": "feed Merchant",
+        "wilq-merchant-feed-operator": "plik produktowy Merchant",
         "wilq-social-publisher": "treści social",
     }.get(skill_id, "workflow WILQ")
 
@@ -1193,17 +1193,17 @@ def _merchant_item_from_tactical(
     )
     return CommandCenterBriefItem(
         id="daily_merchant_feed",
-        title="Merchant: kolejka problemów feedu",
+        title="Merchant: kolejka problemów pliku produktowego",
         route="/merchant",
         status="ready" if live_data_available else "blocked",
         priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
         summary=(
-            f"{summary} To jest kolejka do sprawdzenia, nie automatyczna naprawa feedu."
+            f"{summary} To jest kolejka do sprawdzenia, nie automatyczna naprawa pliku produktowego."
             if live_data_available
             else summary
         ),
         next_step=(
-            "Otwórz widok Merchant i przejrzyj decyzje feedu przed sprawdzeniem propozycji w WILQ."
+            "Otwórz widok Merchant i przejrzyj decyzje pliku produktowego przed sprawdzeniem propozycji w WILQ."
             if live_data_available
             else "Uruchom odczyt danych Merchant, potem wróć do widoku Merchant."
         ),
@@ -1230,7 +1230,7 @@ def _merchant_item_from_tactical(
             or [
                 "ponowne zatwierdzenie produktu",
                 "odzyskany przychód",
-                "automatyczna zmiana feedu",
+                "automatyczna zmiana pliku produktowego",
             ]
         ),
         risk=ActionRisk.medium,
@@ -1967,7 +1967,7 @@ def _unique(values: Iterable[object]) -> list[str]:
 def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     for item in items:
         if item.id == "daily_merchant_feed" and item.status == "ready":
-            return "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów feedu."
+            return "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego."
     for item in items:
         if item.status == "ready":
             return item.next_step
@@ -1990,7 +1990,7 @@ def _action_plan_item(
             category="Merchant Center",
             why_it_matters=(
                 f"WILQ widzi {item.metric_tiles.get('produkty', 0)} produktów i "
-                f"{issue_count} zgłoszeń problemów feedu. To może blokować "
+                f"{issue_count} zgłoszeń problemów pliku produktowego. To może blokować "
                 "widoczność produktów, ale wymaga sprawdzenia przez człowieka przed zmianami."
             ),
             operator_action=(
@@ -1999,13 +1999,13 @@ def _action_plan_item(
             skill_id="wilq-merchant-feed-operator",
             codex_prompt=(
                 "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center "
-                "dla Ekologus, pogrupuj problemy feedu, wskaż najbezpieczniejszą "
+                "dla Ekologus, pogrupuj problemy pliku produktowego, wskaż najbezpieczniejszą "
                 "kolejkę oceny i nie twierdź, że produkty zostały ponownie zatwierdzone "
                 "albo że przychód został odzyskany."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polskie podsumowanie przeglądu problemów feedu z dowodami źródłowymi, akcją "
+                "Polskie podsumowanie przeglądu problemów pliku produktowego z dowodami źródłowymi, akcją "
                 "i listą twierdzeń, których nie wolno używać."
             ),
             source_connectors=item.source_connectors,
@@ -2379,7 +2379,7 @@ def _decision_observation(
             prefix="Merchant Center ma",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
-                "To jest kolejka ręcznego sprawdzenia feedu; WILQ nie twierdzi, że "
+                "To jest kolejka ręcznego sprawdzenia pliku produktowego; WILQ nie twierdzi, że "
                 "zatwierdzenie produktu, przychód albo dane produktu zostały już naprawione."
             ),
         )

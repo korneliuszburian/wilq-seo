@@ -62,7 +62,7 @@ MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
     "efekt naprawy produktu",
     "skalowanie produktu w reklamach produktowych i Performance Max",
     "ponowne zatwierdzenie produktu",
-    "zapis do feedu",
+    "zapis do pliku produktowego",
 ]
 MERCHANT_KNOWLEDGE_CARD_IDS = [
     "card_merchant_feed_optimization_playbook",
@@ -90,10 +90,10 @@ MERCHANT_REQUIRED_VALIDATION_LABELS = {
     "human_confirm_before_apply": "człowiek potwierdza przed zapisem",
     "human_review_before_action": "człowiek sprawdza przed działaniem",
     "mutation_audit_required": "wymagany audyt zapisu",
-    "prepare_feed_fix_preview": "przygotuj podgląd zmian feedu",
-    "prepare_supplemental_feed_draft_preview": "przygotuj podgląd uzupełnienia feedu",
+    "prepare_feed_fix_preview": "przygotuj podgląd zmian pliku produktowego",
+    "prepare_supplemental_feed_draft_preview": "przygotuj podgląd uzupełnienia pliku produktowego",
     "prepare_supplemental_feed_preview_before_any_mutation": (
-        "przygotuj podgląd uzupełnienia feedu przed zapisem"
+        "przygotuj podgląd uzupełnienia pliku produktowego przed zapisem"
     ),
     "review_ads_product_status": "sprawdź status produktu z Google Ads",
     "review_issue_type_and_attribute": "sprawdź typ problemu i atrybut",
@@ -104,15 +104,15 @@ MERCHANT_REQUIRED_VALIDATION_LABELS = {
     "validate_change_values": "sprawdź wartości przed zapisem",
 }
 MERCHANT_DECISION_TYPE_LABELS = {
-    "review_issue_cluster": "przegląd problemu feedu",
-    "review_feed_status": "przegląd statusu feedu",
+    "review_issue_cluster": "przegląd problemu pliku produktowego",
+    "review_feed_status": "przegląd statusu pliku produktowego",
     "review_product_state_mapping": "powiązanie produktu z Ads",
     "review_price_impact_readiness": "sprawdzenie wpływu ceny",
     "block_until_vendor_read": "blokada do czasu odczytu Merchant",
 }
 MERCHANT_SECTION_LABELS = {
     "merchant_feed_health": "Metryki produktów",
-    "merchant_issue_queue": "Kolejka problemów feedu",
+    "merchant_issue_queue": "Kolejka problemów pliku produktowego",
     "merchant_action_safety": "Bezpieczeństwo akcji",
 }
 PRODUCT_JOIN_DIMENSION_KEYS = [
@@ -512,7 +512,7 @@ def _merchant_refresh_status_label(status: object) -> str:
 
 
 def _merchant_live_data_status_label(live_data_available: bool) -> str:
-    return "metryki feedu dostępne" if live_data_available else "brak metryk feedu"
+    return "metryki pliku produktowego dostępne" if live_data_available else "brak metryk pliku produktowego"
 
 
 def _merchant_freshness_label(status: object) -> str:
@@ -690,7 +690,7 @@ def _merchant_freshness_assessment(
             stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary="Brak zapisanego odczytu danych Merchant Center.",
-            next_step="Uruchom odczyt danych Merchant przed oceną aktualnego stanu feedu.",
+            next_step="Uruchom odczyt danych Merchant przed oceną aktualnego stanu pliku produktowego.",
         )
 
     completed_at = latest_refresh.completed_at or latest_refresh.started_at
@@ -709,7 +709,7 @@ def _merchant_freshness_assessment(
             ),
             next_step=(
                 "Napraw blocker odczytu i uruchom ponownie odczyt danych Merchant przed "
-                "budowaniem kolejki feedu."
+                "budowaniem kolejki pliku produktowego."
             ),
         )
 
@@ -724,7 +724,7 @@ def _merchant_freshness_assessment(
             summary=(
                 f"Ostatni odczyt danych Merchant ma około {age_hours:.1f}h. "
                 "To wystarcza do przeglądu nieświeżych danych, "
-                "ale nie do obietnic o bieżącym stanie feedu."
+                "ale nie do obietnic o bieżącym stanie pliku produktowego."
             ),
             next_step=(
                 "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy aktualnego stanu produktów."
@@ -775,8 +775,8 @@ def _merchant_unknowns(
                     ),
                     blocked_claims=[
                         "naprawa pojedynczego produktu",
-                        "zapis do feedu",
-                        "automatyczna zmiana feedu",
+                        "zapis do pliku produktowego",
+                        "automatyczna zmiana pliku produktowego",
                     ],
                 )
             )
@@ -809,12 +809,12 @@ def _merchant_unknowns(
                 id="merchant_product_performance_join_missing",
                 title="Brak połączenia produktów Merchant z Ads/GA4",
                 reason=(
-                    "WILQ ma próbki produktów Merchant albo kolejkę problemów feedu, "
+                    "WILQ ma próbki produktów Merchant albo kolejkę problemów pliku produktowego, "
                     "ale nie ma dopasowanych faktów Ads/GA4 z kluczem produktu dla "
                     "tych produktów."
                 ),
                 impact=(
-                    "Można prowadzić przegląd problemów feedu, ale nie wolno twierdzić, "
+                    "Można prowadzić przegląd problemów pliku produktowego, ale nie wolno twierdzić, "
                     "które produkty mają zwrot z reklam, przychód, koszt albo efekt naprawy."
                 ),
                 next_step=(
@@ -858,7 +858,7 @@ def _merchant_product_sample_readiness(
                 "Użyj próbek do sprawdzenia. Dla tytułów, SKU i statusów dodaj "
                 "dokładniejszy odczyt produktów z problemami."
             ),
-            blocked_claims=["zapis do feedu", "automatyczna zmiana feedu"],
+            blocked_claims=["zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"],
         )
 
     if issue_clusters or decisions:
@@ -881,8 +881,8 @@ def _merchant_product_sample_readiness(
             ),
             blocked_claims=[
                 "naprawa pojedynczego produktu",
-                "zapis do feedu",
-                "automatyczna zmiana feedu",
+                "zapis do pliku produktowego",
+                "automatyczna zmiana pliku produktowego",
             ],
         )
 
@@ -899,8 +899,8 @@ def _merchant_product_sample_readiness(
         next_step="Najpierw uruchom odczyt danych Merchant.",
         blocked_claims=[
             "naprawa pojedynczego produktu",
-            "zapis do feedu",
-            "automatyczna zmiana feedu",
+            "zapis do pliku produktowego",
+            "automatyczna zmiana pliku produktowego",
         ],
     )
 
@@ -1068,7 +1068,7 @@ def _merchant_product_performance_readiness(
             summary = (
                 "WILQ ma dopasowane fakty produktu dla części próbek Merchant. "
                 "To wspiera przegląd produktu z metrykami Ads/GA4, ale nie oznacza "
-                "automatycznej naprawy feedu ani efektu po zmianie."
+                "automatycznej naprawy pliku produktowego ani efektu po zmianie."
             )
             next_step = (
                 "Użyj wierszy produktu do ustalenia kolejności przeglądu. Do obietnic o efekcie "
@@ -1249,7 +1249,7 @@ def _merchant_price_impact_readiness(
             "opłacalność produktu",
             "odzyskany przychód",
             "ponowne zatwierdzenie produktu",
-            "zapis do feedu",
+            "zapis do pliku produktowego",
         ],
     )
 
@@ -1367,7 +1367,7 @@ def _merchant_price_impact_payload_preview(
             "opłacalność produktu",
             "odzyskany przychód",
             "ponowne zatwierdzenie produktu",
-            "zapis do feedu",
+            "zapis do pliku produktowego",
         ],
         "evidence_ids": evidence_ids,
         "api_mutation_ready": False,
@@ -1397,7 +1397,7 @@ def _product_performance_blocked_reason(
     if not sample_product_ids:
         return (
             "Odczyt Merchant nie daje próbek produktów, więc WILQ nie ma klucza "
-            "do połączenia problemów feedu z Ads/GA4."
+            "do połączenia problemów pliku produktowego z Ads/GA4."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
         lookback_label = (
@@ -1433,7 +1433,7 @@ def _product_performance_next_step(
     if not sample_product_ids:
         return (
             "Dodać próbki produktów Merchant z kluczem produktu lub SKU, zanim WILQ "
-            "spróbuje łączyć feed ze skutecznością."
+            "spróbuje łączyć plik produktowy ze skutecznością."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
         if ads_shopping_lookback_days is not None and ads_shopping_lookback_days >= 90:
@@ -1732,19 +1732,19 @@ def _feed_health_section(
     if not facts:
         return MerchantDiagnosticSection(
             id="merchant_feed_health",
-            title="Merchant Center: brak aktualnych metryk feedu",
+            title="Merchant Center: brak aktualnych metryk pliku produktowego",
             status="blocked",
             summary=_merchant_blocker_reason(latest_refresh),
             diagnosis=(
                 "WILQ nie ma aktualnych metryk Merchant, więc nie może ocenić "
-                "liczby produktów, liczby zgłoszeń problemów ani stanu feedu."
+                "liczby produktów, liczby zgłoszeń problemów ani stanu pliku produktowego."
             ),
-            next_step=("Uruchom odczyt danych Merchant i dopiero potem twórz kolejkę feedu."),
+            next_step=("Uruchom odczyt danych Merchant i dopiero potem twórz kolejkę pliku produktowego."),
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
             blocked_claims=[
-                "ocena stanu feedu",
+                "ocena stanu pliku produktowego",
                 "zatwierdzenie produktu",
                 "liczba zgłoszeń problemów",
             ],
@@ -1754,11 +1754,11 @@ def _feed_health_section(
     product_facts = _merchant_health_metric_facts(latest_refresh, facts)
     return MerchantDiagnosticSection(
         id="merchant_feed_health",
-        title="Merchant Center: stan produktów i feedu",
+        title="Merchant Center: stan produktów i pliku produktowego",
         status="ready",
         summary=_metric_sentence(product_facts or facts),
         diagnosis=(
-            "WILQ ma metryki Merchant z odczytu. Można ocenić skalę feedu i liczbę "
+            "WILQ ma metryki Merchant z odczytu. Można ocenić skalę pliku produktowego i liczbę "
             "zgłoszonych problemów, ale nie wolno twierdzić, że produkt został naprawiony bez "
             "akcji do sprawdzenia i audytu."
         ),
@@ -1791,26 +1791,26 @@ def _issue_queue_section(
     if not issue_facts and not tactical_items:
         return MerchantDiagnosticSection(
             id="merchant_issue_queue",
-            title="Merchant Center: brak kolejki problemów feedu",
+            title="Merchant Center: brak kolejki problemów pliku produktowego",
             status="missing",
             summary="Brak metryk problemów i pozycji kolejki Merchant.",
             diagnosis=(
-                "Nie ma bezpiecznego materiału do kolejki feed triage. WILQ musi "
+                "Nie ma bezpiecznego materiału do kolejki oceny pliku produktowego. WILQ musi "
                 "najpierw zebrać typ problemu, atrybut albo metryki statusu produktu."
             ),
             next_step="Odśwież dane Merchant i sprawdź aggregateProductStatuses.",
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["propozycja naprawy feedu", "naprawa pojedynczego produktu"],
+            blocked_claims=["propozycja naprawy pliku produktowego", "naprawa pojedynczego produktu"],
             risk=ActionRisk.medium,
         )
 
     cluster_count = _pl_count(
         len(issue_clusters),
-        "grupę problemów feedu",
-        "grupy problemów feedu",
-        "grup problemów feedu",
+        "grupę problemów pliku produktowego",
+        "grupy problemów pliku produktowego",
+        "grup problemów pliku produktowego",
     )
     tactical_count = _pl_count(
         len(tactical_items),
@@ -1827,7 +1827,7 @@ def _issue_queue_section(
 
     return MerchantDiagnosticSection(
         id="merchant_issue_queue",
-        title="Merchant Center: kolejka problemów feedu",
+        title="Merchant Center: kolejka problemów pliku produktowego",
         status="ready",
         summary=(
             f"WILQ ma {cluster_count}, {tactical_count} i {issue_fact_count}. "
@@ -1851,8 +1851,8 @@ def _issue_queue_section(
         tactical_items=tactical_items[:6],
         action_ids=action_ids,
         blocked_claims=[
-            "automatyczna zmiana feedu",
-            "nadpisanie głównego feedu",
+            "automatyczna zmiana pliku produktowego",
+            "nadpisanie głównego pliku produktowego",
             "ponowne zatwierdzenie produktu",
         ],
         risk=ActionRisk.medium,
@@ -1929,14 +1929,14 @@ def _merchant_issue_clusters(
                 blocked_claims=[
                     "ponowne zatwierdzenie produktu",
                     "odzyskany przychód",
-                    "automatyczna zmiana feedu",
+                    "automatyczna zmiana pliku produktowego",
                 ],
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
                 risk_label=_merchant_risk_label(_merchant_cluster_risk(severity, resolution)),
                 next_step=(
                     "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; "
-                    "najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."
+                    "najpierw przygotuj podgląd zmian, bez automatycznej zmiany pliku produktowego."
                 ),
             )
         )
@@ -2036,15 +2036,15 @@ def _operator_summary(
         key=lambda item: (-item.priority, item.id),
     )[:3]
     return MerchantOperatorSummary(
-        title="Co marketer ma zrobić teraz z feedem",
+        title="Co marketer ma zrobić teraz z plikiem produktowym",
         summary=(
             "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka "
             "przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno "
-            "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu."
+            "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać pliku produktowego."
         ),
         next_step=(
             "Przejdź przez top decyzje lub klastry problemów, przygotuj przegląd "
-            "akcji i nie zapisuj zmian feedu bez sprawdzenia w WILQ oraz zgody operatora."
+            "akcji i nie zapisuj zmian pliku produktowego bez sprawdzenia w WILQ oraz zgody operatora."
         ),
         top_decision_ids=[decision.id for decision in decisions[:4]],
         top_issue_cluster_ids=[cluster.id for cluster in issue_clusters[:4]],
@@ -2057,7 +2057,7 @@ def _operator_summary(
                     for cluster in issue_clusters
                 ),
                 *(
-                    _merchant_display_label(item.dimensions.get("issue_type") or "problem feedu")
+                    _merchant_display_label(item.dimensions.get("issue_type") or "problem pliku produktowego")
                     for item in issue_items
                     if item.dimensions.get("issue_type")
                 ),
@@ -2100,7 +2100,7 @@ def _merchant_decision_queue(
                 id="merchant_block_vendor_read",
                 decision_type="block_until_vendor_read",
                 status="blocked",
-                title="Merchant: odczyt feedu wymagany przed decyzją",
+                title="Merchant: odczyt pliku produktowego wymagany przed decyzją",
                 summary=_merchant_blocker_reason(latest_refresh),
                 priority=5,
                 metric_tiles={"blokady": 1},
@@ -2108,13 +2108,13 @@ def _merchant_decision_queue(
                 evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
                 action_ids=action_ids,
                 blocked_claims=[
-                    "ocena stanu feedu",
+                    "ocena stanu pliku produktowego",
                     "zatwierdzenie produktu",
                     "liczba zgłoszeń problemów",
                 ],
                 rationale=(
                     "WILQ nie ma aktualnych metryk Merchant, więc nie może "
-                    "uczciwie zbudować kolejki problemów feedu ani ocenić stanu produktów."
+                    "uczciwie zbudować kolejki problemów pliku produktowego ani ocenić stanu produktów."
                 ),
                 next_step="Uruchom odczyt danych Merchant, potem wróć do /merchant.",
                 risk=ActionRisk.medium,
@@ -2405,8 +2405,8 @@ def _merchant_product_state_review_decision(
         ),
         next_step=(
             "Sprawdź powiązane produkty: status Ads, dostępność, cenę, "
-            "powiązany problem Merchant i podgląd uzupełnienia feedu. "
-            "Główny feed, zapis zmian i wpływ na zatwierdzenie pozostają zablokowane."
+            "powiązany problem Merchant i podgląd uzupełnienia pliku produktowego. "
+            "Główny plik produktowy, zapis zmian i wpływ na zatwierdzenie pozostają zablokowane."
         ),
         risk=ActionRisk.medium,
     )
@@ -2438,7 +2438,7 @@ def _merchant_product_state_review_payload_preview(
         ],
         "reason": (
             "Do sprawdzenia: podgląd powiązania próbek Merchant ze statusem "
-            "produktów w Google Ads. To nie jest gotowa zmiana feedu."
+            "produktów w Google Ads. To nie jest gotowa zmiana pliku produktowego."
         ),
         "required_validation": [
             "review_product_identity_mapping",
@@ -2476,9 +2476,9 @@ def _merchant_supplemental_feed_review_payload_preview(
         "primary_feed_mutation_allowed": False,
         "candidates": candidates,
         "reason": (
-            "Do sprawdzenia: propozycje do supplemental feed. WILQ pokazuje pola do "
+            "Do sprawdzenia: propozycje do uzupełnienia pliku produktowego. WILQ pokazuje pola do "
             "sprawdzenia i źródła sprawdzenia, ale nie wylicza docelowych wartości "
-            "feedu i nie wykonuje mutacji."
+            "pliku produktowego i nie wykonuje mutacji."
         ),
         "required_validation": [
             "review_product_identity_mapping",
@@ -2492,8 +2492,8 @@ def _merchant_supplemental_feed_review_payload_preview(
         "blocked_claims": _unique(
             [
                 *MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
-                "nadpisanie głównego feedu",
-                "zapis do feedu uzupełniającego",
+                "nadpisanie głównego pliku produktowego",
+                "zapis do pliku produktowego uzupełniającego",
                 "zmiana danych produktu",
                 "automatyczna naprawa zatwierdzenia",
             ]
@@ -2529,8 +2529,8 @@ def _merchant_supplemental_feed_candidate(
         "value_sources_required": value_sources,
         "candidate_status": "requires_human_value_confirmation",
         "allowed_next_step": (
-            "Przygotuj supplemental-feed draft dopiero po potwierdzeniu wartości "
-            "w źródle produktu. Nie nadpisuj primary feed."
+            "Przygotuj szkic uzupełnienia pliku produktowego dopiero po potwierdzeniu wartości "
+            "w źródle produktu. Nie nadpisuj głównego pliku produktowego."
         ),
     }
 
@@ -2670,11 +2670,11 @@ def _merchant_decision_from_cluster_group(
             "To jest jedna decyzja operatorska, bo typ problemu, atrybut, kraj, "
             "status i wymagana ścieżka rozwiązania są takie same. Konteksty "
             "raportowania są detalem przeglądu. Suma raportów nie jest liczbą "
-            "unikalnych produktów ani gotową zmianą feedu."
+            "unikalnych produktów ani gotową zmianą pliku produktowego."
         ),
         next_step=(
             "Przejrzyj problem przez akcję do sprawdzenia, sprawdź konteksty "
-            "raportowania i przygotuj podgląd zmian bez automatycznej zmiany feedu."
+            "raportowania i przygotuj podgląd zmian bez automatycznej zmiany pliku produktowego."
         ),
         risk=max((cluster.risk for cluster in clusters), key=_action_risk_rank),
     )
@@ -2746,7 +2746,7 @@ def _merchant_decision_from_cluster(
         rationale=(
             "To jest klaster problemu Merchant do ręcznego sprawdzenia. Liczba oznacza "
             "wystąpienia problemu w raportach, nie gwarantowaną liczbę unikalnych "
-            "produktów ani gotową zmianę feedu. Przykładowe produkty służą tylko do "
+            "produktów ani gotową zmianę pliku produktowego. Przykładowe produkty służą tylko do "
             "ręcznego sprawdzenia problemu."
         ),
         next_step=cluster.next_step,
@@ -2761,7 +2761,7 @@ def _merchant_decision_from_tactical_item(
     issue_type = item.dimensions.get("issue_type")
     severity = item.dimensions.get("severity")
     product_count = _numeric_metric(item.metric_facts, "issue_product_count")
-    display_issue_type = _merchant_display_label(issue_type or "problem feedu")
+    display_issue_type = _merchant_display_label(issue_type or "problem pliku produktowego")
     display_attribute = _merchant_display_label(
         item.dimensions.get("affected_attribute") or "atrybut"
     )
@@ -2847,7 +2847,7 @@ def _merchant_decision_payload_preview(
         ),
         "reason": (
             "Do sprawdzenia: podgląd konkretnej decyzji Merchant. WILQ może przygotować "
-            "kolejkę oceny, ale nie może zmienić feedu ani obiecać przywrócenia "
+            "kolejkę oceny, ale nie może zmienić pliku produktowego ani obiecać przywrócenia "
             "zatwierdzenia bez osobnego kontraktu zapisu i audytu."
         ),
         "required_validation": [
@@ -2860,9 +2860,9 @@ def _merchant_decision_payload_preview(
         "blocked_claims": [
             "ponowne zatwierdzenie produktu",
             "odzyskany przychód",
-            "automatyczna zmiana feedu",
-            "nadpisanie głównego feedu",
-            "zapis do feedu",
+            "automatyczna zmiana pliku produktowego",
+            "nadpisanie głównego pliku produktowego",
+            "zapis do pliku produktowego",
             "zmiana danych produktu",
             "automatyczna naprawa zatwierdzenia",
         ],
@@ -2919,10 +2919,10 @@ def _merchant_aggregate_feed_status_decision(
         id="merchant_decision_feed_status_review",
         decision_type="review_feed_status",
         status="ready",
-        title="Merchant: przejrzyj zgłoszenia problemów feedu",
+        title="Merchant: przejrzyj zgłoszenia problemów pliku produktowego",
         summary=(
             f"WILQ widzi {product_count or 0} produktów i {issue_count or 0} "
-            "zgłoszeń problemów feedu. Brakuje wymiarowego klastra problemów, "
+            "zgłoszeń problemów pliku produktowego. Brakuje wymiarowego klastra problemów, "
             "więc to jest kolejka agregatowego review."
         ),
         issue_cluster_ids=[],
@@ -2947,10 +2947,10 @@ def _merchant_aggregate_feed_status_decision(
         blocked_claims=[
             "ponowne zatwierdzenie produktu",
             "odzyskany przychód",
-            "automatyczna zmiana feedu",
+            "automatyczna zmiana pliku produktowego",
         ],
         rationale=(
-            "Merchant ma aggregate product/feed facts, ale bieżący odczyt nie "
+            "Merchant ma zagregowane fakty produktów i pliku produktowego, ale bieżący odczyt nie "
             "dostarcza wymiarowych issue clusters. Marketer może rozpocząć review "
             "akcji, ale nie wolno twierdzić, który konkretny atrybut lub "
             "produkt został naprawiony."
@@ -3083,8 +3083,8 @@ def _product_action_safety_section(
             "zakresu zmian i audytu."
         ),
         diagnosis=(
-            "Zmiany feedu lub produktów mogą wpływać na widoczność i sprzedaż. WILQ "
-            "może przygotować kolejkę przeglądu, ale nie może zmieniać głównego feedu ani "
+            "Zmiany pliku produktowego lub produktów mogą wpływać na widoczność i sprzedaż. WILQ "
+            "może przygotować kolejkę przeglądu, ale nie może zmieniać głównego pliku produktowego ani "
             "twierdzić, że naprawił produkty bez obsługi zapisu zmian."
         ),
         next_step=(
@@ -3095,7 +3095,7 @@ def _product_action_safety_section(
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         action_ids=action_ids,
         blocked_claims=[
-            "zapis do feedu",
+            "zapis do pliku produktowego",
             "zmiana danych produktu",
             "automatyczna naprawa zatwierdzenia",
         ],

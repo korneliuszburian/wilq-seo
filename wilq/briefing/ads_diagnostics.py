@@ -192,7 +192,7 @@ ADS_REVIEW_GATE_LABELS = {
     "campaign_budget_apply_safety": "bezpieczeństwo zmiany budżetu",
     "campaign_budget_operation_preview": "sprawdzenie zapisu budżetu w Google Ads",
     "review_conversion_tracking": "sprawdzenie trackingu konwersji",
-    "review_pmax_asset_feed_context": "sprawdzenie PMax, feedu i assetów",
+    "review_pmax_asset_feed_context": "sprawdzenie PMax, pliku produktowego i materiałów",
     "review_draft_campaign_status": "sprawdzenie statusu draftu",
     "recommendation_apply_preview": "podgląd zapisu rekomendacji",
     "google_ads_rmf_compliance_review": "ocena zgodności Google Ads RMF",

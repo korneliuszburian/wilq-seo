@@ -103,13 +103,13 @@ export const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/merchant": {
     title: "Merchant Center",
     description:
-      "Widok feedu i produktów oparty o WILQ. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo akcji do sprawdzenia.",
-    focusTitle: "Feed i produkty do sprawdzenia",
+      "Widok pliku produktowego i produktów oparty o WILQ. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo akcji do sprawdzenia.",
+    focusTitle: "Plik produktowy i produkty do sprawdzenia",
     emptyMessage:
-      "Brak dowodów Merchant w WILQ. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
-    safetyTitle: "Brama bezpieczeństwa feedu",
+      "Brak dowodów Merchant w WILQ. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany pliku produktowego albo produktu.",
+    safetyTitle: "Brama bezpieczeństwa pliku produktowego",
     safetyText:
-      "Zmiana feedu wymaga podglądu akcji, sprawdzenia w WILQ i audytu. Ten ekran działa bez zapisu zmian, dopóki WILQ nie przygotuje poprawnej akcji do sprawdzenia.",
+      "Zmiana pliku produktowego wymaga podglądu akcji, sprawdzenia w WILQ i audytu. Ten ekran działa bez zapisu zmian, dopóki WILQ nie przygotuje poprawnej akcji do sprawdzenia.",
     connectorIds: ["google_merchant_center", "merchant_center"],
     textNeedles: []
   }

@@ -8,7 +8,7 @@ import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
 const actionFixture: ActionObject = {
   id: "act_1",
-  title: "Przygotuj kolejkę przeglądu feedu Merchant Center",
+  title: "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
   domain: "merchant",
   connector: "google_merchant_center",
   connector_label: "Merchant Center",
@@ -24,7 +24,7 @@ const actionFixture: ActionObject = {
   validation_status: "not_validated",
   validation_status_label: "nie sprawdzono w WILQ",
   human_diagnosis: "Merchant Center ma fakty o problemach i próbki produktów do sprawdzenia.",
-  recommended_reason: "Przejrzyj podgląd bez mutacji feedu.",
+  recommended_reason: "Przejrzyj podgląd bez zmiany pliku produktowego.",
   payload: {
     action_type: "merchant_feed_issue",
     preview_contract: "merchant_feed_issue_review_preview_v1",
@@ -69,7 +69,7 @@ const actionFixture: ActionObject = {
     {
       id: "merchant_feed_issue_review_1",
       kind: "merchant_feed_issue_review",
-      title_label: "Problem feedu do sprawdzenia",
+      title_label: "Problem pliku produktowego do sprawdzenia",
       subtitle_label: "zmiana dostępności do sprawdzenia / dostępność",
       status_label: "zapis zmian zablokowany",
       rows: [
@@ -1588,7 +1588,7 @@ describe("Action detail route", () => {
   it("renders the selected action detail", async () => {
     renderActionDetail();
     await waitFor(() =>
-      expect(screen.getByText("Problem feedu do sprawdzenia")).toBeInTheDocument()
+      expect(screen.getByText("Problem pliku produktowego do sprawdzenia")).toBeInTheDocument()
     );
     expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
     expect(screen.getByText("Problem: zmiana dostępności do sprawdzenia")).toBeInTheDocument();

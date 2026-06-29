@@ -835,7 +835,7 @@ KNOWLEDGE_DISPLAY_TITLE_LABELS = {
     "ahrefs_content_gap_playbook": "Luki contentowe i konkurencja z Ahrefs",
     "localo_local_seo_playbook": "Widoczność lokalna Localo",
     "ga4_behavior_diagnostics_playbook": "Diagnostyka zachowania GA4",
-    "merchant_feed_optimization_playbook": "Diagnostyka feedu Merchant",
+    "merchant_feed_optimization_playbook": "Diagnostyka pliku produktowego Merchant",
     "linkedin_content_playbook": "Publikacje LinkedIn",
     "facebook_content_playbook": "Publikacje Facebook",
     "wordpress_content_refresh_playbook": "Odświeżanie treści WordPress",
@@ -849,7 +849,7 @@ KNOWLEDGE_CARD_TYPE_LABELS = {
     "keyword_cluster_card": "klastry słów",
     "local_visibility_card": "widoczność lokalna",
     "negative_keyword_pattern_card": "wykluczenia",
-    "service_card": "feed i usługi",
+    "service_card": "plik produktowy i usługi",
     "social_pattern_card": "social",
     "voice_rule": "reguła głosu",
 }
@@ -1303,7 +1303,7 @@ def _tactical_intent_label(intent: str) -> str:
         "content_block": "blokada treści",
         "landing_page_quality": "jakość strony wejścia",
         "tracking_gap": "problem pomiaru",
-        "merchant_feed_triage": "kolejność oceny feedu",
+        "merchant_feed_triage": "kolejność oceny pliku produktowego",
         "traffic_quality_review": "jakość ruchu",
     }
     return labels.get(intent, "zadanie do sprawdzenia")
@@ -3654,7 +3654,7 @@ class MerchantOperatorSummary(BaseModel):
     decision_source: Literal["decision_queue"] = "decision_queue"
     decision_source_label: str = "kolejka decyzji Merchant"
     drilldown_source: Literal["issue_clusters"] = "issue_clusters"
-    drilldown_source_label: str = "grupy problemów feedu"
+    drilldown_source_label: str = "grupy problemów pliku produktowego"
     count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     count_semantics_label: str = "wystąpienia problemów w raportach"
     issue_types: list[str] = Field(default_factory=list)
