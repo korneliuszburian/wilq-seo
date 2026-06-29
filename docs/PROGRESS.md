@@ -129,6 +129,10 @@ Date: 2026-06-29
   English credential wording. Browser proof:
   `.local-lab/proof/evidence-detail-no-id-wording-20260629.txt` and
   `.local-lab/proof/evidence-detail-expanded-no-id-wording-20260629.txt`.
+- Codex context-pack product rules and strict instruction now use Polish WILQ
+  operating language instead of English `No evidence ID` / `must not invent
+  metrics` wording. Live context-pack guard covers daily, content, Merchant,
+  Ads, GA4, Localo and Ahrefs skills.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
 - Localo top metric tiles use API/domain missing-data summary labels instead

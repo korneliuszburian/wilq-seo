@@ -199,6 +199,17 @@ ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
+
+CONTEXT_PRODUCT_RULES = [
+    "Brak dowodu w WILQ -> brak rekomendacji.",
+    "Brak źródła danych -> brak rekomendacji.",
+    "Brak sprawdzonej akcji -> brak zapisu zmian.",
+    "Brak audytu -> brak zapisu zmian.",
+    "Brak odczytu z WILQ API -> Codex nie może podawać metryk.",
+]
+CONTEXT_STRICT_INSTRUCTION = (
+    "Codex nie może podawać metryk bez odczytu z WILQ API i dowodów źródłowych."
+)
 DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT = 32
 
 
@@ -257,13 +268,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     active_actions = _full_context_actions_for_skill(skill)
     daily_runtime = build_daily_runtime()
     pack = {
-        "current_product_rules": [
-            "No evidence ID -> no recommendation.",
-            "No source connector -> no recommendation.",
-            "No validated action -> no execution.",
-            "No audit event -> no write.",
-            "No WILQ API call -> Codex must not invent metrics.",
-        ],
+        "current_product_rules": CONTEXT_PRODUCT_RULES,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [connector.model_dump(mode="json") for connector in connectors],
         "top_opportunities": [
@@ -290,7 +295,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
         "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
         "ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json"),
-        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+        "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
     }
     return redact_mapping(pack)
 
@@ -336,13 +341,7 @@ def _daily_command_context_pack(
             },
             "source_connectors": sorted(source_connectors),
         },
-        "current_product_rules": [
-            "No evidence ID -> no recommendation.",
-            "No source connector -> no recommendation.",
-            "No validated action -> no execution.",
-            "No audit event -> no write.",
-            "No WILQ API call -> Codex must not invent metrics.",
-        ],
+        "current_product_rules": CONTEXT_PRODUCT_RULES,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
             _compact_connector_status_for_operator_context(connector)
@@ -404,7 +403,7 @@ def _daily_command_context_pack(
             "full_marketing_brief_endpoint": "/api/marketing/brief",
             "full_command_center_endpoint": "/api/dashboard/command-center",
         },
-        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+        "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
     }
     pack = _strip_raw_operator_context(pack)
     return redact_mapping(pack)
@@ -1177,13 +1176,7 @@ def _skill_scoped_context_pack(
             "full_context_request": {"skill": skill, "full_context": True},
             "source_connectors": sorted(scoped_connectors),
         },
-        "current_product_rules": [
-            "No evidence ID -> no recommendation.",
-            "No source connector -> no recommendation.",
-            "No validated action -> no execution.",
-            "No audit event -> no write.",
-            "No WILQ API call -> Codex must not invent metrics.",
-        ],
+        "current_product_rules": CONTEXT_PRODUCT_RULES,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
             _compact_connector_status_for_operator_context(connector)
@@ -1239,7 +1232,7 @@ def _skill_scoped_context_pack(
             "connector_refresh_runs_limit": connector_refresh_run_limit,
             "evidence_summaries_limit": evidence_summary_limit,
         },
-        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+        "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
         **diagnostics,
     }
     pack = _strip_raw_operator_context(pack)

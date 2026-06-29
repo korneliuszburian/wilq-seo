@@ -159,6 +159,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Ads live-data diagnostics and evidence detail no longer expose `ID dowodu`
   wording, and connector-status evidence summaries use Polish operator copy
   instead of English credential wording.
+- Codex context-pack product rules and strict instruction now use Polish WILQ
+  operating language instead of English `No evidence ID` / `must not invent
+  metrics` wording.
 - GA4 overview, decision and proof panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Google Ads first-screen, condensed decision, proof and action panels use

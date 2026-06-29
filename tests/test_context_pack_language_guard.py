@@ -11,6 +11,8 @@ def test_context_pack_guard_tracks_action_and_url_jargon() -> None:
         "ActionObject",
         "Dry-run",
         "dry-run",
+        "No evidence ID",
+        "must not invent metrics",
         "ID dowodu",
         "source_public_url",
         "final_canonical_url",

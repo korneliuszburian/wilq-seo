@@ -351,6 +351,9 @@ Known cleanup already started:
 - Ads live-data diagnostics and evidence detail now use Polish proof wording:
   `dowód w WILQ` / `Klucz dowodu w WILQ`, not `ID dowodu`; connector-status
   evidence summaries no longer expose English credential wording.
+- Codex context-pack product rules and strict instruction now use Polish WILQ
+  operating language instead of English `No evidence ID` / `must not invent
+  metrics` wording; the live context-pack guard blocks those regressions.
 
 ## 9. Current Goal
 

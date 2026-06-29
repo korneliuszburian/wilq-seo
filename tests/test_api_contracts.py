@@ -16829,8 +16829,11 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     )
     response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert response.status_code == 200
-    serialized = json.dumps(response.json())
-    assert "must not invent metrics" in serialized
+    serialized = json.dumps(response.json(), ensure_ascii=False)
+    assert "Codex nie może podawać metryk" in serialized
+    assert "Brak dowodu w WILQ" in serialized
+    assert "must not invent metrics" not in serialized
+    assert "No evidence ID" not in serialized
     assert "sk-supersecretvalue1234567890" not in serialized
 
 
@@ -16858,6 +16861,8 @@ def _assert_context_pack_operator_strings_clean(context: dict[str, Any]) -> None
         "Content" + " Planner",
         "Ads" + " Doctor",
         "evidence" + " IDs",
+        "No " + "evidence ID",
+        "must not " + "invent metrics",
         "block" + "ery",
         "target" + "_site",
         "mapping" + "_review",

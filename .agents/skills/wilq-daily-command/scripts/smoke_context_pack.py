@@ -125,9 +125,9 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     instruction = str(pack.get("strict_instruction", "")).lower()
-    if "must not invent metrics" not in instruction or "evidence" not in instruction:
+    if not has_metric_evidence_guardrails(instruction):
         raise SystemExit(
-            "Context pack strict instruction does not include WILQ evidence/API guardrails"
+            "Instrukcja context-packa nie zawiera zasad metryk i dowodów z WILQ API"
         )
 
     marker_hits = sorted(set(scan_strings(pack)))

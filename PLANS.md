@@ -1036,3 +1036,7 @@ WILQ is complete for this long-range goal when:
   live API proof and browser proof passed after replacing `ID dowodu` with
   Polish proof wording and moving connector-status evidence summaries away
   from English credential phrasing.
+- Latest context-rule proof: focused API context-pack tests, daily skill smoke,
+  live context-pack guard and direct WILQ API proof passed after moving
+  context-pack product rules and strict instruction to Polish WILQ operating
+  language.
