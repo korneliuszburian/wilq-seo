@@ -33,9 +33,9 @@ UAT_ROUTE_ORDER = [
         "operator_task": "Wskaż jeden problem feedu albo blocker.",
         "pass_condition": (
             "Marketer rozumie, że zgłoszenia problemów nie są automatycznie "
-            "unikalnymi SKU i że feed write/approval recovery nie są obiecane."
+            "unikalnymi SKU i że zapis do feedu ani odzyskanie zatwierdzeń nie są obiecane."
         ),
-        "fail_condition": "Marketer oczekuje automatycznej naprawy feedu albo approval recovery.",
+        "fail_condition": "Marketer oczekuje automatycznej naprawy feedu albo odzyskania zatwierdzeń.",
     },
     {
         "key": "content",
@@ -47,7 +47,7 @@ UAT_ROUTE_ORDER = [
             "bramki jakości, H1/H2/FAQ/CTA, brakujące dowody i zakazane obietnice."
         ),
         "fail_condition": (
-            "Marketer uważa, że WILQ już wygenerował publish-ready artykuł albo "
+            "Marketer uważa, że WILQ już wygenerował artykuł gotowy do publikacji albo "
             "że opcjonalny podgląd projektu jest źródłem historycznej skuteczności "
             "albo finalnym URL-em SEO."
         ),
@@ -56,12 +56,13 @@ UAT_ROUTE_ORDER = [
         "key": "ads",
         "label": "Google Ads",
         "route": "/ads-doctor",
-        "operator_task": "Wskaż jedną kolejkę Ads review.",
+        "operator_task": "Wskaż jedną kolejkę sprawdzenia Ads.",
         "pass_condition": (
-            "Marketer rozumie, że CPA/ROAS/wasted budget/budget scaling/apply są "
-            "zablokowane bez targetów, review i audit contract."
+            "Marketer rozumie, że koszt pozyskania celu, zwrot z reklam, "
+            "zmarnowany budżet, skalowanie budżetu i zapis zmian są zablokowane "
+            "bez celów biznesowych, sprawdzenia i audytu."
         ),
-        "fail_condition": "Marketer oczekuje automatycznego optimizera albo werdyktu opłacalności.",
+        "fail_condition": "Marketer oczekuje automatycznego optymalizatora albo werdyktu opłacalności.",
     },
     {
         "key": "ga4",
@@ -69,7 +70,7 @@ UAT_ROUTE_ORDER = [
         "route": "/ga4",
         "operator_task": "Wskaż jeden problem pomiaru.",
         "pass_condition": (
-            "Marketer rozumie, że `(not set)` to problem tracking/attribution, "
+            "Marketer rozumie, że `(not set)` to problem pomiaru albo przypisania źródła, "
             "nie dowód złej kampanii albo złego landingu."
         ),
         "fail_condition": (
@@ -281,10 +282,8 @@ def render_markdown(packet: dict[str, Any]) -> str:
     lines = [
         "# Pakiet UAT dla marketera Ekologus",
         "",
-        f"- Typ: `{packet.get('packet_type')}`",
-        f"- Wygenerowano: `{packet.get('wygenerowano') or 'brak daty'}`",
-        f"- API: `{packet.get('api_base')}`",
-        f"- Limit: `{packet.get('limit_minut')}` minut",
+        f"- Wygenerowano: {packet.get('wygenerowano') or 'brak daty'}",
+        f"- Limit: {packet.get('limit_minut')} minut",
         f"- Następny krok: {packet.get('następny_krok') or 'brak'}",
         "",
         packet.get("safety_note") or "",
@@ -305,37 +304,132 @@ def render_markdown(packet: dict[str, Any]) -> str:
                 "",
                 "Podgląd z WILQ:",
                 "",
-                "```json",
-                json.dumps(route.get("podgląd_z_wilq") or {}, ensure_ascii=False, indent=2),
-                "```",
+                *render_readable_preview(route.get("podgląd_z_wilq")),
                 "",
-                "Do uzupełnienia po sesji:",
+                "Karta odpowiedzi po sesji:",
                 "",
-                "```json",
-                json.dumps(
-                    route.get("do_uzupełnienia_po_sesji") or {},
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                "```",
+                "- Wynik: zaliczone / niezaliczone",
+                "- Co marketer mówi, że zrobi dalej: ...",
+                "- Co było niejasne: ...",
+                "- Zadania do utworzenia: ...",
                 "",
             ]
-    )
+        )
     lines.extend(["## Pytania końcowe", ""])
     for question in _list(packet.get("pytania_końcowe")):
         lines.append(f"- {question}")
     lines.extend(
         [
             "",
-            "## Wynik do zapisania",
+            "## Wynik do zapisania po sesji",
             "",
-            "```json",
-            json.dumps(packet.get("szablon_wyniku") or {}, ensure_ascii=False, indent=2),
-            "```",
+            "- Data sesji: ...",
+            "- Osoba: ...",
+            "- Centrum pracy: zaliczone / niezaliczone + notatka",
+            "- Merchant: zaliczone / niezaliczone + notatka",
+            "- Treści: zaliczone / niezaliczone + notatka",
+            "- Google Ads: zaliczone / niezaliczone + notatka",
+            "- GA4: zaliczone / niezaliczone + notatka",
+            "- Największy realny zysk: ...",
+            "- Największa niejasność: ...",
+            "- Nowe zadania z feedbacku: ...",
+            "- Gotowe bez developera: tak / nie",
             "",
         ]
     )
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_readable_preview(value: Any) -> list[str]:
+    lines = render_readable_value(value, indent=0)
+    return lines if lines else ["- brak danych do pokazania"]
+
+
+def render_readable_value(value: Any, *, indent: int) -> list[str]:
+    if isinstance(value, dict):
+        return render_readable_mapping(value, indent=indent)
+    if isinstance(value, list):
+        return render_readable_list(value, indent=indent)
+    if value is None:
+        return []
+    return [f"{'  ' * indent}- {value}"]
+
+
+def render_readable_mapping(value: dict[str, Any], *, indent: int) -> list[str]:
+    lines: list[str] = []
+    for key, item in value.items():
+        label = _readable_packet_label(key)
+        if label is None or item is None or item == [] or item == {}:
+            continue
+        prefix = "  " * indent
+        if isinstance(item, dict):
+            lines.append(f"{prefix}- {label}:")
+            lines.extend(render_readable_mapping(item, indent=indent + 1))
+        elif isinstance(item, list):
+            lines.append(f"{prefix}- {label}:")
+            lines.extend(render_readable_list(item, indent=indent + 1))
+        else:
+            lines.append(f"{prefix}- {label}: {item}")
+    return lines
+
+
+def render_readable_list(value: list[Any], *, indent: int) -> list[str]:
+    lines: list[str] = []
+    for item in value:
+        prefix = "  " * indent
+        if isinstance(item, dict):
+            title = item.get("decyzja") or item.get("widok") or item.get("etykieta")
+            if title:
+                lines.append(f"{prefix}- {title}")
+                nested = {key: nested_value for key, nested_value in item.items() if key != "decyzja"}
+                lines.extend(render_readable_mapping(nested, indent=indent + 1))
+            else:
+                lines.extend(render_readable_mapping(item, indent=indent))
+        elif item is not None:
+            lines.append(f"{prefix}- {item}")
+    return lines
+
+
+def _readable_packet_label(key: str) -> str | None:
+    labels = {
+            "następny_krok": "następny krok",
+            "liczba_blokad": "liczba blokad",
+            "liczba_zadań": "liczba zadań",
+            "zgłoszenia_problemów": "zgłoszenia problemów",
+            "decyzje_do_sprawdzenia": "decyzje do sprawdzenia",
+            "unikalne_produkty": "unikalne produkty",
+            "produkty": "produkty",
+            "kampanie": "kampanie",
+            "problemy_pomiaru": "problemy pomiaru",
+            "gotowe_do_sprawdzenia": "gotowe do sprawdzenia",
+            "zablokowane_obietnice": "zablokowane obietnice",
+            "decyzje_dnia": "decyzje dnia",
+        "widok": "widok",
+        "adres_widoku": "adres widoku",
+        "stan": "stan",
+        "priorytet": "priorytet",
+        "metryki": "metryki",
+        "wygenerowano": "wygenerowano",
+        "podsumowanie": "podsumowanie",
+        "decyzje": "decyzje",
+        "tryb": "tryb",
+        "czego_nie_obiecywać": "czego nie obiecywać",
+        "akcje_do_sprawdzenia": "akcje do sprawdzenia",
+        "potwierdzone_dopasowania_wordpress": "potwierdzone dopasowania WordPress",
+        "brakujące_dopasowania_wordpress": "brakujące dopasowania WordPress",
+        "dopasowania_obecnej_strony": "dopasowania obecnej strony",
+        "tryby_decyzji": "tryby decyzji",
+        "najważniejsze_decyzje": "najważniejsze decyzje",
+        "publiczny_url": "publiczny URL",
+        "planowany_finalny_url": "planowany finalny URL",
+        "finalny_kanoniczny_url": "finalny kanoniczny URL",
+        "opcjonalny_podgląd": "opcjonalny podgląd",
+    }
+    if key in labels:
+        return labels[key]
+    if "_" in key:
+        return None
+    return key
 
 
 def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:

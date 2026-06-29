@@ -1,23 +1,26 @@
-# Marketer UAT Ready - 2026-06-29
+# Pakiet UAT marketera gotowy - 2026-06-29
 
-Status: ready for real marketer session, not completed UAT.
+Status: gotowe do realnej sesji z marketerem, ale UAT nie jest jeszcze
+wykonany.
 
-## What Is Ready
+## Co jest gotowe
 
-- Local WILQ API and dashboard were reachable when the packet was generated.
-- The live UAT packet exporter reads current WILQ API surfaces for:
+- Lokalny WILQ API i dashboard były dostępne przy generowaniu pakietu.
+- Eksporter pakietu UAT czyta aktualne powierzchnie WILQ API dla:
   - Centrum pracy
   - Merchant
   - Treści
   - Google Ads
   - GA4
-- The packet uses Polish operator-facing snapshot fields and avoids raw route,
-  decision-type, status and URL-contract keys in the visible WILQ preview.
-- The result recorder accepts the same Polish filled-result shape.
+- Markdown pakietu pokazuje czytelną ścieżkę sesji i kartę odpowiedzi po
+  polsku, bez surowych bloków JSON.
+- JSON pakietu pozostaje formatem maszynowym dla automatyzacji i zapisu
+  wyniku, nie główną formą czytania przez marketera.
+- Rejestrator wyniku przyjmuje tylko kanoniczny polski kształt odpowiedzi.
 
-## Generate Current Packet
+## Wygeneruj aktualny pakiet
 
-Run from repo root:
+Uruchom z katalogu repo:
 
 ```bash
 rtk uv run python scripts/export_marketer_uat_packet.py \
@@ -29,30 +32,30 @@ rtk uv run python scripts/export_marketer_uat_packet.py \
   --format json > .local-lab/proof/marketer-uat-packet-$(date +%Y%m%d).json
 ```
 
-The generated packet is ignored under `.local-lab/`; it is live proof material,
-not a committed source document.
+Wygenerowany pakiet w `.local-lab/` jest materiałem dowodowym z live API, nie
+źródłem do commita.
 
-## Run The Session
+## Przeprowadź sesję
 
-Open:
+Otwórz:
 
 ```text
 http://127.0.0.1:5173/command-center
 ```
 
-Give Wilku or the marketer 15 minutes. Do not explain statuses first. The
-person should answer from the UI:
+Daj Wilkowi albo marketerowi 15 minut. Nie tłumacz najpierw statusów. Osoba ma
+odpowiedzieć z samego UI:
 
-1. What is the next action?
-2. Which screen gives the biggest real value?
-3. Where did they need to guess what a field/status means?
-4. Does Treści save time deciding what to keep, refresh or merge on
+1. Jaki jest następny krok?
+2. Który ekran daje największą realną wartość?
+3. Gdzie trzeba było zgadywać znaczenie pola albo statusu?
+4. Czy Treści oszczędzają czas przy decyzji, co zachować, odświeżyć albo scalić na
    `ekologus.pl`?
-5. How much time does this save: 0, 15, 30 or 60+ minutes?
+5. Ile czasu to realnie oszczędza: 0, 15, 30 albo 60+ minut?
 
-## Record Result
+## Zapisz wynik
 
-Save a filled JSON file under `.local-lab/proof/`, for example:
+Po sesji zapisz wypełniony JSON pod `.local-lab/proof/`, na przykład:
 
 ```json
 {
@@ -70,7 +73,7 @@ Save a filled JSON file under `.local-lab/proof/`, for example:
 }
 ```
 
-Then run:
+Potem uruchom:
 
 ```bash
 rtk uv run python scripts/record_marketer_uat_result.py \
@@ -78,9 +81,9 @@ rtk uv run python scripts/record_marketer_uat_result.py \
   --format markdown > .local-lab/proof/marketer-uat-result-20260629.md
 ```
 
-## Check Completion Proof
+## Sprawdź dowód domknięcia
 
-Before claiming Goal 001 completion, run the guard:
+Przed deklaracją domknięcia Goal 001 uruchom guard:
 
 ```bash
 rtk uv run python scripts/goal_001_completion_check.py \
@@ -88,8 +91,8 @@ rtk uv run python scripts/goal_001_completion_check.py \
   --format markdown
 ```
 
-If the owner explicitly defers real UAT instead of running the session, save a
-JSON note under `.local-lab/proof/`, for example:
+Jeżeli owner jawnie odracza realny UAT zamiast przeprowadzić sesję, zapisz
+notatkę JSON pod `.local-lab/proof/`, na przykład:
 
 ```json
 {
@@ -105,7 +108,7 @@ JSON note under `.local-lab/proof/`, for example:
 }
 ```
 
-Then run:
+Potem uruchom:
 
 ```bash
 rtk uv run python scripts/goal_001_completion_check.py \
@@ -113,18 +116,19 @@ rtk uv run python scripts/goal_001_completion_check.py \
   --format markdown
 ```
 
-## Completion Rule
+## Reguła domknięcia
 
-Goal 001 can only claim UAT completion when one of these is true:
+Goal 001 może deklarować UAT jako domknięty tylko wtedy, gdy spełniony jest
+jeden z warunków:
 
-- A filled real marketer UAT result exists and `record_marketer_uat_result.py`
-  validates it.
-- The owner explicitly defers real marketer UAT and the defer note states:
-  - who deferred,
-  - date,
-  - reason,
-  - what remains safe to show,
-  - what product claims stay blocked.
+- Istnieje wypełniony wynik realnego UAT marketera i
+  `record_marketer_uat_result.py` go waliduje.
+- Owner jawnie odracza realny UAT marketera, a notatka mówi:
+  - kto odroczył,
+  - kiedy,
+  - dlaczego,
+  - co można bezpiecznie pokazać,
+  - jakie obietnice produktu nadal są zablokowane.
 
-Until then, WILQ has a verified cleanup gate and a ready UAT packet, not a
-completed usefulness proof.
+Do tego momentu WILQ ma zweryfikowany cleanup gate i gotowy pakiet UAT, ale nie
+ma domkniętego dowodu użyteczności.

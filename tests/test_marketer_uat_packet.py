@@ -125,6 +125,14 @@ def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> Non
     assert "Command Center" not in serialized
     assert "Content Planner" not in serialized
     assert "Ads Doctor" not in serialized
+    assert "feed write" not in serialized
+    assert "approval recovery" not in serialized
+    assert "publish-ready" not in serialized
+    assert "tracking/attribution" not in serialized
+    assert "wasted budget" not in serialized
+    assert "budget scaling" not in serialized
+    assert "audit contract" not in serialized
+    assert "optimizer" not in serialized
     assert "dev preview" not in serialized
     assert "decision_type" not in serialized
     assert "marketer_next_step" not in serialized
@@ -183,10 +191,19 @@ def test_marketer_uat_packet_markdown_has_recording_fields() -> None:
 
     assert "# Pakiet UAT dla marketera Ekologus" in markdown
     assert "Podgląd z WILQ" in markdown
-    assert "Do uzupełnienia po sesji" in markdown
+    assert "Karta odpowiedzi po sesji" in markdown
     assert "Czy wiesz, co zrobić jako następny krok?" in markdown
-    assert "gotowe_bez_developera" in markdown
-    assert "następny_krok_marketera" in markdown
+    assert "Gotowe bez developera: tak / nie" in markdown
+    assert "Co marketer mówi, że zrobi dalej" in markdown
+    assert "gotowe_bez_developera" not in markdown
+    assert "następny_krok_marketera" not in markdown
+    assert "zadania_do_utworzenia" not in markdown
+    assert "```json" not in markdown
+    assert "feed write" not in markdown
+    assert "approval recovery" not in markdown
+    assert "publish-ready" not in markdown
+    assert "Pass:" not in markdown
+    assert "Fail:" not in markdown
     assert "Command Center" not in markdown
     assert "- Route:" not in markdown
     assert "- Pass:" not in markdown

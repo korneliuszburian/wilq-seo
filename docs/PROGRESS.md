@@ -71,6 +71,10 @@ Date: 2026-06-29
   shape. Stale English packet fields and `pass`/`fail`/`yes` route/result
   values are rejected instead of normalized, while the human markdown report
   renders Polish route and readiness labels.
+- Live UAT packet markdown now renders a readable Polish session card instead
+  of raw JSON blocks. The machine JSON remains available through `--format json`
+  for recording/completion checks, but the marketer handoff no longer leads
+  with technical field names.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,
