@@ -139,7 +139,9 @@ API status later contradicts this state.
   operator-facing skill context. Raw `source_metric_names` are also removed
   from compact action plans; metric meaning must come through labels/summaries.
   Search-term theme previews use marketer-readable compact keys instead of
-  `ngram_preview`, and validation counters use required-check naming.
+  `ngram_preview`, and validation counters use required-check naming. Raw
+  blocked-claim and missing-contract lists are removed from compact action
+  plans when marketer-readable labels are present.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

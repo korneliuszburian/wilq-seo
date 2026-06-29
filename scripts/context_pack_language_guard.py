@@ -25,6 +25,8 @@ FORBIDDEN_ACTION_PLAN_KEYS = (
     "mode",
     "operation_type",
     "source_metric_names",
+    "blocked_claims",
+    "missing_read_contracts",
     "ngram_preview",
     "payload_preview",
     "budget_payload_preview",

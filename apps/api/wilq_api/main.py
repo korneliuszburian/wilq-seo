@@ -3376,6 +3376,11 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
     if isinstance(required_validation_total, int):
         value.setdefault("required_checks_total", required_validation_total)
 
+    if "blocked_claim_labels" in value:
+        value.pop("blocked_claims", None)
+    if "missing_read_contract_labels" in value:
+        value.pop("missing_read_contracts", None)
+
     apply_allowed = value.pop("apply_allowed", None)
     if isinstance(apply_allowed, bool):
         value.setdefault(
