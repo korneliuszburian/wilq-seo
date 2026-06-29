@@ -12,11 +12,17 @@ After context loss, read:
 2. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
 3. `docs/goals/001-goal.md` - only active goal and next queue.
 4. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
+5. `bd prime` - Beads recovery context, persistent task memories and session rules.
+6. `bd ready --json` - current unblocked development work graph.
 
 Keep progress and skill eval findings in those docs instead of bloating AGENTS.md.
 Keep all recovery docs aggressively pruned: remove or archive outdated/done
 items before adding new ones. The active goal/progress files should be the
 smallest useful source of truth, not an append-only transcript.
+Use Beads for development task tracking only. Product truth stays in WILQ API,
+typed schemas, `PLAN.md`, `PLANS.md`, `docs/goals`, `docs/PROGRESS.md`, eval
+ledgers and knowledge cards. Do not copy Beads issues into markdown TODO lists,
+and do not move marketing decisions or product behavior into Beads descriptions.
 
 ## Product philosophy
 
