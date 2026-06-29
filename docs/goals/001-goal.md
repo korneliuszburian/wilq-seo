@@ -80,10 +80,17 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- `OperatingRouteSurfaces.tsx` has been split into focused opportunity,
+  action, workflow, outcome and expandable-detail sections, removing it from
+  Fallow's refactoring-target list without changing visible operator copy. The
+  remaining high-confidence JS/TS cleanup target is the monolithic
+  `App.test.tsx`. Live `/workflows` still needs a separate UI investigation
+  because agent-browser remains on the loading band even though the workflows
+  API endpoints respond.
 - `GenericSurface.tsx` has been split into focused renderer sections, removing
   it from Fallow's refactoring-target list without changing visible operator
-  copy. The remaining high-confidence JS/TS cleanup targets are
-  `OperatingRouteSurfaces.tsx` and the monolithic `App.test.tsx`.
+  copy. The remaining high-confidence JS/TS cleanup target is the monolithic
+  `App.test.tsx`.
 - Dashboard lint tooling is on current compatible releases:
   `eslint@10.6.0`, `@eslint/js@10.0.1`,
   `typescript-eslint@8.62.0` and
@@ -92,10 +99,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Fallow JS/TS scanning is wired with `.fallowrc.json` and root package
   scripts. Dead-code and dependency hygiene are clean, while the current full
   scan still exposes inherited dashboard debt rather than a green repo: high
-  route duplication and complexity hotspots in `GenericSurface.tsx`,
-  `OperatingRouteSurfaces.tsx` and the monolithic `App.test.tsx`. Use
-  `fallow:audit` as the changed-file gate while cleaning the remaining
-  duplication and complexity backlog in focused slices.
+  route duplication and the monolithic `App.test.tsx`. Use `fallow:audit` as
+  the changed-file gate while cleaning the remaining duplication and complexity
+  backlog in focused slices.
 - Merchant review cards now show labelled Polish decision type, priority,
   issue/context summaries and `audyt zmiany` wording instead of slash-combined
   fragments or the stale `audit zmiany` copy. Focused API/dashboard tests, both
