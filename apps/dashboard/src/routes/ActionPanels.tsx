@@ -363,14 +363,10 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <div className="font-semibold text-risk">Ostatni zapis bezpieczeństwa</div>
           <p className="mt-1 leading-5">{actionMutationAuditSummary(gate)}</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
-            <div>Wynik: {gate.last_mutation_audit_status_label ?? "brak"}</div>
-            <div>Czy próbowano zapisu: {gate.last_mutation_attempted ? "tak" : "nie"}</div>
-            <div>
-              System zewnętrzny: {gate.last_mutation_adapter ? "wskazany" : "brak"}
-            </div>
-            <div>
-              Ślad bezpieczeństwa: {gate.last_mutation_audit_event_id ? "zapisany" : "brak"}
-            </div>
+            <div>Wynik: {gate.last_mutation_audit_status_label}</div>
+            <div>Czy próbowano zapisu: {gate.last_mutation_attempted_label}</div>
+            <div>System zewnętrzny: {gate.last_mutation_adapter_label}</div>
+            <div>Ślad bezpieczeństwa: {gate.last_mutation_audit_trace_label}</div>
           </div>
           <TraceLine
             label="Co blokuje zapis"

@@ -1263,9 +1263,16 @@ def test_action_apply_requires_validation(
     assert action_response.status_code == 200
     review_gate = action_response.json()["review_gate"]
     assert review_gate["last_mutation_audit_status"] == "blocked"
+    assert review_gate["last_mutation_audit_status_label"] == "zablokowany"
     assert review_gate["last_mutation_attempted"] is False
+    assert (
+        review_gate["last_mutation_attempted_label"]
+        == "nie próbowano zapisu w systemie zewnętrznym"
+    )
     assert review_gate["last_mutation_adapter"] is None
+    assert review_gate["last_mutation_adapter_label"] == "brak bezpiecznej ścieżki zapisu"
     assert review_gate["last_mutation_audit_event_id"] == body["audit_event"]["id"]
+    assert review_gate["last_mutation_audit_trace_label"] == "ślad bezpieczeństwa zapisany"
     assert "Wymagane jest jawne potwierdzenie zapisu zmian" in json.dumps(
         review_gate["last_mutation_blockers"]
     )

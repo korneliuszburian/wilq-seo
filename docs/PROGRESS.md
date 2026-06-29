@@ -122,6 +122,14 @@ API status later contradicts this state.
   `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
   Focused dashboard tests, typecheck, lint, language guards, `git diff --check`
   and browser proof passed.
+- Action detail safety-record fields now use API-owned labels for mutation
+  audit status, write attempt, external write path and audit trace. The review
+  panel shows concrete states such as `nie próbowano zapisu w systemie
+  zewnętrznym`, `brak bezpiecznej ścieżki zapisu` and `ślad bezpieczeństwa
+  zapisany` instead of local `brak` fallbacks. Focused action API tests,
+  action-panel/detail route tests, shared-schema tests, dashboard
+  typecheck/lint, language guards, live blocked-apply API proof and browser
+  proof passed.
 - GA4 dashboard trace lines no longer use generic `brak` empty states for
   measurement readiness, evidence or sources. Focused GA4 route tests,
   dashboard typecheck/lint, language guards and browser proof passed.
@@ -310,6 +318,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant_product_performance_readiness or merchant_diagnostics_promotes_ads_product_state_review_decision'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'target_guardrail'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'action_apply_requires_validation or apply_ready_action_blocks_without_mutation_adapter'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`

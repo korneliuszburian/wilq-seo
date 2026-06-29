@@ -3875,6 +3875,15 @@ def _review_gate_with_operator_labels(gate: ActionReviewGate) -> ActionReviewGat
             )
             if gate.last_mutation_audit_status
             else None,
+            "last_mutation_attempted_label": _action_mutation_attempted_label(
+                gate.last_mutation_attempted
+            ),
+            "last_mutation_adapter_label": _action_mutation_adapter_label(
+                gate.last_mutation_adapter
+            ),
+            "last_mutation_audit_trace_label": _action_mutation_audit_trace_label(
+                gate.last_mutation_audit_event_id
+            ),
         }
     )
 
@@ -4529,7 +4538,28 @@ def _action_mutation_audit_status_label(value: str | None) -> str:
         "applied": "zapisany",
         "failed": "błąd",
     }
-    return labels.get(value or "", "brak")
+    return labels.get(value or "", "stan zapisu nieustalony")
+
+
+def _action_mutation_attempted_label(value: bool | None) -> str:
+    if value is True:
+        return "próbowano zapisu w systemie zewnętrznym"
+    if value is False:
+        return "nie próbowano zapisu w systemie zewnętrznym"
+    return "brak informacji o próbie zapisu"
+
+
+def _action_mutation_adapter_label(value: str | None) -> str:
+    if not value:
+        return "brak bezpiecznej ścieżki zapisu"
+    labels = source_connector_labels([value])
+    return labels[0] if labels else "system zewnętrzny wskazany"
+
+
+def _action_mutation_audit_trace_label(value: str | None) -> str:
+    if value:
+        return "ślad bezpieczeństwa zapisany"
+    return "ślad bezpieczeństwa niepowiązany"
 
 
 def _action_result_status_label(value: str | None) -> str:

@@ -135,6 +135,26 @@ const actionFixture: ActionObject = {
   audit_events: []
 };
 
+const actionWithMutationAuditFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_mutation_audit",
+  review_gate: {
+    ...actionFixture.review_gate,
+    last_mutation_audit_status: "blocked",
+    last_mutation_audit_status_label: "zablokowany",
+    last_mutation_audit_summary: "Zapis zablokowany przed zmianą danych.",
+    last_mutation_attempted: false,
+    last_mutation_attempted_label: "nie próbowano zapisu w systemie zewnętrznym",
+    last_mutation_adapter: null,
+    last_mutation_adapter_label: "brak bezpiecznej ścieżki zapisu",
+    last_mutation_audit_event_id: "audit_apply_blocked",
+    last_mutation_audit_trace_label: "ślad bezpieczeństwa zapisany",
+    last_mutation_blockers: ["vendor_mutation_adapter_required"],
+    last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"],
+    last_mutation_blocker_summary_label: "1 blokada"
+  }
+};
+
 const adsActionFixture: ActionObject = {
   ...actionFixture,
   preview_cards: [
@@ -1520,6 +1540,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_1")) {
         return Promise.resolve(Response.json(actionFixture));
       }
+      if (url.endsWith("/api/actions/act_mutation_audit")) {
+        return Promise.resolve(Response.json(actionWithMutationAuditFixture));
+      }
       if (url.endsWith("/api/actions/act_ads")) {
         return Promise.resolve(Response.json(adsActionFixture));
       }
@@ -1617,6 +1640,26 @@ describe("Action detail route", () => {
     expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/zapis zmian zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders mutation audit details from API labels", async () => {
+    renderActionDetail("act_mutation_audit");
+    await waitFor(() =>
+      expect(screen.getByText("Ostatni zapis bezpieczeństwa")).toBeInTheDocument()
+    );
+    expect(screen.getByText("Wynik: zablokowany")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Czy próbowano zapisu: nie próbowano zapisu w systemie zewnętrznym"
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("System zewnętrzny: brak bezpiecznej ścieżki zapisu")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ślad bezpieczeństwa: ślad bezpieczeństwa zapisany")).toBeInTheDocument();
+    expect(screen.queryByText("Wynik: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText("System zewnętrzny: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ślad bezpieczeństwa: brak")).not.toBeInTheDocument();
   });
 
   it("renders Google Ads budget change preview without requiring raw JSON", async () => {
@@ -1938,6 +1981,7 @@ describe("Action detail route", () => {
 
   it("keeps action detail labels sourced from API payload labels", () => {
     const source = readFileSync("src/routes/DetailPanels.tsx", "utf8");
+    const actionPanelsSource = readFileSync("src/routes/ActionPanels.tsx", "utf8");
 
     expect(source).not.toContain("from \"./marketingLabels\"");
     expect(source).not.toContain("adsMissingReadContractLabel");
@@ -1956,5 +2000,13 @@ describe("Action detail route", () => {
     expect(source).not.toContain("PayloadPreviewCard");
     expect(source).toContain("ActionChangePreviewSummary");
     expect(source).toContain("action.preview_cards");
+    expect(actionPanelsSource).toContain("gate.last_mutation_attempted_label");
+    expect(actionPanelsSource).toContain("gate.last_mutation_adapter_label");
+    expect(actionPanelsSource).toContain("gate.last_mutation_audit_trace_label");
+    expect(actionPanelsSource).not.toContain('gate.last_mutation_audit_status_label ?? "brak"');
+    expect(actionPanelsSource).not.toContain('gate.last_mutation_adapter ? "wskazany" : "brak"');
+    expect(actionPanelsSource).not.toContain(
+      'gate.last_mutation_audit_event_id ? "zapisany" : "brak"'
+    );
   });
 });

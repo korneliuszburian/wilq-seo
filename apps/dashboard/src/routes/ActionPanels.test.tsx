@@ -43,9 +43,13 @@ describe("ActionPanels", () => {
               last_confirmation_summary: null,
               last_mutation_audit_summary: "blocked",
               last_mutation_audit_status: "blocked",
+              last_mutation_audit_status_label: "zablokowany",
               last_mutation_attempted: false,
+              last_mutation_attempted_label: "nie próbowano zapisu w systemie zewnętrznym",
               last_mutation_adapter: null,
+              last_mutation_adapter_label: "brak bezpiecznej ścieżki zapisu",
               last_mutation_audit_event_id: "audit_apply_blocked",
+              last_mutation_audit_trace_label: "ślad bezpieczeństwa zapisany",
               last_mutation_blockers: ["vendor_mutation_adapter_required"],
               last_mutation_blocker_labels: ["brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"],
               last_mutation_blocker_summary_label: "1 blokada"
@@ -59,11 +63,17 @@ describe("ActionPanels", () => {
     expect(
       screen.getByText("Zapisano kontrolę bezpieczeństwa bez zmian w zewnętrznych systemach.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Czy próbowano zapisu: nie")).toBeInTheDocument();
-    expect(screen.getByText("System zewnętrzny: brak")).toBeInTheDocument();
-    expect(screen.getByText("Ślad bezpieczeństwa: zapisany")).toBeInTheDocument();
+    expect(screen.getByText("Wynik: zablokowany")).toBeInTheDocument();
+    expect(
+      screen.getByText("Czy próbowano zapisu: nie próbowano zapisu w systemie zewnętrznym")
+    ).toBeInTheDocument();
+    expect(screen.getByText("System zewnętrzny: brak bezpiecznej ścieżki zapisu")).toBeInTheDocument();
+    expect(screen.getByText("Ślad bezpieczeństwa: ślad bezpieczeństwa zapisany")).toBeInTheDocument();
     expect(screen.getAllByText(/1 blokada/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/brak bezpiecznej ścieżki zapisu/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Wynik: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText("System zewnętrzny: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ślad bezpieczeństwa: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText(/vendor_mutation_adapter_required/)).not.toBeInTheDocument();
     expect(screen.queryByText("Ostatni audyt zmiany")).not.toBeInTheDocument();
     expect(screen.queryByText(/Adapter:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Zdarzenie audytu:/)).not.toBeInTheDocument();

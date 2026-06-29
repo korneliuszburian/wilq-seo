@@ -181,8 +181,11 @@ export const ActionReviewGateSchema = z.object({
   last_mutation_audit_at: z.string().nullable().optional(),
   last_mutation_audit_summary: z.string().nullable().optional(),
   last_mutation_attempted: z.boolean().nullable().optional(),
+  last_mutation_attempted_label: z.string().nullable().optional(),
   last_mutation_adapter: z.string().nullable().optional(),
+  last_mutation_adapter_label: z.string().nullable().optional(),
   last_mutation_audit_event_id: z.string().nullable().optional(),
+  last_mutation_audit_trace_label: z.string().nullable().optional(),
   last_mutation_blockers: z.array(z.string()).default([]),
   last_mutation_blocker_labels: z.array(z.string()).default([]),
   last_mutation_blocker_summary_label: z.string().optional().default("")

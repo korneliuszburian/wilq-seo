@@ -584,8 +584,11 @@ class ActionReviewGate(BaseModel):
     last_mutation_audit_at: datetime | None = None
     last_mutation_audit_summary: str | None = None
     last_mutation_attempted: bool | None = None
+    last_mutation_attempted_label: str | None = None
     last_mutation_adapter: str | None = None
+    last_mutation_adapter_label: str | None = None
     last_mutation_audit_event_id: str | None = None
+    last_mutation_audit_trace_label: str | None = None
     last_mutation_blockers: list[str] = Field(default_factory=list)
     last_mutation_blocker_labels: list[str] = Field(default_factory=list)
     last_mutation_blocker_summary_label: str = ""
