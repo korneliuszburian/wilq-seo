@@ -399,10 +399,10 @@ def _localo_sections(
         title="Localo: dane rankingów i profilu firmy w Google",
         status="ready" if visibility_facts else "missing",
         summary=(
-            (
-                f"WILQ ma {_localo_aggregate_count_label(len(visibility_facts))} dla danych: "
-                f"{_localo_contracts_phrase(present_contracts)}. Nadal brakuje: "
-                f"{_localo_contracts_phrase(missing_contracts) if missing_contracts else 'brak'}."
+            _localo_visibility_summary_with_contracts(
+                visibility_facts=visibility_facts,
+                present_contracts=present_contracts,
+                missing_contracts=missing_contracts,
             )
             if visibility_facts
             else (
@@ -782,12 +782,16 @@ def _localo_decision_status_label(status: str) -> str:
 
 
 def _localo_section_status_label(status: str) -> str:
-    labels = {"ready": "gotowe", "blocked": "zablokowane", "missing": "brak danych"}
+    labels = {
+        "ready": "gotowe",
+        "blocked": "zablokowane",
+        "missing": "zakres danych niepodłączony",
+    }
     return labels.get(status, "status sekcji do sprawdzenia")
 
 
 def _localo_read_contract_status_label(status: str) -> str:
-    labels = {"ready": "gotowe", "missing": "brak danych"}
+    labels = {"ready": "gotowe", "missing": "zakres danych niepotwierdzony"}
     return labels.get(status, "status danych do sprawdzenia")
 
 
@@ -852,15 +856,15 @@ def _localo_bool_label(value: bool | None) -> str:
         return "tak"
     if value is False:
         return "nie"
-    return "brak"
+    return "niepotwierdzone"
 
 
 def _localo_token_presence_label(value: bool | None) -> str:
     if value is True:
-        return "obecny"
+        return "token obecny"
     if value is False:
-        return "brak"
-    return "brak danych"
+        return "token nieobecny"
+    return "stan tokena niepotwierdzony"
 
 
 def _localo_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
@@ -977,7 +981,7 @@ def _localo_contracts_phrase(contracts: list[str]) -> str:
     }
     values = [labels.get(contract, "zakres danych Localo do sprawdzenia") for contract in contracts]
     if not values:
-        return "brak"
+        return "żaden zakres danych Localo nie jest brakujący"
     if len(values) == 1:
         return values[0]
     return f"{', '.join(values[:-1])} i {values[-1]}"
@@ -994,10 +998,28 @@ def _localo_missing_contracts_phrase(contracts: list[str]) -> str:
     }
     values = [labels.get(contract, "zakres danych Localo do sprawdzenia") for contract in contracts]
     if not values:
-        return "brak"
+        return "żaden brakujący zakres danych Localo"
     if len(values) == 1:
         return values[0]
     return f"{', '.join(values[:-1])} i {values[-1]}"
+
+
+def _localo_visibility_summary_with_contracts(
+    *,
+    visibility_facts: list[MetricFact],
+    present_contracts: list[str],
+    missing_contracts: list[str],
+) -> str:
+    ready_summary = (
+        f"WILQ ma {_localo_aggregate_count_label(len(visibility_facts))} dla danych: "
+        f"{_localo_contracts_phrase(present_contracts)}."
+    )
+    if not missing_contracts:
+        return (
+            f"{ready_summary} Żaden zakres Localo z obecnego kontraktu nie jest oznaczony "
+            "jako brakujący."
+        )
+    return f"{ready_summary} Nadal brakuje: {_localo_contracts_phrase(missing_contracts)}."
 
 
 def _blocked_claims_for_contract(contract: str) -> list[str]:

@@ -1752,18 +1752,30 @@ def _localo_item(
     if has_value_facts:
         item_id = "daily_localo_visibility_facts"
         title = "Localo: agregaty widoczności i recenzji są gotowe"
-        summary = (
-            "Localo dostarczył agregaty miejsc, monitorowanych fraz, "
-            "profilu firmy w Google, konkurencji i recenzji. WILQ nadal blokuje "
-            f"{missing_value_contracts_phrase}, zapis zmian i obietnicę wzrostu "
-            "widoczności bez osobnych danych albo dowodu efektu."
-        )
-        next_step = (
-            "Otwórz widok Localo i przejrzyj agregaty fraz, pozycje w siatce "
-            "lokalnej oraz recenzje. "
-            f"Nie twierdź nic o {missing_value_contracts_phrase}, zapisie zmian ani "
-            "wzroście widoczności bez dodatkowych dowodów."
-        )
+        if missing_value_contracts:
+            summary = (
+                "Localo dostarczył część agregatów miejsc, monitorowanych fraz, "
+                "profilu firmy w Google, konkurencji albo recenzji. WILQ nadal blokuje "
+                f"{missing_value_contracts_phrase}, zapis zmian i obietnicę wzrostu "
+                "widoczności bez osobnych danych albo dowodu efektu."
+            )
+            next_step = (
+                "Otwórz widok Localo i przejrzyj agregaty fraz, pozycje w siatce "
+                "lokalnej oraz recenzje. "
+                f"Nie twierdź nic o {missing_value_contracts_phrase}, zapisie zmian ani "
+                "wzroście widoczności bez dodatkowych dowodów."
+            )
+        else:
+            summary = (
+                "Localo dostarczył agregaty miejsc, monitorowanych fraz, profilu firmy "
+                "w Google, konkurencji i recenzji. WILQ nadal blokuje zapis zmian oraz "
+                "obietnicę wzrostu widoczności bez osobnego dowodu efektu."
+            )
+            next_step = (
+                "Otwórz widok Localo i przejrzyj agregaty fraz, pozycje w siatce "
+                "lokalnej, profil firmy w Google, konkurencję oraz recenzje. Zapis zmian "
+                "i obietnicę wzrostu widoczności zostaw zablokowane do osobnego dowodu."
+            )
         priority = 18
         blocked_claims = _localo_blocked_claims_for_missing_contracts(missing_value_contracts)
     elif oauth_access_ready:
@@ -1880,7 +1892,7 @@ def _localo_contracts_phrase(contracts: list[str]) -> str:
     }
     values = [labels.get(contract, "zakres danych Localo do sprawdzenia") for contract in contracts]
     if not values:
-        return "brak"
+        return "żaden zakres danych Localo nie jest brakujący"
     if len(values) == 1:
         return values[0]
     return f"{', '.join(values[:-1])} i {values[-1]}"

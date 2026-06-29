@@ -84,6 +84,7 @@ from wilq.briefing.ga4_diagnostics import (
     build_ga4_diagnostics,
 )
 from wilq.briefing.localo_diagnostics import (
+    _localo_bool_label,
     _localo_connector_status_label,
     _localo_contract_evidence_kind,
     _localo_decision_status_label,
@@ -91,6 +92,7 @@ from wilq.briefing.localo_diagnostics import (
     _localo_read_contract_status_label,
     _localo_refresh_status_label,
     _localo_section_status_label,
+    _localo_token_presence_label,
 )
 from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fact_label
 from wilq.briefing.marketing_brief import _blocker_summary, build_marketing_brief
@@ -2039,6 +2041,14 @@ def test_action_review_records_human_outcome_without_apply(
     )
     assert action["review_gate"]["last_reviewed_by"] == "operator_test"
     assert action["review_gate"]["apply_allowed"] is False
+
+
+def test_localo_missing_statuses_explain_unconfirmed_contracts() -> None:
+    assert _localo_section_status_label("missing") == "zakres danych niepodłączony"
+    assert _localo_read_contract_status_label("missing") == "zakres danych niepotwierdzony"
+    assert _localo_bool_label(None) == "niepotwierdzone"
+    assert _localo_token_presence_label(False) == "token nieobecny"
+    assert _localo_token_presence_label(None) == "stan tokena niepotwierdzony"
 
 
 def test_validated_ready_action_copy_does_not_claim_human_review(
@@ -7175,7 +7185,10 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     )
     assert contract_status_by_id["reviews"]["status"] == "ready"
     assert contract_status_by_id["gbp_visibility"]["status"] == "missing"
-    assert contract_status_by_id["gbp_visibility"]["status_label"] == "brak danych"
+    assert (
+        contract_status_by_id["gbp_visibility"]["status_label"]
+        == "zakres danych niepotwierdzony"
+    )
     assert contract_status_by_id["gbp_visibility"]["blocked_claims"] == [
         "wyniki profilu firmy w Google",
         "zapis zmian w profilu firmy",

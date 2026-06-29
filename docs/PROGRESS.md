@@ -388,6 +388,9 @@ API status later contradicts this state.
   rendering bare missing-view fallback text.
 - Workflow API model now explains complete missing-data state for processes
   instead of returning a bare missing-state fallback in process detail labels.
+- Localo and Command Center now explain missing Localo read contracts as
+  unconfirmed/unconnected data scopes from API/domain copy instead of bare
+  missing-data placeholders.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
