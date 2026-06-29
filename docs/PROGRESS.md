@@ -116,6 +116,10 @@ Date: 2026-06-29
   placeholders like `wymiar` or `wartość wymiaru do sprawdzenia`. Metrics now
   keep only dimensions with useful API-owned labels; live context-pack guard
   covers daily, content strategist and Ahrefs packs for this regression.
+- Ads skill context active actions now compact action metrics through the same
+  metric context helper, so `wilq-ads-doctor` no longer receives raw
+  `dimension_value_labels` or generic placeholder dimension values in active
+  action objects.
 - `PLANS.md` now includes a long-range BDOS benchmark watchlist for GTM
   measurement safety, Google Ads API v24.2/PMax tracks, GA4 source hygiene,
   lead-quality loops and bidding/campaign-change readiness. These are future

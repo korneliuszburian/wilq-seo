@@ -18314,6 +18314,9 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
                     assert rows == []
                     assert payload[f"{rows_key}_included"] == 0
                 assert payload[f"{rows_key}_total"] >= 0
+    serialized_actions = json.dumps(data["active_action_objects"], ensure_ascii=False)
+    assert "dimension_value_labels" not in serialized_actions
+    assert "wartość wymiaru do sprawdzenia" not in serialized_actions
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
     assert "act_review_demand_gen_readiness" not in actions_by_id
     campaign_review_action = actions_by_id["act_prepare_ads_campaign_review_queue"]

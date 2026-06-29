@@ -3158,7 +3158,11 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact["metrics"] = (
             []
             if compact.get("id") in {SEARCH_TERM_NGRAM_ACTION_ID, "act_review_merchant_feed_issues"}
-            else metrics[:1]
+            else [
+                _compact_metric_fact_for_context(metric)
+                for metric in metrics[:1]
+                if isinstance(metric, dict)
+            ]
         )
         compact["metrics_included"] = len(compact["metrics"])
     preview_cards = compact.get("preview_cards")
