@@ -124,10 +124,11 @@ API status later contradicts this state.
   Focused API/dashboard/shared-schema tests, dashboard typecheck/lint,
   marketer language guard and `git diff --check` passed.
 - Demand Gen readiness now builds from Ads summary diagnostics instead of the
-  full Ads cockpit. Direct/TestClient proof returns in about two seconds, but
-  the local uvicorn stack timed out on HTTP after repeated interrupted live
-  probes. Treat this as a runtime proof blocker for Demand Gen HTTP/browser
-  verification until the stack hang is isolated.
+  full Ads cockpit. Direct/TestClient proof returns in about two seconds. A
+  temporary HTTP timeout was traced to orphaned `agent-browser`/headless Chrome
+  processes hammering the dashboard after Vite restarted; after closing them
+  and restarting the canonical stack, `/api/health` returned in 0.001 s and
+  `/api/demand-gen/diagnostics` returned in 1.47 s.
 - Action detail validation now uses self-explanatory empty states such as
   `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
   Focused dashboard tests, typecheck, lint, language guards, `git diff --check`
