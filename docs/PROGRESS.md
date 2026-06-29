@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Knowledge operating map no longer marks the daily plan as unusable only
+  because it contains blocked decisions. `Plan dnia WILQ` now reports
+  `gotowe z blokadami`: the process is usable for the marketer, while blocked
+  decisions remain visible as a boundary and risk signal. Live
+  `/api/knowledge/operating-map` and `/knowledge` browser proof confirmed the
+  corrected status.
 - Treści top metric tiles now come from the API-owned
   `operator_summary.metric_tiles` instead of route-local labels. The visible
   `/content-planner` screen shows `Zapytania i adresy z GSC`,

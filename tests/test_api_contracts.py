@@ -19214,11 +19214,13 @@ def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
     daily = binding_by_id["knowledge_daily_command"]
     assert daily["route"] == "/command-center"
     assert daily["route_label"] == "Centrum pracy"
-    assert daily["status_label"] in {"gotowe", "zablokowane"}
+    assert daily["status"] == "ready"
+    assert daily["status_label"] in {"gotowe", "gotowe z blokadami"}
     assert daily["risk_label"] in {"niskie ryzyko", "średnie ryzyko"}
     assert daily["skill_id"] == "wilq-daily-command"
     assert daily["knowledge_card_ids"] == ["card_goal_001_rules"]
     assert daily["metric_tiles"]["decyzje"] >= 1
+    assert daily["metric_tiles"]["blokady"] >= 0
     assert daily["evidence_ids"]
     assert daily["evidence_summary_label"]
     assert daily["source_connector_labels"]

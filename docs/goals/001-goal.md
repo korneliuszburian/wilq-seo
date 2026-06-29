@@ -191,6 +191,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   fallback labels or old product-file jargon in normal copy. The active language
   guard covers Merchant terms in API, dashboard, skills, knowledge, workflows
   and plan docs.
+- Knowledge operating map distinguishes usable processes from their boundaries:
+  `Plan dnia WILQ` is `gotowe z blokadami` when the plan can be used but some
+  daily decisions remain blocked. Live API and browser proof confirmed the
+  Knowledge route no longer presents the daily plan itself as unusable.
 - Ahrefs decision and gap-contract panels use API/domain evidence and action
   summary labels instead of route-local count formatting.
 - Ahrefs gap-contract metric tiles use API/domain missing-data and

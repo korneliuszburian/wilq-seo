@@ -240,7 +240,8 @@ def _daily_command_workflow(decisions: list[DailyDecision]) -> Workflow:
         item for decision in decisions for item in decision.source_connectors
     )
     blocked_count = sum(1 for decision in decisions if decision.status == "blocked")
-    status: Literal["ready", "blocked"] = "blocked" if blocked_count else "ready"
+    status: Literal["ready", "blocked"] = "ready" if decisions else "blocked"
+    status_label = "gotowe z blokadami" if decisions and blocked_count else _status_label(status)
     risk = ActionRisk.medium if blocked_count else ActionRisk.low
     return Workflow(
         id="daily_command",
@@ -250,7 +251,7 @@ def _daily_command_workflow(decisions: list[DailyDecision]) -> Workflow:
             "sprawdzenia i polecenia do Codexa z WILQ API."
         ),
         status=status,
-        status_label=_status_label(status),
+        status_label=status_label,
         route="/command-center",
         route_label=_route_label("/command-center"),
         skill_id="wilq-daily-command",
