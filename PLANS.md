@@ -1020,3 +1020,7 @@ WILQ is complete for this long-range goal when:
   browser text proof passed after moving content refresh/source connector
   labels to API contracts and removing Content Planner's local connector-ID
   mapping.
+- Latest Google Ads budget-copy proof: focused dashboard route tests, marketer
+  language guard, live context-pack guard, WILQ API connector/Ads diagnostics
+  proof, browser text scan and `git diff --check` passed after removing raw
+  budget identifier wording from the normal shared-budget panel.

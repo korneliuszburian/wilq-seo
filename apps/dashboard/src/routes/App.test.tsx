@@ -7725,6 +7725,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.recommendation_type_label");
     expect(routeSource).toContain("row.preview_card");
     expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");
+    expect(routeSource).not.toContain("Wspólne budget_id");
+    expect(routeSource).not.toContain("ID budżetu:");
     expect(routeSource).toContain("candidate.preview_card");
     expect(routeSource).not.toContain("candidate.payload_preview");
     expect(routeSource).toContain("row.missing_read_contract_summary_label");

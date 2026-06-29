@@ -1401,8 +1401,8 @@ function AdsSharedBudgetDistributionPanel({
         <div>
           <h3 className="text-sm font-semibold text-ink">Podział wspólnych budżetów</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            Wspólne budget_id z Google Ads rozbite po kampaniach. To jest kontekst
-            oceny, nie rekomendacja skalowania ani zmiany budżetu.
+            Wspólne budżety Google Ads rozbite po kampaniach. To jest kontekst oceny,
+            nie rekomendacja skalowania ani zmiany budżetu.
           </p>
         </div>
         <MetricTile label="Wspólne budżety" value={rows.length} />
@@ -1413,10 +1413,10 @@ function AdsSharedBudgetDistributionPanel({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h4 className="text-sm font-semibold text-ink">
-                  {row.budget_name ?? row.budget_id}
+                  {row.budget_name ?? "Budżet bez nazwy w odczycie"}
                 </h4>
                 <p className="mt-1 text-xs text-slate-500">
-                  ID budżetu: {row.budget_id ?? "brak"} / kampanie: {row.campaign_count}
+                  Kampanie korzystające z tego budżetu: {row.campaign_count}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">

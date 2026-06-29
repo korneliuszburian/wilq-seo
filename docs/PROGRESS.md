@@ -168,6 +168,9 @@ Date: 2026-06-29
 - Google Ads campaign, KPI, budget, impression-share and change-history tables
   use API/domain row summary labels for human review gates, blocked claims and
   changed fields instead of route-local label joins.
+- Google Ads shared-budget panel no longer exposes raw budget identifiers in
+  normal marketer copy. Budget IDs remain technical row keys only; visible copy
+  uses budget name fallback and campaign-count wording.
 - Google Ads full-review optimizer, strategy-readiness, change-impact,
   campaign-triage and recommendation panels use API/domain summary labels for
   missing data, required checks and blocked claims instead of rendering long

@@ -201,6 +201,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Google Ads campaign, KPI, budget, impression-share and change-history tables
   use API/domain row summary labels for human review gates, blocked claims and
   changed fields instead of route-local label joins.
+- Google Ads shared-budget copy no longer shows raw budget IDs in normal
+  marketer panels; raw IDs stay as technical row keys only.
 - Google Ads full-review optimizer, strategy-readiness, change-impact,
   campaign-triage and recommendation panels use API/domain summary labels for
   missing data, required checks and blocked claims instead of rendering long
