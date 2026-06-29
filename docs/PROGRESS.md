@@ -30,6 +30,17 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Dashboard patch/minor dependencies were updated without taking framework
+  major migrations in the same slice: `@tanstack/react-query@5.101.2`,
+  `@playwright/test@1.61.1`, `postcss@8.5.16` and
+  `autoprefixer@10.5.2`. Dashboard typecheck, full dashboard tests, lint,
+  build, Fallow audit/health, marketer/context-pack language guards and
+  `git diff --check` passed. Remaining outdated JS packages are major
+  migrations that need separate slices, especially Vite, Vitest, Zod,
+  Tailwind, lucide-react, jsdom, `@vitejs/plugin-react` and Node types.
+- Live connector check on 2026-06-29 confirmed Google Search Console, GA4 and
+  Merchant Center are configured and fresh. Do not reopen old WSL credential
+  recovery for those connectors.
 - `OperatingRouteSurfaces.tsx` was split into focused opportunity, action,
   workflow, outcome and expandable-detail sections without changing operator
   copy. Fallow no longer lists it as a refactoring target; the remaining
