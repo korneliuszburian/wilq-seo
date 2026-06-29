@@ -48,6 +48,7 @@ GA4_TRACKING_REQUIRED_VALIDATION = [
     "review_conversion_or_key_event_mapping",
     "human_confirm_before_tracking_change",
 ]
+GA4_TRACKING_REQUIRED_BREAKDOWNS = ["landing_page", "source_medium", "campaign_name"]
 
 
 def validate_ga4_tracking_quality_payload(payload: dict[str, Any]) -> list[str]:
@@ -91,7 +92,10 @@ def ga4_tracking_quality_payload_from_metric_facts(facts: list[MetricFact]) -> d
         "mode": "prepare_only",
         "preview_contract": GA4_TRACKING_QUALITY_PREVIEW_CONTRACT,
         "source_metric_names": _unique(fact.name for fact in facts),
-        "required_breakdowns": ["landing_page", "source_medium", "campaign_name"],
+        "required_breakdowns": GA4_TRACKING_REQUIRED_BREAKDOWNS,
+        "required_breakdown_labels": [
+            _tracking_dimension_gap_label(value) for value in GA4_TRACKING_REQUIRED_BREAKDOWNS
+        ],
         "required_validation": GA4_TRACKING_REQUIRED_VALIDATION,
         "blocked_claims": GA4_TRACKING_BLOCKED_CLAIMS,
         "payload_preview": review_rows,

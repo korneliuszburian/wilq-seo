@@ -5553,9 +5553,15 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert set(context_action_by_id) == {"act_review_ga4_tracking_quality"}
     assert "payload" not in context_action_by_id["act_review_ga4_tracking_quality"]
     assert "action_plan" in context_action_by_id["act_review_ga4_tracking_quality"]
-    context_preview = context_action_by_id["act_review_ga4_tracking_quality"]["action_plan"][
-        "preview_items"
-    ][0]
+    context_action_plan = context_action_by_id["act_review_ga4_tracking_quality"]["action_plan"]
+    assert "required_breakdowns" not in context_action_plan
+    assert "required_breakdown_labels" not in context_action_plan
+    assert context_action_plan["required_dimension_labels"] == [
+        "strona wejścia",
+        "źródło i medium ruchu",
+        "kampania",
+    ]
+    context_preview = context_action_plan["preview_items"][0]
     assert context_preview["metric_tiles"]["aktywni użytkownicy"] == preview["metric_snapshot"][
         "active_users"
     ]

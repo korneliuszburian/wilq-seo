@@ -170,6 +170,39 @@ def test_context_pack_guard_blocks_raw_content_status_keys() -> None:
     ]
 
 
+def test_context_pack_guard_blocks_raw_ga4_breakdown_keys() -> None:
+    payload = {
+        "active_action_objects": [
+            {
+                "id": "act_bad",
+                "action_plan": {
+                    "required_breakdowns": ["landing_page", "source_medium"],
+                    "required_breakdown_labels": ["strona wejścia", "źródło i medium ruchu"],
+                    "required_breakdowns_total": 2,
+                },
+            }
+        ]
+    }
+
+    assert _context_pack_structure_errors(payload) == [
+        (
+            "$.active_action_objects[0].action_plan.required_breakdowns",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of required_breakdowns.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.required_breakdown_labels",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of required_breakdown_labels.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.required_breakdowns_total",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of required_breakdowns_total.",
+        ),
+    ]
+
+
 def test_context_pack_guard_blocks_raw_ads_status_and_gate_keys() -> None:
     payload = {
         "active_action_objects": [

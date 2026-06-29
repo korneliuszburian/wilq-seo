@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-
 from collections.abc import Iterable
 from contextlib import suppress
 from typing import Any, Literal, cast
@@ -345,6 +344,11 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 "preview_contract": "ga4_tracking_quality_review_v1",
                 "source_metric_names": [],
                 "required_breakdowns": ["landing_page", "source_medium", "campaign"],
+                "required_breakdown_labels": [
+                    "strona wejścia",
+                    "źródło i medium ruchu",
+                    "kampania",
+                ],
                 "required_validation": [
                     "review_landing_page_dimension",
                     "review_source_medium_dimension",

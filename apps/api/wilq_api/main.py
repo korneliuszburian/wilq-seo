@@ -3408,6 +3408,14 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
     if isinstance(required_validation_total, int):
         value.setdefault("required_checks_total", required_validation_total)
 
+    required_breakdown_labels = value.pop("required_breakdown_labels", None)
+    if isinstance(required_breakdown_labels, list):
+        value.setdefault("required_dimension_labels", required_breakdown_labels)
+    value.pop("required_breakdowns", None)
+    required_breakdowns_total = value.pop("required_breakdowns_total", None)
+    if isinstance(required_breakdowns_total, int):
+        value.setdefault("required_dimensions_total", required_breakdowns_total)
+
     if "blocked_claim_labels" in value:
         value.pop("blocked_claims", None)
         value.pop("forbidden_claims", None)
