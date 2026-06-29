@@ -1239,7 +1239,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             ),
             recommended_reason=(
                 "W widoku Google Ads przejrzyj terminy z kosztem/kliknięciami i zerową "
-                "konwersją w bieżącym evidence, ale potraktuj je wyłącznie jako "
+                "konwersją w bieżących dowodach, ale potraktuj je wyłącznie jako "
                 "kolejkę oceny przed 90-dniową kontrolą bezpieczeństwa."
             ),
             payload=negative_keyword_payload,

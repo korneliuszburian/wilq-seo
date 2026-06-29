@@ -17444,6 +17444,12 @@ def test_action_recommended_reasons_do_not_expose_route_slugs(
         "/social-publisher",
     ):
         assert route_slug not in visible_copy
+    for stale_term in (
+        "evidence",
+        "source connector",
+        "blocked claims",
+    ):
+        assert stale_term not in visible_copy
     assert "W widoku Merchant" in visible_copy
     assert "W widoku Treści" in visible_copy
     assert "W widoku GA4" in visible_copy

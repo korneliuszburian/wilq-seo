@@ -30,6 +30,10 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Action reason copy no longer mixes Polish with the raw English word
+  `evidence`. The negative-keyword review reason now says `bieżące dowody`,
+  and `/api/actions` plus `/actions` browser proof returned zero hits for the
+  guarded route slugs and stale English action-reason terms.
 - Full action and Centrum pracy API responses no longer expose generic metric
   dimension placeholders such as `wymiar`, `wymiar do sprawdzenia`,
   `wartość wymiaru do sprawdzenia` or `wartość do sprawdzenia`. Shared metric
