@@ -1685,7 +1685,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert knowledge_binding.action_summary_label == "brak akcji do sprawdzenia"
     assert knowledge_binding.knowledge_summary_label == "brak użytej wiedzy"
     assert knowledge_binding.required_evidence_summary_label == "brak wymaganych dowodów"
-    assert knowledge_binding.missing_contract_summary_label == "brak brakujących danych"
+    assert knowledge_binding.missing_contract_summary_label == "dane kompletne"
     assert knowledge_binding.missing_contract_detail_label == "brak"
     assert knowledge_binding.has_missing_contracts is False
     assert knowledge_binding.blocked_claim_summary_label == "brak zakazanych obietnic"
@@ -12304,7 +12304,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["missing_read_contracts"] == []
     assert negative_keywords_contract["missing_read_contract_labels"] == []
     assert negative_keywords_contract["missing_read_contract_summary_label"] == (
-        "brak brakujących danych"
+        "dane kompletne"
     )
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
     assert (

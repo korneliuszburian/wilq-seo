@@ -142,7 +142,7 @@ describe("KnowledgePanels", () => {
             expert_rule_count: 1,
             binding_count: 1,
             blocked_binding_summary_label: "brak zablokowanych decyzji",
-            missing_contract_summary_label: "brak brakujących danych",
+            missing_contract_summary_label: "dane kompletne",
             blocked_claim_count_summary_label: "brak zablokowanych obietnic",
             bindings: [
               {
@@ -171,7 +171,7 @@ describe("KnowledgePanels", () => {
                 required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
-                missing_contract_summary_label: "brak brakujących danych",
+                missing_contract_summary_label: "dane kompletne",
                 missing_contract_detail_label: "brak",
                 has_missing_contracts: false,
                 blocked_claims: [],
@@ -214,7 +214,7 @@ describe("KnowledgePanels", () => {
             expert_rule_count: 1,
             binding_count: 1,
             blocked_binding_summary_label: "brak zablokowanych decyzji",
-            missing_contract_summary_label: "brak brakujących danych",
+            missing_contract_summary_label: "dane kompletne",
             blocked_claim_count_summary_label: "1 zablokowana obietnica",
             bindings: [
               {
@@ -243,7 +243,7 @@ describe("KnowledgePanels", () => {
                 required_evidence_summary_label: "1 wymagany dowód",
                 missing_contracts: [],
                 missing_contract_labels: [],
-                missing_contract_summary_label: "brak brakujących danych",
+                missing_contract_summary_label: "dane kompletne",
                 missing_contract_detail_label: "brak",
                 has_missing_contracts: false,
                 blocked_claims: ["ranking_guarantee"],

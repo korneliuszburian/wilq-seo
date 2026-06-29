@@ -151,6 +151,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         <TraceLine
           label="Brakujące dane"
           values={decision.missing_read_contract_labels}
+          empty="dane kompletne"
         />
         <TraceLine
           label="Czego nie wolno obiecać"
@@ -192,6 +193,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         <TraceLine
           label="Brakujące dane"
           values={contract.missing_read_contract_labels}
+          empty="dane kompletne"
         />
         <TraceLine
           label="Co trzeba sprawdzić"

@@ -65,6 +65,10 @@ surfaces must show marketer-readable decisions, why they matter, the safe next
 step, blockers, source freshness and proof summaries in Polish. Technical
 connector state, payload previews, ActionObject/audit details and raw IDs stay
 behind technical detail unless they directly block action.
+Operator-facing content must defend itself: every first-screen summary,
+decision card and empty state should be understandable without developer
+translation and should state the decision, reason, proof, blocker or next safe
+step directly.
 
 ## Codex skills and hooks rules
 

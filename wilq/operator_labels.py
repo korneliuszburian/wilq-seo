@@ -549,7 +549,7 @@ def missing_contract_labels(contracts: Iterable[object]) -> list[str]:
 def missing_contract_count_label(contracts: Iterable[object]) -> str:
     count = len(missing_contract_labels(contracts))
     if count == 0:
-        return "brak brakujących danych"
+        return "dane kompletne"
     if count == 1:
         return "1 brakujący zakres danych"
     if 2 <= count <= 4:

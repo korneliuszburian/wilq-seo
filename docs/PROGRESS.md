@@ -133,6 +133,14 @@ API status later contradicts this state.
   się oprzeć` instead of the contract-like `Dozwolone dowody`; focused
   dashboard tests, typecheck/lint, language guards and browser proof for both
   routes passed.
+- Empty missing-data states now say `dane kompletne` instead of awkward
+  negative phrasing such as `brak brakujących danych` or `Brakujące dane:
+  brak`; focused API/dashboard tests, language guards and Ahrefs browser/API
+  proof passed.
+- `AGENTS.md` now codifies the marketer-content rule: first-screen summaries,
+  decision cards and empty states must be understandable without developer
+  translation and must state the decision, reason, proof, blocker or next safe
+  step directly.
 - Action detail now hides legacy English apply/audit summaries from the
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;

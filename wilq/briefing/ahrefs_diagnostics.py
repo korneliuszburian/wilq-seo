@@ -720,7 +720,7 @@ def _gap_fact_label(name: str) -> str:
 
 def _missing_gap_contracts_summary(missing_contracts: list[str]) -> str:
     if not missing_contracts:
-        return "brak"
+        return "dane kompletne"
     return ", ".join(_missing_gap_contract_label(contract) for contract in missing_contracts)
 
 

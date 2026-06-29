@@ -6038,7 +6038,7 @@ const ahrefsDiagnostics = {
     status: "ready",
     status_label: "gotowe",
     title: "Luki SEO z Ahrefs",
-    summary: "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: brak.",
+    summary: "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: dane kompletne.",
     available_read_contracts: [
       "ahrefs_authority_summary",
       "ahrefs_gap_metric_facts",
@@ -6059,7 +6059,7 @@ const ahrefsDiagnostics = {
     ],
     missing_read_contracts: [],
     missing_read_contract_labels: [],
-    missing_read_contract_summary_label: "brak brakujących danych",
+    missing_read_contract_summary_label: "dane kompletne",
     allowed_evidence: [
       "domain_rating",
       "ahrefs_rank",
@@ -6364,7 +6364,7 @@ const ahrefsDiagnostics = {
       decision_type_label: "sprawdzenie luk",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
-        "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: brak.",
+        "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: dane kompletne.",
       rationale:
         "To są konkretne rekordy z dowodami Ahrefs, więc mogą wejść do sprawdzenia SEO i treści.",
       next_step:
@@ -6780,7 +6780,7 @@ const knowledgeOperatingMap = {
   expert_rule_count: 1,
   binding_count: 1,
   blocked_binding_summary_label: "brak zablokowanych decyzji",
-  missing_contract_summary_label: "brak brakujących danych",
+  missing_contract_summary_label: "dane kompletne",
   blocked_claim_count_summary_label: "1 zablokowana obietnica",
   bindings: [
     {
@@ -6807,7 +6807,7 @@ const knowledgeOperatingMap = {
       required_evidence_summary_label: "2 wymagane dowody",
       missing_contracts: [],
       missing_contract_labels: [],
-      missing_contract_summary_label: "brak brakujących danych",
+      missing_contract_summary_label: "dane kompletne",
       missing_contract_detail_label: "brak",
       has_missing_contracts: false,
       blocked_claims: ["ocena zmarnowanego budżetu"],
@@ -7401,7 +7401,7 @@ function mockWorkflowAndKnowledgeApi(url: string) {
               metric_tiles: { decyzje: 4, blokady: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               missing_contract_labels: [],
-              missing_contract_summary_label: "brak brakujących danych",
+              missing_contract_summary_label: "dane kompletne",
               missing_contract_detail_label: "brak",
               risk: "low",
               risk_label: "niskie ryzyko"
@@ -8629,8 +8629,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("pozycja w rankingu Ahrefs").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Na czym można się oprzeć:/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Brakujące dane: brak/)).not.toBeInTheDocument();
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("brak brakujących danych")).toBeInTheDocument();
+    expect(screen.getByText("dane kompletne")).toBeInTheDocument();
     expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/gap read contract/i)).not.toBeInTheDocument();

@@ -258,6 +258,7 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
         <TraceLine
           label="Brakujące dane"
           values={decision.missing_read_contract_labels}
+          empty="dane kompletne"
         />
         <TraceLine
           label="Czego nie wolno obiecać"
