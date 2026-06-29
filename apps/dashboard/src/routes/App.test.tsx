@@ -5350,9 +5350,9 @@ const contentDiagnostics = {
             "propozycja treści"
           ],
           gsc_demand: "present",
-          gsc_demand_label: "jest",
+          gsc_demand_label: "jest w GSC",
           wordpress_inventory_match: "present",
-          wordpress_inventory_match_label: "jest",
+          wordpress_inventory_match_label: "jest w WordPress",
           gsc_overlap_terms: ["audyt środowiskowy"],
           wordpress_overlap_urls: ["https://www.ekologus.pl/audyt-srodowiskowy/"],
           keyword: "audyt środowiskowy",
@@ -8345,6 +8345,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByRole("button", { name: "Pokaż plany treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż pełny przegląd treści" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Pokaż akcje do sprawdzenia" })).toBeInTheDocument();
+    expect(screen.queryByText("Źródło: brak")).not.toBeInTheDocument();
     expect(screen.queryByText("google_ads")).not.toBeInTheDocument();
     expect(screen.queryByText("google_analytics_4")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
@@ -8424,6 +8425,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("decision.evidence_summary_label");
     expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("item.evidence_summary_label");
+    expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain("action.payload.content_brief_preview");
     expect(routeSource).not.toContain("action.payload.wordpress_draft_payload_preview");
     expect(routeSource).not.toContain("formatContentEvidenceCount");
@@ -8592,10 +8594,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Odbiorca:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/CTA:/)).not.toBeInTheDocument();
     expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("GSC: jest")).toBeInTheDocument();
-    expect(screen.getByText("WP: jest")).toBeInTheDocument();
-    expect(screen.getByText("Overlap GSC: audyt środowiskowy")).toBeInTheDocument();
-    expect(screen.getByText("Overlap WP: /audyt-srodowiskowy/")).toBeInTheDocument();
+    expect(screen.getByText("GSC: jest w GSC")).toBeInTheDocument();
+    expect(screen.getByText("WP: jest w WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Wspólne zapytania GSC: audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("Powiązane URL-e WordPress: /audyt-srodowiskowy/")).toBeInTheDocument();
     expect(screen.getByText("Szkic WordPress po sprawdzeniu")).toBeInTheDocument();
     expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
     expect(screen.getAllByText("Szkic WordPress do sprawdzenia").length).toBeGreaterThan(0);

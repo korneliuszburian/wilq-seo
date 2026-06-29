@@ -15268,7 +15268,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert zielony_lad_candidate["relevance_status"] == "relevant"
     assert zielony_lad_candidate["gsc_demand"] == "present"
+    assert zielony_lad_candidate["gsc_demand_label"] == "jest w GSC"
     assert zielony_lad_candidate["wordpress_inventory_match"] == "present"
+    assert zielony_lad_candidate["wordpress_inventory_match_label"] == "jest w WordPress"
     assert zielony_lad_candidate["gsc_overlap_terms"] == ["zielony ład"]
     assert zielony_lad_candidate["wordpress_overlap_urls"] == [
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -15296,6 +15298,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "rekomendacja treści poza zakresem" in ahrefs_decision["blocked_claims"]
     assert "wzrost ruchu" in ahrefs_decision["blocked_claims"]
     assert "ev_refresh_ahrefs_gap_records" in payload["evidence_ids"]
+    assert all(
+        candidate["gsc_demand_label"] != "brak"
+        and candidate["wordpress_inventory_match_label"] != "brak"
+        for candidate in ahrefs_decision["ahrefs_candidate_rows"]
+    )
 
     context_response = client.post(
         "/api/codex/context-pack",

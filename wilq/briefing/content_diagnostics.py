@@ -1918,9 +1918,11 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
             _content_ahrefs_reason_label(reason) for reason in score.reasons
         ],
         gsc_demand="present" if gsc_overlap else "missing",
-        gsc_demand_label="jest" if gsc_overlap else "brak",
+        gsc_demand_label="jest w GSC" if gsc_overlap else "brak dopasowania w GSC",
         wordpress_inventory_match="present" if wordpress_overlap else "missing",
-        wordpress_inventory_match_label="jest" if wordpress_overlap else "brak",
+        wordpress_inventory_match_label=(
+            "jest w WordPress" if wordpress_overlap else "brak dopasowania w WordPress"
+        ),
         gsc_overlap_terms=list(score.gsc_overlap_terms),
         wordpress_overlap_urls=list(score.wordpress_overlap_urls),
         keyword=dimensions.get("keyword") or None,

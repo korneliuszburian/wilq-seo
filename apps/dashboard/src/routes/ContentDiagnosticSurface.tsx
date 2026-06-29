@@ -576,6 +576,7 @@ function ContentSelectedDecisionPanel({
               ]
                 .filter(Boolean)
                 .map(shortPath)}
+              empty="adres źródłowy do potwierdzenia"
             />
             <TraceLine
               label="Podgląd"
@@ -676,7 +677,11 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb treści</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Tryby decyzji" values={summary.decision_type_labels} empty="brak" />
+            <TraceLine
+              label="Tryby decyzji"
+              values={summary.decision_type_labels}
+              empty="brak trybów decyzji"
+            />
             <TraceLine
               label="Dopasowania WordPress"
               values={[
@@ -693,7 +698,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             <TraceLine
               label="Dowody"
               values={[summary.evidence_summary_label]}
-              empty="brak"
+              empty="brak dowodów źródłowych"
             />
             <TraceLine label="Akcje" values={[summary.action_summary_label]} />
             <TraceLine
@@ -835,12 +840,14 @@ function ContentDecisionCard({
                   values={candidate.business_relevance_reason_labels}
                 />
                 <TraceLine
-                  label="Overlap GSC"
+                  label="Wspólne zapytania GSC"
                   values={candidate.gsc_overlap_terms.slice(0, 3)}
+                  empty="brak wspólnych zapytań w GSC"
                 />
                 <TraceLine
-                  label="Overlap WP"
+                  label="Powiązane URL-e WordPress"
                   values={candidate.wordpress_overlap_urls.map(shortPath).slice(0, 3)}
+                  empty="brak powiązanych URL-i WordPress"
                 />
               </div>
             ))}
@@ -851,7 +858,7 @@ function ContentDecisionCard({
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
         <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine label="Akcje" values={[decision.action_summary_label]} />

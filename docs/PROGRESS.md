@@ -132,6 +132,10 @@ API status later contradicts this state.
 - Localo and Ahrefs dashboard evidence traces no longer use generic `brak`
   empty states. Focused route tests, dashboard typecheck/lint, language guards
   and browser proofs passed.
+- Content diagnostics no longer expose generic Ahrefs/GSC overlap labels such
+  as `GSC: brak` or `Overlap GSC`; API labels now distinguish confirmed GSC or
+  WordPress matches from missing overlap. Focused API/dashboard tests,
+  typecheck/lint, language guards, context-pack guard and browser proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof
