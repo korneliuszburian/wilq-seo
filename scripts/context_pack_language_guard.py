@@ -20,6 +20,10 @@ DEFAULT_SKILLS = (
 )
 
 FORBIDDEN_ACTION_PLAN_KEYS = (
+    "action_type",
+    "connector",
+    "mode",
+    "operation_type",
     "payload_preview",
     "budget_payload_preview",
     "custom_segment_payload_preview",

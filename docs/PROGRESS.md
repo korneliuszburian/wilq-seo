@@ -134,8 +134,9 @@ API status later contradicts this state.
 - Skill context-pack `action_plan` no longer exposes technical preview/safety
   field names such as `payload_preview`, `preview_contract`,
   `required_validation`, `apply_allowed`, `api_mutation_ready` or
-  `destructive`. Compact action plans now use preview lists and Polish status
-  labels for operator-facing skill context.
+  `destructive`, and no longer repeats raw action type/connector/mode fields.
+  Compact action plans now use preview lists and Polish status labels for
+  operator-facing skill context.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
