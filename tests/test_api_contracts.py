@@ -18735,7 +18735,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         for action in data["active_action_objects"]
         if action["id"] == SEARCH_TERM_NGRAM_ACTION_ID
     )
-    assert ngram_context_action["action_plan"]["ngram_preview_included"] <= 4
+    assert ngram_context_action["action_plan"]["search_term_theme_preview_items_included"] <= 4
     ngram_context_text = json.dumps(ngram_context_action, ensure_ascii=False)
     assert "N-gram review" not in ngram_context_text
     assert "search-term evidence" not in ngram_context_text

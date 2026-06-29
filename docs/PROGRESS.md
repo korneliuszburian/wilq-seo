@@ -138,6 +138,8 @@ API status later contradicts this state.
   Compact action plans now use preview lists and Polish status labels for
   operator-facing skill context. Raw `source_metric_names` are also removed
   from compact action plans; metric meaning must come through labels/summaries.
+  Search-term theme previews use marketer-readable compact keys instead of
+  `ngram_preview`, and validation counters use required-check naming.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

@@ -3324,6 +3324,7 @@ ACTION_PLAN_LIST_KEY_LABELS = {
     "budget_payload_preview": "budget_preview_items",
     "custom_segment_payload_preview": "custom_segment_preview_items",
     "negative_keyword_payload_preview": "negative_keyword_preview_items",
+    "ngram_preview": "search_term_theme_preview_items",
     "content_brief_preview": "content_plan_items",
     "wordpress_draft_payload_preview": "wordpress_draft_preview_items",
 }
@@ -3371,6 +3372,9 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
     if isinstance(required_validation_labels, list):
         value.setdefault("required_check_labels", required_validation_labels)
     value.pop("required_validation", None)
+    required_validation_total = value.pop("required_validation_total", None)
+    if isinstance(required_validation_total, int):
+        value.setdefault("required_checks_total", required_validation_total)
 
     apply_allowed = value.pop("apply_allowed", None)
     if isinstance(apply_allowed, bool):
