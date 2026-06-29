@@ -92,6 +92,49 @@ const operatingRoutes = [
   "/settings"
 ];
 
+const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
+  "/ads-doctor": () => (
+    <LazyRoute>
+      <AdsDoctorSurface />
+    </LazyRoute>
+  ),
+  "/ads-doctor/custom-segments": () => (
+    <LazyRoute>
+      <CustomSegmentsDiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/ads-doctor/demand-gen": () => (
+    <LazyRoute>
+      <DemandGenDiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/ga4": () => (
+    <LazyRoute>
+      <Ga4DiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/localo": () => (
+    <LazyRoute>
+      <LocaloDiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/ahrefs": () => (
+    <LazyRoute>
+      <AhrefsDiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/merchant": () => (
+    <LazyRoute>
+      <MerchantDiagnosticSurface />
+    </LazyRoute>
+  ),
+  "/content-planner": () => (
+    <LazyRoute>
+      <ContentDiagnosticSurface title={briefSurfaceConfigs["/content-planner"].title} />
+    </LazyRoute>
+  )
+};
+
 function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" | "evidence" }) {
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const id = params.actionId ?? params.opportunityId ?? params.workflowId ?? params.evidenceId ?? "";
@@ -103,6 +146,14 @@ function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflow
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingBand />}>{children}</Suspense>;
+}
+
+function renderGeneratedRoute(path: string) {
+  const dedicatedRenderer = dedicatedRouteRenderers[path];
+  if (dedicatedRenderer) return dedicatedRenderer();
+  const briefConfig = briefSurfaceConfigs[path];
+  if (briefConfig) return <BriefWorkflowSurface config={briefConfig} />;
+  return <GenericSurface routeName={path} />;
 }
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -156,70 +207,7 @@ const generatedRoutes = operatingRoutes.map((path) =>
   createRoute({
     getParentRoute: () => rootRoute,
     path,
-    component: () => {
-      if (path === "/ads-doctor") {
-        return (
-          <LazyRoute>
-            <AdsDoctorSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/ads-doctor/custom-segments") {
-        return (
-          <LazyRoute>
-            <CustomSegmentsDiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/ads-doctor/demand-gen") {
-        return (
-          <LazyRoute>
-            <DemandGenDiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/ga4") {
-        return (
-          <LazyRoute>
-            <Ga4DiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/localo") {
-        return (
-          <LazyRoute>
-            <LocaloDiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/ahrefs") {
-        return (
-          <LazyRoute>
-            <AhrefsDiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/merchant") {
-        return (
-          <LazyRoute>
-            <MerchantDiagnosticSurface />
-          </LazyRoute>
-        );
-      }
-      if (path === "/content-planner") {
-        return (
-          <LazyRoute>
-            <ContentDiagnosticSurface title={briefSurfaceConfigs[path].title} />
-          </LazyRoute>
-        );
-      }
-      const briefConfig = briefSurfaceConfigs[path];
-      return briefConfig ? (
-        <BriefWorkflowSurface config={briefConfig} />
-      ) : (
-        <GenericSurface routeName={path} />
-      );
-    }
+    component: () => renderGeneratedRoute(path)
   })
 );
 

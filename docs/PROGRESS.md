@@ -30,6 +30,13 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- `App.tsx` route composition now uses a dedicated route renderer map instead
+  of a long conditional chain for generated dashboard routes. Focused dashboard
+  tests, typecheck, lint, Fallow audit/health, marketer/context-pack language
+  guards, `git diff --check` and browser proof for `/merchant`,
+  `/content-planner` and `/settings` passed. Fallow still lists `App.tsx` as a
+  historical hotspot because of churn, but there are no current refactoring
+  targets.
 - `App.test.tsx` mock API handler was split into focused endpoint handlers.
   Fallow no longer reports high-confidence refactoring targets; changed-file
   Fallow audit, dashboard typecheck, focused dashboard tests, lint,

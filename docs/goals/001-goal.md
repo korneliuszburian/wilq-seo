@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- `App.tsx` generated route composition now uses a dedicated route renderer map
+  instead of a long conditional chain. Fallow still lists `App.tsx` as a
+  historical hotspot because of churn, but no current refactoring target is
+  reported.
 - `App.test.tsx` mock API routing is split into focused endpoint handlers.
   Fallow no longer reports high-confidence refactoring targets. `App.test.tsx`
   remains a size/churn hotspot, but no current function-level target is blocking
