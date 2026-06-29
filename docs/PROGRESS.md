@@ -62,8 +62,12 @@ API status later contradicts this state.
 - `lucide-react` has been upgraded to `1.22.0`. Dashboard typecheck, focused
   route tests, lint, production build, Fallow changed-file audit and browser
   proof for `/command-center` passed after the upgrade.
+- `jsdom` has been upgraded to `29.1.1`. Dashboard typecheck, full dashboard
+  test suite, lint, production build, Fallow changed-file audit,
+  marketer/context-pack language guards and browser proof for `/command-center`
+  passed after the upgrade.
 - The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest, Zod, Tailwind, jsdom,
+  as separate verified slices: Vite, Vitest, Zod, Tailwind,
   `@vitejs/plugin-react`, `@types/node` and TypeScript.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
