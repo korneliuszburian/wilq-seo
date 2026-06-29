@@ -266,6 +266,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   `docs/handoffs/2026-06-29-marketer-uat-ready.md`. Goal 001 still needs a
   filled real marketer UAT result or explicit owner defer before completion can
   be claimed.
+- Completion proof is machine-guarded by
+  `scripts/goal_001_completion_check.py`. Without `--uat-result` or
+  `--owner-defer`, the expected status is `blocked_missing_uat_proof`.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`
@@ -326,6 +329,8 @@ are resolved or explicitly deferred.
 9. Real marketer UAT is still required for usefulness claims unless explicitly
    deferred by the owner. Use
    `docs/handoffs/2026-06-29-marketer-uat-ready.md` as the current handoff.
+   Guard command:
+   `rtk uv run python scripts/goal_001_completion_check.py --format markdown`.
 
 ## Execution Policy
 

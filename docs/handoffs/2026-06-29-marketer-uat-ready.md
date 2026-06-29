@@ -78,6 +78,41 @@ rtk uv run python scripts/record_marketer_uat_result.py \
   --format markdown > .local-lab/proof/marketer-uat-result-20260629.md
 ```
 
+## Check Completion Proof
+
+Before claiming Goal 001 completion, run the guard:
+
+```bash
+rtk uv run python scripts/goal_001_completion_check.py \
+  --uat-result .local-lab/proof/marketer-uat-result-20260629.json \
+  --format markdown
+```
+
+If the owner explicitly defers real UAT instead of running the session, save a
+JSON note under `.local-lab/proof/`, for example:
+
+```json
+{
+  "odroczenie_realnego_uat": true,
+  "data": "2026-06-29",
+  "osoba": "<owner>",
+  "powód": "<dlaczego UAT jest odroczony>",
+  "co_można_pokazać": "<bezpieczny zakres demo>",
+  "zablokowane_obietnice": [
+    "potwierdzona użyteczność marketera",
+    "gotowość bez developera"
+  ]
+}
+```
+
+Then run:
+
+```bash
+rtk uv run python scripts/goal_001_completion_check.py \
+  --owner-defer .local-lab/proof/marketer-uat-owner-defer-20260629.json \
+  --format markdown
+```
+
 ## Completion Rule
 
 Goal 001 can only claim UAT completion when one of these is true:

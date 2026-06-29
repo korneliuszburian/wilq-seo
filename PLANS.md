@@ -571,6 +571,10 @@ WILQ is complete for this long-range goal when:
 - 2026-06-29: Live UAT packet export was cleaned for marketer use: visible
   snapshots now use Polish operator fields, and the result recorder accepts the
   matching Polish filled-result format. Real marketer UAT remains open.
+- 2026-06-29: Added `scripts/goal_001_completion_check.py`, which blocks Goal
+  001 completion unless a filled real marketer UAT result or explicit owner
+  defer note is provided. This keeps technical cleanup proof separate from
+  human usefulness proof.
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from

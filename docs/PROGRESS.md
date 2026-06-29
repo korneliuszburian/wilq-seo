@@ -229,6 +229,10 @@ Date: 2026-06-29
 - Durable UAT handoff: `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
   Next completion step is a filled real UAT result or an explicit owner defer
   note; do not replace that with more technical proof.
+- Goal 001 completion proof is guarded by
+  `scripts/goal_001_completion_check.py`. Running it without `--uat-result` or
+  `--owner-defer` must return `blocked_missing_uat_proof`; that is the honest
+  current state until UAT/defer evidence exists.
 - Fresh first-party Google reads are healthy after the latest stack restart:
   GSC, GA4 and Merchant are `configured`, have no missing credentials and have
   fresh `last_success_at` values from 2026-06-29T02:30Z. LinkedIn and Facebook
@@ -279,10 +283,22 @@ Date: 2026-06-29
 9. Real marketer UAT is still required for a usefulness claim unless the owner
    explicitly defers it. Current handoff:
    `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
+   Guard:
+   `rtk uv run python scripts/goal_001_completion_check.py --format markdown`.
 
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Completion guard for UAT/defer: `scripts/goal_001_completion_check.py`
+  validates either a filled real UAT result or an explicit owner defer note.
+  Without those inputs it returns `blocked_missing_uat_proof`, preventing a
+  technical cleanup pass from being mistaken for a human usefulness proof.
+  Verification:
+  - `rtk uv run pytest tests/test_goal_001_completion_check.py tests/test_marketer_uat_result.py -q`
+  - `rtk uv run python scripts/goal_001_completion_check.py --format markdown || true`
+
+Previous verified local slice:
 
 - UAT packet cleanup: `scripts/export_marketer_uat_packet.py` now exports
   marketer-readable Polish snapshot fields, and
