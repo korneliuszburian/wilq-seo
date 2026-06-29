@@ -33,7 +33,7 @@ class WorkflowOutput(BaseModel):
     error_summary_label: str = ""
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self) -> "WorkflowOutput":
+    def hydrate_operator_labels(self) -> WorkflowOutput:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -80,7 +80,7 @@ class Workflow(BaseModel):
     risk_label: str | None = None
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self) -> "Workflow":
+    def hydrate_operator_labels(self) -> Workflow:
         if not self.source_connector_labels:
             self.source_connector_labels = source_connector_labels(self.source_connectors)
         if not self.source_connector_summary_label:
@@ -94,9 +94,7 @@ class Workflow(BaseModel):
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = blocked_claim_labels(self.blocked_claims)
         if not self.blocked_claim_summary_label:
-            self.blocked_claim_summary_label = blocked_claim_count_label(
-                self.blocked_claims
-            )
+            self.blocked_claim_summary_label = blocked_claim_count_label(self.blocked_claims)
         if not self.missing_contract_labels:
             self.missing_contract_labels = missing_contract_labels(self.missing_contracts)
         if not self.missing_contract_summary_label:
@@ -121,7 +119,7 @@ class WorkflowRun(BaseModel):
     output: WorkflowOutput = Field(default_factory=WorkflowOutput)
 
     @model_validator(mode="after")
-    def hydrate_labels(self) -> "WorkflowRun":
+    def hydrate_labels(self) -> WorkflowRun:
         if not self.status_label:
             self.status_label = _workflow_run_status_label(self.status)
         return self

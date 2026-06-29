@@ -68,7 +68,9 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
             if payload.get("oauth_scope") != "https://www.googleapis.com/auth/adwords":
                 errors.append(missing("Naprawa dostępu Google Ads", "zakresu dostępu Google Ads"))
             if not isinstance(payload.get("oauth_client_json_path"), str):
-                errors.append(missing("Naprawa dostępu Google Ads", "lokalnej ścieżki klienta OAuth"))
+                errors.append(
+                    missing("Naprawa dostępu Google Ads", "lokalnej ścieżki klienta OAuth")
+                )
             if not isinstance(payload.get("helper_commands"), list):
                 errors.append(missing("Naprawa dostępu Google Ads", "instrukcji pomocniczych"))
         if action_type == ADS_BUSINESS_CONTEXT_ACTION_TYPE:

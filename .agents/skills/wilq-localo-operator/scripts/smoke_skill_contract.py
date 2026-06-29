@@ -49,9 +49,7 @@ def latest_localo_run_from_pack(
         return diagnostics_run, "localo_diagnostics.latest_refresh"
 
     localo_refresh_runs = [
-        run
-        for run in pack.get("connector_refresh_runs", [])
-        if run.get("connector_id") == "localo"
+        run for run in pack.get("connector_refresh_runs", []) if run.get("connector_id") == "localo"
     ]
     if localo_refresh_runs:
         return localo_refresh_runs[0], "context_pack.connector_refresh_runs"
@@ -64,10 +62,7 @@ def main() -> int:
     parser.add_argument(
         "--refresh",
         action="store_true",
-        help=(
-            "Run an explicit Localo data read before validating "
-            "the skill contract."
-        ),
+        help=("Run an explicit Localo data read before validating the skill contract."),
     )
     args = parser.parse_args()
 
@@ -126,10 +121,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
     localo_blockers = [
         item
@@ -146,17 +138,11 @@ def main() -> int:
     )
     if latest_localo_run is None:
         if access_probe.get("status") != "unknown":
-            raise SystemExit(
-                "Missing Localo refresh run is allowed only for unknown access status"
-            )
+            raise SystemExit("Missing Localo refresh run is allowed only for unknown access status")
         if "localo_fix_access_before_visibility_review" not in decision_ids:
-            raise SystemExit(
-                "Missing Localo refresh run must expose the access review decision"
-            )
+            raise SystemExit("Missing Localo refresh run must expose the access review decision")
         if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
-            raise SystemExit(
-                "Missing Localo refresh run must keep visibility claims blocked"
-            )
+            raise SystemExit("Missing Localo refresh run must keep visibility claims blocked")
         latest_localo_run_source = "clean_runtime_without_refresh"
         latest_localo_run_status = "missing"
     else:
@@ -182,9 +168,7 @@ def main() -> int:
         if access_probe.get("status") != "access_ready":
             raise SystemExit("Completed Localo OAuth probe must produce access_ready diagnostics")
         localo_metric_facts = [
-            fact
-            for decision in decision_queue
-            for fact in decision.get("metric_facts", [])
+            fact for decision in decision_queue for fact in decision.get("metric_facts", [])
         ]
         if metric_summary.get("localo_read_contract_count"):
             if "localo_review_visibility_facts" not in decision_ids:
@@ -200,9 +184,7 @@ def main() -> int:
                 {},
             )
             allowed_evidence = set(review_decision.get("allowed_evidence") or [])
-            if not {"place_inventory", "local_rankings", "reviews"}.issubset(
-                allowed_evidence
-            ):
+            if not {"place_inventory", "local_rankings", "reviews"}.issubset(allowed_evidence):
                 raise SystemExit("Localo value review is missing aggregate evidence contracts")
             missing_contracts = set(review_decision.get("missing_read_contracts") or [])
             unsupported_contracts = {"local_tasks"}
@@ -232,15 +214,12 @@ def main() -> int:
             preview = payload_preview[0]
             if preview.get("preview_contract") != LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT:
                 raise SystemExit(
-                    "Localo review action must expose "
-                    f"{LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}"
+                    f"Localo review action must expose {LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}"
                 )
             if preview.get("apply_allowed") is not False:
                 raise SystemExit("Localo review change preview must keep apply_allowed=false")
             if preview.get("api_mutation_ready") is not False:
-                raise SystemExit(
-                    "Localo review change preview must keep api_mutation_ready=false"
-                )
+                raise SystemExit("Localo review change preview must keep api_mutation_ready=false")
             metric_snapshot = preview.get("metric_snapshot") or {}
             if not isinstance(metric_snapshot, dict) or not metric_snapshot:
                 raise SystemExit("Localo review change preview must include metric_snapshot")
@@ -280,9 +259,7 @@ def main() -> int:
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
     action_validations = []
-    active_action_ids = [
-        action.get("id") for action in pack.get("active_action_objects", [])
-    ]
+    active_action_ids = [action.get("id") for action in pack.get("active_action_objects", [])]
     if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids:
         quoted_action = urllib.parse.quote(LOCALO_VISIBILITY_REVIEW_ACTION_ID, safe="")
         validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")

@@ -306,9 +306,7 @@ def build_content_diagnostics(
     ]
     latest_refreshes = _latest_refreshes(CONTENT_CONNECTOR_IDS)
     metric_facts = (
-        metric_facts
-        if metric_facts is not None
-        else _content_metric_facts(CONTENT_CONNECTOR_IDS)
+        metric_facts if metric_facts is not None else _content_metric_facts(CONTENT_CONNECTOR_IDS)
     )
     metric_facts = [_content_metric_fact_with_api_label(fact) for fact in metric_facts]
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
@@ -348,11 +346,7 @@ def build_content_diagnostics(
     evidence_ids = _unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-            *(
-                evidence_id
-                for decision in decision_queue
-                for evidence_id in decision.evidence_ids
-            ),
+            *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
         ]
     )
     action_ids = _unique(
@@ -364,19 +358,13 @@ def build_content_diagnostics(
     response_source_connectors = _unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
-            *(
-                connector
-                for decision in decision_queue
-                for connector in decision.source_connectors
-            ),
+            *(connector for decision in decision_queue for connector in decision.source_connectors),
         ]
     )
     return ContentDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connectors=[_content_connector_with_api_label(connector) for connector in connectors],
-        latest_refreshes=[
-            _content_refresh_with_api_label(refresh) for refresh in latest_refreshes
-        ],
+        latest_refreshes=[_content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
         live_data_available=live_data_available,
         live_data_status_label=_content_live_data_status_label(live_data_available),
         query_page_count=_query_page_count(content_tactical_items),
@@ -400,9 +388,7 @@ def build_content_preflight(
     diagnostics = diagnostics or build_content_diagnostics()
     items = [_content_preflight_item(decision) for decision in diagnostics.decision_queue]
     primary_item = next((item for item in items if item.status != "blocked"), None)
-    source_connectors = _unique(
-        connector for item in items for connector in item.source_connectors
-    )
+    source_connectors = _unique(connector for item in items for connector in item.source_connectors)
     return ContentPreflightResponse(
         strict_instruction=(
             "Bramka pisania działa przed planem treści i szkicem. Nie wolno pisać "
@@ -425,9 +411,7 @@ def _operator_summary(
 ) -> ContentOperatorSummary:
     top_decisions = decisions[:4]
     current_site_match_count = sum(
-        1
-        for decision in decisions
-        if _content_decision_has_public_final_canonical(decision)
+        1 for decision in decisions if _content_decision_has_public_final_canonical(decision)
     )
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
@@ -450,31 +434,22 @@ def _operator_summary(
         ),
         current_site_match_count=current_site_match_count,
         decision_type_labels=_unique(
-            _content_decision_type_summary_label(decision.decision_type)
-            for decision in decisions
+            _content_decision_type_summary_label(decision.decision_type) for decision in decisions
         ),
         source_connectors=_unique(
-            connector
-            for decision in top_decisions
-            for connector in decision.source_connectors
+            connector for decision in top_decisions for connector in decision.source_connectors
         ),
         evidence_ids=_unique(
-            evidence_id
-            for decision in top_decisions
-            for evidence_id in decision.evidence_ids
+            evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
         ),
         evidence_summary_label=evidence_count_label(
             _unique(
-                evidence_id
-                for decision in top_decisions
-                for evidence_id in decision.evidence_ids
+                evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
             )
         ),
         action_ids=action_ids,
         action_summary_label=action_count_label(action_ids),
-        blocked_claims=_unique(
-            claim for section in sections for claim in section.blocked_claims
-        ),
+        blocked_claims=_unique(claim for section in sections for claim in section.blocked_claims),
         blocked_claim_labels=_content_blocked_claim_labels(
             claim for section in sections for claim in section.blocked_claims
         ),
@@ -615,11 +590,7 @@ def _content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
     urls = []
     if decision.wordpress_match == "found":
         urls.append(_content_decision_final_canonical_url(decision) or decision.source_public_url)
-    urls.extend(
-        url
-        for row in decision.ahrefs_candidate_rows
-        for url in row.wordpress_overlap_urls
-    )
+    urls.extend(url for row in decision.ahrefs_candidate_rows for url in row.wordpress_overlap_urls)
     return _unique(url for url in urls if url)
 
 
@@ -747,7 +718,8 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
     }:
         return (
             "Potwierdź istniejący URL, kanoniczny adres i ryzyko duplikacji. Jeśli "
-            "kontrola przejdzie, WILQ może przygotować plan treści; jeśli nie, temat zostaje zablokowany."
+            "kontrola przejdzie, WILQ może przygotować plan treści; "
+            "jeśli nie, temat zostaje zablokowany."
         )
     if decision.decision_type == "block_as_tracking_not_content":
         return "Napraw lub potwierdź tracking GA4, a potem wróć do oceny treści."
@@ -796,7 +768,9 @@ def _content_marketer_content_angle(decision: ContentDecisionItem) -> str:
             "Plan pisania powstaje dopiero po kontroli spisu i kanonicznego URL-a."
         )
     if decision.decision_type == "block_as_tracking_not_content":
-        return "To nie jest jeszcze temat do pisania. Najpierw trzeba potwierdzić jakość pomiaru GA4."
+        return (
+            "To nie jest jeszcze temat do pisania. Najpierw trzeba potwierdzić jakość pomiaru GA4."
+        )
     if decision.decision_type == "review_ahrefs_gap_records":
         return (
             f"Traktuj temat {topic} jako inspirację do sprawdzenia, nie jako gotowy brief. "
@@ -819,12 +793,20 @@ def _content_marketer_h2_direction(decision: ContentDecisionItem) -> list[str]:
     if decision.decision_type == "block_until_vendor_read":
         return ["odczyt danych GSC", "spis treści WordPress"]
     if decision.decision_type == "refresh_or_merge":
-        return [f"co już odpowiada na temat {topic}", "co wymaga aktualizacji", "czego nie wolno obiecać"]
+        return [
+            f"co już odpowiada na temat {topic}",
+            "co wymaga aktualizacji",
+            "czego nie wolno obiecać",
+        ]
     if decision.decision_type in {
         "merge_create_after_inventory_check",
         "inventory_check_before_create",
     }:
-        return ["istniejące treści do sprawdzenia", "ryzyko duplikacji", "decyzja: zachować, odświeżyć, scalić albo utworzyć"]
+        return [
+            "istniejące treści do sprawdzenia",
+            "ryzyko duplikacji",
+            "decyzja: zachować, odświeżyć, scalić albo utworzyć",
+        ]
     if decision.decision_type == "block_as_tracking_not_content":
         return ["brak pomiaru", "co trzeba naprawić przed oceną treści"]
     return ["gap do sprawdzenia", "popyt w GSC", "dopasowanie do oferty Ekologus"]
@@ -1034,10 +1016,7 @@ def _query_page_section(
                 "WILQ nie ma metryk zapytań i URL-i z Google Search Console, więc nie może "
                 "wskazać odświeżenia, nowej treści ani scalenia bez zmyślania intencji."
             ),
-            next_step=(
-                "Uruchom odczyt danych z GSC i dopiero potem buduj "
-                "kolejkę treści."
-            ),
+            next_step=("Uruchom odczyt danych z GSC i dopiero potem buduj kolejkę treści."),
             source_connectors=["google_search_console"],
             evidence_ids=_refresh_or_connector_evidence_ids(
                 latest_refreshes,
@@ -1056,10 +1035,7 @@ def _query_page_section(
         id="content_query_page_matrix",
         title="GSC: zapytania i URL-e",
         status="ready",
-        summary=(
-            f"WILQ ma {len(gsc_items)} zadań GSC i "
-            f"{len(gsc_facts)} metryk zapytań i URL-i."
-        ),
+        summary=(f"WILQ ma {len(gsc_items)} zadań GSC i {len(gsc_facts)} metryk zapytań i URL-i."),
         diagnosis=(
             "Macierz zapytań i URL-i pozwala wskazać konkretne strony do "
             "odświeżenia, scalenia albo kontroli. To nie jest ogólny brainstorming tematów."
@@ -1099,14 +1075,10 @@ def _inventory_match_section(
         in {"content_object_count", "content_object_seen", "pages_total", "posts_total"}
     ]
     matched_items = [
-        item
-        for item in tactical_items
-        if item.dimensions.get("wordpress_match") == "found"
+        item for item in tactical_items if item.dimensions.get("wordpress_match") == "found"
     ]
     missing_items = [
-        item
-        for item in tactical_items
-        if item.dimensions.get("wordpress_match") == "missing"
+        item for item in tactical_items if item.dimensions.get("wordpress_match") == "missing"
     ]
     if not inventory_facts:
         return ContentDiagnosticSection(
@@ -1208,7 +1180,11 @@ def _content_action_safety_section(
         action_ids=action_ids,
         knowledge_card_ids=["card_wordpress_content_refresh_playbook"],
         expert_rule_ids=["content_brief_rules_v1", "content_voice_rules_v1"],
-        blocked_claims=["zapis do WordPress bez potwierdzenia", "automatyczna publikacja", "gwarancja pozycji"],
+        blocked_claims=[
+            "zapis do WordPress bez potwierdzenia",
+            "automatyczna publikacja",
+            "gwarancja pozycji",
+        ],
         risk=ActionRisk.medium,
     )
 
@@ -1450,9 +1426,7 @@ def _gsc_content_decisions(
         wordpress_match = first.dimensions.get("wordpress_match", "missing")
         query_count = _int_dimension(first, "gsc_page_query_count", len(page_items))
         queries = _unique(
-            item.dimensions.get("query")
-            for item in page_items
-            if item.dimensions.get("query")
+            item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
         )
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
@@ -2078,8 +2052,7 @@ def _score_ahrefs_gap_fact(
 
     hard_off_topic = False
     if any(
-        _matches_normalized_term(normalized_text, tokens, term)
-        for term in AHREFS_OFF_TOPIC_TERMS
+        _matches_normalized_term(normalized_text, tokens, term) for term in AHREFS_OFF_TOPIC_TERMS
     ):
         score -= 6
         hard_off_topic = True
@@ -2152,9 +2125,7 @@ def _matching_content_signal_labels(
     *,
     limit: int = 4,
 ) -> tuple[str, ...]:
-    return tuple(
-        _unique(signal.label for signal in signals if tokens & signal.tokens)[:limit]
-    )
+    return tuple(_unique(signal.label for signal in signals if tokens & signal.tokens)[:limit])
 
 
 def _ahrefs_relevance_reason_count(
@@ -2195,9 +2166,7 @@ def _normalized_domain(value: str | None) -> str | None:
 
 def _ahrefs_gap_sample_keywords(metric_facts: list[MetricFact]) -> list[str]:
     return _unique(
-        fact.dimensions.get("keyword")
-        for fact in metric_facts
-        if fact.dimensions.get("keyword")
+        fact.dimensions.get("keyword") for fact in metric_facts if fact.dimensions.get("keyword")
     )[:6]
 
 

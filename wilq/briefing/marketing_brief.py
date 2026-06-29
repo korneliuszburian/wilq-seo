@@ -207,11 +207,7 @@ def _marketing_brief_metric_facts(
         [connector.id for connector in connectors],
         limit_per_connector=MARKETING_BRIEF_CONNECTOR_FACT_LIMIT,
     )
-    return [
-        fact
-        for connector in connectors
-        for fact in facts_by_connector.get(connector.id, [])
-    ]
+    return [fact for connector in connectors for fact in facts_by_connector.get(connector.id, [])]
 
 
 def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
@@ -409,11 +405,7 @@ def _decision_recommendation_items(
 
 
 def _daily_decision_connector_ids(decisions: list[DailyDecision]) -> set[str]:
-    return {
-        connector_id
-        for decision in decisions
-        for connector_id in decision.source_connectors
-    }
+    return {connector_id for decision in decisions for connector_id in decision.source_connectors}
 
 
 def _decision_summary(decision: DailyDecision) -> str:
@@ -435,7 +427,9 @@ def _merge_items(
     return sorted(items_by_id.values(), key=lambda item: item.priority)
 
 
-def _item_semantic_key(item: MarketingBriefItem) -> tuple[
+def _item_semantic_key(
+    item: MarketingBriefItem,
+) -> tuple[
     str,
     str,
     tuple[str, ...],
@@ -524,8 +518,7 @@ def _metric_fact_allowed_by_latest_refresh(
     if latest_run is None:
         return True
     return (
-        latest_run.status == ConnectorRefreshStatus.completed
-        and latest_run.vendor_data_collected
+        latest_run.status == ConnectorRefreshStatus.completed and latest_run.vendor_data_collected
     )
 
 
@@ -562,9 +555,7 @@ def _blocker_items(
         priority = 1 if connector.id == "google_ads" else 5
         if connector.id == "localo":
             priority = 6
-        risk = (
-            ActionRisk.medium if connector.id in {"google_ads", "localo"} else ActionRisk.low
-        )
+        risk = ActionRisk.medium if connector.id in {"google_ads", "localo"} else ActionRisk.low
         blockers.append(
             MarketingBriefItem(
                 id=f"brief_blocker_{connector.id}",
@@ -591,9 +582,7 @@ def _stateful_brief_actions(
     blocker_items: list[MarketingBriefItem],
 ) -> list[ActionObject]:
     blocked_connector_ids = {
-        connector
-        for item in blocker_items
-        for connector in item.source_connectors
+        connector for item in blocker_items for connector in item.source_connectors
     }
     return [
         action
@@ -638,11 +627,7 @@ def _actions_for_daily_decisions(
     actions: list[ActionObject],
     decisions: list[DailyDecision],
 ) -> list[ActionObject]:
-    daily_action_ids = {
-        action_id
-        for decision in decisions
-        for action_id in decision.action_ids
-    }
+    daily_action_ids = {action_id for decision in decisions for action_id in decision.action_ids}
     if not daily_action_ids:
         return []
     return [action for action in actions if action.id in daily_action_ids]
@@ -730,10 +715,7 @@ def _recommendation_items(
                     "GSC ma kliknięcia, impressions, CTR i pozycję. Następny krok to "
                     "rozbicie zapytań i stron, nie ogólna burza tematów."
                 ),
-                next_step=(
-                    "Zbuduj kolejkę treści: odświeżyć, utworzyć, "
-                    "scalić albo zablokować."
-                ),
+                next_step=("Zbuduj kolejkę treści: odświeżyć, utworzyć, scalić albo zablokować."),
                 risk=ActionRisk.low,
             )
         )
@@ -751,10 +733,14 @@ def _recommendation_items(
                 source_connectors=["google_ads"],
                 evidence_ids=google_ads_blocker.evidence_ids,
                 summary=(
-                    "WILQ nie może uczciwie diagnozować zmarnowanego kosztu bez aktualnych dowodów Ads. "
+                    "WILQ nie może uczciwie diagnozować zmarnowanego kosztu "
+                    "bez aktualnych dowodów Ads. "
                     "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
-                next_step="Użyj sprawdzonej akcji do sprawdzenia, żeby przywrócić odczyt Google Ads.",
+                next_step=(
+                    "Użyj sprawdzonej akcji do sprawdzenia, "
+                    "żeby przywrócić odczyt Google Ads."
+                ),
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,
             )
@@ -875,8 +861,7 @@ def _refresh_reason_from_metrics(connector_id: str, run: ConnectorRefreshRun) ->
             )
         if connector_id == "google_merchant_center":
             return (
-                "odczyt Merchant Center zakończony; "
-                f"produkty: {metrics.get('total_products', 0)}"
+                f"odczyt Merchant Center zakończony; produkty: {metrics.get('total_products', 0)}"
             )
         if connector_id == "google_ads":
             return (
@@ -886,8 +871,7 @@ def _refresh_reason_from_metrics(connector_id: str, run: ConnectorRefreshRun) ->
             )
         if connector_id == "google_search_console":
             return (
-                "odczyt Google Search Console zakończony; "
-                f"wiersze: {metrics.get('row_count', 0)}"
+                f"odczyt Google Search Console zakończony; wiersze: {metrics.get('row_count', 0)}"
             )
         if connector_id == "wordpress_ekologus":
             return (
@@ -905,8 +889,6 @@ def _refresh_reason_from_metrics(connector_id: str, run: ConnectorRefreshRun) ->
         return "odczyt źródła danych zablokowany"
     if run.status == ConnectorRefreshStatus.failed:
         return "odczyt źródła danych zakończony błędem"
-    if run.status == ConnectorRefreshStatus.running:
-        return "odczyt źródła danych jest w toku"
     return "ostatni odczyt nie zebrał danych"
 
 
@@ -921,13 +903,9 @@ def _blocker_summary(
             "jeszcze zakończonego dostępu do danych lokalnej widoczności."
         )
     if run:
-        return (
-            f"Ostatni odczyt zakończył się statusem {run.status}. "
-            f"Powód: {reason}"
-        )
+        return f"Ostatni odczyt zakończył się statusem {run.status}. Powód: {reason}"
     return (
-        f"{_connector_label(connector.id)} nie może dostarczyć dowodów źródłowych. "
-        f"Powód: {reason}"
+        f"{_connector_label(connector.id)} nie może dostarczyć dowodów źródłowych. Powód: {reason}"
     )
 
 
@@ -937,9 +915,7 @@ def _blocker_next_step(connector_id: str, reason: str) -> str:
             "Przywróć dostęp Google Ads przez akcję walidowaną w WILQ i nie "
             "pokazuj rekomendacji Ads."
         )
-    if connector_id == "localo" and (
-        "LOCALO_ACCESS_TOKEN" in reason or "dostęp Localo" in reason
-    ):
+    if connector_id == "localo" and ("LOCALO_ACCESS_TOKEN" in reason or "dostęp Localo" in reason):
         return (
             "Dokończ połączenie Localo i wróć do danych lokalnej widoczności "
             "dopiero po potwierdzonym odczycie."

@@ -96,9 +96,7 @@ def normalize_for_marker_check(value: str) -> str:
 
 def has_metric_evidence_guardrails(value: str) -> bool:
     normalized = normalize_for_marker_check(value)
-    return "metryk" in normalized and (
-        "dowod" in normalized or "evidence" in normalized
-    )
+    return "metryk" in normalized and ("dowod" in normalized or "evidence" in normalized)
 
 
 def main() -> int:
@@ -275,8 +273,7 @@ def validate_command_center(command_center: Any, *, compact: bool = False) -> No
     leaked_decision_ids = sorted(forbidden_decision_ids & decision_ids)
     if leaked_decision_ids:
         raise SystemExit(
-            "Command center promoted non-core daily decisions: "
-            + ", ".join(leaked_decision_ids)
+            "Command center promoted non-core daily decisions: " + ", ".join(leaked_decision_ids)
         )
     expected_decision_ids = {
         plan_id.replace("plan_", "decision_", 1) for plan_id in required_plan_ids
@@ -356,14 +353,12 @@ def validate_marketing_brief(brief: Any) -> None:
     missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - set(action_ids))
     if missing_core_actions:
         raise SystemExit(
-            "Marketing brief missing core daily action IDs: "
-            + ", ".join(missing_core_actions)
+            "Marketing brief missing core daily action IDs: " + ", ".join(missing_core_actions)
         )
     forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & set(action_ids))
     if forbidden_actions:
         raise SystemExit(
-            "Marketing brief promotes non-core daily action IDs: "
-            + ", ".join(forbidden_actions)
+            "Marketing brief promotes non-core daily action IDs: " + ", ".join(forbidden_actions)
         )
 
 
@@ -380,15 +375,13 @@ def validate_daily_action_scope(
     missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - all_daily_action_ids)
     if missing_core_actions:
         raise SystemExit(
-            "Daily command context missing core action IDs: "
-            + ", ".join(missing_core_actions)
+            "Daily command context missing core action IDs: " + ", ".join(missing_core_actions)
         )
 
     forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & all_daily_action_ids)
     if forbidden_actions:
         raise SystemExit(
-            "Daily command context includes social action IDs: "
-            + ", ".join(forbidden_actions)
+            "Daily command context includes social action IDs: " + ", ".join(forbidden_actions)
         )
 
     active_action_objects = pack.get("active_action_objects") or []

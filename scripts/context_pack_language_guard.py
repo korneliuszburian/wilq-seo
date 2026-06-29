@@ -8,7 +8,6 @@ from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-
 DEFAULT_API_BASE = "http://127.0.0.1:8000"
 DEFAULT_SKILLS = (
     "wilq-daily-command",
@@ -65,7 +64,9 @@ def main() -> int:
         try:
             payload = _fetch_context_pack(args.api_base, skill, timeout=args.timeout)
         except RuntimeError as error:
-            errors.append({"skill": skill, "path": "$", "term": "fetch_failed", "value": str(error)})
+            errors.append(
+                {"skill": skill, "path": "$", "term": "fetch_failed", "value": str(error)}
+            )
             continue
         checked.append(skill)
         for path, value in _walk_string_values(payload):

@@ -105,9 +105,7 @@ def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
         actions = actions_future.result()
         refresh_runs = refresh_runs_future.result()
         command_center_facts_by_connector = command_facts_future.result()
-        tactical_queue = build_tactical_queue(
-            facts_by_connector=command_center_facts_by_connector
-        )
+        tactical_queue = build_tactical_queue(facts_by_connector=command_center_facts_by_connector)
     base = DailyRuntimeBase(
         connectors=connectors,
         actions=actions,
@@ -174,9 +172,13 @@ def build_daily_marketing_brief(
         if cached_brief is not None:
             return cached_brief
     base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
-    command_center = command_center if command_center is not None else build_daily_command_center(
-        use_cache=use_cache,
-        base=base,
+    command_center = (
+        command_center
+        if command_center is not None
+        else build_daily_command_center(
+            use_cache=use_cache,
+            base=base,
+        )
     )
     brief = build_marketing_brief(
         connectors=base.connectors,

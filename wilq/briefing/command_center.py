@@ -13,6 +13,11 @@ from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.briefing.merchant_labels import (
+    merchant_dimension_label,
+    merchant_dimension_value_label,
+    merchant_metric_fact_label,
+)
 from wilq.briefing.tactical_queue import (
     GSC_QUERY_PAGE_FACT_LIMIT,
     WORDPRESS_INVENTORY_FACT_LIMIT,
@@ -20,14 +25,15 @@ from wilq.briefing.tactical_queue import (
     is_ahrefs_gap_fact,
     is_reviewable_ahrefs_gap_fact,
 )
-from wilq.briefing.merchant_labels import (
-    merchant_dimension_label,
-    merchant_dimension_value_label,
-    merchant_metric_fact_label,
-)
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
+from wilq.operator_labels import (
+    freshness_state_label,
+    route_cta_label,
+    route_operator_label,
+    source_connector_label,
+)
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -49,12 +55,6 @@ from wilq.schemas import (
     TacticalQueueItem,
     TacticalQueueResponse,
     utc_now,
-)
-from wilq.operator_labels import (
-    freshness_state_label,
-    route_cta_label,
-    route_operator_label,
-    source_connector_label,
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
@@ -199,9 +199,7 @@ def _operator_brief_for_marketer(
     items: list[CommandCenterBriefItem],
 ) -> list[CommandCenterBriefItem]:
     return [
-        item.model_copy(
-            update={"blocked_claims": operator_blocked_claims(item.blocked_claims)}
-        )
+        item.model_copy(update={"blocked_claims": operator_blocked_claims(item.blocked_claims)})
         for item in items
     ]
 
@@ -580,9 +578,7 @@ def _daily_decision_freshness_by_connector(
         completed_at = _as_utc(run.completed_at or run.started_at)
         age = utc_now() - completed_at
         state: Literal["fresh", "stale"] = (
-            "fresh"
-            if age <= timedelta(hours=DAILY_DECISION_FRESH_AFTER_HOURS)
-            else "stale"
+            "fresh" if age <= timedelta(hours=DAILY_DECISION_FRESH_AFTER_HOURS) else "stale"
         )
         freshness_by_connector[connector_id] = FreshnessState(
             state=state,
@@ -689,9 +685,7 @@ def _decision_metric_fact_with_operator_labels(
     return fact.model_copy(
         update={
             "metric_label": merchant_metric_fact_label(fact.name),
-            "dimension_labels": {
-                key: merchant_dimension_label(key) for key in fact.dimensions
-            },
+            "dimension_labels": {key: merchant_dimension_label(key) for key in fact.dimensions},
             "dimension_value_labels": {
                 key: merchant_dimension_value_label(key, value)
                 for key, value in fact.dimensions.items()
@@ -775,15 +769,11 @@ def _ads_item_from_facts(
     ads_action_ids = _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
     if live_data_available:
         action_ids = [
-            action_id
-            for action_id in DAILY_ADS_REVIEW_ACTION_IDS
-            if action_id in ads_action_ids
+            action_id for action_id in DAILY_ADS_REVIEW_ACTION_IDS if action_id in ads_action_ids
         ]
     else:
         action_ids = [
-            action_id
-            for action_id in ads_action_ids
-            if action_id == CONFIGURE_GOOGLE_ADS_ACTION_ID
+            action_id for action_id in ads_action_ids if action_id == CONFIGURE_GOOGLE_ADS_ACTION_ID
         ]
     metric_tiles: dict[str, float | int | str] = {
         "kampanie": _summary_int_tile(latest_summary, ("row_count",), campaign_count),
@@ -879,7 +869,13 @@ def _ads_item_from_facts(
                 "zmarnowany budżet",
             ]
             if live_data_available
-            else ["wydatki reklamowe", "CPA", "zwrot z reklam", "zapytania z reklam", "zmarnowany budżet"]
+            else [
+                "wydatki reklamowe",
+                "CPA",
+                "zwrot z reklam",
+                "zapytania z reklam",
+                "zmarnowany budżet",
+            ]
         ),
         risk=ActionRisk.medium,
     )
@@ -1154,12 +1150,9 @@ def _merchant_item_from_tactical(
         allow_refresh_lookup=allow_refresh_lookup,
     )
     facts = _facts_for_latest_refresh(latest_refresh, facts)
-    merchant_items = [
-        item for item in tactical_items if item.domain == OpportunityDomain.merchant
-    ]
+    merchant_items = [item for item in tactical_items if item.domain == OpportunityDomain.merchant]
     has_current_issue_facts = any(
-        fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
-        for fact in facts
+        fact.name == "issue_product_count" and fact.dimensions.get("issue_type") for fact in facts
     )
     merchant_items = (
         []
@@ -1174,18 +1167,18 @@ def _merchant_item_from_tactical(
     live_data_available = bool(merchant_items or issue_occurrence_count)
     action_ids = _unique(
         [
-            *(
-                action_id
-                for item in merchant_items
-                for action_id in item.action_ids
-            ),
+            *(action_id for item in merchant_items for action_id in item.action_ids),
             *_action_ids_for(actions, connector=GOOGLE_MERCHANT_CONNECTOR_ID),
         ]
     )
-    top_item = sorted(
-        merchant_items,
-        key=lambda item: (_risk_rank(item.risk), -_merchant_item_product_count(item), item.id),
-    )[0] if merchant_items else None
+    top_item = (
+        sorted(
+            merchant_items,
+            key=lambda item: (_risk_rank(item.risk), -_merchant_item_product_count(item), item.id),
+        )[0]
+        if merchant_items
+        else None
+    )
     summary = (
         f"Produkty={product_count}, typy problemów={issue_type_count}, "
         f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}. "
@@ -1379,9 +1372,7 @@ def _content_item_from_tactical(
         for group in queue.compact_groups
         if group.source_connectors and "google_search_console" in group.source_connectors
     ]
-    content_items = [
-        item for item in queue.items if item.domain == OpportunityDomain.gsc_seo
-    ]
+    content_items = [item for item in queue.items if item.domain == OpportunityDomain.gsc_seo]
     latest_ahrefs_refresh = _resolve_latest_connector_refresh(
         AHREFS_CONNECTOR_ID,
         latest_ahrefs_refresh,
@@ -1417,11 +1408,7 @@ def _content_item_from_tactical(
         else "Otwórz widok Treści i odśwież GSC oraz spis treści WordPress."
     )
     source_connectors = [
-        *(
-            [AHREFS_CONNECTOR_ID]
-            if ahrefs_available
-            else []
-        ),
+        *([AHREFS_CONNECTOR_ID] if ahrefs_available else []),
         "google_search_console",
         "wordpress_ekologus",
         "wordpress_sklep",
@@ -1471,9 +1458,7 @@ def _content_item_from_tactical(
             **ahrefs_metric_tiles,
             "blokady": 0 if live_data_available else 1,
         },
-        blocked_claims=_unique(
-            claim for item in content_items for claim in item.blocked_claims
-        )
+        blocked_claims=_unique(claim for item in content_items for claim in item.blocked_claims)
         or ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
         risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
@@ -1764,9 +1749,7 @@ def _localo_item(
             "wzroście widoczności bez dodatkowych dowodów."
         )
         priority = 18
-        blocked_claims = _localo_blocked_claims_for_missing_contracts(
-            missing_value_contracts
-        )
+        blocked_claims = _localo_blocked_claims_for_missing_contracts(missing_value_contracts)
     elif oauth_access_ready:
         item_id = "daily_localo_readiness"
         title = "Localo: dostęp działa, brakuje rankingów i danych profilu firmy w Google"
@@ -1854,9 +1837,7 @@ def _localo_missing_value_contracts(value_facts: list[MetricFact]) -> list[str]:
         if fact_names.intersection(names)
     }
     return [
-        contract
-        for contract in LOCALO_COMMAND_CENTER_CONTRACT_ORDER
-        if contract not in present
+        contract for contract in LOCALO_COMMAND_CENTER_CONTRACT_ORDER if contract not in present
     ]
 
 
@@ -1993,8 +1974,6 @@ def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     return "Najpierw usuń blokadę dostępu z najwyższym priorytetem."
 
 
-
-
 def _action_plan_item(
     item: CommandCenterBriefItem,
     tactical_items: list[Any],
@@ -2043,9 +2022,7 @@ def _action_plan_item(
             status=_action_plan_status(item),
             priority=12,
             category="Content + SEO",
-            why_it_matters=(
-                f"{item.summary} Pełne szczegóły zapytań i URL-i są w widoku Treści."
-            ),
+            why_it_matters=(f"{item.summary} Pełne szczegóły zapytań i URL-i są w widoku Treści."),
             operator_action=item.next_step,
             skill_id="wilq-content-strategist",
             codex_prompt=(
@@ -2116,7 +2093,8 @@ def _action_plan_item(
             priority=18,
             category="Google Ads",
             why_it_matters=(
-                "Ads ma aktualne metryki i kolejki do sprawdzenia, ale bez marży, celu biznesowego, "
+                "Ads ma aktualne metryki i kolejki do sprawdzenia, "
+                "ale bez marży, celu biznesowego, "
                 "celu budżetu oraz docelowego zwrotu z reklam albo kosztu pozyskania "
                 "celu WILQ nie może uczciwie mówić o rentowności, zmarnowanym budżecie "
                 "ani skalowaniu."
@@ -2197,14 +2175,19 @@ def _action_plan_item(
             priority=5,
             category="Google Ads",
             why_it_matters=(
-                "Google Ads ma blokadę OAuth. WILQ nie pokaże kosztu, kosztu pozyskania celu, zwrotu z reklam ani "
+                "Google Ads ma blokadę OAuth. WILQ nie pokaże kosztu, "
+                "kosztu pozyskania celu, zwrotu z reklam ani "
                 "wyszukiwanych haseł bez świeżych dowodów Ads."
             ),
-            operator_action="Otwórz widok Google Ads i przejdź ścieżkę naprawy przez sprawdzenie w WILQ.",
+            operator_action=(
+                "Otwórz widok Google Ads i przejdź ścieżkę naprawy "
+                "przez sprawdzenie w WILQ."
+            ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Zweryfikuj blokadę Ads dla Ekologus "
-                "i przygotuj ścieżkę naprawy bez diagnozowania kosztu, kosztu pozyskania celu, zwrotu z reklam ani wyszukiwanych haseł."
+                "i przygotuj ścieżkę naprawy bez diagnozowania kosztu, "
+                "kosztu pozyskania celu, zwrotu z reklam ani wyszukiwanych haseł."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -2245,7 +2228,8 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski przegląd Localo z dowodami źródłowymi, agregatami i zablokowanymi obietnicami."
+                "Polski przegląd Localo z dowodami źródłowymi, "
+                "agregatami i zablokowanymi obietnicami."
             ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
@@ -2420,7 +2404,7 @@ def _decision_observation(
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
             f"{brief_item.summary} To blokada decyzji zależnych od celu, nie awaria "
-                "Google Ads ani brak aktualnych danych kampanii."
+            "Google Ads ani brak aktualnych danych kampanii."
         )
     if item.id == "plan_review_ads_campaign_metrics" and brief_item is not None:
         return _decision_metric_observation(

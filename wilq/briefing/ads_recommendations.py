@@ -27,9 +27,7 @@ def build_recommendations_read_contract(
 ) -> AdsRecommendationsReadContract:
     rows = _recommendation_rows(metric_facts)
     impact_row_count = sum(1 for row in rows if row.impact_available)
-    payload_preview = [
-        row.payload_preview for row in rows if row.payload_preview is not None
-    ]
+    payload_preview = [row.payload_preview for row in rows if row.payload_preview is not None]
     action_ids = [RECOMMENDATION_REVIEW_ACTION_ID] if payload_preview else []
     missing_read_contracts = [
         "change_history",
@@ -53,8 +51,7 @@ def build_recommendations_read_contract(
     if rows or read_attempted:
         if rows:
             types = _unique(
-                row.recommendation_type_label
-                or _recommendation_type_label(row.recommendation_type)
+                row.recommendation_type_label or _recommendation_type_label(row.recommendation_type)
                 for row in rows
             )
             summary = (
@@ -263,9 +260,7 @@ def _recommendation_row(
     review_score = _recommendation_review_score(
         recommendation_type=recommendation_type,
         campaign_id=campaign_id,
-        campaign_count=_int_metric_value(
-            facts_by_name.get("recommendation_campaign_count")
-        ),
+        campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
         impact_available=impact_available,
         delta_clicks=delta_clicks,
         delta_cost_micros=delta_cost_micros,
@@ -298,9 +293,7 @@ def _recommendation_row(
         dismissed=first_dimensions.get("dismissed") == "true",
         campaign_id=campaign_id,
         campaign_budget_id=campaign_budget_id,
-        campaign_count=_int_metric_value(
-            facts_by_name.get("recommendation_campaign_count")
-        ),
+        campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
         impact_available=impact_available,
         base_clicks=base_clicks,
         potential_clicks=potential_clicks,

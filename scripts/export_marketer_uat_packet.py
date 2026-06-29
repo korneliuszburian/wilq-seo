@@ -73,8 +73,7 @@ UAT_ROUTE_ORDER = [
             "nie dowód złej kampanii albo złego landingu."
         ),
         "fail_condition": (
-            "Marketer interpretuje tracking gap jako rekomendację contentową "
-            "lub Adsową."
+            "Marketer interpretuje tracking gap jako rekomendację contentową lub Adsową."
         ),
     },
 ]
@@ -154,8 +153,7 @@ def build_marketer_uat_packet(
 
     command_center = _mapping(surfaces["command_center"])
     route_checks = [
-        build_route_check(route, _mapping(surfaces.get(route["key"])))
-        for route in UAT_ROUTE_ORDER
+        build_route_check(route, _mapping(surfaces.get(route["key"]))) for route in UAT_ROUTE_ORDER
     ]
 
     return {

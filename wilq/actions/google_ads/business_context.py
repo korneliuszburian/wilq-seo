@@ -252,8 +252,7 @@ def ads_business_context_missing_read_contracts() -> list[str]:
 def ads_business_context_configured() -> bool:
     missing_read_contracts = ads_business_context_missing_read_contracts()
     return not any(
-        contract in ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS
-        for contract in missing_read_contracts
+        contract in ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS for contract in missing_read_contracts
     )
 
 

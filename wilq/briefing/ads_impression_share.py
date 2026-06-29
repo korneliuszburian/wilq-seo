@@ -33,14 +33,10 @@ def build_impression_share_read_contract(
     if rows or read_attempted:
         if rows:
             budget_limited = sum(
-                1
-                for row in rows
-                if (row.search_budget_lost_impression_share or 0) > 0
+                1 for row in rows if (row.search_budget_lost_impression_share or 0) > 0
             )
             rank_limited = sum(
-                1
-                for row in rows
-                if (row.search_rank_lost_impression_share or 0) > 0
+                1 for row in rows if (row.search_rank_lost_impression_share or 0) > 0
             )
             summary = (
                 f"WILQ ma udział w wyświetleniach dla {len(rows)} kampanii; "
@@ -146,9 +142,7 @@ def _impression_share_row(
         campaign_name=campaign_name,
         campaign_status=first_dimensions.get("campaign_status"),
         advertising_channel_type=first_dimensions.get("advertising_channel_type"),
-        search_impression_share=_float_metric_value(
-            facts_by_name.get("search_impression_share")
-        ),
+        search_impression_share=_float_metric_value(facts_by_name.get("search_impression_share")),
         search_budget_lost_impression_share=_float_metric_value(
             facts_by_name.get("search_budget_lost_impression_share")
         ),

@@ -105,18 +105,18 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
     assert metrics_response.status_code == 200
     facts = metrics_response.json()
     assert facts == [
-            {
-                "name": "domain_rating",
-                "metric_label": "autorytet domeny",
-                "value": 31,
-                "period": "connector_refresh",
-                "source_connector": "ahrefs",
-                "evidence_id": refresh_response.json()["evidence_ids"][-1],
-                "dimensions": {},
-                "dimension_labels": {},
-                "dimension_value_labels": {},
-                "unit": None,
-                "collected_at": refresh_response.json()["completed_at"],
+        {
+            "name": "domain_rating",
+            "metric_label": "autorytet domeny",
+            "value": 31,
+            "period": "connector_refresh",
+            "source_connector": "ahrefs",
+            "evidence_id": refresh_response.json()["evidence_ids"][-1],
+            "dimensions": {},
+            "dimension_labels": {},
+            "dimension_value_labels": {},
+            "unit": None,
+            "collected_at": refresh_response.json()["completed_at"],
             "previous_value": None,
             "previous_evidence_id": None,
             "previous_collected_at": None,
@@ -348,12 +348,13 @@ def test_metric_store_lists_latest_metric_facts_with_connector_specific_limits(
         }
     )
 
-    assert [
-        fact.evidence_id for fact in facts_by_connector["google_analytics_4"]
-    ] == ["ev_google_analytics_4_new"]
-    assert {
-        fact.evidence_id for fact in facts_by_connector["google_search_console"]
-    } == {"ev_google_search_console_old", "ev_google_search_console_new"}
+    assert [fact.evidence_id for fact in facts_by_connector["google_analytics_4"]] == [
+        "ev_google_analytics_4_new"
+    ]
+    assert {fact.evidence_id for fact in facts_by_connector["google_search_console"]} == {
+        "ev_google_search_console_old",
+        "ev_google_search_console_new",
+    }
     assert facts_by_connector["missing_connector"] == []
 
 

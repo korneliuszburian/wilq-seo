@@ -119,7 +119,7 @@ CONTENT_CONTRACT_LABELS = {
     "needs_service_review": "wymaga dopasowania do usługi",
     "new_content_without_inventory_check": "nowa treść bez sprawdzenia spisu",
     "notes": "notatki",
-    "outline_only_until_gates_pass": "plan treści do czasu kontroli",
+    "outline_only_until_checks_complete": "plan treści do czasu kontroli",
     "prepare_only_review_recorded": "zapisano ocenę przygotowania",
     "non_public_url_as_final_canonical": "niepubliczny URL jako finalny URL kanoniczny",
     "publish_ready_claim": "obietnica gotowości do publikacji",
@@ -184,7 +184,9 @@ CONTENT_CONTRACT_LABELS = {
     "ahrefs_gap_review": "Ahrefs do sprawdzenia",
     "same_url_or_redirect_mapping_confirmed": "ten sam URL albo przekierowanie potwierdzone",
     "tracking_quality_review": "kontrola jakości pomiaru",
-    "gsc_query_page_clicks_impressions_ctr_position": "kliknięcia, wyświetlenia, CTR i pozycja z GSC",
+    "gsc_query_page_clicks_impressions_ctr_position": (
+        "kliknięcia, wyświetlenia, CTR i pozycja z GSC"
+    ),
     "ga4_landing_engagement_and_key_events": "zaangażowanie i zdarzenia GA4",
     "wordpress_publish_metadata": "metadane publikacji WordPress",
     "reviewable_polish_draft_preview": "polska wersja robocza do kontroli",
@@ -198,7 +200,9 @@ CONTENT_CONTRACT_LABELS = {
     "blocked_until_review": "zablokowane do sprawdzenia",
     "blocked_until_content_review": "zablokowany do kontroli treści i URL-a",
     "blocked_pending_canonical_duplicate_review": "zablokowany do kontroli URL-i i duplikatów",
-    "blocked_pending_canonical_duplicate_review_after_url_review": "zablokowany do kontroli URL-i i duplikatów",
+    "blocked_pending_canonical_duplicate_review_after_url_review": (
+        "zablokowany do kontroli URL-i i duplikatów"
+    ),
     "blocked_missing_public_inventory": "zablokowany bez spisu publicznych treści",
     "legal_compliance_guarantee": "gwarancja zgodności prawnej",
     "request_duplicate_or_canonical_review": "poproś o kontrolę duplikacji albo URL-a kanonicznego",
@@ -213,11 +217,7 @@ CONTENT_CONTRACT_LABELS = {
 def content_refresh_payload_from_metric_facts(
     metric_facts: list[MetricFact],
 ) -> dict[str, Any] | None:
-    facts = [
-        fact
-        for fact in metric_facts
-        if fact.source_connector in CONTENT_SOURCE_CONNECTORS
-    ]
+    facts = [fact for fact in metric_facts if fact.source_connector in CONTENT_SOURCE_CONNECTORS]
     if not facts:
         return None
     content_brief_preview = [
@@ -343,17 +343,13 @@ def content_payload_with_reviewed_wordpress_draft_previews(
     if not reviewed_candidate_ids:
         return enriched_payload
     brief_previews = [
-        item
-        for item in enriched_payload.get("content_brief_preview", [])
-        if isinstance(item, dict)
+        item for item in enriched_payload.get("content_brief_preview", []) if isinstance(item, dict)
     ]
     draft_previews = [
         _wordpress_draft_payload_preview(
             item,
             url_review=url_reviews.get(str(item.get("candidate_id") or "")),
-            draft_readiness_review=draft_readiness_reviews.get(
-                str(item.get("candidate_id") or "")
-            ),
+            draft_readiness_review=draft_readiness_reviews.get(str(item.get("candidate_id") or "")),
         )
         for item in brief_previews
         if isinstance(item.get("candidate_id"), str)
@@ -383,20 +379,22 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         reverse=True,
     )[:4]:
         queries = _unique(
-            fact.dimensions.get("query")
-            for fact in page_facts
-            if fact.dimensions.get("query")
+            fact.dimensions.get("query") for fact in page_facts if fact.dimensions.get("query")
         )
         primary_query = queries[0] if queries else _short_path(page)
         page_path = _normalized_path(page)
         wordpress_content_url = wordpress_urls_by_path.get(page_path)
         wordpress_match = wordpress_content_url is not None
         mode = "refresh" if wordpress_match else "inventory_check"
-        decision_options = ["refresh", "merge", "block"] if wordpress_match else [
-            "merge",
-            "create",
-            "block",
-        ]
+        decision_options = (
+            ["refresh", "merge", "block"]
+            if wordpress_match
+            else [
+                "merge",
+                "create",
+                "block",
+            ]
+        )
         content_gate_status = _content_gate_status_for_brief(
             source_type="gsc_query_page",
             mode=mode,
@@ -550,9 +548,7 @@ def _reviewed_candidate_draft_readiness_from_details(
             "draft_readiness_outcome": str(review.get("draft_readiness_outcome") or ""),
             "canonical_review_outcome": str(review.get("canonical_review_outcome") or ""),
             "duplicate_review_outcome": str(review.get("duplicate_review_outcome") or ""),
-            "legal_factual_review_outcome": str(
-                review.get("legal_factual_review_outcome") or ""
-            ),
+            "legal_factual_review_outcome": str(review.get("legal_factual_review_outcome") or ""),
             "human_review_outcome": str(review.get("human_review_outcome") or ""),
             "draft_readiness_notes": str(review.get("draft_readiness_notes") or ""),
         }
@@ -615,9 +611,7 @@ def _wordpress_draft_payload_preview(
     wordpress_draft_final_url = final_canonical_url or intended_final_url or source_public_url
     wordpress_draft_handoff_status = _wordpress_draft_handoff_status(
         draft_generation_status=draft_generation_status,
-        draft_readiness_outcome=(draft_readiness_review or {}).get(
-            "draft_readiness_outcome"
-        ),
+        draft_readiness_outcome=(draft_readiness_review or {}).get("draft_readiness_outcome"),
     )
     wordpress_draft_handoff_blockers = _wordpress_draft_handoff_blockers(
         wordpress_draft_handoff_status
@@ -638,11 +632,7 @@ def _wordpress_draft_payload_preview(
     required_validation = _unique(
         [
             "operator_review_approved_for_prepare",
-            *[
-                item
-                for item in preview.get("required_validation", [])
-                if isinstance(item, str)
-            ],
+            *[item for item in preview.get("required_validation", []) if isinstance(item, str)],
             "wordpress_draft_payload_review",
             "human_confirm_before_wordpress_write",
         ]
@@ -650,11 +640,7 @@ def _wordpress_draft_payload_preview(
     candidate_id = str(preview["candidate_id"])
     operation_type = _wordpress_draft_operation(mode)
     blocked_claims = _unique(
-        [
-            item
-            for item in preview.get("blocked_claims", [])
-            if isinstance(item, str)
-        ]
+        [item for item in preview.get("blocked_claims", []) if isinstance(item, str)]
     )
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -680,12 +666,8 @@ def _wordpress_draft_payload_preview(
         "content_url_review_recorded_outcome": (
             (url_review or {}).get("url_review_outcome") or None
         ),
-        "content_url_review_reviewed_url": (
-            (url_review or {}).get("reviewed_url") or None
-        ),
-        "content_url_review_notes": (
-            (url_review or {}).get("review_notes") or None
-        ),
+        "content_url_review_reviewed_url": ((url_review or {}).get("reviewed_url") or None),
+        "content_url_review_notes": ((url_review or {}).get("review_notes") or None),
         "inventory_gate_status": inventory_gate_status,
         "canonical_gate_status": canonical_gate_status,
         "duplicate_gate_status": duplicate_gate_status,
@@ -760,18 +742,10 @@ def _wordpress_draft_payload_preview(
         "blocked_claims": blocked_claims,
         "blocked_claim_labels": _content_contract_labels(blocked_claims),
         "source_connectors": _unique(
-            [
-                item
-                for item in preview.get("source_connectors", [])
-                if isinstance(item, str)
-            ]
+            [item for item in preview.get("source_connectors", []) if isinstance(item, str)]
         ),
         "evidence_ids": _unique(
-            [
-                item
-                for item in preview.get("evidence_ids", [])
-                if isinstance(item, str)
-            ]
+            [item for item in preview.get("evidence_ids", []) if isinstance(item, str)]
         ),
         "mutation_allowed": False,
         "apply_allowed": False,
@@ -864,7 +838,7 @@ def _draft_generation_contract(
     output_kind = (
         "reviewable_polish_draft_preview"
         if draft_generation_status == "ready_for_review"
-        else "outline_only_until_gates_pass"
+        else "outline_only_until_checks_complete"
     )
     return {
         "contract_version": "content_draft_generation_v1",
@@ -940,7 +914,7 @@ def _wordpress_draft_handoff_status(
     draft_readiness_outcome: str | None,
 ) -> str:
     if draft_generation_status != "ready_for_review":
-        return "blocked_until_draft_gates_pass"
+        return "blocked_until_draft_checks_complete"
     if draft_readiness_outcome != "approve_outline_for_editorial_review":
         return "blocked_until_draft_readiness_review"
     return "blocked_until_wordpress_draft_handoff_action"
@@ -952,7 +926,7 @@ def _wordpress_draft_handoff_blockers(wordpress_draft_handoff_status: str) -> li
         "api_mutation_ready_false",
         "human_confirm_before_wordpress_write",
     ]
-    if wordpress_draft_handoff_status == "blocked_until_draft_gates_pass":
+    if wordpress_draft_handoff_status == "blocked_until_draft_checks_complete":
         return [
             "content_url_preflight_review",
             "final_canonical_review",
@@ -1090,9 +1064,7 @@ def _draft_readiness_review_contract_summary(contract: Mapping[str, Any]) -> lis
         values.append(f"zakres: {_content_contract_label(scope)}")
     values.extend(_prefixed_labels("wynik", _string_list(contract.get("allowed_outcomes"))[:3]))
     required_fields = [
-        value
-        for value in _string_list(contract.get("required_fields"))
-        if value != "candidate_id"
+        value for value in _string_list(contract.get("required_fields")) if value != "candidate_id"
     ]
     values.extend(_prefixed_labels("wymaga", required_fields[:4]))
     values.extend(_prefixed_labels("blokuje", _string_list(contract.get("blocked_outputs"))[:4]))
@@ -1129,7 +1101,9 @@ def _wordpress_draft_handoff_contract_summary(contract: Mapping[str, Any]) -> li
     next_action = contract.get("required_next_action_contract")
     if isinstance(next_action, str) and next_action:
         values.append(f"następny krok: {_content_contract_label(next_action)}")
-    values.extend(_prefixed_labels("warunek", _string_list(contract.get("requires_passed_gates"))[:4]))
+    values.extend(
+        _prefixed_labels("warunek", _string_list(contract.get("requires_passed_gates"))[:4])
+    )
     values.extend(_prefixed_labels("blokuje", _string_list(contract.get("blocked_outputs"))[:4]))
     return values
 
@@ -1153,7 +1127,9 @@ def _post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
     if isinstance(baseline_window, str) and baseline_window:
         values.append(f"punkt odniesienia: {_content_contract_label(baseline_window)}")
     values.extend(_prefixed_labels("sprawdzenie", _string_list(plan.get("followup_windows"))[:3]))
-    values.extend(_prefixed_labels("źródło", _string_list(plan.get("required_source_connectors"))[:3]))
+    values.extend(
+        _prefixed_labels("źródło", _string_list(plan.get("required_source_connectors"))[:3])
+    )
     return values
 
 
@@ -1172,7 +1148,7 @@ def post_publication_measurement_summary(plan: Mapping[str, Any]) -> list[str]:
 
 def _content_wordpress_draft_handoff_status_label(value: str) -> str:
     labels = {
-        "blocked_until_draft_gates_pass": "zablokowany do przejścia kontroli szkicu",
+        "blocked_until_draft_checks_complete": "zablokowany do przejścia kontroli szkicu",
         "blocked_until_draft_readiness_review": "zablokowany do sprawdzenia gotowości szkicu",
         "blocked_until_wordpress_draft_handoff_action": "zablokowany do osobnego kroku WordPress",
     }
@@ -1181,7 +1157,9 @@ def _content_wordpress_draft_handoff_status_label(value: str) -> str:
 
 def _post_publication_measurement_status_label(value: str) -> str:
     labels = {
-        "blocked_until_publish_and_followup_data": "zablokowany do publikacji i danych po publikacji",
+        "blocked_until_publish_and_followup_data": (
+            "zablokowany do publikacji i danych po publikacji"
+        ),
     }
     return labels.get(value, _content_contract_label(value))
 
@@ -1488,9 +1466,7 @@ def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float 
     return {
         "queries": len(
             _unique(
-                fact.dimensions.get("query")
-                for fact in page_facts
-                if fact.dimensions.get("query")
+                fact.dimensions.get("query") for fact in page_facts if fact.dimensions.get("query")
             )
         ),
         "clicks": _metric_sum_or_missing(page_facts, "clicks"),
@@ -1548,8 +1524,7 @@ def _content_intent(topic: str, wordpress_match: bool) -> str:
         )
     elif "operat" in normalized or "pozwolen" in normalized:
         base = (
-            "konsultacyjna: użytkownik chce ustalić wymagania formalne i "
-            "kolejny krok postępowania"
+            "konsultacyjna: użytkownik chce ustalić wymagania formalne i kolejny krok postępowania"
         )
     elif "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
         base = (
@@ -1588,8 +1563,7 @@ def _content_audience(topic: str) -> str:
         return "Decydent lub specjalista środowiskowy szukający prostego wyjaśnienia regulacji."
     if "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
         return (
-            "Firma potrzebująca bezpiecznego procesu, produktu albo konsultacji "
-            "w obszarze odpadów."
+            "Firma potrzebująca bezpiecznego procesu, produktu albo konsultacji w obszarze odpadów."
         )
     return "Marketer i ekspert Ekologus powinni doprecyzować odbiorcę przed pisaniem treści."
 
@@ -1602,8 +1576,7 @@ def _key_objections(topic: str) -> list[str]:
     ]
     if "bdo" in normalized:
         objections.append(
-            "czy użytkownik potrzebuje definicji, checklisty obowiązków czy "
-            "konsultacji"
+            "czy użytkownik potrzebuje definicji, checklisty obowiązków czy konsultacji"
         )
     elif "zielony lad" in normalized or "esg" in normalized:
         objections.append("czy tekst ma wyjaśniać pojęcie, obowiązki firmy czy wpływ na procesy")
@@ -1618,10 +1591,7 @@ def _h1_direction(topic: str, wordpress_match: bool) -> str:
             f"H1 powinien jasno odpowiadać na intencję `{topic}` i nie sugerować "
             "nowej, osobnej strony."
         )
-    return (
-        f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL "
-        "i braku duplikatu."
-    )
+    return f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL i braku duplikatu."
 
 
 def _seo_title_direction(topic: str, wordpress_match: bool) -> str:
@@ -1696,7 +1666,10 @@ def _cta_direction(topic: str) -> str:
     if "bdo" in normalized:
         return "CTA do konsultacji lub weryfikacji obowiązków BDO, bez obietnicy uniknięcia kar."
     if "zielony lad" in normalized or "esg" in normalized:
-        return "CTA do rozmowy o wpływie regulacji na firmę, bez obietnicy przychodu ani wzrostu leadów."
+        return (
+            "CTA do rozmowy o wpływie regulacji na firmę, "
+            "bez obietnicy przychodu ani wzrostu leadów."
+        )
     return "CTA do kontaktu z ekspertem Ekologus po ręcznym potwierdzeniu intencji tematu."
 
 
@@ -1804,7 +1777,10 @@ def _brief_outline(topic: str, wordpress_match: bool) -> list[dict[str, str]]:
         },
         {
             "section": "cta",
-            "instruction": "Dopasuj CTA do usługi Ekologus, ale bez obietnicy przychodu ani wzrostu leadów.",
+            "instruction": (
+                "Dopasuj CTA do usługi Ekologus, "
+                "ale bez obietnicy przychodu ani wzrostu leadów."
+            ),
         },
     ]
 

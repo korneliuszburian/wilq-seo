@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Literal
 
 from wilq.connectors.google_auth import (
     GOOGLE_CREDENTIAL_ENV_NAMES,
@@ -299,9 +300,7 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             health_check=definition.health_check,
         )
     missing = [
-        name
-        for name in definition.required_env
-        if not _credential_available(name)
+        name for name in definition.required_env if not _credential_available(name)
     ] + _missing_credential_groups(definition)
     configured = not missing
     latest_success = _latest_successful_vendor_read(definition.id) if configured else None
@@ -380,7 +379,9 @@ def _connector_freshness(
             notes="WILQ ma odczyt źródła danych bez czasu zakończenia.",
         )
     age = utc_now() - completed_at
-    state = "fresh" if age <= timedelta(hours=CONNECTOR_FRESH_AFTER_HOURS) else "stale"
+    state: Literal["fresh", "stale"] = (
+        "fresh" if age <= timedelta(hours=CONNECTOR_FRESH_AFTER_HOURS) else "stale"
+    )
     freshness_label = "świeży" if state == "fresh" else "do odświeżenia"
     return FreshnessState(
         state=state,

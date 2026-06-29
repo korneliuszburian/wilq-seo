@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 MERCHANT_ISSUE_LABELS = {
     "availability_updated": "zmiana dostępności do sprawdzenia",
     "attribute_pending_review": "atrybut czeka na sprawdzenie",
@@ -138,11 +140,8 @@ def merchant_resolution_label(value: object) -> str:
     return MERCHANT_RESOLUTION_LABELS.get(text, merchant_display_label(text))
 
 
-def merchant_metric_snapshot_labels(metric_snapshot: dict[str, object]) -> dict[str, str]:
-    return {
-        key: MERCHANT_METRIC_LABELS.get(key, "metryka Merchant")
-        for key in metric_snapshot
-    }
+def merchant_metric_snapshot_labels(metric_snapshot: Mapping[str, object]) -> dict[str, str]:
+    return {key: MERCHANT_METRIC_LABELS.get(key, "metryka Merchant") for key in metric_snapshot}
 
 
 def merchant_metric_fact_label(value: object) -> str:

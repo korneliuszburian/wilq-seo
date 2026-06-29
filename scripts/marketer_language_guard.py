@@ -414,7 +414,8 @@ FORBIDDEN_PHRASES = (
     ),
     ForbiddenPhrase(
         "uplift",
-        "Use plain Polish outcome wording such as wzrost, and only claim it when evidence allows it.",
+        "Use plain Polish outcome wording such as wzrost, "
+        "and only claim it when evidence allows it.",
     ),
     ForbiddenPhrase(
         "Demand Gen launch recommendation",

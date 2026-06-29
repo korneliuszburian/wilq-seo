@@ -67,10 +67,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -155,9 +152,7 @@ def main() -> int:
     demand_gen_landing_quality_rows = readiness.get("demand_gen_landing_quality_rows")
     if not isinstance(demand_gen_landing_quality_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_landing_quality_rows list")
-    demand_gen_campaign_mode_review_rows = readiness.get(
-        "demand_gen_campaign_mode_review_rows"
-    )
+    demand_gen_campaign_mode_review_rows = readiness.get("demand_gen_campaign_mode_review_rows")
     if not isinstance(demand_gen_campaign_mode_review_rows, list):
         raise SystemExit(
             "Demand Gen readiness must expose demand_gen_campaign_mode_review_rows list"
@@ -212,15 +207,9 @@ def main() -> int:
                     "campaign_rows_evaluated": campaign_rows_evaluated,
                     "campaign_channel_counts": campaign_channel_counts,
                     "demand_gen_campaign_row_count": len(demand_gen_campaign_rows),
-                    "demand_gen_ad_group_ad_row_count": len(
-                        demand_gen_ad_group_ad_rows
-                    ),
-                    "demand_gen_creative_asset_row_count": len(
-                        demand_gen_creative_asset_rows
-                    ),
-                    "demand_gen_landing_quality_row_count": len(
-                        demand_gen_landing_quality_rows
-                    ),
+                    "demand_gen_ad_group_ad_row_count": len(demand_gen_ad_group_ad_rows),
+                    "demand_gen_creative_asset_row_count": len(demand_gen_creative_asset_rows),
+                    "demand_gen_landing_quality_row_count": len(demand_gen_landing_quality_rows),
                     "demand_gen_campaign_mode_review_row_count": len(
                         demand_gen_campaign_mode_review_rows
                     ),

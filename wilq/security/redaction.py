@@ -8,6 +8,7 @@ SECRET_KEY_RE = re.compile(r"(token|secret|password|credential|api[_-]?key|clien
 SECRET_VALUE_RE = re.compile(
     r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_-]{32,})"
 )
+PUBLIC_URL_RE = re.compile(r"https?://[^\s]+", re.I)
 ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")
 SAFE_TRACE_VALUE_RE = re.compile(
     r"^(act|audit|card|connector|content_brief|ev|job|opp|refresh|run|tq|workflow)"
@@ -126,6 +127,8 @@ def redact_value(value: Any) -> Any:
     if value is None:
         return None
     if isinstance(value, str):
+        if _looks_like_public_url_text(value):
+            return value
         matches = SECRET_VALUE_RE.findall(value)
         if matches and not all(
             _looks_like_env_name(match) or _looks_like_safe_trace_identifier(match)
@@ -145,10 +148,25 @@ def _looks_like_env_name(value: str) -> bool:
 
 
 def _looks_like_safe_trace_identifier(value: str) -> bool:
-    return bool(
-        SAFE_TRACE_VALUE_RE.fullmatch(value)
-        or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value)
+    return bool(SAFE_TRACE_VALUE_RE.fullmatch(value) or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value))
+
+
+def _looks_like_public_url_text(value: str) -> bool:
+    if not PUBLIC_URL_RE.search(value):
+        return False
+    lowered = value.lower()
+    unsafe_fragments = (
+        "access_token",
+        "api_key",
+        "apikey",
+        "client_secret",
+        "credential",
+        "password",
+        "refresh_token",
+        "secret",
+        "token",
     )
+    return not any(fragment in lowered for fragment in unsafe_fragments)
 
 
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:

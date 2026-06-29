@@ -231,11 +231,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
-                "terms": {
-                    "Merchant Center",
-                    "plik produktowy",
-                    "produkty",
-                    "merchant_diagnostics",
+            "terms": {
+                "Merchant Center",
+                "plik produktowy",
+                "produkty",
+                "merchant_diagnostics",
                 "freshness_assessment",
                 "decision_queue",
                 "unknowns",
@@ -358,13 +358,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-social-publisher": {
             "surface_path": "/social-publisher",
-                "terms": {
-                    "social_draft_context",
-                    "publish_allowed",
-                    "missing_publish_access",
-                    "source_inputs",
-                    "do sprawdzenia w WILQ",
-                    "LinkedIn",
+            "terms": {
+                "social_draft_context",
+                "publish_allowed",
+                "missing_publish_access",
+                "source_inputs",
+                "do sprawdzenia w WILQ",
+                "LinkedIn",
                 "Facebook",
                 "zablokowane obietnice",
             },
@@ -420,9 +420,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         )
         assert expected_terms.issuperset(contract["terms"])
         assert expected_action_ids.issuperset(contract["action_ids"])
-        assert expected_validated_action_ids.issuperset(
-            contract.get("validated_action_ids", set())
-        )
+        assert expected_validated_action_ids.issuperset(contract.get("validated_action_ids", set()))
         assert set(case.get("forbidden_connectors", [])).issuperset(
             contract.get("forbidden_connectors", set())
         )
@@ -483,9 +481,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     demand_gen_case = cases["wilq-demand-gen-operator"]
     assert demand_gen_case["expected_connectors"] == ["google_ads", "google_analytics_4"]
     assert "act_review_demand_gen_readiness" in demand_gen_case["expected_action_ids"]
-    assert "act_review_demand_gen_readiness" in demand_gen_case[
-        "expected_validated_action_ids"
-    ]
+    assert "act_review_demand_gen_readiness" in demand_gen_case["expected_validated_action_ids"]
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     assert demand_gen_case["expected_blocked"] is True
     assert "rekomendacja uruchomienia Demand Gen" in demand_gen_case["blocked_claim_terms"]
@@ -500,9 +496,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "act_review_localo_visibility_facts" in daily_case["forbidden_action_ids"]
     assert "act_prepare_linkedin_social_drafts" in daily_case["forbidden_action_ids"]
     assert "act_prepare_facebook_social_drafts" in daily_case["forbidden_action_ids"]
-    assert set(daily_case["required_source_connectors"]) <= set(
-        daily_case["expected_connectors"]
-    )
+    assert set(daily_case["required_source_connectors"]) <= set(daily_case["expected_connectors"])
     assert set(daily_case["expected_validated_action_ids"]) == {
         "act_prepare_ads_campaign_review_queue",
         "act_review_merchant_feed_issues",
@@ -589,7 +583,7 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "evidence_backed_reasoning must be true",
         "messy_marketer_prompt",
         "messy_task_pl",
-        "task_pl = case.get(\"task_pl\") or messy_task_pl",
+        'task_pl = case.get("task_pl") or messy_task_pl',
         "requires task_pl or messy_task_pl",
         "forbidden operator-facing term present",
         "default_forbidden_operator_terms",
@@ -601,9 +595,7 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
 
 def test_codex_skill_eval_schema_requires_decision_quality() -> None:
     schema = json.loads(
-        Path("docs/evals/schemas/wilq-skill-eval-result.schema.json").read_text(
-            encoding="utf-8"
-        )
+        Path("docs/evals/schemas/wilq-skill-eval-result.schema.json").read_text(encoding="utf-8")
     )
     decision_quality = schema["properties"]["decision_quality"]
 
@@ -636,9 +628,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         skill_root = Path(".agents/skills") / skill
         skill_doc = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         smoke_script_name = (
-            "smoke_context_pack.py"
-            if skill == "wilq-daily-command"
-            else "smoke_skill_contract.py"
+            "smoke_context_pack.py" if skill == "wilq-daily-command" else "smoke_skill_contract.py"
         )
         smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
 
@@ -651,9 +641,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         else:
             assert '"brief_items": brief_items' in smoke_script
 
-    ads_skill_doc = Path(".agents/skills/wilq-ads-doctor/SKILL.md").read_text(
-        encoding="utf-8"
-    )
+    ads_skill_doc = Path(".agents/skills/wilq-ads-doctor/SKILL.md").read_text(encoding="utf-8")
     ads_smoke_script = Path(
         ".agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
@@ -669,32 +657,30 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert ads_validation_call in ads_smoke_script
     assert '"action_validations": action_validations' in ads_smoke_script
 
-    custom_segments_skill_doc = Path(
-        ".agents/skills/wilq-custom-segments/SKILL.md"
-    ).read_text(encoding="utf-8")
+    custom_segments_skill_doc = Path(".agents/skills/wilq-custom-segments/SKILL.md").read_text(
+        encoding="utf-8"
+    )
     custom_segments_smoke_script = Path(
         ".agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/ads/diagnostics" in custom_segments_skill_doc
     assert (
-        'request_json(args.api_base, "GET", "/api/ads/diagnostics")'
-        in custom_segments_smoke_script
+        'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in custom_segments_smoke_script
     )
     assert '"ads_diagnostics": {' in custom_segments_smoke_script
     assert "custom_segments_read_contract" in custom_segments_smoke_script
     assert "act_prepare_custom_segments_from_search_terms" in custom_segments_smoke_script
     assert '"action_validations": action_validations' in custom_segments_smoke_script
 
-    merchant_skill_doc = Path(
-        ".agents/skills/wilq-merchant-feed-operator/SKILL.md"
-    ).read_text(encoding="utf-8")
+    merchant_skill_doc = Path(".agents/skills/wilq-merchant-feed-operator/SKILL.md").read_text(
+        encoding="utf-8"
+    )
     merchant_smoke_script = Path(
         ".agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
     assert "GET /api/merchant/diagnostics" in merchant_skill_doc
     assert (
-        'request_json(args.api_base, "GET", "/api/merchant/diagnostics")'
-        in merchant_smoke_script
+        'request_json(args.api_base, "GET", "/api/merchant/diagnostics")' in merchant_smoke_script
     )
     assert '"merchant_diagnostics": {' in merchant_smoke_script
     assert "freshness_assessment" in merchant_smoke_script
@@ -715,9 +701,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert merchant_validation_call in merchant_smoke_script
     assert '"action_validations": action_validations' in merchant_smoke_script
 
-    ga4_skill_doc = Path(".agents/skills/wilq-ga4-analyst/SKILL.md").read_text(
-        encoding="utf-8"
-    )
+    ga4_skill_doc = Path(".agents/skills/wilq-ga4-analyst/SKILL.md").read_text(encoding="utf-8")
     ga4_smoke_script = Path(
         ".agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
@@ -748,7 +732,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         assert '"content_diagnostics": {' in content_smoke_script
         if skill in {"wilq-gsc-content-doctor", "wilq-content-strategist"}:
             assert '"POST"' in content_smoke_script
-            assert '/api/actions/{quoted_action}/validate' in content_smoke_script
+            assert "/api/actions/{quoted_action}/validate" in content_smoke_script
             assert '"action_validations": action_validations' in content_smoke_script
         if skill == "wilq-content-strategist":
             assert '"content_brief_preview_type": "content_brief_preview_v1"' in (

@@ -463,11 +463,7 @@ def knowledge_reference_count_label(
     playbook_ids: Iterable[str] = (),
     expert_rule_ids: Iterable[str] = (),
 ) -> str:
-    count = (
-        len(list(knowledge_card_ids))
-        + len(list(playbook_ids))
-        + len(list(expert_rule_ids))
-    )
+    count = len(list(knowledge_card_ids)) + len(list(playbook_ids)) + len(list(expert_rule_ids))
     if count == 0:
         return "brak użytej wiedzy"
     if count == 1:
@@ -599,7 +595,7 @@ def _impact_comparison_summary_part_label(part: str) -> str:
     }
     for prefix, label in prefix_labels.items():
         if part.startswith(prefix):
-            return f"{label}{part[len(prefix):]}"
+            return f"{label}{part[len(prefix) :]}"
     return part
 
 

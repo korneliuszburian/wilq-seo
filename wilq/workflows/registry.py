@@ -377,9 +377,7 @@ def _blueprint_next_step(blueprint: WorkflowBlueprint) -> str:
         )
     missing_count = len(blueprint.missing_contracts)
     missing_phrase = (
-        "brakujący warunek"
-        if missing_count == 1
-        else f"{missing_count} brakujące warunki"
+        "brakujący warunek" if missing_count == 1 else f"{missing_count} brakujące warunki"
     )
     return (
         "Nie traktuj tego procesu jako gotowej automatyzacji. "

@@ -65,12 +65,8 @@ def build_uat_result_report(payload: dict[str, Any]) -> dict[str, Any]:
     if errors:
         raise RuntimeError("Invalid UAT result:\n- " + "\n- ".join(errors))
 
-    route_results = [
-        normalize_route_result(key, payload.get(key)) for key in ROUTE_KEYS
-    ]
-    failed_routes = [
-        result for result in route_results if result["result"] == "fail"
-    ]
+    route_results = [normalize_route_result(key, payload.get(key)) for key in ROUTE_KEYS]
+    failed_routes = [result for result in route_results if result["result"] == "fail"]
     task_candidates = build_task_candidates(payload, route_results)
     ready_without_developer = normalize_ready(payload.get("ready_without_developer"))
 
@@ -204,8 +200,7 @@ def render_markdown(report: dict[str, Any]) -> str:
     for route in list_payload(report.get("route_results")):
         route = mapping(route)
         lines.append(
-            f"- `{route.get('result')}` {route.get('label')}: "
-            f"{route.get('note') or 'brak notatki'}"
+            f"- `{route.get('result')}` {route.get('label')}: {route.get('note') or 'brak notatki'}"
         )
     lines.extend(
         [
@@ -223,10 +218,7 @@ def render_markdown(report: dict[str, Any]) -> str:
     if task_candidates:
         for task in task_candidates:
             task = mapping(task)
-            lines.append(
-                f"- `{task.get('category')}` z `{task.get('source')}`: "
-                f"{task.get('task')}"
-            )
+            lines.append(f"- `{task.get('category')}` z `{task.get('source')}`: {task.get('task')}")
     else:
         lines.append("- brak")
     return "\n".join(lines).rstrip() + "\n"

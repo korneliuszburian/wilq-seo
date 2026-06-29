@@ -81,16 +81,22 @@ def main() -> int:
     if not isinstance(gap_contract, dict):
         raise SystemExit("Ahrefs diagnostics gap_read_contract must be an object")
     missing_read_contracts = gap_contract.get("missing_read_contracts") or []
+    missing_read_contract_count = gap_contract.get("missing_read_contracts_total")
+    if not isinstance(missing_read_contract_count, int):
+        missing_read_contract_count = len(missing_read_contracts)
     gap_records = gap_contract.get("gap_records") or []
     if gap_records and "ahrefs_review_gap_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose gap review decision")
-    if missing_read_contracts and "ahrefs_block_gap_claims_without_records" not in decision_ids:
+    if (
+        missing_read_contract_count
+        and "ahrefs_block_gap_claims_without_records" not in decision_ids
+    ):
         raise SystemExit("Ahrefs diagnostics must block gap claims when contracts are missing")
-    if not missing_read_contracts and gap_contract.get("status") != "ready":
+    if not missing_read_contract_count and gap_contract.get("status") != "ready":
         raise SystemExit(
             "Ahrefs diagnostics gap contract must be ready when no contracts are missing"
         )
-    if not missing_read_contracts and "ahrefs_review_gap_records" not in decision_ids:
+    if not missing_read_contract_count and "ahrefs_review_gap_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose ready gap review decision")
     freshness_states = sorted(
         {
@@ -141,10 +147,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -176,9 +179,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
-                "ahrefs_authority_fact_count": ahrefs_diagnostics.get(
-                    "authority_fact_count"
-                ),
+                "ahrefs_authority_fact_count": ahrefs_diagnostics.get("authority_fact_count"),
                 "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
                 "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
                 "gap_read_contract": {

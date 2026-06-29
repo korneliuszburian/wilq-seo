@@ -186,9 +186,7 @@ def refresh_localo_visibility_summary(
                 external_call_attempted=True,
                 vendor_data_collected=False,
                 metric_summary=metric_summary,
-                errors=[
-                    "Localo OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."
-                ],
+                errors=["Localo OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN."],
             )
 
         return VendorReadResult(
@@ -343,9 +341,7 @@ def _mcp_initialized_notification(client: httpx.Client, access_token: str | None
         json={"jsonrpc": "2.0", "method": "notifications/initialized"},
     )
     if response.status_code not in {200, 202, 204}:
-        raise LocaloMcpReadError(
-            f"Localo initialized notification HTTP {response.status_code}."
-        )
+        raise LocaloMcpReadError(f"Localo initialized notification HTTP {response.status_code}.")
 
 
 def _active_places(client: httpx.Client, access_token: str | None) -> list[str]:

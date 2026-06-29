@@ -10,6 +10,13 @@ from wilq.actions.google_ads.business_context import (
     ads_float_env,
     ads_int_env,
 )
+from wilq.actions.google_ads.campaign_triage import (
+    campaign_review_gates,
+    campaign_review_priority,
+    campaign_review_reason,
+    campaign_review_score,
+    campaign_target_context,
+)
 from wilq.actions.validation_copy import (
     missing,
     missing_evidence,
@@ -19,13 +26,6 @@ from wilq.actions.validation_copy import (
     no_write,
     row,
     wrong,
-)
-from wilq.actions.google_ads.campaign_triage import (
-    campaign_review_gates,
-    campaign_review_priority,
-    campaign_review_reason,
-    campaign_review_score,
-    campaign_target_context,
 )
 from wilq.schemas import MetricFact
 
@@ -164,9 +164,7 @@ def campaign_review_payload_from_metric_facts(
         ),
     )[:8]
     evidence_ids = _unique(
-        evidence_id
-        for candidate in candidates
-        for evidence_id in candidate.get("evidence_ids", [])
+        evidence_id for candidate in candidates for evidence_id in candidate.get("evidence_ids", [])
     )
     if not evidence_ids:
         return None
@@ -244,9 +242,7 @@ def _campaign_candidate(
     advertising_channel_type = dimensions.get("advertising_channel_type")
     campaign_status = dimensions.get("campaign_status")
     budget_amount_micros = _int_metric_value(facts_by_name.get("budget_amount_micros"))
-    has_recommended_budget = _bool_metric_value(
-        facts_by_name.get("budget_has_recommended_budget")
-    )
+    has_recommended_budget = _bool_metric_value(facts_by_name.get("budget_has_recommended_budget"))
     recommended_budget_amount_micros = _int_metric_value(
         facts_by_name.get("budget_recommended_amount_micros")
     )

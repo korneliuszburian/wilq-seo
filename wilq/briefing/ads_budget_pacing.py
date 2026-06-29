@@ -29,9 +29,7 @@ def build_budget_pacing_read_contract(
 ) -> AdsBudgetPacingReadContract:
     rows = _budget_pacing_rows(metric_facts)
     shared_budget_distribution_rows = _shared_budget_distribution_rows(rows)
-    payload_preview = [
-        row.payload_preview for row in rows if row.payload_preview is not None
-    ]
+    payload_preview = [row.payload_preview for row in rows if row.payload_preview is not None]
     missing_read_contracts = [
         "shared_budget_distribution",
         "budget_target_or_seasonality",
@@ -131,13 +129,9 @@ def _shared_budget_distribution_rows(
     for budget_id, rows in grouped_rows.items():
         if len(rows) < 2:
             continue
-        total_cost_micros_7d = _sum_optional_int(
-            row.cost_micros_7d for row in rows
-        )
+        total_cost_micros_7d = _sum_optional_int(row.cost_micros_7d for row in rows)
         budget_amount_micros = _first_present(row.budget_amount_micros for row in rows)
-        seven_day_budget_micros = _first_present(
-            row.seven_day_budget_micros for row in rows
-        )
+        seven_day_budget_micros = _first_present(row.seven_day_budget_micros for row in rows)
         campaign_shares = [
             AdsSharedBudgetCampaignShare(
                 campaign_id=row.campaign_id,
@@ -240,9 +234,7 @@ def _budget_pacing_row(
         if budget_amount_micros is not None and budget_period == "DAILY"
         else None
     )
-    has_recommended_budget = _bool_metric_value(
-        facts_by_name.get("budget_has_recommended_budget")
-    )
+    has_recommended_budget = _bool_metric_value(facts_by_name.get("budget_has_recommended_budget"))
     recommended_budget_amount_micros = _int_metric_value(
         facts_by_name.get("budget_recommended_amount_micros")
     )

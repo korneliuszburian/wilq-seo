@@ -38,9 +38,7 @@ def test_connector_status_hydrates_operator_status_label() -> None:
 
 
 def test_connector_status_unknown_fallback_is_neutral_polish_copy() -> None:
-    assert connector_status_label("vendor_status_that_drifted") == (
-        "status źródła do sprawdzenia"
-    )
+    assert connector_status_label("vendor_status_that_drifted") == ("status źródła do sprawdzenia")
 
 
 def test_connector_status_uses_latest_successful_vendor_read(
@@ -138,9 +136,7 @@ def test_metric_fact_preserves_marketer_useful_dimension_values() -> None:
     )
     assert fact.dimension_value_labels["query"] == "zielony ład co to"
     assert fact.dimension_value_labels["country"] == "Polska"
-    assert fact.dimension_value_labels["landing_page"] == (
-        "brak wartości w danych źródłowych"
-    )
+    assert fact.dimension_value_labels["landing_page"] == ("brak wartości w danych źródłowych")
     assert fact.dimension_value_labels["campaign_name"] == "ruch organiczny"
 
 

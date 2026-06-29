@@ -158,24 +158,21 @@ def test_live_contract_smoke_rejects_daily_decision_without_decision_state() -> 
 def test_live_contract_smoke_rejects_metric_fact_without_label() -> None:
     smoke = _load_live_smoke_module()
     payloads = _payloads_with_metric_value(12)
-    del payloads["command_center"]["daily_decisions"][0]["metric_facts"][0][
-        "metric_label"
-    ]
+    del payloads["command_center"]["daily_decisions"][0]["metric_facts"][0]["metric_label"]
 
     errors = smoke.evaluate_contracts(payloads)
 
     assert (
-        "command_center.daily_decisions[0].metric_facts[0].metric_label must be present"
-        in errors
+        "command_center.daily_decisions[0].metric_facts[0].metric_label must be present" in errors
     )
 
 
 def test_live_contract_smoke_rejects_raw_metric_label() -> None:
     smoke = _load_live_smoke_module()
     payloads = _payloads_with_metric_value(12)
-    payloads["command_center"]["daily_decisions"][0]["metric_facts"][0][
-        "metric_label"
-    ] = "search_term_cost_micros"
+    payloads["command_center"]["daily_decisions"][0]["metric_facts"][0]["metric_label"] = (
+        "search_term_cost_micros"
+    )
 
     errors = smoke.evaluate_contracts(payloads)
 
@@ -195,6 +192,7 @@ def test_live_contract_smoke_rejects_empty_operator_label() -> None:
     errors = smoke.evaluate_contracts(payloads)
 
     assert (
-        "ads_diagnostics.campaign_read_contract.campaign_rows[0].campaign_status_label must not be empty"
+        "ads_diagnostics.campaign_read_contract.campaign_rows[0]."
+        "campaign_status_label must not be empty"
         in errors
     )

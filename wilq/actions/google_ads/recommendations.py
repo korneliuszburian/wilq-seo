@@ -132,9 +132,7 @@ def _recommendation_fact_groups(
 ) -> dict[tuple[str | None, str], list[MetricFact]]:
     grouped: dict[tuple[str | None, str], list[MetricFact]] = {}
     for fact in facts:
-        if fact.source_connector != "google_ads" or not fact.name.startswith(
-            "recommendation_"
-        ):
+        if fact.source_connector != "google_ads" or not fact.name.startswith("recommendation_"):
             continue
         recommendation_type = fact.dimensions.get("recommendation_type")
         recommendation_id = fact.dimensions.get("recommendation_id")
@@ -158,9 +156,7 @@ def _recommendation_candidate(
     payload_preview = {
         "id": f"recommendation_apply_preview_{recommendation_id or recommendation_type}",
         "recommendation_id": recommendation_id,
-        "recommendation_resource_name": first_dimensions.get(
-            "recommendation_resource_name"
-        ),
+        "recommendation_resource_name": first_dimensions.get("recommendation_resource_name"),
         "recommendation_type": recommendation_type,
         "campaign_id": first_dimensions.get("campaign_id"),
         "campaign_budget_id": first_dimensions.get("campaign_budget_id"),
@@ -181,9 +177,7 @@ def _recommendation_candidate(
     return {
         "id": recommendation_id or recommendation_type,
         "recommendation_id": recommendation_id,
-        "recommendation_resource_name": first_dimensions.get(
-            "recommendation_resource_name"
-        ),
+        "recommendation_resource_name": first_dimensions.get("recommendation_resource_name"),
         "recommendation_type": recommendation_type,
         "campaign_id": first_dimensions.get("campaign_id"),
         "campaign_budget_id": first_dimensions.get("campaign_budget_id"),

@@ -68,8 +68,10 @@ def validate_ga4_tracking_quality_payload(payload: dict[str, Any]) -> list[str]:
             errors.append(missing(item_subject, "listy braków w wymiarach pomiaru"))
         metric_snapshot = item.get("metric_snapshot")
         metric_snapshot_labels = item.get("metric_snapshot_labels")
-        if isinstance(metric_snapshot, dict) and metric_snapshot and not isinstance(
-            metric_snapshot_labels, dict
+        if (
+            isinstance(metric_snapshot, dict)
+            and metric_snapshot
+            and not isinstance(metric_snapshot_labels, dict)
         ):
             errors.append(missing(item_subject, "etykiet widocznych metryk"))
         if item.get("apply_allowed") is not False:
@@ -200,10 +202,7 @@ def _metric_snapshot(facts: list[MetricFact]) -> dict[str, float | int | str]:
 
 
 def _metric_snapshot_labels(facts: list[MetricFact]) -> dict[str, str]:
-    return {
-        fact.name: GA4_TRACKING_METRIC_LABELS.get(fact.name, "metryka GA4")
-        for fact in facts
-    }
+    return {fact.name: GA4_TRACKING_METRIC_LABELS.get(fact.name, "metryka GA4") for fact in facts}
 
 
 def _dimension_value_label(value: str, *, missing_label: str) -> str:
@@ -249,8 +248,9 @@ def _reason(gaps: Sequence[str]) -> str:
             "wnioski o konwersjach i jakości kampanii do czasu sprawdzenia pomiaru."
         )
     return (
-        "Lista sprawdzenia jakości strony wejścia, źródła ruchu i kampanii w WILQ. To pozwala "
-        "sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic zwrotu z reklam ani przychodu."
+        "Lista sprawdzenia jakości strony wejścia, źródła ruchu i kampanii w WILQ. "
+        "To pozwala sprawdzić dopasowanie komunikatu, ale nie odblokowuje obietnic "
+        "zwrotu z reklam ani przychodu."
     )
 
 

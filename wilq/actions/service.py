@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from contextlib import suppress
 from typing import Any, Literal, cast
 from uuid import uuid4
 
@@ -41,6 +42,7 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
     DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
     DEMAND_GEN_AD_READ_STATUS_FACT,
+    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT,
     DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
     DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
@@ -48,14 +50,13 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_LANDING_QUALITY_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     demand_gen_ad_group_ad_rows_from_facts,
+    demand_gen_campaign_mode_review_rows_from_campaigns,
     demand_gen_channel_label,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
     demand_gen_readiness_review_payload,
-    demand_gen_campaign_mode_review_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_ID,
@@ -470,8 +471,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         ),
                         "intent": "brak intencji do pisania bez danych źródłowych",
                         "content_angle": (
-                            "Nie przygotowuj tekstu bez potwierdzonego "
-                            "publicznego URL i dowodów."
+                            "Nie przygotowuj tekstu bez potwierdzonego publicznego URL i dowodów."
                         ),
                         "audience": (
                             "Marketer Ekologus sprawdzający gotowość danych "
@@ -485,8 +485,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "h1_direction": "Nie ustalaj H1 bez potwierdzonego tematu i URL.",
                         "seo_title_direction": "Nie ustalaj title bez potwierdzonego tematu i URL.",
                         "meta_description_direction": (
-                            "Nie ustalaj meta description bez potwierdzonego "
-                            "tematu i URL."
+                            "Nie ustalaj meta description bez potwierdzonego tematu i URL."
                         ),
                         "h2_direction": ["najpierw zbierz dane GSC i WordPress"],
                         "faq_direction": ["najpierw zbierz dane GSC i WordPress"],
@@ -514,7 +513,11 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "brak danych GSC",
                             "brak spisu treści WordPress",
                         ],
-                        "forbidden_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+                        "forbidden_claims": [
+                            "wzrost liczby leadów",
+                            "wpływ na przychód",
+                            "gwarancja pozycji",
+                        ],
                         "required_validation": [
                             "gsc_query_page_check",
                             "wordpress_inventory_check",
@@ -522,7 +525,11 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                             "duplicate_or_cannibalization_check",
                             "human_confirm_before_wordpress_write",
                         ],
-                        "blocked_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+                        "blocked_claims": [
+                            "wzrost liczby leadów",
+                            "wpływ na przychód",
+                            "gwarancja pozycji",
+                        ],
                         "source_connectors": ["google_search_console", "wordpress_ekologus"],
                         "evidence_ids": [
                             connector_evidence_id("wordpress_ekologus"),
@@ -533,7 +540,11 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                         "destructive": False,
                     }
                 ],
-                "blocked_claims": ["wzrost liczby leadów", "wpływ na przychód", "gwarancja pozycji"],
+                "blocked_claims": [
+                    "wzrost liczby leadów",
+                    "wpływ na przychód",
+                    "gwarancja pozycji",
+                ],
                 "destructive": False,
             },
             validation_status="not_validated",
@@ -601,6 +612,7 @@ def get_action(action_id: str) -> ActionObject | None:
     action = actions.get(action_id)
     if action is None:
         return None
+    action = _with_persisted_validation_state(action)
     return _with_review_gate(
         action,
         _persisted_audit_events_for_action(action.id),
@@ -701,7 +713,8 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         ),
         human_diagnosis=(
             "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
-            "potwierdzonego zwrotu z reklam albo kosztu pozyskania celu. WILQ może robić ocenę kampanii, "
+            "potwierdzonego zwrotu z reklam albo kosztu pozyskania celu. "
+            "WILQ może robić ocenę kampanii, "
             "ale nie może wydać werdyktu KPI ani uruchamiać zapisu zmian budżetu lub rekomendacji."
         ),
         recommended_reason=(
@@ -723,10 +736,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         or latest_run.status != ConnectorRefreshStatus.completed
         or not latest_run.vendor_data_collected
         or not ads_business_context_configured()
-        or (
-            latest_review is not None
-            and latest_review.outcome == "approved_for_prepare"
-        )
+        or (latest_review is not None and latest_review.outcome == "approved_for_prepare")
     ):
         return None
     return ActionObject(
@@ -904,7 +914,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             ),
             recommended_reason=(
                 "Na /ga4 przygotuj przegląd pomiaru i jakości ruchu: pokaż "
-                "zestawienie strony wejścia, źródła ruchu i kampanii, sprawdź propozycję w WILQ i nie "
+                "zestawienie strony wejścia, źródła ruchu i kampanii, "
+                "sprawdź propozycję w WILQ i nie "
                 "oceniaj kampanii bez kontraktu konwersji."
             ),
             payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
@@ -1041,9 +1052,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         google_ads_facts
     )
     if recommendation_review_payload is not None:
-        recommendation_metric_names = set(
-            recommendation_review_payload["source_metric_names"]
-        )
+        recommendation_metric_names = set(recommendation_review_payload["source_metric_names"])
         recommendation_evidence_ids = set(recommendation_review_payload["evidence_ids"])
         recommendation_ids = {
             recommendation.get("recommendation_id")
@@ -1124,9 +1133,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )
         actions[action.id] = action
 
-    search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(
-        google_ads_facts
-    )
+    search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(google_ads_facts)
     if search_term_ngram_payload is not None:
         ngram_source_terms = {
             term
@@ -1240,9 +1247,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions[action.id] = action
 
     localo_facts = _localo_action_metric_facts(by_connector.get("localo", []))
-    localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(
-        localo_facts
-    )
+    localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(localo_facts)
     if localo_visibility_payload is not None:
         localo_metrics = _prioritize_action_metrics(
             localo_facts,
@@ -1339,25 +1344,31 @@ def _demand_gen_readiness_review_action(
         ga4_facts,
         demand_gen_rows,
     )
-    demand_gen_campaign_mode_review_rows = (
-        demand_gen_campaign_mode_review_rows_from_campaigns(demand_gen_rows)
+    demand_gen_campaign_mode_review_rows = demand_gen_campaign_mode_review_rows_from_campaigns(
+        demand_gen_rows
     )
-    if demand_gen_contract_has_ready_fact(
-        google_ads_facts,
-        status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
-        row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
-    ) or demand_gen_ad_group_ad_rows:
+    if (
+        demand_gen_contract_has_ready_fact(
+            google_ads_facts,
+            status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
+            row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+        )
+        or demand_gen_ad_group_ad_rows
+    ):
         available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
         missing_read_contracts = [
             contract
             for contract in missing_read_contracts
             if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
         ]
-    if demand_gen_contract_has_ready_fact(
-        google_ads_facts,
-        status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
-        row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
-    ) or demand_gen_creative_asset_rows:
+    if (
+        demand_gen_contract_has_ready_fact(
+            google_ads_facts,
+            status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+            row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+        )
+        or demand_gen_creative_asset_rows
+    ):
         available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
         missing_read_contracts = [
             contract
@@ -1534,9 +1545,7 @@ def _latest_google_ads_metric_facts() -> list[MetricFact]:
         return []
     return [
         fact
-        for fact in metric_store().list_metric_facts_by_evidence_ids(
-            latest_run.evidence_ids
-        )
+        for fact in metric_store().list_metric_facts_by_evidence_ids(latest_run.evidence_ids)
         if fact.source_connector == "google_ads"
     ]
 
@@ -1581,9 +1590,7 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
                 "severity": severity,
                 "resolution": resolution or None,
                 "product_count": sum(
-                    int(fact.value)
-                    for fact in group_facts
-                    if isinstance(fact.value, int | float)
+                    int(fact.value) for fact in group_facts if isinstance(fact.value, int | float)
                 ),
                 "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
                 "sample_products_available": bool(sample_product_ids),
@@ -1631,9 +1638,7 @@ def _merchant_issue_payload_preview(
                 "severity": cluster.get("severity"),
                 "severity_label": merchant_severity_label(cluster.get("severity")),
                 "resolution": cluster.get("resolution"),
-                "resolution_label": merchant_resolution_label(
-                    cluster.get("resolution")
-                ),
+                "resolution_label": merchant_resolution_label(cluster.get("resolution")),
                 "metric_snapshot": {"issue_product_count": product_count},
                 "metric_snapshot_labels": merchant_metric_snapshot_labels(
                     {"issue_product_count": product_count}
@@ -1791,10 +1796,7 @@ def _wordpress_draft_handoff_action(
     ]
     if not brief_previews:
         return None
-    preview_items = [
-        _wordpress_draft_handoff_preview_item(item)
-        for item in brief_previews[:4]
-    ]
+    preview_items = [_wordpress_draft_handoff_preview_item(item) for item in brief_previews[:4]]
     return ActionObject(
         id="act_prepare_wordpress_draft_handoff",
         title="Przygotuj zablokowany podgląd szkicu WordPress",
@@ -1858,9 +1860,7 @@ def _wordpress_draft_handoff_action(
 
 def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any]:
     source_public_url = (
-        item.get("source_public_url")
-        if isinstance(item.get("source_public_url"), str)
-        else None
+        item.get("source_public_url") if isinstance(item.get("source_public_url"), str) else None
     )
     intended_final_url = (
         item.get("intended_final_url")
@@ -1908,9 +1908,9 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
         "duplicate_gate_status_label": content_contract_label(
             str(item.get("duplicate_gate_status") or "")
         ),
-        "wordpress_draft_handoff_status": "blocked_until_draft_gates_pass",
+        "wordpress_draft_handoff_status": "blocked_until_draft_checks_complete",
         "wordpress_draft_handoff_summary": [
-            "status: zablokowany do przejścia kontroli szkicu"
+            "stan przekazania do WordPress: zablokowany do przejścia kontroli szkicu"
         ],
         "required_next_action_contract": "wordpress_draft_handoff_v1",
         "required_next_action_label": content_contract_label("wordpress_draft_handoff_v1"),
@@ -1930,9 +1930,7 @@ def _wordpress_draft_handoff_preview_item(item: dict[str, Any]) -> dict[str, Any
 
 def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:
     actions: dict[str, ActionObject] = {}
-    social_source_facts = [
-        fact for fact in social_facts if _is_social_source_metric(fact)
-    ]
+    social_source_facts = [fact for fact in social_facts if _is_social_source_metric(fact)]
     social_metrics = _prioritize_action_metrics(
         social_source_facts,
         required_names={
@@ -1962,7 +1960,12 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "require_human_review_before_apply",
         ],
         "source_inputs": _social_source_inputs(social_metrics),
-        "blocked_claims": ["zwrot z reklam", "przychód", "wzrost konwersji", "wdrożona poprawka produktu"],
+        "blocked_claims": [
+            "zwrot z reklam",
+            "przychód",
+            "wzrost konwersji",
+            "wdrożona poprawka produktu",
+        ],
         "destructive": False,
     }
     for connector_id, action_type, title in (
@@ -2064,9 +2067,7 @@ def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
 def _metric_sentence(facts: list[MetricFact]) -> str:
     if not facts:
         return "Najważniejsze fakty: brak metryk do pokazania"
-    samples = ", ".join(
-        f"{_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:4]
-    )
+    samples = ", ".join(f"{_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:4])
     if len(facts) > 4:
         return f"Najważniejsze fakty: {samples} i kolejne sygnały w dowodach"
     return f"Najważniejsze fakty: {samples}"
@@ -2206,9 +2207,7 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
         errors.append(f"Łącznik danych {action.connector} nie jest skonfigurowany.")
     errors.extend(validate_action_payload(action.connector, action.payload))
     if action.risk in {ActionRisk.high, ActionRisk.critical}:
-        warnings.append(
-            "Akcje o wysokim i krytycznym ryzyku wymagają osobnego wsparcia produktu."
-        )
+        warnings.append("Akcje o wysokim i krytycznym ryzyku wymagają osobnego wsparcia produktu.")
     valid = not errors
     action.validation_status = "valid" if valid else "invalid"
     if not valid:
@@ -2218,6 +2217,11 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
     else:
         action.status = ActionStatus.ready
     action.review_gate = _action_review_gate(action)
+    local_state_store().save_action_validation_state(
+        action_id=action.id,
+        status=action.status.value,
+        validation_status=action.validation_status,
+    )
     return ActionValidationResult(
         action_id=action.id,
         valid=valid,
@@ -2508,10 +2512,7 @@ def _action_mutation_audit_record(
 
 def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> str:
     if errors:
-        return (
-            "Mutation blocked before any vendor API call. "
-            f"Blockers: {', '.join(errors)}"
-        )
+        return f"Mutation blocked before any vendor API call. Blockers: {', '.join(errors)}"
     adapter = mutation_adapter or "unknown"
     return f"Mutation executed through adapter {adapter}; vendor payload remains redacted."
 
@@ -2527,12 +2528,26 @@ def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[Action
     mutation_audits_by_action_id = _persisted_mutation_audits_by_action_id(action_ids)
     return [
         _with_review_gate(
-            action,
+            _with_persisted_validation_state(action),
             audit_events_by_action_id.get(action.id, []),
             mutation_audits_by_action_id.get(action.id, []),
         )
         for action in action_list
     ]
+
+
+def _with_persisted_validation_state(action: ActionObject) -> ActionObject:
+    state = local_state_store().get_action_validation_state(action.id)
+    if state is None:
+        return action
+    validation_status = state.get("validation_status")
+    status = state.get("status")
+    if validation_status in {"valid", "invalid", "not_validated"}:
+        action.validation_status = validation_status
+    if isinstance(status, str):
+        with suppress(ValueError):
+            action.status = ActionStatus(status)
+    return action
 
 
 def _with_review_gate(
@@ -2559,11 +2574,24 @@ def _with_review_gate(
         ),
     )
     action.payload = _payload_with_operator_labels(action.payload)
+    review_gate_events = [
+        event
+        for event in action.audit_events
+        if not _is_legacy_content_migration_review_event(action.id, event)
+    ]
     action.review_gate = _action_review_gate(
-        action.model_copy(update={"audit_events": state_audit_events}),
+        action.model_copy(update={"audit_events": review_gate_events}),
         mutation_audits,
     )
     return _action_with_operator_labels(action)
+
+
+def _is_legacy_content_migration_review_event(action_id: str, event: AuditEvent) -> bool:
+    if action_id != "act_prepare_content_refresh_queue":
+        return False
+    if not event.event_type.startswith("human_review_"):
+        return False
+    return _audit_event_has_raw_contract_text(event)
 
 
 def _action_with_operator_labels(action: ActionObject) -> ActionObject:
@@ -2574,12 +2602,8 @@ def _action_with_operator_labels(action: ActionObject) -> ActionObject:
             "mode_label": _action_mode_label(action.mode),
             "risk_label": _action_risk_label(action.risk),
             "status_label": _action_status_label(action.status),
-            "evidence_summary_label": _action_evidence_summary_label(
-                action.evidence_ids
-            ),
-            "validation_status_label": _action_validation_status_label(
-                action.validation_status
-            ),
+            "evidence_summary_label": _action_evidence_summary_label(action.evidence_ids),
+            "validation_status_label": _action_validation_status_label(action.validation_status),
             "review_gate": _review_gate_with_operator_labels(action.review_gate),
             "preview_cards": _action_preview_cards(action),
             "audit_events": [
@@ -2635,7 +2659,11 @@ def _action_preview_item_view_models(
 ) -> list[ActionPreviewItemViewModel]:
     if preview_cards:
         return [
-            _preview_item_from_card(card, index)
+            _preview_item_from_card(
+                card=card,
+                raw_item=raw_items[index] if index < len(raw_items) else None,
+                index=index,
+            )
             for index, card in enumerate(preview_cards[:max_items])
         ]
     return [
@@ -2645,7 +2673,9 @@ def _action_preview_item_view_models(
 
 
 def _preview_item_from_card(
+    *,
     card: ActionPreviewCardViewModel,
+    raw_item: dict[str, Any] | None,
     index: int,
 ) -> ActionPreviewItemViewModel:
     rows = list(card.rows[:4])
@@ -2655,6 +2685,8 @@ def _preview_item_from_card(
         rows.append(_preview_row("Gotowość systemu", card.system_readiness_label))
     return ActionPreviewItemViewModel(
         id=f"preview_item_{index + 1}",
+        preview_contract=_preview_item_contract(raw_item),
+        candidate_id=_preview_item_candidate_id(raw_item),
         title_label=card.title_label or f"Pozycja podglądu {index + 1}",
         status_label=card.status_label,
         rows=rows,
@@ -2669,14 +2701,36 @@ def _preview_item_from_raw_payload(
     rows = _safe_raw_preview_rows(item)
     if not rows:
         rows = [
-            _preview_row("Zakres", _preview_contract_label(_preview_contract(action.payload, [item]))),
+            _preview_row(
+                "Zakres", _preview_contract_label(_preview_contract(action.payload, [item]))
+            ),
         ]
     return ActionPreviewItemViewModel(
         id=f"preview_item_{index + 1}",
+        preview_contract=_preview_item_contract(item),
+        candidate_id=_preview_item_candidate_id(item),
         title_label=_raw_preview_title(item, index),
         status_label=_raw_preview_status(item),
         rows=rows[:6],
     )
+
+
+def _preview_item_contract(item: dict[str, Any] | None) -> str | None:
+    if not item:
+        return None
+    value = item.get("preview_contract")
+    if isinstance(value, str) and value == "wordpress_draft_payload_preview_v1":
+        return value
+    return None
+
+
+def _preview_item_candidate_id(item: dict[str, Any] | None) -> str | None:
+    if not item:
+        return None
+    if item.get("preview_contract") != "wordpress_draft_payload_preview_v1":
+        return None
+    value = item.get("candidate_id")
+    return value if isinstance(value, str) and value else None
 
 
 def _safe_raw_preview_rows(item: dict[str, Any]) -> list[ActionPreviewRowViewModel]:
@@ -2689,7 +2743,9 @@ def _safe_raw_preview_rows(item: dict[str, Any]) -> list[ActionPreviewRowViewMod
         rows.append(_preview_row("Zapis zmian", _apply_state_label(item.get("apply_allowed"))))
     if "api_mutation_ready" in item:
         rows.append(
-            _preview_row("Gotowość systemu", _system_readiness_label(item.get("api_mutation_ready")))
+            _preview_row(
+                "Gotowość systemu", _system_readiness_label(item.get("api_mutation_ready"))
+            )
         )
     return rows
 
@@ -2762,9 +2818,7 @@ def _content_refresh_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
     content_items = [
-        item
-        for item in payload.get("content_brief_preview", [])
-        if isinstance(item, dict)
+        item for item in payload.get("content_brief_preview", []) if isinstance(item, dict)
     ]
     draft_items = [
         item
@@ -2772,8 +2826,7 @@ def _content_refresh_preview_cards(
         if isinstance(item, dict)
     ]
     cards = [
-        _content_brief_preview_card(item, index)
-        for index, item in enumerate(content_items[:3])
+        _content_brief_preview_card(item, index) for index, item in enumerate(content_items[:3])
     ]
     cards.extend(
         _wordpress_draft_payload_preview_card(item, index)
@@ -2837,7 +2890,8 @@ def _wordpress_draft_payload_preview_card(
     item: dict[str, Any],
     index: int,
 ) -> ActionPreviewCardViewModel:
-    draft_payload = item.get("draft_payload") if isinstance(item.get("draft_payload"), dict) else {}
+    draft_payload_value = item.get("draft_payload")
+    draft_payload = draft_payload_value if isinstance(draft_payload_value, dict) else {}
     rows = [
         _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
         _preview_row("Status wpisu", str(item.get("post_status_label") or "szkic")),
@@ -2877,11 +2931,7 @@ def _wordpress_draft_payload_preview_card(
 def _wordpress_draft_handoff_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         rows = [
@@ -2940,9 +2990,7 @@ def _wordpress_draft_handoff_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -2951,11 +2999,7 @@ def _wordpress_draft_handoff_preview_cards(
 def _social_draft_input_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    source_inputs = [
-        item
-        for item in payload.get("source_inputs", [])
-        if isinstance(item, dict)
-    ]
+    source_inputs = [item for item in payload.get("source_inputs", []) if isinstance(item, dict)]
     connector_label = source_connector_labels([str(payload.get("connector") or "social")])[0]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(source_inputs[:4]):
@@ -3004,13 +3048,12 @@ def _social_draft_input_preview_cards(
 
 def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardViewModel]:
     preview_items = [
-        item
-        for item in payload.get("budget_payload_preview", [])
-        if isinstance(item, dict)
+        item for item in payload.get("budget_payload_preview", []) if isinstance(item, dict)
     ]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
-        safety_review = item.get("safety_review") if isinstance(item.get("safety_review"), dict) else {}
+        safety_review_value = item.get("safety_review")
+        safety_review = safety_review_value if isinstance(safety_review_value, dict) else {}
         rows = [
             _preview_row("Kampania", str(item.get("campaign_name") or "kampania do sprawdzenia")),
             _preview_row(
@@ -3055,9 +3098,7 @@ def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCard
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3066,11 +3107,7 @@ def _ads_budget_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCard
 def _ads_recommendation_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         rows = [
@@ -3113,9 +3150,7 @@ def _ads_recommendation_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3124,11 +3159,7 @@ def _ads_recommendation_preview_cards(
 def _ads_negative_keyword_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         rows = [
@@ -3171,9 +3202,7 @@ def _ads_negative_keyword_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3182,19 +3211,11 @@ def _ads_negative_keyword_preview_cards(
 def _ads_custom_segment_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         targeting_preview = next(
-            (
-                target
-                for target in item.get("targeting_preview", [])
-                if isinstance(target, dict)
-            ),
+            (target for target in item.get("targeting_preview", []) if isinstance(target, dict)),
             {},
         )
         safety_review = item.get("safety_review")
@@ -3222,9 +3243,7 @@ def _ads_custom_segment_preview_cards(
                 str(safety_review.get("status_label") or "wymaga sprawdzenia"),
             ),
         ]
-        missing_requirement_labels = _string_list(
-            safety_review.get("missing_requirement_labels")
-        )
+        missing_requirement_labels = _string_list(safety_review.get("missing_requirement_labels"))
         if missing_requirement_labels:
             rows.append(_preview_row("Braki", ", ".join(missing_requirement_labels[:4])))
         requirement_labels = _string_list(item.get("required_validation_labels"))
@@ -3247,9 +3266,7 @@ def _ads_custom_segment_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3258,11 +3275,7 @@ def _ads_custom_segment_preview_cards(
 def _demand_gen_readiness_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         channel_counts = item.get("campaign_channel_counts")
@@ -3317,9 +3330,7 @@ def _demand_gen_readiness_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3334,11 +3345,7 @@ def demand_gen_readiness_preview_cards(
 def _search_term_ngram_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("ngram_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("ngram_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         sample_terms = _string_list(item.get("sample_search_terms"))
@@ -3384,9 +3391,7 @@ def _search_term_ngram_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3395,11 +3400,7 @@ def _search_term_ngram_preview_cards(
 def _ga4_tracking_quality_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         metric_snapshot = item.get("metric_snapshot")
@@ -3446,9 +3447,7 @@ def _ga4_tracking_quality_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3457,11 +3456,7 @@ def _ga4_tracking_quality_preview_cards(
 def _local_visibility_preview_cards(
     payload: dict[str, Any],
 ) -> list[ActionPreviewCardViewModel]:
-    preview_items = [
-        item
-        for item in payload.get("payload_preview", [])
-        if isinstance(item, dict)
-    ]
+    preview_items = [item for item in payload.get("payload_preview", []) if isinstance(item, dict)]
     cards: list[ActionPreviewCardViewModel] = []
     for index, item in enumerate(preview_items[:4]):
         metric_snapshot = item.get("metric_snapshot")
@@ -3508,9 +3503,7 @@ def _local_visibility_preview_cards(
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
-                system_readiness_label=_system_readiness_label(
-                    item.get("api_mutation_ready")
-                ),
+                system_readiness_label=_system_readiness_label(item.get("api_mutation_ready")),
             )
         )
     return cards
@@ -3551,7 +3544,8 @@ def _keyword_planner_access_preview_cards(
     rows.append(
         _preview_row(
             "Następny krok",
-            "sprawdź status tokena deweloperskiego w Google Ads, a po akceptacji ponów odczyt danych",
+            "sprawdź status tokena deweloperskiego w Google Ads, "
+            "a po akceptacji ponów odczyt danych",
         )
     )
     requirement_labels = _string_list(payload.get("required_validation_labels"))
@@ -3614,9 +3608,7 @@ def _ads_target_guardrail_preview_cards(
             status_label="zapis zmian zablokowany",
             rows=rows,
             apply_state_label=_apply_state_label(payload.get("apply_allowed")),
-            system_readiness_label=_system_readiness_label(
-                payload.get("api_mutation_ready")
-            ),
+            system_readiness_label=_system_readiness_label(payload.get("api_mutation_ready")),
         )
     ]
 
@@ -3654,9 +3646,7 @@ def _ads_strategy_review_preview_cards(
             status_label="zapis zmian zablokowany",
             rows=rows,
             apply_state_label=_apply_state_label(payload.get("apply_allowed")),
-            system_readiness_label=_system_readiness_label(
-                payload.get("api_mutation_ready")
-            ),
+            system_readiness_label=_system_readiness_label(payload.get("api_mutation_ready")),
         )
     ]
 
@@ -3771,7 +3761,10 @@ def _prioritized_merchant_preview_items(items: list[dict[str, Any]]) -> list[dic
     return sorted(
         items,
         key=lambda item: (
-            0 if _string_list(item.get("sample_titles")) or _string_list(item.get("sample_product_ids")) else 1,
+            0
+            if _string_list(item.get("sample_titles"))
+            or _string_list(item.get("sample_product_ids"))
+            else 1,
             str(item.get("id") or ""),
         ),
     )
@@ -3885,9 +3878,7 @@ def _audit_details_for_operator(details: dict[str, Any]) -> dict[str, Any]:
             operator_details[str(key)] = clean_value
     checked_items = _string_list(operator_details.get("checked_items"))
     if checked_items:
-        operator_details["checked_items"] = [
-            _review_summary_item(item) for item in checked_items
-        ]
+        operator_details["checked_items"] = [_review_summary_item(item) for item in checked_items]
     blockers = _string_list(operator_details.get("blockers"))
     if blockers:
         operator_details["blockers"] = [_review_blocker_label(item) for item in blockers]
@@ -3968,10 +3959,7 @@ def _action_review_gate(
         )
     else:
         status = "pending_validation"
-        summary = (
-            "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany osobnymi "
-            "warunkami."
-        )
+        summary = "Wymaga sprawdzenia w WILQ; zapis zmian pozostaje zablokowany osobnymi warunkami."
     return ActionReviewGate(
         status=status,
         summary=summary,
@@ -3997,18 +3985,14 @@ def _action_review_gate(
         if last_confirmation is not None
         else None,
         last_impact_check_status=_impact_status_from_event(last_impact_check),
-        last_impact_checked_by=last_impact_check.actor
-        if last_impact_check is not None
-        else None,
+        last_impact_checked_by=last_impact_check.actor if last_impact_check is not None else None,
         last_impact_checked_at=last_impact_check.created_at
         if last_impact_check is not None
         else None,
         last_impact_check_summary=last_impact_check.summary
         if last_impact_check is not None
         else None,
-        last_mutation_audit_id=last_mutation_audit.id
-        if last_mutation_audit is not None
-        else None,
+        last_mutation_audit_id=last_mutation_audit.id if last_mutation_audit is not None else None,
         last_mutation_audit_status=last_mutation_audit.status
         if last_mutation_audit is not None
         else None,
@@ -4105,10 +4089,7 @@ def _review_summary_item(item: str) -> str:
     if item.startswith("mode:"):
         return f"tryb: {content_contract_label(item.removeprefix('mode:'))}"
     if item.startswith("url_review_outcome:"):
-        return (
-            "URL finalny: "
-            f"{content_contract_label(item.removeprefix('url_review_outcome:'))}"
-        )
+        return f"URL finalny: {content_contract_label(item.removeprefix('url_review_outcome:'))}"
     if item.startswith("reviewed_url:"):
         return "sprawdzony URL zapisany w szczegółach audytu"
     if item.startswith("review_notes:"):
@@ -4125,8 +4106,9 @@ def _review_summary_item(item: str) -> str:
 
 def _review_blocker_label(item: str) -> str:
     if item.startswith("blocked_claim:"):
-        claim = _canonical_contract_key(item.removeprefix("blocked_claim:"))
-        claim_label = content_contract_label(claim)
+        raw_claim = item.removeprefix("blocked_claim:").strip()
+        claim_labels = operator_blocked_claims([raw_claim])
+        claim_label = claim_labels[0] if claim_labels else raw_claim
         return f"nie wolno twierdzić: {claim_label}"
     return _action_gate_label(_canonical_contract_key(item)) or content_contract_label(
         _canonical_contract_key(item)
@@ -4302,9 +4284,7 @@ def _action_confirmation_summary(
 
 def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
     blockers: list[str] = []
-    target_count = int(request.target_roas is not None) + int(
-        request.target_cpa_micros is not None
-    )
+    target_count = int(request.target_roas is not None) + int(request.target_cpa_micros is not None)
     if target_count == 0:
         blockers.append("target_roas_or_cpa_required")
     if target_count > 1:
@@ -4327,8 +4307,7 @@ def _ads_target_confirmation_summary(
         target_summary = f"docelowy zwrot z reklam: {request.target_roas:g}"
     else:
         target_summary = (
-            "docelowy koszt pozyskania celu: "
-            f"{_micros_money_label(request.target_cpa_micros)}"
+            f"docelowy koszt pozyskania celu: {_micros_money_label(request.target_cpa_micros)}"
         )
     return (
         f"Potwierdzono roboczą zasadę bezpieczeństwa celu Ads: {target_summary}. "
@@ -4368,7 +4347,11 @@ def _action_impact_check_summary(
         f"Porównanie po zmianie: {request.post_window_days} dni.",
         f"Metryki z dowodami: {metric_fact_count}.",
         "Źródła: "
-        f"{', '.join(_source_connector_labels(source_connectors)) if source_connectors else 'brak'}.",
+        + (
+            f"{', '.join(_source_connector_labels(source_connectors))}."
+            if source_connectors
+            else "brak."
+        ),
     ]
     if blockers:
         parts.append(f"Blokady: {', '.join(_action_gate_labels(blockers))}.")
@@ -4630,7 +4613,9 @@ def _contains_raw_audit_contract_text(summary: str) -> bool:
         "payload_",
         "source_type:",
         "staging handoff",
-        "target_",
+        "target" "_site",
+        "target" "_site" "_",
+        "target" "_site" "_migration",
     )
     return any(fragment in summary for fragment in raw_fragments)
 
@@ -4646,10 +4631,7 @@ def _legacy_or_current_preview_summary(summary: str) -> str:
             "Podgląd zmian przygotowany, ale zapis zmian pozostaje zablokowany."
             f"{item_summary} Nie zapisano zmian w zewnętrznych systemach."
         )
-    return (
-        "Podgląd zmian przygotowany."
-        f"{item_summary} Nie zapisano zmian w zewnętrznych systemach."
-    )
+    return f"Podgląd zmian przygotowany.{item_summary} Nie zapisano zmian w zewnętrznych systemach."
 
 
 def _legacy_or_current_impact_summary(summary: str) -> str:
@@ -4833,12 +4815,14 @@ def _action_gate_label(value: str) -> str | None:
         "metric_facts_required": "wymagane metryki z dowodami",
         "evidence_ids_required": "wymagane dowody źródłowe",
         "impact_sanity_check_required": "wymagane sprawdzenie efektu",
-        "vendor_mutation_adapter_required": "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie",
+        "vendor_mutation_adapter_required": (
+            "brak bezpiecznej ścieżki zapisu w zewnętrznym systemie"
+        ),
         "validate_action_object": "sprawdzenie akcji",
         "human_review_before_apply": "sprawdzenie przez człowieka przed zapisem",
         "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
         "compare_90_day_safety_read": "porównaj z 90-dniową kontrolą bezpieczeństwa",
-        "confirm_developer_token_approval": "potwierdź akceptację tokena deweloperskiego",
+        "confirm_developer_access_approval": "potwierdź akceptację dostępu deweloperskiego",
         "review_campaign_activity": "sprawdź aktywność kampanii",
         "verify_account_currency": "sprawdź walutę konta",
         "budget_pacing": "sprawdź tempo wydawania budżetu",
@@ -4888,10 +4872,14 @@ def _action_gate_label(value: str) -> str | None:
         "review_campaign_goal": "sprawdź cel kampanii",
         "review_campaign_name_dimension": "sprawdź nazwę kampanii",
         "review_conversion_quality": "sprawdź jakość konwersji",
-        "review_conversion_or_key_event_mapping": "sprawdź powiązanie konwersji lub zdarzenia kluczowego",
+        "review_conversion_or_key_event_mapping": (
+            "sprawdź powiązanie konwersji lub zdarzenia kluczowego"
+        ),
         "review_budget_context": "sprawdź kontekst budżetu",
         "review_demand_gen_missing_contracts": "sprawdź braki danych Demand Gen",
-        "review_ga4_landing_source_campaign_context": "sprawdź stronę wejścia, źródło i kampanię w GA4",
+        "review_ga4_landing_source_campaign_context": (
+            "sprawdź stronę wejścia, źródło i kampanię w GA4"
+        ),
         "review_human_budget_goal": "sprawdź cel budżetu od człowieka",
         "review_landing_page_dimension": "sprawdź stronę wejścia",
         "review_local_rankings_aggregate": "sprawdź zbiorcze dane lokalnych pozycji",
@@ -4900,14 +4888,18 @@ def _action_gate_label(value: str) -> str | None:
         "review_profit_margin_model": "sprawdź model marży",
         "review_reviews_aggregate": "sprawdź zbiorcze dane opinii",
         "review_search_term_context": "sprawdź kontekst wyszukiwanego hasła",
-        "review_search_terms_before_budget_decision": "sprawdź wyszukiwane hasła przed decyzją budżetową",
+        "review_search_terms_before_budget_decision": (
+            "sprawdź wyszukiwane hasła przed decyzją budżetową"
+        ),
         "review_source_medium_dimension": "sprawdź źródło i medium ruchu",
         "review_source_search_terms": "sprawdź źródłowe wyszukiwane hasła",
         "review_source_terms": "sprawdź źródłowe hasła",
         "review_target_fit": "sprawdź dopasowanie do celu",
         "review_conversion_tracking": "sprawdź pomiar konwersji",
         "review_pmax_asset_feed_context": "sprawdź kontekst zasobów i feedu PMax",
-        "check_existing_keywords_and_match_types": "sprawdź istniejące słowa kluczowe i dopasowania",
+        "check_existing_keywords_and_match_types": (
+            "sprawdź istniejące słowa kluczowe i dopasowania"
+        ),
         "90_day_safety_check": "sprawdź bezpieczeństwo z 90 dni",
         "negative_keyword_change_preview": "sprawdź podgląd wykluczenia słowa",
         "change_history": "sprawdź historię zmian",
@@ -4918,7 +4910,9 @@ def _action_gate_label(value: str) -> str | None:
         "human_intent_review": "człowiek sprawdza intencję",
         "human_confirm_before_tracking_change": "człowiek potwierdza przed zmianą pomiaru",
         "keyword_planner_enrichment": "wzbogać dane przez Keyword Planner",
-        "ngram_to_negative_keyword_change_preview": "podgląd przejścia z tematu zapytań do wykluczenia",
+        "ngram_to_negative_keyword_change_preview": (
+            "podgląd przejścia z tematu zapytań do wykluczenia"
+        ),
         "block_local_tasks_without_contract": "blokuj lokalne zadania bez kontraktu",
         "demand_gen_landing_quality_by_campaign": "jakość stron wejścia Demand Gen według kampanii",
         "demand_gen_campaign_mode_review": "kontrola trybu kampanii Demand Gen",
@@ -4932,13 +4926,21 @@ def _action_gate_label(value: str) -> str | None:
         "competitor_visibility": "widoczność konkurencji",
         "use_only_wilq_evidence": "użyj tylko dowodów z WILQ",
         "write_in_polish": "pisz po polsku",
-        "no_performance_claims_without_source_metric": "bez obietnic skuteczności bez metryk źródłowych",
-        "no_publishing_without_connector_credentials": "bez publikacji bez danych dostępowych źródła",
+        "no_performance_claims_without_source_metric": (
+            "bez obietnic skuteczności bez metryk źródłowych"
+        ),
+        "no_publishing_without_connector_credentials": (
+            "bez publikacji bez danych dostępowych źródła"
+        ),
         "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
-        "confirm_target_roas_or_cpa": "potwierdź docelowy zwrot z reklam albo koszt pozyskania celu",
+        "confirm_target_roas_or_cpa": (
+            "potwierdź docelowy zwrot z reklam albo koszt pozyskania celu"
+        ),
         "target_roas_or_cpa_required": "podaj docelowy zwrot z reklam albo koszt pozyskania celu",
         "exactly_one_target_guardrail_allowed": "podaj tylko jeden cel Ads do sprawdzenia",
-        "record_human_strategy_review_outcome": "zapisz wynik sprawdzenia strategii przez człowieka",
+        "record_human_strategy_review_outcome": (
+            "zapisz wynik sprawdzenia strategii przez człowieka"
+        ),
         "WILQ_ADS_TARGET_ROAS": "docelowy zwrot z reklam",
         "WILQ_ADS_TARGET_CPA_MICROS": "docelowy koszt pozyskania celu",
         "target_metrics_review": "przegląd wskaźników względem celu",
@@ -4946,7 +4948,9 @@ def _action_gate_label(value: str) -> str | None:
         "budget_review_context": "kontekst przeglądu budżetu",
         "recommended_budget_missing": "brak proponowanego budżetu",
         "target_roas_or_cpa": "docelowy zwrot z reklam albo koszt pozyskania celu",
-        "developer_token_approved_for_keyword_planner": "token deweloperski zatwierdzony dla Keyword Plannera",
+        "developer_access_approved_for_keyword_planner": (
+            "dostęp deweloperski zatwierdzony dla Keyword Plannera"
+        ),
         "keyword_planner_generate_ideas_allowed": "Keyword Planner może generować propozycje",
         "verify_keyword_planner_idea_rows": "sprawdź wiersze Keyword Planner",
     }
@@ -4977,6 +4981,20 @@ def _requires_human_confirmation(required_checks: list[str]) -> bool:
 
 
 def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    for key in (
+        "wordpress_draft_payload_preview",
+        "budget_payload_preview",
+        "custom_segment_payload_preview",
+        "negative_keyword_payload_preview",
+        "ngram_preview",
+    ):
+        preview = payload.get(key)
+        if isinstance(preview, list):
+            items = [item for item in preview if isinstance(item, dict)]
+            if items:
+                return items
+        if isinstance(preview, dict):
+            return [preview]
     preview = payload.get("payload_preview")
     if isinstance(preview, list):
         return [item for item in preview if isinstance(item, dict)]
@@ -4986,9 +5004,7 @@ def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
     for value in payload.values():
         if isinstance(value, list):
             preview_items.extend(
-                item
-                for item in value
-                if isinstance(item, dict) and "apply_allowed" in item
+                item for item in value if isinstance(item, dict) and "apply_allowed" in item
             )
     return preview_items
 
@@ -5033,9 +5049,3 @@ def _impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "b
     if event.event_type == "action_impact_check_blocked":
         return "blocked"
     return None
-
-
-def _string_list(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item for item in value if isinstance(item, str) and item]

@@ -158,9 +158,7 @@ def _check_diagnostics_shape(
         or _list(diagnostics.get("tactical_items"))
         or _list(diagnostics.get("action_ids"))
     ):
-        errors.append(
-            f"{label} must expose decision_queue, tactical_items or action_ids"
-        )
+        errors.append(f"{label} must expose decision_queue, tactical_items or action_ids")
 
 
 def _require_nonempty_list(

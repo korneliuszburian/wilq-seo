@@ -174,11 +174,7 @@ def _keyword_context_items(facts: list[MetricFact]) -> list[dict[str, Any]]:
     for (keyword_text, campaign_id, ad_group_id, criterion_id), group in grouped.items():
         first_dimensions = group[0].dimensions
         match_type = next(
-            (
-                str(fact.value)
-                for fact in group
-                if fact.name == "keyword_match_type" and fact.value
-            ),
+            (str(fact.value) for fact in group if fact.name == "keyword_match_type" and fact.value),
             first_dimensions.get("keyword_match_type", "UNKNOWN"),
         )
         negative = any(
@@ -282,9 +278,12 @@ def _payload_preview_items(groups: list[list[MetricFact]]) -> list[dict[str, Any
 
 
 def _slug(value: str) -> str:
-    return "".join(character.lower() if character.isalnum() else "_" for character in value)[
-        :80
-    ].strip("_") or "item"
+    return (
+        "".join(character.lower() if character.isalnum() else "_" for character in value)[
+            :80
+        ].strip("_")
+        or "item"
+    )
 
 
 def _unique(values: Iterable[str]) -> list[str]:

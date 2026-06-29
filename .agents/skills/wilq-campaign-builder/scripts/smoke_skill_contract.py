@@ -68,10 +68,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -115,9 +112,7 @@ def main() -> int:
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
                 "content_landing_context": {
-                    "live_data_available": content_landing_context.get(
-                        "live_data_available"
-                    ),
+                    "live_data_available": content_landing_context.get("live_data_available"),
                     "query_page_candidate_count": content_landing_context.get(
                         "query_page_candidate_count"
                     ),

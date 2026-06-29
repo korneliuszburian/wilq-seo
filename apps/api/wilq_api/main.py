@@ -20,6 +20,7 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
     DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
     DEMAND_GEN_AD_READ_STATUS_FACT,
+    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
     DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT,
     DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
     DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
@@ -28,17 +29,16 @@ from wilq.actions.google_ads.demand_gen import (
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
-    DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT,
+    demand_gen_ad_group_ad_rows_from_facts,
+    demand_gen_campaign_mode_review_rows_from_campaigns,
     demand_gen_campaign_status_label,
     demand_gen_channel_label,
     demand_gen_channel_labels,
-    demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
     demand_gen_contract_labels,
     demand_gen_creative_asset_rows_from_facts,
     demand_gen_landing_quality_rows_from_facts,
     demand_gen_readiness_review_payload,
-    demand_gen_campaign_mode_review_rows_from_campaigns,
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
@@ -269,9 +269,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "top_opportunities": [
             opportunity.model_dump(mode="json") for opportunity in opportunities[:max_opportunities]
         ],
-        "active_action_objects": [
-            action.model_dump(mode="json") for action in active_actions
-        ],
+        "active_action_objects": [action.model_dump(mode="json") for action in active_actions],
         "connector_refresh_runs": [
             run.model_dump(mode="json") for run in list_connector_refresh_runs()[:10]
         ],
@@ -372,8 +370,7 @@ def _daily_command_context_pack(
             for evidence in list_evidence_by_ids(sorted(evidence_ids))
         ][:DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT],
         "knowledge_card_summaries": [
-            _compact_knowledge_card_for_operator_context(card)
-            for card in compile_playbook_cards()
+            _compact_knowledge_card_for_operator_context(card) for card in compile_playbook_cards()
         ],
         "expert_rule_summaries": [
             _compact_expert_rule_for_operator_context(rule)
@@ -446,9 +443,7 @@ def _compact_daily_action_for_context(
                 "decision_id": decision.id,
                 "decision_status": decision.status,
                 "decision_title": decision.title,
-                "human_diagnosis": (
-                    f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
-                ),
+                "human_diagnosis": (f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"),
                 "recommended_reason": decision.bezpieczny_next_step,
                 "source_connectors": decision.source_connectors,
                 "evidence_ids": decision.evidence_ids,
@@ -489,17 +484,12 @@ def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, 
         raw_missing_credentials if isinstance(raw_missing_credentials, list) else []
     )
     checked_credentials = (
-        run.get("checked_credentials")
-        if isinstance(run.get("checked_credentials"), list)
-        else []
+        run.get("checked_credentials") if isinstance(run.get("checked_credentials"), list) else []
     )
     metric_summary = run.get("metric_summary")
     metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
     connector_id = str(run.get("connector_id") or "")
-    metric_labels = [
-        metric_fact_label(key, connector_id)
-        for key in metric_keys
-    ]
+    metric_labels = [metric_fact_label(key, connector_id) for key in metric_keys]
     source_label = source_connector_label(str(run.get("connector_id") or ""))
     status_label = connector_refresh_status_label(run.get("status"))
     summary = (
@@ -753,7 +743,7 @@ def _compact_daily_decision_for_context(decision: dict[str, Any]) -> dict[str, A
         compact["metric_fact_count"] = len(metric_facts)
         compact["metric_facts"] = [
             _compact_metric_fact_for_context(fact)
-            for fact in metric_facts[:3]
+            for fact in metric_facts[:8]
             if isinstance(fact, dict)
         ]
         compact["metric_facts_included"] = len(compact["metric_facts"])
@@ -890,9 +880,7 @@ def _compact_tactical_queue_for_skill_context(
                 "diagnosis": _context_pack_text(item.get("diagnosis"), limit=180),
                 "next_step": _context_pack_text(item.get("next_step"), limit=180),
                 "blocked_claims": (item.get("blocked_claims") or [])[:6],
-                "metric_fact_count": (
-                    len(metric_facts) if isinstance(metric_facts, list) else 0
-                ),
+                "metric_fact_count": (len(metric_facts) if isinstance(metric_facts, list) else 0),
             }
         )
     compact_groups = []
@@ -963,7 +951,7 @@ def _compact_dimensions_for_context(
     labels = dimension_labels if isinstance(dimension_labels, dict) else {}
     value_labels = dimension_value_labels if isinstance(dimension_value_labels, dict) else {}
     compact: dict[str, str] = {}
-    for key, value in list(dimensions.items())[:8]:
+    for key, _value in list(dimensions.items())[:8]:
         label = str(labels.get(key) or "wymiar")
         value_label = str(value_labels.get(key) or "wartość wymiaru do sprawdzenia")
         compact_label = label
@@ -1157,9 +1145,7 @@ def _skill_scoped_context_pack(
     evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
     scoped_actions = _actions_for_scope(actions, scoped_connectors, evidence_ids)
     evidence_ids.update(
-        evidence_id
-        for action in scoped_actions
-        for evidence_id in action.evidence_ids
+        evidence_id for action in scoped_actions for evidence_id in action.evidence_ids
     )
     if skill == "wilq-social-publisher":
         diagnostics["social_draft_context"] = _social_draft_context_for_context(
@@ -1217,8 +1203,7 @@ def _skill_scoped_context_pack(
             if run.connector_id in scoped_connectors
         ][:connector_refresh_run_limit],
         "evidence_summaries": [
-            _compact_evidence_for_operator_context(evidence)
-            for evidence in scoped_evidence
+            _compact_evidence_for_operator_context(evidence) for evidence in scoped_evidence
         ][:evidence_summary_limit],
         "knowledge_card_summaries": [
             _compact_knowledge_card_for_operator_context(card)
@@ -1409,9 +1394,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
                 runtime.marketing_brief,
                 include_top_metric_facts=False,
             ),
-            "tactical_queue": _compact_tactical_queue_for_skill_context(
-                build_tactical_queue()
-            ),
+            "tactical_queue": _compact_tactical_queue_for_skill_context(build_tactical_queue()),
         }
     return {"marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json")}
 
@@ -1449,29 +1432,17 @@ def _social_draft_context_for_context(
         payload = action.payload
         if isinstance(payload, dict):
             source_inputs.extend(
-                item
-                for item in payload.get("source_inputs", [])
-                if isinstance(item, dict)
+                item for item in payload.get("source_inputs", []) if isinstance(item, dict)
             )
             draft_constraints.extend(
-                str(item)
-                for item in payload.get("draft_constraints", [])
-                if item
+                str(item) for item in payload.get("draft_constraints", []) if item
             )
-            blocked_claims.extend(
-                str(item)
-                for item in payload.get("blocked_claims", [])
-                if item
-            )
+            blocked_claims.extend(str(item) for item in payload.get("blocked_claims", []) if item)
             source_metric_names.extend(
-                str(item)
-                for item in payload.get("source_metric_names", [])
-                if item
+                str(item) for item in payload.get("source_metric_names", []) if item
             )
             source_connectors.extend(
-                str(item)
-                for item in payload.get("source_connectors", [])
-                if item
+                str(item) for item in payload.get("source_connectors", []) if item
             )
         evidence_ids.extend(action.evidence_ids)
     return {
@@ -1534,9 +1505,7 @@ def _demand_gen_ga4_diagnostics_from_metric_facts(
     ga4_metric_facts: list[MetricFact],
 ) -> dict[str, Any]:
     evidence_ids = list(
-        dict.fromkeys(
-            fact.evidence_id for fact in ga4_metric_facts if fact.evidence_id
-        )
+        dict.fromkeys(fact.evidence_id for fact in ga4_metric_facts if fact.evidence_id)
     )
     return {
         "source_connectors": ["google_analytics_4"],
@@ -1584,10 +1553,8 @@ def _demand_gen_readiness_contract(
         ga4_metric_facts,
         demand_gen_campaign_row_dicts,
     )
-    demand_gen_campaign_mode_review_rows = (
-        demand_gen_campaign_mode_review_rows_from_campaigns(
-            demand_gen_campaign_row_dicts,
-        )
+    demand_gen_campaign_mode_review_rows = demand_gen_campaign_mode_review_rows_from_campaigns(
+        demand_gen_campaign_row_dicts,
     )
     demand_gen_ad_read_available = demand_gen_contract_has_ready_fact(
         demand_gen_metric_facts,
@@ -1628,10 +1595,13 @@ def _demand_gen_readiness_contract(
     if campaign_channel_read_available:
         available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
         labeled_channel_counts = demand_gen_channel_labels(channel_counts)
-        channel_summary = ", ".join(
-            f"{label}: {channel_counts[channel]}"
-            for channel, label in labeled_channel_counts.items()
-        ) or "brak rozpoznanych kanałów"
+        channel_summary = (
+            ", ".join(
+                f"{label}: {channel_counts[channel]}"
+                for channel, label in labeled_channel_counts.items()
+            )
+            or "brak rozpoznanych kanałów"
+        )
         campaign_context = (
             f"WILQ ocenił {len(campaign_rows)} kampanii Ads. "
             f"Kanały w odczycie: {channel_summary}. "
@@ -1639,9 +1609,7 @@ def _demand_gen_readiness_contract(
         )
     else:
         missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
-        campaign_context = (
-            "WILQ nie ma jeszcze pewnego odczytu typów kanałów kampanii Ads."
-        )
+        campaign_context = "WILQ nie ma jeszcze pewnego odczytu typów kanałów kampanii Ads."
     if demand_gen_ad_read_available:
         available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
         missing_read_contracts = [
@@ -1678,9 +1646,7 @@ def _demand_gen_readiness_contract(
     payload = demand_gen_readiness_review_payload(
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
-        demand_gen_campaign_rows=[
-            row.model_dump(mode="json") for row in demand_gen_campaign_rows
-        ],
+        demand_gen_campaign_rows=[row.model_dump(mode="json") for row in demand_gen_campaign_rows],
         demand_gen_ad_group_ad_rows=[
             row.model_dump(mode="json") for row in demand_gen_ad_group_ad_rows
         ],
@@ -1711,7 +1677,10 @@ def _demand_gen_readiness_contract(
             + (
                 f"Nadal brakuje danych: {missing_contract_summary}. "
                 if missing_contract_summary
-                else "WILQ nie wykrywa brakujących danych w tym odczycie, ale nadal nie widzi kampanii Demand Gen/Discovery do rekomendacji. "
+                else (
+                    "WILQ nie wykrywa brakujących danych w tym odczycie, "
+                    "ale nadal nie widzi kampanii Demand Gen/Discovery do rekomendacji. "
+                )
             )
             + "To blokuje użyteczną rekomendację; nie jest to problem treści polecenia."
         ),
@@ -1731,9 +1700,7 @@ def _demand_gen_readiness_contract(
         missing_read_contract_labels=missing_contract_labels,
         blocked_claims=DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         source_connectors=["google_ads", "google_analytics_4"],
-        source_connector_labels=source_connector_labels(
-            ["google_ads", "google_analytics_4"]
-        ),
+        source_connector_labels=source_connector_labels(["google_ads", "google_analytics_4"]),
         evidence_ids=evidence_ids,
         evidence_summary_label=evidence_count_label(evidence_ids),
         action_ids=action_ids,
@@ -1958,9 +1925,7 @@ def _compact_ahrefs_diagnostics_for_context(
         )
     latest_refresh = compact.get("latest_refresh")
     if isinstance(latest_refresh, dict):
-        compact["latest_refresh"] = _compact_refresh_run_for_operator_context(
-            latest_refresh
-        )
+        compact["latest_refresh"] = _compact_refresh_run_for_operator_context(latest_refresh)
     gap_contract = compact.get("gap_read_contract")
     if isinstance(gap_contract, dict):
         _compact_labelled_contract_list_for_context(
@@ -1985,9 +1950,7 @@ def _compact_ahrefs_diagnostics_for_context(
                 len(gap_records) if isinstance(gap_records, list) else 0
             )
         gap_contract["gap_records_omitted"] = True
-        gap_contract["gap_records_total"] = (
-            len(gap_records) if isinstance(gap_records, list) else 0
-        )
+        gap_contract["gap_records_total"] = len(gap_records) if isinstance(gap_records, list) else 0
     operator_summary = compact.get("operator_summary")
     if isinstance(operator_summary, dict):
         _compact_labelled_contract_list_for_context(
@@ -2097,9 +2060,7 @@ def _compact_merchant_diagnostics_for_context(
                 for preview in payload_preview[:2]
                 if isinstance(preview, dict)
             ]
-            price_impact["payload_preview_included"] = len(
-                price_impact["payload_preview"]
-            )
+            price_impact["payload_preview_included"] = len(price_impact["payload_preview"])
     operator_summary = compact.get("operator_summary")
     if isinstance(operator_summary, dict):
         operator_summary.pop("top_decision_ids", None)
@@ -2111,9 +2072,7 @@ def _compact_merchant_diagnostics_for_context(
     compact["issue_cluster_summaries"] = _compact_merchant_issue_clusters_for_context(
         issue_clusters
     )
-    compact["decision_queue"] = _compact_merchant_decision_queue_for_context(
-        decision_queue
-    )
+    compact["decision_queue"] = _compact_merchant_decision_queue_for_context(decision_queue)
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
         "sections_omitted": True,
@@ -2139,11 +2098,9 @@ def _compact_merchant_issue_clusters_for_context(value: Any) -> list[dict[str, A
             {
                 "problem": cluster.get("issue_type_label") or "problem feedu",
                 "atrybut": cluster.get("affected_attribute_label") or "atrybut",
-                "kontekst": cluster.get("reporting_context_label")
-                or "kontekst raportowania",
+                "kontekst": cluster.get("reporting_context_label") or "kontekst raportowania",
                 "status": cluster.get("severity_label") or cluster.get("risk"),
-                "rozwiązanie": cluster.get("resolution_label")
-                or "wymaga sprawdzenia w Merchant",
+                "rozwiązanie": cluster.get("resolution_label") or "wymaga sprawdzenia w Merchant",
                 "zgłoszenia": cluster.get("product_count"),
                 "country": cluster.get("country"),
                 "next_step": _context_pack_text(cluster.get("next_step"), limit=180),
@@ -2170,10 +2127,7 @@ def _compact_merchant_decision_queue_for_context(value: Any) -> list[dict[str, A
             "priority": decision.get("priority"),
             "problem": decision.get("issue_type_label") or "problem feedu",
             "atrybut": decision.get("affected_attribute_label") or "atrybut",
-            "kontekst": (
-                decision.get("reporting_context_label")
-                or "kontekst raportowania"
-            ),
+            "kontekst": (decision.get("reporting_context_label") or "kontekst raportowania"),
             "summary": _context_pack_text(decision.get("summary"), limit=220),
             "next_step": _context_pack_text(decision.get("next_step"), limit=200),
             "metric_tiles": decision.get("metric_tiles") or {},
@@ -2306,11 +2260,7 @@ def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
         reverse=True,
     )
     evidence_ids = sorted(
-        {
-            evidence_id
-            for candidate in candidates
-            for evidence_id in candidate["evidence_ids"]
-        }
+        {evidence_id for candidate in candidates for evidence_id in candidate["evidence_ids"]}
     )
     return _campaign_builder_landing_context(
         candidates=candidates,
@@ -2582,9 +2532,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "decision_row_payloads_omitted": True,
         "empty_decision_row_lists_omitted": True,
         "campaign_rows_total": len(campaign_rows),
-        "campaign_rows_included": len(
-            _list_at(compact, "campaign_read_contract", "campaign_rows")
-        ),
+        "campaign_rows_included": len(_list_at(compact, "campaign_read_contract", "campaign_rows")),
         "campaign_triage_rows_total": len(campaign_triage_rows),
         "campaign_triage_rows_included": len(
             _list_at(compact, "campaign_triage_read_contract", "triage_rows")
@@ -2931,14 +2879,10 @@ def _compact_campaign_triage_rows_for_context(rows: list[Any]) -> None:
             "conversions": row.get("conversions"),
             "roas": row.get("roas"),
             "spend_to_budget_ratio_7d": row.get("spend_to_budget_ratio_7d"),
-            "search_budget_lost_impression_share": row.get(
-                "search_budget_lost_impression_share"
-            ),
+            "search_budget_lost_impression_share": row.get("search_budget_lost_impression_share"),
             "recommendation_count": row.get("recommendation_count"),
             "has_budget_apply_preview": row.get("has_budget_apply_preview"),
-            "has_recommendation_apply_preview": row.get(
-                "has_recommendation_apply_preview"
-            ),
+            "has_recommendation_apply_preview": row.get("has_recommendation_apply_preview"),
             "next_step": row.get("next_step"),
             "evidence_ids": row.get("evidence_ids"),
             "action_ids": row.get("action_ids"),
@@ -2982,9 +2926,7 @@ def _compact_budget_apply_preview_item(item: dict[str, Any]) -> dict[str, Any]:
         compact_item["blocked_claims"] = blocked_claims[:4]
     safety_review = item.get("safety_review")
     if isinstance(safety_review, dict):
-        compact_item["safety_review"] = _compact_budget_safety_review_item(
-            safety_review
-        )
+        compact_item["safety_review"] = _compact_budget_safety_review_item(safety_review)
     return compact_item
 
 
@@ -3048,8 +2990,7 @@ def _compact_ads_diagnostics_for_lite_context(
         compact["decision_queue"] = [
             decision
             for decision in decision_queue
-            if isinstance(decision, dict)
-            and str(decision.get("id")) in allowed_decision_ids
+            if isinstance(decision, dict) and str(decision.get("id")) in allowed_decision_ids
         ][:ADS_LITE_DECISION_LIMIT]
     if allowed_action_ids is not None:
         action_ids = compact.get("action_ids")
@@ -3203,8 +3144,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             "z wyszukiwanych haseł; nie wykonuj zmian."
         )
         compact["recommended_reason"] = (
-            "Sprawdź intencję tematów i próbki zapytań przed kolejką "
-            "sprawdzenia wykluczeń."
+            "Sprawdź intencję tematów i próbki zapytań przed kolejką sprawdzenia wykluczeń."
         )
         compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
     audit_events = compact.get("audit_events")
@@ -3218,8 +3158,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact["metrics_total"] = len(metrics)
         compact["metrics"] = (
             []
-            if compact.get("id")
-            in {SEARCH_TERM_NGRAM_ACTION_ID, "act_review_merchant_feed_issues"}
+            if compact.get("id") in {SEARCH_TERM_NGRAM_ACTION_ID, "act_review_merchant_feed_issues"}
             else metrics[:1]
         )
         compact["metrics_included"] = len(compact["metrics"])
@@ -3232,9 +3171,100 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             if isinstance(card, dict)
         ]
         compact["preview_cards_included"] = len(compact["preview_cards"])
-    compact.pop("payload", None)
+    payload = compact.get("payload")
+    if isinstance(payload, dict):
+        if _action_payload_should_survive_skill_context(str(compact.get("id") or "")):
+            _compact_action_payload_for_context(
+                payload,
+                action_id=str(compact.get("id") or ""),
+            )
+        else:
+            compact.pop("payload", None)
     compact["api_endpoint_template"] = "/api/actions/{action_id}"
     return compact
+
+
+def _action_payload_should_survive_skill_context(action_id: str) -> bool:
+    return action_id in {
+        "act_prepare_content_refresh_queue",
+        "act_review_ga4_tracking_quality",
+        "act_review_localo_visibility_facts",
+        "act_review_ads_search_term_ngrams",
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_custom_segments_from_search_terms",
+        "act_review_demand_gen_readiness",
+    }
+
+
+def _compact_action_payload_for_context(payload: dict[str, Any], *, action_id: str) -> None:
+    payload.pop("source_metric_names", None)
+    _compact_action_row_list_for_context(
+        payload,
+        "campaign_candidates",
+        keep_limit=3 if action_id == "act_prepare_ads_campaign_review_queue" else 0,
+    )
+    for key in ("recommendations", "terms", "source_terms", "keyword_match_context"):
+        _compact_action_row_list_for_context(payload, key, keep_limit=0)
+    _compact_preview_list_for_context(payload, "payload_preview")
+    _compact_preview_list_for_context(payload, "budget_payload_preview", limit=0)
+    _compact_preview_list_for_context(payload, "custom_segment_payload_preview")
+    _compact_preview_list_for_context(payload, "negative_keyword_payload_preview")
+    _compact_preview_list_for_context(payload, "ngram_preview")
+    _compact_content_action_payload_for_context(payload)
+
+
+def _compact_action_row_list_for_context(
+    payload: dict[str, Any],
+    key: str,
+    *,
+    keep_limit: int,
+) -> None:
+    value = payload.get(key)
+    if not isinstance(value, list):
+        return
+    payload[f"{key}_total"] = len(value)
+    payload[key] = value[:keep_limit]
+    payload[f"{key}_included"] = len(payload[key])
+
+
+def _compact_preview_list_for_context(
+    payload: dict[str, Any],
+    key: str,
+    *,
+    limit: int = 4,
+) -> None:
+    value = payload.get(key)
+    if not isinstance(value, list):
+        return
+    payload[f"{key}_total"] = len(value)
+    payload[key] = value[:limit]
+    payload[f"{key}_included"] = len(payload[key])
+
+
+def _compact_content_action_payload_for_context(payload: dict[str, Any]) -> None:
+    content_preview = payload.get("content_brief_preview")
+    if isinstance(content_preview, list):
+        payload["content_brief_preview_total"] = len(content_preview)
+        payload["content_brief_preview"] = _compact_content_brief_preview_for_context(
+            content_preview
+        )
+        payload["content_brief_preview_included"] = len(payload["content_brief_preview"])
+
+    wordpress_preview = payload.get("wordpress_draft_payload_preview")
+    if isinstance(wordpress_preview, list):
+        payload["wordpress_draft_payload_preview_total"] = len(wordpress_preview)
+        payload["wordpress_draft_payload_preview"] = (
+            _compact_wordpress_draft_payload_preview_for_context(wordpress_preview)
+        )
+        payload["wordpress_draft_payload_preview_included"] = len(
+            payload["wordpress_draft_payload_preview"]
+        )
+
+    for key in ("content_brief_preview", "wordpress_draft_payload_preview"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            payload.setdefault(f"{key}_total", len(value))
+            payload.setdefault(f"{key}_included", len(value))
 
 
 def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
@@ -3318,10 +3348,10 @@ def _compact_ngram_preview_for_context(preview_items: list[Any]) -> list[dict[st
         "conversions",
         "conversion_value",
         "operation_type",
-                "required_validation",
-                "blocked_claims",
-                "evidence_ids",
-                "api_mutation_ready",
+        "required_validation",
+        "blocked_claims",
+        "evidence_ids",
+        "api_mutation_ready",
         "apply_allowed",
         "destructive",
     }
@@ -3690,13 +3720,9 @@ def _compact_wordpress_draft_payload_preview_for_context(
             }
             content_blocks = draft_payload.get("content_blocks")
             if isinstance(content_blocks, list):
-                compact_item["draft_payload"]["content_blocks_total"] = len(
-                    content_blocks
-                )
+                compact_item["draft_payload"]["content_blocks_total"] = len(content_blocks)
                 compact_item["draft_payload"]["content_blocks"] = [
-                    block
-                    for block in content_blocks[:4]
-                    if isinstance(block, dict)
+                    block for block in content_blocks[:4] if isinstance(block, dict)
                 ]
                 compact_item["draft_payload"]["content_blocks_included"] = len(
                     compact_item["draft_payload"]["content_blocks"]
@@ -3762,9 +3788,7 @@ def _compact_post_publication_measurement_plan(item: dict[str, Any]) -> None:
         "requires_before_claims",
         "blocked_outputs",
     }
-    compact_plan = {
-        key: measurement_plan[key] for key in keep_keys if key in measurement_plan
-    }
+    compact_plan = {key: measurement_plan[key] for key in keep_keys if key in measurement_plan}
     for key, limit in (
         ("followup_windows", 3),
         ("required_source_connectors", 3),
@@ -4004,16 +4028,12 @@ def _compact_custom_segment_payload_preview_item(item: dict[str, Any]) -> dict[s
         )
         if key in item
     }
-    compact_item["targeting_preview"] = (
-        _compact_custom_segment_targeting_preview_for_context(
-            item.get("targeting_preview")
-        )
+    compact_item["targeting_preview"] = _compact_custom_segment_targeting_preview_for_context(
+        item.get("targeting_preview")
     )
     safety_review = item.get("safety_review")
     if isinstance(safety_review, dict):
-        compact_item["safety_review"] = _compact_custom_segment_safety_review_item(
-            safety_review
-        )
+        compact_item["safety_review"] = _compact_custom_segment_safety_review_item(safety_review)
     return compact_item
 
 
@@ -4243,8 +4263,7 @@ def _opportunities_for_skill_scope(
     return [
         opportunity
         for opportunity in scoped
-        if opportunity.action_ids
-        and set(opportunity.action_ids).issubset(allowed_action_ids)
+        if opportunity.action_ids and set(opportunity.action_ids).issubset(allowed_action_ids)
     ][:max_opportunities]
 
 
@@ -4600,7 +4619,7 @@ def preview_action_endpoint(
     result = preview_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     clear_api_view_model_caches()
-    return result.model_dump(mode="json")
+    return result.model_dump(mode="json", exclude_none=True)
 
 
 @app.post("/api/actions/{action_id}/confirm")

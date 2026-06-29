@@ -1011,7 +1011,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
     blocked_reason:
       "api_code=403, api_status=PERMISSION_DENIED, ads_error=authorizationError.DEVELOPER_TOKEN_NOT_APPROVED 403",
     required_google_ads_state: [
-      "developer_token_approved_for_keyword_planner",
+      "developer_access_approved_for_keyword_planner",
       "keyword_planner_generate_ideas_allowed"
     ],
     required_google_ads_state_labels: [
@@ -1023,7 +1023,7 @@ const keywordPlannerAccessActionFixture: ActionObject = {
       "Po zmianie statusu wykonaj odczyt danych Google Ads."
     ],
     required_validation: [
-      "confirm_developer_token_approval",
+      "confirm_developer_access_approval",
       "rerun_google_ads_data_read",
       "verify_keyword_planner_idea_rows",
       "human_confirm_before_apply"

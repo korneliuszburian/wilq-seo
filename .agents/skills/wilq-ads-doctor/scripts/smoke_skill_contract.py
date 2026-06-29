@@ -59,9 +59,7 @@ def main() -> int:
     pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
     pack_bytes = len(json.dumps(pack, ensure_ascii=False).encode())
     if pack_bytes >= MAX_CONTEXT_PACK_BYTES:
-        raise SystemExit(
-            f"{SKILL_NAME} context-pack exceeds budget: {pack_bytes} bytes"
-        )
+        raise SystemExit(f"{SKILL_NAME} context-pack exceeds budget: {pack_bytes} bytes")
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
@@ -96,48 +94,26 @@ def main() -> int:
                 "Blocked Ads handoff must list blocked zwrot z reklam and wyszukiwane hasła claims"
             )
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
-    campaign_triage_read_contract = (
-        ads_diagnostics.get("campaign_triage_read_contract") or {}
-    )
-    optimizer_readiness_contract = (
-        ads_diagnostics.get("optimizer_readiness_contract") or {}
-    )
-    account_currency_read_contract = (
-        ads_diagnostics.get("account_currency_read_contract") or {}
-    )
-    business_context_read_contract = (
-        ads_diagnostics.get("business_context_read_contract") or {}
-    )
+    campaign_triage_read_contract = ads_diagnostics.get("campaign_triage_read_contract") or {}
+    optimizer_readiness_contract = ads_diagnostics.get("optimizer_readiness_contract") or {}
+    account_currency_read_contract = ads_diagnostics.get("account_currency_read_contract") or {}
+    business_context_read_contract = ads_diagnostics.get("business_context_read_contract") or {}
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
-    recommendations_read_contract = (
-        ads_diagnostics.get("recommendations_read_contract") or {}
-    )
-    impression_share_read_contract = (
-        ads_diagnostics.get("impression_share_read_contract") or {}
-    )
-    change_history_read_contract = (
-        ads_diagnostics.get("change_history_read_contract") or {}
-    )
-    change_impact_readiness_contract = (
-        ads_diagnostics.get("change_impact_readiness_contract") or {}
-    )
+    recommendations_read_contract = ads_diagnostics.get("recommendations_read_contract") or {}
+    impression_share_read_contract = ads_diagnostics.get("impression_share_read_contract") or {}
+    change_history_read_contract = ads_diagnostics.get("change_history_read_contract") or {}
+    change_impact_readiness_contract = ads_diagnostics.get("change_impact_readiness_contract") or {}
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     search_term_review_summary_contract = (
         ads_diagnostics.get("search_term_review_summary_contract") or {}
     )
-    search_term_ngram_read_contract = (
-        ads_diagnostics.get("search_term_ngram_read_contract") or {}
-    )
-    search_term_safety_read_contract = (
-        ads_diagnostics.get("search_term_safety_read_contract") or {}
-    )
+    search_term_ngram_read_contract = ads_diagnostics.get("search_term_ngram_read_contract") or {}
+    search_term_safety_read_contract = ads_diagnostics.get("search_term_safety_read_contract") or {}
     keyword_match_context_read_contract = (
         ads_diagnostics.get("keyword_match_context_read_contract") or {}
     )
     keyword_planner_read_contract = ads_diagnostics.get("keyword_planner_read_contract") or {}
-    negative_keywords_read_contract = (
-        ads_diagnostics.get("negative_keywords_read_contract") or {}
-    )
+    negative_keywords_read_contract = ads_diagnostics.get("negative_keywords_read_contract") or {}
     custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
@@ -190,8 +166,7 @@ def main() -> int:
     if (
         campaign_read_contract.get("status") == "ready"
         and campaign_read_contract.get("campaign_rows")
-        and "act_prepare_ads_campaign_review_queue"
-        not in (ads_diagnostics.get("action_ids") or [])
+        and "act_prepare_ads_campaign_review_queue" not in (ads_diagnostics.get("action_ids") or [])
     ):
         raise SystemExit("Ready campaign diagnostics must expose campaign review action")
     if campaign_read_contract.get("status") == "ready" and campaign_read_contract.get(
@@ -210,9 +185,7 @@ def main() -> int:
         pack_triage_contract = (
             pack.get("ads_diagnostics", {}).get("campaign_triage_read_contract") or {}
         )
-        if pack_triage_contract.get("summary") != campaign_triage_read_contract.get(
-            "summary"
-        ):
+        if pack_triage_contract.get("summary") != campaign_triage_read_contract.get("summary"):
             raise SystemExit("Context pack campaign triage contract differs")
         if not pack_triage_contract.get("triage_rows"):
             raise SystemExit("Context pack must include campaign triage rows")
@@ -260,9 +233,7 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Strategy review readiness must block ocena opłacalności")
-    if pack_strategy_readiness_contract.get("id") != (
-        strategy_readiness_contract.get("id")
-    ):
+    if pack_strategy_readiness_contract.get("id") != (strategy_readiness_contract.get("id")):
         raise SystemExit("Context pack strategy review readiness ID differs")
     if pack_strategy_readiness_contract.get("status") != (
         strategy_readiness_contract.get("status")
@@ -294,9 +265,7 @@ def main() -> int:
         )
         if not pack_budget_contract.get("budget_rows"):
             raise SystemExit("Context pack must include ready budget pacing rows")
-        shared_budget_rows = budget_pacing_read_contract.get(
-            "shared_budget_distribution_rows"
-        )
+        shared_budget_rows = budget_pacing_read_contract.get("shared_budget_distribution_rows")
         if shared_budget_rows is None:
             raise SystemExit("Budget pacing contract must expose shared budget rows")
         budget_rows = budget_pacing_read_contract.get("budget_rows") or []
@@ -326,9 +295,7 @@ def main() -> int:
             "knowledge_card_ids"
         ):
             raise SystemExit("Context pack budget decision knowledge cards differ")
-        if pack_budget_decision.get("expert_rule_ids") != budget_decision.get(
-            "expert_rule_ids"
-        ):
+        if pack_budget_decision.get("expert_rule_ids") != budget_decision.get("expert_rule_ids"):
             raise SystemExit("Context pack budget decision expert rules differ")
     if recommendations_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose recommendations_read_contract")
@@ -368,7 +335,8 @@ def main() -> int:
                 or row.get("recommendation_type")
                 or "unknown_recommendation"
                 for row in recommendation_rows
-                if row.get("review_priority") not in {
+                if row.get("review_priority")
+                not in {
                     "pilne",
                     "wysokie",
                     "normalne",
@@ -376,9 +344,7 @@ def main() -> int:
                 }
                 or not isinstance(row.get("review_score"), int)
                 or not (0 <= row.get("review_score", -1) <= 100)
-                or "kolejność przeglądu rekomendacji" not in row.get(
-                    "review_reason", ""
-                )
+                or "kolejność przeglądu rekomendacji" not in row.get("review_reason", "")
                 or not row.get("human_review_gates")
             ]
             if missing_triage:
@@ -393,19 +359,16 @@ def main() -> int:
                 raise SystemExit("Recommendation preview must keep apply_allowed=false")
             if item.get("api_mutation_ready") is not False:
                 raise SystemExit("Recommendation preview must not be mutation-ready")
-        pack_recommendation_rows = pack_recommendations_contract.get(
-            "recommendation_rows",
-        ) or []
+        pack_recommendation_rows = (
+            pack_recommendations_contract.get(
+                "recommendation_rows",
+            )
+            or []
+        )
         pack_payload_preview = pack_recommendations_contract.get("payload_preview") or []
-        pack_compaction = pack.get("ads_diagnostics", {}).get(
-            "context_pack_compaction"
-        ) or {}
-        pack_payload_preview_total = pack_compaction.get(
-            "recommendation_apply_preview_total"
-        )
-        pack_payload_preview_included = pack_compaction.get(
-            "recommendation_apply_preview_included"
-        )
+        pack_compaction = pack.get("ads_diagnostics", {}).get("context_pack_compaction") or {}
+        pack_payload_preview_total = pack_compaction.get("recommendation_apply_preview_total")
+        pack_payload_preview_included = pack_compaction.get("recommendation_apply_preview_included")
         pack_impact_row_count = sum(
             1 for row in pack_recommendation_rows if row.get("impact_available")
         )
@@ -504,8 +467,7 @@ def main() -> int:
         raise SystemExit("Ads diagnostics must expose search_term_review_summary_contract")
     if search_term_review_summary_contract.get("status") == "ready":
         pack_search_term_review_contract = (
-            pack.get("ads_diagnostics", {}).get("search_term_review_summary_contract")
-            or {}
+            pack.get("ads_diagnostics", {}).get("search_term_review_summary_contract") or {}
         )
         if pack_search_term_review_contract.get("summary") != (
             search_term_review_summary_contract.get("summary")
@@ -526,9 +488,7 @@ def main() -> int:
         pack_safety_contract = (
             pack.get("ads_diagnostics", {}).get("search_term_safety_read_contract") or {}
         )
-        if pack_safety_contract.get("summary") != search_term_safety_read_contract.get(
-            "summary"
-        ):
+        if pack_safety_contract.get("summary") != search_term_safety_read_contract.get("summary"):
             raise SystemExit("Context pack search-term safety contract differs")
         if "dodanie wykluczających słów kluczowych" not in search_term_safety_read_contract.get(
             "blocked_claims",
@@ -546,15 +506,12 @@ def main() -> int:
         raise SystemExit("Keyword match context contract must list zablokowane obietnice")
     if keyword_match_context_read_contract.get("status") == "ready":
         pack_keyword_context_contract = (
-            pack.get("ads_diagnostics", {}).get("keyword_match_context_read_contract")
-            or {}
+            pack.get("ads_diagnostics", {}).get("keyword_match_context_read_contract") or {}
         )
         if pack_keyword_context_contract.get("summary") != (
             keyword_match_context_read_contract.get("summary")
         ):
-            raise SystemExit(
-                "Context-pack Ads diagnostics must include keyword match context"
-            )
+            raise SystemExit("Context-pack Ads diagnostics must include keyword match context")
     elif "keyword_match_context_read" not in keyword_match_context_read_contract.get(
         "missing_read_contracts",
         [],
@@ -567,9 +524,7 @@ def main() -> int:
     pack_keyword_planner_contract = (
         pack.get("ads_diagnostics", {}).get("keyword_planner_read_contract") or {}
     )
-    if pack_keyword_planner_contract.get("summary") != keyword_planner_read_contract.get(
-        "summary"
-    ):
+    if pack_keyword_planner_contract.get("summary") != keyword_planner_read_contract.get("summary"):
         raise SystemExit("Context pack Keyword Planner contract differs")
     if keyword_planner_read_contract.get("status") == "ready":
         if not keyword_planner_read_contract.get("idea_rows"):
@@ -591,9 +546,7 @@ def main() -> int:
             "missing_read_contracts",
             [],
         ):
-            raise SystemExit(
-                "Blocked Keyword Planner contract must list missing enrichment"
-            )
+            raise SystemExit("Blocked Keyword Planner contract must list missing enrichment")
         if keyword_planner_read_contract.get("idea_rows"):
             raise SystemExit("Blocked Keyword Planner contract must not expose idea rows")
     if custom_segments_read_contract.get("status") not in {"ready", "blocked"}:
@@ -601,39 +554,27 @@ def main() -> int:
     pack_custom_segments_contract = (
         pack.get("ads_diagnostics", {}).get("custom_segments_read_contract") or {}
     )
-    if pack_custom_segments_contract.get("summary") != custom_segments_read_contract.get(
-        "summary"
-    ):
+    if pack_custom_segments_contract.get("summary") != custom_segments_read_contract.get("summary"):
         raise SystemExit("Context pack custom segments contract differs")
-    custom_segments_missing = set(
-        custom_segments_read_contract.get("missing_read_contracts") or []
-    )
+    custom_segments_missing = set(custom_segments_read_contract.get("missing_read_contracts") or [])
     custom_segment_idea_count = sum(
         len(candidate.get("keyword_planner_ideas") or [])
         for candidate in custom_segments_read_contract.get("candidates") or []
     )
     if keyword_planner_read_contract.get("status") == "ready":
         if "keyword_planner_enrichment" in custom_segments_missing:
-            raise SystemExit(
-                "Ready Keyword Planner must unblock custom segments enrichment"
-            )
+            raise SystemExit("Ready Keyword Planner must unblock custom segments enrichment")
         if not custom_segment_idea_count:
-            raise SystemExit(
-                "Ready Keyword Planner must enrich custom segment candidates"
-            )
+            raise SystemExit("Ready Keyword Planner must enrich custom segment candidates")
     elif custom_segments_read_contract.get("status") == "ready":
         if "keyword_planner_enrichment" not in custom_segments_missing:
             raise SystemExit(
                 "Custom segments must keep Keyword Planner enrichment missing when blocked"
             )
         if custom_segment_idea_count:
-            raise SystemExit(
-                "Blocked Keyword Planner must not enrich custom segment candidates"
-            )
+            raise SystemExit("Blocked Keyword Planner must not enrich custom segment candidates")
     if search_term_ngram_read_contract.get("status") == "ready":
-        ngram_missing = set(
-            search_term_ngram_read_contract.get("missing_read_contracts") or []
-        )
+        ngram_missing = set(search_term_ngram_read_contract.get("missing_read_contracts") or [])
         if "negative_keyword_change_preview" in ngram_missing:
             raise SystemExit(
                 "Search-term n-gram contract must not use the generic negative "
@@ -641,8 +582,7 @@ def main() -> int:
             )
         if "ngram_to_negative_keyword_change_preview" not in ngram_missing:
             raise SystemExit(
-                "Search-term n-gram contract must list the n-gram-specific "
-                "change preview blocker"
+                "Search-term n-gram contract must list the n-gram-specific change preview blocker"
             )
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
@@ -652,9 +592,7 @@ def main() -> int:
         if not negative_keywords_read_contract.get("candidates"):
             raise SystemExit("Ready negative keyword contract must expose candidates")
         if not negative_keywords_read_contract.get("payload_preview"):
-            raise SystemExit(
-                "Ready negative keyword contract must expose payload_preview"
-            )
+            raise SystemExit("Ready negative keyword contract must expose payload_preview")
         if "negative_keyword_change_preview" in (
             negative_keywords_read_contract.get("missing_read_contracts") or []
         ):
@@ -706,10 +644,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -784,15 +719,11 @@ def main() -> int:
                     "optimizer_readiness_contract": {
                         "status": optimizer_readiness_contract.get("status"),
                         "mode": optimizer_readiness_contract.get("mode"),
-                        "ready_area_count": optimizer_readiness_contract.get(
-                            "ready_area_count"
-                        ),
+                        "ready_area_count": optimizer_readiness_contract.get("ready_area_count"),
                         "blocked_area_count": optimizer_readiness_contract.get(
                             "blocked_area_count"
                         ),
-                        "apply_allowed": optimizer_readiness_contract.get(
-                            "apply_allowed"
-                        ),
+                        "apply_allowed": optimizer_readiness_contract.get("apply_allowed"),
                         "readiness_item_ids": [
                             item.get("id")
                             for item in optimizer_readiness_contract.get(
@@ -812,15 +743,11 @@ def main() -> int:
                     },
                     "account_currency_read_contract": {
                         "status": account_currency_read_contract.get("status"),
-                        "currency_code": account_currency_read_contract.get(
-                            "currency_code"
-                        ),
+                        "currency_code": account_currency_read_contract.get("currency_code"),
                         "missing_read_contracts": account_currency_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "blocked_claims": account_currency_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": account_currency_read_contract.get("blocked_claims", []),
                     },
                     "business_context_read_contract": {
                         "status": business_context_read_contract.get("status"),
@@ -835,39 +762,27 @@ def main() -> int:
                             "missing_read_contracts": strategy_readiness_contract.get(
                                 "missing_read_contracts", []
                             ),
-                            "action_ids": strategy_readiness_contract.get(
-                                "action_ids", []
-                            ),
-                            "apply_allowed": strategy_readiness_contract.get(
-                                "apply_allowed"
-                            ),
+                            "action_ids": strategy_readiness_contract.get("action_ids", []),
+                            "apply_allowed": strategy_readiness_contract.get("apply_allowed"),
                         },
                         "missing_read_contracts": business_context_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "blocked_claims": business_context_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": business_context_read_contract.get("blocked_claims", []),
                     },
                     "budget_pacing_read_contract": {
                         "status": budget_pacing_read_contract.get("status"),
                         "summary": budget_pacing_read_contract.get("summary"),
-                        "allowed_metrics": budget_pacing_read_contract.get(
-                            "allowed_metrics", []
-                        ),
+                        "allowed_metrics": budget_pacing_read_contract.get("allowed_metrics", []),
                         "missing_read_contracts": budget_pacing_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "row_count": len(
-                            budget_pacing_read_contract.get("budget_rows") or []
-                        ),
+                        "row_count": len(budget_pacing_read_contract.get("budget_rows") or []),
                     },
                     "budget_decision": {
                         "id": budget_decision.get("id"),
                         "status": budget_decision.get("status"),
-                        "knowledge_card_ids": budget_decision.get(
-                            "knowledge_card_ids", []
-                        ),
+                        "knowledge_card_ids": budget_decision.get("knowledge_card_ids", []),
                         "expert_rule_ids": budget_decision.get("expert_rule_ids", []),
                         "action_ids": budget_decision.get("action_ids", []),
                         "blocked_claims": budget_decision.get("blocked_claims", []),
@@ -979,9 +894,7 @@ def main() -> int:
                             or []
                             if row.get("current_campaign_metrics_available")
                         ),
-                        "apply_allowed": change_impact_readiness_contract.get(
-                            "apply_allowed"
-                        ),
+                        "apply_allowed": change_impact_readiness_contract.get("apply_allowed"),
                         "blocked_claims": change_impact_readiness_contract.get(
                             "blocked_claims",
                             [],
@@ -990,24 +903,17 @@ def main() -> int:
                     "search_terms_read_contract": {
                         "status": search_terms_read_contract.get("status"),
                         "summary": search_terms_read_contract.get("summary"),
-                        "allowed_metrics": search_terms_read_contract.get(
-                            "allowed_metrics", []
-                        ),
+                        "allowed_metrics": search_terms_read_contract.get("allowed_metrics", []),
                         "missing_read_contracts": search_terms_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "row_count": len(
-                            search_terms_read_contract.get("search_term_rows") or []
-                        ),
+                        "row_count": len(search_terms_read_contract.get("search_term_rows") or []),
                     },
                     "search_term_review_summary_contract": {
                         "status": search_term_review_summary_contract.get("status"),
                         "summary": search_term_review_summary_contract.get("summary"),
                         "campaign_review_row_count": len(
-                            search_term_review_summary_contract.get(
-                                "campaign_review_rows"
-                            )
-                            or []
+                            search_term_review_summary_contract.get("campaign_review_rows") or []
                         ),
                         "zero_conversion_search_term_count": (
                             search_term_review_summary_contract.get(
@@ -1026,9 +932,7 @@ def main() -> int:
                             "missing_read_contracts",
                             [],
                         ),
-                        "row_count": len(
-                            search_term_safety_read_contract.get("safety_rows") or []
-                        ),
+                        "row_count": len(search_term_safety_read_contract.get("safety_rows") or []),
                         "blocked_claims": search_term_safety_read_contract.get(
                             "blocked_claims",
                             [],
@@ -1050,15 +954,11 @@ def main() -> int:
                     "keyword_planner_read_contract": {
                         "status": keyword_planner_read_contract.get("status"),
                         "summary": keyword_planner_read_contract.get("summary"),
-                        "idea_row_count": len(
-                            keyword_planner_read_contract.get("idea_rows") or []
-                        ),
+                        "idea_row_count": len(keyword_planner_read_contract.get("idea_rows") or []),
                         "missing_read_contracts": keyword_planner_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "blocked_claims": keyword_planner_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": keyword_planner_read_contract.get("blocked_claims", []),
                     },
                     "custom_segments_read_contract": {
                         "status": custom_segments_read_contract.get("status"),
@@ -1070,9 +970,7 @@ def main() -> int:
                         "missing_read_contracts": custom_segments_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "blocked_claims": custom_segments_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": custom_segments_read_contract.get("blocked_claims", []),
                         "action_ids": custom_segments_read_contract.get("action_ids", []),
                     },
                     "negative_keywords_read_contract": {
@@ -1087,9 +985,7 @@ def main() -> int:
                         "missing_read_contracts": negative_keywords_read_contract.get(
                             "missing_read_contracts", []
                         ),
-                        "blocked_claims": negative_keywords_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": negative_keywords_read_contract.get("blocked_claims", []),
                         "action_ids": negative_keywords_read_contract.get("action_ids", []),
                     },
                     "blocked_handoff": _blocked_handoff_summary(blocked_handoff),
@@ -1105,9 +1001,9 @@ def main() -> int:
                         for section in ads_diagnostics.get("sections", [])
                         for claim in section.get("blocked_claims", [])
                     ][:20],
-                    "latest_refresh_status": (
-                        ads_diagnostics.get("latest_refresh") or {}
-                    ).get("status"),
+                    "latest_refresh_status": (ads_diagnostics.get("latest_refresh") or {}).get(
+                        "status"
+                    ),
                 },
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
@@ -1188,9 +1084,7 @@ def validate_context_lineage(pack: dict[str, Any]) -> None:
         if isinstance(card, dict)
     }
     context_expert_rule_ids = {
-        rule.get("id")
-        for rule in pack.get("expert_rule_summaries", [])
-        if isinstance(rule, dict)
+        rule.get("id") for rule in pack.get("expert_rule_summaries", []) if isinstance(rule, dict)
     }
     missing_cards = referenced_knowledge_card_ids - context_knowledge_card_ids
     missing_rules = referenced_expert_rule_ids - context_expert_rule_ids
@@ -1201,8 +1095,7 @@ def validate_context_lineage(pack: dict[str, Any]) -> None:
         )
     if missing_rules:
         raise SystemExit(
-            "Ads context-pack lacks expert rule summaries for: "
-            + ", ".join(sorted(missing_rules))
+            "Ads context-pack lacks expert rule summaries for: " + ", ".join(sorted(missing_rules))
         )
 
 

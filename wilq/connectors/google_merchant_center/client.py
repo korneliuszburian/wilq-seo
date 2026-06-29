@@ -91,9 +91,8 @@ def _fetch_product_status_summary(
     )
     response.raise_for_status()
     metric_summary, metric_facts = _summarize_aggregate_product_statuses(response.json())
-    if (
-        _int_metric(metric_summary.get("item_level_issue_count")) > 0
-        and not any(fact.name == "sample_product_id" for fact in metric_facts)
+    if _int_metric(metric_summary.get("item_level_issue_count")) > 0 and not any(
+        fact.name == "sample_product_id" for fact in metric_facts
     ):
         try:
             product_sample_facts = _fetch_product_issue_samples(client, account_id, access_token)
@@ -144,9 +143,7 @@ def _fetch_product_issue_samples(
                     break
         page_token_value = payload.get("nextPageToken") if isinstance(payload, dict) else None
         page_token = (
-            page_token_value
-            if isinstance(page_token_value, str) and page_token_value
-            else None
+            page_token_value if isinstance(page_token_value, str) and page_token_value else None
         )
         if not page_token:
             break

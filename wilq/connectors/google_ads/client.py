@@ -258,12 +258,10 @@ def refresh_google_ads_campaign_summary(
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
             summary=(
-                "Google Ads vendor read blocked by missing credential names: "
-                f"{', '.join(missing)}."
+                f"Google Ads vendor read blocked by missing credential names: {', '.join(missing)}."
             ),
             errors=[
-                "Google Ads vendor read blocked by missing credential names: "
-                f"{', '.join(missing)}."
+                f"Google Ads vendor read blocked by missing credential names: {', '.join(missing)}."
             ],
         )
 
@@ -309,12 +307,10 @@ def refresh_google_ads_campaign_summary(
                     access_token,
                 )
             )
-            keyword_context_summary, keyword_context_facts = (
-                _fetch_keyword_match_context_summary(
-                    client,
-                    credentials,
-                    access_token,
-                )
+            keyword_context_summary, keyword_context_facts = _fetch_keyword_match_context_summary(
+                client,
+                credentials,
+                access_token,
             )
             recommendation_summary, recommendation_facts = _fetch_recommendation_summary(
                 client,
@@ -326,12 +322,10 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
-            demand_gen_ad_summary, demand_gen_ad_facts = (
-                _fetch_optional_demand_gen_ad_group_ads(
-                    client,
-                    credentials,
-                    access_token,
-                )
+            demand_gen_ad_summary, demand_gen_ad_facts = _fetch_optional_demand_gen_ad_group_ads(
+                client,
+                credentials,
+                access_token,
             )
             demand_gen_asset_summary, demand_gen_asset_facts = (
                 _fetch_optional_demand_gen_creative_assets(
@@ -340,13 +334,11 @@ def refresh_google_ads_campaign_summary(
                     access_token,
                 )
             )
-            keyword_planner_summary, keyword_planner_facts = (
-                _fetch_optional_keyword_planner_ideas(
-                    client,
-                    credentials,
-                    access_token,
-                    search_term_facts,
-                )
+            keyword_planner_summary, keyword_planner_facts = _fetch_optional_keyword_planner_ideas(
+                client,
+                credentials,
+                access_token,
+                search_term_facts,
             )
             metric_summary.update(search_term_summary)
             metric_summary.update(search_term_safety_summary)
@@ -395,8 +387,7 @@ def refresh_google_ads_campaign_summary(
                     metric_summary=metric_summary,
                     metric_facts=metric_facts,
                     errors=[
-                        "Google Ads manager account cannot return campaign metrics "
-                        f"({detail})."
+                        f"Google Ads manager account cannot return campaign metrics ({detail})."
                     ],
                 )
             return _http_failure_result("searchStream", exc)
@@ -1910,9 +1901,7 @@ def _summarize_demand_gen_ad_group_ad_response(
             "demand_gen_ad_group_ad_status": "ready",
             "demand_gen_ad_group_ad_query": "demand_gen_ad_group_ad_inventory",
             "demand_gen_ad_group_ad_row_count": len(rows),
-            "demand_gen_multi_asset_ad_count": ad_type_counts[
-                "DEMAND_GEN_MULTI_ASSET_AD"
-            ],
+            "demand_gen_multi_asset_ad_count": ad_type_counts["DEMAND_GEN_MULTI_ASSET_AD"],
             "demand_gen_carousel_ad_count": ad_type_counts["DEMAND_GEN_CAROUSEL_AD"],
             "demand_gen_video_responsive_ad_count": ad_type_counts[
                 "DEMAND_GEN_VIDEO_RESPONSIVE_AD"
@@ -2357,9 +2346,7 @@ def _recommendation_impact_metric_facts(
     ):
         if not isinstance(metrics, dict):
             continue
-        metric_facts.extend(
-            _recommendation_impact_metrics_for_prefix(prefix, metrics, dimensions)
-        )
+        metric_facts.extend(_recommendation_impact_metrics_for_prefix(prefix, metrics, dimensions))
     return metric_facts
 
 
@@ -2372,9 +2359,7 @@ def _recommendation_impact_metrics_for_prefix(
     int_metrics = {
         "clicks": _optional_int_metric(metrics.get("clicks")),
         "impressions": _optional_int_metric(metrics.get("impressions")),
-        "cost_micros": _optional_int_metric(
-            metrics.get("costMicros", metrics.get("cost_micros"))
-        ),
+        "cost_micros": _optional_int_metric(metrics.get("costMicros", metrics.get("cost_micros"))),
     }
     float_metrics = {
         "conversions": _optional_float_metric(metrics.get("conversions")),

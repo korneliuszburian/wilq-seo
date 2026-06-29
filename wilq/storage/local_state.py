@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -42,17 +43,14 @@ class LocalStateStore:
         return {
             "backend": "sqlite",
             "enabled": True,
-            "codex_runs": self._count_with_query(
-                "SELECT COUNT(*) AS count FROM codex_runs"
-            ),
-            "workflow_runs": self._count_with_query(
-                "SELECT COUNT(*) AS count FROM workflow_runs"
-            ),
-            "audit_events": self._count_with_query(
-                "SELECT COUNT(*) AS count FROM audit_events"
-            ),
+            "codex_runs": self._count_with_query("SELECT COUNT(*) AS count FROM codex_runs"),
+            "workflow_runs": self._count_with_query("SELECT COUNT(*) AS count FROM workflow_runs"),
+            "audit_events": self._count_with_query("SELECT COUNT(*) AS count FROM audit_events"),
             "action_mutation_audits": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM action_mutation_audits"
+            ),
+            "action_validation_states": self._count_with_query(
+                "SELECT COUNT(*) AS count FROM action_validation_states"
             ),
             "connector_refresh_runs": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM connector_refresh_runs"
@@ -180,8 +178,7 @@ class LocalStateStore:
                     (connector_id,),
                 ).fetchall()
         return [
-            _model_from_json(ConnectorRefreshRun, cast(str, row["payload_json"]))
-            for row in rows
+            _model_from_json(ConnectorRefreshRun, cast(str, row["payload_json"])) for row in rows
         ]
 
     def get_connector_refresh_run(self, run_id: str) -> ConnectorRefreshRun | None:
@@ -327,6 +324,51 @@ class LocalStateStore:
             for row in rows
         ]
 
+    def save_action_validation_state(
+        self,
+        *,
+        action_id: str,
+        status: str,
+        validation_status: str,
+    ) -> None:
+        updated_at = datetime.now(UTC).isoformat()
+        payload_json = json.dumps(
+            {
+                "action_id": action_id,
+                "status": status,
+                "validation_status": validation_status,
+                "updated_at": updated_at,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO action_validation_states (
+                  action_id, status, validation_status, updated_at, payload_json
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(action_id) DO UPDATE SET
+                  status = excluded.status,
+                  validation_status = excluded.validation_status,
+                  updated_at = excluded.updated_at,
+                  payload_json = excluded.payload_json
+                """,
+                (action_id, status, validation_status, updated_at, payload_json),
+            )
+
+    def get_action_validation_state(self, action_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM action_validation_states WHERE action_id = ?",
+                (action_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        payload = json.loads(cast(str, row["payload_json"]))
+        return payload if isinstance(payload, dict) else None
+
     def save_ads_target_guardrail_confirmation(
         self,
         confirmation: AdsTargetGuardrailConfirmation,
@@ -453,6 +495,14 @@ class LocalStateStore:
               action_id TEXT NOT NULL,
               status TEXT NOT NULL,
               created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS action_validation_states (
+              action_id TEXT PRIMARY KEY,
+              status TEXT NOT NULL,
+              validation_status TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
 

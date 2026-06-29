@@ -10,13 +10,13 @@ from wilq.operator_labels import (
     action_count_label,
     ads_campaign_status_label,
     ads_channel_type_label,
-    blocker_count_label,
-    blocked_claim_label,
     blocked_claim_count_label,
+    blocked_claim_label,
     blocked_claim_summary_label,
+    blocker_count_label,
+    connector_refresh_status_label,
     credential_field_count_label,
     credential_source_count_label,
-    connector_refresh_status_label,
     evidence_count_label,
     impact_comparison_summary_label,
     knowledge_reference_count_label,
@@ -25,12 +25,12 @@ from wilq.operator_labels import (
     missing_contract_count_label,
     policy_count_label,
     reported_issue_occurrence_count_label,
-    required_validation_count_label,
     required_evidence_count_label,
-    source_connector_summary_label,
-    source_contract_count_label,
+    required_validation_count_label,
     source_connector_label,
     source_connector_labels,
+    source_connector_summary_label,
+    source_contract_count_label,
     source_lineage_count_label,
 )
 
@@ -250,9 +250,7 @@ class MetricFact(BaseModel):
         if not self.metric_label:
             self.metric_label = metric_fact_label(self.name, self.source_connector)
         if not self.dimension_labels:
-            self.dimension_labels = {
-                key: _metric_dimension_label(key) for key in self.dimensions
-            }
+            self.dimension_labels = {key: _metric_dimension_label(key) for key in self.dimensions}
         if not self.dimension_value_labels:
             self.dimension_value_labels = {
                 key: _metric_dimension_value_label(key, value)
@@ -306,9 +304,7 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         "gbp_visibility": "profil firmy w Google",
         "local_rankings": "lokalne pozycje",
         "MERCHANT_ACTION": "wymaga działania po stronie Merchant",
-        "missing_potentially_required_attribute": (
-            "brak potencjalnie wymaganego atrybutu"
-        ),
+        "missing_potentially_required_attribute": ("brak potencjalnie wymaganego atrybutu"),
         "n:availability": "dostępność",
         "n:unit_pricing_measure": "miara ceny jednostkowej",
         "NOT_IMPACTED": "bez wpływu",
@@ -331,17 +327,21 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         return "brak wartości w danych źródłowych"
     if text == "(organic)":
         return "ruch organiczny"
-    if key in {
-        "campaign_name",
-        "competitor_domain",
-        "keyword",
-        "landing_page",
-        "page",
-        "query",
-        "source_medium",
-        "source_url",
-        "target_domain",
-    } and text:
+    if (
+        key
+        in {
+            "campaign_name",
+            "competitor_domain",
+            "keyword",
+            "landing_page",
+            "page",
+            "query",
+            "source_medium",
+            "source_url",
+            "target_domain",
+        }
+        and text
+    ):
         return text
     return "wartość wymiaru do sprawdzenia"
 
@@ -476,7 +476,7 @@ class ActionReviewGate(BaseModel):
     last_mutation_blocker_summary_label: str = ""
 
     @model_validator(mode="after")
-    def hydrate_summary_labels(self) -> "ActionReviewGate":
+    def hydrate_summary_labels(self) -> ActionReviewGate:
         if not self.apply_blocker_summary_label:
             self.apply_blocker_summary_label = blocker_count_label(
                 self.apply_blocker_labels or self.apply_blockers
@@ -509,6 +509,8 @@ class ActionPreviewCardViewModel(BaseModel):
 
 class ActionPreviewItemViewModel(BaseModel):
     id: str
+    preview_contract: str | None = None
+    candidate_id: str | None = None
     title_label: str
     status_label: str = ""
     rows: list[ActionPreviewRowViewModel] = Field(default_factory=list)
@@ -634,9 +636,7 @@ class AdsTargetGuardrailConfirmation(BaseModel):
 
     @model_validator(mode="after")
     def exactly_one_target(self) -> AdsTargetGuardrailConfirmation:
-        target_count = int(self.target_roas is not None) + int(
-            self.target_cpa_micros is not None
-        )
+        target_count = int(self.target_roas is not None) + int(self.target_cpa_micros is not None)
         if target_count != 1:
             raise ValueError("exactly one Ads target guardrail must be confirmed")
         return self
@@ -961,13 +961,9 @@ class KnowledgeDecisionBinding(BaseModel):
             )
         self.has_blocked_claims = bool(self.blocked_claim_labels or self.blocked_claims)
         if not self.blocked_claim_summary_label:
-            self.blocked_claim_summary_label = blocked_claim_summary_label(
-                self.blocked_claims
-            )
+            self.blocked_claim_summary_label = blocked_claim_summary_label(self.blocked_claims)
         if not self.blocked_claim_count_summary_label:
-            self.blocked_claim_count_summary_label = blocked_claim_count_label(
-                self.blocked_claims
-            )
+            self.blocked_claim_count_summary_label = blocked_claim_count_label(self.blocked_claims)
         if not self.source_lineage_summary_label:
             self.source_lineage_summary_label = source_lineage_count_label(self.source_lineage)
         return self
@@ -993,15 +989,11 @@ class KnowledgeOperatingMapResponse(BaseModel):
             )
         if not self.missing_contract_summary_label:
             self.missing_contract_summary_label = missing_contract_count_label(
-                contract
-                for binding in self.bindings
-                for contract in binding.missing_contracts
+                contract for binding in self.bindings for contract in binding.missing_contracts
             )
         if not self.blocked_claim_count_summary_label:
             self.blocked_claim_count_summary_label = blocked_claim_count_label(
-                claim
-                for binding in self.bindings
-                for claim in binding.blocked_claims
+                claim for binding in self.bindings for claim in binding.blocked_claims
             )
         return self
 
@@ -1106,9 +1098,7 @@ class MarketingBriefItem(BaseModel):
                 len(self.evidence_ids)
             )
         if not self.action_summary_label:
-            self.action_summary_label = _marketing_brief_action_count_label(
-                len(self.action_ids)
-            )
+            self.action_summary_label = _marketing_brief_action_count_label(len(self.action_ids))
         if not self.risk_label:
             self.risk_label = _marketing_risk_label(self.risk)
         return self
@@ -1331,17 +1321,13 @@ class TacticalQueueItem(BaseModel):
                 len(self.evidence_ids)
             )
         if not self.action_summary_label:
-            self.action_summary_label = _marketing_brief_action_count_label(
-                len(self.action_ids)
-            )
+            self.action_summary_label = _marketing_brief_action_count_label(len(self.action_ids))
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 _blocked_claim_label(claim) for claim in self.blocked_claims
             ]
         if not self.dimension_labels:
-            self.dimension_labels = {
-                key: _tactical_dimension_label(key) for key in self.dimensions
-            }
+            self.dimension_labels = {key: _tactical_dimension_label(key) for key in self.dimensions}
         if not self.dimension_value_labels:
             self.dimension_value_labels = {
                 key: _tactical_dimension_value_label(key, value)
@@ -1385,9 +1371,7 @@ class TacticalQueueGroup(BaseModel):
                 len(self.evidence_ids)
             )
         if not self.action_summary_label:
-            self.action_summary_label = _marketing_brief_action_count_label(
-                len(self.action_ids)
-            )
+            self.action_summary_label = _marketing_brief_action_count_label(len(self.action_ids))
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 _blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1473,9 +1457,7 @@ class AdsCampaignMetricRow(BaseModel):
         "no_target",
     ] = "no_target"
     target_status_label: str = "brak celu"
-    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
-        "niski sygnał"
-    )
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = "niski sygnał"
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str = ""
     human_review_gates: list[str] = Field(default_factory=list)
@@ -1483,7 +1465,7 @@ class AdsCampaignMetricRow(BaseModel):
     human_review_gate_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsCampaignMetricRow":
+    def fill_summary_labels(self) -> AdsCampaignMetricRow:
         if not self.campaign_status_label:
             self.campaign_status_label = ads_campaign_status_label(self.campaign_status)
         if not self.advertising_channel_type_label:
@@ -1560,7 +1542,7 @@ class AdsBusinessTargetInterpretation(BaseModel):
     destructive: bool = False
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self):
+    def hydrate_operator_labels(self) -> AdsBusinessTargetInterpretation:
         if not self.policy_summary_label:
             self.policy_summary_label = policy_count_label(self.policy_ids)
         if not self.action_summary_label:
@@ -1604,7 +1586,7 @@ class AdsStrategyReviewReadinessContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self):
+    def hydrate_operator_labels(self) -> AdsStrategyReviewReadinessContract:
         if not self.required_validation_summary_label:
             self.required_validation_summary_label = required_validation_count_label(
                 self.required_validation
@@ -1688,7 +1670,7 @@ class AdsDerivedKpiRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsDerivedKpiRow":
+    def fill_summary_labels(self) -> AdsDerivedKpiRow:
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1717,9 +1699,7 @@ class AdsDerivedKpiReadContract(BaseModel):
 class AdsBudgetApplySafetyReview(BaseModel):
     id: str
     budget_preview_id: str
-    safety_contract: Literal["campaign_budget_apply_safety_v1"] = (
-        "campaign_budget_apply_safety_v1"
-    )
+    safety_contract: Literal["campaign_budget_apply_safety_v1"] = "campaign_budget_apply_safety_v1"
     status: Literal["blocked"] = "blocked"
     status_label: str = ""
     reason: str
@@ -1793,7 +1773,7 @@ class AdsBudgetPacingRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsBudgetPacingRow":
+    def fill_summary_labels(self) -> AdsBudgetPacingRow:
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1832,7 +1812,7 @@ class AdsSharedBudgetDistributionRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsSharedBudgetDistributionRow":
+    def fill_summary_labels(self) -> AdsSharedBudgetDistributionRow:
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -1891,9 +1871,7 @@ class AdsRecommendationRow(BaseModel):
     recommendation_resource_name: str | None = None
     recommendation_type: str
     recommendation_type_label: str = ""
-    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
-        "normalne"
-    )
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = "normalne"
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
@@ -1929,7 +1907,7 @@ class AdsRecommendationRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsRecommendationRow":
+    def fill_summary_labels(self) -> AdsRecommendationRow:
         if not self.human_review_gate_summary_label:
             self.human_review_gate_summary_label = required_validation_count_label(
                 self.human_review_gate_labels or self.human_review_gates
@@ -1982,7 +1960,7 @@ class AdsImpressionShareRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsImpressionShareRow":
+    def fill_summary_labels(self) -> AdsImpressionShareRow:
         if not self.blocked_claim_labels:
             self.blocked_claim_labels = [
                 blocked_claim_label(claim) for claim in self.blocked_claims
@@ -2016,9 +1994,7 @@ class AdsCampaignTriageRow(BaseModel):
     campaign_status_label: str | None = None
     advertising_channel_type: str | None = None
     advertising_channel_type_label: str | None = None
-    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
-        "niski sygnał"
-    )
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = "niski sygnał"
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     next_step: str
@@ -2134,7 +2110,7 @@ class AdsOptimizerReadinessItem(BaseModel):
     risk_label: str = ""
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self):
+    def hydrate_operator_labels(self) -> AdsOptimizerReadinessItem:
         if not self.source_contract_summary_label:
             self.source_contract_summary_label = source_contract_count_label(
                 self.source_contract_ids
@@ -2190,7 +2166,7 @@ class AdsOptimizerReadinessContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsOptimizerReadinessContract":
+    def fill_trace_summary_labels(self) -> AdsOptimizerReadinessContract:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -2234,7 +2210,7 @@ class AdsChangeHistoryRow(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsChangeHistoryRow":
+    def hydrate_display_labels(self) -> AdsChangeHistoryRow:
         if not self.change_resource_label:
             self.change_resource_label = _ads_change_resource_display_label(
                 self.change_resource_type_label,
@@ -2244,9 +2220,7 @@ class AdsChangeHistoryRow(BaseModel):
             self.campaign_label = _ads_campaign_display_label(None, self.campaign_id)
         if not self.changed_field_summary_label:
             if self.changed_field_labels:
-                self.changed_field_summary_label = ", ".join(
-                    self.changed_field_labels[:4]
-                )
+                self.changed_field_summary_label = ", ".join(self.changed_field_labels[:4])
             else:
                 self.changed_field_summary_label = f"{self.changed_field_count or 0} pól"
         return self
@@ -2297,11 +2271,9 @@ class AdsChangeImpactReadinessRow(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsChangeImpactReadinessRow":
+    def hydrate_display_labels(self) -> AdsChangeImpactReadinessRow:
         if not self.change_event_label:
-            self.change_event_label = _ads_change_event_display_label(
-                self.change_event_id
-            )
+            self.change_event_label = _ads_change_event_display_label(self.change_event_id)
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2342,7 +2314,7 @@ class AdsChangeImpactReadinessContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsChangeImpactReadinessContract":
+    def fill_trace_summary_labels(self) -> AdsChangeImpactReadinessContract:
         if not self.action_summary_label:
             self.action_summary_label = action_count_label(self.action_ids)
         if not self.missing_read_contract_summary_label:
@@ -2417,7 +2389,7 @@ class AdsSearchTermMetricRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsSearchTermMetricRow":
+    def hydrate_display_labels(self) -> AdsSearchTermMetricRow:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2468,7 +2440,7 @@ class AdsSearchTermReviewRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsSearchTermReviewRow":
+    def hydrate_display_labels(self) -> AdsSearchTermReviewRow:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2499,7 +2471,7 @@ class AdsSearchTermCampaignReviewRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsSearchTermCampaignReviewRow":
+    def hydrate_display_labels(self) -> AdsSearchTermCampaignReviewRow:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2533,13 +2505,11 @@ class AdsSearchTermReviewSummaryContract(BaseModel):
     total_cost_micros: int = 0
     total_conversions: float = 0.0
     top_cost_search_terms: list[AdsSearchTermReviewRow] = Field(default_factory=list)
-    campaign_review_rows: list[AdsSearchTermCampaignReviewRow] = Field(
-        default_factory=list
-    )
+    campaign_review_rows: list[AdsSearchTermCampaignReviewRow] = Field(default_factory=list)
     next_step: str
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsSearchTermReviewSummaryContract":
+    def fill_trace_summary_labels(self) -> AdsSearchTermReviewSummaryContract:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts
@@ -2616,7 +2586,7 @@ class AdsSearchTermSafetyRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsSearchTermSafetyRow":
+    def hydrate_display_labels(self) -> AdsSearchTermSafetyRow:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2669,7 +2639,7 @@ class AdsKeywordMatchContextRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsKeywordMatchContextRow":
+    def hydrate_display_labels(self) -> AdsKeywordMatchContextRow:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -2707,9 +2677,7 @@ class AdsCustomSegmentTargetingPreview(BaseModel):
     target_scope: Literal["campaign_context_review"] = "campaign_context_review"
     campaign_id: str | None = None
     campaign_name: str | None = None
-    operation_type: Literal["custom_segment_targeting_review"] = (
-        "custom_segment_targeting_review"
-    )
+    operation_type: Literal["custom_segment_targeting_review"] = "custom_segment_targeting_review"
     reason: str
     required_validation: list[str] = Field(default_factory=list)
     required_validation_labels: list[str] = Field(default_factory=list)
@@ -2723,9 +2691,7 @@ class AdsCustomSegmentTargetingPreview(BaseModel):
 class AdsCustomSegmentApplySafetyReview(BaseModel):
     id: str
     custom_segment_preview_id: str
-    safety_contract: Literal["custom_segment_apply_safety_v1"] = (
-        "custom_segment_apply_safety_v1"
-    )
+    safety_contract: Literal["custom_segment_apply_safety_v1"] = "custom_segment_apply_safety_v1"
     status: Literal["blocked"] = "blocked"
     status_label: str = "zablokowane"
     reason: str
@@ -2757,9 +2723,7 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     required_validation_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
-    targeting_preview: list[AdsCustomSegmentTargetingPreview] = Field(
-        default_factory=list
-    )
+    targeting_preview: list[AdsCustomSegmentTargetingPreview] = Field(default_factory=list)
     safety_review: AdsCustomSegmentApplySafetyReview
     api_mutation_ready: bool = False
     apply_allowed: bool = False
@@ -2781,7 +2745,7 @@ class AdsCustomSegmentAudienceForecastRow(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsCustomSegmentAudienceForecastRow":
+    def fill_summary_labels(self) -> AdsCustomSegmentAudienceForecastRow:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -2795,9 +2759,7 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     summary: str
     checked_candidate_count: int = 0
     forecast_row_count: int = 0
-    forecast_rows: list[AdsCustomSegmentAudienceForecastRow] = Field(
-        default_factory=list
-    )
+    forecast_rows: list[AdsCustomSegmentAudienceForecastRow] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contract_labels: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
@@ -2810,7 +2772,7 @@ class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_operator_labels(self) -> "AdsCustomSegmentAudienceForecastReadContract":
+    def fill_operator_labels(self) -> AdsCustomSegmentAudienceForecastReadContract:
         if not self.status_label:
             self.status_label = _ads_read_contract_status_label(self.status)
         if not self.evidence_summary_label:
@@ -2824,15 +2786,16 @@ def default_ads_custom_segment_audience_forecast_contract() -> (
     return AdsCustomSegmentAudienceForecastReadContract(
         status="blocked",
         title="Prognoza i rozmiar odbiorców segmentów",
-        summary=(
-            "Brak propozycji segmentów do sprawdzenia prognozy albo rozmiaru odbiorców."
-        ),
+        summary=("Brak propozycji segmentów do sprawdzenia prognozy albo rozmiaru odbiorców."),
         missing_read_contracts=["custom_segment_candidates", "forecast_or_audience_size"],
         operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
-        blocked_claims=["rozmiar odbiorców", "wzrost konwersji", "zwrot z reklam", "zapis kierowania reklam"],
-        next_step=(
-            "Najpierw zbuduj propozycje segmentów z realnych wyszukiwanych haseł."
-        ),
+        blocked_claims=[
+            "rozmiar odbiorców",
+            "wzrost konwersji",
+            "zwrot z reklam",
+            "zapis kierowania reklam",
+        ],
+        next_step=("Najpierw zbuduj propozycje segmentów z realnych wyszukiwanych haseł."),
     )
 
 
@@ -2867,7 +2830,7 @@ class AdsKeywordPlannerReadContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_operator_labels(self) -> "AdsKeywordPlannerReadContract":
+    def fill_operator_labels(self) -> AdsKeywordPlannerReadContract:
         if not self.status_label:
             self.status_label = _ads_read_contract_status_label(self.status)
         return self
@@ -2886,9 +2849,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
     intent: str
-    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
-        "normalne"
-    )
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = "normalne"
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
@@ -2916,7 +2877,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "AdsCustomSegmentCandidate":
+    def fill_summary_labels(self) -> AdsCustomSegmentCandidate:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -2930,8 +2891,8 @@ class AdsCustomSegmentsReadContract(BaseModel):
     summary: str
     candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(default_factory=list)
-    audience_forecast_read_contract: AdsCustomSegmentAudienceForecastReadContract = (
-        Field(default_factory=default_ads_custom_segment_audience_forecast_contract)
+    audience_forecast_read_contract: AdsCustomSegmentAudienceForecastReadContract = Field(
+        default_factory=default_ads_custom_segment_audience_forecast_contract
     )
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -2949,7 +2910,7 @@ class AdsCustomSegmentsReadContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_operator_labels(self) -> "AdsCustomSegmentsReadContract":
+    def fill_operator_labels(self) -> AdsCustomSegmentsReadContract:
         if not self.status_label:
             self.status_label = _ads_read_contract_status_label(self.status)
         if not self.evidence_summary_label:
@@ -3001,7 +2962,7 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
     destructive: bool = False
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsNegativeKeywordPayloadPreview":
+    def hydrate_display_labels(self) -> AdsNegativeKeywordPayloadPreview:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -3018,9 +2979,7 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
 class AdsNegativeKeywordCandidate(BaseModel):
     id: str
     search_term: str
-    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
-        "normalne"
-    )
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = "normalne"
     review_score: int = Field(default=0, ge=0, le=100)
     review_reason: str
     human_review_gates: list[str] = Field(default_factory=list)
@@ -3064,7 +3023,7 @@ class AdsNegativeKeywordCandidate(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def hydrate_display_labels(self) -> "AdsNegativeKeywordCandidate":
+    def hydrate_display_labels(self) -> AdsNegativeKeywordCandidate:
         if not self.campaign_label:
             self.campaign_label = _ads_campaign_display_label(
                 self.campaign_name,
@@ -3097,7 +3056,7 @@ class AdsNegativeKeywordsReadContract(BaseModel):
     next_step: str
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsNegativeKeywordsReadContract":
+    def fill_trace_summary_labels(self) -> AdsNegativeKeywordsReadContract:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts
@@ -3160,27 +3119,21 @@ class AdsDecisionItem(BaseModel):
     )
     budget_apply_preview: list[AdsBudgetApplyPreview] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
-    recommendation_apply_preview: list[AdsRecommendationApplyPreview] = Field(
-        default_factory=list
-    )
+    recommendation_apply_preview: list[AdsRecommendationApplyPreview] = Field(default_factory=list)
     impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     search_term_ngram_rows: list[AdsSearchTermNgramRow] = Field(default_factory=list)
     search_term_safety_rows: list[AdsSearchTermSafetyRow] = Field(default_factory=list)
-    keyword_match_context_rows: list[AdsKeywordMatchContextRow] = Field(
-        default_factory=list
-    )
-    keyword_planner_idea_rows: list[AdsKeywordPlannerIdeaRow] = Field(
-        default_factory=list
-    )
+    keyword_match_context_rows: list[AdsKeywordMatchContextRow] = Field(default_factory=list)
+    keyword_planner_idea_rows: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     custom_segment_payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(
         default_factory=list
     )
-    custom_segment_audience_forecast_rows: list[
-        AdsCustomSegmentAudienceForecastRow
-    ] = Field(default_factory=list)
+    custom_segment_audience_forecast_rows: list[AdsCustomSegmentAudienceForecastRow] = Field(
+        default_factory=list
+    )
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     negative_keyword_payload_preview: list[AdsNegativeKeywordPayloadPreview] = Field(
         default_factory=list
@@ -3197,7 +3150,7 @@ class AdsDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsDecisionItem":
+    def fill_trace_summary_labels(self) -> AdsDecisionItem:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts
@@ -3247,7 +3200,7 @@ class AdsOperatorSummary(BaseModel):
     blocked_claim_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AdsOperatorSummary":
+    def fill_trace_summary_labels(self) -> AdsOperatorSummary:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts
@@ -3320,7 +3273,7 @@ class DemandGenAdGroupAdRow(BaseModel):
     evidence_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "DemandGenAdGroupAdRow":
+    def fill_summary_labels(self) -> DemandGenAdGroupAdRow:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -3335,7 +3288,7 @@ class DemandGenCreativeAssetRow(BaseModel):
     evidence_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "DemandGenCreativeAssetRow":
+    def fill_summary_labels(self) -> DemandGenCreativeAssetRow:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -3353,7 +3306,7 @@ class DemandGenLandingQualityRow(BaseModel):
     evidence_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "DemandGenLandingQualityRow":
+    def fill_summary_labels(self) -> DemandGenLandingQualityRow:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -3374,7 +3327,7 @@ class DemandGenCampaignModeReviewRow(BaseModel):
     evidence_summary_label: str = ""
 
     @model_validator(mode="after")
-    def fill_summary_labels(self) -> "DemandGenCampaignModeReviewRow":
+    def fill_summary_labels(self) -> DemandGenCampaignModeReviewRow:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self
@@ -3469,9 +3422,7 @@ class MerchantDecisionItem(BaseModel):
     reporting_context_label: str | None = None
     product_count: int | None = None
     issue_count: int | None = None
-    count_semantics: Literal["reported_issue_occurrences"] = (
-        "reported_issue_occurrences"
-    )
+    count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     priority: int = Field(ge=1, le=100)
     priority_label: str = ""
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
@@ -3621,9 +3572,7 @@ class MerchantProductPerformanceRow(BaseModel):
 
 
 class MerchantProductPerformanceReadiness(BaseModel):
-    id: Literal["merchant_product_performance_readiness"] = (
-        "merchant_product_performance_readiness"
-    )
+    id: Literal["merchant_product_performance_readiness"] = "merchant_product_performance_readiness"
     status: Literal["ready", "blocked"]
     status_label: str = ""
     joined_product_count: int = 0
@@ -3963,9 +3912,9 @@ class Ga4TrackingQualityPayloadPreview(BaseModel):
     source_medium_label: str = ""
     campaign_name: str | None = None
     campaign_name_label: str = ""
-    tracking_dimension_gaps: list[
-        Literal["landing_page", "source_medium", "campaign_name"]
-    ] = Field(default_factory=list)
+    tracking_dimension_gaps: list[Literal["landing_page", "source_medium", "campaign_name"]] = (
+        Field(default_factory=list)
+    )
     tracking_dimension_gap_labels: list[str] = Field(default_factory=list)
     metric_snapshot: dict[str, float | int | str] = Field(default_factory=dict)
     metric_snapshot_labels: dict[str, str] = Field(default_factory=dict)
@@ -4251,7 +4200,7 @@ class LocaloOperatorSummary(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def hydrate_operator_summary_labels(self) -> "LocaloOperatorSummary":
+    def hydrate_operator_summary_labels(self) -> LocaloOperatorSummary:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts
@@ -4301,7 +4250,7 @@ class AhrefsDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AhrefsDiagnosticSection":
+    def fill_trace_summary_labels(self) -> AhrefsDiagnosticSection:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -4345,7 +4294,7 @@ class AhrefsDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AhrefsDecisionItem":
+    def fill_trace_summary_labels(self) -> AhrefsDecisionItem:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -4406,7 +4355,7 @@ class AhrefsGapReadContract(BaseModel):
     risk: ActionRisk = ActionRisk.medium
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AhrefsGapReadContract":
+    def fill_trace_summary_labels(self) -> AhrefsGapReadContract:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -4416,9 +4365,7 @@ class AhrefsGapReadContract(BaseModel):
                 self.missing_read_contracts
             )
         if not self.blocked_claim_summary_label:
-            self.blocked_claim_summary_label = blocked_claim_count_label(
-                self.blocked_claims
-            )
+            self.blocked_claim_summary_label = blocked_claim_count_label(self.blocked_claims)
         return self
 
 
@@ -4445,7 +4392,7 @@ class AhrefsOperatorSummary(BaseModel):
     blocked_claim_labels: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AhrefsOperatorSummary":
+    def fill_trace_summary_labels(self) -> AhrefsOperatorSummary:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -4477,7 +4424,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
     @model_validator(mode="after")
-    def fill_trace_summary_labels(self) -> "AhrefsDiagnosticsResponse":
+    def fill_trace_summary_labels(self) -> AhrefsDiagnosticsResponse:
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         if not self.action_summary_label:
@@ -4537,9 +4484,7 @@ class DailyDecision(BaseModel):
     id: str
     title: str
     domain: str = "wilq"
-    freshness: FreshnessState = Field(
-        default_factory=lambda: FreshnessState(state="unknown")
-    )
+    freshness: FreshnessState = Field(default_factory=lambda: FreshnessState(state="unknown"))
     freshness_label: str = ""
     decision_state: DecisionState = "unknown"
     decision_state_label: str = ""
@@ -4615,12 +4560,8 @@ class DemandGenReadinessContract(BaseModel):
     campaign_channel_labels: dict[str, str] = Field(default_factory=dict)
     demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     demand_gen_ad_group_ad_rows: list[DemandGenAdGroupAdRow] = Field(default_factory=list)
-    demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow] = Field(
-        default_factory=list
-    )
-    demand_gen_landing_quality_rows: list[DemandGenLandingQualityRow] = Field(
-        default_factory=list
-    )
+    demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow] = Field(default_factory=list)
+    demand_gen_landing_quality_rows: list[DemandGenLandingQualityRow] = Field(default_factory=list)
     demand_gen_campaign_mode_review_rows: list[DemandGenCampaignModeReviewRow] = Field(
         default_factory=list
     )
@@ -4629,7 +4570,7 @@ class DemandGenReadinessContract(BaseModel):
     risk_label: str = ""
 
     @model_validator(mode="after")
-    def fill_operator_labels(self) -> "DemandGenReadinessContract":
+    def fill_operator_labels(self) -> DemandGenReadinessContract:
         if not self.status_label:
             self.status_label = _demand_gen_status_label(self.status)
         if not self.risk_label:

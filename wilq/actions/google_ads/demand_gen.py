@@ -15,9 +15,9 @@ from wilq.actions.validation_copy import (
 )
 from wilq.schemas import (
     DemandGenAdGroupAdRow,
+    DemandGenCampaignModeReviewRow,
     DemandGenCreativeAssetRow,
     DemandGenLandingQualityRow,
-    DemandGenCampaignModeReviewRow,
     MetricFact,
 )
 
@@ -63,15 +63,11 @@ DEMAND_GEN_CONTRACT_LABELS = {
     DEMAND_GEN_CAMPAIGN_MODE_REVIEW_CONTRACT: "kontrola trybu kampanii",
     "demand_gen_specific_evidence_required": "konkretne dowody Demand Gen",
     "already_demand_gen_review_only": "już Demand Gen, bez zapisu zmian",
-    "discovery_to_demand_gen_requires_human_review": (
-        "Discovery wymaga ręcznego sprawdzenia"
-    ),
+    "discovery_to_demand_gen_requires_human_review": ("Discovery wymaga ręcznego sprawdzenia"),
     "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
     "human_strategy_review": "sprawdzenie strategii przez człowieka",
     "review_ads_campaign_channel_context": "sprawdzenie kanałów kampanii Ads",
-    "review_demand_gen_missing_contracts": (
-        "sprawdzenie brakujących danych Demand Gen"
-    ),
+    "review_demand_gen_missing_contracts": ("sprawdzenie brakujących danych Demand Gen"),
     "review_ga4_landing_source_campaign_context": (
         "sprawdzenie GA4: strona wejścia, źródło ruchu i kampania"
     ),
@@ -149,18 +145,12 @@ def demand_gen_readiness_review_payload(
         "demand_gen_creative_asset_rows": demand_gen_creative_asset_rows[:4],
         "demand_gen_landing_quality_row_count": len(demand_gen_landing_quality_rows),
         "demand_gen_landing_quality_rows": demand_gen_landing_quality_rows[:4],
-        "demand_gen_campaign_mode_review_row_count": len(
-            demand_gen_campaign_mode_review_rows
-        ),
+        "demand_gen_campaign_mode_review_row_count": len(demand_gen_campaign_mode_review_rows),
         "demand_gen_campaign_mode_review_rows": demand_gen_campaign_mode_review_rows[:4],
         "available_read_contracts": available_read_contracts,
-        "available_read_contract_labels": demand_gen_contract_labels(
-            available_read_contracts
-        ),
+        "available_read_contract_labels": demand_gen_contract_labels(available_read_contracts),
         "missing_read_contracts": missing_read_contracts,
-        "missing_read_contract_labels": demand_gen_contract_labels(
-            missing_read_contracts
-        ),
+        "missing_read_contract_labels": demand_gen_contract_labels(missing_read_contracts),
         "reason": (
             "Podgląd gotowości Demand Gen do sprawdzenia w WILQ. WILQ może pokazać "
             "kontekst kanałów kampanii Ads i GA4, ale nadal blokuje uruchomienie, "
@@ -185,13 +175,9 @@ def demand_gen_readiness_review_payload(
         "source_connectors": source_connectors,
         "evidence_ids": evidence_ids,
         "available_read_contracts": available_read_contracts,
-        "available_read_contract_labels": demand_gen_contract_labels(
-            available_read_contracts
-        ),
+        "available_read_contract_labels": demand_gen_contract_labels(available_read_contracts),
         "missing_read_contracts": missing_read_contracts,
-        "missing_read_contract_labels": demand_gen_contract_labels(
-            missing_read_contracts
-        ),
+        "missing_read_contract_labels": demand_gen_contract_labels(missing_read_contracts),
         "required_validation": DEMAND_GEN_READINESS_REQUIRED_VALIDATION,
         "required_validation_labels": demand_gen_contract_labels(
             DEMAND_GEN_READINESS_REQUIRED_VALIDATION
@@ -270,9 +256,7 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
             errors.append(missing(preview_subject, "listy brakujących odczytów"))
         if not isinstance(preview.get("required_validation"), list):
             errors.append(missing(preview_subject, "listy wymaganych sprawdzeń"))
-        if not isinstance(preview.get("evidence_ids"), list) or not preview.get(
-            "evidence_ids"
-        ):
+        if not isinstance(preview.get("evidence_ids"), list) or not preview.get("evidence_ids"):
             errors.append(missing_evidence(preview_subject))
         if preview.get("api_mutation_ready") is not False:
             errors.append(no_api_write(preview_subject))

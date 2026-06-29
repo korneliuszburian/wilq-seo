@@ -162,7 +162,7 @@ def exchange_localo_oauth_code(
         "env_file": str(target_env) if write_env else None,
         "env_var": LOCALO_ACCESS_TOKEN_ENV,
         "next_step": (
-            'Run `uv run wilq connectors refresh localo --mode vendor_read '
+            "Run `uv run wilq connectors refresh localo --mode vendor_read "
             '--reason "Goal 001 Localo live data proof"`.'
         ),
         "secrets_redacted": True,

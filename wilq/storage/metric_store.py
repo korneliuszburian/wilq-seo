@@ -537,10 +537,7 @@ def _connect_with_retry(path: Path, read_only: bool = False) -> duckdb.DuckDBPyC
         except duckdb.Error as exc:
             last_error = exc
             message = str(exc)
-            is_retryable = (
-                "Conflicting lock" in message
-                or "Unique file handle conflict" in message
-            )
+            is_retryable = "Conflicting lock" in message or "Unique file handle conflict" in message
             if not is_retryable or attempt == DUCKDB_CONNECT_ATTEMPTS - 1:
                 raise
             time.sleep(DUCKDB_CONNECT_RETRY_SECONDS * (attempt + 1))

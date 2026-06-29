@@ -178,11 +178,7 @@ def build_ga4_diagnostics(
         sections=sections,
         evidence_ids=_unique(
             [
-                *(
-                    evidence_id
-                    for section in sections
-                    for evidence_id in section.evidence_ids
-                ),
+                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
                 *conversion_readiness_contract.evidence_ids,
             ]
         ),
@@ -238,9 +234,7 @@ def _operator_summary(
         ),
         conversion_readiness_status=conversion_readiness_contract.status,
         source_connectors=_unique(
-            connector
-            for decision in top_decisions
-            for connector in decision.source_connectors
+            connector for decision in top_decisions for connector in decision.source_connectors
         )
         or [GA4_CONNECTOR_ID],
         evidence_ids=_unique(
@@ -321,8 +315,7 @@ def _ga4_response_with_marketer_labels(
                 }
             ),
             "decision_queue": [
-                _ga4_decision_with_marketer_labels(decision)
-                for decision in response.decision_queue
+                _ga4_decision_with_marketer_labels(decision) for decision in response.decision_queue
             ],
             "sections": [
                 _ga4_section_with_marketer_labels(section) for section in response.sections
@@ -364,14 +357,11 @@ def _ga4_decision_with_marketer_labels(decision: Ga4DecisionItem) -> Ga4Decision
                 decision.campaign_name,
                 missing_label="brak kampanii w raporcie",
             ),
-            "source_connector_labels": _ga4_source_connector_labels(
-                decision.source_connectors
-            ),
+            "source_connector_labels": _ga4_source_connector_labels(decision.source_connectors),
             "evidence_summary_label": _ga4_evidence_summary_label(decision.evidence_ids),
             "action_summary_label": _ga4_action_summary_label(decision.action_ids),
             "metric_facts": [
-                _ga4_metric_fact_with_marketer_labels(fact)
-                for fact in decision.metric_facts
+                _ga4_metric_fact_with_marketer_labels(fact) for fact in decision.metric_facts
             ],
             "blocked_claim_labels": _ga4_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _ga4_risk_label(decision.risk),
@@ -388,8 +378,7 @@ def _ga4_section_with_marketer_labels(section: Ga4DiagnosticSection) -> Ga4Diagn
             "evidence_summary_label": _ga4_evidence_summary_label(section.evidence_ids),
             "action_summary_label": _ga4_action_summary_label(section.action_ids),
             "metric_facts": [
-                _ga4_metric_fact_with_marketer_labels(fact)
-                for fact in section.metric_facts
+                _ga4_metric_fact_with_marketer_labels(fact) for fact in section.metric_facts
             ],
             "blocked_claim_labels": _ga4_blocked_claim_labels(section.blocked_claims),
             "risk_label": _ga4_risk_label(section.risk),
@@ -402,8 +391,7 @@ def _ga4_metric_fact_with_marketer_labels(fact: MetricFact) -> MetricFact:
         update={
             "metric_label": GA4_METRIC_FACT_LABELS.get(fact.name, "metryka GA4"),
             "dimension_labels": {
-                key: GA4_METRIC_DIMENSION_LABELS.get(key, "wymiar GA4")
-                for key in fact.dimensions
+                key: GA4_METRIC_DIMENSION_LABELS.get(key, "wymiar GA4") for key in fact.dimensions
             },
             "dimension_value_labels": {
                 key: _ga4_metric_dimension_value_label(key, value)
@@ -522,11 +510,7 @@ def _ga4_section_status_label(status: object) -> str:
 
 
 def _ga4_conversion_readiness_status_label(status: object) -> str:
-    return (
-        "blokuje wnioski o konwersjach"
-        if _enum_value(status) == "blocked"
-        else "gotowe"
-    )
+    return "blokuje wnioski o konwersjach" if _enum_value(status) == "blocked" else "gotowe"
 
 
 def _ga4_risk_label(risk: object) -> str:
@@ -578,8 +562,7 @@ def _ga4_freshness_assessment(
                     stale_after_hours=GA4_STALE_AFTER_HOURS,
                     requires_refresh=True,
                     summary=(
-                        f"Najnowsze metryki GA4 mają około {age_hours:.1f}h "
-                        "i są do odświeżenia."
+                        f"Najnowsze metryki GA4 mają około {age_hours:.1f}h i są do odświeżenia."
                     ),
                     next_step=(
                         "Uruchom odczyt danych GA4, jeśli pytanie dotyczy "
@@ -643,7 +626,8 @@ def _ga4_freshness_assessment(
             requires_refresh=True,
             summary=(
                 f"Ostatni odczyt danych GA4 ma około {age_hours:.1f}h i jest do odświeżenia. "
-                "To wystarcza do przeglądu nieświeżych danych, ale nie do obietnic o bieżącym stanie ruchu."
+                "To wystarcza do przeglądu nieświeżych danych, "
+                "ale nie do obietnic o bieżącym stanie ruchu."
             ),
             next_step=(
                 "Uruchom odczyt danych GA4, jeśli pytanie dotyczy aktualnego "
@@ -759,9 +743,7 @@ def _tracking_readiness_section(
     tactical_items: list[TacticalQueueItem],
     action_ids: list[str],
 ) -> Ga4DiagnosticSection:
-    conversion_like_facts = [
-        fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES
-    ]
+    conversion_like_facts = [fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES]
     dimensioned_facts = _dimensioned_ga4_facts(facts)
     tactical_group_count = _tactical_landing_group_count(tactical_items)
     if not facts:
@@ -793,8 +775,7 @@ def _tracking_readiness_section(
             "brakujący wymiar analizy."
         ),
         next_step=(
-            "Sprawdź propozycję w WILQ i przygotuj checklistę jakości pomiaru "
-            "bez zapisu zmian."
+            "Sprawdź propozycję w WILQ i przygotuj checklistę jakości pomiaru bez zapisu zmian."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_unique(fact.evidence_id for fact in facts[:20]),
@@ -816,9 +797,7 @@ def _conversion_readiness_contract(
     tactical_items: list[TacticalQueueItem],
     action_ids: list[str],
 ) -> Ga4ConversionReadinessContract:
-    conversion_like_facts = [
-        fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES
-    ]
+    conversion_like_facts = [fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES]
     dimensioned_facts = _dimensioned_ga4_facts(facts)
     landing_group_count = max(
         _landing_group_count(dimensioned_facts),
@@ -866,7 +845,9 @@ def _conversion_readiness_contract(
 
 
 def _ga4_read_contract_labels(values: Iterable[str]) -> list[str]:
-    return [GA4_READ_CONTRACT_LABELS.get(value, "zakres danych GA4 do sprawdzenia") for value in values]
+    return [
+        GA4_READ_CONTRACT_LABELS.get(value, "zakres danych GA4 do sprawdzenia") for value in values
+    ]
 
 
 def _ga4_action_safety_section(
@@ -881,7 +862,8 @@ def _ga4_action_safety_section(
         status="ready" if facts or tactical_items else "blocked",
         summary="Akcje GA4 pozostają w trybie przygotowania i nie zapisują zmian w pomiarze.",
         diagnosis=(
-            "WILQ może przygotować listę sprawdzenia jakości pomiaru i przegląd stron wejścia. Nie może "
+            "WILQ może przygotować listę sprawdzenia jakości pomiaru "
+            "i przegląd stron wejścia. Nie może "
             "zmieniać konfiguracji GA4 ani twierdzić, że naprawił pomiar bez osobnego "
             "potwierdzenia, sprawdzenia i audytu."
         ),
@@ -929,7 +911,8 @@ def _ga4_decision_queue(
                 "zanim powstanie wniosek o treści."
             )
             next_step = (
-                "Zweryfikuj, czy strona wejścia istnieje w WordPress lub mapie strony, a potem sprawdź "
+                "Zweryfikuj, czy strona wejścia istnieje w WordPress lub mapie strony, "
+                "a potem sprawdź "
                 "dopasowanie komunikatu dla kampanii."
             )
             risk = ActionRisk.medium
@@ -941,7 +924,8 @@ def _ga4_decision_queue(
                 "oceny jakości ruchu i dopasowania komunikatu, ale nie do obietnic konwersji."
             )
             next_step = (
-                "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. Nie oceniaj zwrotu z reklam "
+                "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. "
+                "Nie oceniaj zwrotu z reklam "
                 "ani przychodu bez osobnych metryk konwersji i kosztów."
             )
             risk = ActionRisk.low
@@ -1033,8 +1017,9 @@ def _ga4_decisions_from_dimensioned_facts(
             decision_type = "review_traffic_quality"
             title = f"Sprawdź jakość ruchu: {landing_page}"
             rationale = (
-                "GA4 ma fakty strony wejścia, źródła ruchu i kampanii. To wystarcza do sprawdzenia jakości "
-                "ruchu i dopasowania komunikatu, ale nie do obietnic zwrotu z reklam albo przychodu."
+                "GA4 ma fakty strony wejścia, źródła ruchu i kampanii. "
+                "To wystarcza do sprawdzenia jakości ruchu i dopasowania komunikatu, "
+                "ale nie do obietnic zwrotu z reklam albo przychodu."
             )
             next_step = (
                 "Porównaj stronę wejścia, źródło ruchu i kampanię z intencją strony. Jeśli trzeba, "

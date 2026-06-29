@@ -252,6 +252,12 @@ action IDs and audit fields may stay in technical contracts or drawers.
   2026-06-29T00:20-00:22Z completed with `vendor_data_collected=true`.
   Merchant refresh retries transient `ReadTimeout` responses after a live
   `aggregateProductStatuses` timeout was reproduced.
+- Broad cleanup verification passed with `rtk scripts/verify.sh` after the
+  current action-context/dashboard/API cleanup slice. Live `/api/connectors`
+  confirms GSC, GA4 and Merchant are configured, fresh and not missing
+  credential names after the 2026-06-29T02:30Z refreshes. LinkedIn/Facebook
+  remain optional missing-credential social connectors; Google Sheets remains
+  disabled by scope.
 - Daily context-pack connector status uses API-owned Polish status and
   freshness labels, includes the latest successful read time where available,
   and no longer exposes empty freshness labels or `status configured`
@@ -315,6 +321,9 @@ are resolved or explicitly deferred.
 ## Execution Policy
 
 - Use `rtk` before every shell command.
+- Use `scripts/local_stack.sh start|status|logs|restart|stop` for the local
+  WILQ API/dashboard runtime; do not hand-roll detached API or dashboard
+  processes.
 - Inspect existing implementation before editing.
 - Prefer small verified slices and conventional commits.
 - Use subagents for parallel read-only audits or disjoint write scopes.

@@ -68,10 +68,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -141,12 +138,8 @@ def main() -> int:
                 "social_draft_context": {
                     "mode": social_draft_context.get("mode"),
                     "publish_allowed": social_draft_context.get("publish_allowed"),
-                    "missing_publish_access": social_draft_context.get(
-                        "missing_publish_access"
-                    ),
-                    "source_input_count": len(
-                        social_draft_context.get("source_inputs", [])
-                    ),
+                    "missing_publish_access": social_draft_context.get("missing_publish_access"),
+                    "source_input_count": len(social_draft_context.get("source_inputs", [])),
                     "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),
                     "draft_constraints": social_draft_context.get("draft_constraints", []),

@@ -75,12 +75,10 @@ def refresh_wordpress_content_inventory(
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
             summary=(
-                "WordPress vendor read blocked by missing credential names: "
-                f"{', '.join(missing)}."
+                f"WordPress vendor read blocked by missing credential names: {', '.join(missing)}."
             ),
             errors=[
-                "WordPress vendor read blocked by missing credential names: "
-                f"{', '.join(missing)}."
+                f"WordPress vendor read blocked by missing credential names: {', '.join(missing)}."
             ],
         )
 
@@ -303,9 +301,7 @@ def _fetch_public_sitemap_objects(
     base_hosts = {_host(base_url or "")}
     public_objects = _fetch_sitemap_objects(client, public_url, enrich_metadata=False)
     filtered_objects = [
-        item
-        for item in public_objects
-        if _host(item.get("content_url", "")) not in base_hosts
+        item for item in public_objects if _host(item.get("content_url", "")) not in base_hosts
     ]
     return _enrich_sitemap_objects_with_page_metadata(client, filtered_objects)
 
@@ -376,11 +372,9 @@ def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[
     entries = _parse_sitemap_xml(xml_text)
     child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
     if not child_sitemaps:
-        return [
-            _sitemap_url_object(entry)
-            for entry in entries
-            if entry["kind"] == "url"
-        ][:WORDPRESS_SITEMAP_URL_LIMIT]
+        return [_sitemap_url_object(entry) for entry in entries if entry["kind"] == "url"][
+            :WORDPRESS_SITEMAP_URL_LIMIT
+        ]
 
     objects: list[dict[str, str]] = []
     for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
@@ -391,9 +385,7 @@ def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[
             continue
         child_entries = _parse_sitemap_xml(response.text)
         objects.extend(
-            _sitemap_url_object(entry)
-            for entry in child_entries
-            if entry["kind"] == "url"
+            _sitemap_url_object(entry) for entry in child_entries if entry["kind"] == "url"
         )
         if len(objects) >= WORDPRESS_SITEMAP_URL_LIMIT:
             return objects[:WORDPRESS_SITEMAP_URL_LIMIT]

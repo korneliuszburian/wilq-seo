@@ -23,7 +23,8 @@ def seed_cards() -> list[KnowledgeCard]:
             card_type="voice_rule",
             title="Bez zmyślonych metryk",
             summary=(
-                "Rekomendacje marketingowe muszą opierać się na dowodach i źródłach danych z WILQ API."
+                "Rekomendacje marketingowe muszą opierać się na dowodach "
+                "i źródłach danych z WILQ API."
             ),
             source_type="repo_goal",
             source_id="docs/goals/001-goal.md",

@@ -59,10 +59,12 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
                     errors.append(no_write(f"{subject}, sprawdzenie bezpieczeństwa"))
                 if safety_review.get("api_mutation_ready") is not False:
                     errors.append(no_api_write(f"{subject}, sprawdzenie bezpieczeństwa"))
-                if safety_review.get("safety_contract") != (
-                    CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT
-                ):
-                    errors.append(missing(f"{subject}, sprawdzenie bezpieczeństwa", "poprawnej kontroli segmentu"))
+                if safety_review.get("safety_contract") != (CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT):
+                    errors.append(
+                        missing(
+                            f"{subject}, sprawdzenie bezpieczeństwa", "poprawnej kontroli segmentu"
+                        )
+                    )
             if not isinstance(targeting_preview, list) or not targeting_preview:
                 errors.append(missing(f"{subject}, podgląd zmian", "sprawdzenia kierowania"))
                 continue
@@ -97,9 +99,7 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
         return None
     campaign_name = _first_dimension(eligible_facts, "campaign_name")
     custom_segment_name = (
-        f"Wyszukiwane hasła: {campaign_name}"
-        if campaign_name
-        else "Segment z wyszukiwanych haseł"
+        f"Wyszukiwane hasła: {campaign_name}" if campaign_name else "Segment z wyszukiwanych haseł"
     )
     return {
         "action_type": "custom_segment_candidate",

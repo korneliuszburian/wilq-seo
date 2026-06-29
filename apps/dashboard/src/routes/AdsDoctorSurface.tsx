@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ActionObject,
   AdsDiagnosticsResponse,
-  ConnectorStatus,
   getActions,
   getAdsDiagnosticsSummary,
   getConnectors
@@ -87,7 +86,6 @@ export function AdsDoctorSurface() {
   }
 
   const data = diagnostics.data;
-  const connectorStatuses = connectors.data;
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const latestRefresh = data.latest_refresh;
@@ -150,9 +148,9 @@ export function AdsDoctorSurface() {
         <AdsBlockedHandoffPanel handoff={data.blocked_handoff} />
       ) : null}
 
-      <AdsCondensedDecisionPanel data={data} currencyCode={currencyCode} connectorStatuses={connectorStatuses} />
+      <AdsCondensedDecisionPanel data={data} currencyCode={currencyCode} />
       <AdsMarketSnapshot data={data} currencyCode={currencyCode} />
-      <AdsExpandableReviewPanel data={data} currencyCode={currencyCode} connectorStatuses={connectorStatuses} />
+      <AdsExpandableReviewPanel data={data} currencyCode={currencyCode} />
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
@@ -211,12 +209,10 @@ function AdsExpandableActionsPanel({
 
 function AdsExpandableReviewPanel({
   data,
-  currencyCode,
-  connectorStatuses
+  currencyCode
 }: {
   data: AdsDiagnosticsResponse;
   currencyCode: string | undefined;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const [showDeepReview, setShowDeepReview] = useState(false);
   const summary = data.operator_summary;
@@ -251,7 +247,7 @@ function AdsExpandableReviewPanel({
 
       {showDeepReview ? (
         <div className="mt-4 grid gap-6">
-          <AdsOperatorSummary data={data} connectorStatuses={connectorStatuses} />
+          <AdsOperatorSummary data={data} />
           <AdsMetricEvidencePanel data={data} currencyCode={currencyCode} />
         </div>
       ) : null}
@@ -261,12 +257,10 @@ function AdsExpandableReviewPanel({
 
 function AdsCondensedDecisionPanel({
   data,
-  currencyCode,
-  connectorStatuses
+  currencyCode
 }: {
   data: AdsDiagnosticsResponse;
   currencyCode: string | undefined;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
@@ -426,11 +420,9 @@ function AdsMarketSnapshot({
 }
 
 function AdsOperatorSummary({
-  data,
-  connectorStatuses
+  data
 }: {
   data: AdsDiagnosticsResponse;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const optimizer = data.optimizer_readiness_contract;
@@ -498,7 +490,6 @@ function AdsOperatorSummary({
                 key={decision.id}
                 decision={decision}
                 currencyCode={currencyCode}
-                connectorStatuses={connectorStatuses}
               />
             ))
           ) : (
@@ -728,12 +719,10 @@ function AdsOptimizerReadinessGroup({
 
 function AdsDecisionCard({
   decision,
-  currencyCode,
-  connectorStatuses
+  currencyCode
 }: {
   decision: AdsDecisionItem;
   currencyCode?: string;
-  connectorStatuses: ConnectorStatus[];
 }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">

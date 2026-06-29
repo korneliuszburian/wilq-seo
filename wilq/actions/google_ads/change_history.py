@@ -55,9 +55,7 @@ def change_history_impact_payload_from_metric_facts(
         reverse=True,
     )[:8]
     evidence_ids = _unique(
-        evidence_id
-        for preview in previews
-        for evidence_id in preview.get("evidence_ids", [])
+        evidence_id for preview in previews for evidence_id in preview.get("evidence_ids", [])
     )
     if not evidence_ids:
         return None
@@ -155,9 +153,7 @@ def _change_history_impact_preview(
 ) -> dict[str, Any]:
     dimensions = facts[0].dimensions if facts else {}
     changed_fields = [
-        field.strip()
-        for field in dimensions.get("changed_fields", "").split(",")
-        if field.strip()
+        field.strip() for field in dimensions.get("changed_fields", "").split(",") if field.strip()
     ]
     return {
         "id": f"change_history_impact_preview_{_slug(change_event_id)}",

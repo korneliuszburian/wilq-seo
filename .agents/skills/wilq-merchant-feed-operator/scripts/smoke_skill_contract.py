@@ -75,10 +75,26 @@ def main() -> int:
         raise SystemExit("Context pack merchant_diagnostics evidence IDs differ from endpoint")
     if packed_merchant.get("action_ids") != merchant_diagnostics.get("action_ids"):
         raise SystemExit("Context pack merchant_diagnostics action IDs differ from endpoint")
-    if packed_merchant.get("price_impact_readiness") != merchant_diagnostics.get(
-        "price_impact_readiness"
+    packed_price_impact = packed_merchant.get("price_impact_readiness")
+    endpoint_price_impact = merchant_diagnostics.get("price_impact_readiness")
+    if not isinstance(packed_price_impact, dict) or not isinstance(endpoint_price_impact, dict):
+        raise SystemExit("Context pack merchant price_impact_readiness must be an object")
+    for key in (
+        "status",
+        "evidence_ids",
+        "source_connectors",
+        "missing_read_contracts",
+        "blocked_claims",
     ):
-        raise SystemExit("Context pack merchant price_impact_readiness differs from endpoint")
+        if packed_price_impact.get(key) != endpoint_price_impact.get(key):
+            raise SystemExit(
+                f"Context pack merchant price_impact_readiness differs on {key}"
+            )
+    endpoint_preview = endpoint_price_impact.get("payload_preview")
+    if isinstance(endpoint_preview, list) and packed_price_impact.get(
+        "payload_preview_total"
+    ) != len(endpoint_preview):
+        raise SystemExit("Context pack merchant price preview total differs from endpoint")
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
     if not isinstance(product_sample_readiness, dict):
         raise SystemExit("Merchant diagnostics must expose product_sample_readiness")
@@ -95,9 +111,7 @@ def main() -> int:
         if product_sample_readiness.get("sample_count", 0) <= 0:
             raise SystemExit("Merchant product_sample_readiness ready state must include samples")
         if not product_sample_readiness.get("sample_product_ids"):
-            raise SystemExit(
-                "Merchant diagnostics with samples must expose sample product IDs"
-            )
+            raise SystemExit("Merchant diagnostics with samples must expose sample product IDs")
     elif product_sample_readiness.get("status") != "blocked":
         raise SystemExit("Merchant product_sample_readiness without samples must be blocked")
     product_performance_readiness = merchant_diagnostics.get("product_performance_readiness")
@@ -136,7 +150,8 @@ def main() -> int:
             "zapis do feedu",
         }.issubset(blocked_claims):
             raise SystemExit(
-                "Blocked product_performance_readiness must block product przychód/zwrot z reklam claims"
+                "Blocked product_performance_readiness must block product "
+                "przychód/zwrot z reklam claims"
             )
     else:
         raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")
@@ -170,23 +185,20 @@ def main() -> int:
             "opłacalność produktu",
             "zapis do feedu",
         }.issubset(blocked_claims):
-            raise SystemExit("Blocked price_impact_readiness must block price/zwrot z reklam claims")
+            raise SystemExit(
+                "Blocked price_impact_readiness must block price/zwrot z reklam claims"
+            )
         if not price_impact_readiness.get("missing_read_contracts"):
             raise SystemExit("Blocked price_impact_readiness must list missing read contracts")
     else:
         raise SystemExit("Merchant price_impact_readiness status must be ready or blocked")
     if price_preview:
-        if (
-            price_preview[0].get("preview_contract")
-            != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
-        ):
+        if price_preview[0].get("preview_contract") != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT:
             raise SystemExit("Merchant price readiness preview contract mismatch")
         if price_preview[0].get("apply_allowed") is not False:
             raise SystemExit("Merchant price readiness preview must keep apply_allowed=false")
         if price_preview[0].get("api_mutation_ready") is not False:
-            raise SystemExit(
-                "Merchant price readiness preview must keep api_mutation_ready=false"
-            )
+            raise SystemExit("Merchant price readiness preview must keep api_mutation_ready=false")
         products = price_preview[0].get("products") or []
         if products:
             first_product = products[0]
@@ -236,18 +248,13 @@ def main() -> int:
         ):
             price_decision = find_decision(decisions, MERCHANT_PRICE_IMPACT_DECISION_ID)
             if price_decision is None:
-                raise SystemExit(
-                    f"{surface_name} must expose {MERCHANT_PRICE_IMPACT_DECISION_ID}"
-                )
+                raise SystemExit(f"{surface_name} must expose {MERCHANT_PRICE_IMPACT_DECISION_ID}")
             if price_decision.get("decision_type") != MERCHANT_PRICE_IMPACT_DECISION_TYPE:
                 raise SystemExit(
-                    f"{surface_name} price decision must use "
-                    f"{MERCHANT_PRICE_IMPACT_DECISION_TYPE}"
+                    f"{surface_name} price decision must use {MERCHANT_PRICE_IMPACT_DECISION_TYPE}"
                 )
             if price_decision.get("status") != price_status:
-                raise SystemExit(
-                    f"{surface_name} price decision status must match price readiness"
-                )
+                raise SystemExit(f"{surface_name} price decision status must match price readiness")
             decision_preview = price_decision.get("payload_preview") or []
             if not decision_preview:
                 raise SystemExit(f"{surface_name} price decision must expose payload_preview")
@@ -271,28 +278,22 @@ def main() -> int:
         ),
         None,
     )
-    merchant_payload = merchant_action.get("payload", {}) if merchant_action else {}
-    merchant_preview = merchant_payload.get("payload_preview") or []
+    merchant_preview_cards = merchant_action.get("preview_cards", []) if merchant_action else []
     context_pack_action_status = merchant_action.get("status") if merchant_action else None
     context_pack_validation_status = (
         merchant_action.get("validation_status") if merchant_action else None
     )
     if issue_clusters and merchant_action is None:
         raise SystemExit("Merchant issue clusters must expose review action")
-    if (
-        issue_clusters
-        and merchant_payload.get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
-    ):
-        raise SystemExit("Merchant review action must expose typed preview contract")
-    if issue_clusters and not merchant_preview:
+    if issue_clusters and not merchant_preview_cards:
         raise SystemExit("Merchant review action must keep compact change preview")
+    if issue_clusters and merchant_preview_cards[0].get("kind") != "merchant_feed_issue_review":
+        raise SystemExit("Merchant change preview contract mismatch")
     if (
         issue_clusters
-        and merchant_preview[0].get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
+        and merchant_preview_cards[0].get("apply_state_label") != "zapis zmian zablokowany"
     ):
-        raise SystemExit("Merchant change preview contract mismatch")
-    if issue_clusters and merchant_preview[0].get("apply_allowed") is not False:
-        raise SystemExit("Merchant change preview must keep apply_allowed=false")
+        raise SystemExit("Merchant change preview must keep blocked write state")
 
     action_validations = []
     for action_id in merchant_diagnostics.get("action_ids", []):
@@ -322,10 +323,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -386,16 +384,13 @@ def main() -> int:
                     "product_sample_readiness": product_sample_readiness,
                     "product_performance_readiness": product_performance_readiness,
                     "price_impact_readiness": price_impact_readiness,
-                    "latest_refresh_status": (
-                        merchant_diagnostics.get("latest_refresh") or {}
-                    ).get("status"),
+                    "latest_refresh_status": (merchant_diagnostics.get("latest_refresh") or {}).get(
+                        "status"
+                    ),
                     "context_pack_action_status": context_pack_action_status,
                     "context_pack_validation_status": context_pack_validation_status,
-                    "action_preview_contract": merchant_payload.get("preview_contract"),
-                    "preview_cluster_ids": [
-                        item.get("cluster_id")
-                        for item in merchant_preview
-                        if item.get("cluster_id")
+                    "preview_card_kinds": [
+                        item.get("kind") for item in merchant_preview_cards if item.get("kind")
                     ],
                 },
                 "brief_items": brief_items,

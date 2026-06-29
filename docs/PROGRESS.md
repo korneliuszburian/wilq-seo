@@ -218,6 +218,15 @@ Date: 2026-06-29
   instead of exposing raw enum keys, snake_case or English values.
 - Connector refresh runs hydrate Polish status labels at the shared schema
   boundary, including historical runs returned by the API.
+- Full local verification passed after the current cleanup slice:
+  `rtk scripts/verify.sh` completed backend tests, shared-schema tests,
+  dashboard tests, API smoke, skill smokes, Playwright route smoke and
+  dashboard build. Treat this as cleanup-gate proof, not final MOS completion.
+- Fresh first-party Google reads are healthy after the latest stack restart:
+  GSC, GA4 and Merchant are `configured`, have no missing credentials and have
+  fresh `last_success_at` values from 2026-06-29T02:30Z. LinkedIn and Facebook
+  remain optional missing-credential social connectors; Google Sheets remains
+  disabled by current scope.
 - Connector status objects now hydrate Polish `status_label` values at the
   shared backend schema boundary, so `/api/connectors` no longer returns empty
   visible status labels.
@@ -266,6 +275,15 @@ Date: 2026-06-29
 ## Latest Accepted Proof
 
 Most recent verified local slice:
+
+- Broad cleanup verification: `rtk scripts/verify.sh` passed after action
+  context condensation, typed preview-card cleanup and live Google connector
+  proof. Live `/api/connectors` confirms GSC, GA4 and Merchant are configured
+  and fresh with no missing credential names; `/api/content/diagnostics`,
+  `/api/ga4/diagnostics` and `/api/merchant/diagnostics` all report
+  `live_data_available=true`.
+
+Previous verified local slice:
 
 - Compact skill action-context cleanup: active actions in daily, content,
   Merchant, Ads, GA4 and Localo context packs now omit raw action payloads,

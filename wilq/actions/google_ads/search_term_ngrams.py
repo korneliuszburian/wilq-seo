@@ -77,9 +77,7 @@ def search_term_ngram_payload_from_metric_facts(
         ),
     )[:8]
     evidence_ids = _unique(
-        evidence_id
-        for preview in previews
-        for evidence_id in preview.get("evidence_ids", [])
+        evidence_id for preview in previews for evidence_id in preview.get("evidence_ids", [])
     )
     if not evidence_ids:
         return None
@@ -96,9 +94,7 @@ def search_term_ngram_payload_from_metric_facts(
             for metric_name in preview.get("source_metric_names", [])
         ),
         "source_search_terms": _unique(
-            term
-            for preview in previews
-            for term in preview.get("sample_search_terms", [])
+            term for preview in previews for term in preview.get("sample_search_terms", [])
         ),
         "evidence_ids": evidence_ids,
         "missing_read_contracts": [
@@ -203,9 +199,7 @@ def _ngram_preview(
     facts: list[MetricFact],
 ) -> dict[str, Any]:
     search_terms = _unique(
-        fact.dimensions.get("search_term")
-        for fact in facts
-        if fact.dimensions.get("search_term")
+        fact.dimensions.get("search_term") for fact in facts if fact.dimensions.get("search_term")
     )
     return {
         "id": f"search_term_ngram_review_{_slug(ngram)}_{ngram_size}",
@@ -240,9 +234,7 @@ def _ngram_preview(
 def _search_term_tokens(search_term: str) -> list[str]:
     tokens = re.findall(r"[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+", search_term.lower())
     return [
-        token
-        for token in tokens
-        if len(token) > 1 and token not in SEARCH_TERM_NGRAM_STOPWORDS
+        token for token in tokens if len(token) > 1 and token not in SEARCH_TERM_NGRAM_STOPWORDS
     ]
 
 
@@ -264,9 +256,7 @@ def _has_positive_signal(facts: list[MetricFact]) -> bool:
 
 def _sum_metric(facts: list[MetricFact], name: str) -> int | float:
     values = [
-        fact.value
-        for fact in facts
-        if fact.name == name and isinstance(fact.value, int | float)
+        fact.value for fact in facts if fact.name == name and isinstance(fact.value, int | float)
     ]
     total = sum(values)
     return int(total) if float(total).is_integer() else round(float(total), 6)

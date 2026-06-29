@@ -22,6 +22,7 @@ class CampaignTargetContext(TypedDict):
     cost_per_conversion_micros: float | None
     cpa_vs_target_micros: float | None
 
+
 CAMPAIGN_REVIEW_HUMAN_GATES = [
     "review_campaign_goal",
     "review_conversion_quality",
@@ -120,7 +121,8 @@ def campaign_review_reason(
     signal_text = ", ".join(signals) or "brak aktywności w bieżących dowodach"
     return (
         f"Kolejność oceny kampanii wynika z faktów: {signal_text}. "
-        "To nie jest ocena przepalonego budżetu, kosztu pozyskania celu ani zwrotu z reklam; przed decyzją potrzebna "
+        "To nie jest ocena przepalonego budżetu, kosztu pozyskania celu "
+        "ani zwrotu z reklam; przed decyzją potrzebna "
         "jest ocena celu, jakości konwersji, budżetu i wyszukiwanych haseł."
     )
 

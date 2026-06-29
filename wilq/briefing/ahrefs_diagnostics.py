@@ -259,21 +259,13 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
     evidence_ids = _unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
-            *(
-                evidence_id
-                for decision in decision_queue
-                for evidence_id in decision.evidence_ids
-            ),
+            *(evidence_id for decision in decision_queue for evidence_id in decision.evidence_ids),
         ]
     )
     response_source_connectors = _unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
-            *(
-                connector
-                for decision in decision_queue
-                for connector in decision.source_connectors
-            ),
+            *(connector for decision in decision_queue for connector in decision.source_connectors),
             *labeled_gap_read_contract.source_connectors,
         ]
     )
@@ -315,58 +307,60 @@ def _operator_summary(
     top_decisions = decisions[:4]
     available_contracts = gap_read_contract.available_read_contracts
     missing_contracts = gap_read_contract.missing_read_contracts
-    return _label_ahrefs_operator_summary(AhrefsOperatorSummary(
-        title="Co marketer ma wiedzieć o Ahrefs",
-        summary=(
-            "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i treści. "
-            "Autorytet domeny może być kontekstem, ale wnioski o lukach treści "
-            "lub linków zwrotnych wymagają konkretnych danych Ahrefs."
-        ),
-        next_step=_operator_summary_next_step(gap_read_contract),
-        top_decision_ids=[decision.id for decision in top_decisions],
-        gap_read_status=gap_read_contract.status,
-        authority_fact_count=authority_fact_count,
-        gap_fact_count=gap_fact_count,
-        available_read_contracts=available_contracts,
-        available_read_contract_labels=_labels_for_values(
-            available_contracts,
-            _ahrefs_read_contract_label,
-        ),
-        missing_read_contracts=missing_contracts,
-        missing_read_contract_labels=_labels_for_values(
-            missing_contracts,
-            _missing_gap_contract_label,
-        ),
-        source_connectors=_unique(
-            [
-                *(
-                    connector
-                    for decision in top_decisions
-                    for connector in decision.source_connectors
-                ),
-                *gap_read_contract.source_connectors,
-            ]
-        ),
-        evidence_ids=_unique(
-            [
-                *(
-                    evidence_id
-                    for decision in top_decisions
-                    for evidence_id in decision.evidence_ids
-                ),
-                *gap_read_contract.evidence_ids,
-            ]
-        ),
-        action_ids=_unique(
-            action_id for decision in top_decisions for action_id in decision.action_ids
-        ),
-        blocked_claims=_unique(
-            [
-                *(claim for decision in top_decisions for claim in decision.blocked_claims),
-                *gap_read_contract.blocked_claims,
-            ]
-        ),
-    ))
+    return _label_ahrefs_operator_summary(
+        AhrefsOperatorSummary(
+            title="Co marketer ma wiedzieć o Ahrefs",
+            summary=(
+                "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i treści. "
+                "Autorytet domeny może być kontekstem, ale wnioski o lukach treści "
+                "lub linków zwrotnych wymagają konkretnych danych Ahrefs."
+            ),
+            next_step=_operator_summary_next_step(gap_read_contract),
+            top_decision_ids=[decision.id for decision in top_decisions],
+            gap_read_status=gap_read_contract.status,
+            authority_fact_count=authority_fact_count,
+            gap_fact_count=gap_fact_count,
+            available_read_contracts=available_contracts,
+            available_read_contract_labels=_labels_for_values(
+                available_contracts,
+                _ahrefs_read_contract_label,
+            ),
+            missing_read_contracts=missing_contracts,
+            missing_read_contract_labels=_labels_for_values(
+                missing_contracts,
+                _missing_gap_contract_label,
+            ),
+            source_connectors=_unique(
+                [
+                    *(
+                        connector
+                        for decision in top_decisions
+                        for connector in decision.source_connectors
+                    ),
+                    *gap_read_contract.source_connectors,
+                ]
+            ),
+            evidence_ids=_unique(
+                [
+                    *(
+                        evidence_id
+                        for decision in top_decisions
+                        for evidence_id in decision.evidence_ids
+                    ),
+                    *gap_read_contract.evidence_ids,
+                ]
+            ),
+            action_ids=_unique(
+                action_id for decision in top_decisions for action_id in decision.action_ids
+            ),
+            blocked_claims=_unique(
+                [
+                    *(claim for decision in top_decisions for claim in decision.blocked_claims),
+                    *gap_read_contract.blocked_claims,
+                ]
+            ),
+        )
+    )
 
 
 def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str:
@@ -550,15 +544,8 @@ def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
             keyword,
         ), facts in grouped_facts.items()
     ]
-    scored_records = [
-        (_gap_record_relevance_score(record), record)
-        for record in records
-    ]
-    reviewable_records = [
-        (score, record)
-        for score, record in scored_records
-        if score >= 0
-    ]
+    scored_records = [(_gap_record_relevance_score(record), record) for record in records]
+    reviewable_records = [(score, record) for score, record in scored_records if score >= 0]
     return [
         record
         for _, record in sorted(
@@ -893,8 +880,7 @@ def _gap_record_relevance_score(record: AhrefsGapRecord) -> int:
         score -= 1
 
     if any(
-        _matches_normalized_term(normalized_text, tokens, term)
-        for term in AHREFS_OFF_TOPIC_TERMS
+        _matches_normalized_term(normalized_text, tokens, term) for term in AHREFS_OFF_TOPIC_TERMS
     ):
         score -= 6
     if competitor_domain in AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS:
@@ -991,8 +977,7 @@ def _ahrefs_sections(
             "ale nie są samodzielnym dowodem luki treści, luki linków zwrotnych ani wzrostu ruchu."
             if authority_facts
             else (
-                "Bez danych autorytetu z Ahrefs WILQ nie może nawet użyć "
-                "Ahrefs jako kontekstu SEO."
+                "Bez danych autorytetu z Ahrefs WILQ nie może nawet użyć Ahrefs jako kontekstu SEO."
             )
         ),
         next_step=(
@@ -1023,7 +1008,10 @@ def _ahrefs_sections(
             f"WILQ ma {len(gap_facts)} rekordów luk z Ahrefs. Brakujące dane: "
             f"{_missing_gap_contracts_summary(missing_gap_contracts)}."
             if gap_facts
-            else "WILQ nie ma jeszcze rekordów luk konkurencji, treści ani linków zwrotnych z Ahrefs."
+            else (
+                "WILQ nie ma jeszcze rekordów luk konkurencji, treści "
+                "ani linków zwrotnych z Ahrefs."
+            )
         ),
         diagnosis=(
             "Rekordy luk można połączyć z GSC i spisem treści WordPress, ale tylko w zakresie "
@@ -1035,12 +1023,10 @@ def _ahrefs_sections(
             )
         ),
         next_step=(
-            "Połącz rekordy luk z GSC i WordPress, potem przygotuj kolejkę sprawdzenia treści i linków."
+            "Połącz rekordy luk z GSC i WordPress, "
+            "potem przygotuj kolejkę sprawdzenia treści i linków."
             if gap_facts
-            else (
-                "Dodaj odczyt danych Ahrefs dla stron konkurencji, luk treści "
-                "i luk linków."
-            )
+            else ("Dodaj odczyt danych Ahrefs dla stron konkurencji, luk treści i luk linków.")
         ),
         source_connectors=[AHREFS_CONNECTOR_ID],
         evidence_ids=_evidence_ids_for_facts_or_refresh(gap_facts, latest_refresh),
@@ -1226,9 +1212,7 @@ def _ahrefs_decision_queue(
                 ),
                 source_connectors=[AHREFS_CONNECTOR_ID],
                 evidence_ids=_unique(
-                    evidence_id
-                    for record in gap_records
-                    for evidence_id in record.evidence_ids
+                    evidence_id for record in gap_records for evidence_id in record.evidence_ids
                 ),
                 metric_facts=[fact for record in gap_records for fact in record.metric_facts][:12],
                 metric_fact_labels=_metric_fact_labels_for_facts(
@@ -1296,9 +1280,7 @@ def _ahrefs_decisions_with_lineage(
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *AHREFS_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique(
-                    [*decision.expert_rule_ids, *AHREFS_EXPERT_RULE_IDS]
-                ),
+                "expert_rule_ids": _unique([*decision.expert_rule_ids, *AHREFS_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
@@ -1337,10 +1319,7 @@ def _missing_authority_summary(
     latest_refresh: ConnectorRefreshRun | None,
 ) -> str:
     if connector_missing:
-        return (
-            "Ahrefs ma braki dostępu: "
-            f"{len(connector_missing)}."
-        )
+        return f"Ahrefs ma braki dostępu: {len(connector_missing)}."
     if latest_refresh and latest_refresh.status != ConnectorRefreshStatus.completed:
         return f"Ostatni Ahrefs refresh zakończył się statusem {latest_refresh.status.value}."
     return "WILQ nie ma świeżych danych autorytetu Ahrefs."
@@ -1412,19 +1391,18 @@ def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
         "ahrefs_organic_keywords_by_url": {"ahrefs_organic_keyword_gap_count"},
         "ahrefs_top_pages_by_competitor": {"ahrefs_top_page_gap_count"},
     }
-    return [
+    missing_contracts = [
         contract
         for contract in AHREFS_GAP_READ_CONTRACTS
         if not fact_names.intersection(present_by_fact[contract])
     ]
+    if not _ahrefs_gap_records(gap_facts) and "ahrefs_content_gap_records" not in missing_contracts:
+        missing_contracts.append("ahrefs_content_gap_records")
+    return missing_contracts
 
 
 def _available_gap_contracts(missing_contracts: list[str]) -> list[str]:
-    return [
-        contract
-        for contract in AHREFS_GAP_READ_CONTRACTS
-        if contract not in missing_contracts
-    ]
+    return [contract for contract in AHREFS_GAP_READ_CONTRACTS if contract not in missing_contracts]
 
 
 def _allowed_gap_evidence(
@@ -1448,9 +1426,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         "ahrefs_top_pages_by_competitor": "wzrost ruchu",
     }
     claims = [
-        claim
-        for contract, claim in claims_by_contract.items()
-        if contract in missing_contracts
+        claim for contract, claim in claims_by_contract.items() if contract in missing_contracts
     ]
     claims.extend(AHREFS_GAP_IMPACT_BLOCKED_CLAIMS)
     return _unique(claims)

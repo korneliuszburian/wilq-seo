@@ -124,9 +124,7 @@ def _skill_md_errors(skill_name: str, path: Path, text: str) -> list[str]:
         errors.append(f"{relative}: missing Polish language contract guardrail")
     for line_number, line in enumerate(text.splitlines(), start=1):
         if ENGLISH_WORKFLOW_PREFIX.match(line):
-            errors.append(
-                f"{relative}:{line_number}: workflow step starts with English imperative"
-            )
+            errors.append(f"{relative}:{line_number}: workflow step starts with English imperative")
     errors.extend(_diagnostics_first_errors(skill_name, path, text))
     return errors
 
@@ -146,9 +144,7 @@ def _diagnostics_first_errors(skill_name: str, path: Path, text: str) -> list[st
     if diagnostics_index == -1:
         return [f"{path.as_posix()}: missing diagnostics-first endpoint {endpoint!r}"]
     if context_pack_index != -1 and diagnostics_index > context_pack_index:
-        return [
-            f"{path.as_posix()}: diagnostics endpoint must be documented before context-pack"
-        ]
+        return [f"{path.as_posix()}: diagnostics endpoint must be documented before context-pack"]
     return []
 
 
@@ -166,8 +162,7 @@ def _long_line_errors(path: Path, text: str) -> list[str]:
             continue
         if len(line) > MAX_BODY_LINE_LENGTH:
             errors.append(
-                f"{path.as_posix()}:{line_number}: line exceeds "
-                f"{MAX_BODY_LINE_LENGTH} characters"
+                f"{path.as_posix()}:{line_number}: line exceeds {MAX_BODY_LINE_LENGTH} characters"
             )
     return errors
 

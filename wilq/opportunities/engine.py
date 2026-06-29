@@ -191,7 +191,8 @@ def _daily_decision_opportunities() -> list[Opportunity]:
             decisions_by_id.get(plan_item.id.replace("plan_", "decision_", 1)),
         )
         for plan_item in runtime.command_center.action_plan
-        if plan_item.evidence_ids and plan_item.source_connectors
+        if plan_item.evidence_ids
+        and plan_item.source_connectors
         and plan_item.id not in EXCLUDED_DAILY_OPPORTUNITY_PLAN_IDS
     ]
     return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))
@@ -203,45 +204,47 @@ def _opportunity_from_action_plan_item(
 ) -> Opportunity:
     metric_tiles = matching_decision.metric_tiles if matching_decision is not None else {}
     metrics = _metric_tiles_to_facts(matching_decision) if matching_decision is not None else []
-    return _label_opportunity(Opportunity(
-        id=f"opp_{plan_item.id.replace('plan_', 'decision_', 1)}",
-        type=_route_opportunity_type(plan_item.route),
-        title=plan_item.title,
-        domain=_route_opportunity_domain(plan_item.route),
-        source_connectors=plan_item.source_connectors,
-        evidence_ids=plan_item.evidence_ids,
-        metric_tiles=metric_tiles,
-        metrics=metrics,
-        human_diagnosis=plan_item.why_it_matters,
-        recommended_action=plan_item.operator_action,
-        risk=plan_item.risk,
-        action_ids=plan_item.action_ids,
-        expert_rule_ids=[],
-        playbook_ids=[plan_item.skill_id] if plan_item.skill_id else [],
-        is_fixture=False,
-    ))
+    return _label_opportunity(
+        Opportunity(
+            id=f"opp_{plan_item.id.replace('plan_', 'decision_', 1)}",
+            type=_route_opportunity_type(plan_item.route),
+            title=plan_item.title,
+            domain=_route_opportunity_domain(plan_item.route),
+            source_connectors=plan_item.source_connectors,
+            evidence_ids=plan_item.evidence_ids,
+            metric_tiles=metric_tiles,
+            metrics=metrics,
+            human_diagnosis=plan_item.why_it_matters,
+            recommended_action=plan_item.operator_action,
+            risk=plan_item.risk,
+            action_ids=plan_item.action_ids,
+            expert_rule_ids=[],
+            playbook_ids=[plan_item.skill_id] if plan_item.skill_id else [],
+            is_fixture=False,
+        )
+    )
 
 
 def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
-    return _label_opportunity(Opportunity(
-        id=f"opp_{decision.id}",
-        type=_route_opportunity_type(decision.route),
-        title=decision.title,
-        domain=_route_opportunity_domain(decision.route),
-        source_connectors=decision.source_connectors,
-        evidence_ids=decision.evidence_ids,
-        metric_tiles=decision.metric_tiles,
-        metrics=_metric_tiles_to_facts(decision),
-        human_diagnosis=(
-            f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
-        ),
-        recommended_action=decision.bezpieczny_next_step,
-        risk=decision.risk,
-        action_ids=decision.action_ids,
-        expert_rule_ids=[],
-        playbook_ids=[decision.skill_id] if decision.skill_id else [],
-        is_fixture=False,
-    ))
+    return _label_opportunity(
+        Opportunity(
+            id=f"opp_{decision.id}",
+            type=_route_opportunity_type(decision.route),
+            title=decision.title,
+            domain=_route_opportunity_domain(decision.route),
+            source_connectors=decision.source_connectors,
+            evidence_ids=decision.evidence_ids,
+            metric_tiles=decision.metric_tiles,
+            metrics=_metric_tiles_to_facts(decision),
+            human_diagnosis=(f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"),
+            recommended_action=decision.bezpieczny_next_step,
+            risk=decision.risk,
+            action_ids=decision.action_ids,
+            expert_rule_ids=[],
+            playbook_ids=[decision.skill_id] if decision.skill_id else [],
+            is_fixture=False,
+        )
+    )
 
 
 def _daily_decision_type(decision: DailyDecision) -> str:
@@ -335,34 +338,36 @@ def _connector_registry_opportunities() -> list[Opportunity]:
         latest_live_run = _latest_live_refresh(connector.id)
         title = _title(blueprint, connector.configured, latest_live_run is not None)
         opportunities.append(
-            _label_opportunity(Opportunity(
-                id=f"opp_connector_{connector.id}",
-                type=blueprint.opportunity_type,
-                title=title,
-                domain=blueprint.domain,
-                source_connectors=[connector.id],
-                evidence_ids=[evidence_id],
-                metrics=_opportunity_metrics(connector.id, connector.configured, evidence_id),
-                human_diagnosis=_diagnosis(
-                    connector.id,
-                    connector.configured,
-                    missing,
-                    blueprint.playbook_ids,
-                    blueprint.expert_rule_ids,
-                    latest_live_run is not None,
-                ),
-                recommended_action=_recommended_action(
-                    connector.id,
-                    connector.configured,
-                    missing,
-                    latest_live_run is not None,
-                ),
-                risk=blueprint.risk,
-                action_ids=list(blueprint.action_ids) if not connector.configured else [],
-                expert_rule_ids=list(blueprint.expert_rule_ids),
-                playbook_ids=list(blueprint.playbook_ids),
-                is_fixture=False,
-            ))
+            _label_opportunity(
+                Opportunity(
+                    id=f"opp_connector_{connector.id}",
+                    type=blueprint.opportunity_type,
+                    title=title,
+                    domain=blueprint.domain,
+                    source_connectors=[connector.id],
+                    evidence_ids=[evidence_id],
+                    metrics=_opportunity_metrics(connector.id, connector.configured, evidence_id),
+                    human_diagnosis=_diagnosis(
+                        connector.id,
+                        connector.configured,
+                        missing,
+                        blueprint.playbook_ids,
+                        blueprint.expert_rule_ids,
+                        latest_live_run is not None,
+                    ),
+                    recommended_action=_recommended_action(
+                        connector.id,
+                        connector.configured,
+                        missing,
+                        latest_live_run is not None,
+                    ),
+                    risk=blueprint.risk,
+                    action_ids=list(blueprint.action_ids) if not connector.configured else [],
+                    expert_rule_ids=list(blueprint.expert_rule_ids),
+                    playbook_ids=list(blueprint.playbook_ids),
+                    is_fixture=False,
+                )
+            )
         )
     return opportunities
 
@@ -423,9 +428,7 @@ def _recommended_action(
         )
     missing_count = len(missing_credentials)
     missing_suffix = (
-        ""
-        if missing_count == 0
-        else f" Brakuje {missing_count} wymaganych ustawień dostępu."
+        "" if missing_count == 0 else f" Brakuje {missing_count} wymaganych ustawień dostępu."
     )
     return f"Skonfiguruj dostęp dla: {connector_label}, potem odśwież dane.{missing_suffix}"
 
@@ -447,9 +450,7 @@ def _label_opportunity(opportunity: Opportunity) -> Opportunity:
     return opportunity.model_copy(
         update={
             "domain_label": opportunity_domain_label(opportunity.domain),
-            "source_connector_labels": source_connector_labels(
-                opportunity.source_connectors
-            ),
+            "source_connector_labels": source_connector_labels(opportunity.source_connectors),
             "evidence_summary_label": evidence_count_label(opportunity.evidence_ids),
             "risk_label": _risk_label(opportunity.risk),
             "action_summary_label": action_count_label(opportunity.action_ids),

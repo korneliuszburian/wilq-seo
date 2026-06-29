@@ -277,9 +277,7 @@ def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGrou
     first = items[0]
     facts = [fact for item in items for fact in item.metric_facts]
     queries = _unique(
-        query
-        for item in items
-        if (query := item.dimensions.get("query")) is not None
+        query for item in items if (query := item.dimensions.get("query")) is not None
     )
     clicks = _sum_metric_facts(facts, "clicks")
     impressions = _sum_metric_facts(facts, "impressions")
@@ -304,9 +302,7 @@ def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGrou
         source_connectors=_unique(
             connector for item in items for connector in item.source_connectors
         ),
-        evidence_ids=_unique(
-            evidence_id for item in items for evidence_id in item.evidence_ids
-        ),
+        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
         action_ids=_unique(action_id for item in items for action_id in item.action_ids),
         blocked_claims=_unique(claim for item in items for claim in item.blocked_claims),
     )
@@ -345,9 +341,7 @@ def _compact_tactical_diagnosis(
         metrics = ", ".join(
             metric
             for metric in (
-                None
-                if clicks is None
-                else f"kliknięcia: {_format_compact_number(clicks)}",
+                None if clicks is None else f"kliknięcia: {_format_compact_number(clicks)}",
                 None
                 if impressions is None
                 else f"wyświetlenia: {_format_compact_number(impressions)}",
@@ -621,7 +615,12 @@ def _ga4_quality_items(
                     wordpress_match=wordpress_match,
                 ),
                 next_step=_ga4_next_step(has_not_set_dimension),
-                blocked_claims=["współczynnik konwersji", "zwrot z reklam", "przychód", "opłacalność"],
+                blocked_claims=[
+                    "współczynnik konwersji",
+                    "zwrot z reklam",
+                    "przychód",
+                    "opłacalność",
+                ],
                 action_ids=action_ids_by_connector.get("google_analytics_4", []),
             )
         )
@@ -632,9 +631,7 @@ def _merchant_feed_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
 ) -> list[TacticalQueueItem]:
-    merchant_facts = [
-        fact for fact in facts if fact.source_connector == "google_merchant_center"
-    ]
+    merchant_facts = [fact for fact in facts if fact.source_connector == "google_merchant_center"]
     merchant_issue_facts = [
         fact
         for fact in merchant_facts
@@ -645,9 +642,7 @@ def _merchant_feed_items(
         merchant_issue_facts = [
             fact for fact in merchant_issue_facts if fact.dimensions.get("issue_type")
         ]
-    issue_groups = _group_facts(
-        merchant_issue_facts
-    )
+    issue_groups = _group_facts(merchant_issue_facts)
     product_groups = _group_facts(
         fact
         for fact in merchant_facts
@@ -755,7 +750,9 @@ def _ahrefs_gap_items(
     gap_groups = _group_ahrefs_gap_facts(facts)
     items: list[TacticalQueueItem] = []
     for index, group in enumerate(gap_groups.items(), start=1):
-        (gap_type, keyword, source_url, referenced_public_url, competitor_domain), group_facts = group
+        (gap_type, keyword, source_url, referenced_public_url, competitor_domain), group_facts = (
+            group
+        )
         if _is_ahrefs_off_topic(keyword, source_url, referenced_public_url, competitor_domain):
             continue
         topic = _ahrefs_topic(keyword, source_url, referenced_public_url, competitor_domain)
@@ -791,9 +788,7 @@ def _ahrefs_gap_items(
                         "present" if confirmation.wordpress_overlap_urls else "missing"
                     ),
                     "gsc_overlap_terms": ", ".join(confirmation.gsc_overlap_terms),
-                    "wordpress_overlap_urls": ", ".join(
-                        confirmation.wordpress_overlap_urls
-                    ),
+                    "wordpress_overlap_urls": ", ".join(confirmation.wordpress_overlap_urls),
                 },
                 diagnosis=_ahrefs_gap_diagnosis(
                     gap_type,

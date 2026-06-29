@@ -139,9 +139,7 @@ def _summarize_search_analytics_response(
             "clicks": clicks,
             "impressions": impressions,
             "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
-            "average_position": round(weighted_position / impressions, 4)
-            if impressions
-            else 0.0,
+            "average_position": round(weighted_position / impressions, 4) if impressions else 0.0,
         },
         metric_facts,
     )

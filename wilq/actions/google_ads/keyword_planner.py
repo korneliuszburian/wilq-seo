@@ -24,7 +24,7 @@ def keyword_planner_access_payload(blocker: str) -> dict[str, Any]:
         "blocked_api": "Keyword Planner",
         "blocked_reason": blocker,
         "required_google_ads_state": [
-            "developer_token_approved_for_keyword_planner",
+            "developer_access_approved_for_keyword_planner",
             "keyword_planner_generate_ideas_allowed",
         ],
         "helper_steps": [
@@ -39,7 +39,7 @@ def keyword_planner_access_payload(blocker: str) -> dict[str, Any]:
             ),
         ],
         "required_validation": [
-            "confirm_developer_token_approval",
+            "confirm_developer_access_approval",
             "rerun_google_ads_data_read",
             "verify_keyword_planner_idea_rows",
             "human_confirm_before_apply",

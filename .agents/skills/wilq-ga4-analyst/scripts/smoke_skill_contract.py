@@ -144,9 +144,7 @@ def main() -> int:
             if not decision.get("next_step"):
                 raise SystemExit(f"GA4 decision lacks next_step: {decision.get('id')}")
         decision_action_ids = {
-            action_id
-            for decision in decision_queue
-            for action_id in decision.get("action_ids", [])
+            action_id for decision in decision_queue for action_id in decision.get("action_ids", [])
         }
         if (
             "act_review_ga4_tracking_quality" in ga4_diagnostics.get("action_ids", [])
@@ -167,10 +165,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []

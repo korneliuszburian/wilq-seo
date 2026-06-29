@@ -5824,7 +5824,7 @@ const localoDiagnostics = {
         "dane Localo": 0,
         "brakujące dane": 5
       },
-      allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
+      allowed_evidence: ["mcp_initialize", "oauth_metadata", "local_access_presence"],
       allowed_evidence_labels: [
         "potwierdzenie dostępu Localo",
         "potwierdzenie autoryzacji",

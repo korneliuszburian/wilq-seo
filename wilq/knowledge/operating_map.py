@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from wilq.expert.rules import list_expert_rule_summaries
 from wilq.briefing.blocked_claim_labels import operator_blocked_claims
+from wilq.expert.rules import list_expert_rule_summaries
 from wilq.knowledge.compilers.playbook_compiler import compile_playbook_cards, list_playbooks
 from wilq.operator_labels import (
     action_count_label,

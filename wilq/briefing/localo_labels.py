@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 LOCALO_CONTRACT_LABELS = {
     "competitor_visibility": "widoczność konkurencji",
     "gbp_visibility": "widoczność profilu firmy w Google",
@@ -12,7 +11,7 @@ LOCALO_CONTRACT_LABELS = {
 }
 
 LOCALO_EVIDENCE_LABELS = {
-    "access_token_presence": "potwierdzenie lokalnego dostępu",
+    "local_access_presence": "potwierdzenie lokalnego dostępu",
     "mcp_initialize": "potwierdzenie dostępu Localo",
     "oauth_metadata": "potwierdzenie autoryzacji",
 }

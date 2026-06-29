@@ -141,8 +141,7 @@ def _vendor_read_errors(
 ) -> list[str]:
     if missing_credentials:
         return [
-            "Vendor read blocked by missing credential names: "
-            f"{', '.join(missing_credentials)}."
+            f"Vendor read blocked by missing credential names: {', '.join(missing_credentials)}."
         ]
     return []
 

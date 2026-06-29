@@ -5,7 +5,6 @@ import { ShieldAlert } from "lucide-react";
 import {
   ActionObject,
   ActionPreviewCardViewModel,
-  ConnectorStatus,
   Ga4DiagnosticsResponse,
   getActions,
   getConnectors,
@@ -58,7 +57,6 @@ export function Ga4DiagnosticSurface() {
   }
 
   const data = diagnostics.data;
-  const connectorStatuses = connectors.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const trackingPreviewCards = ga4TrackingQualityPreviewCardsFromActions(routeActions);
   const latestRefresh = data.latest_refresh;
@@ -124,12 +122,11 @@ export function Ga4DiagnosticSurface() {
         ) : null}
       </section>
 
-      <Ga4OperatorSummary data={data} connectorStatuses={connectorStatuses} />
+      <Ga4OperatorSummary data={data} />
 
       <Ga4ExpandableReviewPanel
         data={data}
         trackingPreviewCards={trackingPreviewCards}
-        connectorStatuses={connectorStatuses}
       />
 
       {routeActions.length > 0 ? (
@@ -146,12 +143,10 @@ export function Ga4DiagnosticSurface() {
 
 function Ga4ExpandableReviewPanel({
   data,
-  trackingPreviewCards,
-  connectorStatuses
+  trackingPreviewCards
 }: {
   data: Ga4DiagnosticsResponse;
   trackingPreviewCards: ActionPreviewCardViewModel[];
-  connectorStatuses: ConnectorStatus[];
 }) {
   const [showReview, setShowReview] = useState(false);
 
@@ -185,7 +180,7 @@ function Ga4ExpandableReviewPanel({
 
       {showReview ? (
         <div className="mt-4 grid gap-6">
-          <Ga4MeasurementIssues data={data} connectorStatuses={connectorStatuses} />
+          <Ga4MeasurementIssues data={data} />
           <Ga4DiagnosticProof data={data} />
           {trackingPreviewCards.length > 0 ? (
             <section className="rounded-md border border-line bg-white p-4">
@@ -282,11 +277,9 @@ function Ga4ExpandableActionsPanel({
 }
 
 function Ga4MeasurementIssues({
-  data,
-  connectorStatuses
+  data
 }: {
   data: Ga4DiagnosticsResponse;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const measurementDecisions = data.decision_queue.filter(
     (decision) => decision.decision_type === "fix_measurement"
@@ -324,11 +317,9 @@ function Ga4MeasurementIssues({
 }
 
 function Ga4OperatorSummary({
-  data,
-  connectorStatuses
+  data
 }: {
   data: Ga4DiagnosticsResponse;
-  connectorStatuses: ConnectorStatus[];
 }) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
@@ -572,8 +563,4 @@ function Ga4MetricTiles({ facts }: { facts: Ga4MetricFact[] }) {
 function formatGa4MetricValue(value: string | number | boolean) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
   return value;
-}
-
-function uniqueValues(values: string[]) {
-  return Array.from(new Set(values));
 }

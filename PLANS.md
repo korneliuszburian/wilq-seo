@@ -564,6 +564,10 @@ WILQ is complete for this long-range goal when:
   `vendor_read` instead of only credential-presence state. Live GSC, GA4 and
   Merchant refreshes completed with `vendor_data_collected=true`; `/api/connectors`
   now shows fresh `last_success_at` for those sources.
+- 2026-06-29: Broad cleanup verification passed with `rtk scripts/verify.sh`
+  after the current context/action/dashboard cleanup slice. Live WILQ API
+  status confirms GSC, GA4 and Merchant are configured, fresh and not missing
+  credential names; optional LinkedIn/Facebook social credentials remain open.
 - 2026-06-25: Replaced old long-range plan with clean product path.
 - 2026-06-25: Current cleanup goal lives in `PLAN.md`.
 - 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
@@ -865,6 +869,11 @@ WILQ is complete for this long-range goal when:
   raw active-action payloads, payload key lists, raw apply-blocker keys, raw
   Ahrefs contract/metric keys and raw Merchant preview issue keys from compact
   skill contexts.
+- Latest broad proof: `rtk scripts/verify.sh` passed on the active cleanup
+  worktree, covering backend tests, dashboard tests, API smoke, skill smokes,
+  Playwright route smoke and dashboard build. This proves the cleanup gate is
+  green for the touched product surfaces, while real marketer UAT remains the
+  usefulness proof.
 - Latest self-improving guardrail: `scripts/context_pack_language_guard.py`
   checks the core skill context packs for stale route names, raw payload
   wording, dev/migration terms and raw vendor/action values. `verify.sh` runs

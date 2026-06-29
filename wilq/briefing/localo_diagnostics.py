@@ -161,40 +161,42 @@ def _operator_summary(
 ) -> LocaloOperatorSummary:
     top_decisions = decisions[:4]
     missing_contracts = _missing_contract_ids(read_contract_statuses)
-    return _label_localo_operator_summary(LocaloOperatorSummary(
-        title="Co marketer ma wiedzieć o Localo",
-        summary=_operator_summary_text(visibility_fact_count, missing_contracts),
-        next_step=_operator_summary_next_step(visibility_fact_count, missing_contracts),
-        top_decision_ids=[decision.id for decision in top_decisions],
-        access_status=access_probe.status,
-        visibility_fact_count=visibility_fact_count,
-        missing_read_contracts=_unique(
-            contract
-            for decision in top_decisions
-            for contract in decision.missing_read_contracts
-        ),
-        read_contract_statuses=read_contract_statuses,
-        source_connectors=_unique(
-            connector for decision in top_decisions for connector in decision.source_connectors
+    return _label_localo_operator_summary(
+        LocaloOperatorSummary(
+            title="Co marketer ma wiedzieć o Localo",
+            summary=_operator_summary_text(visibility_fact_count, missing_contracts),
+            next_step=_operator_summary_next_step(visibility_fact_count, missing_contracts),
+            top_decision_ids=[decision.id for decision in top_decisions],
+            access_status=access_probe.status,
+            visibility_fact_count=visibility_fact_count,
+            missing_read_contracts=_unique(
+                contract
+                for decision in top_decisions
+                for contract in decision.missing_read_contracts
+            ),
+            read_contract_statuses=read_contract_statuses,
+            source_connectors=_unique(
+                connector for decision in top_decisions for connector in decision.source_connectors
+            )
+            or [LOCALO_CONNECTOR_ID],
+            evidence_ids=_unique(
+                [
+                    *(
+                        evidence_id
+                        for decision in top_decisions
+                        for evidence_id in decision.evidence_ids
+                    ),
+                    *access_probe.evidence_ids,
+                ]
+            ),
+            action_ids=_unique(
+                action_id for decision in top_decisions for action_id in decision.action_ids
+            ),
+            blocked_claims=_unique(
+                claim for decision in top_decisions for claim in decision.blocked_claims
+            ),
         )
-        or [LOCALO_CONNECTOR_ID],
-        evidence_ids=_unique(
-            [
-                *(
-                    evidence_id
-                    for decision in top_decisions
-                    for evidence_id in decision.evidence_ids
-                ),
-                *access_probe.evidence_ids,
-            ]
-        ),
-        action_ids=_unique(
-            action_id for decision in top_decisions for action_id in decision.action_ids
-        ),
-        blocked_claims=_unique(
-            claim for decision in top_decisions for claim in decision.blocked_claims
-        ),
-    ))
+    )
 
 
 def _operator_summary_text(visibility_fact_count: int, missing_contracts: list[str]) -> str:
@@ -547,7 +549,7 @@ def _localo_decision_queue(
                     "dane Localo": 0,
                     "brakujące dane": len(LOCALO_VISIBILITY_READ_CONTRACTS),
                 },
-                allowed_evidence=["mcp_initialize", "oauth_metadata", "access_token_presence"],
+                allowed_evidence=["mcp_initialize", "oauth_metadata", "local_access_presence"],
                 missing_read_contracts=LOCALO_VISIBILITY_READ_CONTRACTS,
                 read_contract_statuses=read_contract_statuses,
                 source_connectors=[LOCALO_CONNECTOR_ID],
@@ -598,9 +600,7 @@ def _localo_decisions_with_lineage(
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *LOCALO_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique(
-                    [*decision.expert_rule_ids, *LOCALO_EXPERT_RULE_IDS]
-                ),
+                "expert_rule_ids": _unique([*decision.expert_rule_ids, *LOCALO_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
@@ -682,9 +682,7 @@ def _label_localo_access_probe(probe: LocaloAccessProbe) -> LocaloAccessProbe:
     return probe.model_copy(
         update={
             "status_label": _localo_access_status_label(probe.status),
-            "access_check_label": _localo_access_check_label(
-                probe.mcp_initialize_status
-            ),
+            "access_check_label": _localo_access_check_label(probe.mcp_initialize_status),
             "authorization_code_supported_label": _localo_bool_label(
                 probe.authorization_code_supported
             ),
@@ -701,18 +699,14 @@ def _label_localo_access_probe(probe: LocaloAccessProbe) -> LocaloAccessProbe:
                 blocked="brak potwierdzenia bezpiecznego połączenia",
                 unknown="bezpieczeństwo połączenia niepotwierdzone",
             ),
-            "access_token_present_label": _localo_token_presence_label(
-                probe.access_token_present
-            ),
+            "access_token_present_label": _localo_token_presence_label(probe.access_token_present),
             "credential_readiness_label": _localo_readiness_label(
                 probe.access_token_present,
                 ready="dostęp lokalny gotowy",
                 blocked="brak lokalnego dostępu",
                 unknown="lokalny dostęp niepotwierdzony",
             ),
-            "evidence_summary_label": _localo_evidence_summary_label(
-                probe.evidence_ids
-            ),
+            "evidence_summary_label": _localo_evidence_summary_label(probe.evidence_ids),
         }
     )
 
@@ -721,12 +715,8 @@ def _label_localo_section(section: LocaloDiagnosticSection) -> LocaloDiagnosticS
     return section.model_copy(
         update={
             "status_label": _localo_section_status_label(section.status),
-            "source_connector_labels": _localo_source_connector_labels(
-                section.source_connectors
-            ),
-            "evidence_summary_label": _localo_evidence_summary_label(
-                section.evidence_ids
-            ),
+            "source_connector_labels": _localo_source_connector_labels(section.source_connectors),
+            "evidence_summary_label": _localo_evidence_summary_label(section.evidence_ids),
             "blocked_claim_labels": section.blocked_claims,
         }
     )
@@ -740,8 +730,7 @@ def _label_localo_read_contract_status(
             "id_label": _localo_contract_label(str(contract_status.id)),
             "status_label": _localo_read_contract_status_label(contract_status.status),
             "metric_fact_labels": {
-                name: _localo_metric_fact_label(name)
-                for name in contract_status.metric_fact_names
+                name: _localo_metric_fact_label(name) for name in contract_status.metric_fact_names
             },
             "blocked_claim_labels": contract_status.blocked_claims,
         }
@@ -761,15 +750,10 @@ def _label_localo_decision(decision: LocaloDecisionItem) -> LocaloDecisionItem:
             "missing_read_contract_labels": [
                 _localo_contract_label(value) for value in decision.missing_read_contracts
             ],
-            "source_connector_labels": _localo_source_connector_labels(
-                decision.source_connectors
-            ),
-            "evidence_summary_label": _localo_evidence_summary_label(
-                decision.evidence_ids
-            ),
+            "source_connector_labels": _localo_source_connector_labels(decision.source_connectors),
+            "evidence_summary_label": _localo_evidence_summary_label(decision.evidence_ids),
             "metric_fact_labels": {
-                fact.name: _localo_metric_fact_label(fact.name)
-                for fact in decision.metric_facts
+                fact.name: _localo_metric_fact_label(fact.name) for fact in decision.metric_facts
             },
             "blocked_claim_labels": decision.blocked_claims,
         }
@@ -785,12 +769,8 @@ def _label_localo_operator_summary(
             "missing_read_contract_labels": [
                 _localo_contract_label(value) for value in summary.missing_read_contracts
             ],
-            "source_connector_labels": _localo_source_connector_labels(
-                summary.source_connectors
-            ),
-            "evidence_summary_label": _localo_evidence_summary_label(
-                summary.evidence_ids
-            ),
+            "source_connector_labels": _localo_source_connector_labels(summary.source_connectors),
+            "evidence_summary_label": _localo_evidence_summary_label(summary.evidence_ids),
             "blocked_claim_labels": summary.blocked_claims,
         }
     )
@@ -947,19 +927,23 @@ def _localo_read_contract_statuses(
             facts_by_contract.setdefault(contract, []).append(fact)
 
     return [
-        _label_localo_read_contract_status(LocaloReadContractStatus(
-            id=contract,  # type: ignore[arg-type]
-            status="ready" if facts_by_contract.get(contract) else "missing",
-            evidence_kind=_localo_contract_evidence_kind(contract),
-            metric_fact_names=_unique(fact.name for fact in facts_by_contract.get(contract, [])),
-            blocked_claims=[]
-            if facts_by_contract.get(contract)
-            else _blocked_claims_for_contract(contract),
-            next_step=_localo_contract_next_step(
-                contract,
-                ready=bool(facts_by_contract.get(contract)),
-            ),
-        ))
+        _label_localo_read_contract_status(
+            LocaloReadContractStatus(
+                id=contract,  # type: ignore[arg-type]
+                status="ready" if facts_by_contract.get(contract) else "missing",
+                evidence_kind=_localo_contract_evidence_kind(contract),
+                metric_fact_names=_unique(
+                    fact.name for fact in facts_by_contract.get(contract, [])
+                ),
+                blocked_claims=[]
+                if facts_by_contract.get(contract)
+                else _blocked_claims_for_contract(contract),
+                next_step=_localo_contract_next_step(
+                    contract,
+                    ready=bool(facts_by_contract.get(contract)),
+                ),
+            )
+        )
         for contract in LOCALO_CONTRACT_ORDER
     ]
 
@@ -967,11 +951,7 @@ def _localo_read_contract_statuses(
 def _missing_contract_ids(
     read_contract_statuses: list[LocaloReadContractStatus],
 ) -> list[str]:
-    return [
-        str(contract.id)
-        for contract in read_contract_statuses
-        if contract.status != "ready"
-    ]
+    return [str(contract.id) for contract in read_contract_statuses if contract.status != "ready"]
 
 
 def _localo_contract_evidence_kind(contract: str) -> str:
@@ -1071,9 +1051,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         "local_tasks": "ukończone zadanie lokalne",
     }
     claims = [
-        claim
-        for contract, claim in claims_by_contract.items()
-        if contract in missing_contracts
+        claim for contract, claim in claims_by_contract.items() if contract in missing_contracts
     ]
     claims.extend(["zapis zmian w profilu firmy", "poprawa widoczności lokalnej"])
     return _unique(claims)

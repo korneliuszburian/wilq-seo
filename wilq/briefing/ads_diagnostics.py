@@ -63,6 +63,7 @@ from wilq.operator_labels import (
 from wilq.schemas import (
     ActionObject,
     ActionPreviewCardViewModel,
+    ActionPreviewRowViewModel,
     ActionRisk,
     AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
@@ -173,14 +174,14 @@ ADS_REVIEW_GATE_LABELS = {
     "configure_profit_margin_or_value_model": "uzupełnienie marży albo modelu wartości",
     "review_human_budget_goal": "sprawdzenie celu budżetu",
     "configure_human_budget_goal": "uzupełnienie celu budżetu",
-    "confirm_target_roas_or_cpa": "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu",
+    "confirm_target_roas_or_cpa": (
+        "potwierdzenie docelowego zwrotu z reklam albo kosztu pozyskania celu"
+    ),
     "review_target_fit": "sprawdzenie dopasowania do celu",
     "review_campaign_goal": "sprawdzenie celu kampanii",
     "review_conversion_quality": "sprawdzenie jakości konwersji",
     "review_budget_context": "sprawdzenie kontekstu budżetu",
-    "review_search_terms_before_budget_decision": (
-        "wyszukiwane hasła przed decyzją budżetową"
-    ),
+    "review_search_terms_before_budget_decision": ("wyszukiwane hasła przed decyzją budżetową"),
     "review_campaign_activity": "sprawdzenie aktywności kampanii",
     "verify_account_currency": "sprawdzenie waluty konta",
     "budget_pacing": "tempo wydawania budżetu",
@@ -801,9 +802,9 @@ def _compact_ads_diagnostics_summary(
                 response.custom_segments_read_contract.audience_forecast_read_contract.model_copy(
                     update={
                         "forecast_rows": (
-                            response.custom_segments_read_contract
-                            .audience_forecast_read_contract
-                            .forecast_rows[:ADS_SUMMARY_VIEW_ROW_LIMIT]
+                            response.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows[
+                                :ADS_SUMMARY_VIEW_ROW_LIMIT
+                            ]
                         )
                     }
                 )
@@ -995,22 +996,16 @@ def _operator_summary(
             metric for decision in top_decisions for metric in decision.allowed_metrics
         ),
         missing_read_contracts=_unique(
-            contract
-            for decision in top_decisions
-            for contract in decision.missing_read_contracts
+            contract for decision in top_decisions for contract in decision.missing_read_contracts
         ),
         operator_review_gates=_unique(
             gate for decision in top_decisions for gate in decision.operator_review_gates
         ),
         source_connectors=_unique(
-            connector
-            for decision in top_decisions
-            for connector in decision.source_connectors
+            connector for decision in top_decisions for connector in decision.source_connectors
         ),
         evidence_ids=_unique(
-            evidence_id
-            for decision in top_decisions
-            for evidence_id in decision.evidence_ids
+            evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
         ),
         action_ids=_unique(
             action_id for decision in top_decisions for action_id in decision.action_ids
@@ -1080,13 +1075,8 @@ def _google_ads_action_ids(
         return [
             action_id
             for action_id in GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS
-            if not (
-                live_data_available and action_id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID
-            )
-            and not (
-                business_context_configured
-                and action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
-            )
+            if not (live_data_available and action_id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID)
+            and not (business_context_configured and action_id == ADS_BUSINESS_CONTEXT_ACTION_ID)
             and not (
                 action_id == ADS_TARGET_CONFIRMATION_ACTION_ID
                 and (
@@ -1137,7 +1127,8 @@ def _oauth_or_live_section(
             ),
             next_step=(
                 "Użyj wierszy kampanii i zapytań do sprawdzenia. Następnie dodaj "
-                "rekomendacje, historię zmian, kontrole bezpieczeństwa i akcje do sprawdzenia przed "
+                "rekomendacje, historię zmian, kontrole bezpieczeństwa "
+                "i akcje do sprawdzenia przed "
                 "rekomendacjami zapisu zmian."
             ),
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1160,7 +1151,8 @@ def _oauth_or_live_section(
         summary=reason,
         diagnosis=(
             "WILQ widzi konfigurację Google Ads, ale ostatni odczyt danych nie "
-            "zebrał danych. WILQ nie może uczciwie pokazać wydatków, kosztu pozyskania celu, zwrotu z reklam, "
+            "zebrał danych. WILQ nie może uczciwie pokazać wydatków, "
+            "kosztu pozyskania celu, zwrotu z reklam, "
             "wyszukiwanych haseł ani rekomendacji Google bez poprawnego OAuth."
         ),
         next_step=(
@@ -1197,11 +1189,12 @@ def _campaign_overview_section(
             title="Aktywność kampanii Google Ads",
             status="ready",
             summary=campaign_read_contract.summary,
-            diagnosis=(
-                "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
-                "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
-                "do diagnozy kosztu pozyskania celu, zwrotu z reklam, strat budżetu na zapytaniach ani wykluczeń."
-            ),
+        diagnosis=(
+            "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
+            "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
+            "do diagnozy kosztu pozyskania celu, zwrotu z reklam, "
+            "strat budżetu na zapytaniach ani wykluczeń."
+        ),
             next_step=campaign_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=campaign_read_contract.evidence_ids,
@@ -1241,7 +1234,8 @@ def _derived_kpi_section(
         diagnosis=(
             "WILQ może pokazać współczynnik kliknięć, koszt kliknięcia, współczynnik konwersji, "
             "koszt pozyskania celu i zwrot z reklam jako obliczenia z bieżących danych kampanii. "
-            "To nie jest jeszcze diagnoza rentowności, ocena zmarnowanego budżetu ani zgoda na zmianę budżetu."
+            "To nie jest jeszcze diagnoza rentowności, ocena zmarnowanego budżetu "
+            "ani zgoda na zmianę budżetu."
         ),
         next_step=derived_kpi_read_contract.next_step,
         source_connectors=derived_kpi_read_contract.source_connectors,
@@ -1334,11 +1328,14 @@ def _campaign_read_contract(
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            evidence_ids=_unique(
+                evidence_id for row in rows for evidence_id in row.evidence_ids
+            ),
             campaign_rows=rows,
             next_step=(
-                "Użyj wierszy kampanii do sprawdzenia aktywności. Przed wnioskami o stracie budżetu, "
-                "koszcie pozyskania celu, zwrocie z reklam albo wykluczeniach uzupełnij brakujące dane."
+                "Użyj wierszy kampanii do sprawdzenia aktywności. "
+                "Przed wnioskami o stracie budżetu, koszcie pozyskania celu, "
+                "zwrocie z reklam albo wykluczeniach uzupełnij brakujące dane."
             ),
         )
 
@@ -1388,7 +1385,8 @@ def _account_currency_read_contract(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
             next_step=(
-                "Pokazuj koszt, koszt kliknięcia i koszt pozyskania celu w walucie konta. Nadal nie oceniaj "
+                "Pokazuj koszt, koszt kliknięcia i koszt pozyskania celu "
+                "w walucie konta. Nadal nie oceniaj "
                 "rentowności bez marży, celu biznesowego i sprawdzonego podglądu zmian."
             ),
         )
@@ -1407,9 +1405,7 @@ def _account_currency_read_contract(
         ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-        next_step=(
-            "Uruchom odczyt danych Google Ads z polem `customer.currency_code`."
-        ),
+        next_step=("Uruchom odczyt danych Google Ads z polem `customer.currency_code`."),
     )
 
 
@@ -1427,9 +1423,7 @@ def _business_context_read_contract(
         target_confirmation,
     ) = ads_target_guardrail_values()
     strategy_review = ads_strategy_review_state()
-    strategy_review_status = (
-        strategy_review.outcome if strategy_review is not None else "missing"
-    )
+    strategy_review_status = strategy_review.outcome if strategy_review is not None else "missing"
     strategy_review_approved = strategy_review_status == "approved_for_prepare"
     configured_sources = _unique(
         source
@@ -1439,9 +1433,7 @@ def _business_context_read_contract(
             budget_goal_source,
             target_roas_source,
             target_cpa_source,
-            f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}"
-            if strategy_review is not None
-            else None,
+            f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}" if strategy_review is not None else None,
         ]
         if source
     )
@@ -1476,9 +1468,7 @@ def _business_context_read_contract(
         if contract not in {"target_roas_or_cpa", "human_strategy_review"}
     ]
     target_missing = "target_roas_or_cpa" in missing_read_contracts
-    status: Literal["ready", "blocked"] = (
-        "ready" if not blocking_missing_contracts else "blocked"
-    )
+    status: Literal["ready", "blocked"] = "ready" if not blocking_missing_contracts else "blocked"
     business_policy_ids = _business_policy_ids(
         profit_margin=profit_margin,
         business_goal=business_goal,
@@ -1496,16 +1486,12 @@ def _business_context_read_contract(
     )
     metric_tiles = _clean_metric_tiles(
         {
-            "marża": _format_ratio_percent(profit_margin)
-            if profit_margin is not None
-            else "brak",
+            "marża": _format_ratio_percent(profit_margin) if profit_margin is not None else "brak",
             "cel biznesowy": business_goal or "brak",
             "cel budżetu": budget_goal or "brak",
             "docelowy zwrot z reklam": target_roas,
             "docelowy koszt pozyskania celu": _format_micros(target_cpa_micros),
-            "źródło celu": "potwierdzone"
-            if target_confirmation is not None
-            else None,
+            "źródło celu": "potwierdzone" if target_confirmation is not None else None,
             "ocena strategii": _strategy_review_label(strategy_review_status),
         }
     )
@@ -1535,8 +1521,10 @@ def _business_context_read_contract(
         else:
             summary = (
                 "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
-                "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. To pozwala "
-                "interpretować wskaźniki ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
+                "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu. "
+                "To pozwala "
+                "interpretować wskaźniki ostrożniej, "
+                "ale nadal nie odblokowuje automatycznych zmian."
             )
             next_step = (
                 "Użyj potwierdzonego celu jako kontekstu oceny kampanii i "
@@ -1566,15 +1554,9 @@ def _business_context_read_contract(
         target_roas=target_roas,
         target_cpa_micros=target_cpa_micros,
         strategy_review_status=strategy_review_status,
-        strategy_reviewed_by=strategy_review.reviewed_by
-        if strategy_review is not None
-        else None,
-        strategy_reviewed_at=strategy_review.created_at
-        if strategy_review is not None
-        else None,
-        strategy_review_summary=strategy_review.notes
-        if strategy_review is not None
-        else None,
+        strategy_reviewed_by=strategy_review.reviewed_by if strategy_review is not None else None,
+        strategy_reviewed_at=strategy_review.created_at if strategy_review is not None else None,
+        strategy_review_summary=strategy_review.notes if strategy_review is not None else None,
         configured_sources=configured_sources,
         business_policy_ids=business_policy_ids,
         operator_review_gates=operator_review_gates,
@@ -1657,7 +1639,8 @@ def _strategy_review_readiness_contract(
     if strategy_review_approved:
         summary = (
             "Ocena strategii Ads przez człowieka jest zatwierdzona do przygotowania. To pozwala "
-            "używać potwierdzonego celu w ocenie, ale nie odblokowuje zapisu zmian ani automatycznej "
+            "używać potwierdzonego celu w ocenie, ale nie odblokowuje zapisu zmian "
+            "ani automatycznej "
             "optymalizacji."
         )
         next_step = (
@@ -1675,7 +1658,8 @@ def _strategy_review_readiness_contract(
         )
         next_step = (
             "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel "
-            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu, a potem zapisz wynik oceny."
+            "budżetu oraz docelowy zwrot z reklam albo koszt pozyskania celu, "
+            "a potem zapisz wynik oceny."
         )
         status = "blocked"
         contract_missing = _unique(
@@ -1694,9 +1678,7 @@ def _strategy_review_readiness_contract(
             ]
         )
         action_ids = [ADS_STRATEGY_REVIEW_ACTION_ID]
-    latest_outcome = (
-        strategy_review.outcome if strategy_review is not None else None
-    )
+    latest_outcome = strategy_review.outcome if strategy_review is not None else None
     return AdsStrategyReviewReadinessContract(
         status=status,
         title="Google Ads: gotowość oceny strategii przez człowieka",
@@ -1812,7 +1794,8 @@ def _business_target_interpretation(
     else:
         summary = (
             "WILQ ma potwierdzony docelowy zwrot z reklam albo koszt pozyskania celu "
-            "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. Zapis zmian nadal wymaga "
+            "i może porównywać wskaźniki do celu po zatwierdzeniu przez człowieka. "
+            "Zapis zmian nadal wymaga "
             "akcji sprawdzonej w WILQ, podglądu, potwierdzenia i audytu."
         )
         blocked_uses = [
@@ -1914,9 +1897,7 @@ def _business_context_review_gates(
         else "configure_profit_margin_or_value_model"
     )
     gates.append("review_business_goal" if business_goal else "configure_business_goal")
-    gates.append(
-        "review_human_budget_goal" if budget_goal else "configure_human_budget_goal"
-    )
+    gates.append("review_human_budget_goal" if budget_goal else "configure_human_budget_goal")
     gates.append("confirm_target_roas_or_cpa" if target_missing else "review_target_fit")
     return _unique(gates)
 
@@ -2093,7 +2074,7 @@ def _derived_kpi_read_contract(
         "skalowanie budżetu",
         "zmarnowany budżet",
         "zapis rekomendacji",
-            "wpływ samej zmiany",
+        "wpływ samej zmiany",
     ]
     kpi_rows = [
         _derived_kpi_row(row, business_context_read_contract)
@@ -2138,7 +2119,8 @@ def _derived_kpi_read_contract(
             title="Google Ads: wyliczone wskaźniki kampanii",
             summary=(
                 f"WILQ może policzyć wskaźniki dla {len(kpi_rows)} kampanii: "
-                f"koszt pozyskania celu dostępny dla {rows_with_cpa}, zwrot z reklam dostępny dla {rows_with_roas}. "
+                f"koszt pozyskania celu dostępny dla {rows_with_cpa}, "
+                f"zwrot z reklam dostępny dla {rows_with_roas}. "
                 "To są obliczenia z bieżących danych źródłowych, nie ocena opłacalności."
                 f"{target_summary}"
             ),
@@ -2151,7 +2133,8 @@ def _derived_kpi_read_contract(
             ),
             kpi_rows=kpi_rows,
             next_step=(
-                "Użyj wskaźników i ewentualnego porównania z celem do ustalenia kolejności oceny kampanii. "
+                "Użyj wskaźników i ewentualnego porównania z celem "
+                "do ustalenia kolejności oceny kampanii. "
                 "Przed decyzją budżetową sprawdź marżę, pacing budżetu, historię "
                 "zmian i rekomendacje."
             ),
@@ -2303,7 +2286,6 @@ def _remove_missing_contract_names(
     return [contract for contract in missing_read_contracts if contract not in removals]
 
 
-
 def _recommendations_section(
     recommendations_read_contract: AdsRecommendationsReadContract,
 ) -> AdsDiagnosticSection:
@@ -2330,7 +2312,6 @@ def _recommendations_section(
         blocked_claims=recommendations_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
-
 
 
 def _impression_share_section(
@@ -2408,7 +2389,8 @@ def _campaign_triage_read_contract(
                 f"WILQ połączył aktywność kampanii, wskaźniki, budżet, rekomendacje i "
                 f"udział w wyświetleniach dla {len(rows)} kampanii. Pilne={urgent_rows}, "
                 f"wysokie={high_rows}. To nie jest ocena zmarnowanego budżetu, "
-                "opłacalności, kosztu pozyskania celu ani zwrotu z reklam; to kolejność ręcznej oceny."
+                "opłacalności, kosztu pozyskania celu ani zwrotu z reklam; "
+                "to kolejność ręcznej oceny."
             ),
             allowed_metrics=[
                 "clicks",
@@ -2469,9 +2451,7 @@ def _campaign_triage_row(
     for recommendation_row in recommendation_rows:
         source_metric_values.extend(fact.name for fact in recommendation_row.metric_facts)
     if impression_share_row is not None:
-        source_metric_values.extend(
-            fact.name for fact in impression_share_row.metric_facts
-        )
+        source_metric_values.extend(fact.name for fact in impression_share_row.metric_facts)
     source_metric_names = _unique(source_metric_values)
     evidence_ids = _unique(
         [
@@ -2862,9 +2842,7 @@ def _optimizer_readiness_contract(
         ready_area_count=ready_area_count,
         blocked_area_count=blocked_area_count,
         readiness_items=items,
-        allowed_metrics=_unique(
-            metric for item in items for metric in item.allowed_metrics
-        ),
+        allowed_metrics=_unique(metric for item in items for metric in item.allowed_metrics),
         missing_read_contracts=_unique(
             contract for item in items for contract in item.missing_read_contracts
         ),
@@ -2882,9 +2860,7 @@ def _optimizer_readiness_contract(
             ]
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_unique(
-            evidence_id for item in items for evidence_id in item.evidence_ids
-        ),
+        evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
         action_ids=_unique(action_id for item in items for action_id in item.action_ids),
         next_step=(
             "Pracuj od obszarów ready, ale każdy wniosek o zmianie budżetu, "
@@ -2961,9 +2937,7 @@ def _change_impact_readiness_contract(
         _change_impact_readiness_row(change_row, campaign_read_contract.campaign_rows)
         for change_row in change_history_read_contract.change_history_rows
     ]
-    row_missing = _unique(
-        missing for row in rows for missing in row.missing_read_contracts
-    )
+    row_missing = _unique(missing for row in rows for missing in row.missing_read_contracts)
     missing_read_contracts = _unique(
         [
             *(
@@ -2990,9 +2964,7 @@ def _change_impact_readiness_contract(
             ]
         )
     if rows:
-        campaign_context_count = sum(
-            1 for row in rows if row.current_campaign_metrics_available
-        )
+        campaign_context_count = sum(1 for row in rows if row.current_campaign_metrics_available)
         summary = (
             f"WILQ ma {len(rows)} zdarzeń zmian do oceny wpływu i "
             f"{campaign_context_count} powiązanych bieżących odczytów kampanii. To jest "
@@ -3073,7 +3045,6 @@ def _change_impact_readiness_row(
     )
 
 
-
 def _change_history_section(
     change_history_read_contract: AdsChangeHistoryReadContract,
 ) -> AdsDiagnosticSection:
@@ -3108,9 +3079,7 @@ def _change_history_with_action_ids(
     if not change_history_read_contract.change_history_rows:
         return change_history_read_contract
     change_history_action_ids = _change_history_action_ids(action_ids)
-    return change_history_read_contract.model_copy(
-        update={"action_ids": change_history_action_ids}
-    )
+    return change_history_read_contract.model_copy(update={"action_ids": change_history_action_ids})
 
 
 def _change_history_row_sort_key(row: AdsChangeHistoryRow) -> tuple[str, str]:
@@ -3281,7 +3250,7 @@ def _search_terms_read_contract(
             "Uruchom odczyt danych Google Ads po dodaniu odczytu `search_term_view` "
             "i zapisz metryki search_term_*."
         ),
-        )
+    )
 
 
 def _search_term_review_summary_contract(
@@ -3301,8 +3270,7 @@ def _search_term_review_summary_contract(
             status="blocked",
             title="Google Ads: brak kolejki oceny wyszukiwanych haseł",
             summary=(
-                "WILQ nie ma wierszy wyszukiwanych haseł, więc nie może wskazać "
-                "kolejności oceny."
+                "WILQ nie ma wierszy wyszukiwanych haseł, więc nie może wskazać kolejności oceny."
             ),
             allowed_metrics=[],
             missing_read_contracts=["search_term_view"],
@@ -3345,9 +3313,7 @@ def _search_term_review_summary_contract(
         total_impressions=total_impressions,
         total_cost_micros=total_cost_micros,
         total_conversions=round(total_conversions, 6),
-        top_cost_search_terms=[
-            _search_term_review_row(row) for row in rows[:5]
-        ],
+        top_cost_search_terms=[_search_term_review_row(row) for row in rows[:5]],
         campaign_review_rows=campaign_review_rows,
         next_step=(
             "Najpierw przejrzyj kampanie i zapytania z największym kosztem. "
@@ -3404,9 +3370,7 @@ def _search_term_campaign_review_rows(
                     6,
                 ),
                 evidence_ids=_unique(
-                    evidence_id
-                    for row in campaign_rows
-                    for evidence_id in row.evidence_ids
+                    evidence_id for row in campaign_rows for evidence_id in row.evidence_ids
                 ),
                 blocked_claims=[
                     "marnowanie budżetu na zapytaniach",
@@ -3479,9 +3443,7 @@ def _search_term_metric_row(
         impressions=_int_metric_value(facts_by_name.get("search_term_impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),
         conversions=_float_metric_value(facts_by_name.get("search_term_conversions")),
-        conversion_value=_float_metric_value(
-            facts_by_name.get("search_term_conversion_value")
-        ),
+        conversion_value=_float_metric_value(facts_by_name.get("search_term_conversion_value")),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
@@ -3557,9 +3519,7 @@ def _search_term_ngram_read_contract(
     return AdsSearchTermNgramReadContract(
         status="blocked",
         title="Google Ads: brak n-gramów zapytań",
-        summary=(
-            "WILQ nie ma wierszy wyszukiwanych haseł, więc nie może zbudować n-gramów."
-        ),
+        summary=("WILQ nie ma wierszy wyszukiwanych haseł, więc nie może zbudować n-gramów."),
         allowed_metrics=[],
         missing_read_contracts=["search_term_view"],
         operator_review_gates=[],
@@ -3598,11 +3558,7 @@ def _search_term_ngram_rows(
 
 def _search_term_tokens(search_term: str) -> list[str]:
     tokens = re.findall(r"[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+", search_term.lower())
-    return [
-        token
-        for token in tokens
-        if len(token) > 1 and token not in ADS_NGRAM_STOPWORDS
-    ]
+    return [token for token in tokens if len(token) > 1 and token not in ADS_NGRAM_STOPWORDS]
 
 
 def _search_term_ngram_row(
@@ -3709,9 +3665,7 @@ def _search_term_safety_read_contract(
             operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
-                evidence_id for row in rows for evidence_id in row.evidence_ids
-            )
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
             or _refresh_or_connector_evidence_ids(latest_refresh),
             safety_rows=rows,
             next_step=(
@@ -3797,15 +3751,9 @@ def _search_term_safety_row(
         ad_group_name=first_dimensions.get("ad_group_name"),
         search_term_status=first_dimensions.get("search_term_status"),
         clicks_90d=_int_metric_value(facts_by_name.get("search_term_90d_clicks")),
-        impressions_90d=_int_metric_value(
-            facts_by_name.get("search_term_90d_impressions")
-        ),
-        cost_micros_90d=_int_metric_value(
-            facts_by_name.get("search_term_90d_cost_micros")
-        ),
-        conversions_90d=_float_metric_value(
-            facts_by_name.get("search_term_90d_conversions")
-        ),
+        impressions_90d=_int_metric_value(facts_by_name.get("search_term_90d_impressions")),
+        cost_micros_90d=_int_metric_value(facts_by_name.get("search_term_90d_cost_micros")),
+        conversions_90d=_float_metric_value(facts_by_name.get("search_term_90d_conversions")),
         conversion_value_90d=_float_metric_value(
             facts_by_name.get("search_term_90d_conversion_value")
         ),
@@ -3855,16 +3803,15 @@ def _keyword_match_context_read_contract(
     ]
     if rows or read_attempted:
         match_type_labels = _unique(
-            _ads_keyword_match_type_label(row.match_type)
-            for row in rows
-            if row.match_type
+            _ads_keyword_match_type_label(row.match_type) for row in rows if row.match_type
         )
         return AdsKeywordMatchContextReadContract(
             status="ready",
             title="Google Ads: kontekst dopasowań słów kluczowych",
             summary=(
                 f"WILQ ma kontekst {len(rows)} istniejących słów kluczowych "
-                f"z typami dopasowania: {', '.join(match_type_labels) if match_type_labels else 'brak wierszy'}."
+                "z typami dopasowania: "
+                f"{', '.join(match_type_labels) if match_type_labels else 'brak wierszy'}."
             ),
             allowed_metrics=[
                 "keyword_text",
@@ -3878,9 +3825,7 @@ def _keyword_match_context_read_contract(
             operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
-                evidence_id for row in rows for evidence_id in row.evidence_ids
-            )
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids)
             or _refresh_or_connector_evidence_ids(latest_refresh),
             context_rows=rows,
             next_step=(
@@ -4087,9 +4032,7 @@ def _search_term_ngram_section(
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
 ) -> AdsDiagnosticSection:
     metric_facts = [
-        fact
-        for row in search_term_ngram_read_contract.ngram_rows
-        for fact in row.metric_facts
+        fact for row in search_term_ngram_read_contract.ngram_rows for fact in row.metric_facts
     ]
     return AdsDiagnosticSection(
         id="ads_search_term_ngrams",
@@ -4115,9 +4058,7 @@ def _search_term_safety_section(
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
 ) -> AdsDiagnosticSection:
     metric_facts = [
-        fact
-        for row in search_term_safety_read_contract.safety_rows
-        for fact in row.metric_facts
+        fact for row in search_term_safety_read_contract.safety_rows for fact in row.metric_facts
     ]
     return AdsDiagnosticSection(
         id="ads_search_term_safety",
@@ -4213,9 +4154,7 @@ def _keyword_planner_read_contract(
             ],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
-                evidence_id for row in rows for evidence_id in row.evidence_ids
-            ),
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             idea_rows=rows,
             next_step=(
                 "Użyj wzbogacenia jako dodatkowego kontekstu przy segmentach. "
@@ -4278,8 +4217,7 @@ def _keyword_planner_idea_rows(metric_facts: list[MetricFact]) -> list[AdsKeywor
         grouped_facts.setdefault(idea_text, []).append(fact)
 
     rows = [
-        _keyword_planner_idea_row(idea_text, facts)
-        for idea_text, facts in grouped_facts.items()
+        _keyword_planner_idea_row(idea_text, facts) for idea_text, facts in grouped_facts.items()
     ]
     return sorted(
         rows,
@@ -4308,9 +4246,7 @@ def _keyword_planner_idea_row(
             facts_by_name.get("keyword_planner_avg_monthly_searches")
         ),
         competition=first_dimensions.get("competition"),
-        competition_index=_int_metric_value(
-            facts_by_name.get("keyword_planner_competition_index")
-        ),
+        competition_index=_int_metric_value(facts_by_name.get("keyword_planner_competition_index")),
         low_top_of_page_bid_micros=_int_metric_value(
             facts_by_name.get("keyword_planner_low_top_of_page_bid_micros")
         ),
@@ -4336,9 +4272,7 @@ def _keyword_planner_section(
     action_ids: list[str],
 ) -> AdsDiagnosticSection:
     metric_facts = [
-        fact
-        for row in keyword_planner_read_contract.idea_rows
-        for fact in row.metric_facts
+        fact for row in keyword_planner_read_contract.idea_rows for fact in row.metric_facts
     ]
     return AdsDiagnosticSection(
         id="ads_keyword_planner",
@@ -4361,11 +4295,7 @@ def _keyword_planner_section(
 
 
 def _keyword_planner_access_action_ids(action_ids: list[str]) -> list[str]:
-    return [
-        action_id
-        for action_id in action_ids
-        if action_id == KEYWORD_PLANNER_ACCESS_ACTION_ID
-    ]
+    return [action_id for action_id in action_ids if action_id == KEYWORD_PLANNER_ACCESS_ACTION_ID]
 
 
 def _custom_segments_read_contract(
@@ -4377,10 +4307,7 @@ def _custom_segments_read_contract(
         return AdsCustomSegmentsReadContract(
             status="blocked",
             title="Segmenty z wyszukiwanych haseł",
-            summary=(
-                "Brak wierszy wyszukiwanych haseł do zbudowania propozycji "
-                "segmentów."
-            ),
+            summary=("Brak wierszy wyszukiwanych haseł do zbudowania propozycji segmentów."),
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=search_terms_read_contract.evidence_ids,
             missing_read_contracts=[
@@ -4439,9 +4366,7 @@ def _custom_segments_read_contract(
         for candidate in candidates
         if candidate.payload_preview is not None
     ]
-    audience_forecast_read_contract = _custom_segment_audience_forecast_read_contract(
-        candidates
-    )
+    audience_forecast_read_contract = _custom_segment_audience_forecast_read_contract(candidates)
     missing_read_contracts = ["forecast_or_audience_size"]
     if keyword_planner_read_contract.status != "ready":
         missing_read_contracts.insert(0, "keyword_planner_enrichment")
@@ -4459,9 +4384,7 @@ def _custom_segments_read_contract(
         audience_forecast_read_contract=audience_forecast_read_contract,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
-            evidence_id
-            for candidate in candidates
-            for evidence_id in candidate.evidence_ids
+            evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
         missing_read_contracts=missing_read_contracts,
         operator_review_gates=CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES,
@@ -4512,9 +4435,7 @@ def _custom_segment_audience_forecast_read_contract(
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
-            evidence_id
-            for candidate in candidates
-            for evidence_id in candidate.evidence_ids
+            evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
         next_step=(
             "Nie oceniaj zasięgu ani skuteczności segmentu. Najpierw dostarcz "
@@ -4560,9 +4481,7 @@ def _custom_segment_candidates(
         group_key = (row.campaign_id, row.campaign_name)
         rejection_reason = _custom_segment_rejection_reason(row)
         if rejection_reason is not None:
-            rejected_by_group.setdefault(group_key, []).append(
-                (row.search_term, rejection_reason)
-            )
+            rejected_by_group.setdefault(group_key, []).append((row.search_term, rejection_reason))
             continue
         grouped.setdefault(group_key, []).append(row)
 
@@ -4578,9 +4497,7 @@ def _custom_segment_candidates(
         name = _custom_segment_name(campaign_name, index)
         rejected_pairs = rejected_by_group.get((campaign_id, campaign_name), [])
         rejected_terms = _unique(term for term, _reason in rejected_pairs)
-        rejection_reasons = _unique(
-            f"{term}: {reason}" for term, reason in rejected_pairs
-        )
+        rejection_reasons = _unique(f"{term}: {reason}" for term, reason in rejected_pairs)
         matched_keyword_planner_ideas = _matching_keyword_planner_ideas(
             source_terms,
             keyword_planner_ideas,
@@ -4597,11 +4514,7 @@ def _custom_segment_candidates(
         )
         metric_facts = [
             *(fact for row in sorted_rows for fact in row.metric_facts),
-            *(
-                fact
-                for idea in matched_keyword_planner_ideas
-                for fact in idea.metric_facts
-            ),
+            *(fact for idea in matched_keyword_planner_ideas for fact in idea.metric_facts),
         ][:28]
         payload_preview = _custom_segment_change_preview(
             candidate_id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
@@ -4754,9 +4667,7 @@ def _custom_segment_source_quality(
         accepted_terms=accepted_terms,
         rejected_terms=rejected_terms,
         missing_metric_terms=missing_metric_terms,
-        rejection_reasons=dict(
-            sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))
-        ),
+        rejection_reasons=dict(sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))),
     )
 
 
@@ -4938,23 +4849,18 @@ def _negative_keywords_read_contract(
                 ),
             ],
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
-        action_ids=[],
-        next_step=(
-            "Kontynuuj ocenę wyszukiwanych haseł bez zapisu zmian. Nie twórz "
-            "propozycji wykluczeń, jeśli bieżące dowody nie pokazują zerowej "
-            "konwersji."
+            action_ids=[],
+            next_step=(
+                "Kontynuuj ocenę wyszukiwanych haseł bez zapisu zmian. Nie twórz "
+                "propozycji wykluczeń, jeśli bieżące dowody nie pokazują zerowej "
+                "konwersji."
             ),
         )
 
     missing_read_contracts = (
-        []
-        if keyword_match_context_read_contract.status == "ready"
-        else ["keyword match context"]
+        [] if keyword_match_context_read_contract.status == "ready" else ["keyword match context"]
     )
-    if any(
-        candidate.safety_status != "read_ready_needs_human_review"
-        for candidate in candidates
-    ):
+    if any(candidate.safety_status != "read_ready_needs_human_review" for candidate in candidates):
         missing_read_contracts.insert(1, "90_day_safety_check")
 
     return AdsNegativeKeywordsReadContract(
@@ -5066,9 +4972,7 @@ def _negative_keyword_candidates(
                 impressions_90d=safety_row.impressions_90d if safety_row else None,
                 cost_micros_90d=safety_row.cost_micros_90d if safety_row else None,
                 conversions_90d=safety_row.conversions_90d if safety_row else None,
-                conversion_value_90d=(
-                    safety_row.conversion_value_90d if safety_row else None
-                ),
+                conversion_value_90d=(safety_row.conversion_value_90d if safety_row else None),
                 evidence_ids=row.evidence_ids,
                 safety_evidence_ids=safety_row.evidence_ids if safety_row else [],
                 keyword_context_evidence_ids=_unique(
@@ -5138,9 +5042,7 @@ def _negative_keyword_review_reason(
     current_cost = _format_micros(row.cost_micros)
     safety_cost = _format_micros(safety_row.cost_micros_90d if safety_row else None)
     current_conversions = _format_float(float(row.conversions or 0))
-    safety_conversions_value = (
-        safety_row.conversions_90d if safety_row is not None else 0
-    )
+    safety_conversions_value = safety_row.conversions_90d if safety_row is not None else 0
     safety_conversions = _format_float(float(safety_conversions_value or 0))
     safety_part = (
         f"90 dni: kliknięcia={safety_row.clicks_90d or 0}, koszt={safety_cost or '0'}, "
@@ -5166,12 +5068,8 @@ def _negative_keyword_change_preview(
 ) -> AdsNegativeKeywordPayloadPreview:
     safety_evidence_ids = safety_row.evidence_ids if safety_row else []
     evidence_ids = _unique([*row.evidence_ids, *safety_evidence_ids])
-    safety_metric_names = (
-        [fact.name for fact in safety_row.metric_facts] if safety_row else []
-    )
-    source_metric_names = _unique(
-        [*(fact.name for fact in row.metric_facts), *safety_metric_names]
-    )
+    safety_metric_names = [fact.name for fact in safety_row.metric_facts] if safety_row else []
+    source_metric_names = _unique([*(fact.name for fact in row.metric_facts), *safety_metric_names])
     level: Literal["ad_group", "campaign_review_required"] = (
         "ad_group" if row.ad_group_id else "campaign_review_required"
     )
@@ -5330,20 +5228,23 @@ def _ads_decision_queue(
 ) -> list[AdsDecisionItem]:
     if blocked_handoff is not None:
         return [
-            _with_ads_decision_lineage(AdsDecisionItem(
-                id="ads_fix_access_before_analysis",
-                decision_type="fix_ads_access",
-                status="blocked",
-                title="Napraw dostęp Google Ads przed analizą",
-                summary=blocked_handoff.summary,
-                rationale=blocked_handoff.marketer_message,
-                next_step="Wykonaj ścieżkę naprawy OAuth i dopiero potem odczyt Google Ads.",
-                source_connectors=blocked_handoff.source_connectors,
-                evidence_ids=blocked_handoff.evidence_ids,
-                action_ids=blocked_handoff.action_ids,
-                blocked_claims=blocked_handoff.blocked_claims,
-                risk=ActionRisk.medium,
-            ), currency_code)
+            _with_ads_decision_lineage(
+                AdsDecisionItem(
+                    id="ads_fix_access_before_analysis",
+                    decision_type="fix_ads_access",
+                    status="blocked",
+                    title="Napraw dostęp Google Ads przed analizą",
+                    summary=blocked_handoff.summary,
+                    rationale=blocked_handoff.marketer_message,
+                    next_step="Wykonaj ścieżkę naprawy OAuth i dopiero potem odczyt Google Ads.",
+                    source_connectors=blocked_handoff.source_connectors,
+                    evidence_ids=blocked_handoff.evidence_ids,
+                    action_ids=blocked_handoff.action_ids,
+                    blocked_claims=blocked_handoff.blocked_claims,
+                    risk=ActionRisk.medium,
+                ),
+                currency_code,
+            )
         ]
 
     decisions: list[AdsDecisionItem] = []
@@ -5437,7 +5338,8 @@ def _ads_decision_queue(
             rationale=(
                 "Google Ads pokazuje koszt, kliknięcia, konwersje i część wskaźników. "
                 "WILQ używa lokalnego kontraktu z marżą, celem biznesowym, "
-                "celem budżetu oraz docelowym zwrotem z reklam albo kosztem pozyskania celu jako kontekstu oceny, ale "
+                "celem budżetu oraz docelowym zwrotem z reklam albo kosztem "
+                "pozyskania celu jako kontekstu oceny, ale "
                 "nadal blokuje zapis zmian i twarde oceny bez pełnych danych "
                 "tempa wydawania budżetu, historii zmian, rekomendacji i audytu."
                 if business_context_read_contract.status == "ready"
@@ -5471,9 +5373,11 @@ def _ads_decision_queue(
                 title="Sprawdź wyliczone wskaźniki kampanii bez decyzji budżetowych",
                 summary=derived_kpi_read_contract.summary,
                 rationale=(
-                    "Koszt pozyskania celu i zwrot z reklam są tu wartościami obliczonymi z kosztu, konwersji "
+                    "Koszt pozyskania celu i zwrot z reklam są tu wartościami "
+                    "obliczonymi z kosztu, konwersji "
                     "i wartości konwersji w bieżących dowodach Google Ads. WILQ nadal "
-                    "blokuje wniosek o rentowności, stracie budżetu, skalowaniu budżetu i zapisie zmian."
+                    "blokuje wniosek o rentowności, stracie budżetu, "
+                    "skalowaniu budżetu i zapisie zmian."
                 ),
                 next_step=derived_kpi_read_contract.next_step,
                 allowed_metrics=derived_kpi_read_contract.allowed_metrics,
@@ -5595,10 +5499,7 @@ def _ads_decision_queue(
             )
         )
 
-    if (
-        change_history_read_contract.status == "ready"
-        or change_history_read_contract.evidence_ids
-    ):
+    if change_history_read_contract.status == "ready" or change_history_read_contract.evidence_ids:
         metric_facts = [
             fact
             for row in change_history_read_contract.change_history_rows
@@ -5673,9 +5574,7 @@ def _ads_decision_queue(
 
     if search_term_ngram_read_contract.ngram_rows:
         metric_facts = [
-            fact
-            for row in search_term_ngram_read_contract.ngram_rows
-            for fact in row.metric_facts
+            fact for row in search_term_ngram_read_contract.ngram_rows for fact in row.metric_facts
         ]
         top_rows = search_term_ngram_read_contract.ngram_rows[:8]
         decisions.append(
@@ -5699,12 +5598,8 @@ def _ads_decision_queue(
                     "top kliknięcia": sum(row.clicks or 0 for row in top_rows),
                 },
                 allowed_metrics=search_term_ngram_read_contract.allowed_metrics,
-                missing_read_contracts=(
-                    search_term_ngram_read_contract.missing_read_contracts
-                ),
-                operator_review_gates=(
-                    search_term_ngram_read_contract.operator_review_gates
-                ),
+                missing_read_contracts=(search_term_ngram_read_contract.missing_read_contracts),
+                operator_review_gates=(search_term_ngram_read_contract.operator_review_gates),
                 source_connectors=search_term_ngram_read_contract.source_connectors,
                 evidence_ids=search_term_ngram_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
@@ -5735,9 +5630,7 @@ def _ads_decision_queue(
                 ),
                 next_step=search_term_safety_read_contract.next_step,
                 allowed_metrics=search_term_safety_read_contract.allowed_metrics,
-                missing_read_contracts=(
-                    search_term_safety_read_contract.missing_read_contracts
-                ),
+                missing_read_contracts=(search_term_safety_read_contract.missing_read_contracts),
                 operator_review_gates=search_term_safety_read_contract.operator_review_gates,
                 source_connectors=search_term_safety_read_contract.source_connectors,
                 evidence_ids=search_term_safety_read_contract.evidence_ids,
@@ -5810,9 +5703,7 @@ def _ads_decision_queue(
                 search_term_safety_rows=search_term_safety_read_contract.safety_rows[:12],
                 keyword_match_context_rows=keyword_match_context_rows[:12],
                 negative_keyword_candidates=negative_keywords_read_contract.candidates,
-                negative_keyword_payload_preview=(
-                    negative_keywords_read_contract.payload_preview
-                ),
+                negative_keyword_payload_preview=(negative_keywords_read_contract.payload_preview),
                 action_ids=negative_keywords_read_contract.action_ids,
                 blocked_claims=negative_keywords_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
@@ -5861,9 +5752,7 @@ def _ads_decision_queue(
                     "keyword_planner_competition_index",
                 ],
                 missing_read_contracts=custom_segments_read_contract.missing_read_contracts,
-                operator_review_gates=(
-                    custom_segments_read_contract.operator_review_gates
-                ),
+                operator_review_gates=(custom_segments_read_contract.operator_review_gates),
                 source_connectors=custom_segments_read_contract.source_connectors,
                 evidence_ids=custom_segments_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
@@ -5915,23 +5804,15 @@ def _business_context_action_ids(action_ids: list[str]) -> list[str]:
         ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
     }
-    return [
-        action_id for action_id in action_ids if action_id in allowed_ids
-    ]
+    return [action_id for action_id in action_ids if action_id in allowed_ids]
 
 
 def _recommendation_action_ids(action_ids: list[str]) -> list[str]:
-    return [
-        action_id
-        for action_id in action_ids
-        if action_id == RECOMMENDATION_REVIEW_ACTION_ID
-    ]
+    return [action_id for action_id in action_ids if action_id == RECOMMENDATION_REVIEW_ACTION_ID]
 
 
 def _change_history_action_ids(action_ids: list[str]) -> list[str]:
-    return [
-        action_id for action_id in action_ids if action_id == CHANGE_HISTORY_IMPACT_ACTION_ID
-    ]
+    return [action_id for action_id in action_ids if action_id == CHANGE_HISTORY_IMPACT_ACTION_ID]
 
 
 def _search_term_ngram_with_action_ids(
@@ -5963,30 +5844,22 @@ def _remove_available_contracts(
 ) -> list[str]:
     unavailable = list(missing_read_contracts)
     if budget_pacing_read_contract.status == "ready":
-        unavailable = [
-            contract for contract in unavailable if contract != "budget_pacing"
-        ]
+        unavailable = [contract for contract in unavailable if contract != "budget_pacing"]
     if (
         recommendations_read_contract is not None
         and recommendations_read_contract.status == "ready"
     ):
-        unavailable = [
-            contract for contract in unavailable if contract != "recommendations"
-        ]
+        unavailable = [contract for contract in unavailable if contract != "recommendations"]
     if (
         impression_share_read_contract is not None
         and impression_share_read_contract.status == "ready"
     ):
-        unavailable = [
-            contract for contract in unavailable if contract != "impression_share"
-        ]
+        unavailable = [contract for contract in unavailable if contract != "impression_share"]
     if (
         change_history_read_contract is not None
         and "change_history" not in change_history_read_contract.missing_read_contracts
     ):
-        unavailable = [
-            contract for contract in unavailable if contract != "change_history"
-        ]
+        unavailable = [contract for contract in unavailable if contract != "change_history"]
     return unavailable
 
 
@@ -6008,7 +5881,9 @@ def _blocked_handoff(
         summary=_ads_blocker_reason(latest_refresh),
         marketer_message=(
             "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o "
-            "wydatkach, koszcie pozyskania celu, zwrocie z reklam, wyszukiwanych hasłach i wykluczających słowach kluczowych. To jest kontrola jakości, "
+            "wydatkach, koszcie pozyskania celu, zwrocie z reklam, "
+            "wyszukiwanych hasłach i wykluczających słowach kluczowych. "
+            "To jest kontrola jakości, "
             "nie brak wiedzy."
         ),
         repair_steps=[
@@ -6016,7 +5891,8 @@ def _blocked_handoff(
             "Zweryfikuj akcję `act_configure_google_ads_env`.",
             "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
             "Uruchom odczyt danych Google Ads.",
-            "Dopiero po świeżych dowodach pokazuj wydatki, koszt pozyskania celu, zwrot z reklam lub wyszukiwane hasła.",
+            "Dopiero po świeżych dowodach pokazuj wydatki, koszt pozyskania celu, "
+            "zwrot z reklam lub wyszukiwane hasła.",
         ],
         allowed_demo_claims=[
             "Google Ads jest zablokowany przez dostęp OAuth/API.",
@@ -6126,14 +6002,8 @@ def _ads_decision_metric_tiles(
             row.recommendation_count for row in decision.campaign_triage_rows
         )
         preview_count = sum(
-            1
-            for row in decision.campaign_triage_rows
-            if row.has_budget_apply_preview
-        ) + sum(
-            1
-            for row in decision.campaign_triage_rows
-            if row.has_recommendation_apply_preview
-        )
+            1 for row in decision.campaign_triage_rows if row.has_budget_apply_preview
+        ) + sum(1 for row in decision.campaign_triage_rows if row.has_recommendation_apply_preview)
         return _clean_metric_tiles(
             {
                 "kampanie": len(decision.campaign_triage_rows),
@@ -6198,9 +6068,7 @@ def _ads_decision_metric_tiles(
             ),
         }
         if decision.shared_budget_distribution_rows:
-            budget_tiles["wspólne budżety"] = len(
-                decision.shared_budget_distribution_rows
-            )
+            budget_tiles["wspólne budżety"] = len(decision.shared_budget_distribution_rows)
         return _clean_metric_tiles(budget_tiles)
     if decision.decision_type == "review_recommendations":
         rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
@@ -6422,9 +6290,7 @@ def _hydrate_ads_review_gate_labels(response: AdsDiagnosticsResponse) -> None:
         *response.decision_queue,
     ]
     for owner in operator_gate_owners:
-        owner.operator_review_gate_labels = _ads_review_gate_labels(
-            owner.operator_review_gates
-        )
+        owner.operator_review_gate_labels = _ads_review_gate_labels(owner.operator_review_gates)
         if hasattr(owner, "operator_review_gate_summary_label"):
             owner.operator_review_gate_summary_label = required_validation_count_label(
                 owner.operator_review_gate_labels or owner.operator_review_gates
@@ -6464,8 +6330,8 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
     response.operator_summary.missing_read_contract_labels = _ads_missing_read_contract_labels(
         response.operator_summary.missing_read_contracts
     )
-    response.operator_summary.missing_read_contract_summary_label = (
-        missing_contract_count_label(response.operator_summary.missing_read_contracts)
+    response.operator_summary.missing_read_contract_summary_label = missing_contract_count_label(
+        response.operator_summary.missing_read_contracts
     )
     response.operator_summary.allowed_metric_labels = _ads_allowed_metric_labels(
         response.operator_summary.allowed_metrics
@@ -6474,8 +6340,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         response.operator_summary.blocked_claims
     )
     response.operator_summary.blocked_claim_summary_label = blocked_claim_count_label(
-        response.operator_summary.blocked_claim_labels
-        or response.operator_summary.blocked_claims
+        response.operator_summary.blocked_claim_labels or response.operator_summary.blocked_claims
     )
     response.decision_queue = [
         decision.model_copy(
@@ -6489,9 +6354,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 ),
                 "measurement_plan": _ads_decision_measurement_plan(decision),
                 "risk_label": _ads_risk_label(decision.risk),
-                "source_connector_labels": source_connector_labels(
-                    decision.source_connectors
-                ),
+                "source_connector_labels": source_connector_labels(decision.source_connectors),
                 "evidence_summary_label": evidence_count_label(decision.evidence_ids),
                 "action_summary_label": action_count_label(decision.action_ids),
                 "missing_read_contract_labels": _ads_missing_read_contract_labels(
@@ -6505,8 +6368,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                     _unique(decision.blocked_claims)
                 ),
                 "operator_review_gate_summary_label": required_validation_count_label(
-                    decision.operator_review_gate_labels
-                    or decision.operator_review_gates
+                    decision.operator_review_gate_labels or decision.operator_review_gates
                 ),
             }
         )
@@ -6516,9 +6378,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         section.model_copy(
             update={
                 "status_label": _ads_status_label(section.status),
-                "source_connector_labels": source_connector_labels(
-                    section.source_connectors
-                ),
+                "source_connector_labels": source_connector_labels(section.source_connectors),
                 "evidence_summary_label": evidence_count_label(section.evidence_ids),
                 "action_summary_label": action_count_label(section.action_ids),
                 "blocked_claim_labels": _unique(section.blocked_claims),
@@ -6536,9 +6396,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
                 "evidence_summary_label": evidence_count_label(
                     response.blocked_handoff.evidence_ids
                 ),
-                "action_summary_label": action_count_label(
-                    response.blocked_handoff.action_ids
-                ),
+                "action_summary_label": action_count_label(response.blocked_handoff.action_ids),
                 "blocked_claim_labels": _unique(response.blocked_handoff.blocked_claims),
             }
         )
@@ -6580,9 +6438,7 @@ def _hydrate_ads_marketer_labels(response: AdsDiagnosticsResponse) -> None:
         )
     )
     _hydrate_negative_keywords_marketer_labels(response.negative_keywords_read_contract)
-    _hydrate_keyword_match_context_marketer_labels(
-        response.keyword_match_context_read_contract
-    )
+    _hydrate_keyword_match_context_marketer_labels(response.keyword_match_context_read_contract)
 
 
 def _hydrate_campaign_triage_marketer_labels(
@@ -6591,9 +6447,7 @@ def _hydrate_campaign_triage_marketer_labels(
     contract.action_summary_label = action_count_label(contract.action_ids)
     for row in contract.triage_rows:
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
-        row.advertising_channel_type_label = _ads_channel_type_label(
-            row.advertising_channel_type
-        )
+        row.advertising_channel_type_label = _ads_channel_type_label(row.advertising_channel_type)
         row.missing_read_contract_labels = _ads_missing_read_contract_labels(
             row.missing_read_contracts
         )
@@ -6609,9 +6463,7 @@ def _hydrate_budget_pacing_marketer_labels(
         _hydrate_budget_payload_preview_labels(preview)
     for row in contract.budget_rows:
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
-        row.advertising_channel_type_label = _ads_channel_type_label(
-            row.advertising_channel_type
-        )
+        row.advertising_channel_type_label = _ads_channel_type_label(row.advertising_channel_type)
         row.budget_period_label = _ads_budget_period_label(row.budget_period)
         row.budget_status_label = _ads_campaign_status_label(row.budget_status)
         row.blocked_claim_labels = _unique(row.blocked_claims)
@@ -6621,15 +6473,13 @@ def _hydrate_budget_pacing_marketer_labels(
         if row.payload_preview is not None:
             _hydrate_budget_payload_preview_labels(row.payload_preview)
             row.preview_card = _budget_preview_card(row.payload_preview, currency_code)
-    for row in contract.shared_budget_distribution_rows:
-        row.blocked_claim_labels = _unique(row.blocked_claims)
-        row.blocked_claim_summary_label = blocked_claim_count_label(
-            row.blocked_claim_labels or row.blocked_claims
+    for shared_budget_row in contract.shared_budget_distribution_rows:
+        shared_budget_row.blocked_claim_labels = _unique(shared_budget_row.blocked_claims)
+        shared_budget_row.blocked_claim_summary_label = blocked_claim_count_label(
+            shared_budget_row.blocked_claim_labels or shared_budget_row.blocked_claims
         )
-        for share in row.campaign_shares:
-            share.campaign_status_label = _ads_campaign_status_label(
-                share.campaign_status
-            )
+        for share in shared_budget_row.campaign_shares:
+            share.campaign_status_label = _ads_campaign_status_label(share.campaign_status)
             share.advertising_channel_type_label = _ads_channel_type_label(
                 share.advertising_channel_type
             )
@@ -6637,9 +6487,7 @@ def _hydrate_budget_pacing_marketer_labels(
 
 def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> None:
     preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
-    preview.required_validation_labels = _ads_review_gate_labels(
-        preview.required_validation
-    )
+    preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
     safety_review = preview.safety_review
     safety_review.status_label = _ads_status_label(safety_review.status)
@@ -6653,9 +6501,13 @@ def _hydrate_budget_payload_preview_labels(preview: AdsBudgetApplyPreview) -> No
 
 
 def _ads_preview_card_id(kind: str, source_id: str) -> str:
-    digest = hashlib.sha1(source_id.encode("utf-8")).digest()
+    digest = hashlib.sha256(source_id.encode("utf-8")).digest()
     suffix = "".join(chr(ord("a") + byte % 26) for byte in digest[:8])
     return f"{kind}_card_{suffix}"
+
+
+def _ads_preview_row(label: str, value: str) -> ActionPreviewRowViewModel:
+    return ActionPreviewRowViewModel(label=label, value=value)
 
 
 def _budget_preview_card(
@@ -6663,55 +6515,52 @@ def _budget_preview_card(
     currency_code: str | None,
 ) -> ActionPreviewCardViewModel:
     rows = [
-        {
-            "label": "Budżet teraz",
-            "value": _format_money_micros(
+        _ads_preview_row(
+            "Budżet teraz",
+            _format_money_micros(
                 preview.current_budget_amount_micros,
                 currency_code,
             )
             or "brak danych",
-        },
-        {
-            "label": "Propozycja do sprawdzenia",
-            "value": _format_money_micros(
+        ),
+        _ads_preview_row(
+            "Propozycja do sprawdzenia",
+            _format_money_micros(
                 preview.proposed_budget_amount_micros,
                 currency_code,
             )
             or "brak danych",
-        },
-        {
-            "label": "Operacja",
-            "value": preview.operation_type_label or "zmiana budżetu do sprawdzenia",
-        },
+        ),
+        _ads_preview_row(
+            "Operacja",
+            preview.operation_type_label or "zmiana budżetu do sprawdzenia",
+        ),
     ]
     if preview.campaign_id or preview.campaign_budget_id:
         rows.append(
-            {
-                "label": "Powiązanie",
-                "value": "kampania albo budżet do sprawdzenia w szczegółach technicznych",
-            }
+            _ads_preview_row(
+                "Powiązanie",
+                "kampania albo budżet do sprawdzenia w szczegółach technicznych",
+            )
         )
     if preview.required_validation_labels:
         rows.append(
-            {
-                "label": "Warunki sprawdzenia",
-                "value": ", ".join(preview.required_validation_labels[:4]),
-            }
+            _ads_preview_row(
+                "Warunki sprawdzenia",
+                ", ".join(preview.required_validation_labels[:4]),
+            )
         )
     missing_requirements = preview.safety_review.missing_requirement_labels
     if missing_requirements:
         rows.append(
-            {
-                "label": "Braki bezpieczeństwa",
-                "value": ", ".join(missing_requirements[:4]),
-            }
+            _ads_preview_row("Braki bezpieczeństwa", ", ".join(missing_requirements[:4]))
         )
     if preview.blocked_claim_labels:
         rows.append(
-            {
-                "label": "Czego nie wolno twierdzić",
-                "value": ", ".join(preview.blocked_claim_labels[:4]),
-            }
+            _ads_preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(preview.blocked_claim_labels[:4]),
+            )
         )
     return ActionPreviewCardViewModel(
         id=_ads_preview_card_id("google_ads_budget_review", preview.id),
@@ -6721,14 +6570,10 @@ def _budget_preview_card(
         status_label="zapis zmian zablokowany",
         rows=rows,
         apply_state_label=(
-            "możliwy zapis po sprawdzeniu"
-            if preview.apply_allowed
-            else "zapis zmian zablokowany"
+            "możliwy zapis po sprawdzeniu" if preview.apply_allowed else "zapis zmian zablokowany"
         ),
         system_readiness_label=(
-            "system gotowy do zapisu"
-            if preview.api_mutation_ready
-            else "wymaga kontroli"
+            "system gotowy do zapisu" if preview.api_mutation_ready else "wymaga kontroli"
         ),
     )
 
@@ -6737,9 +6582,7 @@ def _hydrate_recommendations_marketer_labels(
     contract: AdsRecommendationsReadContract,
 ) -> None:
     for row in contract.recommendation_rows:
-        row.recommendation_type_label = _ads_recommendation_type_label(
-            row.recommendation_type
-        )
+        row.recommendation_type_label = _ads_recommendation_type_label(row.recommendation_type)
         row.blocked_claim_labels = _unique(row.blocked_claims)
         if row.payload_preview is not None:
             _hydrate_recommendation_payload_preview_labels(row.payload_preview)
@@ -6751,13 +6594,9 @@ def _hydrate_recommendations_marketer_labels(
 def _hydrate_recommendation_payload_preview_labels(
     preview: AdsRecommendationApplyPreview,
 ) -> None:
-    preview.recommendation_type_label = _ads_recommendation_type_label(
-        preview.recommendation_type
-    )
+    preview.recommendation_type_label = _ads_recommendation_type_label(preview.recommendation_type)
     preview.operation_type_label = _ads_google_operation_label(preview.operation_type)
-    preview.required_validation_labels = _ads_review_gate_labels(
-        preview.required_validation
-    )
+    preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
 
 
@@ -6765,36 +6604,35 @@ def _recommendation_preview_card(
     preview: AdsRecommendationApplyPreview,
 ) -> ActionPreviewCardViewModel:
     rows = [
-        {
-            "label": "Rekomendacja",
-            "value": preview.recommendation_type_label
-            or "rekomendacja do sprawdzenia",
-        },
-        {
-            "label": "Operacja",
-            "value": preview.operation_type_label or "operacja do sprawdzenia",
-        },
+        _ads_preview_row(
+            "Rekomendacja",
+            preview.recommendation_type_label or "rekomendacja do sprawdzenia",
+        ),
+        _ads_preview_row(
+            "Operacja",
+            preview.operation_type_label or "operacja do sprawdzenia",
+        ),
     ]
     if preview.campaign_id or preview.campaign_budget_id:
         rows.append(
-            {
-                "label": "Powiązanie",
-                "value": "kampania albo budżet do sprawdzenia w szczegółach technicznych",
-            }
+            _ads_preview_row(
+                "Powiązanie",
+                "kampania albo budżet do sprawdzenia w szczegółach technicznych",
+            )
         )
     if preview.required_validation_labels:
         rows.append(
-            {
-                "label": "Warunki sprawdzenia",
-                "value": ", ".join(preview.required_validation_labels[:4]),
-            }
+            _ads_preview_row(
+                "Warunki sprawdzenia",
+                ", ".join(preview.required_validation_labels[:4]),
+            )
         )
     if preview.blocked_claim_labels:
         rows.append(
-            {
-                "label": "Czego nie wolno twierdzić",
-                "value": ", ".join(preview.blocked_claim_labels[:4]),
-            }
+            _ads_preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(preview.blocked_claim_labels[:4]),
+            )
         )
     return ActionPreviewCardViewModel(
         id=_ads_preview_card_id("google_ads_recommendation_review", preview.id),
@@ -6804,14 +6642,10 @@ def _recommendation_preview_card(
         status_label="zapis zmian zablokowany",
         rows=rows,
         apply_state_label=(
-            "możliwy zapis po sprawdzeniu"
-            if preview.apply_allowed
-            else "zapis zmian zablokowany"
+            "możliwy zapis po sprawdzeniu" if preview.apply_allowed else "zapis zmian zablokowany"
         ),
         system_readiness_label=(
-            "system gotowy do zapisu"
-            if preview.api_mutation_ready
-            else "wymaga kontroli"
+            "system gotowy do zapisu" if preview.api_mutation_ready else "wymaga kontroli"
         ),
     )
 
@@ -6821,9 +6655,7 @@ def _hydrate_impression_share_marketer_labels(
 ) -> None:
     for row in contract.impression_share_rows:
         row.campaign_status_label = _ads_campaign_status_label(row.campaign_status)
-        row.advertising_channel_type_label = _ads_channel_type_label(
-            row.advertising_channel_type
-        )
+        row.advertising_channel_type_label = _ads_channel_type_label(row.advertising_channel_type)
         row.blocked_claim_labels = _unique(row.blocked_claims)
         row.blocked_claim_summary_label = blocked_claim_count_label(
             row.blocked_claim_labels or row.blocked_claims
@@ -6840,9 +6672,7 @@ def _hydrate_change_history_marketer_labels(
     )
     contract.blocked_claim_labels = _unique(contract.blocked_claims)
     for row in contract.change_history_rows:
-        row.change_resource_type_label = _ads_change_resource_type_label(
-            row.change_resource_type
-        )
+        row.change_resource_type_label = _ads_change_resource_type_label(row.change_resource_type)
         row.resource_change_operation_label = _ads_resource_change_operation_label(
             row.resource_change_operation
         )
@@ -6888,9 +6718,7 @@ def _hydrate_negative_keywords_marketer_labels(
         contract.blocked_claim_labels or contract.blocked_claims
     )
     for candidate in contract.candidates:
-        candidate.required_check_labels = _ads_review_gate_labels(
-            candidate.required_checks
-        )
+        candidate.required_check_labels = _ads_review_gate_labels(candidate.required_checks)
         candidate.safety_status_label = _ads_negative_keyword_safety_status_label(
             candidate.safety_status
         )
@@ -6902,9 +6730,7 @@ def _hydrate_negative_keywords_marketer_labels(
             _hydrate_keyword_match_context_row_labels(row)
         if candidate.payload_preview is not None:
             _hydrate_negative_keyword_payload_preview_labels(candidate.payload_preview)
-            candidate.preview_card = _negative_keyword_preview_card(
-                candidate.payload_preview
-            )
+            candidate.preview_card = _negative_keyword_preview_card(candidate.payload_preview)
     for preview in contract.payload_preview:
         _hydrate_negative_keyword_payload_preview_labels(preview)
 
@@ -6914,9 +6740,7 @@ def _hydrate_negative_keyword_payload_preview_labels(
 ) -> None:
     preview.match_type_label = _ads_keyword_match_type_label(preview.match_type)
     preview.level_label = _ads_negative_keyword_level_label(preview.level)
-    preview.required_validation_labels = _ads_review_gate_labels(
-        preview.required_validation
-    )
+    preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
 
 
@@ -6924,38 +6748,26 @@ def _negative_keyword_preview_card(
     preview: AdsNegativeKeywordPayloadPreview,
 ) -> ActionPreviewCardViewModel:
     rows = [
-        {"label": "Hasło", "value": preview.search_term},
-        {"label": "Wykluczenie", "value": preview.negative_keyword_text},
-        {
-            "label": "Dopasowanie",
-            "value": preview.match_type_label or "dopasowanie do sprawdzenia",
-        },
-        {
-            "label": "Poziom",
-            "value": preview.level_label or "poziom do sprawdzenia",
-        },
-        {
-            "label": "Kampania",
-            "value": preview.campaign_label or "kampania do sprawdzenia",
-        },
-        {
-            "label": "Grupa reklam",
-            "value": preview.ad_group_label or "grupa reklam do sprawdzenia",
-        },
+        _ads_preview_row("Hasło", preview.search_term),
+        _ads_preview_row("Wykluczenie", preview.negative_keyword_text),
+        _ads_preview_row("Dopasowanie", preview.match_type_label or "dopasowanie do sprawdzenia"),
+        _ads_preview_row("Poziom", preview.level_label or "poziom do sprawdzenia"),
+        _ads_preview_row("Kampania", preview.campaign_label or "kampania do sprawdzenia"),
+        _ads_preview_row("Grupa reklam", preview.ad_group_label or "grupa reklam do sprawdzenia"),
     ]
     if preview.required_validation_labels:
         rows.append(
-            {
-                "label": "Warunki sprawdzenia",
-                "value": ", ".join(preview.required_validation_labels[:4]),
-            }
+            _ads_preview_row(
+                "Warunki sprawdzenia",
+                ", ".join(preview.required_validation_labels[:4]),
+            )
         )
     if preview.blocked_claim_labels:
         rows.append(
-            {
-                "label": "Czego nie wolno twierdzić",
-                "value": ", ".join(preview.blocked_claim_labels[:4]),
-            }
+            _ads_preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(preview.blocked_claim_labels[:4]),
+            )
         )
     return ActionPreviewCardViewModel(
         id=_ads_preview_card_id("google_ads_negative_keyword_review", preview.id),
@@ -6965,14 +6777,10 @@ def _negative_keyword_preview_card(
         status_label="zapis zmian zablokowany",
         rows=rows,
         apply_state_label=(
-            "możliwy zapis po sprawdzeniu"
-            if preview.apply_allowed
-            else "zapis zmian zablokowany"
+            "możliwy zapis po sprawdzeniu" if preview.apply_allowed else "zapis zmian zablokowany"
         ),
         system_readiness_label=(
-            "system gotowy do zapisu"
-            if preview.api_mutation_ready
-            else "wymaga kontroli"
+            "system gotowy do zapisu" if preview.api_mutation_ready else "wymaga kontroli"
         ),
     )
 
@@ -6986,9 +6794,7 @@ def _hydrate_keyword_match_context_marketer_labels(
 
 def _hydrate_keyword_match_context_row_labels(row: AdsKeywordMatchContextRow) -> None:
     row.match_type_label = _ads_keyword_match_type_label(row.match_type)
-    row.criterion_status_label = _ads_keyword_criterion_status_label(
-        row.criterion_status
-    )
+    row.criterion_status_label = _ads_keyword_criterion_status_label(row.criterion_status)
     row.negative_label = "wykluczające" if row.negative else "aktywne"
 
 
@@ -6998,12 +6804,8 @@ def _hydrate_business_context_marketer_labels(
     contract.status_label = _ads_business_context_status_label(contract)
     interpretation = contract.target_interpretation
     interpretation.status_label = _ads_status_label(interpretation.status)
-    interpretation.allowed_use_labels = _ads_business_use_labels(
-        interpretation.allowed_uses
-    )
-    interpretation.blocked_use_labels = _ads_business_use_labels(
-        interpretation.blocked_uses
-    )
+    interpretation.allowed_use_labels = _ads_business_use_labels(interpretation.allowed_uses)
+    interpretation.blocked_use_labels = _ads_business_use_labels(interpretation.blocked_uses)
     interpretation.missing_requirement_labels = _ads_missing_read_contract_labels(
         interpretation.missing_requirements
     )
@@ -7017,9 +6819,7 @@ def _hydrate_business_context_marketer_labels(
     readiness.latest_review_status_label = _ads_strategy_review_status_label(
         readiness.latest_review_status
     )
-    readiness.required_validation_labels = _ads_review_gate_labels(
-        readiness.required_validation
-    )
+    readiness.required_validation_labels = _ads_review_gate_labels(readiness.required_validation)
     readiness.missing_read_contract_labels = _ads_missing_read_contract_labels(
         readiness.missing_read_contracts
     )
@@ -7092,51 +6892,42 @@ def _custom_segment_preview_card(
     targeting_preview = preview.targeting_preview[0] if preview.targeting_preview else None
     safety_review = preview.safety_review
     rows = [
-        {
-            "label": "Nazwa",
-            "value": preview.custom_segment_name,
-        },
-        {
-            "label": "Typ odbiorców",
-            "value": preview.member_type_label or "typ odbiorców do sprawdzenia",
-        },
-        {
-            "label": "Hasła źródłowe",
-            "value": ", ".join(preview.source_terms[:4]) if preview.source_terms else "brak haseł",
-        },
-        {
-            "label": "Kampania do sprawdzenia",
-            "value": (
+        _ads_preview_row("Nazwa", preview.custom_segment_name),
+        _ads_preview_row(
+            "Typ odbiorców",
+            preview.member_type_label or "typ odbiorców do sprawdzenia",
+        ),
+        _ads_preview_row(
+            "Hasła źródłowe",
+            ", ".join(preview.source_terms[:4]) if preview.source_terms else "brak haseł",
+        ),
+        _ads_preview_row(
+            "Kampania do sprawdzenia",
+            (
                 targeting_preview.campaign_name
                 if targeting_preview is not None and targeting_preview.campaign_name
                 else "kampania do sprawdzenia"
             ),
-        },
-        {
-            "label": "Bezpieczeństwo",
-            "value": safety_review.status_label or "wymaga sprawdzenia",
-        },
+        ),
+        _ads_preview_row("Bezpieczeństwo", safety_review.status_label or "wymaga sprawdzenia"),
     ]
     if safety_review.missing_requirement_labels:
         rows.append(
-            {
-                "label": "Braki",
-                "value": ", ".join(safety_review.missing_requirement_labels[:4]),
-            }
+            _ads_preview_row("Braki", ", ".join(safety_review.missing_requirement_labels[:4]))
         )
     if preview.required_validation_labels:
         rows.append(
-            {
-                "label": "Warunki sprawdzenia",
-                "value": ", ".join(preview.required_validation_labels[:4]),
-            }
+            _ads_preview_row(
+                "Warunki sprawdzenia",
+                ", ".join(preview.required_validation_labels[:4]),
+            )
         )
     if preview.blocked_claim_labels:
         rows.append(
-            {
-                "label": "Czego nie wolno twierdzić",
-                "value": ", ".join(preview.blocked_claim_labels[:4]),
-            }
+            _ads_preview_row(
+                "Czego nie wolno twierdzić",
+                ", ".join(preview.blocked_claim_labels[:4]),
+            )
         )
     return ActionPreviewCardViewModel(
         id=_ads_preview_card_id("google_ads_custom_segment_review", preview.id),
@@ -7157,9 +6948,7 @@ def _custom_segment_preview_card(
 def _hydrate_custom_segment_payload_preview_labels(
     preview: AdsCustomSegmentPayloadPreview,
 ) -> None:
-    preview.required_validation_labels = _ads_review_gate_labels(
-        preview.required_validation
-    )
+    preview.required_validation_labels = _ads_review_gate_labels(preview.required_validation)
     preview.blocked_claim_labels = _unique(preview.blocked_claims)
     safety_review = preview.safety_review
     safety_review.status_label = _ads_status_label(safety_review.status)
@@ -7171,9 +6960,7 @@ def _hydrate_custom_segment_payload_preview_labels(
     )
     safety_review.blocked_claim_labels = _unique(safety_review.blocked_claims)
     for target in preview.targeting_preview:
-        target.required_validation_labels = _ads_review_gate_labels(
-            target.required_validation
-        )
+        target.required_validation_labels = _ads_review_gate_labels(target.required_validation)
         target.blocked_claim_labels = _unique(target.blocked_claims)
 
 
@@ -7526,13 +7313,9 @@ def _ads_missing_read_contract_labels(contracts: Iterable[object]) -> list[str]:
         "search_term_90d_read": "90-dniowy odczyt zapytań",
         "human_intent_review": "ręczna ocena intencji",
         "negative_keyword_change_preview": "podgląd zmian wykluczeń",
-        "ngram_to_negative_keyword_change_preview": (
-            "podgląd zmian wykluczeń z tematów zapytań"
-        ),
+        "ngram_to_negative_keyword_change_preview": ("podgląd zmian wykluczeń z tematów zapytań"),
         "review_search_term_context": "sprawdzenie intencji zapytania",
-        "check_existing_keywords_and_match_types": (
-            "sprawdzenie słów i typów dopasowania"
-        ),
+        "check_existing_keywords_and_match_types": ("sprawdzenie słów i typów dopasowania"),
         "human_confirm_before_apply": "potwierdzenie człowieka przed zapisem",
         "google_ads_mutation_audit": "sprawdzenie zapisu zmian w Google Ads",
         "mutation_audit": "audyt zapisu zmian",

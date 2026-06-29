@@ -212,11 +212,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "Treści", { exact: true });
     await expect(page.getByRole("heading", { name: "Stan danych treści" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", {
-        name: "Zachowaj istniejącą treść i przygotuj odświeżenie albo scalenie, zamiast pisać nowy tekst od zera."
-      })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dlaczego to ma znaczenie" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczny następny krok" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kierunek treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Adresy i podgląd" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd treści" }).click();
     await expect(page.getByRole("heading", { name: "Dowody i warunki decyzji treści" })).toBeVisible();

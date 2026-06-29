@@ -107,9 +107,7 @@ def refresh_ahrefs_domain_rating(
                             "organic_keywords_by_url_rows": 0,
                         }
                     )
-                    errors.append(
-                        f"Ahrefs Site Explorer organic-keywords HTTP {status_code}."
-                    )
+                    errors.append(f"Ahrefs Site Explorer organic-keywords HTTP {status_code}.")
                 except httpx.HTTPError as exc:
                     metric_summary.update(
                         {
@@ -117,9 +115,7 @@ def refresh_ahrefs_domain_rating(
                             "organic_keywords_by_url_rows": 0,
                         }
                     )
-                    errors.append(
-                        f"Ahrefs Site Explorer organic-keywords {type(exc).__name__}."
-                    )
+                    errors.append(f"Ahrefs Site Explorer organic-keywords {type(exc).__name__}.")
                 try:
                     content_summary, content_facts = _fetch_content_gaps(
                         client,
@@ -148,8 +144,7 @@ def refresh_ahrefs_domain_rating(
                         }
                     )
                     errors.append(
-                        "Ahrefs Site Explorer content-gap organic-keywords "
-                        f"{type(exc).__name__}."
+                        f"Ahrefs Site Explorer content-gap organic-keywords {type(exc).__name__}."
                     )
                 try:
                     backlink_summary, backlink_facts = _fetch_backlink_gaps(
@@ -176,9 +171,7 @@ def refresh_ahrefs_domain_rating(
                             "backlink_gap_rows": 0,
                         }
                     )
-                    errors.append(
-                        f"Ahrefs Site Explorer refdomains {type(exc).__name__}."
-                    )
+                    errors.append(f"Ahrefs Site Explorer refdomains {type(exc).__name__}.")
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
                 metric_summary.update(
@@ -212,9 +205,7 @@ def refresh_ahrefs_domain_rating(
                     "organic_competitor_rows": 0,
                 }
             )
-            errors.append(
-                f"Ahrefs Site Explorer organic-competitors {type(exc).__name__}."
-            )
+            errors.append(f"Ahrefs Site Explorer organic-competitors {type(exc).__name__}.")
     finally:
         if owns_client:
             client.close()
@@ -527,9 +518,7 @@ def _fetch_backlink_gaps(
         limit=target_limit,
     )
     target_domain_names = {
-        domain
-        for row in target_refdomains
-        if (domain := _refdomain(row)) is not None
+        domain for row in target_refdomains if (domain := _refdomain(row)) is not None
     }
     competitor_limit = _backlink_gap_refdomain_limit()
     facts: list[VendorMetricFact] = []

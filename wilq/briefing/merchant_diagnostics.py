@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from typing import Literal
 
@@ -21,7 +21,7 @@ from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
-from wilq.operator_labels import reported_issue_occurrence_count_label
+from wilq.operator_labels import action_count_label, reported_issue_occurrence_count_label
 from wilq.schemas import (
     ActionObject,
     ActionPreviewCardViewModel,
@@ -43,7 +43,6 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
-    action_count_label,
     utc_now,
 )
 from wilq.storage.metric_store import metric_store
@@ -73,12 +72,8 @@ MERCHANT_EXPERT_RULE_IDS = [
     "merchant_feed_rules_v1",
     "merchant_product_diagnostics_v1",
 ]
-MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = (
-    "merchant_product_state_review_preview_v1"
-)
-MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT = (
-    "merchant_supplemental_feed_review_preview_v1"
-)
+MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = "merchant_product_state_review_preview_v1"
+MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT = "merchant_supplemental_feed_review_preview_v1"
 MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT = "merchant_price_impact_readiness_preview_v1"
 MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS = [
     "google_ads_shopping_product_current_price",
@@ -146,6 +141,7 @@ MERCHANT_HEALTH_METRIC_NAMES = {
 }
 MERCHANT_STALE_AFTER_HOURS = 48
 
+
 def build_merchant_diagnostics(
     *,
     tactical_items: list[TacticalQueueItem] | None = None,
@@ -175,9 +171,7 @@ def build_merchant_diagnostics(
     trusted_facts = metric_facts if live_data_available else []
     tactical_items = [
         item
-        for item in (
-            tactical_items if tactical_items is not None else build_tactical_queue().items
-        )
+        for item in (tactical_items if tactical_items is not None else build_tactical_queue().items)
         if item.domain == OpportunityDomain.merchant
     ]
     current_issue_facts = _current_facts_for_refresh(latest_refresh, trusted_facts)
@@ -217,18 +211,14 @@ def build_merchant_diagnostics(
         issue_clusters=issue_clusters,
         product_sample_readiness=product_sample_readiness,
     )
-    price_impact_readiness = _merchant_price_impact_readiness(
-        product_performance_readiness
-    )
+    price_impact_readiness = _merchant_price_impact_readiness(product_performance_readiness)
     price_impact_readiness = price_impact_readiness.model_copy(
         update={
             "payload_preview": [
                 _merchant_payload_preview_with_operator_labels(preview)
                 for preview in price_impact_readiness.payload_preview
             ],
-            "preview_cards": _merchant_preview_cards(
-                price_impact_readiness.payload_preview
-            ),
+            "preview_cards": _merchant_preview_cards(price_impact_readiness.payload_preview),
         }
     )
     decision_queue = _merchant_decisions_with_product_state_review(
@@ -332,15 +322,11 @@ def _merchant_response_with_operator_labels(
             "source_connector_labels": _merchant_source_connector_labels(
                 response_source_connectors
             ),
-            "evidence_summary_label": _merchant_evidence_summary_label(
-                response.evidence_ids
-            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(response.evidence_ids),
             "action_summary_label": action_count_label(response.action_ids),
             "freshness_assessment": response.freshness_assessment.model_copy(
                 update={
-                    "state_label": _merchant_freshness_label(
-                        response.freshness_assessment.state
-                    ),
+                    "state_label": _merchant_freshness_label(response.freshness_assessment.state),
                 }
             ),
             "operator_summary": response.operator_summary.model_copy(
@@ -411,8 +397,7 @@ def _merchant_response_with_operator_labels(
                 for decision in response.decision_queue
             ],
             "sections": [
-                _merchant_section_with_operator_labels(section)
-                for section in response.sections
+                _merchant_section_with_operator_labels(section) for section in response.sections
             ],
         }
     )
@@ -430,9 +415,7 @@ def _merchant_product_performance_readiness_with_operator_labels(
             "source_connector_labels": _merchant_source_connector_labels(
                 readiness.source_connectors
             ),
-            "evidence_summary_label": _merchant_evidence_summary_label(
-                readiness.evidence_ids
-            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(readiness.evidence_ids),
             "blocked_claim_labels": _merchant_blocked_claim_labels(readiness.blocked_claims),
             "performance_rows": [
                 row.model_copy(
@@ -445,16 +428,12 @@ def _merchant_product_performance_readiness_with_operator_labels(
                         "evidence_summary_label": _merchant_evidence_summary_label(
                             row.evidence_ids
                         ),
-                        "blocked_claim_labels": _merchant_blocked_claim_labels(
-                            row.blocked_claims
-                        ),
+                        "blocked_claim_labels": _merchant_blocked_claim_labels(row.blocked_claims),
                         "ads_product_status_label": _merchant_ads_product_status_label(
                             row.ads_product_status
                         ),
                         "ads_product_availability_label": (
-                            _merchant_ads_product_availability_label(
-                                row.ads_product_availability
-                            )
+                            _merchant_ads_product_availability_label(row.ads_product_availability)
                         ),
                         "ads_product_price_label": _merchant_micros_price_label(
                             row.ads_product_price_micros,
@@ -488,9 +467,7 @@ def _merchant_decision_with_operator_labels(
             "source_connector_labels": _merchant_source_connector_labels(
                 decision.source_connectors
             ),
-            "evidence_summary_label": _merchant_evidence_summary_label(
-                decision.evidence_ids
-            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(decision.evidence_ids),
             "action_summary_label": action_count_label(decision.action_ids),
             "blocked_claim_labels": _merchant_blocked_claim_labels(decision.blocked_claims),
             "risk_label": _merchant_risk_label(decision.risk),
@@ -505,9 +482,7 @@ def _merchant_section_with_operator_labels(
         update={
             "label": MERCHANT_SECTION_LABELS.get(section.id, section.title),
             "status_label": _merchant_status_label(section.status),
-            "evidence_summary_label": _merchant_evidence_summary_label(
-                section.evidence_ids
-            ),
+            "evidence_summary_label": _merchant_evidence_summary_label(section.evidence_ids),
             "action_summary_label": action_count_label(section.action_ids),
             "blocked_claim_labels": _merchant_blocked_claim_labels(section.blocked_claims),
             "risk_label": _merchant_risk_label(section.risk),
@@ -570,11 +545,7 @@ def _merchant_product_sample_status_label(readiness: MerchantProductSampleReadin
 
 
 def _merchant_product_performance_status_label(status: object) -> str:
-    return (
-        "dane Ads/GA4 dostępne"
-        if _enum_value(status) == "ready"
-        else "dane Ads/GA4 zablokowane"
-    )
+    return "dane Ads/GA4 dostępne" if _enum_value(status) == "ready" else "dane Ads/GA4 zablokowane"
 
 
 def _merchant_sample_summary_label(count: int) -> str:
@@ -592,11 +563,7 @@ def _merchant_sample_title_labels(titles: Iterable[str]) -> list[str]:
 
 
 def _merchant_product_row_title_label(row: MerchantProductPerformanceRow) -> str:
-    return (
-        row.sample_title
-        or row.ads_product_title
-        or "Produkt Merchant do sprawdzenia"
-    )
+    return row.sample_title or row.ads_product_title or "Produkt Merchant do sprawdzenia"
 
 
 def _merchant_product_reference_label(row: MerchantProductPerformanceRow) -> str:
@@ -650,7 +617,9 @@ def _merchant_missing_metric_labels(metrics: Iterable[str]) -> list[str]:
         "ga4_ecommerce_purchases": "zakupy GA4",
         "ga4_purchase_revenue": "przychód GA4",
     }
-    return _unique(labels.get(str(metric), _merchant_display_label(str(metric))) for metric in metrics)
+    return _unique(
+        labels.get(str(metric), _merchant_display_label(str(metric))) for metric in metrics
+    )
 
 
 def _merchant_price_impact_status_label(status: object) -> str:
@@ -754,11 +723,11 @@ def _merchant_freshness_assessment(
             requires_refresh=True,
             summary=(
                 f"Ostatni odczyt danych Merchant ma około {age_hours:.1f}h. "
-                "To wystarcza do przeglądu nieświeżych danych, ale nie do obietnic o bieżącym stanie feedu."
+                "To wystarcza do przeglądu nieświeżych danych, "
+                "ale nie do obietnic o bieżącym stanie feedu."
             ),
             next_step=(
-                "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy "
-                "aktualnego stanu produktów."
+                "Uruchom odczyt danych Merchant, jeśli pytanie dotyczy aktualnego stanu produktów."
             ),
         )
 
@@ -820,7 +789,8 @@ def _merchant_unknowns(
                     "więc suma raportów może liczyć ten sam produkt więcej niż raz."
                 ),
                 impact=(
-                    "Kolejka decyzji musi używać największej liczby zgłoszeń jako skali i traktować "
+                    "Kolejka decyzji musi używać największej liczby zgłoszeń "
+                    "jako skali i traktować "
                     "sumę raportów wyłącznie jako szczegóły raportowania."
                 ),
                 next_step=(
@@ -965,9 +935,7 @@ def _merchant_product_performance_readiness(
         fact for fact in ads_product_facts if fact.name in GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES
     ]
     ads_product_performance_facts = [
-        fact
-        for fact in ads_product_facts
-        if fact.name not in GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES
+        fact for fact in ads_product_facts if fact.name not in GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES
     ]
     ga4_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GA4_CONNECTOR_ID, [])
@@ -1007,9 +975,7 @@ def _merchant_product_performance_readiness(
             )
             if sample_context is not None
             else None,
-            source_connectors=_unique(
-                fact.source_connector for fact in [*ads_facts, *ga4_facts]
-            ),
+            source_connectors=_unique(fact.source_connector for fact in [*ads_facts, *ga4_facts]),
             evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
             ads_product_title=_dimension_value(ads_facts, ["product_title"]),
             ads_product_status=_text_metric_value(
@@ -1095,9 +1061,7 @@ def _merchant_product_performance_readiness(
 
     if performance_rows:
         rows_with_metrics = [
-            row
-            for row in performance_rows
-            if _has_product_performance_metric(row)
+            row for row in performance_rows if _has_product_performance_metric(row)
         ]
         if rows_with_metrics:
             status: Literal["ready", "blocked"] = "ready"
@@ -1117,7 +1081,8 @@ def _merchant_product_performance_readiness(
                 "ale nie ma jeszcze metryk skuteczności Ads/GA4 dla tych produktów."
             )
             next_step = (
-                "Użyj wierszy stanu produktu tylko do potwierdzenia dopasowania produktów. Zwrot z reklam "
+                "Użyj wierszy stanu produktu tylko do potwierdzenia dopasowania produktów. "
+                "Zwrot z reklam "
                 "na poziomie produktu, odzyskany przychód i efekt naprawy pozostają zablokowane "
                 "do czasu metryk skuteczności albo audytu sprzed i po zmianie."
             )
@@ -1136,21 +1101,13 @@ def _merchant_product_performance_readiness(
             source_connectors=_unique(
                 [
                     MERCHANT_CONNECTOR_ID,
-                    *(
-                        connector
-                        for row in performance_rows
-                        for connector in row.source_connectors
-                    ),
+                    *(connector for row in performance_rows for connector in row.source_connectors),
                 ]
             ),
             evidence_ids=_unique(
                 [
                     *merchant_evidence_ids,
-                    *(
-                        evidence_id
-                        for row in performance_rows
-                        for evidence_id in row.evidence_ids
-                    ),
+                    *(evidence_id for row in performance_rows for evidence_id in row.evidence_ids),
                 ]
             ),
             summary=summary,
@@ -1228,18 +1185,14 @@ def _merchant_price_impact_readiness(
     product_performance_readiness: MerchantProductPerformanceReadiness,
 ) -> MerchantPriceImpactReadiness:
     rows = product_performance_readiness.performance_rows
-    rows_with_current_price = [
-        row for row in rows if row.ads_product_price_micros is not None
-    ]
+    rows_with_current_price = [row for row in rows if row.ads_product_price_micros is not None]
     rows_with_previous_price = [
         row
         for row in rows_with_current_price
         if row.ads_product_previous_price_micros is not None
         and row.ads_product_previous_price_collected_at is not None
     ]
-    rows_with_price_change = [
-        row for row in rows_with_previous_price if _has_price_change(row)
-    ]
+    rows_with_price_change = [row for row in rows_with_previous_price if _has_price_change(row)]
     rows_with_unchanged_price_history = [
         row for row in rows_with_previous_price if not _has_price_change(row)
     ]
@@ -1255,9 +1208,7 @@ def _merchant_price_impact_readiness(
         for contract in MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS
         if contract not in current_read_contracts
     ]
-    status: Literal["ready", "blocked"] = (
-        "ready" if not missing_read_contracts else "blocked"
-    )
+    status: Literal["ready", "blocked"] = "ready" if not missing_read_contracts else "blocked"
     summary = _merchant_price_impact_summary(
         status=status,
         rows_with_current_price=len(rows_with_current_price),
@@ -1356,8 +1307,7 @@ def _merchant_price_impact_summary(
             "ale nie ma dopasowanych metryk skuteczności w oknie sprzed i po zmianie."
         )
     return (
-        "WILQ nie ma wystarczających faktów ceny i skuteczności, żeby ocenić wpływ "
-        "ceny produktu."
+        "WILQ nie ma wystarczających faktów ceny i skuteczności, żeby ocenić wpływ ceny produktu."
     )
 
 
@@ -1379,9 +1329,7 @@ def _merchant_price_impact_payload_preview(
                 "product_id": row.product_id,
                 "title": row.sample_title or row.ads_product_title,
                 "current_price_micros": row.ads_product_price_micros,
-                "current_price_collected_at": _iso_datetime(
-                    row.ads_product_price_collected_at
-                ),
+                "current_price_collected_at": _iso_datetime(row.ads_product_price_collected_at),
                 "previous_price_micros": row.ads_product_previous_price_micros,
                 "previous_price_collected_at": _iso_datetime(
                     row.ads_product_previous_price_collected_at
@@ -1791,10 +1739,7 @@ def _feed_health_section(
                 "WILQ nie ma aktualnych metryk Merchant, więc nie może ocenić "
                 "liczby produktów, liczby zgłoszeń problemów ani stanu feedu."
             ),
-            next_step=(
-                "Uruchom odczyt danych Merchant i dopiero potem "
-                "twórz kolejkę feedu."
-            ),
+            next_step=("Uruchom odczyt danych Merchant i dopiero potem twórz kolejkę feedu."),
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
@@ -1894,9 +1839,7 @@ def _issue_queue_section(
             "problemu, atrybucie i kontekście widoczności. WILQ nadal nie pokazuje "
             "surowych list produktów."
         ),
-        next_step=(
-            "Otwórz akcję do sprawdzenia i przygotuj kolejkę przeglądu."
-        ),
+        next_step=("Otwórz akcję do sprawdzenia i przygotuj kolejkę przeglądu."),
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_unique(
             [
@@ -1943,9 +1886,7 @@ def _merchant_issue_clusters(
     for key, group_facts in grouped.items():
         issue_type, affected_attribute, country, reporting_context, severity, resolution = key
         product_count = sum(
-            int(fact.value)
-            for fact in group_facts
-            if isinstance(fact.value, int | float)
+            int(fact.value) for fact in group_facts if isinstance(fact.value, int | float)
         )
         sample_product_ids = _sample_product_ids_for_cluster(facts, key)
         sample_titles = _sample_titles_for_cluster(facts, key)
@@ -1992,9 +1933,7 @@ def _merchant_issue_clusters(
                 ],
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
-                risk_label=_merchant_risk_label(
-                    _merchant_cluster_risk(severity, resolution)
-                ),
+                risk_label=_merchant_risk_label(_merchant_cluster_risk(severity, resolution)),
                 next_step=(
                     "Przejrzyj tę grupę problemu przez akcję do sprawdzenia; "
                     "najpierw przygotuj podgląd zmian, bez automatycznej zmiany feedu."
@@ -2089,9 +2028,7 @@ def _operator_summary(
         sum(cluster.product_count for cluster in issue_clusters)
         if issue_clusters
         else sum(
-            int(fact.value)
-            for fact in issue_metric_facts
-            if isinstance(fact.value, int | float)
+            int(fact.value) for fact in issue_metric_facts if isinstance(fact.value, int | float)
         )
     )
     top_issue_items = sorted(
@@ -2145,9 +2082,7 @@ def _operator_summary(
             ]
         ),
         action_ids=action_ids,
-        blocked_claims=_unique(
-            claim for section in sections for claim in section.blocked_claims
-        ),
+        blocked_claims=_unique(claim for section in sections for claim in section.blocked_claims),
     )
 
 
@@ -2194,8 +2129,7 @@ def _merchant_decision_queue(
         return decisions
 
     tactical_decisions = [
-        _merchant_decision_from_tactical_item(item, action_ids)
-        for item in tactical_items[:6]
+        _merchant_decision_from_tactical_item(item, action_ids) for item in tactical_items[:6]
     ]
     if tactical_decisions:
         return tactical_decisions
@@ -2252,9 +2186,7 @@ def _merchant_decisions_with_lineage(
                 "knowledge_card_ids": _unique(
                     [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
                 ),
-                "expert_rule_ids": _unique(
-                    [*decision.expert_rule_ids, *MERCHANT_EXPERT_RULE_IDS]
-                ),
+                "expert_rule_ids": _unique([*decision.expert_rule_ids, *MERCHANT_EXPERT_RULE_IDS]),
             }
         )
         for decision in decisions
@@ -2274,9 +2206,7 @@ def _merchant_payload_preview_with_operator_labels(
     ]
     return {
         **preview,
-        "preview_contract_label": merchant_preview_contract_label(
-            preview.get("preview_contract")
-        ),
+        "preview_contract_label": merchant_preview_contract_label(preview.get("preview_contract")),
         "required_validation_labels": labels,
     }
 
@@ -2337,11 +2267,7 @@ def _merchant_preview_scope_label(preview: dict[str, object]) -> str:
     metric_snapshot = preview.get("metric_snapshot")
     if isinstance(metric_snapshot, dict) and metric_snapshot:
         labels = _merchant_metric_snapshot_labels(
-            {
-                str(key): value
-                for key, value in metric_snapshot.items()
-                if isinstance(value, int)
-            }
+            {str(key): value for key, value in metric_snapshot.items() if isinstance(value, int)}
         )
         if labels:
             return ", ".join(labels.values())
@@ -2397,9 +2323,7 @@ def _merchant_price_impact_review_decision(
                 "ceny bieżące": price_impact_readiness.products_with_current_price,
                 "historia ceny": price_impact_readiness.products_with_previous_price,
                 "zmiany ceny": price_impact_readiness.products_with_price_change,
-                "performance": (
-                    price_impact_readiness.products_with_performance_metrics
-                ),
+                "performance": (price_impact_readiness.products_with_performance_metrics),
             }
         ),
         payload_preview=price_impact_readiness.payload_preview,
@@ -2429,9 +2353,7 @@ def _merchant_product_state_review_decision(
     if not state_rows:
         return None
     visible_rows = state_rows[:8]
-    not_eligible_count = sum(
-        1 for row in state_rows if row.ads_product_status == "NOT_ELIGIBLE"
-    )
+    not_eligible_count = sum(1 for row in state_rows if row.ads_product_status == "NOT_ELIGIBLE")
     out_of_stock_count = sum(
         1 for row in state_rows if row.ads_product_availability == "OUT_OF_STOCK"
     )
@@ -2710,9 +2632,9 @@ def _merchant_decision_from_cluster_group(
         sample_product_ids=_unique(
             sample_id for cluster in clusters for sample_id in cluster.sample_product_ids
         )[:10],
-        sample_titles=_unique(
-            title for cluster in clusters for title in cluster.sample_titles
-        )[:10],
+        sample_titles=_unique(title for cluster in clusters for title in cluster.sample_titles)[
+            :10
+        ],
         payload_preview=[
             _merchant_decision_payload_preview(
                 cluster=primary_cluster,
@@ -2724,17 +2646,13 @@ def _merchant_decision_from_cluster_group(
                     "reporting_contexts": len(clusters),
                 },
                 sample_product_ids=_unique(
-                    sample_id
-                    for cluster in clusters
-                    for sample_id in cluster.sample_product_ids
+                    sample_id for cluster in clusters for sample_id in cluster.sample_product_ids
                 )[:10],
                 sample_titles=_unique(
                     title for cluster in clusters for title in cluster.sample_titles
                 )[:10],
                 evidence_ids=_unique(
-                    evidence_id
-                    for cluster in clusters
-                    for evidence_id in cluster.evidence_ids
+                    evidence_id for cluster in clusters for evidence_id in cluster.evidence_ids
                 ),
             )
         ],
@@ -2747,9 +2665,7 @@ def _merchant_decision_from_cluster_group(
         metric_facts=group_facts[:6],
         action_ids=action_ids
         or _unique(cluster.action_id for cluster in clusters if cluster.action_id),
-        blocked_claims=_unique(
-            claim for cluster in clusters for claim in cluster.blocked_claims
-        ),
+        blocked_claims=_unique(claim for cluster in clusters for claim in cluster.blocked_claims),
         rationale=(
             "To jest jedna decyzja operatorska, bo typ problemu, atrybut, kraj, "
             "status i wymagana ścieżka rozwiązania są takie same. Konteksty "
@@ -2796,8 +2712,7 @@ def _merchant_decision_from_cluster(
         severity=cluster.severity,
         severity_label=cluster.severity_label or _merchant_severity_label(cluster.severity),
         resolution=cluster.resolution,
-        resolution_label=cluster.resolution_label
-        or _merchant_resolution_label(cluster.resolution),
+        resolution_label=cluster.resolution_label or _merchant_resolution_label(cluster.resolution),
         affected_attribute=cluster.affected_attribute,
         affected_attribute_label=display_attribute,
         country=cluster.country,
@@ -2905,8 +2820,7 @@ def _merchant_decision_payload_preview(
         "operation_type": "MerchantIssueClusterReview",
         "cluster_id": cluster.id,
         "issue_type": cluster.issue_type,
-        "issue_type_label": cluster.issue_type_label
-        or _merchant_display_label(cluster.issue_type),
+        "issue_type_label": cluster.issue_type_label or _merchant_display_label(cluster.issue_type),
         "affected_attribute": cluster.affected_attribute,
         "affected_attribute_label": cluster.affected_attribute_label
         or _merchant_display_label(cluster.affected_attribute or "atrybut nieznany"),
@@ -2915,8 +2829,7 @@ def _merchant_decision_payload_preview(
         "reporting_context_label": cluster.reporting_context_label
         or _merchant_reporting_context_label(cluster.reporting_context),
         "severity": cluster.severity,
-        "severity_label": cluster.severity_label
-        or _merchant_severity_label(cluster.severity),
+        "severity_label": cluster.severity_label or _merchant_severity_label(cluster.severity),
         "resolution": cluster.resolution,
         "resolution_label": cluster.resolution_label
         or _merchant_resolution_label(cluster.resolution),
@@ -2962,7 +2875,7 @@ def _merchant_decision_payload_preview(
     }
 
 
-def _merchant_metric_snapshot_labels(metric_snapshot: dict[str, int]) -> dict[str, str]:
+def _merchant_metric_snapshot_labels(metric_snapshot: Mapping[str, object]) -> dict[str, str]:
     return merchant_metric_snapshot_labels(metric_snapshot)
 
 
@@ -3060,11 +2973,9 @@ def _facts_for_cluster(
         if fact.name == "issue_product_count"
         and fact.dimensions.get("issue_type") == cluster.issue_type
         and fact.dimensions.get("severity") == cluster.severity
-        and (fact.dimensions.get("affected_attribute") or None)
-        == cluster.affected_attribute
+        and (fact.dimensions.get("affected_attribute") or None) == cluster.affected_attribute
         and (fact.dimensions.get("country") or None) == cluster.country
-        and (fact.dimensions.get("reporting_context") or None)
-        == cluster.reporting_context
+        and (fact.dimensions.get("reporting_context") or None) == cluster.reporting_context
     ]
 
 
@@ -3072,11 +2983,7 @@ def _facts_for_cluster_group(
     facts: list[MetricFact],
     clusters: list[MerchantIssueCluster],
 ) -> list[MetricFact]:
-    return [
-        fact
-        for cluster in clusters
-        for fact in _facts_for_cluster(facts, cluster)
-    ]
+    return [fact for cluster in clusters for fact in _facts_for_cluster(facts, cluster)]
 
 
 def _action_risk_rank(risk: ActionRisk) -> int:
@@ -3108,9 +3015,7 @@ def _merchant_metric_fact_with_labels(fact: MetricFact) -> MetricFact:
     return fact.model_copy(
         update={
             "metric_label": merchant_metric_fact_label(fact.name),
-            "dimension_labels": {
-                key: merchant_dimension_label(key) for key in fact.dimensions
-            },
+            "dimension_labels": {key: merchant_dimension_label(key) for key in fact.dimensions},
             "dimension_value_labels": {
                 key: merchant_dimension_value_label(key, value)
                 for key, value in fact.dimensions.items()
@@ -3154,11 +3059,7 @@ def _merchant_issue_priority(
 def _clean_merchant_metric_tiles(
     values: dict[str, int | float | str | None],
 ) -> dict[str, int | float | str]:
-    return {
-        key: value
-        for key, value in values.items()
-        if value is not None and value != ""
-    }
+    return {key: value for key, value in values.items() if value is not None and value != ""}
 
 
 def _stable_slug(value: str) -> str:
@@ -3238,11 +3139,11 @@ def _metric_facts_from_refresh_summary(
         facts.append(
             _merchant_metric_fact_with_labels(
                 MetricFact(
-                name=name,
-                value=value,
-                period="connector_refresh",
-                source_connector=MERCHANT_CONNECTOR_ID,
-                evidence_id=evidence_id,
+                    name=name,
+                    value=value,
+                    period="connector_refresh",
+                    source_connector=MERCHANT_CONNECTOR_ID,
+                    evidence_id=evidence_id,
                 )
             )
         )

@@ -50,9 +50,7 @@ def list_evidence() -> list[Evidence]:
     ]
     known_evidence_ids = {evidence.id for evidence in [*connector_evidence, *refresh_evidence]}
     metric_evidence = [
-        evidence
-        for evidence in _metric_fact_evidence()
-        if evidence.id not in known_evidence_ids
+        evidence for evidence in _metric_fact_evidence() if evidence.id not in known_evidence_ids
     ]
     return [*connector_evidence, *refresh_evidence, *metric_evidence]
 

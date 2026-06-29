@@ -66,9 +66,7 @@ def main() -> int:
             "negative keyword or business-context actions"
         )
     active_action_ids = [
-        item.get("id")
-        for item in (pack.get("active_action_objects") or [])
-        if item.get("id")
+        item.get("id") for item in (pack.get("active_action_objects") or []) if item.get("id")
     ]
     if any(action_id != CUSTOM_SEGMENT_ACTION_ID for action_id in active_action_ids):
         raise SystemExit(
@@ -117,9 +115,7 @@ def main() -> int:
     safety_review: dict[str, Any] = {}
     if custom_segment_candidates:
         if not audience_forecast_contract.get("forecast_rows"):
-            raise SystemExit(
-                "Ready custom segments contract must expose forecast blocker rows"
-            )
+            raise SystemExit("Ready custom segments contract must expose forecast blocker rows")
         first_forecast_row = audience_forecast_contract["forecast_rows"][0]
         if first_forecast_row.get("status") != "missing_forecast":
             raise SystemExit("Audience forecast row must show missing forecast state")
@@ -163,34 +159,22 @@ def main() -> int:
         payload_preview = custom_segments_read_contract["payload_preview"][0]
         safety_review = payload_preview.get("safety_review") or {}
         if safety_review.get("safety_contract") != "custom_segment_apply_safety_v1":
-            raise SystemExit(
-                "Custom segment payload_preview must expose apply safety_review"
-            )
+            raise SystemExit("Custom segment payload_preview must expose apply safety_review")
         if safety_review.get("apply_allowed") is not False:
             raise SystemExit("Custom segment safety_review must keep apply blocked")
         if safety_review.get("api_mutation_ready") is not False:
-            raise SystemExit(
-                "Custom segment safety_review must keep api_mutation_ready=false"
-            )
+            raise SystemExit("Custom segment safety_review must keep api_mutation_ready=false")
         if safety_review.get("audit_required") is not True:
             raise SystemExit("Custom segment safety_review must require mutation audit")
         missing_safety = set(safety_review.get("missing_requirements") or [])
         if "forecast_or_audience_size" not in missing_safety:
-            raise SystemExit(
-                "Custom segment safety_review must require forecast_or_audience_size"
-            )
+            raise SystemExit("Custom segment safety_review must require forecast_or_audience_size")
         if "google_ads_mutation_audit" not in missing_safety:
-            raise SystemExit(
-                "Custom segment safety_review must require google_ads_mutation_audit"
-            )
+            raise SystemExit("Custom segment safety_review must require google_ads_mutation_audit")
         if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
-            raise SystemExit(
-                "Custom segments read contract must expose custom segment action"
-            )
+            raise SystemExit("Custom segments read contract must expose custom segment action")
         if pack_ads_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
-            raise SystemExit(
-                "Ready custom segments context must expose custom segment action"
-            )
+            raise SystemExit("Ready custom segments context must expose custom segment action")
         if active_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
             raise SystemExit(
                 "Ready custom segments active actions must expose custom segment action"
@@ -206,9 +190,7 @@ def main() -> int:
             {},
         )
         if custom_segment_action_validation.get("valid") is not True:
-            raise SystemExit(
-                "Custom segment action validation must pass when candidates exist"
-            )
+            raise SystemExit("Custom segment action validation must pass when candidates exist")
         action_validations.append(
             {
                 "action_id": custom_segment_action_validation.get("action_id"),
@@ -233,10 +215,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -276,9 +255,7 @@ def main() -> int:
                         "apply_safety_review": {
                             "status": safety_review.get("status"),
                             "safety_contract": safety_review.get("safety_contract"),
-                            "missing_requirements": safety_review.get(
-                                "missing_requirements", []
-                            ),
+                            "missing_requirements": safety_review.get("missing_requirements", []),
                             "audit_required": safety_review.get("audit_required"),
                             "apply_allowed": safety_review.get("apply_allowed"),
                         },
@@ -293,13 +270,9 @@ def main() -> int:
                             "missing_read_contracts": audience_forecast_contract.get(
                                 "missing_read_contracts", []
                             ),
-                            "blocked_claims": audience_forecast_contract.get(
-                                "blocked_claims", []
-                            ),
+                            "blocked_claims": audience_forecast_contract.get("blocked_claims", []),
                         },
-                        "blocked_claims": custom_segments_read_contract.get(
-                            "blocked_claims", []
-                        ),
+                        "blocked_claims": custom_segments_read_contract.get("blocked_claims", []),
                         "action_ids": custom_segments_read_contract.get("action_ids", []),
                     },
                     "decision_ids": [

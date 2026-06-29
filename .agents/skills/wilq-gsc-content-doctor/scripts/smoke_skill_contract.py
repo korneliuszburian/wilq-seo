@@ -103,18 +103,14 @@ def main() -> int:
     if gsc_query_page_fact_count:
         if not content_diagnostics.get("query_page_count"):
             raise SystemExit(
-                "GSC query/page metric facts exist but content diagnostics has "
-                "query_page_count=0"
+                "GSC query/page metric facts exist but content diagnostics has query_page_count=0"
             )
         if not decision_queue:
             raise SystemExit(
-                "GSC query/page metric facts exist but content diagnostics has no "
-                "decision_queue"
+                "GSC query/page metric facts exist but content diagnostics has no decision_queue"
             )
         decision_types = {
-            item.get("decision_type")
-            for item in decision_queue
-            if item.get("decision_type")
+            item.get("decision_type") for item in decision_queue if item.get("decision_type")
         }
         content_decision_types = {
             "refresh_or_merge",
@@ -163,10 +159,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -236,14 +229,12 @@ def main() -> int:
                         for item in packed_decision_trace[:5]
                     ],
                     "context_pack_has_ahrefs_evidence": any(
-                        "_ahrefs" in str(evidence_id)
-                        for evidence_id in packed_evidence_ids
+                        "_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids
                     ),
                     "gsc_query_page_metric_fact_count": gsc_query_page_fact_count,
                     "blocker_count": content_diagnostics.get("blocker_count"),
                     "section_ids": [
-                        section.get("id")
-                        for section in content_diagnostics.get("sections", [])
+                        section.get("id") for section in content_diagnostics.get("sections", [])
                     ],
                     "evidence_ids": content_diagnostics.get("evidence_ids", [])[:20],
                     "action_ids": content_diagnostics.get("action_ids", []),

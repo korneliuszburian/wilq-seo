@@ -73,13 +73,11 @@ def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
     unexpected_url_keys = sorted(
         key
         for key in value
-        if (key.endswith("_url") or key.endswith("_host"))
-        and key not in CURRENT_CONTENT_URL_KEYS
+        if (key.endswith("_url") or key.endswith("_host")) and key not in CURRENT_CONTENT_URL_KEYS
     )
     if unexpected_url_keys:
         raise SystemExit(
-            f"{label} exposes non-current content URL fields: "
-            + ", ".join(unexpected_url_keys)
+            f"{label} exposes non-current content URL fields: " + ", ".join(unexpected_url_keys)
         )
 
 
@@ -183,10 +181,7 @@ def main() -> int:
         }
         for section in brief.get("sections", [])
         for item in section.get("items", [])
-        if any(
-            connector in REQUIRED_CONNECTORS
-            for connector in item.get("source_connectors", [])
-        )
+        if any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ][:8]
 
     connector_results = []
@@ -236,8 +231,7 @@ def main() -> int:
                         if isinstance(item, dict)
                     ],
                     "section_ids": [
-                        section.get("id")
-                        for section in content_diagnostics.get("sections", [])
+                        section.get("id") for section in content_diagnostics.get("sections", [])
                     ],
                     "evidence_ids": content_diagnostics.get("evidence_ids", [])[:20],
                     "action_ids": content_diagnostics.get("action_ids", []),
@@ -499,9 +493,7 @@ def validate_content_action_preview(
             "duplicate_gate_status": preview.get("duplicate_gate_status"),
             "content_gate_summary": preview.get("content_gate_summary"),
             "cta_direction": preview.get("cta_direction"),
-            "publication_readiness_status": preview.get(
-                "publication_readiness_status"
-            ),
+            "publication_readiness_status": preview.get("publication_readiness_status"),
             "publication_blockers": (preview.get("publication_blockers") or [])[:6],
             "source_facts": (preview.get("source_facts") or [])[:4],
             "missing_evidence": (preview.get("missing_evidence") or [])[:3],
@@ -551,20 +543,13 @@ def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None
     measurement_plan = first_preview.get("post_publication_measurement_plan")
     if not isinstance(measurement_plan, dict):
         raise SystemExit("WordPress draft handoff preview lacks post_publication_measurement_plan")
-    if (
-        measurement_plan.get("contract_version")
-        != "post_publication_measurement_plan_v1"
-    ):
+    if measurement_plan.get("contract_version") != "post_publication_measurement_plan_v1":
         raise SystemExit("Post-publication measurement plan has invalid contract")
     if measurement_plan.get("scope") != "blocked_preview_only":
         raise SystemExit("Post-publication measurement plan must be blocked_preview_only")
-    if "google_search_console" not in set(
-        measurement_plan.get("required_source_connectors") or []
-    ):
+    if "google_search_console" not in set(measurement_plan.get("required_source_connectors") or []):
         raise SystemExit("Post-publication measurement plan must require GSC evidence")
-    if "google_analytics_4" not in set(
-        measurement_plan.get("required_source_connectors") or []
-    ):
+    if "google_analytics_4" not in set(measurement_plan.get("required_source_connectors") or []):
         raise SystemExit("Post-publication measurement plan must require GA4 evidence")
     blocked_outputs = set(measurement_plan.get("blocked_outputs") or [])
     if not {"ranking_gain_claim", "obietnica wzrostu leadów"}.issubset(blocked_outputs):
@@ -583,13 +568,10 @@ def validate_context_pack_condensation(pack: dict[str, Any]) -> None:
         "knowledge_card_summaries_compacted",
         "raw_history_omitted",
     }
-    missing_flags = sorted(
-        flag for flag in required_flags if compaction.get(flag) is not True
-    )
+    missing_flags = sorted(flag for flag in required_flags if compaction.get(flag) is not True)
     if missing_flags:
         raise SystemExit(
-            "Context pack compaction is missing required flags: "
-            + ", ".join(missing_flags)
+            "Context pack compaction is missing required flags: " + ", ".join(missing_flags)
         )
     operator_context = {
         "connector_status": pack.get("connector_status"),
@@ -598,12 +580,10 @@ def validate_context_pack_condensation(pack: dict[str, Any]) -> None:
         "knowledge_card_summaries": pack.get("knowledge_card_summaries"),
         "expert_rule_summaries": pack.get("expert_rule_summaries"),
         "active_action_objects": pack.get("active_action_objects"),
-        "content_diagnostics_connectors": (pack.get("content_diagnostics") or {}).get(
-            "connectors"
+        "content_diagnostics_connectors": (pack.get("content_diagnostics") or {}).get("connectors"),
+        "content_diagnostics_latest_refreshes": (pack.get("content_diagnostics") or {}).get(
+            "latest_refreshes"
         ),
-        "content_diagnostics_latest_refreshes": (
-            pack.get("content_diagnostics") or {}
-        ).get("latest_refreshes"),
     }
     serialized = json.dumps(operator_context, ensure_ascii=False)
     forbidden_terms = (
@@ -616,8 +596,7 @@ def validate_context_pack_condensation(pack: dict[str, Any]) -> None:
     leaked_terms = [term for term in forbidden_terms if term in serialized]
     if leaked_terms:
         raise SystemExit(
-            "Context pack leaked raw history or technical wording: "
-            + ", ".join(leaked_terms)
+            "Context pack leaked raw history or technical wording: " + ", ".join(leaked_terms)
         )
 
 

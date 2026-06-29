@@ -11,26 +11,33 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import (
-    app,
     _compact_metric_fact_for_context,
     _compact_refresh_run_for_operator_context,
+    app,
+)
+from wilq.actions.content_refresh import _draft_content_block_label, content_contract_label
+from wilq.actions.ga4.tracking_quality import (
+    _blocked_claim_label as _ga4_tracking_blocked_claim_label,
+)
+from wilq.actions.ga4.tracking_quality import (
+    _operation_type_label as _ga4_tracking_operation_type_label,
+)
+from wilq.actions.ga4.tracking_quality import (
+    _tracking_dimension_gap_label as _ga4_tracking_dimension_gap_label,
+)
+from wilq.actions.ga4.tracking_quality import (
+    _validation_label as _ga4_tracking_validation_label,
 )
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
-from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.campaign_triage import _campaign_channel_label
+from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.demand_gen import demand_gen_contract_labels
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.actions.ga4.tracking_quality import (
-    _blocked_claim_label as _ga4_tracking_blocked_claim_label,
-    _operation_type_label as _ga4_tracking_operation_type_label,
-    _tracking_dimension_gap_label as _ga4_tracking_dimension_gap_label,
-    _validation_label as _ga4_tracking_validation_label,
-)
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
@@ -40,19 +47,22 @@ from wilq.actions.service import (
     apply_action,
     list_actions,
 )
-from wilq.actions.content_refresh import content_contract_label, _draft_content_block_label
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
     _custom_segment_source_quality,
     build_ads_diagnostics,
 )
+from wilq.briefing.ahrefs_diagnostics import (
+    _ahrefs_connector_status_label,
+    _ahrefs_refresh_status_label,
+    _ahrefs_status_label,
+)
 from wilq.briefing.content_diagnostics import (
     _content_marketer_blocked_claims,
     build_content_diagnostics,
     build_content_preflight,
 )
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.ga4_diagnostics import (
     _ga4_connector_status_label,
     _ga4_decision_with_marketer_labels,
@@ -62,11 +72,7 @@ from wilq.briefing.ga4_diagnostics import (
     _ga4_refresh_status_label,
     _ga4_risk_label,
     _ga4_section_status_label,
-)
-from wilq.briefing.ahrefs_diagnostics import (
-    _ahrefs_connector_status_label,
-    _ahrefs_refresh_status_label,
-    _ahrefs_status_label,
+    build_ga4_diagnostics,
 )
 from wilq.briefing.localo_diagnostics import (
     _localo_connector_status_label,
@@ -79,6 +85,16 @@ from wilq.briefing.localo_diagnostics import (
 )
 from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fact_label
 from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.merchant_diagnostics import (
+    _merchant_connector_status_label,
+    _merchant_freshness_label,
+    _merchant_price_impact_readiness,
+    _merchant_product_performance_readiness,
+    _merchant_refresh_status_label,
+    _merchant_risk_label,
+    _merchant_status_label,
+    build_merchant_diagnostics,
+)
 from wilq.briefing.merchant_labels import (
     merchant_dimension_label,
     merchant_dimension_value_label,
@@ -90,16 +106,6 @@ from wilq.briefing.merchant_labels import (
     merchant_severity_label,
 )
 from wilq.briefing.tactical_queue import _merchant_dimension_label, _merchant_feed_items
-from wilq.briefing.merchant_diagnostics import (
-    _merchant_connector_status_label,
-    _merchant_freshness_label,
-    _merchant_price_impact_readiness,
-    _merchant_product_performance_readiness,
-    _merchant_refresh_status_label,
-    _merchant_risk_label,
-    _merchant_status_label,
-    build_merchant_diagnostics,
-)
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import (
     _fetch_optional_shopping_product_performance,
@@ -133,9 +139,6 @@ from wilq.operator_labels import (
     source_connector_labels,
 )
 from wilq.opportunities.engine import _risk_label as _opportunity_risk_label
-from wilq.workflows.models import _workflow_run_status_label
-from wilq.workflows.registry import _risk_label as _workflow_risk_label
-from wilq.workflows.registry import _status_label as _workflow_status_label
 from wilq.schemas import (
     ActionApplyRequest,
     ActionMode,
@@ -180,6 +183,9 @@ from wilq.schemas import (
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
+from wilq.workflows.models import _workflow_run_status_label
+from wilq.workflows.registry import _risk_label as _workflow_risk_label
+from wilq.workflows.registry import _status_label as _workflow_status_label
 
 client = TestClient(app)
 
@@ -218,6 +224,7 @@ def preview_card_row_values(card: dict[str, Any], label: str) -> list[str]:
         for row in card.get("rows", [])
         if row.get("label") == label and isinstance(row.get("value"), str)
     ]
+
 
 GOOGLE_ADS_TEST_ENV = (
     "GOOGLE_ADS_DEVELOPER_TOKEN",
@@ -469,7 +476,7 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                     "status": "publish",
                     "modified_gmt": "2026-06-16T10:00:00",
                 },
-            )
+            ),
         ],
         "refresh_ahrefs_action_test": [
             VendorMetricFact(
@@ -675,9 +682,7 @@ def save_google_ads_recommendation_rows_for_context_pack() -> None:
     ):
         dimensions = {
             "recommendation_id": recommendation_id,
-            "recommendation_resource_name": (
-                f"customers/123/recommendations/{recommendation_id}"
-            ),
+            "recommendation_resource_name": (f"customers/123/recommendations/{recommendation_id}"),
             "recommendation_type": "CAMPAIGN_BUDGET",
             "campaign_id": "101",
             "campaign_budget_id": "701",
@@ -947,9 +952,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
                 "search_term_safety_read_contract",
             ],
             "blocked_claims": ["rekomendacja uruchomienia Demand Gen"],
-            "cluster_id": (
-                "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
-            ),
+            "cluster_id": ("merchant_issue_pl_not_impacted_missing_potentially_required_attribute"),
             "issue_type": "missing_potentially_required_attribute",
             "affected_attribute": "n:unit_pricing_measure",
             "country": "PL",
@@ -983,8 +986,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["api"] == "ahrefs_site_explorer_domain_rating"
     assert redacted["audit_event_id"] == "audit_action_preview_generated_1234567890abcdef"
     assert redacted["summary"] == (
-        "Vendor read blocked by missing credential names: "
-        "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
+        "Vendor read blocked by missing credential names: GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
     )
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
@@ -993,13 +995,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["created_by"] == "system_ads_target_confirmation_seed"
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
-    assert redacted["business_policy_ids"] == [
-        "use_margin_as_context_not_profitability_verdict"
-    ]
+    assert redacted["business_policy_ids"] == ["use_margin_as_context_not_profitability_verdict"]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
-    assert redacted["human_review_gates"] == [
-        "review_search_terms_before_budget_decision"
-    ]
+    assert redacted["human_review_gates"] == ["review_search_terms_before_budget_decision"]
     assert redacted["review_gate"]["required_checks"] == [
         "google_ads_rmf_compliance_review",
         "reject_brand_or_low_intent_terms",
@@ -1015,15 +1013,11 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["supported_actions"] == ["custom_segment_candidate"]
     assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
     assert redacted["preview_contract"] == "custom_segment_change_preview_v1"
-    assert redacted["custom_segment_preview_id"] == (
-        "preview_ads_custom_segment_23848569273"
-    )
+    assert redacted["custom_segment_preview_id"] == ("preview_ads_custom_segment_23848569273")
     assert redacted["operation_type"] == "custom_segment_targeting_review"
     assert redacted["recommended_actions"] == ["prepare_custom_segment_review"]
     assert redacted["source_metric_names"] == ["search_term_clicks"]
-    assert redacted["available_read_contracts"] == [
-        "ga4_landing_source_campaign_quality"
-    ]
+    assert redacted["available_read_contracts"] == ["ga4_landing_source_campaign_quality"]
     assert redacted["missing_read_contracts"] == [
         "demand_gen_landing_quality_by_campaign",
         "demand_gen_campaign_mode_review",
@@ -1078,13 +1072,11 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redact_mapping(
         {
             "summary": (
-                "Sprawdzone: "
-                "candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
+                "Sprawdzone: candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
             )
         }
     )["summary"] == (
-        "Sprawdzone: "
-        "candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
+        "Sprawdzone: candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
     )
     assert redact_mapping(
         {
@@ -1099,9 +1091,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
         "demand_gen_landing_quality_by_campaign, "
         "demand_gen_campaign_mode_review."
     )
-    assert redact_mapping({"summary": "token sk-this_must_be_hidden"})["summary"] == (
-        "[REDACTED]"
-    )
+    assert redact_mapping({"summary": "token sk-this_must_be_hidden"})["summary"] == ("[REDACTED]")
 
 
 def test_google_first_party_status_accepts_authorized_user_credentials(
@@ -1235,9 +1225,7 @@ def test_action_apply_requires_validation(
     assert body["mutation_audit"]["mutation_adapter"] is None
     assert "Wymagane jest jawne potwierdzenie zapisu zmian" in serialized
     assert "Przed zapisem zmian" in serialized
-    audit_response = client.get(
-        "/api/audit/events?action_id=act_configure_google_ads_env"
-    )
+    audit_response = client.get("/api/audit/events?action_id=act_configure_google_ads_env")
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "apply_confirmation_missing"
     mutation_audit_response = client.get(
@@ -1260,9 +1248,10 @@ def test_action_apply_requires_validation(
     assert "Wymagane jest jawne potwierdzenie zapisu zmian" in json.dumps(
         review_gate["last_mutation_blockers"]
     )
-    assert "Wymagane jest jawne potwierdzenie zapisu zmian." in review_gate[
-        "last_mutation_blocker_labels"
-    ]
+    assert (
+        "Wymagane jest jawne potwierdzenie zapisu zmian."
+        in review_gate["last_mutation_blocker_labels"]
+    )
 
 
 def test_action_apply_requires_explicit_confirmation_actor(
@@ -1279,9 +1268,7 @@ def test_action_apply_requires_explicit_confirmation_actor(
     assert response.status_code == 409
     body = response.json()["detail"]
     assert body["status"] == "blocked"
-    assert "Brakuje osoby potwierdzającej zapis zmian" in json.dumps(
-        body, ensure_ascii=False
-    )
+    assert "Brakuje osoby potwierdzającej zapis zmian" in json.dumps(body, ensure_ascii=False)
     assert body["audit_event"]["event_type"] == "apply_confirmation_missing"
     assert body["mutation_audit"]["status"] == "blocked"
     assert body["mutation_audit"]["actor"] == "wilq_api"
@@ -1413,12 +1400,11 @@ def test_action_operator_labels_are_specific(
         if isinstance(value, dict):
             for key, item in value.items():
                 item_path = f"{path}.{key}" if path else str(key)
-                if key.endswith("_labels") and isinstance(item, list):
-                    if (
-                        "warunek techniczny do sprawdzenia" in item
-                        or "brak opisu w kontrakcie WILQ" in item
-                    ):
-                        leaks.append((action_id, item_path))
+                if key.endswith("_labels") and isinstance(item, list) and (
+                    "warunek techniczny do sprawdzenia" in item
+                    or "brak opisu w kontrakcie WILQ" in item
+                ):
+                    leaks.append((action_id, item_path))
                 walk(action_id, item, item_path)
         elif isinstance(value, list):
             for index, item in enumerate(value):
@@ -1454,12 +1440,8 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
         summary="Testowy odczyt.",
     )
     assert connector_run.connector_label == "źródło danych do sprawdzenia"
-    assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == (
-        "odczyt zakończony"
-    )
-    assert connector_refresh_status_label(ConnectorRefreshStatus.blocked) == (
-        "odczyt zablokowany"
-    )
+    assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == ("odczyt zakończony")
+    assert connector_refresh_status_label(ConnectorRefreshStatus.blocked) == ("odczyt zablokowany")
     assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
     assert knowledge_reference_count_label() == "brak użytej wiedzy"
     assert (
@@ -1509,12 +1491,10 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     raw_value = "new_VENDOR_raw_value"
 
     assert merchant_display_label("n:certification") == "certyfikacja"
-    assert merchant_display_label("liczba unikalnych produktów") == (
-        "liczba unikalnych produktów"
-    )
-    assert merchant_display_label("skalowanie produktu w reklamach produktowych i Performance Max") == (
+    assert merchant_display_label("liczba unikalnych produktów") == ("liczba unikalnych produktów")
+    assert merchant_display_label(
         "skalowanie produktu w reklamach produktowych i Performance Max"
-    )
+    ) == ("skalowanie produktu w reklamach produktowych i Performance Max")
     assert merchant_display_label("opłacalność produktu") == "opłacalność produktu"
     assert merchant_display_label("nadpisanie głównego feedu") == "nadpisanie głównego feedu"
     assert merchant_display_label("zmiana danych produktu") == "zmiana danych produktu"
@@ -1684,14 +1664,12 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         risk=ActionRisk.high,
         blocked_claims=[raw_value],
     )
-    assert knowledge_blocked_claim_binding.blocked_claim_labels == [
-        "obietnica do sprawdzenia"
-    ]
+    assert knowledge_blocked_claim_binding.blocked_claim_labels == ["obietnica do sprawdzenia"]
+    assert knowledge_blocked_claim_binding.blocked_claim_summary_label == "obietnica do sprawdzenia"
     assert (
-        knowledge_blocked_claim_binding.blocked_claim_summary_label
-        == "obietnica do sprawdzenia"
+        knowledge_blocked_claim_binding.blocked_claim_count_summary_label
+        == "1 zablokowana obietnica"
     )
-    assert knowledge_blocked_claim_binding.blocked_claim_count_summary_label == "1 zablokowana obietnica"
     assert knowledge_blocked_claim_binding.has_blocked_claims is True
     assert raw_value not in knowledge_blocked_claim_binding.blocked_claim_summary_label
 
@@ -1741,9 +1719,9 @@ def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
     from wilq.briefing.ads_diagnostics import (
         _ads_allowed_metric_labels,
         _ads_campaign_status_label,
+        _ads_change_resource_type_label,
         _ads_changed_field_labels,
         _ads_channel_type_label,
-        _ads_change_resource_type_label,
         _ads_client_type_label,
         _ads_google_operation_label,
         _ads_keyword_criterion_status_label,
@@ -1937,9 +1915,7 @@ def test_action_review_records_human_outcome_without_apply(
     assert review_payload["review_gate"]["apply_allowed"] is False
     assert "zmian w zewnętrznych systemach" in review_payload["audit_event"]["summary"]
 
-    audit_response = client.get(
-        "/api/audit/events?action_id=act_review_merchant_feed_issues"
-    )
+    audit_response = client.get("/api/audit/events?action_id=act_review_merchant_feed_issues")
     assert audit_response.status_code == 200
     audit_events = audit_response.json()
     assert audit_events[0]["event_type"] == "human_review_approved_for_prepare"
@@ -1996,9 +1972,7 @@ def test_action_preview_generates_dry_run_audit_without_apply(
     assert "zapis zmian=" not in preview["audit_event"]["summary"]
     assert "zapis zmian pozostaje zablokowany" in preview["audit_event"]["summary"]
 
-    audit_response = client.get(
-        "/api/audit/events?action_id=act_review_merchant_feed_issues"
-    )
+    audit_response = client.get("/api/audit/events?action_id=act_review_merchant_feed_issues")
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "action_preview_generated"
 
@@ -2033,8 +2007,7 @@ def test_content_action_preview_exposes_review_only_brief_payload(
         for card in preview["preview_cards"]
     )
     assert any(
-        "kontrola prawna"
-        in ", ".join(preview_card_row_values(card, "Blokady publikacji"))
+        "kontrola prawna" in ", ".join(preview_card_row_values(card, "Blokady publikacji"))
         for card in preview["preview_cards"]
     )
     assert "action_mode_prepare_only" in preview["blockers"]
@@ -2047,9 +2020,7 @@ def test_content_brief_preview_keeps_dev_site_as_optional_preview_only(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_target_state.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_target.duckdb"))
     source_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
-    dev_preview_url = (
-        "https://ekologus.dev.proudsite.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
-    )
+    dev_preview_url = "https://ekologus.dev.proudsite.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
     gsc_run = ConnectorRefreshRun(
         id="refresh_gsc_content_public_url_test",
         connector_id="google_search_console",
@@ -2110,11 +2081,7 @@ def test_content_brief_preview_keeps_dev_site_as_optional_preview_only(
     assert diagnostics_response.status_code == 200
     action = action_response.json()
     diagnostics = diagnostics_response.json()
-    decision = next(
-        item
-        for item in diagnostics["decision_queue"]
-        if item["page"] == source_url
-    )
+    decision = next(item for item in diagnostics["decision_queue"] if item["page"] == source_url)
     assert decision["source_public_url"] == source_url
     assert decision["final_canonical_url"] == source_url
     assert decision["intended_final_url"] == source_url
@@ -2136,9 +2103,7 @@ def test_content_brief_preview_keeps_dev_site_as_optional_preview_only(
     assert "adresu kanonicznego" in decision["content_gate_summary"]
     assert "duplik" in decision["content_gate_summary"]
     assert diagnostics["operator_summary"]["current_site_match_count"] == 1
-    assert not any(
-        key.startswith("target_site_") for key in diagnostics["operator_summary"]
-    )
+    assert not any(key.startswith("target_site_") for key in diagnostics["operator_summary"])
     preview = next(
         item
         for item in action["payload"]["content_brief_preview"]
@@ -2165,13 +2130,9 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
         "WILQ_METRIC_DB",
         str(tmp_path / "content_target_alternative.duckdb"),
     )
-    source_url = (
-        "https://www.ekologus.pl/"
-        "remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
-    )
+    source_url = "https://www.ekologus.pl/remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
     dev_same_path_url = (
-        "https://ekologus.dev.proudsite.pl/"
-        "remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
+        "https://ekologus.dev.proudsite.pl/remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
     )
     alternative_url = (
         "https://ekologus.dev.proudsite.pl/uslugi/ekodokumentacje/"
@@ -2238,9 +2199,7 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
                     "modified_gmt": "2025-09-05T09:13:12+00:00",
-                    "title_or_h1": (
-                        "Remediacje, monitoring gruntów i wód podziemnych"
-                    ),
+                    "title_or_h1": ("Remediacje, monitoring gruntów i wód podziemnych"),
                     "canonical_url": alternative_url,
                 },
             ),
@@ -2253,11 +2212,7 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
     assert diagnostics_response.status_code == 200
     assert action_response.status_code == 200
     diagnostics = diagnostics_response.json()
-    decision = next(
-        item
-        for item in diagnostics["decision_queue"]
-        if item["page"] == source_url
-    )
+    decision = next(item for item in diagnostics["decision_queue"] if item["page"] == source_url)
     assert decision["source_public_url"] == source_url
     assert decision["final_canonical_url"] == source_url
     assert decision["intended_final_url"] == source_url
@@ -2266,9 +2221,7 @@ def test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exist
     assert not any(key.startswith("transition_candidate") for key in decision)
     assert normalized_alternative_url not in str(decision)
     assert dev_same_path_url not in str(decision)
-    assert not any(
-        key.startswith("target_site_") for key in diagnostics["operator_summary"]
-    )
+    assert not any(key.startswith("target_site_") for key in diagnostics["operator_summary"])
 
     action = action_response.json()
     preview = next(
@@ -2558,10 +2511,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert result["review_gate"]["last_review_outcome"] == "approved_for_prepare"
     assert "wybrano pozycję do sprawdzenia" in result["audit_event"]["summary"]
     assert "URL finalny: potwierdź finalny URL kanoniczny" in result["audit_event"]["summary"]
-    assert (
-        "sprawdzony URL zapisany w szczegółach audytu"
-        in result["audit_event"]["summary"]
-    )
+    assert "sprawdzony URL zapisany w szczegółach audytu" in result["audit_event"]["summary"]
     for raw_term in (
         f"candidate:{candidate_id}",
         "source_type:gsc_query_page",
@@ -2590,21 +2540,16 @@ def test_content_brief_candidate_review_persists_audit_event(
         "draft_readiness_notes": "canonical i duplikaty wymagaja dalszego review",
     }
     assert (
-        "Ten krok nie zapisuje zmian w zewnętrznych systemach"
-        in result["audit_event"]["summary"]
+        "Ten krok nie zapisuje zmian w zewnętrznych systemach" in result["audit_event"]["summary"]
     )
 
-    audit_response = client.get(
-        "/api/audit/events?action_id=act_prepare_content_refresh_queue"
-    )
+    audit_response = client.get("/api/audit/events?action_id=act_prepare_content_refresh_queue")
     assert audit_response.status_code == 200
     persisted_audit = audit_response.json()[0]
     assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
     assert "wybrano pozycję do sprawdzenia" in persisted_audit["summary"]
     assert f"candidate:{candidate_id}" not in persisted_audit["summary"]
-    assert persisted_audit["details"]["content_url_review"]["reviewed_url"] == (
-        reviewed_url
-    )
+    assert persisted_audit["details"]["content_url_review"]["reviewed_url"] == (reviewed_url)
 
     reviewed_action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
     assert reviewed_action_response.status_code == 200
@@ -2621,10 +2566,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["destructive"] is False
-    assert (
-        draft_preview["content_url_review_recorded_outcome"]
-        == "confirm_final_canonical_url"
-    )
+    assert draft_preview["content_url_review_recorded_outcome"] == "confirm_final_canonical_url"
     assert draft_preview["content_url_review_reviewed_url"] == reviewed_url
     assert draft_preview["content_url_review_notes"] == (
         "operator potwierdzil publiczny URL do dalszego review"
@@ -2636,18 +2578,11 @@ def test_content_brief_candidate_review_persists_audit_event(
         for key in draft_preview
     )
     assert "current_transition_candidate_url" not in draft_preview
+    assert draft_preview["draft_readiness_review_recorded_outcome"] == "needs_duplicate_resolution"
     assert (
-        draft_preview["draft_readiness_review_recorded_outcome"]
-        == "needs_duplicate_resolution"
+        draft_preview["canonical_review_recorded_outcome"] == "canonical_needs_target_confirmation"
     )
-    assert (
-        draft_preview["canonical_review_recorded_outcome"]
-        == "canonical_needs_target_confirmation"
-    )
-    assert (
-        draft_preview["duplicate_review_recorded_outcome"]
-        == "merge_required_before_draft"
-    )
+    assert draft_preview["duplicate_review_recorded_outcome"] == "merge_required_before_draft"
     assert draft_preview["legal_factual_review_recorded_outcome"] == "needs_expert_review"
 
     assert draft_preview["human_review_recorded_outcome"] == "prepare_only_review_recorded"
@@ -2670,26 +2605,27 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["canonical_gate_status"]
     assert draft_preview["duplicate_gate_status"]
     assert draft_preview["content_gate_summary"]
-    assert "spis treści: spis potwierdzony na obecnej stronie" in draft_preview[
-        "content_gate_status_summary"
-    ]
-    assert "URL kanoniczny: publiczny URL kanoniczny potwierdzony" in draft_preview[
-        "content_gate_status_summary"
-    ]
-    assert "duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia" in draft_preview[
-        "content_gate_status_summary"
-    ]
+    assert (
+        "spis treści: spis potwierdzony na obecnej stronie"
+        in draft_preview["content_gate_status_summary"]
+    )
+    assert (
+        "URL kanoniczny: publiczny URL kanoniczny potwierdzony"
+        in draft_preview["content_gate_status_summary"]
+    )
+    assert (
+        "duplikaty: istniejąca publiczna treść wymaga odświeżenia albo scalenia"
+        in draft_preview["content_gate_status_summary"]
+    )
     draft_contract = draft_preview["draft_generation_contract"]
     assert draft_contract["contract_version"] == "content_draft_generation_v1"
     assert draft_contract["language"] == "pl-PL"
     assert draft_contract["status"] == draft_preview["draft_generation_status"]
     assert draft_contract["allowed_output_kind"] in {
-        "outline_only_until_gates_pass",
+        "outline_only_until_checks_complete",
         "reviewable_polish_draft_preview",
     }
-    assert "duplicate_or_cannibalization_check" in draft_contract[
-        "requires_passed_gates"
-    ]
+    assert "duplicate_or_cannibalization_check" in draft_contract["requires_passed_gates"]
     assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
     readiness_contract = draft_preview["draft_readiness_review_contract"]
     assert readiness_contract["contract_version"] == "content_draft_readiness_review_v1"
@@ -2697,26 +2633,20 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "needs_duplicate_resolution" in readiness_contract["allowed_outcomes"]
     assert "canonical_review_outcome" in readiness_contract["required_fields"]
     assert "wordpress_draft_write" in readiness_contract["blocked_outputs"]
-    assert draft_preview["wordpress_draft_handoff_status"] == "blocked_until_draft_gates_pass"
-    assert "wordpress_draft_write_not_requested" in draft_preview[
-        "wordpress_draft_handoff_blockers"
-    ]
+    assert draft_preview["wordpress_draft_handoff_status"] == "blocked_until_draft_checks_complete"
+    assert (
+        "wordpress_draft_write_not_requested" in draft_preview["wordpress_draft_handoff_blockers"]
+    )
     wordpress_draft_contract = draft_preview["wordpress_draft_handoff_contract"]
     assert wordpress_draft_contract["contract_version"] == "wordpress_draft_handoff_v1"
     assert wordpress_draft_contract["scope"] == "blocked_preview_only"
     assert wordpress_draft_contract["final_canonical_url"] == draft_preview["final_canonical_url"]
     assert "target_site_url" not in wordpress_draft_contract
-    assert (
-        wordpress_draft_contract["required_next_action_contract"]
-        == "wordpress_draft_handoff_v1"
-    )
+    assert wordpress_draft_contract["required_next_action_contract"] == "wordpress_draft_handoff_v1"
     assert "content_draft_readiness_review" in wordpress_draft_contract["requires_passed_gates"]
     assert "wordpress_draft_write" in wordpress_draft_contract["blocked_outputs"]
     measurement_plan = draft_preview["post_publication_measurement_plan"]
-    assert (
-        measurement_plan["contract_version"]
-        == "post_publication_measurement_plan_v1"
-    )
+    assert measurement_plan["contract_version"] == "post_publication_measurement_plan_v1"
     assert measurement_plan["scope"] == "blocked_preview_only"
     assert measurement_plan["final_canonical_url"] == draft_preview["final_canonical_url"]
     assert "target_site_url" not in measurement_plan
@@ -2731,9 +2661,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["post_status_label"] == "szkic"
     assert draft_preview["draft_payload"]["post_status_label"] == "szkic"
     assert draft_preview["draft_payload"]["post_title"]
-    assert "human_confirm_before_wordpress_write" in draft_preview[
-        "required_validation"
-    ]
+    assert "human_confirm_before_wordpress_write" in draft_preview["required_validation"]
     assert "gwarancja pozycji" in draft_preview["blocked_claims"]
     assert draft_preview["evidence_ids"]
 
@@ -2769,7 +2697,8 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
                 "selected_target_url:[stored in audit details], "
                 "mapping_notes:target wybrany tylko do review staging handoff. "
                 "Blokady: payload_apply_allowed_false, wordpress_write_not_requested, "
-                "blocked_claim:ranking guarantee. Sprawdzone: source_type:gsc_query_page, mode:refresh."
+                "blocked_claim:ranking guarantee. "
+                "Sprawdzone: source_type:gsc_query_page, mode:refresh."
             ),
             evidence_ids=["ev_refresh_wordpress_content_contract_test"],
             details={
@@ -2780,15 +2709,15 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
                     "mapping_outcome:confirm_alternative_candidate",
                     "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
                     "mapping_notes:target wybrany tylko do review staging handoff",
-                "draft_readiness_outcome:needs_duplicate_resolution",
-                "source_type:gsc_query_page",
-                "mode:refresh",
-            ],
-            "blockers": [
-                "payload_apply_allowed_false",
-                "wordpress_write_not_requested",
-                "blocked_claim:ranking guarantee",
-            ],
+                    "draft_readiness_outcome:needs_duplicate_resolution",
+                    "source_type:gsc_query_page",
+                    "mode:refresh",
+                ],
+                "blockers": [
+                    "payload_apply_allowed_false",
+                    "wordpress_write_not_requested",
+                    "blocked_claim:ranking guarantee",
+                ],
                 "target_site_mapping_review": {
                     "candidate": "content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca",
                     "mapping_outcome": "confirm_alternative_candidate",
@@ -3004,16 +2933,12 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert payload["content_brief_preview_total"] >= 1
     assert payload["content_brief_preview_included"] >= 1
     brief_preview = next(
-        item
-        for item in payload["content_brief_preview"]
-        if item["candidate_id"] == candidate_id
+        item for item in payload["content_brief_preview"] if item["candidate_id"] == candidate_id
     )
     assert brief_preview["intent"]
     assert brief_preview["source_type_label"] == "Google Search Console"
     assert brief_preview["mode_label"] == "odśwież istniejącą treść"
-    assert brief_preview["publication_readiness_status_label"] == (
-        "zablokowane do sprawdzenia"
-    )
+    assert brief_preview["publication_readiness_status_label"] == ("zablokowane do sprawdzenia")
     assert "gwarancja pozycji" in brief_preview["blocked_claim_labels"]
     assert brief_preview["content_angle"]
     assert brief_preview["audience"]
@@ -3028,9 +2953,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["internal_link_direction"]
     assert brief_preview["publication_readiness_status"] == "blocked_until_review"
     assert "legal_factual_review" in brief_preview["publication_blockers"]
-    assert "kontrola prawna i faktograficzna" in brief_preview[
-        "publication_blocker_labels"
-    ]
+    assert "kontrola prawna i faktograficzna" in brief_preview["publication_blocker_labels"]
     assert brief_preview["legal_review_notes"]
     assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
@@ -3051,13 +2974,8 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         if key.startswith(("target_site_", "mapping_review_", "transition_candidate"))
         or key == "current_transition_candidate_url"
     ]
-    assert (
-        "duplicate_or_cannibalization_check"
-        in brief_preview["required_validation"]
-    )
-    assert "kontrola duplikacji i kanibalizacji" in brief_preview[
-        "required_validation_labels"
-    ]
+    assert "duplicate_or_cannibalization_check" in brief_preview["required_validation"]
+    assert "kontrola duplikacji i kanibalizacji" in brief_preview["required_validation_labels"]
     assert "odśwież istniejącą treść" in brief_preview["decision_option_labels"]
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
@@ -3067,9 +2985,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
-    assert draft_preview["operation_type_label"] == (
-        "wersja robocza istniejącej treści"
-    )
+    assert draft_preview["operation_type_label"] == ("wersja robocza istniejącej treści")
     assert draft_preview["post_status_label"] == "szkic"
     assert draft_preview["draft_generation_status_label"]
     assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
@@ -3103,67 +3019,59 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_contract["language"] == "pl-PL"
     assert draft_contract["status"] == draft_preview["draft_generation_status"]
     assert draft_contract["allowed_output_kind"] in {
-        "outline_only_until_gates_pass",
+        "outline_only_until_checks_complete",
         "reviewable_polish_draft_preview",
     }
-    assert "duplicate_or_cannibalization_check" in draft_contract[
-        "requires_passed_gates"
-    ]
+    assert "duplicate_or_cannibalization_check" in draft_contract["requires_passed_gates"]
     assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
-    assert "warunek: kontrola duplikacji i kanibalizacji" in draft_preview[
-        "draft_generation_summary"
-    ]
-    assert "zakaz: obietnica gotowości do publikacji" in draft_preview[
-        "draft_generation_summary"
-    ]
+    assert (
+        "warunek: kontrola duplikacji i kanibalizacji" in draft_preview["draft_generation_summary"]
+    )
+    assert "zakaz: obietnica gotowości do publikacji" in draft_preview["draft_generation_summary"]
     assert draft_preview["wordpress_draft_handoff_status"] in {
-        "blocked_until_draft_gates_pass",
+        "blocked_until_draft_checks_complete",
         "blocked_until_draft_readiness_review",
         "blocked_until_wordpress_draft_handoff_action",
     }
-    assert "wordpress_draft_write_not_requested" in draft_preview[
-        "wordpress_draft_handoff_blockers"
-    ]
-    assert "zapis szkicu WordPress nie został zlecony" in draft_preview[
-        "wordpress_draft_handoff_blocker_labels"
-    ]
-    assert "blokada: zapis szkicu WordPress nie został zlecony" in draft_preview[
-        "wordpress_draft_handoff_summary"
-    ]
+    assert (
+        "wordpress_draft_write_not_requested" in draft_preview["wordpress_draft_handoff_blockers"]
+    )
+    assert (
+        "zapis szkicu WordPress nie został zlecony"
+        in draft_preview["wordpress_draft_handoff_blocker_labels"]
+    )
+    assert (
+        "blokada: zapis szkicu WordPress nie został zlecony"
+        in draft_preview["wordpress_draft_handoff_summary"]
+    )
     wordpress_draft_contract = draft_preview["wordpress_draft_handoff_contract"]
     assert wordpress_draft_contract["contract_version"] == "wordpress_draft_handoff_v1"
     assert wordpress_draft_contract["scope"] == "blocked_preview_only"
     assert "wordpress_publish" in wordpress_draft_contract["blocked_outputs"]
-    assert "blokuje: publikacja WordPress" in draft_preview[
-        "wordpress_draft_handoff_contract_summary"
-    ]
-    measurement_plan = draft_preview["post_publication_measurement_plan"]
     assert (
-        measurement_plan["contract_version"]
-        == "post_publication_measurement_plan_v1"
+        "blokuje: publikacja WordPress" in draft_preview["wordpress_draft_handoff_contract_summary"]
     )
+    measurement_plan = draft_preview["post_publication_measurement_plan"]
+    assert measurement_plan["contract_version"] == "post_publication_measurement_plan_v1"
     assert measurement_plan["scope"] == "blocked_preview_only"
     assert measurement_plan["status"] == "blocked_until_publish_and_followup_data"
     assert "google_search_console" in measurement_plan["required_source_connectors"]
     assert "google_analytics_4" in measurement_plan["required_source_connectors"]
     assert "content_success_verdict" in measurement_plan["blocked_outputs"]
-    assert "blokuje: werdykt skuteczności treści" in draft_preview[
-        "post_publication_measurement_summary"
-    ]
-    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
-    assert "potwierdzenie człowieka przed zapisem WordPress" in draft_preview[
-        "draft_blocker_labels"
-    ]
-    assert "wymaga: wynik decyzji człowieka" in draft_preview[
-        "draft_readiness_review_contract_summary"
-    ]
     assert (
-        "duplicate_or_cannibalization_check"
-        in draft_preview["required_validation"]
+        "blokuje: werdykt skuteczności treści"
+        in draft_preview["post_publication_measurement_summary"]
     )
-    assert "kontrola duplikacji i kanibalizacji" in draft_preview[
-        "required_validation_labels"
-    ]
+    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
+    assert (
+        "potwierdzenie człowieka przed zapisem WordPress" in draft_preview["draft_blocker_labels"]
+    )
+    assert (
+        "wymaga: wynik decyzji człowieka"
+        in draft_preview["draft_readiness_review_contract_summary"]
+    )
+    assert "duplicate_or_cannibalization_check" in draft_preview["required_validation"]
+    assert "kontrola duplikacji i kanibalizacji" in draft_preview["required_validation_labels"]
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]
@@ -3180,9 +3088,7 @@ def test_legacy_raw_audit_summary_is_not_rewritten_with_string_labels() -> None:
 
     cleaned = _operator_audit_summary_text(summary)
 
-    assert cleaned == (
-        "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
-    )
+    assert cleaned == ("Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu.")
     assert "payload_apply_allowed_false" not in cleaned
     assert "candidate:" not in cleaned
     assert "blocked_claim:" not in cleaned
@@ -3218,9 +3124,7 @@ def test_action_review_gate_hides_raw_legacy_review_summary(
 
     summary = response.json()["review_gate"]["last_review_summary"]
 
-    assert summary == (
-        "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
-    )
+    assert summary == ("Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu.")
     assert "Wynik review" not in summary
     assert "Blockery" not in summary
     assert "candidate:" not in summary
@@ -3255,8 +3159,9 @@ def test_daily_context_pack_preserves_action_preview_audit(
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     latest_audit_event = merchant_action["latest_audit_event"]
     assert latest_audit_event["event_type"] == "action_preview_generated"
-    assert "szczegóły techniczne są dostępne w szczegółach akcji WILQ" in (
-        latest_audit_event["summary"]
+    assert (
+        "szczegóły techniczne są dostępne w szczegółach akcji WILQ"
+        in (latest_audit_event["summary"])
     )
     assert "details_keys" not in latest_audit_event
     assert merchant_action["review_gate"]["apply_allowed"] is False
@@ -3293,9 +3198,7 @@ def test_action_confirm_requires_prior_preview(
     assert confirmation["review_gate"]["apply_allowed"] is False
     assert confirmation["review_gate"]["status_label"]
 
-    audit_response = client.get(
-        "/api/audit/events?action_id=act_review_merchant_feed_issues"
-    )
+    audit_response = client.get("/api/audit/events?action_id=act_review_merchant_feed_issues")
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "action_confirmation_blocked"
 
@@ -3426,9 +3329,9 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     assert result["metric_fact_count"] > 0
     assert "google_merchant_center" in result["source_connectors"]
     assert result["source_connector_labels"] == ["Merchant Center"]
-    assert "dowód" in result["evidence_summary_label"] or "dowody" in result[
-        "evidence_summary_label"
-    ]
+    assert (
+        "dowód" in result["evidence_summary_label"] or "dowody" in result["evidence_summary_label"]
+    )
     assert result["blocker_labels"] == []
     assert result["audit_event"]["event_type"] == "action_impact_check_completed"
     assert result["review_gate"]["last_impact_check_status"] == "checked"
@@ -3452,12 +3355,8 @@ def test_action_impact_check_records_pre_apply_sanity_without_apply(
     action_response = client.get(f"/api/actions/{action_id}")
     assert action_response.status_code == 200
     action_payload = action_response.json()
-    assert "Porównanie sprzed zmiany" in action_payload["review_gate"][
-        "last_impact_check_summary"
-    ]
-    assert "Okno przed zmianą" not in action_payload["review_gate"][
-        "last_impact_check_summary"
-    ]
+    assert "Porównanie sprzed zmiany" in action_payload["review_gate"]["last_impact_check_summary"]
+    assert "Okno przed zmianą" not in action_payload["review_gate"]["last_impact_check_summary"]
 
 
 def test_daily_context_pack_preserves_human_review_outcome(
@@ -3496,8 +3395,9 @@ def test_daily_context_pack_preserves_human_review_outcome(
     assert "[REDACTED]" not in serialized
     assert "Brakuje podglądu zmian" not in serialized
     assert merchant_action["latest_audit_event"]["event_type"] == "human_review_needs_changes"
-    assert "szczegóły techniczne są dostępne w szczegółach akcji WILQ" in (
-        merchant_action["latest_audit_event"]["summary"]
+    assert (
+        "szczegóły techniczne są dostępne w szczegółach akcji WILQ"
+        in (merchant_action["latest_audit_event"]["summary"])
     )
 
 
@@ -3572,12 +3472,10 @@ def test_google_ads_business_context_action_is_review_only(
         "human_strategy_review",
     ]
     assert "WILQ_ADS_PROFIT_MARGIN" in action["payload"]["required_env"]
-    assert "WILQ_ADS_TARGET_ROAS" in action["payload"]["alternative_env"][
-        "target_roas_or_cpa"
-    ]
-    assert "WILQ_ADS_TARGET_CPA_MICROS" in action["payload"]["alternative_env"][
-        "target_roas_or_cpa"
-    ]
+    assert "WILQ_ADS_TARGET_ROAS" in action["payload"]["alternative_env"]["target_roas_or_cpa"]
+    assert (
+        "WILQ_ADS_TARGET_CPA_MICROS" in action["payload"]["alternative_env"]["target_roas_or_cpa"]
+    )
     assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
     assert "client_secret" not in serialized
 
@@ -3631,36 +3529,39 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "block_target_verdict_until_roas_or_cpa_confirmed",
         "block_target_verdict_until_strategy_review_approved",
     ]
-    assert business_context_contract["target_interpretation"][
-        "interpretation_contract"
-    ] == "ads_business_target_interpretation_v1"
+    assert (
+        business_context_contract["target_interpretation"]["interpretation_contract"]
+        == "ads_business_target_interpretation_v1"
+    )
     assert business_context_contract["target_interpretation"]["status"] == "preliminary"
     assert business_context_contract["target_interpretation"]["status_label"] == "wstępne"
-    assert "campaign_review_context" in business_context_contract[
-        "target_interpretation"
-    ]["allowed_uses"]
-    assert "kontekst oceny kampanii" in business_context_contract[
-        "target_interpretation"
-    ]["allowed_use_labels"]
-    assert "target_kpi_verdict" in business_context_contract["target_interpretation"][
-        "blocked_uses"
-    ]
-    assert "ocena wskaźników względem celu" in business_context_contract[
-        "target_interpretation"
-    ]["blocked_use_labels"]
+    assert (
+        "campaign_review_context"
+        in business_context_contract["target_interpretation"]["allowed_uses"]
+    )
+    assert (
+        "kontekst oceny kampanii"
+        in business_context_contract["target_interpretation"]["allowed_use_labels"]
+    )
+    assert (
+        "target_kpi_verdict" in business_context_contract["target_interpretation"]["blocked_uses"]
+    )
+    assert (
+        "ocena wskaźników względem celu"
+        in business_context_contract["target_interpretation"]["blocked_use_labels"]
+    )
     assert business_context_contract["target_interpretation"]["missing_requirements"] == [
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
-    assert business_context_contract["target_interpretation"][
-        "missing_requirement_labels"
-    ] == [
+    assert business_context_contract["target_interpretation"]["missing_requirement_labels"] == [
         "docelowy zwrot z reklam albo koszt pozyskania celu",
         "ocena strategii przez człowieka",
     ]
-    assert "ocena strategii przez człowieka" in business_context_contract[
-        "target_interpretation"
-    ]["required_validation_labels"]
+    assert (
+        "ocena strategii przez człowieka"
+        in business_context_contract["target_interpretation"]["required_validation_labels"]
+    )
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -3692,9 +3593,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "ocena strategii przez człowieka",
     ]
     assert "human_strategy_review" in strategy_readiness["required_validation"]
-    assert "ocena strategii przez człowieka" in strategy_readiness[
-        "required_validation_labels"
-    ]
+    assert "ocena strategii przez człowieka" in strategy_readiness["required_validation_labels"]
     assert "ocena opłacalności" in strategy_readiness["blocked_claims"]
     assert "ocena opłacalności" in strategy_readiness["blocked_claim_labels"]
     assert business_context_contract["operator_review_gates"] == [
@@ -3741,8 +3640,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "warunki sprawdzenia": 5,
         "polityki": 5,
     }
-    assert business_context_decision["operator_review_gates"] == (
-        business_context_contract["operator_review_gates"]
+    assert (
+        business_context_decision["operator_review_gates"]
+        == (business_context_contract["operator_review_gates"])
     )
     assert business_context_decision["action_ids"] == [
         ADS_TARGET_CONFIRMATION_ACTION_ID,
@@ -3786,9 +3686,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     target_preview_card = action["preview_cards"][0]
     assert target_preview_card["kind"] == "google_ads_target_guardrail_review"
     assert target_preview_card["title_label"] == "Cel Ads do potwierdzenia"
-    target_preview_rows = {
-        row["label"]: row["value"] for row in target_preview_card["rows"]
-    }
+    target_preview_rows = {row["label"]: row["value"] for row in target_preview_card["rows"]}
     assert target_preview_rows["Marża"] == "35%"
     assert target_preview_rows["Cel biznesowy"] == "lead quality review"
     assert target_preview_rows["Cel budżetu"] == "protect current monthly budget"
@@ -3820,13 +3718,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     strategy_preview_card = strategy_action["preview_cards"][0]
     assert strategy_preview_card["kind"] == "google_ads_strategy_review"
     assert strategy_preview_card["title_label"] == "Ocena strategii Ads do zapisania"
-    strategy_preview_rows = {
-        row["label"]: row["value"] for row in strategy_preview_card["rows"]
-    }
+    strategy_preview_rows = {row["label"]: row["value"] for row in strategy_preview_card["rows"]}
     assert strategy_preview_rows["Marża"] == "35%"
-    assert strategy_preview_rows["Ostatni przegląd strategii"] == (
-        "brak zapisanego przeglądu"
-    )
+    assert strategy_preview_rows["Ostatni przegląd strategii"] == ("brak zapisanego przeglądu")
     strategy_marketer_card_text = str(
         {
             key: strategy_preview_card[key]
@@ -3893,13 +3787,11 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     assert business_context["target_roas"] == 4.2
     assert business_context["target_cpa_micros"] is None
     assert business_context["missing_read_contracts"] == ["human_strategy_review"]
-    assert f"local_state:{ADS_TARGET_CONFIRMATION_ACTION_ID}" in business_context[
-        "configured_sources"
-    ]
+    assert (
+        f"local_state:{ADS_TARGET_CONFIRMATION_ACTION_ID}" in business_context["configured_sources"]
+    )
     assert business_context["target_interpretation"]["status"] == "preliminary"
-    assert "target_roas_review_context" in business_context["target_interpretation"][
-        "allowed_uses"
-    ]
+    assert "target_roas_review_context" in business_context["target_interpretation"]["allowed_uses"]
     assert "budget_apply" in business_context["target_interpretation"]["blocked_uses"]
     assert ADS_TARGET_CONFIRMATION_ACTION_ID not in after_payload["action_ids"]
     assert ADS_STRATEGY_REVIEW_ACTION_ID in after_payload["action_ids"]
@@ -3910,9 +3802,7 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     assert ADS_TARGET_CONFIRMATION_ACTION_ID not in action_ids
     assert ADS_STRATEGY_REVIEW_ACTION_ID in action_ids
 
-    audit_response = client.get(
-        f"/api/audit/events?action_id={ADS_TARGET_CONFIRMATION_ACTION_ID}"
-    )
+    audit_response = client.get(f"/api/audit/events?action_id={ADS_TARGET_CONFIRMATION_ACTION_ID}")
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "ads_target_guardrail_confirmed"
     assert "docelowy zwrot z reklam: 4.2" in audit_response.json()[0]["summary"]
@@ -3944,13 +3834,12 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     assert final_business_context["missing_read_contracts"] == []
     assert final_business_context["strategy_review_status"] == "approved_for_prepare"
     assert final_business_context["strategy_reviewed_by"] == "operator_test"
-    assert f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}" in final_business_context[
-        "configured_sources"
-    ]
+    assert (
+        f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}"
+        in final_business_context["configured_sources"]
+    )
     assert final_business_context["target_interpretation"]["status"] == "ready"
-    assert "target_roas_review" in final_business_context["target_interpretation"][
-        "allowed_uses"
-    ]
+    assert "target_roas_review" in final_business_context["target_interpretation"]["allowed_uses"]
     assert ADS_STRATEGY_REVIEW_ACTION_ID not in final_payload["action_ids"]
 
 
@@ -4075,10 +3964,7 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     assert "forecast" not in context_text
     assert "audience size" not in context_text
     assert "Keyword Planner claims" not in context_text
-    assert (
-        "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera"
-        in context_text
-    )
+    assert "token deweloperski nie ma zatwierdzonego dostępu do Keyword Plannera" in context_text
 
     validate_response = client.post(f"/api/actions/{KEYWORD_PLANNER_ACCESS_ACTION_ID}/validate")
     assert validate_response.status_code == 200
@@ -4091,18 +3977,12 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     diagnostics = diagnostics_response.json()
     keyword_planner_contract = diagnostics["keyword_planner_read_contract"]
     assert keyword_planner_contract["status"] == "blocked"
-    assert "keyword_planner_enrichment" in keyword_planner_contract[
-        "missing_read_contracts"
-    ]
+    assert "keyword_planner_enrichment" in keyword_planner_contract["missing_read_contracts"]
     keyword_planner_section = next(
-        section
-        for section in diagnostics["sections"]
-        if section["id"] == "ads_keyword_planner"
+        section for section in diagnostics["sections"] if section["id"] == "ads_keyword_planner"
     )
     assert keyword_planner_section["status"] == "blocked"
-    assert keyword_planner_section["action_ids"] == [
-        KEYWORD_PLANNER_ACCESS_ACTION_ID
-    ]
+    assert keyword_planner_section["action_ids"] == [KEYWORD_PLANNER_ACCESS_ACTION_ID]
     assert KEYWORD_PLANNER_ACCESS_ACTION_ID in diagnostics["action_ids"]
     sections_by_id = {section["id"]: section for section in diagnostics["sections"]}
     assert sections_by_id["ads_live_data_status"]["action_ids"] == []
@@ -4113,15 +3993,14 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
         "act_prepare_custom_segments_from_search_terms",
         "act_prepare_negative_keyword_review_queue",
     ]
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id[
-        "ads_live_data_status"
-    ]["action_ids"]
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id[
-        "ads_campaign_overview"
-    ]["action_ids"]
-    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_search_terms"][
-        "action_ids"
-    ]
+    assert (
+        KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_live_data_status"]["action_ids"]
+    )
+    assert (
+        KEYWORD_PLANNER_ACCESS_ACTION_ID
+        not in sections_by_id["ads_campaign_overview"]["action_ids"]
+    )
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_search_terms"]["action_ids"]
 
 
 def test_metric_backed_prepare_actions_are_evidence_grounded(
@@ -4180,12 +4059,8 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         assert action["review_gate"]["apply_allowed"] is False
         assert "action_validation_required" in action["review_gate"]["apply_blockers"]
         assert "payload_apply_allowed_false" in action["review_gate"]["apply_blockers"]
-        assert "wymagane sprawdzenie w WILQ" in action["review_gate"][
-            "apply_blocker_labels"
-        ]
-        assert "podgląd zmian nie pozwala na zapis" in action["review_gate"][
-            "apply_blocker_labels"
-        ]
+        assert "wymagane sprawdzenie w WILQ" in action["review_gate"]["apply_blocker_labels"]
+        assert "podgląd zmian nie pozwala na zapis" in action["review_gate"]["apply_blocker_labels"]
         assert action["review_gate"]["apply_blocker_summary_label"]
         assert action["evidence_ids"]
         for preview_key in (
@@ -4212,21 +4087,17 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                     for label in preview["required_validation_labels"]
                     if isinstance(label, str)
                 )
-                assert "warunek techniczny do sprawdzenia" not in preview[
-                    "required_validation_labels"
-                ]
-                assert "brak opisu w kontrakcie WILQ" not in preview[
-                    "required_validation_labels"
-                ]
+                assert (
+                    "warunek techniczny do sprawdzenia" not in preview["required_validation_labels"]
+                )
+                assert "brak opisu w kontrakcie WILQ" not in preview["required_validation_labels"]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
             assert action["domain"] == "social"
             assert action["payload"]["source_inputs"]
             assert "candidate_inputs" not in action["payload"]
             preview_cards = action["preview_cards"]
             assert preview_cards
-            assert {card["kind"] for card in preview_cards} == {
-                "social_draft_input_review"
-            }
+            assert {card["kind"] for card in preview_cards} == {"social_draft_input_review"}
             preview_text = json.dumps(
                 [
                     {
@@ -4247,9 +4118,10 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert "google_merchant_center" not in preview_text
             assert "clicks" not in preview_text
             assert "issue_product_count" not in preview_text
-            assert "no_publishing_without_connector_credentials" in action["payload"][
-                "draft_constraints"
-            ]
+            assert (
+                "no_publishing_without_connector_credentials"
+                in action["payload"]["draft_constraints"]
+            )
             assert {"ev_connector_linkedin_status", "ev_connector_facebook_status"}.issubset(
                 set(action["evidence_ids"])
             )
@@ -4260,9 +4132,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert content_cards
             assert "content_brief_review" in {card["kind"] for card in content_cards}
             if content_payload.get("wordpress_draft_payload_preview"):
-                assert "wordpress_draft_payload_review" in {
-                    card["kind"] for card in content_cards
-                }
+                assert "wordpress_draft_payload_review" in {card["kind"] for card in content_cards}
             content_card_text = json.dumps(
                 [
                     {
@@ -4291,15 +4161,11 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert url_contract["contract"] == "content_url_preflight_review_v1"
             assert url_contract["scope"] == "review_only"
             assert "confirm_final_canonical_url" in url_contract["allowed_outcomes"]
-            assert "potwierdź finalny URL kanoniczny" in url_contract[
-                "allowed_outcome_labels"
-            ]
+            assert "potwierdź finalny URL kanoniczny" in url_contract["allowed_outcome_labels"]
             assert "docelowy URL publiczny" in url_contract["required_field_labels"]
             assert "wordpress_publish" in url_contract["blocked_outputs"]
             assert "publikacja WordPress" in url_contract["blocked_output_labels"]
-            assert "obietnica braku duplikacji" in url_contract[
-                "blocked_output_labels"
-            ]
+            assert "obietnica braku duplikacji" in url_contract["blocked_output_labels"]
             assert "content_url_preflight_review" in content_payload["required_validation"]
             assert "target_site_mapping_review" not in content_payload["required_validation"]
             assert "content_brief_preview" in content_payload
@@ -4315,9 +4181,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert gsc_preview["metric_snapshot"]["impressions"] == 120
             assert gsc_preview["apply_allowed"] is False
             assert "gwarancja pozycji" in gsc_preview["blocked_claims"]
-            assert "human_confirm_before_wordpress_write" in gsc_preview[
-                "required_validation"
-            ]
+            assert "human_confirm_before_wordpress_write" in gsc_preview["required_validation"]
             ahrefs_preview = next(
                 item
                 for item in content_payload["content_brief_preview"]
@@ -4334,9 +4198,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             )
             handoff_cards = action["preview_cards"]
             assert handoff_cards
-            assert {card["kind"] for card in handoff_cards} == {
-                "wordpress_draft_handoff_review"
-            }
+            assert {card["kind"] for card in handoff_cards} == {"wordpress_draft_handoff_review"}
             handoff_card_text = json.dumps(
                 [
                     {
@@ -4360,15 +4222,20 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert wordpress_draft_payload["depends_on_action_id"] == (
                 "act_prepare_content_refresh_queue"
             )
-            assert "content_draft_readiness_review_v1" in wordpress_draft_payload[
-                "required_input_contracts"
-            ]
-            assert "post_publication_measurement_plan_v1" in wordpress_draft_payload[
-                "required_input_contracts"
-            ]
+            assert (
+                "content_draft_readiness_review_v1"
+                in wordpress_draft_payload["required_input_contracts"]
+            )
+            assert (
+                "post_publication_measurement_plan_v1"
+                in wordpress_draft_payload["required_input_contracts"]
+            )
             assert wordpress_draft_payload["apply_allowed"] is False
             assert wordpress_draft_payload["api_mutation_ready"] is False
-            assert "wordpress_draft_payload_preview" in wordpress_draft_payload[
+            assert (
+                "wordpress_draft_preview_review" in wordpress_draft_payload["required_validation"]
+            )
+            assert "wordpress_draft_payload_preview" not in wordpress_draft_payload[
                 "required_validation"
             ]
             assert "wordpress_publish" in wordpress_draft_payload["blocked_claims"]
@@ -4399,9 +4266,10 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 == "post_publication_measurement_plan_v1"
             )
             assert wordpress_draft_measurement_plan["scope"] == "blocked_preview_only"
-            assert "wordpress_ekologus" in wordpress_draft_measurement_plan[
-                "required_source_connectors"
-            ]
+            assert (
+                "wordpress_ekologus"
+                in wordpress_draft_measurement_plan["required_source_connectors"]
+            )
             assert "obietnica wzrostu leadów" in wordpress_draft_measurement_plan["blocked_outputs"]
             assert first_wordpress_draft_preview["canonical_gate_status_label"]
             assert first_wordpress_draft_preview["duplicate_gate_status_label"]
@@ -4419,18 +4287,13 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 first_wordpress_draft_preview["required_next_action_label"]
                 == "zapis szkicu WordPress"
             )
-            assert "potwierdzenie publicznego URL-a" in first_wordpress_draft_preview[
-                "required_validation_labels"
-            ]
-            assert "publikacja WordPress" in first_wordpress_draft_preview[
-                "blocked_claim_labels"
-            ]
+            assert (
+                "potwierdzenie publicznego URL-a"
+                in first_wordpress_draft_preview["required_validation_labels"]
+            )
+            assert "publikacja WordPress" in first_wordpress_draft_preview["blocked_claim_labels"]
             assert "blokuje: obietnica wzrostu pozycji" in (
-                " ".join(
-                    first_wordpress_draft_preview[
-                        "post_publication_measurement_summary"
-                    ]
-                )
+                " ".join(first_wordpress_draft_preview["post_publication_measurement_summary"])
             )
             assert ahrefs_preview["mode"] == "review"
             assert ahrefs_preview["topic"] == "audyt środowiskowy"
@@ -4536,8 +4399,7 @@ def test_action_metric_facts_use_latest_batch_read_for_speed(
     assert facts == [fact]
     assert seen["connector_limits"]["google_ads"] == action_service.ACTION_METRIC_FACT_LIMIT
     assert (
-        seen["connector_limits"]["google_search_console"]
-        == action_service.ACTION_METRIC_FACT_LIMIT
+        seen["connector_limits"]["google_search_console"] == action_service.ACTION_METRIC_FACT_LIMIT
     )
 
 
@@ -4584,12 +4446,11 @@ def test_daily_context_pack_preserves_action_review_gates(
     assert merchant_action["review_gate"]["apply_allowed"] is False
     assert "apply_blockers" not in merchant_action["review_gate"]
     assert merchant_action["review_gate"]["apply_blockers_total"] >= 2
-    assert "wymagane sprawdzenie w WILQ" in merchant_action["review_gate"][
-        "apply_blocker_labels"
-    ]
-    assert "podgląd zmian nie pozwala na zapis" in merchant_action["review_gate"][
-        "apply_blocker_labels"
-    ]
+    assert "wymagane sprawdzenie w WILQ" in merchant_action["review_gate"]["apply_blocker_labels"]
+    assert (
+        "podgląd zmian nie pozwala na zapis"
+        in merchant_action["review_gate"]["apply_blocker_labels"]
+    )
     assert "payload_apply_allowed_false" not in json.dumps(
         merchant_action["review_gate"], ensure_ascii=False
     )
@@ -5200,8 +5061,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert all("average_position=" not in item["diagnosis"] for item in content_items)
     assert any("kliknięcia:" in item["diagnosis"] for item in content_items)
     assert any(
-        item["dimensions"]["wordpress_match_confidence"] == "exact_url"
-        for item in content_items
+        item["dimensions"]["wordpress_match_confidence"] == "exact_url" for item in content_items
     )
     assert any("wordpress_ekologus" in item["source_connectors"] for item in content_items)
     ga4_items = [item for item in queue["items"] if item["intent"] == "landing_page_quality"]
@@ -5210,12 +5070,9 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     merchant_items = [item for item in queue["items"] if item["intent"] == "merchant_feed_triage"]
     assert any(item["dimensions"].get("issue_type") == "missing_image" for item in merchant_items)
     assert any(
-        item["dimensions"].get("affected_attribute") == "image_link"
-        for item in merchant_items
+        item["dimensions"].get("affected_attribute") == "image_link" for item in merchant_items
     )
-    ahrefs_items = [
-        item for item in queue["items"] if item["source_connectors"] == ["ahrefs"]
-    ]
+    ahrefs_items = [item for item in queue["items"] if item["source_connectors"] == ["ahrefs"]]
     assert ahrefs_items
     assert any(
         item["dimensions"].get("keyword") == "audyt środowiskowy"
@@ -5223,9 +5080,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         for item in ahrefs_items
     )
     ahrefs_audit_item = next(
-        item
-        for item in ahrefs_items
-        if item["dimensions"].get("keyword") == "audyt środowiskowy"
+        item for item in ahrefs_items if item["dimensions"].get("keyword") == "audyt środowiskowy"
     )
     assert ahrefs_audit_item["dimensions"]["gsc_demand"] == "present"
     assert ahrefs_audit_item["dimensions"]["wordpress_inventory_match"] == "present"
@@ -5245,10 +5100,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert ahrefs_beczka_item["dimensions"]["wordpress_overlap_urls"] == ""
     assert all(item["domain"] == "content" for item in ahrefs_items)
     assert all("wzrost ruchu" in item["blocked_claims"] for item in ahrefs_items)
-    assert all(
-        item["dimensions"].get("competitor_domain") != "cuk.pl"
-        for item in ahrefs_items
-    )
+    assert all(item["dimensions"].get("competitor_domain") != "cuk.pl" for item in ahrefs_items)
     for item in queue["items"]:
         assert item["domain_label"]
         assert item["intent_label"]
@@ -5351,8 +5203,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         if fact["dimensions"].get("landing_page") == "(not set)"
     ]
     assert all(
-        fact["dimension_value_labels"]["landing_page"]
-        == "brak strony wejścia w raporcie"
+        fact["dimension_value_labels"]["landing_page"] == "brak strony wejścia w raporcie"
         for fact in measurement_metric_facts
     )
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
@@ -5396,9 +5247,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         for decision in measurement_decisions
     )
     assert operator_summary["wordpress_missing_count"] == sum(
-        1
-        for decision in payload["decision_queue"]
-        if decision.get("wordpress_match") == "missing"
+        1 for decision in payload["decision_queue"] if decision.get("wordpress_match") == "missing"
     )
     assert operator_summary["action_ids"] == payload["action_ids"]
     assert operator_summary["conversion_readiness_status"] == readiness_contract["status"]
@@ -5411,15 +5260,14 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert sections["ga4_landing_behavior"]["label"] == "Jakość ruchu ze stron wejścia"
     assert sections["ga4_landing_behavior"]["status_label"] == "gotowe"
     assert all(
-        fact["metric_label"]
-        for section in sections.values()
-        for fact in section["metric_facts"]
+        fact["metric_label"] for section in sections.values() for fact in section["metric_facts"]
     )
     assert "zwrot z reklam" in sections["ga4_landing_behavior"]["blocked_claim_labels"]
     assert sections["ga4_landing_behavior"]["tactical_items"]
-    assert sections["ga4_landing_behavior"]["tactical_items"][0]["dimensions"][
-        "landing_page"
-    ] == "/europejski-zielony-lad-co-to-takiego/"
+    assert (
+        sections["ga4_landing_behavior"]["tactical_items"][0]["dimensions"]["landing_page"]
+        == "/europejski-zielony-lad-co-to-takiego/"
+    )
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
     assert sections["ga4_tracking_readiness"]["status_label"] == "brak metryk konwersji"
     assert "spadek konwersji" in sections["ga4_tracking_readiness"]["blocked_claims"]
@@ -5431,9 +5279,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert readiness_contract["conversion_like_metric_count"] == 0
     assert readiness_contract["dimensioned_behavior_metric_count"] >= 1
     assert readiness_contract["landing_group_count"] >= 1
-    assert readiness_contract["missing_read_contracts"] == [
-        "conversion_or_key_event_mapping"
-    ]
+    assert readiness_contract["missing_read_contracts"] == ["conversion_or_key_event_mapping"]
     assert readiness_contract["missing_read_contract_labels"] == [
         "powiązanie konwersji i zdarzeń kluczowych"
     ]
@@ -5462,9 +5308,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert preview["preview_contract"] == "ga4_tracking_quality_review_v1"
     assert preview["operation_type"] == "tracking_quality_review"
     assert preview["operation_type_label"] == "ocena jakości pomiaru"
-    assert len(preview["tracking_dimension_gap_labels"]) == len(
-        preview["tracking_dimension_gaps"]
-    )
+    assert len(preview["tracking_dimension_gap_labels"]) == len(preview["tracking_dimension_gaps"])
     assert preview["operation_type_label"] != preview["operation_type"]
     assert preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
     assert preview["metric_snapshot_labels"]["engagement_rate"] == "zaangażowanie"
@@ -5475,13 +5319,8 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert ga4_action["preview_cards"]
     ga4_preview_card = ga4_action["preview_cards"][0]
     assert ga4_preview_card["kind"] == "ga4_tracking_quality_review"
-    assert (
-        ga4_preview_card["title_label"]
-        == "Jakość pomiaru GA4 do sprawdzenia"
-    )
-    ga4_preview_rows = {
-        row["label"]: row["value"] for row in ga4_preview_card["rows"]
-    }
+    assert ga4_preview_card["title_label"] == "Jakość pomiaru GA4 do sprawdzenia"
+    ga4_preview_rows = {row["label"]: row["value"] for row in ga4_preview_card["rows"]}
     assert ga4_preview_rows["Strona wejścia"]
     assert ga4_preview_rows["Źródło"]
     assert ga4_preview_rows["Kampania"]
@@ -5716,7 +5555,7 @@ def test_ga4_diagnostics_preserves_dimensioned_landing_facts_after_aggregate_noi
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
                 },
-            )
+            ),
         ],
     )
 
@@ -5854,10 +5693,7 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     assert payload.evidence_summary_label == "4 dowody źródłowe"
     assert payload.action_summary_label == "brak akcji do sprawdzenia"
     assert payload.operator_summary.action_summary_label == "brak akcji do sprawdzenia"
-    assert (
-        payload.conversion_readiness_contract.action_summary_label
-        == "brak akcji do sprawdzenia"
-    )
+    assert payload.conversion_readiness_contract.action_summary_label == "brak akcji do sprawdzenia"
 
 
 def test_command_center_exposes_polish_operator_brief(
@@ -5885,16 +5721,13 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["zgłoszenia"] == 3
     assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["decyzje"] >= 1
     assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
-    assert brief_by_id["daily_content_queue"]["title"] == (
-        "Treści: kolejka SEO z GSC i WordPress"
-    )
-    assert "WordPress potwierdza istniejącą stronę" in brief_by_id[
-        "daily_content_queue"
-    ]["summary"]
+    assert brief_by_id["daily_content_queue"]["title"] == ("Treści: kolejka SEO z GSC i WordPress")
+    assert "WordPress potwierdza istniejącą stronę" in brief_by_id["daily_content_queue"]["summary"]
     assert "ahrefs" in brief_by_id["daily_content_queue"]["source_connectors"]
-    assert "ev_refresh_refresh_ahrefs_action_test" in brief_by_id[
-        "daily_content_queue"
-    ]["evidence_ids"]
+    assert (
+        "ev_refresh_refresh_ahrefs_action_test"
+        in brief_by_id["daily_content_queue"]["evidence_ids"]
+    )
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["zapytania/URL"] >= 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 2
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["ocena Ahrefs"] == 1
@@ -5910,12 +5743,9 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["grupy ruchu"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["decyzje"] >= 1
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["brakujące dane"] == 1
-    assert "werdykt zwrotu z reklam" in brief_by_id[
-        "daily_ga4_landing_quality"
-    ]["blocked_claims"]
+    assert "werdykt zwrotu z reklam" in brief_by_id["daily_ga4_landing_quality"]["blocked_claims"]
     assert (
-        "act_review_ga4_tracking_quality"
-        in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
+        "act_review_ga4_tracking_quality" in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
     )
     assert all(item["evidence_ids"] for item in payload["operator_brief"])
     assert payload["demo_script"] == []
@@ -5924,9 +5754,10 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_review_merchant_feed_issues"]["skill_id"] == (
         "wilq-merchant-feed-operator"
     )
-    assert "Użyj skilla wilq-merchant-feed-operator" in plan_by_id[
-        "plan_review_merchant_feed_issues"
-    ]["codex_prompt"]
+    assert (
+        "Użyj skilla wilq-merchant-feed-operator"
+        in plan_by_id["plan_review_merchant_feed_issues"]["codex_prompt"]
+    )
     assert plan_by_id["plan_review_merchant_feed_issues"]["codex_context_endpoint"] == (
         "/api/codex/context-pack"
     )
@@ -5938,25 +5769,28 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_review_ga4_landing_quality"]["skill_id"] == "wilq-ga4-analyst"
     assert plan_by_id["plan_review_ga4_landing_quality"]["status"] == "blocked"
     assert "pomiar i jakość ruchu" in plan_by_id["plan_review_ga4_landing_quality"]["title"]
-    assert "decyzji GA4 do sprawdzenia" in plan_by_id[
-        "plan_review_ga4_landing_quality"
-    ]["why_it_matters"]
-    assert "propozycję przeglądu GA4 w WILQ" in plan_by_id[
-        "plan_review_ga4_landing_quality"
-    ]["operator_action"]
-    assert "Zapis zmian wymaga sprawdzenia" in plan_by_id[
-        "plan_review_ga4_landing_quality"
-    ]["operator_action"]
-    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
-    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == (
-        "wilq-ads-doctor"
+    assert (
+        "decyzji GA4 do sprawdzenia"
+        in plan_by_id["plan_review_ga4_landing_quality"]["why_it_matters"]
     )
-    assert "blokada do sprawdzenia" not in plan_by_id[
-        "plan_fix_ads_oauth_before_spend_analysis"
-    ]["blocked_claims"]
-    assert "wydatki reklamowe" in plan_by_id[
-        "plan_fix_ads_oauth_before_spend_analysis"
-    ]["blocked_claims"]
+    assert (
+        "propozycję przeglądu GA4 w WILQ"
+        in plan_by_id["plan_review_ga4_landing_quality"]["operator_action"]
+    )
+    assert (
+        "Zapis zmian wymaga sprawdzenia"
+        in plan_by_id["plan_review_ga4_landing_quality"]["operator_action"]
+    )
+    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
+    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == ("wilq-ads-doctor")
+    assert (
+        "blokada do sprawdzenia"
+        not in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
+    )
+    assert (
+        "wydatki reklamowe"
+        in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
+    )
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
     visible_blocked_claims = [
         claim
@@ -6062,26 +5896,30 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["metric_tiles"]["decyzje"] >= 1
     assert merchant_decision["metric_facts"]
     assert len(merchant_decision["metric_facts"]) <= 8
-    assert {
-        fact["source_connector"] for fact in merchant_decision["metric_facts"]
-    } == {"google_merchant_center"}
+    assert {fact["source_connector"] for fact in merchant_decision["metric_facts"]} == {
+        "google_merchant_center"
+    }
     assert "status=ready" not in merchant_decision["co_widzimy"]
     for decision in decisions_by_id.values():
         assert "Źródła=" not in decision["co_widzimy"]
         assert "dowody=" not in decision["co_widzimy"]
         assert "akcje=" not in decision["co_widzimy"]
-    assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
-        "plan_review_merchant_feed_issues"
-    ]["why_it_matters"]
-    assert merchant_decision["why_it_matters"] == plan_by_id[
-        "plan_review_merchant_feed_issues"
-    ]["why_it_matters"]
-    assert merchant_decision["bezpieczny_next_step"] == plan_by_id[
-        "plan_review_merchant_feed_issues"
-    ]["operator_action"]
-    assert merchant_decision["operator_action"] == plan_by_id[
-        "plan_review_merchant_feed_issues"
-    ]["operator_action"]
+    assert (
+        merchant_decision["dlaczego_to_ma_znaczenie"]
+        == plan_by_id["plan_review_merchant_feed_issues"]["why_it_matters"]
+    )
+    assert (
+        merchant_decision["why_it_matters"]
+        == plan_by_id["plan_review_merchant_feed_issues"]["why_it_matters"]
+    )
+    assert (
+        merchant_decision["bezpieczny_next_step"]
+        == plan_by_id["plan_review_merchant_feed_issues"]["operator_action"]
+    )
+    assert (
+        merchant_decision["operator_action"]
+        == plan_by_id["plan_review_merchant_feed_issues"]["operator_action"]
+    )
     assert merchant_decision["skill_id"] == "wilq-merchant-feed-operator"
     assert "Użyj skilla wilq-merchant-feed-operator" in merchant_decision["codex_prompt"]
     assert merchant_decision["evidence_ids"]
@@ -6091,23 +5929,17 @@ def test_command_center_exposes_polish_operator_brief(
     assert content_decision["domain"] == "content"
     assert "act_prepare_content_refresh_queue" in content_decision["action_ids"]
     assert "act_prepare_wordpress_draft_handoff" in content_decision["action_ids"]
-    content_fact_sources = {
-        fact["source_connector"] for fact in content_decision["metric_facts"]
-    }
+    content_fact_sources = {fact["source_connector"] for fact in content_decision["metric_facts"]}
     assert {"google_search_console", "ahrefs"}.issubset(content_fact_sources)
     content_ahrefs_facts = [
-        fact
-        for fact in content_decision["metric_facts"]
-        if fact["source_connector"] == "ahrefs"
+        fact for fact in content_decision["metric_facts"] if fact["source_connector"] == "ahrefs"
     ]
     assert content_ahrefs_facts
     assert all(
-        fact["dimensions"].get("competitor_domain") != "cuk.pl"
-        for fact in content_ahrefs_facts
+        fact["dimensions"].get("competitor_domain") != "cuk.pl" for fact in content_ahrefs_facts
     )
     assert all(
-        "prawo jazdy" not in fact["dimensions"].get("keyword", "")
-        for fact in content_ahrefs_facts
+        "prawo jazdy" not in fact["dimensions"].get("keyword", "") for fact in content_ahrefs_facts
     )
     if "decision_review_ads_campaign_metrics" in decisions_by_id:
         assert decisions_by_id["decision_review_ads_campaign_metrics"]["domain"] == "google_ads"
@@ -6117,9 +5949,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
-    assert "grup stron wejścia, źródeł ruchu i kampanii" in ga4_decision[
-        "co_widzimy"
-    ]
+    assert "grup stron wejścia, źródeł ruchu i kampanii" in ga4_decision["co_widzimy"]
     assert "Blokada oznacza" in ga4_decision["co_widzimy"]
     assert "Status blocked" not in ga4_decision["co_widzimy"]
     assert "brak kontraktu" not in ga4_decision["co_widzimy"]
@@ -6284,9 +6114,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert "wskaźniki do sprawdzenia=1" in ads_decision["co_widzimy"]
     assert "kolejki oceny" in ads_decision["co_widzimy"]
-    assert "kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu" in ads_decision[
-        "co_widzimy"
-    ]
+    assert (
+        "kosztu pozyskania celu, zwrotu z reklam i zmarnowanego budżetu"
+        in ads_decision["co_widzimy"]
+    )
     assert ads_decision["action_ids"] == ads_item["action_ids"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
@@ -6491,12 +6322,8 @@ def test_command_center_merchant_uses_latest_refresh_issue_facts(
     assert merchant_item["metric_tiles"]["decyzje"] == 1
     assert "zgłoszenia=23" in merchant_item["summary"]
     assert "decyzje=1" in merchant_item["summary"]
-    assert "ev_refresh_refresh_google_merchant_center_latest" in merchant_item[
-        "evidence_ids"
-    ]
-    assert "ev_refresh_refresh_google_merchant_center_older" not in merchant_item[
-        "evidence_ids"
-    ]
+    assert "ev_refresh_refresh_google_merchant_center_latest" in merchant_item["evidence_ids"]
+    assert "ev_refresh_refresh_google_merchant_center_older" not in merchant_item["evidence_ids"]
 
 
 def test_command_center_merchant_decision_count_matches_grouped_issue_decisions(
@@ -6639,8 +6466,7 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     assert "1 problemów pomiaru" in ga4_item["summary"]
     assert "1 decyzji jakości ruchu" in ga4_item["summary"]
     assert (
-        "ev_refresh_refresh_google_analytics_4_command_center_fallback"
-        in ga4_item["evidence_ids"]
+        "ev_refresh_refresh_google_analytics_4_command_center_fallback" in ga4_item["evidence_ids"]
     )
     assert "grupy ruchu=0" not in json.dumps(payload, ensure_ascii=False)
 
@@ -6699,9 +6525,7 @@ def test_command_center_ga4_uses_visible_decision_cap(
 
     assert response.status_code == 200
     payload = response.json()
-    ga4_item = {
-        item["id"]: item for item in payload["operator_brief"]
-    }["daily_ga4_landing_quality"]
+    ga4_item = {item["id"]: item for item in payload["operator_brief"]}["daily_ga4_landing_quality"]
     assert ga4_item["metric_tiles"]["grupy ruchu"] == 10
     assert ga4_item["metric_tiles"]["decyzje"] == 6
     assert ga4_item["metric_tiles"]["pomiar"] == 2
@@ -6816,15 +6640,9 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert payload["access_probe"]["mcp_initialize_status"] == 200
     assert payload["access_probe"]["access_check_label"] == "połączenie potwierdzone"
     assert payload["access_probe"]["authorization_code_supported_label"] == "tak"
-    assert (
-        payload["access_probe"]["authorization_readiness_label"]
-        == "gotowe do połączenia"
-    )
+    assert payload["access_probe"]["authorization_readiness_label"] == "gotowe do połączenia"
     assert payload["access_probe"]["pkce_s256_supported_label"] == "tak"
-    assert (
-        payload["access_probe"]["secure_readiness_label"]
-        == "bezpieczne połączenie gotowe"
-    )
+    assert payload["access_probe"]["secure_readiness_label"] == "bezpieczne połączenie gotowe"
     assert payload["access_probe"]["access_token_present_label"] == "obecny"
     assert payload["access_probe"]["credential_readiness_label"] == "dostęp lokalny gotowy"
     assert payload["access_probe"]["evidence_summary_label"] == "1 dowód źródłowy"
@@ -6850,9 +6668,7 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert "rankingi lokalne" in access_decision["missing_read_contract_labels"]
     assert "potwierdzenie dostępu Localo" in access_decision["allowed_evidence_labels"]
     assert "potwierdzenie autoryzacji" in access_decision["allowed_evidence_labels"]
-    assert "potwierdzenie lokalnego dostępu" in access_decision[
-        "allowed_evidence_labels"
-    ]
+    assert "potwierdzenie lokalnego dostępu" in access_decision["allowed_evidence_labels"]
     assert "obecność tokenu" not in access_decision["allowed_evidence_labels"]
     assert "wyniki profilu firmy w Google" in access_decision["blocked_claims"]
     assert "wyniki profilu firmy w Google" in access_decision["blocked_claim_labels"]
@@ -7017,9 +6833,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
         "widoczność konkurencji",
         "zadania lokalne",
     ]
-    contract_status_by_id = {
-        item["id"]: item for item in payload["read_contract_statuses"]
-    }
+    contract_status_by_id = {item["id"]: item for item in payload["read_contract_statuses"]}
     assert contract_status_by_id["place_inventory"]["status"] == "ready"
     assert contract_status_by_id["place_inventory"]["id_label"] == "lista lokalizacji"
     assert contract_status_by_id["place_inventory"]["status_label"] == "gotowe"
@@ -7071,8 +6885,9 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert operator_summary["visibility_fact_count"] == 4
     assert "agregaty widoczności" in operator_summary["summary"]
     assert "Przejrzyj agregaty Localo" in operator_summary["next_step"]
-    assert "dopóki odczyt danych Localo nie dostarczy danych widoczności" not in (
-        operator_summary["next_step"]
+    assert (
+        "dopóki odczyt danych Localo nie dostarczy danych widoczności"
+        not in (operator_summary["next_step"])
     )
     blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert blocked_decision["metric_tiles"]["brakujące dane"] == 3
@@ -7113,9 +6928,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert localo_action["payload"]["action_type"] == "local_visibility_task"
     assert localo_action["payload"]["apply_allowed"] is False
     assert localo_action["payload"]["destructive"] is False
-    assert localo_action["payload"]["preview_contract"] == (
-        "local_visibility_review_preview_v1"
-    )
+    assert localo_action["payload"]["preview_contract"] == ("local_visibility_review_preview_v1")
     assert localo_action["payload"]["payload_preview"][0]["preview_contract"] == (
         "local_visibility_review_preview_v1"
     )
@@ -7152,9 +6965,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     localo_preview_card = localo_action["preview_cards"][0]
     assert localo_preview_card["kind"] == "localo_visibility_review"
     assert localo_preview_card["title_label"] == "Widoczność lokalna do sprawdzenia"
-    localo_preview_rows = {
-        row["label"]: row["value"] for row in localo_preview_card["rows"]
-    }
+    localo_preview_rows = {row["label"]: row["value"] for row in localo_preview_card["rows"]}
     assert localo_preview_rows["średnia widoczność"]
     assert localo_preview_rows["monitorowane frazy"] == "23"
     assert "Dozwolone odczyty" in localo_preview_rows
@@ -7170,14 +6981,10 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "localo_avg_visibility_current" not in localo_marketer_card_text
     assert "source_metric_names" not in localo_marketer_card_text
 
-    validate_response = client.post(
-        f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/validate"
-    )
+    validate_response = client.post(f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/validate")
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
-    preview_response = client.post(
-        f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/preview"
-    )
+    preview_response = client.post(f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/preview")
     assert preview_response.status_code == 200
     preview_payload = preview_response.json()
     assert preview_payload["preview_contract"] == "local_visibility_review_preview_v1"
@@ -7225,9 +7032,12 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert localo_context_action["payload"]["payload_preview"][0]["preview_contract"] == (
         "local_visibility_review_preview_v1"
     )
-    assert localo_context_action["payload"]["payload_preview"][0]["metric_snapshot"][
-        "localo_active_place_count"
-    ] == 4
+    assert (
+        localo_context_action["payload"]["payload_preview"][0]["metric_snapshot"][
+            "localo_active_place_count"
+        ]
+        == 4
+    )
 
 
 def test_localo_diagnostics_does_not_block_ready_gbp_or_competitor_contracts(
@@ -7374,12 +7184,14 @@ def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
         "dostęp Localo": 0,
         "brakujące dane": 6,
     }
-    assert "mcp_initialize" in decision_by_id[
-        "localo_fix_access_before_visibility_review"
-    ]["missing_read_contracts"]
-    assert decision_by_id["localo_block_visibility_claims_without_read_contract"][
-        "status"
-    ] == "blocked"
+    assert (
+        "mcp_initialize"
+        in decision_by_id["localo_fix_access_before_visibility_review"]["missing_read_contracts"]
+    )
+    assert (
+        decision_by_id["localo_block_visibility_claims_without_read_contract"]["status"]
+        == "blocked"
+    )
 
 
 def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
@@ -7496,9 +7308,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "luka treści" in authority_decision["blocked_claims"]
     assert "luka treści" in authority_decision["blocked_claim_labels"]
-    assert authority_decision["knowledge_card_ids"] == [
-        "card_ahrefs_content_gap_playbook"
-    ]
+    assert authority_decision["knowledge_card_ids"] == ["card_ahrefs_content_gap_playbook"]
     assert authority_decision["expert_rule_ids"] == ["content_brief_rules_v1"]
     block_decision = decision_by_id["ahrefs_block_gap_claims_without_records"]
     assert block_decision["status"] == "blocked"
@@ -7640,8 +7450,7 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
     assert payload["context_pack_compaction"]["raw_history_omitted"] is True
     assert payload["expert_capabilities"]
     assert all(
-        capability["required_mapping"] == []
-        for capability in payload["expert_capabilities"]
+        capability["required_mapping"] == [] for capability in payload["expert_capabilities"]
     )
     assert all(
         isinstance(capability["required_mapping_total"], int)
@@ -7824,9 +7633,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     }
     assert all("target_url" not in record for record in gap_contract["gap_records"])
     content_record = next(
-        record
-        for record in gap_contract["gap_records"]
-        if record["gap_type"] == "content_gap"
+        record for record in gap_contract["gap_records"] if record["gap_type"] == "content_gap"
     )
     assert content_record["keyword"] == "bdo szkolenie"
     assert content_record["referenced_public_url"] == "https://www.ekologus.pl/bdo/"
@@ -7880,9 +7687,10 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert context_gap_contract["available_read_contract_labels"]
     assert context_gap_contract["allowed_evidence_labels"]
     assert "competitor_page" not in json.dumps(context_payload, ensure_ascii=False)
-    assert context_payload["ahrefs_diagnostics"]["context_pack_compaction"][
-        "full_endpoint"
-    ] == "/api/ahrefs/diagnostics"
+    assert (
+        context_payload["ahrefs_diagnostics"]["context_pack_compaction"]["full_endpoint"]
+        == "/api/ahrefs/diagnostics"
+    )
     assert context_payload["active_action_objects"] == []
 
 
@@ -8003,9 +7811,7 @@ def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noi
     assert payload["gap_fact_count"] >= 2
     assert payload["gap_read_contract"]["status"] == "ready"
     assert "ev_refresh_refresh_ahrefs_buried_gap_test" in payload["evidence_ids"]
-    assert {
-        record["gap_type"] for record in payload["gap_read_contract"]["gap_records"]
-    } == {
+    assert {record["gap_type"] for record in payload["gap_read_contract"]["gap_records"]} == {
         "competitor_page",
         "content_gap",
         "backlink_gap",
@@ -8126,9 +7932,9 @@ def test_ahrefs_diagnostics_prioritizes_reviewable_ekologus_gap_records(
     assert "apple.com" not in record_text
     assert "google.com" not in record_text
     assert "prawo jazdy" not in record_text
-    gap_decision = {
-        decision["id"]: decision for decision in payload["decision_queue"]
-    }["ahrefs_review_gap_records"]
+    gap_decision = {decision["id"]: decision for decision in payload["decision_queue"]}[
+        "ahrefs_review_gap_records"
+    ]
     assert gap_decision["metric_tiles"]["rekordy luk"] == 2
 
 
@@ -8204,8 +8010,7 @@ def test_marketing_tactical_queue_rejects_dev_preview_sitemap_match(
                     "content_type": "sitemap",
                     "object_id": "",
                     "content_url": (
-                        "https://ekologus.dev.proudsite.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                        "https://ekologus.dev.proudsite.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
                     ),
                     "status": "indexed",
                     "modified_gmt": "2026-06-17T20:00:00+00:00",
@@ -8229,10 +8034,7 @@ def test_marketing_tactical_queue_rejects_dev_preview_sitemap_match(
     assert item["dimensions"].get("wordpress_host_alias_applied") in {None, "false"}
     assert "wordpress_inventory_source" not in item["dimensions"]
     assert "wordpress_ekologus" not in item["source_connectors"]
-    assert (
-        "ev_refresh_refresh_wordpress_ekologus_dev_preview_test"
-        not in item["evidence_ids"]
-    )
+    assert "ev_refresh_refresh_wordpress_ekologus_dev_preview_test" not in item["evidence_ids"]
 
 
 def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching(
@@ -8275,10 +8077,7 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
                 value=29,
                 dimensions={
                     "query": "co to jest zielony ład",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "europejski-zielony-lad-co-to-takiego/"
-                    ),
+                    "page": ("https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"),
                 },
             ),
             VendorMetricFact(
@@ -8286,10 +8085,7 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
                 value=651,
                 dimensions={
                     "query": "co to jest zielony ład",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "europejski-zielony-lad-co-to-takiego/"
-                    ),
+                    "page": ("https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"),
                 },
             ),
         ],
@@ -8304,8 +8100,7 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
                     "connector_id": "wordpress_ekologus",
                     "content_type": "sitemap",
                     "content_url": (
-                        "https://www.ekologus.pl/"
-                        "europejski-zielony-lad-co-to-takiego/"
+                        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
                     ),
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
@@ -8344,9 +8139,7 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
     assert item["dimensions"]["wordpress_requested_path"] == (
         "/europejski-zielony-lad-co-to-takiego"
     )
-    assert item["dimensions"]["wordpress_matched_path"] == (
-        "/europejski-zielony-lad-co-to-takiego"
-    )
+    assert item["dimensions"]["wordpress_matched_path"] == ("/europejski-zielony-lad-co-to-takiego")
     assert item["intent"] in {"content_refresh", "content_merge"}
     assert "ev_refresh_wordpress_ekologus_target_inventory_test" in item["evidence_ids"]
     serialized_item = json.dumps(item, ensure_ascii=False)
@@ -8434,9 +8227,7 @@ def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
 
     assert response.status_code == 200
     item = next(
-        item
-        for item in response.json()["items"]
-        if item["dimensions"].get("query") == "bdo co to"
+        item for item in response.json()["items"] if item["dimensions"].get("query") == "bdo co to"
     )
     assert item["dimensions"]["wordpress_match"] == "found"
     assert item["dimensions"]["wordpress_match_confidence"] == "exact_url"
@@ -8517,9 +8308,7 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert localo["action_ids"] == ["act_review_localo_visibility_facts"]
     assert localo["is_fixture"] is False
     content = next(
-        item
-        for item in opportunities
-        if item["id"] == "opp_decision_prepare_content_refresh_queue"
+        item for item in opportunities if item["id"] == "opp_decision_prepare_content_refresh_queue"
     )
     assert content["type"] == "content_brief_candidate"
     assert content["domain"] == "gsc_seo"
@@ -8715,7 +8504,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "searchImpressionShare": 0.73,
                                     "searchBudgetLostImpressionShare": 0.18,
                                     "searchRankLostImpressionShare": 0.09,
-                                }
+                                },
                             },
                             {
                                 "customer": {"currencyCode": "PLN"},
@@ -8739,7 +8528,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "costMicros": "1000000",
                                     "conversions": "0",
                                     "conversionsValue": "0",
-                                }
+                                },
                             },
                         ]
                     }
@@ -8759,15 +8548,11 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                         "results": [
                             {
                                 "recommendation": {
-                                    "resourceName": (
-                                        "customers/test/recommendations/rec-1"
-                                    ),
+                                    "resourceName": ("customers/test/recommendations/rec-1"),
                                     "type": "CAMPAIGN_BUDGET",
                                     "dismissed": False,
                                     "campaign": "customers/test/campaigns/101",
-                                    "campaignBudget": (
-                                        "customers/test/campaignBudgets/701"
-                                    ),
+                                    "campaignBudget": ("customers/test/campaignBudgets/701"),
                                     "campaigns": [
                                         "customers/test/campaigns/101",
                                     ],
@@ -8876,9 +8661,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "ad": {
                                         "id": "803",
                                         "type": "DEMAND_GEN_MULTI_ASSET_AD",
-                                        "finalUrls": [
-                                            "https://www.ekologus.pl/oferta/"
-                                        ],
+                                        "finalUrls": ["https://www.ekologus.pl/oferta/"],
                                         "demandGenMultiAssetAd": {
                                             "marketingImages": [
                                                 "customers/123/assets/901",
@@ -9184,9 +8967,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert budget_amount_fact.value == 30000000
     assert budget_amount_fact.dimensions["budget_period"] == "DAILY"
     recommended_budget_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "budget_recommended_amount_micros"
+        fact for fact in result.metric_facts if fact.name == "budget_recommended_amount_micros"
     )
     assert recommended_budget_fact.value == 42000000
     search_term_fact = next(
@@ -9249,15 +9030,11 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "product_title": "Sorbent chemiczny 10 kg",
     }
     shopping_product_value_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "shopping_product_conversion_value"
+        fact for fact in result.metric_facts if fact.name == "shopping_product_conversion_value"
     )
     assert shopping_product_value_fact.value == 320.0
     shopping_product_state_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "shopping_product_state_available"
+        fact for fact in result.metric_facts if fact.name == "shopping_product_state_available"
     )
     assert shopping_product_state_fact.value == 1
     assert shopping_product_state_fact.period == "shopping_product_state"
@@ -9266,9 +9043,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert shopping_product_state_fact.dimensions["product_availability"] == "IN_STOCK"
     assert shopping_product_state_fact.dimensions["target_countries"] == "PL"
     shopping_product_price_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "shopping_product_price_micros"
+        fact for fact in result.metric_facts if fact.name == "shopping_product_price_micros"
     )
     assert shopping_product_price_fact.value == 123450000
     impression_share_fact = next(
@@ -9277,9 +9052,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert impression_share_fact.value == 0.73
     assert impression_share_fact.dimensions["campaign_id"] == "101"
     budget_lost_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "search_budget_lost_impression_share"
+        fact for fact in result.metric_facts if fact.name == "search_budget_lost_impression_share"
     )
     assert budget_lost_fact.value == 0.18
     recommendation_fact = next(
@@ -9321,15 +9094,11 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "changed_fields": "campaign.status,campaign_budget.amount_micros",
     }
     changed_field_count_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "change_event_changed_field_count"
+        fact for fact in result.metric_facts if fact.name == "change_event_changed_field_count"
     )
     assert changed_field_count_fact.value == 2
     keyword_planner_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "keyword_planner_avg_monthly_searches"
+        fact for fact in result.metric_facts if fact.name == "keyword_planner_avg_monthly_searches"
     )
     assert keyword_planner_fact.value == 100
     assert keyword_planner_fact.period == "keyword_planner"
@@ -9358,16 +9127,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "ad_status": "ENABLED",
     }
     demand_gen_asset_count_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "demand_gen_ad_asset_reference_count"
+        fact for fact in result.metric_facts if fact.name == "demand_gen_ad_asset_reference_count"
     )
     assert demand_gen_asset_count_fact.value == 4
     assert demand_gen_asset_count_fact.dimensions["ad_id"] == "803"
     demand_gen_asset_fact = next(
-        fact
-        for fact in result.metric_facts
-        if fact.name == "demand_gen_creative_asset_impressions"
+        fact for fact in result.metric_facts if fact.name == "demand_gen_creative_asset_impressions"
     )
     assert demand_gen_asset_fact.value == 44
     assert demand_gen_asset_fact.period == "demand_gen_creative_asset"
@@ -9506,11 +9271,7 @@ def test_google_ads_vendor_read_discovers_child_accounts_for_manager_customer(
                             {
                                 "requestId": "safe-request-id",
                                 "errors": [
-                                    {
-                                        "errorCode": {
-                                            "queryError": "REQUESTED_METRICS_FOR_MANAGER"
-                                        }
-                                    }
+                                    {"errorCode": {"queryError": "REQUESTED_METRICS_FOR_MANAGER"}}
                                 ],
                             }
                         ],
@@ -9791,10 +9552,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary=(
-                "Odczyt Google Ads zakończony z wierszami kampanii i bez "
-                "change_event rows."
-            ),
+            summary=("Odczyt Google Ads zakończony z wierszami kampanii i bez change_event rows."),
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -9875,9 +9633,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
                     1,
                     {
                         "recommendation_id": "rec-1",
-                        "recommendation_resource_name": (
-                            "customers/test/recommendations/rec-1"
-                        ),
+                        "recommendation_resource_name": ("customers/test/recommendations/rec-1"),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -9891,9 +9647,7 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
                     1,
                     {
                         "recommendation_id": "rec-1",
-                        "recommendation_resource_name": (
-                            "customers/test/recommendations/rec-1"
-                        ),
+                        "recommendation_resource_name": ("customers/test/recommendations/rec-1"),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -9919,17 +9673,13 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     assert change_history_contract["status"] == "ready"
     assert change_history_contract["change_history_rows"] == []
     assert "change_event_rows" not in change_history_contract["missing_read_contracts"]
-    assert "pre_change_performance_window" in change_history_contract[
-        "missing_read_contracts"
-    ]
+    assert "pre_change_performance_window" in change_history_contract["missing_read_contracts"]
     change_impact_contract = payload["change_impact_readiness_contract"]
     assert change_impact_contract["status"] == "blocked"
     assert change_impact_contract["readiness_rows"] == []
     assert change_impact_contract["apply_allowed"] is False
     assert "change_event_rows" in change_impact_contract["missing_read_contracts"]
-    assert "pre_change_performance_window" in change_impact_contract[
-        "missing_read_contracts"
-    ]
+    assert "pre_change_performance_window" in change_impact_contract["missing_read_contracts"]
     assert "wpływ zmian" in change_impact_contract["blocked_claims"]
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     change_history_decision = decisions_by_id["ads_review_change_history"]
@@ -9950,33 +9700,25 @@ def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     assert optimizer_contract["ready_area_count"] == 2
     assert optimizer_contract["blocked_area_count"] >= 1
     assert "change_event_rows" in optimizer_contract["missing_read_contracts"]
-    assert "zdarzenia historii zmian" in optimizer_contract[
-        "missing_read_contract_labels"
-    ]
+    assert "zdarzenia historii zmian" in optimizer_contract["missing_read_contract_labels"]
     assert "wpływ zmian" in optimizer_contract["blocked_claims"]
     assert "wpływ zmian" in optimizer_contract["blocked_claim_labels"]
-    readiness_items_by_id = {
-        item["id"]: item for item in optimizer_contract["readiness_items"]
-    }
+    readiness_items_by_id = {item["id"]: item for item in optimizer_contract["readiness_items"]}
     assert readiness_items_by_id["change_history_impact_review"]["status"] == "blocked"
-    assert readiness_items_by_id["change_history_impact_review"]["status_label"] == (
-        "zablokowane"
+    assert readiness_items_by_id["change_history_impact_review"]["status_label"] == ("zablokowane")
+    assert readiness_items_by_id["change_history_impact_review"]["risk_label"] == ("wysokie")
+    assert readiness_items_by_id["change_history_impact_review"]["label"] == ("historia zmian")
+    assert (
+        "change_event_rows"
+        in readiness_items_by_id["change_history_impact_review"]["missing_read_contracts"]
     )
-    assert readiness_items_by_id["change_history_impact_review"]["risk_label"] == (
-        "wysokie"
+    assert (
+        "zdarzenia historii zmian"
+        in readiness_items_by_id["change_history_impact_review"]["missing_read_contract_labels"]
     )
-    assert readiness_items_by_id["change_history_impact_review"]["label"] == (
-        "historia zmian"
+    assert (
+        "checklisty gotowości" in readiness_items_by_id["change_history_impact_review"]["next_step"]
     )
-    assert "change_event_rows" in readiness_items_by_id[
-        "change_history_impact_review"
-    ]["missing_read_contracts"]
-    assert "zdarzenia historii zmian" in readiness_items_by_id[
-        "change_history_impact_review"
-    ]["missing_read_contract_labels"]
-    assert "checklisty gotowości" in readiness_items_by_id[
-        "change_history_impact_review"
-    ]["next_step"]
 
     for decision_id in (
         "ads_review_campaign_activity",
@@ -10090,7 +9832,9 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                     "campaign_id": "101",
                     "campaign_name": "Brand Search",
                     "campaign_status": "ENABLED",
+                    "campaign_status_label": "aktywna",
                     "advertising_channel_type": "SEARCH",
+                    "advertising_channel_type_label": "sieć wyszukiwania",
                     "cost_micros_7d": 12000000,
                     "spend_share_7d": 0.666667,
                     "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
@@ -10099,7 +9843,9 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                     "campaign_id": "102",
                     "campaign_name": "Generic Search",
                     "campaign_status": "ENABLED",
+                    "campaign_status_label": "aktywna",
                     "advertising_channel_type": "SEARCH",
+                    "advertising_channel_type_label": "sieć wyszukiwania",
                     "cost_micros_7d": 6000000,
                     "spend_share_7d": 0.333333,
                     "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
@@ -10116,14 +9862,26 @@ def test_ads_budget_context_exposes_shared_budget_distribution(
                 "werdykt zwrotu z reklam",
                 "zapis rekomendacji",
             ],
+            "blocked_claim_labels": [
+                "skalowanie budżetu",
+                "zmiana budżetu",
+                "wstrzymanie kampanii",
+                "zmarnowany budżet",
+                "opłacalność",
+                "werdykt kosztu pozyskania celu",
+                "werdykt zwrotu z reklam",
+                "zapis rekomendacji",
+            ],
+            "blocked_claim_summary_label": "8 zablokowanych obietnic",
         }
     ]
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert "shared_budget_distribution" not in budget_decision["missing_read_contracts"]
-    assert budget_decision["shared_budget_distribution_rows"] == budget_contract[
-        "shared_budget_distribution_rows"
-    ]
+    assert (
+        budget_decision["shared_budget_distribution_rows"]
+        == budget_contract["shared_budget_distribution_rows"]
+    )
 
 
 def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
@@ -10165,14 +9923,11 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.failed,
             summary=(
-                "Google Ads OAuth token refresh failed with HTTP 401 "
-                "(oauth_error=deleted_client)."
+                "Google Ads OAuth token refresh failed with HTTP 401 (oauth_error=deleted_client)."
             ),
             external_call_attempted=True,
             vendor_data_collected=False,
-            errors=[
-                "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."
-            ],
+            errors=["Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."],
         ),
     )
 
@@ -10227,9 +9982,7 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief_metric_item_ids = {
-        item["id"]
-        for section in brief_response.json()["sections"]
-        for item in section["items"]
+        item["id"] for section in brief_response.json()["sections"] for item in section["items"]
     }
     assert "brief_metric_google_ads" not in brief_metric_item_ids
     serialized = json.dumps(payload)
@@ -10251,7 +10004,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Odczyt Google Ads zakończony przez googleAds:searchStream. Wiersze kampanii: 1.",
+            summary=(
+                "Odczyt Google Ads zakończony przez googleAds:searchStream. "
+                "Wiersze kampanii: 1."
+            ),
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
@@ -10491,9 +10247,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     10000000,
                     {
                         "recommendation_id": "rec-1",
-                        "recommendation_resource_name": (
-                            "customers/test/recommendations/rec-1"
-                        ),
+                        "recommendation_resource_name": ("customers/test/recommendations/rec-1"),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -10507,9 +10261,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     12000000,
                     {
                         "recommendation_id": "rec-1",
-                        "recommendation_resource_name": (
-                            "customers/test/recommendations/rec-1"
-                        ),
+                        "recommendation_resource_name": ("customers/test/recommendations/rec-1"),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -10891,23 +10643,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "review_priority": "wysokie",
             "review_score": 50,
             "review_reason": read_contract["campaign_rows"][0]["review_reason"],
-                "human_review_gates": [
-                    "review_campaign_goal",
-                    "review_conversion_quality",
-                    "review_budget_context",
-                    "review_search_terms_before_budget_decision",
-                    "human_strategy_review",
-                ],
-                "human_review_gate_labels": [
-                    "sprawdzenie celu kampanii",
-                    "sprawdzenie jakości konwersji",
-                    "sprawdzenie kontekstu budżetu",
-                    "wyszukiwane hasła przed decyzją budżetową",
-                    "ocena strategii przez człowieka",
-                ],
-                "human_review_gate_summary_label": "5 wymaganych sprawdzeń",
-            }
-        ]
+            "human_review_gates": [
+                "review_campaign_goal",
+                "review_conversion_quality",
+                "review_budget_context",
+                "review_search_terms_before_budget_decision",
+                "human_strategy_review",
+            ],
+            "human_review_gate_labels": [
+                "sprawdzenie celu kampanii",
+                "sprawdzenie jakości konwersji",
+                "sprawdzenie kontekstu budżetu",
+                "wyszukiwane hasła przed decyzją budżetową",
+                "ocena strategii przez człowieka",
+            ],
+            "human_review_gate_summary_label": "5 wymaganych sprawdzeń",
+        }
+    ]
     assert "Kolejność oceny kampanii" in read_contract["campaign_rows"][0]["review_reason"]
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ads_operator_summary"
@@ -10931,12 +10683,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert operator_summary["total_cost_micros"] == 12000000
     assert operator_summary["total_conversions"] == 2.5
     assert operator_summary["total_conversion_value"] == 450.75
-    assert operator_summary["ready_area_count"] == payload["optimizer_readiness_contract"][
-        "ready_area_count"
-    ]
-    assert operator_summary["blocked_area_count"] == payload["optimizer_readiness_contract"][
-        "blocked_area_count"
-    ]
+    assert (
+        operator_summary["ready_area_count"]
+        == payload["optimizer_readiness_contract"]["ready_area_count"]
+    )
+    assert (
+        operator_summary["blocked_area_count"]
+        == payload["optimizer_readiness_contract"]["blocked_area_count"]
+    )
     assert "clicks" in operator_summary["allowed_metrics"]
     assert "google_ads" in operator_summary["source_connectors"]
     assert operator_summary["source_connector_labels"] == ["Google Ads"]
@@ -11061,11 +10815,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "warunki sprawdzenia": 5,
         "polityki": 3,
     }
-    assert business_context_decision["operator_review_gates"] == (
-        business_context_contract["operator_review_gates"]
+    assert (
+        business_context_decision["operator_review_gates"]
+        == (business_context_contract["operator_review_gates"])
     )
-    assert business_context_decision["operator_review_gate_labels"] == (
-        business_context_contract["operator_review_gate_labels"]
+    assert (
+        business_context_decision["operator_review_gate_labels"]
+        == (business_context_contract["operator_review_gate_labels"])
     )
     assert business_context_decision["missing_read_contract_summary_label"]
     assert business_context_decision["operator_review_gate_summary_label"]
@@ -11228,18 +10984,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_safety_review["status_label"] == "zablokowane"
     assert budget_safety_review["max_allowed_delta_percent"] == 0.3
     assert budget_safety_review["proposed_delta_percent"] == 0.4
-    assert "budget_delta_within_30_percent" in budget_safety_review[
-        "missing_requirements"
-    ]
+    assert "budget_delta_within_30_percent" in budget_safety_review["missing_requirements"]
     assert budget_safety_review["api_mutation_ready"] is False
     assert budget_safety_review["apply_allowed"] is False
     assert budget_safety_review["destructive"] is False
     budget_preview_card = budget_contract["budget_rows"][0]["preview_card"]
     assert budget_preview_card["kind"] == "google_ads_budget_review"
     assert budget_preview_card["title_label"] == "Budżet kampanii do sprawdzenia"
-    budget_preview_rows = {
-        row["label"]: row["value"] for row in budget_preview_card["rows"]
-    }
+    budget_preview_rows = {row["label"]: row["value"] for row in budget_preview_card["rows"]}
     assert budget_preview_rows["Budżet teraz"] == "30 PLN"
     assert budget_preview_rows["Propozycja do sprawdzenia"] == "42 PLN"
     assert budget_preview_rows["Operacja"] == "zmiana budżetu kampanii"
@@ -11327,17 +11079,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "recommendation_impact_potential_conversion_value",
     ]
     assert "recommendations" not in recommendations_contract["missing_read_contracts"]
-    assert "recommendation_impact_preview" not in recommendations_contract[
-        "missing_read_contracts"
-    ]
-    assert "recommendation_apply_preview" not in recommendations_contract[
-        "missing_read_contracts"
-    ]
+    assert "recommendation_impact_preview" not in recommendations_contract["missing_read_contracts"]
+    assert "recommendation_apply_preview" not in recommendations_contract["missing_read_contracts"]
     assert "impression_share" not in recommendations_contract["missing_read_contracts"]
     assert "change_history" not in recommendations_contract["missing_read_contracts"]
-    assert "human_strategy_review" not in recommendations_contract[
-        "missing_read_contracts"
-    ]
+    assert "human_strategy_review" not in recommendations_contract["missing_read_contracts"]
     assert recommendations_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_recommendation_type",
@@ -11374,49 +11120,37 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "zmiana budżetu",
         "zapis zmian kampanii",
     ]
-    assert recommendation_row["blocked_claim_labels"] == recommendation_row[
-        "blocked_claims"
-    ]
-    assert recommendation_row["payload_preview"] == recommendations_contract[
-        "payload_preview"
-    ][0]
+    assert recommendation_row["blocked_claim_labels"] == recommendation_row["blocked_claims"]
+    assert recommendation_row["payload_preview"] == recommendations_contract["payload_preview"][0]
     assert recommendation_row["preview_card"]["kind"] == "google_ads_recommendation_review"
     assert "101" not in str(recommendation_row["preview_card"])
     assert "701" not in str(recommendation_row["preview_card"])
     assert "CAMPAIGN_BUDGET" not in str(recommendation_row["preview_card"])
     assert "ApplyRecommendationOperation" not in str(recommendation_row["preview_card"])
-    assert "budżet kampanii" in recommendations_contract["recommendation_rows"][0][
-        "review_reason"
-    ]
-    assert "podgląd wpływu" in recommendations_contract["recommendation_rows"][0][
-        "review_reason"
-    ]
-    assert "CAMPAIGN_BUDGET" not in recommendations_contract["recommendation_rows"][0][
-        "review_reason"
-    ]
-    assert "impact preview" not in recommendations_contract["recommendation_rows"][0][
-        "review_reason"
-    ]
-    assert "kolejność przeglądu rekomendacji" in recommendations_contract[
-        "recommendation_rows"
-    ][0]["review_reason"]
-    assert "nie zgoda na zapis zmian" in recommendations_contract[
-        "recommendation_rows"
-    ][0]["review_reason"]
-    recommendation_preview_card = recommendations_contract["recommendation_rows"][0][
-        "preview_card"
-    ]
-    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
-    assert recommendation_preview_card["title_label"] == (
-        "Rekomendacja Google Ads do sprawdzenia"
+    assert "budżet kampanii" in recommendations_contract["recommendation_rows"][0]["review_reason"]
+    assert "podgląd wpływu" in recommendations_contract["recommendation_rows"][0]["review_reason"]
+    assert (
+        "CAMPAIGN_BUDGET" not in recommendations_contract["recommendation_rows"][0]["review_reason"]
     )
+    assert (
+        "impact preview" not in recommendations_contract["recommendation_rows"][0]["review_reason"]
+    )
+    assert (
+        "kolejność przeglądu rekomendacji"
+        in recommendations_contract["recommendation_rows"][0]["review_reason"]
+    )
+    assert (
+        "nie zgoda na zapis zmian"
+        in recommendations_contract["recommendation_rows"][0]["review_reason"]
+    )
+    recommendation_preview_card = recommendations_contract["recommendation_rows"][0]["preview_card"]
+    assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
+    assert recommendation_preview_card["title_label"] == ("Rekomendacja Google Ads do sprawdzenia")
     recommendation_preview_rows = {
         row["label"]: row["value"] for row in recommendation_preview_card["rows"]
     }
     assert recommendation_preview_rows["Rekomendacja"] == "budżet kampanii"
-    assert recommendation_preview_rows["Operacja"] == (
-        "zastosowanie rekomendacji Google Ads"
-    )
+    assert recommendation_preview_rows["Operacja"] == ("zastosowanie rekomendacji Google Ads")
     assert recommendation_preview_rows["Powiązanie"] == (
         "kampania albo budżet do sprawdzenia w szczegółach technicznych"
     )
@@ -11518,9 +11252,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "search_budget_lost_impression_share": 0.18,
             "search_rank_lost_impression_share": 0.09,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": impression_share_contract["impression_share_rows"][0][
-                "metric_facts"
-            ],
+            "metric_facts": impression_share_contract["impression_share_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
                 "skalowanie budżetu",
@@ -11573,9 +11305,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
-    assert campaign_triage_contract["action_ids"] == [
-        "act_prepare_ads_campaign_review_queue"
-    ]
+    assert campaign_triage_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert "zmarnowany budżet" in campaign_triage_contract["blocked_claims"]
     assert campaign_triage_contract["triage_rows"] == [
         {
@@ -11587,9 +11317,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "advertising_channel_type_label": "sieć wyszukiwania",
             "review_priority": "wysokie",
             "review_score": campaign_triage_contract["triage_rows"][0]["review_score"],
-            "review_reason": campaign_triage_contract["triage_rows"][0][
-                "review_reason"
-            ],
+            "review_reason": campaign_triage_contract["triage_rows"][0]["review_reason"],
             "next_step": campaign_triage_contract["triage_rows"][0]["next_step"],
             "target_status": "no_target",
             "target_status_label": "brak celu",
@@ -11674,10 +11402,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
             "human_review_gate_summary_label": "10 wymaganych sprawdzeń",
         }
-        ]
-    assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0][
-        "review_reason"
     ]
+    assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0]["review_reason"]
     assert "nie jest ocena zmarnowanego budżetu" in campaign_triage_contract["summary"]
     optimizer_contract = payload["optimizer_readiness_contract"]
     assert optimizer_contract["status"] == "review_ready"
@@ -11685,17 +11411,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert optimizer_contract["apply_allowed"] is False
     assert "zapis zmian kampanii" in optimizer_contract["blocked_claims"]
     assert "change_event_rows" not in optimizer_contract["missing_read_contracts"]
-    assert "pre_change_performance_window" in optimizer_contract[
-        "missing_read_contracts"
-    ]
-    optimizer_items_by_id = {
-        item["id"]: item for item in optimizer_contract["readiness_items"]
-    }
+    assert "pre_change_performance_window" in optimizer_contract["missing_read_contracts"]
+    optimizer_items_by_id = {item["id"]: item for item in optimizer_contract["readiness_items"]}
     assert optimizer_items_by_id["campaign_review_queue"]["status"] == "ready"
     assert optimizer_items_by_id["change_history_impact_review"]["status"] == "blocked"
-    assert "pre_change_performance_window" in optimizer_items_by_id[
-        "change_history_impact_review"
-    ]["missing_read_contracts"]
+    assert (
+        "pre_change_performance_window"
+        in optimizer_items_by_id["change_history_impact_review"]["missing_read_contracts"]
+    )
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
     assert change_history_contract["status_label"] == "gotowe"
@@ -11732,9 +11455,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "change_resource_id": "101",
             "change_resource_type": "CAMPAIGN",
             "change_resource_type_label": "kampania",
-            "change_resource_label": (
-                "zasób zmiany do sprawdzenia w szczegółach technicznych"
-            ),
+            "change_resource_label": ("zasób zmiany do sprawdzenia w szczegółach technicznych"),
             "resource_change_operation": "UPDATE",
             "resource_change_operation_label": "zmiana",
             "client_type": "GOOGLE_ADS_WEB_CLIENT",
@@ -11746,9 +11467,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "changed_field_labels": ["status kampanii", "kwota budżetu kampanii"],
             "changed_field_summary_label": "status kampanii, kwota budżetu kampanii",
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
-            "metric_facts": change_history_contract["change_history_rows"][0][
-                "metric_facts"
-            ],
+            "metric_facts": change_history_contract["change_history_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
                 "wpływ zmian",
@@ -11782,12 +11501,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "zapis zmian kampanii",
     ]
     assert "change_event_rows" not in change_impact_contract["missing_read_contracts"]
-    assert "current_campaign_snapshot" not in change_impact_contract[
-        "missing_read_contracts"
-    ]
-    assert "pre_change_performance_window" in change_impact_contract[
-        "missing_read_contracts"
-    ]
+    assert "current_campaign_snapshot" not in change_impact_contract["missing_read_contracts"]
+    assert "pre_change_performance_window" in change_impact_contract["missing_read_contracts"]
     assert change_impact_contract["allowed_metrics"] == [
         "change_event_available",
         "change_event_changed_field_count",
@@ -11855,15 +11570,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claim_summary_label": "5 zablokowanych obietnic",
         }
     ]
-    assert optimizer_items_by_id["change_history_impact_review"][
-        "source_contract_ids"
-    ] == [
+    assert optimizer_items_by_id["change_history_impact_review"]["source_contract_ids"] == [
         "ads_change_history_read_contract",
         "ads_change_impact_readiness_contract",
     ]
-    assert "current_campaign_snapshot" not in optimizer_items_by_id[
-        "change_history_impact_review"
-    ]["missing_read_contracts"]
+    assert (
+        "current_campaign_snapshot"
+        not in optimizer_items_by_id["change_history_impact_review"]["missing_read_contracts"]
+    )
     change_history_section = next(
         section for section in payload["sections"] if section["id"] == "ads_change_history"
     )
@@ -11881,8 +11595,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert facts_by_name["conversions"]["value"] == 2.5
     assert facts_by_name["conversion_value"]["value"] == 450.75
     assert any(
-        fact["name"] == "cost_micros"
-        and fact["dimensions"].get("campaign_name") == "Brand Search"
+        fact["name"] == "cost_micros" and fact["dimensions"].get("campaign_name") == "Brand Search"
         for fact in campaign_section["metric_facts"]
     )
     assert "act_configure_google_ads_env" not in payload["action_ids"]
@@ -11902,12 +11615,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "conversions" not in search_terms_contract["missing_read_contracts"]
     assert "conversion_value" not in search_terms_contract["missing_read_contracts"]
     assert "90_day_safety_check" not in search_terms_contract["missing_read_contracts"]
-    assert "negative_keyword_action_validation" not in search_terms_contract[
-        "missing_read_contracts"
-    ]
-    assert search_terms_contract["operator_review_gates"] == [
-        "negative_keyword_action_validation"
-    ]
+    assert (
+        "negative_keyword_action_validation" not in search_terms_contract["missing_read_contracts"]
+    )
+    assert search_terms_contract["operator_review_gates"] == ["negative_keyword_action_validation"]
     assert "dodanie wykluczających słów kluczowych" in search_terms_contract["blocked_claims"]
     assert search_terms_contract["search_term_rows"] == [
         {
@@ -12020,9 +11731,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_intent_review",
         "ngram_to_negative_keyword_change_preview",
     ]
-    assert "negative_keyword_change_preview" not in ngram_contract[
-        "missing_read_contracts"
-    ]
+    assert "negative_keyword_change_preview" not in ngram_contract["missing_read_contracts"]
     assert ngram_contract["operator_review_gates"] == [
         "human_intent_review",
         "negative_keyword_action_validation",
@@ -12037,7 +11746,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngrams_by_name["bdo rejestracja"]["ngram_size"] == 2
     assert ngrams_by_name["odpady cena"]["cost_micros"] == 5000000
     assert all(row["evidence_ids"] for row in ngram_contract["ngram_rows"])
-    assert all("marnowanie budżetu na zapytaniach" in row["blocked_claims"] for row in ngram_contract["ngram_rows"])
+    assert all(
+        "marnowanie budżetu na zapytaniach" in row["blocked_claims"]
+        for row in ngram_contract["ngram_rows"]
+    )
     ngram_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_term_ngrams"
     )
@@ -12060,12 +11772,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "top koszt" in ngram_decision["metric_tiles"]
     assert ngram_decision["search_term_ngram_rows"]
     assert ngram_decision["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    assert "ngram_to_negative_keyword_change_preview" in ngram_decision[
-        "missing_read_contracts"
-    ]
-    assert "negative_keyword_change_preview" not in ngram_decision[
-        "missing_read_contracts"
-    ]
+    assert "ngram_to_negative_keyword_change_preview" in ngram_decision["missing_read_contracts"]
+    assert "negative_keyword_change_preview" not in ngram_decision["missing_read_contracts"]
     assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]
     search_term_safety_contract = payload["search_term_safety_read_contract"]
     assert search_term_safety_contract["status"] == "ready"
@@ -12080,21 +11788,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "search_term_90d_conversions",
         "search_term_90d_conversion_value",
     ]
-    assert "90_day_safety_check" not in search_term_safety_contract[
-        "missing_read_contracts"
-    ]
-    assert "negative_keyword_change_preview" not in search_term_safety_contract[
-        "missing_read_contracts"
-    ]
-    assert "keyword match context" not in search_term_safety_contract[
-        "missing_read_contracts"
-    ]
-    assert "human_intent_review" not in search_term_safety_contract[
-        "missing_read_contracts"
-    ]
-    assert search_term_safety_contract["operator_review_gates"] == [
-        "human_intent_review"
-    ]
+    assert "90_day_safety_check" not in search_term_safety_contract["missing_read_contracts"]
+    assert (
+        "negative_keyword_change_preview"
+        not in search_term_safety_contract["missing_read_contracts"]
+    )
+    assert "keyword match context" not in search_term_safety_contract["missing_read_contracts"]
+    assert "human_intent_review" not in search_term_safety_contract["missing_read_contracts"]
+    assert search_term_safety_contract["operator_review_gates"] == ["human_intent_review"]
     assert "dodanie wykluczających słów kluczowych" in search_term_safety_contract["blocked_claims"]
     assert search_term_safety_contract["safety_rows"] == [
         {
@@ -12113,9 +11814,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "conversion_value_90d": 0.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "evidence_summary_label": "1 dowód źródłowy",
-            "metric_facts": search_term_safety_contract["safety_rows"][0][
-                "metric_facts"
-            ],
+            "metric_facts": search_term_safety_contract["safety_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": [
                 "koszt pozyskania celu",
@@ -12144,9 +11843,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ad_group",
     ]
     assert keyword_context_contract["missing_read_contracts"] == []
-    assert keyword_context_contract["operator_review_gates"] == [
-        "human_intent_review"
-    ]
+    assert keyword_context_contract["operator_review_gates"] == ["human_intent_review"]
     assert keyword_context_contract["context_rows"][0]["keyword_text"] == "odpady"
     assert keyword_context_contract["context_rows"][0]["match_type"] == "BROAD"
     assert keyword_context_contract["context_rows"][0]["negative"] is False
@@ -12160,9 +11857,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     keyword_planner_contract = payload["keyword_planner_read_contract"]
     assert keyword_planner_contract["status"] == "ready"
-    assert keyword_planner_contract["missing_read_contracts"] == [
-        "forecast_or_audience_size"
-    ]
+    assert keyword_planner_contract["missing_read_contracts"] == ["forecast_or_audience_size"]
     assert keyword_planner_contract["idea_rows"][0]["idea_text"] == "bdo szkolenie"
     assert keyword_planner_contract["idea_rows"][0]["avg_monthly_searches"] == 100
     assert keyword_planner_contract["idea_rows"][0]["competition"] == "MEDIUM"
@@ -12178,13 +11873,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert custom_segments_contract["evidence_summary_label"] == "1 dowód źródłowy"
     assert custom_segments_contract["action_summary_label"] == "1 akcja do sprawdzenia"
-    assert "keyword_planner_enrichment" not in custom_segments_contract[
-        "missing_read_contracts"
-    ]
+    assert "keyword_planner_enrichment" not in custom_segments_contract["missing_read_contracts"]
     assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
-    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
-        "missing_read_contract_labels"
-    ]
+    assert (
+        "prognoza albo rozmiar odbiorców"
+        in custom_segments_contract["missing_read_contract_labels"]
+    )
     assert custom_segments_contract["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
@@ -12192,14 +11886,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "forecast_or_audience_size",
         "human_confirm_before_apply",
     ]
-    assert "custom_segment_change_preview" not in custom_segments_contract[
-        "missing_read_contracts"
-    ]
+    assert "custom_segment_change_preview" not in custom_segments_contract["missing_read_contracts"]
     assert "rozmiar odbiorców" in custom_segments_contract["blocked_claims"]
     assert "rozmiar odbiorców" in custom_segments_contract["blocked_claim_labels"]
-    audience_forecast_contract = custom_segments_contract[
-        "audience_forecast_read_contract"
-    ]
+    audience_forecast_contract = custom_segments_contract["audience_forecast_read_contract"]
     assert audience_forecast_contract["status"] == "blocked"
     assert audience_forecast_contract["evidence_summary_label"] == "1 dowód źródłowy"
     assert audience_forecast_contract["checked_candidate_count"] == 1
@@ -12218,8 +11908,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "rozmiar odbiorców" in audience_forecast_contract["blocked_claim_labels"]
     forecast_row = audience_forecast_contract["forecast_rows"][0]
     assert forecast_row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
-    assert forecast_row["custom_segment_name"] == (
-        custom_segments_contract["candidates"][0]["name"]
+    assert (
+        forecast_row["custom_segment_name"] == (custom_segments_contract["candidates"][0]["name"])
     )
     assert forecast_row["status"] == "missing_forecast"
     assert forecast_row["forecast_available"] is False
@@ -12227,9 +11917,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert forecast_row["source_terms"] == ["bdo rejestracja", "odpady cena"]
     assert "prognozy albo rozmiaru odbiorców" in forecast_row["reason"]
     assert "zwrot z reklam" in forecast_row["blocked_claim_labels"]
-    assert forecast_row["evidence_ids"] == [
-        refresh_response.json()["evidence_ids"][-1]
-    ]
+    assert forecast_row["evidence_ids"] == [refresh_response.json()["evidence_ids"][-1]]
     assert forecast_row["evidence_summary_label"] == "1 dowód źródłowy"
     assert custom_segments_contract["candidates"][0]["source_terms"] == [
         "bdo rejestracja",
@@ -12261,15 +11949,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "value": custom_segments_contract["candidates"][0]["name"],
     }
     assert "zapis zmian zablokowany" in preview_card["apply_state_label"]
-    assert "zwrot z reklam" in custom_segments_contract["candidates"][0][
-        "blocked_claim_labels"
-    ]
-    assert "kolejność oceny segmentu" in custom_segments_contract["candidates"][0][
-        "review_reason"
-    ]
-    assert "nie dowód rozmiaru odbiorców" in custom_segments_contract["candidates"][0][
-        "review_reason"
-    ]
+    assert "zwrot z reklam" in custom_segments_contract["candidates"][0]["blocked_claim_labels"]
+    assert "kolejność oceny segmentu" in custom_segments_contract["candidates"][0]["review_reason"]
+    assert (
+        "nie dowód rozmiaru odbiorców" in custom_segments_contract["candidates"][0]["review_reason"]
+    )
     assert custom_segments_contract["candidates"][0]["human_review_gates"] == [
         "sprawdź intencję haseł źródłowych",
         "odrzuć brand, konkurencję i frazy o niskiej intencji",
@@ -12277,34 +11961,39 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "sprawdź prognozę albo rozmiar odbiorców",
         "zatwierdź segment przed zapisem zmian",
     ]
-    assert custom_segments_contract["candidates"][0]["keyword_planner_ideas"][0][
-        "idea_text"
-    ] == "bdo szkolenie"
-    assert custom_segments_contract["payload_preview"][0] == (
-        custom_segments_contract["candidates"][0]["payload_preview"]
+    assert (
+        custom_segments_contract["candidates"][0]["keyword_planner_ideas"][0]["idea_text"]
+        == "bdo szkolenie"
+    )
+    assert (
+        custom_segments_contract["payload_preview"][0]
+        == (custom_segments_contract["candidates"][0]["payload_preview"])
     )
     assert custom_segments_contract["payload_preview"][0]["member_type"] == "KEYWORD"
     assert custom_segments_contract["payload_preview"][0]["apply_allowed"] is False
     assert custom_segments_contract["payload_preview"][0]["api_mutation_ready"] is False
     assert custom_segments_contract["payload_preview"][0]["destructive"] is False
-    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
-        "payload_preview"
-    ][0]["required_validation_labels"]
-    assert "zwrot z reklam" in custom_segments_contract["payload_preview"][0][
-        "blocked_claim_labels"
-    ]
-    assert "prognoza albo rozmiar odbiorców" in custom_segments_contract[
-        "payload_preview"
-    ][0]["safety_review"]["missing_requirement_labels"]
-    assert "sprawdzenie zapisu zmian w Google Ads" in custom_segments_contract[
-        "payload_preview"
-    ][0]["safety_review"]["required_validation_labels"]
-    targeting_preview = custom_segments_contract["payload_preview"][0][
-        "targeting_preview"
-    ][0]
-    assert "prognoza albo rozmiar odbiorców" in targeting_preview[
-        "required_validation_labels"
-    ]
+    assert (
+        "prognoza albo rozmiar odbiorców"
+        in custom_segments_contract["payload_preview"][0]["required_validation_labels"]
+    )
+    assert (
+        "zwrot z reklam" in custom_segments_contract["payload_preview"][0]["blocked_claim_labels"]
+    )
+    assert (
+        "prognoza albo rozmiar odbiorców"
+        in custom_segments_contract["payload_preview"][0]["safety_review"][
+            "missing_requirement_labels"
+        ]
+    )
+    assert (
+        "sprawdzenie zapisu zmian w Google Ads"
+        in custom_segments_contract["payload_preview"][0]["safety_review"][
+            "required_validation_labels"
+        ]
+    )
+    targeting_preview = custom_segments_contract["payload_preview"][0]["targeting_preview"][0]
+    assert "prognoza albo rozmiar odbiorców" in targeting_preview["required_validation_labels"]
     assert targeting_preview["operation_type"] == "custom_segment_targeting_review"
     assert targeting_preview["target_scope"] == "campaign_context_review"
     assert targeting_preview["campaign_id"] == "101"
@@ -12314,9 +12003,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert targeting_preview["destructive"] is False
     assert "forecast_or_audience_size" in targeting_preview["required_validation"]
     assert custom_segments_contract["candidates"][0]["confidence"] == "low"
-    assert custom_segments_contract["candidates"][0]["validation_status"] == (
-        "pending_validation"
-    )
+    assert custom_segments_contract["candidates"][0]["validation_status"] == ("pending_validation")
     assert custom_segments_contract["candidates"][0]["evidence_ids"] == [
         refresh_response.json()["evidence_ids"][-1]
     ]
@@ -12327,49 +12014,52 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     negative_keywords_contract = payload["negative_keywords_read_contract"]
     assert negative_keywords_contract["status"] == "ready"
     assert negative_keywords_contract["title"] == "Ocena wykluczeń z wyszukiwanych haseł"
-    assert negative_keywords_contract["action_ids"] == [
-        "act_prepare_negative_keyword_review_queue"
-    ]
+    assert negative_keywords_contract["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
     assert "90_day_safety_check" not in negative_keywords_contract["missing_read_contracts"]
-    assert "negative_keyword_change_preview" not in negative_keywords_contract[
-        "missing_read_contracts"
-    ]
+    assert (
+        "negative_keyword_change_preview"
+        not in negative_keywords_contract["missing_read_contracts"]
+    )
     assert negative_keywords_contract["missing_read_contracts"] == []
     assert negative_keywords_contract["missing_read_contract_labels"] == []
     assert negative_keywords_contract["missing_read_contract_summary_label"] == (
         "brak brakujących danych"
     )
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
-    assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract[
-        "blocked_claim_labels"
-    ]
+    assert (
+        "dodanie wykluczających słów kluczowych"
+        in negative_keywords_contract["blocked_claim_labels"]
+    )
     assert negative_keywords_contract["blocked_claim_summary_label"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
     assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
     assert negative_keywords_contract["candidates"][0]["review_score"] == 53
-    assert "kolejność oceny" in negative_keywords_contract["candidates"][0][
-        "review_reason"
-    ]
-    assert "nie ocena zmarnowanego budżetu" in negative_keywords_contract[
-        "candidates"
-    ][0]["review_reason"]
+    assert "kolejność oceny" in negative_keywords_contract["candidates"][0]["review_reason"]
+    assert (
+        "nie ocena zmarnowanego budżetu"
+        in negative_keywords_contract["candidates"][0]["review_reason"]
+    )
     assert negative_keywords_contract["candidates"][0]["human_review_gates"] == [
         "sprawdź intencję zapytania",
         "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
         "sprawdź 90-dniowy odczyt bezpieczeństwa",
         "zatwierdź poziom wykluczenia przed zapisem zmian",
     ]
-    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
-        "keyword_text"
-    ] == "odpady"
-    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
-        "match_type"
-    ] == "BROAD"
-    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
-        "match_type_label"
-    ] == "dopasowanie przybliżone"
-    assert negative_keywords_contract["payload_preview"][0] == (
-        negative_keywords_contract["candidates"][0]["payload_preview"]
+    assert (
+        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["keyword_text"]
+        == "odpady"
+    )
+    assert (
+        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["match_type"]
+        == "BROAD"
+    )
+    assert (
+        negative_keywords_contract["candidates"][0]["keyword_context_rows"][0]["match_type_label"]
+        == "dopasowanie przybliżone"
+    )
+    assert (
+        negative_keywords_contract["payload_preview"][0]
+        == (negative_keywords_contract["candidates"][0]["payload_preview"])
     )
     assert negative_keywords_contract["payload_preview"][0]["match_type"] == "EXACT"
     assert negative_keywords_contract["payload_preview"][0]["match_type_label"] == (
@@ -12383,8 +12073,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "90-dniowa kontrola bezpieczeństwa",
         "potwierdzenie człowieka przed zapisem",
     ]
-    assert negative_keywords_contract["payload_preview"][0]["blocked_claim_labels"] == (
-        negative_keywords_contract["payload_preview"][0]["blocked_claims"]
+    assert (
+        negative_keywords_contract["payload_preview"][0]["blocked_claim_labels"]
+        == (negative_keywords_contract["payload_preview"][0]["blocked_claims"])
     )
     assert negative_keywords_contract["payload_preview"][0]["api_mutation_ready"] is False
     assert negative_keywords_contract["payload_preview"][0]["apply_allowed"] is False
@@ -12407,9 +12098,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["candidates"][0]["validation_status_label"] == (
         "do sprawdzenia"
     )
-    assert "90_day_safety_check" in negative_keywords_contract["candidates"][0][
-        "required_checks"
-    ]
+    assert "90_day_safety_check" in negative_keywords_contract["candidates"][0]["required_checks"]
     assert negative_keywords_contract["candidates"][0]["required_check_labels"] == [
         "sprawdzenie intencji zapytania",
         "sprawdzenie istniejących słów kluczowych i typów dopasowania",
@@ -12417,8 +12106,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "podgląd zmian wykluczeń",
         "potwierdzenie człowieka przed zapisem",
     ]
-    assert negative_keywords_contract["candidates"][0]["blocked_claim_labels"] == (
-        negative_keywords_contract["candidates"][0]["blocked_claims"]
+    assert (
+        negative_keywords_contract["candidates"][0]["blocked_claim_labels"]
+        == (negative_keywords_contract["candidates"][0]["blocked_claims"])
     )
     negative_keywords_section = next(
         section for section in payload["sections"] if section["id"] == "ads_negative_keyword_safety"
@@ -12474,13 +12164,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_decision["priority"] == 18
     assert campaign_triage_decision["decision_type"] == "review_campaign_triage"
     assert campaign_triage_decision["title"] == "Ustal kolejność oceny kampanii Ads"
-    assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == (
-        "Brand Search"
-    )
+    assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == ("Brand Search")
     assert campaign_triage_decision["campaign_triage_rows"][0]["roas"] == 37.5625
-    assert campaign_triage_decision["action_ids"] == [
-        "act_prepare_ads_campaign_review_queue"
-    ]
+    assert campaign_triage_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert campaign_triage_decision["metric_tiles"] == {
         "kampanie": 1,
         "pilne": 0,
@@ -12520,9 +12206,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_decision["budget_apply_preview"][0]["api_mutation_ready"] is False
     assert budget_decision["budget_apply_preview"][0]["apply_allowed"] is False
     assert budget_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
-    assert budget_decision["knowledge_card_ids"] == [
-        "card_google_ads_budget_review_playbook"
-    ]
+    assert budget_decision["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert budget_decision["expert_rule_ids"] == [
         "ads_scaling_candidates_v1",
         "ads_recommendations_v1",
@@ -12552,12 +12236,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "podgląd wpływu": 1,
         "podgląd akcji": 1,
     }
-    assert recommendations_decision["recommendation_apply_preview"][0][
-        "operation_type"
-    ] == "ApplyRecommendationOperation"
-    assert recommendations_decision["recommendation_apply_preview"][0][
-        "apply_allowed"
-    ] is False
+    assert (
+        recommendations_decision["recommendation_apply_preview"][0]["operation_type"]
+        == "ApplyRecommendationOperation"
+    )
+    assert recommendations_decision["recommendation_apply_preview"][0]["apply_allowed"] is False
     assert recommendations_decision["action_ids"] == [
         "act_prepare_google_ads_recommendation_review_queue"
     ]
@@ -12605,9 +12288,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_history_decision["priority"] == 65
     assert change_history_decision["metric_tiles"] == {"zmiany": 1, "kampanie": 1}
     assert change_history_decision["decision_type"] == "review_change_history"
-    assert change_history_decision["change_history_rows"][0]["change_resource_type"] == (
-        "CAMPAIGN"
-    )
+    assert change_history_decision["change_history_rows"][0]["change_resource_type"] == ("CAMPAIGN")
     assert change_history_decision["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
     assert change_history_decision["knowledge_card_ids"] == [
         "card_google_ads_budget_review_playbook"
@@ -12629,23 +12310,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_history_action["payload"]["preview_contract"] == (
         "change_history_impact_review_v1"
     )
-    assert change_history_action["payload"]["change_history_preview"][0][
-        "change_event_id"
-    ] == "change-1"
+    assert (
+        change_history_action["payload"]["change_history_preview"][0]["change_event_id"]
+        == "change-1"
+    )
     assert change_history_action["payload"]["apply_allowed"] is False
     assert change_history_action["payload"]["destructive"] is False
     assert change_history_action["payload"]["api_mutation_ready"] is False
-    assert "pre_change_performance_window" in change_history_action["payload"][
-        "missing_read_contracts"
-    ]
+    assert (
+        "pre_change_performance_window"
+        in change_history_action["payload"]["missing_read_contracts"]
+    )
     validate_response = client.post(f"/api/actions/{CHANGE_HISTORY_IMPACT_ACTION_ID}/validate")
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
     assert SEARCH_TERM_NGRAM_ACTION_ID in actions
     ngram_action = actions[SEARCH_TERM_NGRAM_ACTION_ID]
-    assert ngram_action["payload"]["action_type"] == (
-        "google_ads_search_term_ngram_review"
-    )
+    assert ngram_action["payload"]["action_type"] == ("google_ads_search_term_ngram_review")
     assert ngram_action["payload"]["preview_contract"] == "search_term_ngram_review_v1"
     assert ngram_action["payload"]["ngram_preview"][0]["ngram"]
     assert ngram_action["payload"]["ngram_preview"][0]["sample_search_terms"]
@@ -12674,9 +12355,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "SearchTermNgramReview" not in str(ngram_preview_card)
     assert "search_term_ngram_review_v1" not in str(ngram_preview_card)
     assert "ngram_to_negative_keyword_change_preview" not in str(ngram_preview_card)
-    ngram_validate_response = client.post(
-        f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate"
-    )
+    ngram_validate_response = client.post(f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate")
     assert ngram_validate_response.status_code == 200
     assert ngram_validate_response.json()["valid"] is True
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
@@ -12689,9 +12368,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     }
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
     assert search_terms_decision["missing_read_contracts"] == []
-    assert search_terms_decision["operator_review_gates"] == [
-        "negative_keyword_action_validation"
-    ]
+    assert search_terms_decision["operator_review_gates"] == ["negative_keyword_action_validation"]
     assert "dodanie wykluczających słów kluczowych" in search_terms_decision["blocked_claims"]
     search_term_safety_decision = decisions_by_id["ads_review_search_term_safety"]
     assert search_term_safety_decision["status"] == "ready"
@@ -12707,9 +12384,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert "dodanie wykluczających słów kluczowych" in search_term_safety_decision["blocked_claims"]
     assert search_term_safety_decision["missing_read_contracts"] == []
-    assert search_term_safety_decision["operator_review_gates"] == [
-        "human_intent_review"
-    ]
+    assert search_term_safety_decision["operator_review_gates"] == ["human_intent_review"]
     assert search_term_safety_decision["knowledge_card_ids"] == [
         "card_google_ads_negative_keywords_playbook",
         "card_google_ads_search_playbook",
@@ -12729,19 +12404,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "odpady cena"
     )
     assert negative_keyword_decision["search_term_safety_rows"][0]["clicks_90d"] == 10
-    assert negative_keyword_decision["negative_keyword_payload_preview"][0][
-        "negative_keyword_text"
-    ] == "odpady cena"
-    assert negative_keyword_decision["missing_read_contracts"] == []
-    assert negative_keyword_decision["operator_review_gates"] == [
-        "human_intent_review"
-    ]
-    assert negative_keyword_decision["keyword_match_context_rows"][0]["keyword_text"] == (
-        "odpady"
+    assert (
+        negative_keyword_decision["negative_keyword_payload_preview"][0]["negative_keyword_text"]
+        == "odpady cena"
     )
-    assert negative_keyword_decision["action_ids"] == [
-        "act_prepare_negative_keyword_review_queue"
-    ]
+    assert negative_keyword_decision["missing_read_contracts"] == []
+    assert negative_keyword_decision["operator_review_gates"] == ["human_intent_review"]
+    assert negative_keyword_decision["keyword_match_context_rows"][0]["keyword_text"] == ("odpady")
+    assert negative_keyword_decision["action_ids"] == ["act_prepare_negative_keyword_review_queue"]
     assert "marnowanie budżetu na zapytaniach" in negative_keyword_decision["blocked_claims"]
     custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
     assert custom_segments_decision["status"] == "ready"
@@ -12758,15 +12428,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["missing_read_contracts"] == [
         "forecast_or_audience_size",
     ]
-    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
-        "status"
-    ] == "missing_forecast"
-    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
-        "candidate_id"
-    ] == custom_segments_decision["custom_segment_candidates"][0]["id"]
-    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
-        "audience_size"
-    ] is None
+    assert (
+        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["status"]
+        == "missing_forecast"
+    )
+    assert (
+        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["candidate_id"]
+        == custom_segments_decision["custom_segment_candidates"][0]["id"]
+    )
+    assert (
+        custom_segments_decision["custom_segment_audience_forecast_rows"][0]["audience_size"]
+        is None
+    )
     assert custom_segments_decision["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
@@ -12778,21 +12451,24 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
-    assert custom_segments_decision["custom_segment_candidates"][0][
-        "source_quality"
-    ]["accepted_terms"] == 2
+    assert (
+        custom_segments_decision["custom_segment_candidates"][0]["source_quality"]["accepted_terms"]
+        == 2
+    )
     assert custom_segments_decision["keyword_planner_idea_rows"][0]["idea_text"] == (
         "bdo szkolenie"
     )
-    assert custom_segments_decision["custom_segment_payload_preview"][0][
-        "custom_segment_name"
-    ] == "Wyszukiwane hasła: Brand Search"
-    assert custom_segments_decision["custom_segment_payload_preview"][0][
-        "apply_allowed"
-    ] is False
-    assert custom_segments_decision["custom_segment_payload_preview"][0][
-        "targeting_preview"
-    ][0]["apply_allowed"] is False
+    assert (
+        custom_segments_decision["custom_segment_payload_preview"][0]["custom_segment_name"]
+        == "Wyszukiwane hasła: Brand Search"
+    )
+    assert custom_segments_decision["custom_segment_payload_preview"][0]["apply_allowed"] is False
+    assert (
+        custom_segments_decision["custom_segment_payload_preview"][0]["targeting_preview"][0][
+            "apply_allowed"
+        ]
+        is False
+    )
     assert custom_segments_decision["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
@@ -12837,17 +12513,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     context_budget_decision = context_decisions["ads_review_budget_context"]
     assert context_budget_decision["priority"] == budget_decision["priority"]
     assert context_budget_decision["metric_tiles"] == budget_decision["metric_tiles"]
-    assert context_budget_decision["knowledge_card_ids"] == budget_decision[
-        "knowledge_card_ids"
-    ]
+    assert context_budget_decision["knowledge_card_ids"] == budget_decision["knowledge_card_ids"]
     assert context_budget_decision["expert_rule_ids"] == budget_decision["expert_rule_ids"]
-    context_card_ids = {
-        card["id"] for card in context_payload["knowledge_card_summaries"]
-    }
+    context_card_ids = {card["id"] for card in context_payload["knowledge_card_summaries"]}
     assert "card_google_ads_budget_review_playbook" in context_card_ids
-    context_rule_ids = {
-        rule["id"] for rule in context_payload["expert_rule_summaries"]
-    }
+    context_rule_ids = {rule["id"] for rule in context_payload["expert_rule_summaries"]}
     assert "ads_scaling_candidates_v1" in context_rule_ids
     assert "ads_recommendations_v1" in context_rule_ids
 
@@ -12871,29 +12541,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["campaign_candidates"][0]["campaign_name"] == (
         "Brand Search"
     )
-    assert campaign_review_action["payload"]["campaign_candidates"][0][
-        "review_priority"
-    ] == "wysokie"
+    assert (
+        campaign_review_action["payload"]["campaign_candidates"][0]["review_priority"] == "wysokie"
+    )
     assert campaign_review_action["payload"]["campaign_candidates"][0]["review_score"] == 50
     assert (
         "Kolejność oceny kampanii"
         in campaign_review_action["payload"]["campaign_candidates"][0]["review_reason"]
     )
-    assert campaign_review_action["payload"]["campaign_candidates"][0][
-        "human_review_gates"
-    ] == [
+    assert campaign_review_action["payload"]["campaign_candidates"][0]["human_review_gates"] == [
         "review_campaign_goal",
         "review_conversion_quality",
         "review_budget_context",
         "review_search_terms_before_budget_decision",
         "human_strategy_review",
     ]
-    assert campaign_review_action["payload"]["campaign_candidates"][0][
-        "target_context"
-    ]["target_status"] == "no_target"
-    assert campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"][
-        "roas"
-    ] == 37.5625
+    assert (
+        campaign_review_action["payload"]["campaign_candidates"][0]["target_context"][
+            "target_status"
+        ]
+        == "no_target"
+    )
+    assert (
+        campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"]["roas"]
+        == 37.5625
+    )
     assert campaign_review_action["payload"]["campaign_candidates"][0]["budget_context"] == {
         "budget_amount_micros": 30000000,
         "cost_micros_7d": 12000000,
@@ -12902,12 +12574,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "has_recommended_budget": True,
         "recommended_budget_amount_micros": 42000000,
     }
-    assert campaign_review_action["payload"]["preview_contract"] == (
-        "budget_apply_preview_v1"
+    assert campaign_review_action["payload"]["preview_contract"] == ("budget_apply_preview_v1")
+    assert (
+        campaign_review_action["payload"]["budget_payload_preview"][0]["operation_type"]
+        == "CampaignBudgetOperation"
     )
-    assert campaign_review_action["payload"]["budget_payload_preview"][0][
-        "operation_type"
-    ] == "CampaignBudgetOperation"
     assert campaign_review_action["preview_cards"]
     budget_preview_card = campaign_review_action["preview_cards"][0]
     assert budget_preview_card["kind"] == "google_ads_budget_review"
@@ -12920,15 +12591,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "CampaignBudgetOperation" not in str(budget_preview_card)
     assert "101" not in str(budget_preview_card)
     assert "701" not in str(budget_preview_card)
-    assert campaign_review_action["payload"]["budget_payload_preview"][0][
-        "proposed_budget_amount_micros"
-    ] == 42000000
-    assert campaign_review_action["payload"]["budget_payload_preview"][0][
-        "api_mutation_ready"
-    ] is False
-    assert campaign_review_action["payload"]["budget_payload_preview"][0][
-        "apply_allowed"
-    ] is False
+    assert (
+        campaign_review_action["payload"]["budget_payload_preview"][0][
+            "proposed_budget_amount_micros"
+        ]
+        == 42000000
+    )
+    assert (
+        campaign_review_action["payload"]["budget_payload_preview"][0]["api_mutation_ready"]
+        is False
+    )
+    assert campaign_review_action["payload"]["budget_payload_preview"][0]["apply_allowed"] is False
     budget_safety_review = campaign_review_action["payload"]["budget_payload_preview"][0][
         "safety_review"
     ]
@@ -12939,12 +12612,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["apply_allowed"] is False
     assert campaign_review_action["payload"]["destructive"] is False
     assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
-    assert "budget_apply_preview" in campaign_review_action["payload"][
-        "required_validation"
-    ]
-    assert "campaign_budget_apply_safety" in campaign_review_action["payload"][
-        "required_validation"
-    ]
+    assert "budget_apply_preview" in campaign_review_action["payload"]["required_validation"]
+    assert (
+        "campaign_budget_apply_safety" in campaign_review_action["payload"]["required_validation"]
+    )
     assert "skalowanie budżetu" in campaign_review_action["payload"]["blocked_claims"]
     campaign_review_validation_response = client.post(
         "/api/actions/act_prepare_ads_campaign_review_queue/validate",
@@ -12963,34 +12634,30 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendation_review_action["payload"]["preview_contract"] == (
         "recommendation_apply_preview_v1"
     )
-    assert recommendation_review_action["payload"]["payload_preview"][0][
-        "operation_type"
-    ] == "ApplyRecommendationOperation"
-    assert recommendation_review_action["payload"]["payload_preview"][0][
-        "apply_allowed"
-    ] is False
+    assert (
+        recommendation_review_action["payload"]["payload_preview"][0]["operation_type"]
+        == "ApplyRecommendationOperation"
+    )
+    assert recommendation_review_action["payload"]["payload_preview"][0]["apply_allowed"] is False
     assert recommendation_review_action["preview_cards"]
     recommendation_preview_card = recommendation_review_action["preview_cards"][0]
     assert recommendation_preview_card["kind"] == "google_ads_recommendation_review"
-    assert recommendation_preview_card["title_label"] == (
-        "Rekomendacja Google Ads do sprawdzenia"
-    )
+    assert recommendation_preview_card["title_label"] == ("Rekomendacja Google Ads do sprawdzenia")
     recommendation_preview_rows = {
         row["label"]: row["value"] for row in recommendation_preview_card["rows"]
     }
     assert recommendation_preview_rows["Typ rekomendacji"] == "budżet kampanii"
     assert recommendation_preview_rows["Kampania"] == "powiązana kampania do sprawdzenia"
-    assert recommendation_preview_rows["Budżet kampanii"] == (
-        "powiązany budżet do sprawdzenia"
-    )
+    assert recommendation_preview_rows["Budżet kampanii"] == ("powiązany budżet do sprawdzenia")
     assert "CAMPAIGN_BUDGET" not in str(recommendation_preview_card)
     assert "101" not in str(recommendation_preview_card)
     assert "701" not in str(recommendation_preview_card)
     assert recommendation_review_action["payload"]["apply_allowed"] is False
     assert recommendation_review_action["payload"]["destructive"] is False
-    assert "human_confirm_before_apply" in recommendation_review_action["payload"][
-        "required_validation"
-    ]
+    assert (
+        "human_confirm_before_apply"
+        in recommendation_review_action["payload"]["required_validation"]
+    )
     recommendation_review_validation_response = client.post(
         "/api/actions/act_prepare_google_ads_recommendation_review_queue/validate",
         json={},
@@ -13033,9 +12700,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     custom_segment_safety_review = custom_segment_action["payload"]["payload_preview"][0][
         "safety_review"
     ]
-    assert custom_segment_safety_review["safety_contract"] == (
-        "custom_segment_apply_safety_v1"
-    )
+    assert custom_segment_safety_review["safety_contract"] == ("custom_segment_apply_safety_v1")
     assert custom_segment_safety_review["status"] == "blocked"
     assert custom_segment_safety_review["status_label"] == "zablokowane"
     assert custom_segment_safety_review["apply_allowed"] is False
@@ -13044,18 +12709,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segment_safety_review["audit_required"] is True
     assert "forecast," not in custom_segment_safety_review["reason"]
     assert "prognozy rozmiaru odbiorców" in custom_segment_safety_review["reason"]
-    assert "forecast_or_audience_size" in custom_segment_safety_review[
-        "missing_requirements"
-    ]
-    assert "google_ads_mutation_audit" in custom_segment_safety_review[
-        "missing_requirements"
-    ]
-    custom_segment_targeting_preview = custom_segment_action["payload"][
-        "payload_preview"
-    ][0]["targeting_preview"][0]
-    assert custom_segment_targeting_preview["operation_type"] == (
-        "custom_segment_targeting_review"
-    )
+    assert "forecast_or_audience_size" in custom_segment_safety_review["missing_requirements"]
+    assert "google_ads_mutation_audit" in custom_segment_safety_review["missing_requirements"]
+    custom_segment_targeting_preview = custom_segment_action["payload"]["payload_preview"][0][
+        "targeting_preview"
+    ][0]
+    assert custom_segment_targeting_preview["operation_type"] == ("custom_segment_targeting_review")
     assert custom_segment_targeting_preview["apply_allowed"] is False
     assert custom_segment_targeting_preview["api_mutation_ready"] is False
     assert custom_segment_action["payload"]["destructive"] is False
@@ -13090,15 +12749,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "ad_group" not in str(negative_keyword_preview_card)
     assert "101" not in str(negative_keyword_preview_card)
     assert negative_keyword_action["payload"]["keyword_match_context_available"] is True
-    assert negative_keyword_action["payload"]["keyword_match_context"][0][
-        "keyword_text"
-    ] == "odpady"
-    assert negative_keyword_action["payload"]["keyword_match_context"][0][
-        "match_type"
-    ] == "BROAD"
-    assert "search_term_90d_clicks" in negative_keyword_action["payload"][
-        "source_metric_names"
-    ]
+    assert (
+        negative_keyword_action["payload"]["keyword_match_context"][0]["keyword_text"] == "odpady"
+    )
+    assert negative_keyword_action["payload"]["keyword_match_context"][0]["match_type"] == "BROAD"
+    assert "search_term_90d_clicks" in negative_keyword_action["payload"]["source_metric_names"]
     assert negative_keyword_action["payload"]["apply_allowed"] is False
     assert negative_keyword_action["payload"]["destructive"] is False
     assert "90_day_safety_check" in negative_keyword_action["payload"]["required_validation"]
@@ -13122,9 +12777,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_ready_contract["business_goal"] == "lead quality review"
     assert business_ready_contract["budget_goal"] == "protect current monthly budget"
     assert business_ready_contract["target_roas"] == 5.0
-    assert business_ready_contract["missing_read_contracts"] == [
-        "human_strategy_review"
-    ]
+    assert business_ready_contract["missing_read_contracts"] == ["human_strategy_review"]
     assert business_ready_contract["allowed_metrics"] == [
         "profit_margin",
         "business_goal",
@@ -13139,15 +12792,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "block_target_verdict_until_strategy_review_approved",
     ]
     assert business_ready_contract["target_interpretation"]["status"] == "preliminary"
-    assert "target_roas_review_context" in business_ready_contract[
-        "target_interpretation"
-    ]["allowed_uses"]
-    assert "target_roas_or_cpa" not in business_ready_contract[
-        "target_interpretation"
-    ]["missing_requirements"]
-    assert "human_strategy_review" in business_ready_contract["target_interpretation"][
-        "missing_requirements"
-    ]
+    assert (
+        "target_roas_review_context"
+        in business_ready_contract["target_interpretation"]["allowed_uses"]
+    )
+    assert (
+        "target_roas_or_cpa"
+        not in business_ready_contract["target_interpretation"]["missing_requirements"]
+    )
+    assert (
+        "human_strategy_review"
+        in business_ready_contract["target_interpretation"]["missing_requirements"]
+    )
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
     assert business_ready_contract["target_interpretation"]["action_ids"] == [
         ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -13160,9 +12816,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "review_target_fit",
     ]
     derived_ready_contract = business_ready_payload["derived_kpi_read_contract"]
-    campaign_ready_row = business_ready_payload["campaign_read_contract"][
-        "campaign_rows"
-    ][0]
+    campaign_ready_row = business_ready_payload["campaign_read_contract"]["campaign_rows"][0]
     assert campaign_ready_row["target_status"] == "within_target"
     assert campaign_ready_row["target_status_label"] == "zwrot z reklam w granicy celu"
     assert "target=zwrot z reklam w granicy celu" in campaign_ready_row["review_reason"]
@@ -13178,15 +12832,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_ready_contract["kpi_rows"][0]["target_status_label"] == (
         "zwrot z reklam w granicy celu"
     )
-    assert "human_budget_goal" not in business_ready_payload[
-        "budget_pacing_read_contract"
-    ]["missing_read_contracts"]
-    assert "budget_target_or_seasonality" not in business_ready_payload[
-        "budget_pacing_read_contract"
-    ]["missing_read_contracts"]
-    assert "human_budget_goal" not in business_ready_payload[
-        "impression_share_read_contract"
-    ]["missing_read_contracts"]
+    assert (
+        "human_budget_goal"
+        not in business_ready_payload["budget_pacing_read_contract"]["missing_read_contracts"]
+    )
+    assert (
+        "budget_target_or_seasonality"
+        not in business_ready_payload["budget_pacing_read_contract"]["missing_read_contracts"]
+    )
+    assert (
+        "human_budget_goal"
+        not in business_ready_payload["impression_share_read_contract"]["missing_read_contracts"]
+    )
     business_ready_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]
@@ -13200,8 +12857,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "warunki sprawdzenia": 5,
         "polityki": 5,
     }
-    assert business_ready_decision["operator_review_gates"] == (
-        business_ready_contract["operator_review_gates"]
+    assert (
+        business_ready_decision["operator_review_gates"]
+        == (business_ready_contract["operator_review_gates"])
     )
     assert business_ready_decision["action_ids"] == [
         ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -13247,9 +12905,7 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert summary_bytes < full_bytes
     assert summary_payload["operator_summary"] == full_payload["operator_summary"]
     assert summary_payload["evidence_summary_label"] == full_payload["evidence_summary_label"]
-    assert summary_payload["source_connector_labels"] == full_payload[
-        "source_connector_labels"
-    ]
+    assert summary_payload["source_connector_labels"] == full_payload["source_connector_labels"]
     assert summary_payload["source_connector_labels"] == ["Google Ads"]
     assert summary_payload["action_summary_label"] == full_payload["action_summary_label"]
     assert summary_payload["evidence_summary_label"]
@@ -13258,9 +12914,9 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert summary_payload["business_context_read_contract"]["target_interpretation"][
         "action_summary_label"
     ]
-    assert summary_payload["business_context_read_contract"][
-        "strategy_review_readiness_contract"
-    ]["action_summary_label"]
+    assert summary_payload["business_context_read_contract"]["strategy_review_readiness_contract"][
+        "action_summary_label"
+    ]
     assert all(
         row["action_summary_label"]
         for row in summary_payload["campaign_triage_read_contract"]["triage_rows"]
@@ -13270,11 +12926,13 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert summary_payload["live_data_status_label"]
     if summary_payload["latest_refresh"]:
         assert summary_payload["latest_refresh_status_label"]
-    assert summary_payload["operator_summary"]["missing_read_contract_labels"] == (
-        full_payload["operator_summary"]["missing_read_contract_labels"]
+    assert (
+        summary_payload["operator_summary"]["missing_read_contract_labels"]
+        == (full_payload["operator_summary"]["missing_read_contract_labels"])
     )
-    assert summary_payload["operator_summary"]["blocked_claim_labels"] == (
-        full_payload["operator_summary"]["blocked_claim_labels"]
+    assert (
+        summary_payload["operator_summary"]["blocked_claim_labels"]
+        == (full_payload["operator_summary"]["blocked_claim_labels"])
     )
     assert len(summary_payload["decision_queue"]) <= len(full_payload["decision_queue"])
     assert all(decision["status_label"] for decision in summary_payload["decision_queue"])
@@ -13303,8 +12961,7 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert all(section["evidence_summary_label"] for section in summary_payload["sections"])
     assert all(section["action_summary_label"] for section in summary_payload["sections"])
     assert all(
-        isinstance(section["blocked_claim_labels"], list)
-        for section in summary_payload["sections"]
+        isinstance(section["blocked_claim_labels"], list) for section in summary_payload["sections"]
     )
     assert set(summary_payload["operator_summary"]["top_decision_ids"]).issubset(
         {decision["id"] for decision in summary_payload["decision_queue"]}
@@ -13535,9 +13192,7 @@ def test_ads_negative_keyword_candidate_exposes_marketer_preview_card() -> None:
     assert rows["Dopasowanie"] == "dopasowanie ścisłe"
     assert rows["Poziom"] == "grupa reklam"
     assert "sprawdzenie intencji zapytania" in rows["Warunki sprawdzenia"]
-    assert "dodanie wykluczających słów kluczowych" in rows[
-        "Czego nie wolno twierdzić"
-    ]
+    assert "dodanie wykluczających słów kluczowych" in rows["Czego nie wolno twierdzić"]
     assert "EXACT" not in str(card.model_dump())
     assert "ad_group" not in str(card.model_dump())
 
@@ -13607,9 +13262,7 @@ def test_ads_budget_row_exposes_marketer_preview_card() -> None:
     assert rows["Budżet teraz"] == "30 PLN"
     assert rows["Propozycja do sprawdzenia"] == "42 PLN"
     assert rows["Operacja"] == "zmiana budżetu kampanii"
-    assert rows["Powiązanie"] == (
-        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
-    )
+    assert rows["Powiązanie"] == ("kampania albo budżet do sprawdzenia w szczegółach technicznych")
     assert "sprawdzenie aktywności kampanii" in rows["Warunki sprawdzenia"]
     assert "historia zmian" in rows["Braki bezpieczeństwa"]
     assert "audyt zapisu zmian" in rows["Braki bezpieczeństwa"]
@@ -13667,9 +13320,7 @@ def test_ads_recommendation_row_exposes_marketer_preview_card() -> None:
     rows = {row.label: row.value for row in card.rows}
     assert rows["Rekomendacja"] == "budżet kampanii"
     assert rows["Operacja"] == "zastosowanie rekomendacji Google Ads"
-    assert rows["Powiązanie"] == (
-        "kampania albo budżet do sprawdzenia w szczegółach technicznych"
-    )
+    assert rows["Powiązanie"] == ("kampania albo budżet do sprawdzenia w szczegółach technicznych")
     assert "sprawdzenie typu rekomendacji" in rows["Warunki sprawdzenia"]
     assert "zapis rekomendacji" in rows["Czego nie wolno twierdzić"]
     dumped = str(card.model_dump())
@@ -13825,16 +13476,11 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "merchant_aggregate_product_statuses"
     ]
     assert "google_merchant_center" in performance_readiness["source_connectors"]
-    assert refresh_response.json()["evidence_ids"][-1] in performance_readiness[
-        "evidence_ids"
-    ]
+    assert refresh_response.json()["evidence_ids"][-1] in performance_readiness["evidence_ids"]
     assert "zwrot z reklam na poziomie produktu" in performance_readiness["blocked_claims"]
     assert "odzyskany przychód produktu" in performance_readiness["blocked_claims"]
     assert "efekt naprawy produktu" in performance_readiness["blocked_claims"]
-    assert (
-        "zwrot z reklam na poziomie produktu"
-        in performance_readiness["blocked_claim_labels"]
-    )
+    assert "zwrot z reklam na poziomie produktu" in performance_readiness["blocked_claim_labels"]
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert "akcj" in payload["action_summary_label"]
     assert payload["unknowns"]
@@ -13898,9 +13544,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["decision_type_label"] == "przegląd problemu feedu"
     assert decision["status"] == "ready"
     assert decision["status_label"] == "gotowe"
-    assert decision["title"] == (
-        "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność"
-    )
+    assert decision["title"] == ("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
     assert decision["issue_type"] == "availability_updated"
     assert decision["issue_type_label"] == "zmiana dostępności do sprawdzenia"
     assert decision["affected_attribute"] == "n:availability"
@@ -13970,9 +13614,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_metric["dimension_labels"]["reporting_context"] == "kontekst"
     assert decision_metric["dimension_labels"]["resolution"] == "rozwiązanie"
     assert decision_metric["dimension_labels"]["severity"] == "status"
-    assert decision_metric["dimension_value_labels"]["reporting_context"] == (
-        "reklamy produktowe"
-    )
+    assert decision_metric["dimension_value_labels"]["reporting_context"] == ("reklamy produktowe")
     assert decision_metric["dimension_value_labels"]["resolution"] == (
         "wymaga działania po stronie Merchant"
     )
@@ -14051,9 +13693,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "issue_product_count" not in merchant_action["human_diagnosis"]
     assert "zgłoszenia problemów" in merchant_action["human_diagnosis"]
     assert "ev_refresh" not in merchant_action["human_diagnosis"]
-    assert merchant_action["payload"]["issue_clusters"][0]["issue_type"] == (
-        "availability_updated"
-    )
+    assert merchant_action["payload"]["issue_clusters"][0]["issue_type"] == ("availability_updated")
     assert merchant_action["payload"]["issue_clusters"][0]["product_count"] == 23
     assert merchant_action["payload"]["preview_contract"] == (
         "merchant_feed_issue_review_preview_v1"
@@ -14293,21 +13933,23 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
     )
     monkeypatch.setattr(
         "wilq.briefing.merchant_diagnostics._latest_connector_refresh",
-        lambda connector_id: ConnectorRefreshRun(
-            id="refresh_google_ads_shopping_zero_rows",
-            connector_id="google_ads",
-            mode=ConnectorRefreshMode.vendor_read,
-            status=ConnectorRefreshStatus.completed,
-            evidence_ids=["ev_ads_shopping_zero_rows"],
-            metric_summary={
-                "shopping_product_performance_status": "ready",
-                "shopping_product_performance_lookback_days": 90,
-                "shopping_product_performance_row_count": 0,
-            },
-            summary="Shopping product read returned zero rows.",
-        )
-        if connector_id == "google_ads"
-        else None,
+        lambda connector_id: (
+            ConnectorRefreshRun(
+                id="refresh_google_ads_shopping_zero_rows",
+                connector_id="google_ads",
+                mode=ConnectorRefreshMode.vendor_read,
+                status=ConnectorRefreshStatus.completed,
+                evidence_ids=["ev_ads_shopping_zero_rows"],
+                metric_summary={
+                    "shopping_product_performance_status": "ready",
+                    "shopping_product_performance_lookback_days": 90,
+                    "shopping_product_performance_row_count": 0,
+                },
+                summary="Shopping product read returned zero rows.",
+            )
+            if connector_id == "google_ads"
+            else None
+        ),
     )
 
     readiness = _merchant_product_performance_readiness(
@@ -14594,12 +14236,8 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert decision["payload_preview"][0]["preview_contract"] == (
         "merchant_product_state_review_preview_v1"
     )
-    assert decision["payload_preview"][0]["products"][0]["product_id"] == (
-        "online~pl~PL~SKU-001"
-    )
-    assert decision["payload_preview"][0]["products"][0]["ads_product_status"] == (
-        "NOT_ELIGIBLE"
-    )
+    assert decision["payload_preview"][0]["products"][0]["product_id"] == ("online~pl~PL~SKU-001")
+    assert decision["payload_preview"][0]["products"][0]["ads_product_status"] == ("NOT_ELIGIBLE")
     supplemental_preview = next(
         preview
         for preview in decision["payload_preview"]
@@ -14608,9 +14246,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert supplemental_preview["apply_allowed"] is False
     assert supplemental_preview["api_mutation_ready"] is False
     assert supplemental_preview["primary_feed_mutation_allowed"] is False
-    assert supplemental_preview["candidates"][0]["product_id"] == (
-        "online~pl~PL~SKU-001"
-    )
+    assert supplemental_preview["candidates"][0]["product_id"] == ("online~pl~PL~SKU-001")
     assert supplemental_preview["candidates"][0]["review_fields"] == [
         "availability",
         "price",
@@ -14664,8 +14300,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "value": "sprawdzenie wpływu ceny",
     } in price_preview_card["rows"]
     assert not any(
-        "online~pl~PL~SKU" in row["value"]
-        or "MerchantPriceImpactReadinessReview" in row["value"]
+        "online~pl~PL~SKU" in row["value"] or "MerchantPriceImpactReadinessReview" in row["value"]
         for row in price_preview_card["rows"]
     )
     price_decision = next(
@@ -14732,13 +14367,9 @@ def test_merchant_price_impact_blocks_snapshot_history_without_price_change() ->
                     evidence_ids=["ev_ads_product_state"],
                     ads_product_price_micros=123450000,
                     ads_product_currency_code="PLN",
-                    ads_product_price_collected_at=datetime(
-                        2026, 6, 24, 8, 0, tzinfo=UTC
-                    ),
+                    ads_product_price_collected_at=datetime(2026, 6, 24, 8, 0, tzinfo=UTC),
                     ads_product_previous_price_micros=123450000,
-                    ads_product_previous_price_collected_at=datetime(
-                        2026, 6, 23, 8, 0, tzinfo=UTC
-                    ),
+                    ads_product_previous_price_collected_at=datetime(2026, 6, 23, 8, 0, tzinfo=UTC),
                     ads_product_previous_price_evidence_id="ev_ads_previous",
                     ads_product_price_delta_micros=0,
                     ads_product_price_delta_percent=0.0,
@@ -14841,9 +14472,10 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
         "raporty razem": 1784,
         "konteksty": 3,
     }
-    assert "wszystkie konteksty, bezpłatne wyniki produktowe, reklamy produktowe" in decision[
-        "summary"
-    ]
+    assert (
+        "wszystkie konteksty, bezpłatne wyniki produktowe, reklamy produktowe"
+        in decision["summary"]
+    )
     assert "nie jest liczbą unikalnych produktów" in decision["rationale"]
     assert set(decision["issue_cluster_ids"]) == {
         cluster["id"] for cluster in payload["issue_clusters"]
@@ -14908,9 +14540,7 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
         "WordPress ekologus.pl",
     ]
     assert diagnostics.operator_summary.blocked_claim_labels
-    assert "blokada do czasu odczytu danych" in (
-        diagnostics.operator_summary.decision_type_labels
-    )
+    assert "blokada do czasu odczytu danych" in (diagnostics.operator_summary.decision_type_labels)
     assert diagnostics.marketer_decision is not None
     assert diagnostics.marketer_decision.technical_decision_id == decision.id
     assert diagnostics.marketer_decision.status == "blocked"
@@ -14969,10 +14599,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                     12,
                     {
                         "query": "zielony ład",
-                        "page": (
-                            "https://www.ekologus.pl/"
-                            "europejski-zielony-lad-co-to-takiego/"
-                        ),
+                        "page": ("https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"),
                     },
                 ),
                 VendorMetricFact(
@@ -14980,10 +14607,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                     120,
                     {
                         "query": "zielony ład",
-                        "page": (
-                            "https://www.ekologus.pl/"
-                            "europejski-zielony-lad-co-to-takiego/"
-                        ),
+                        "page": ("https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"),
                     },
                 ),
             ],
@@ -15007,8 +14631,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                         "content_type": "sitemap",
                         "status": "indexed",
                         "content_url": (
-                            "https://www.ekologus.pl/"
-                            "europejski-zielony-lad-co-to-takiego/"
+                            "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
                         ),
                         "modified_gmt": "2024-07-11T07:04:02+00:00",
                         "inventory_source": "public_sitemap",
@@ -15110,8 +14733,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert all(fact["metric_label"] for fact in query_section["metric_facts"])
     assert query_section["tactical_items"]
     assert any(
-        item["dimensions"].get("query") == "zielony ład"
-        for item in query_section["tactical_items"]
+        item["dimensions"].get("query") == "zielony ład" for item in query_section["tactical_items"]
     )
     inventory_section = next(
         section for section in payload["sections"] if section["id"] == "content_inventory_match"
@@ -15133,14 +14755,10 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         decision["id"] for decision in payload["decision_queue"][:4]
     ]
     assert operator_summary["confirmed_wordpress_count"] == sum(
-        1
-        for decision in payload["decision_queue"]
-        if decision.get("wordpress_match") == "found"
+        1 for decision in payload["decision_queue"] if decision.get("wordpress_match") == "found"
     )
     assert operator_summary["missing_wordpress_count"] == sum(
-        1
-        for decision in payload["decision_queue"]
-        if decision.get("wordpress_match") == "missing"
+        1 for decision in payload["decision_queue"] if decision.get("wordpress_match") == "missing"
     )
     assert operator_summary["current_site_match_count"] == sum(
         1
@@ -15183,17 +14801,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         assert marketer_decision["source_public_url"].startswith("https://www.ekologus.pl/")
     if marketer_decision["final_canonical_url"]:
         assert "ekologus.dev.proudsite.pl" not in marketer_decision["final_canonical_url"]
-        assert marketer_decision["final_canonical_url"].startswith(
-            "https://www.ekologus.pl/"
-        )
-    assert not any(
-        "podgląd" in value.lower() for value in marketer_decision["missing_inputs"]
-    )
+        assert marketer_decision["final_canonical_url"].startswith("https://www.ekologus.pl/")
+    assert not any("podgląd" in value.lower() for value in marketer_decision["missing_inputs"])
     assert not any("_" in value for value in marketer_decision["missing_inputs"])
     assert not any(
-        "ActionObject" in value
-        for value in marketer_decision.values()
-        if isinstance(value, str)
+        "ActionObject" in value for value in marketer_decision.values() if isinstance(value, str)
     )
     first_decision = next(
         decision
@@ -15215,7 +14827,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     }
     assert first_decision["title"] == 'SEO: odśwież lub scal "zielony ład" (1 zapytanie)'
     assert first_decision["summary"] == (
-        'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: '
+        "GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "
         '"zielony ład". WordPress potwierdza istniejącą stronę, więc to jest '
         "decyzja odświeżenia albo scalenia, nie nowy artykuł."
     )
@@ -15240,7 +14852,10 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert not any(key.startswith("transition_candidate") for key in first_decision)
     assert first_decision["inventory_gate_status"] == "confirmed_current_inventory"
     assert first_decision["canonical_gate_status"] == "public_canonical_confirmed"
-    assert first_decision["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
+    assert (
+        first_decision["duplicate_gate_status"]
+        == "existing_public_content_requires_refresh_or_merge"
+    )
     assert "odświeżenie albo scalenie" in first_decision["content_gate_summary"]
     assert "nowy artykuł" in first_decision["content_gate_summary"]
     active_content_copy = json.dumps(
@@ -15254,9 +14869,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert "mapowanie" not in active_content_copy
     assert "mapping" not in active_content_copy
-    assert first_decision["normalized_page_path"] == (
-        "/europejski-zielony-lad-co-to-takiego"
-    )
+    assert first_decision["normalized_page_path"] == ("/europejski-zielony-lad-co-to-takiego")
     assert first_decision["evidence_ids"]
     assert first_decision["evidence_summary_label"]
     assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
@@ -15290,19 +14903,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert preflight_item["wordpress_draft_allowed"] is False
     assert preflight_item["sales_brief_allowed"] is True
     assert preflight_item["evidence_summary_label"]
-    assert preflight_item["source_connector_labels"] == first_decision[
-        "source_connector_labels"
-    ]
+    assert preflight_item["source_connector_labels"] == first_decision["source_connector_labels"]
     assert preflight_item["source_public_url"] == first_decision["source_public_url"]
     assert preflight_item["final_canonical_url"] == first_decision["final_canonical_url"]
     assert preflight_item["preview_url"] is None
     assert preflight_item["inventory_gate_status"] == "confirmed_current_inventory"
-    assert preflight_item["inventory_gate_status_label"] == (
-        "spis potwierdzony na obecnej stronie"
-    )
+    assert preflight_item["inventory_gate_status_label"] == ("spis potwierdzony na obecnej stronie")
     assert preflight_item["canonical_gate_status"] == "public_canonical_confirmed"
     assert preflight_item["canonical_gate_status_label"] == "publiczny URL kanoniczny potwierdzony"
-    assert preflight_item["duplicate_gate_status"] == "existing_public_content_requires_refresh_or_merge"
+    assert (
+        preflight_item["duplicate_gate_status"]
+        == "existing_public_content_requires_refresh_or_merge"
+    )
     assert preflight_item["duplicate_gate_status_label"] == (
         "istniejąca publiczna treść wymaga odświeżenia albo scalenia"
     )
@@ -15319,9 +14931,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         if decision["decision_type"] == "review_ahrefs_gap_records"
     )
     assert ahrefs_decision["status"] == "ready"
-    assert ahrefs_decision["title"] == (
-        "Ahrefs: zweryfikuj luki SEO przed planem treści"
-    )
+    assert ahrefs_decision["title"] == ("Ahrefs: zweryfikuj luki SEO przed planem treści")
     assert ahrefs_decision["metric_tiles"] == {
         "rekordy Ahrefs": 4,
         "pasujące": 3,
@@ -15351,9 +14961,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     ]
     assert "ekologus_domain_term" in zielony_lad_candidate["business_relevance_reasons"]
     assert "gsc_overlap" in zielony_lad_candidate["business_relevance_reasons"]
-    assert "wordpress_inventory_overlap" in zielony_lad_candidate[
-        "business_relevance_reasons"
-    ]
+    assert "wordpress_inventory_overlap" in zielony_lad_candidate["business_relevance_reasons"]
     assert "content_candidate" in zielony_lad_candidate["business_relevance_reasons"]
     assert zielony_lad_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
     assert "Wspólne sygnały: GSC: zielony ład" in zielony_lad_candidate["next_step"]
@@ -15382,8 +14990,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_response.status_code == 200
     context_payload = context_response.json()
     assert context_payload["content_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
-    assert context_payload["content_preflight"]["primary_item"]["technical_decision_id"] == (
-        first_decision["id"]
+    assert (
+        context_payload["content_preflight"]["primary_item"]["technical_decision_id"]
+        == (first_decision["id"])
     )
     assert context_payload["content_preflight"]["primary_item"]["recommended_mode"] == "refresh"
     assert context_payload["content_preflight"]["primary_item"]["draft_allowed"] is False
@@ -15400,22 +15009,15 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_decision["summary"] == first_decision["summary"]
     assert context_decision["primary_query"] == first_decision["primary_query"]
     assert context_decision["total_impressions"] == first_decision["total_impressions"]
-    assert context_decision["wordpress_match_confidence"] == first_decision[
-        "wordpress_match_confidence"
-    ]
+    assert (
+        context_decision["wordpress_match_confidence"]
+        == first_decision["wordpress_match_confidence"]
+    )
     assert context_decision["normalized_page_path"] == first_decision["normalized_page_path"]
-    assert context_decision["inventory_gate_status"] == first_decision[
-        "inventory_gate_status"
-    ]
-    assert context_decision["canonical_gate_status"] == first_decision[
-        "canonical_gate_status"
-    ]
-    assert context_decision["duplicate_gate_status"] == first_decision[
-        "duplicate_gate_status"
-    ]
-    assert context_decision["content_gate_summary"] == first_decision[
-        "content_gate_summary"
-    ]
+    assert context_decision["inventory_gate_status"] == first_decision["inventory_gate_status"]
+    assert context_decision["canonical_gate_status"] == first_decision["canonical_gate_status"]
+    assert context_decision["duplicate_gate_status"] == first_decision["duplicate_gate_status"]
+    assert context_decision["content_gate_summary"] == first_decision["content_gate_summary"]
     assert context_decision["source_connectors"] == first_decision["source_connectors"]
     assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
     assert context_decision["action_ids"] == first_decision["action_ids"]
@@ -15424,12 +15026,8 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     context_knowledge_card_ids = {
         card["id"] for card in context_payload["knowledge_card_summaries"]
     }
-    context_expert_rule_ids = {
-        rule["id"] for rule in context_payload["expert_rule_summaries"]
-    }
-    assert set(context_decision["knowledge_card_ids"]).issubset(
-        context_knowledge_card_ids
-    )
+    context_expert_rule_ids = {rule["id"] for rule in context_payload["expert_rule_summaries"]}
+    assert set(context_decision["knowledge_card_ids"]).issubset(context_knowledge_card_ids)
     assert set(context_decision["expert_rule_ids"]).issubset(context_expert_rule_ids)
     assert any(
         decision["decision_type"] == "review_ahrefs_gap_records"
@@ -15511,10 +15109,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
                 4,
                 {
                     "query": "bdo co to",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
-                    ),
+                    "page": ("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"),
                 },
             ),
             VendorMetricFact(
@@ -15522,10 +15117,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
                 4429,
                 {
                     "query": "bdo co to",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
-                    ),
+                    "page": ("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"),
                 },
             ),
             VendorMetricFact(
@@ -15533,10 +15125,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
                 0.0009031384059607134,
                 {
                     "query": "bdo co to",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
-                    ),
+                    "page": ("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"),
                 },
             ),
             VendorMetricFact(
@@ -15544,10 +15133,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
                 9.441183111311808,
                 {
                     "query": "bdo co to",
-                    "page": (
-                        "https://www.ekologus.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
-                    ),
+                    "page": ("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"),
                 },
             ),
         ],
@@ -15575,10 +15161,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
                     "connector_id": "wordpress_ekologus",
                     "content_type": "sitemap",
                     "status": "indexed",
-                    "content_url": (
-                        "https://www.ekologus.pl/"
-                        "bdo-co-musi-wiedziec-przedsiebiorca/"
-                    ),
+                    "content_url": ("https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"),
                     "inventory_source": "public_sitemap",
                 },
             )
@@ -15614,8 +15197,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
     assert payload["query_page_count"] >= 1
     assert payload["decision_queue"]
     assert any(
-        decision["page"]
-        == "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+        decision["page"] == "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
         for decision in payload["decision_queue"]
     )
     query_section = next(
@@ -15623,8 +15205,7 @@ def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs
     )
     assert query_section["status"] == "ready"
     assert any(
-        item["dimensions"].get("query") == "bdo co to"
-        for item in query_section["tactical_items"]
+        item["dimensions"].get("query") == "bdo co to" for item in query_section["tactical_items"]
     )
 
 
@@ -15643,8 +15224,7 @@ def test_gsc_vendor_read_uses_search_analytics(
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "searchconsole.googleapis.com"
         assert (
-            request.url.path
-            == "/webmasters/v3/sites/sc-domain:ekologus.pl/searchAnalytics/query"
+            request.url.path == "/webmasters/v3/sites/sc-domain:ekologus.pl/searchAnalytics/query"
         )
         assert request.headers["authorization"] == "Bearer gsc-access-token"
         body = json.loads(request.content.decode())
@@ -15997,9 +15577,7 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "merchantapi.googleapis.com"
-        assert request.url.path == (
-            "/issueresolution/v1/accounts/123456/aggregateProductStatuses"
-        )
+        assert request.url.path == ("/issueresolution/v1/accounts/123456/aggregateProductStatuses")
         assert request.headers["authorization"] == "Bearer merchant-access-token"
         assert request.url.params["pageSize"] == "100"
         return httpx.Response(
@@ -16208,9 +15786,7 @@ def test_merchant_vendor_read_uses_products_list_for_issue_samples(
         "sample_index": "1",
         "sample_source": "products.list",
     }
-    sample_title = next(
-        fact for fact in result.metric_facts if fact.name == "sample_product_title"
-    )
+    sample_title = next(fact for fact in result.metric_facts if fact.name == "sample_product_title")
     assert sample_title.value == "Sorbent chemiczny 10 kg"
     assert sample_title.dimensions == sample_id.dimensions
 
@@ -16234,9 +15810,7 @@ def test_merchant_vendor_read_retries_transient_timeout(
         attempts += 1
         if attempts == 1:
             raise httpx.ReadTimeout("temporary Merchant timeout", request=request)
-        assert request.url.path == (
-            "/issueresolution/v1/accounts/123456/aggregateProductStatuses"
-        )
+        assert request.url.path == ("/issueresolution/v1/accounts/123456/aggregateProductStatuses")
         return httpx.Response(
             200,
             json={
@@ -16824,8 +16398,8 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
                             "removedCount": 2,
                         }
                     }
-                    }
-                )
+                }
+            )
         if "googleMetricSeries" in query:
             metric = variables["args"]["metrics"][0]
             assert variables["args"]["placeId"] in {"place-one", "place-two"}
@@ -16890,9 +16464,7 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
         "local_rankings"
     )
     assert fact_by_name["localo_reviews_count"].dimensions["contract"] == "reviews"
-    assert fact_by_name["localo_gbp_impressions_total"].dimensions["contract"] == (
-        "gbp_visibility"
-    )
+    assert fact_by_name["localo_gbp_impressions_total"].dimensions["contract"] == ("gbp_visibility")
     assert fact_by_name["localo_competitor_count"].dimensions["contract"] == (
         "competitor_visibility"
     )
@@ -16965,8 +16537,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
             assert request.headers["authorization"].startswith("Basic ")
             assert request.url.params["per_page"] == "100"
             assert (
-                request.url.params["_fields"]
-                == "id,status,modified_gmt,date_gmt,link,slug,title"
+                request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug,title"
             )
             return httpx.Response(
                 200,
@@ -16985,8 +16556,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
             assert request.headers["authorization"].startswith("Basic ")
             assert request.url.params["per_page"] == "100"
             assert (
-                request.url.params["_fields"]
-                == "id,status,modified_gmt,date_gmt,link,slug,title"
+                request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug,title"
             )
             return httpx.Response(
                 200,
@@ -17582,7 +17152,7 @@ def test_marketing_brief_localo_blocker_uses_marketer_copy() -> None:
         ]
     )
     assert "Localo" in localo_blocker.source_connector_labels
-    assert "1 dowód źródłowy" == localo_blocker.evidence_summary_label
+    assert localo_blocker.evidence_summary_label == "1 dowód źródłowy"
     assert "OAuth" not in visible_copy
     assert "access token" not in visible_copy.lower()
     assert "LOCALO_ACCESS_TOKEN" not in visible_copy
@@ -18175,21 +17745,24 @@ def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(
     assert context_payload["tactical_queue"]["language"] == "pl-PL"
     assert "items" in context_payload["tactical_queue"]
     assert context_payload["ads_diagnostics"]["language"] == "pl-PL"
-    assert context_payload["ads_diagnostics"]["live_data_available"] == ads_diagnostics[
-        "live_data_available"
-    ]
+    assert (
+        context_payload["ads_diagnostics"]["live_data_available"]
+        == ads_diagnostics["live_data_available"]
+    )
     assert context_payload["ads_diagnostics"]["evidence_ids"] == ads_diagnostics["evidence_ids"]
     assert context_payload["ads_diagnostics"]["action_ids"] == ads_diagnostics["action_ids"]
     assert context_payload["merchant_diagnostics"]["language"] == "pl-PL"
-    assert context_payload["merchant_diagnostics"]["live_data_available"] == merchant_diagnostics[
-        "live_data_available"
-    ]
-    assert context_payload["merchant_diagnostics"]["evidence_ids"] == merchant_diagnostics[
-        "evidence_ids"
-    ]
-    assert context_payload["merchant_diagnostics"]["action_ids"] == merchant_diagnostics[
-        "action_ids"
-    ]
+    assert (
+        context_payload["merchant_diagnostics"]["live_data_available"]
+        == merchant_diagnostics["live_data_available"]
+    )
+    assert (
+        context_payload["merchant_diagnostics"]["evidence_ids"]
+        == merchant_diagnostics["evidence_ids"]
+    )
+    assert (
+        context_payload["merchant_diagnostics"]["action_ids"] == merchant_diagnostics["action_ids"]
+    )
 
 
 def test_daily_context_pack_excludes_social_draft_action_objects(
@@ -18210,9 +17783,7 @@ def test_daily_context_pack_excludes_social_draft_action_objects(
     )
     assert context_response.status_code == 200
     context_payload = context_response.json()
-    daily_action_ids = {
-        action["id"] for action in context_payload["active_action_objects"]
-    }
+    daily_action_ids = {action["id"] for action in context_payload["active_action_objects"]}
 
     assert {
         "act_review_merchant_feed_issues",
@@ -18235,9 +17806,7 @@ def test_social_context_pack_keeps_explicit_social_draft_action_objects(
     )
     assert context_response.status_code == 200
     context_payload = context_response.json()
-    social_action_ids = {
-        action["id"] for action in context_payload["active_action_objects"]
-    }
+    social_action_ids = {action["id"] for action in context_payload["active_action_objects"]}
 
     assert "act_prepare_linkedin_social_drafts" in social_action_ids
     assert "act_prepare_facebook_social_drafts" in social_action_ids
@@ -18281,9 +17850,7 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "context_summary",
         "evidence_id",
     }.issubset(social_context["source_inputs"][0])
-    assert "no_publishing_without_connector_credentials" in social_context[
-        "draft_constraints"
-    ]
+    assert "no_publishing_without_connector_credentials" in social_context["draft_constraints"]
     assert "opublikowanie posta" in social_context["blocked_claims"]
     assert "wzrost skuteczności social" in social_context["blocked_claims"]
     assert "przychód" in social_context["blocked_claims"]
@@ -18298,15 +17865,13 @@ def test_social_context_pack_exposes_review_only_draft_context(
     assert "FREE_LISTINGS" not in serialized_social_context
     assert "MERCHANT_ACTION" not in serialized_social_context
     assert "n:availability" not in serialized_social_context
-    assert context_payload["marketing_brief"]["context_pack_compaction"][
-        "sections_compacted"
-    ] is True
-    assert context_payload["tactical_queue"]["context_pack_compaction"][
-        "items_compacted"
-    ] is True
-    assert context_payload["tactical_queue"]["context_pack_compaction"][
-        "metric_facts_removed"
-    ] is True
+    assert (
+        context_payload["marketing_brief"]["context_pack_compaction"]["sections_compacted"] is True
+    )
+    assert context_payload["tactical_queue"]["context_pack_compaction"]["items_compacted"] is True
+    assert (
+        context_payload["tactical_queue"]["context_pack_compaction"]["metric_facts_removed"] is True
+    )
     assert len(json.dumps(context_payload, ensure_ascii=False).encode()) < 140_000
 
 
@@ -18447,10 +18012,7 @@ def test_codex_context_pack_scopes_gsc_content_doctor_without_ahrefs_decisions()
         for decision in content["decision_queue"]
         for connector in decision.get("source_connectors", [])
     }
-    assert all(
-        "_ahrefs" not in str(evidence_id)
-        for evidence_id in content["evidence_ids"]
-    )
+    assert all("_ahrefs" not in str(evidence_id) for evidence_id in content["evidence_ids"])
     assert content["context_pack_compaction"]["purpose"] == "gsc_content_doctor_context"
     assert content["context_pack_compaction"]["ahrefs_decisions_removed"] is True
 
@@ -18474,9 +18036,7 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     assert "merchant_diagnostics" in data
     assert "ads_diagnostics" not in data
     assert "command_center" not in data
-    assert data["merchant_diagnostics"]["action_ids"] == [
-        "act_review_merchant_feed_issues"
-    ]
+    assert data["merchant_diagnostics"]["action_ids"] == ["act_review_merchant_feed_issues"]
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     assert "payload" not in merchant_action
@@ -18573,9 +18133,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         for decision in ads_context["decision_queue"]
         for rule_id in decision.get("expert_rule_ids", [])
     }
-    context_knowledge_card_ids = {
-        card["id"] for card in data["knowledge_card_summaries"]
-    }
+    context_knowledge_card_ids = {card["id"] for card in data["knowledge_card_summaries"]}
     context_expert_rule_ids = {rule["id"] for rule in data["expert_rule_summaries"]}
     assert referenced_knowledge_card_ids
     assert referenced_expert_rule_ids
@@ -18601,36 +18159,32 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         "act_prepare_ads_campaign_review_queue"
     ]
     assert "zmarnowany budżet" in triage_contract["blocked_claims"]
-    assert (
-        ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
-        == len(triage_contract["triage_rows"])
+    assert ads_context["context_pack_compaction"]["campaign_triage_rows_included"] == len(
+        triage_contract["triage_rows"]
     )
     optimizer_contract = ads_context["optimizer_readiness_contract"]
     assert optimizer_contract["status"] == "review_ready"
     assert optimizer_contract["mode"] == "review_only"
     assert optimizer_contract["apply_allowed"] is False
-    assert "campaign_review_queue" in [
-        item["id"] for item in optimizer_contract["readiness_items"]
-    ]
+    assert "campaign_review_queue" in [item["id"] for item in optimizer_contract["readiness_items"]]
     assert "zapis zmian kampanii" in optimizer_contract["blocked_claims"]
     assert ads_context["change_impact_readiness_contract"]["status"] == "blocked"
-    assert "wpływ zmian" in ads_context["change_impact_readiness_contract"][
-        "blocked_claims"
-    ]
+    assert "wpływ zmian" in ads_context["change_impact_readiness_contract"]["blocked_claims"]
     if ads_context["change_history_read_contract"]["change_history_rows"]:
         assert ads_context["change_impact_readiness_contract"]["readiness_rows"]
         assert (
             "current_campaign_snapshot"
-            not in ads_context["change_impact_readiness_contract"][
-                "missing_read_contracts"
-            ]
+            not in ads_context["change_impact_readiness_contract"]["missing_read_contracts"]
         )
     custom_segment_candidate = ads_context["custom_segments_read_contract"]["candidates"][0]
     assert "source_quality" in custom_segment_candidate
     assert "rejection_reasons" not in custom_segment_candidate
-    assert ads_context["context_pack_compaction"][
-        "custom_segment_candidate_search_term_rows_compacted"
-    ] is True
+    assert (
+        ads_context["context_pack_compaction"][
+            "custom_segment_candidate_search_term_rows_compacted"
+        ]
+        is True
+    )
     assert custom_segment_candidate["search_term_rows_included"] == len(
         custom_segment_candidate["search_term_rows"]
     )
@@ -18647,9 +18201,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
             "missing_metrics",
         }
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
-    target_interpretation = ads_context["business_context_read_contract"][
-        "target_interpretation"
-    ]
+    target_interpretation = ads_context["business_context_read_contract"]["target_interpretation"]
     assert target_interpretation["interpretation_contract"] == (
         "ads_business_target_interpretation_v1"
     )
@@ -18699,24 +18251,14 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     campaign_candidate = campaign_review_action["payload"]["campaign_candidates"][0]
     full_action_response = client.get("/api/actions/act_prepare_ads_campaign_review_queue")
     assert full_action_response.status_code == 200
-    full_campaign_candidate = full_action_response.json()["payload"][
-        "campaign_candidates"
-    ][0]
+    full_campaign_candidate = full_action_response.json()["payload"]["campaign_candidates"][0]
     assert campaign_candidate["campaign_name"] == full_campaign_candidate["campaign_name"]
-    assert campaign_candidate["review_priority"] == full_campaign_candidate[
-        "review_priority"
-    ]
+    assert campaign_candidate["review_priority"] == full_campaign_candidate["review_priority"]
     assert campaign_candidate["review_score"] == full_campaign_candidate["review_score"]
     assert "Kolejność oceny kampanii" in campaign_candidate["review_reason"]
-    assert campaign_candidate["review_reason"] == full_campaign_candidate[
-        "review_reason"
-    ]
-    assert campaign_candidate["human_review_gates"] == full_campaign_candidate[
-        "human_review_gates"
-    ]
-    assert campaign_candidate["target_context"] == full_campaign_candidate[
-        "target_context"
-    ]
+    assert campaign_candidate["review_reason"] == full_campaign_candidate["review_reason"]
+    assert campaign_candidate["human_review_gates"] == full_campaign_candidate["human_review_gates"]
+    assert campaign_candidate["target_context"] == full_campaign_candidate["target_context"]
     assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
     assert campaign_candidate["apply_allowed"] is False
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
@@ -18725,36 +18267,27 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8
     assert len(ads_context["budget_pacing_read_contract"]["payload_preview"]) <= 4
     budget_preview = ads_context["budget_pacing_read_contract"]["payload_preview"][0]
-    assert budget_preview["safety_review"]["safety_contract"] == (
-        "campaign_budget_apply_safety_v1"
-    )
+    assert budget_preview["safety_review"]["safety_contract"] == ("campaign_budget_apply_safety_v1")
     assert budget_preview["safety_review"]["apply_allowed"] is False
     assert len(ads_context["recommendations_read_contract"]["payload_preview"]) <= 8
-    assert ads_context["context_pack_compaction"][
-        "recommendation_row_payload_previews_omitted"
-    ] is True
-    for recommendation_row in ads_context["recommendations_read_contract"][
-        "recommendation_rows"
-    ]:
+    assert (
+        ads_context["context_pack_compaction"]["recommendation_row_payload_previews_omitted"]
+        is True
+    )
+    for recommendation_row in ads_context["recommendations_read_contract"]["recommendation_rows"]:
         assert "payload_preview" not in recommendation_row
         assert recommendation_row["payload_preview_total"] >= 0
         assert recommendation_row["payload_preview_included"] == 0
     assert len(ads_context["negative_keywords_read_contract"]["payload_preview"]) <= 8
-    assert ads_context["context_pack_compaction"][
-        "negative_keyword_candidate_context_rows_compacted"
-    ] is True
     assert (
-        ads_context["context_pack_compaction"]["budget_payload_preview_included"]
-        <= 4
+        ads_context["context_pack_compaction"]["negative_keyword_candidate_context_rows_compacted"]
+        is True
     )
+    assert ads_context["context_pack_compaction"]["budget_payload_preview_included"] <= 4
     for candidate in ads_context["negative_keywords_read_contract"]["candidates"]:
         assert len(candidate["keyword_context_rows"]) <= 2
-        assert candidate["keyword_context_rows_included"] == len(
-            candidate["keyword_context_rows"]
-        )
-        assert candidate["keyword_context_rows_total"] >= len(
-            candidate["keyword_context_rows"]
-        )
+        assert candidate["keyword_context_rows_included"] == len(candidate["keyword_context_rows"])
+        assert candidate["keyword_context_rows_total"] >= len(candidate["keyword_context_rows"])
         for row in candidate["keyword_context_rows"]:
             assert set(row) == {
                 "keyword_text",
@@ -18772,20 +18305,9 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         assert decision.get("omitted_empty_row_lists_count", 0) > 0
         for candidate in decision.get("negative_keyword_candidates", []):
             assert len(candidate["keyword_context_rows"]) <= 4
-    assert (
-        ads_context["context_pack_compaction"]["keyword_match_context_rows_included"]
-        <= 8
-    )
-    assert (
-        ads_context["context_pack_compaction"]["search_term_safety_rows_included"]
-        <= 8
-    )
-    assert (
-        ads_context["context_pack_compaction"][
-            "recommendation_apply_preview_included"
-        ]
-        <= 8
-    )
+    assert ads_context["context_pack_compaction"]["keyword_match_context_rows_included"] <= 8
+    assert ads_context["context_pack_compaction"]["search_term_safety_rows_included"] <= 8
+    assert ads_context["context_pack_compaction"]["recommendation_apply_preview_included"] <= 8
     assert '"metric_facts":' not in json.dumps(ads_context)
     assert "safety_metric_facts" not in json.dumps(ads_context)
     ngram_context_action = next(
@@ -18824,9 +18346,7 @@ def test_ads_doctor_context_pack_preserves_recommendation_impact_rows(
     )
 
     assert response.status_code == 200
-    pack_recommendations = response.json()["ads_diagnostics"][
-        "recommendations_read_contract"
-    ]
+    pack_recommendations = response.json()["ads_diagnostics"]["recommendations_read_contract"]
     pack_impact_ids = [
         row["recommendation_id"]
         for row in pack_recommendations["recommendation_rows"]
@@ -18864,40 +18384,35 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         "ads_prepare_custom_segments_from_search_terms"
     ]
     assert ads_context["custom_segments_read_contract"]["payload_preview"]
-    context_safety_review = ads_context["custom_segments_read_contract"][
-        "payload_preview"
-    ][0]["safety_review"]
+    context_safety_review = ads_context["custom_segments_read_contract"]["payload_preview"][0][
+        "safety_review"
+    ]
     assert context_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
     assert context_safety_review["status"] == "blocked"
     assert context_safety_review["apply_allowed"] is False
     assert context_safety_review["api_mutation_ready"] is False
     assert context_safety_review["audit_required"] is True
-    assert "forecast_or_audience_size" in context_safety_review[
-        "missing_requirements"
+    assert "forecast_or_audience_size" in context_safety_review["missing_requirements"]
+    assert "google_ads_mutation_audit" in context_safety_review["missing_requirements"]
+    action_safety_review = data["active_action_objects"][0]["payload"]["payload_preview"][0][
+        "safety_review"
     ]
-    assert "google_ads_mutation_audit" in context_safety_review[
-        "missing_requirements"
-    ]
-    action_safety_review = data["active_action_objects"][0]["payload"][
-        "payload_preview"
-    ][0]["safety_review"]
     assert action_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
     assert action_safety_review["apply_allowed"] is False
-    assert ads_context["custom_segments_read_contract"][
-        "audience_forecast_read_contract"
-    ]["forecast_rows"]
-    assert "custom_segment_change_preview" not in ads_context[
-        "custom_segments_read_contract"
-    ]["missing_read_contracts"]
+    assert ads_context["custom_segments_read_contract"]["audience_forecast_read_contract"][
+        "forecast_rows"
+    ]
+    assert (
+        "custom_segment_change_preview"
+        not in ads_context["custom_segments_read_contract"]["missing_read_contracts"]
+    )
     assert "recommendations_read_contract" not in ads_context
     assert "negative_keywords_read_contract" not in ads_context
     assert "budget_pacing_read_contract" not in ads_context
     assert "campaign_read_contract" not in ads_context
     assert "search_terms_read_contract" in ads_context
     assert ads_context["context_pack_compaction"]["purpose"] == "custom_segments_context"
-    assert ads_context["context_pack_compaction"][
-        "custom_segment_payload_preview_included"
-    ] <= 8
+    assert ads_context["context_pack_compaction"]["custom_segment_payload_preview_included"] <= 8
     for action in data["active_action_objects"]:
         assert action["metrics_included"] <= 3
         assert action["metrics_total"] >= action["metrics_included"]
@@ -18945,15 +18460,14 @@ def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     }
-    assert data["content_landing_context"]["source_connectors"] == [
-        "google_search_console"
-    ]
-    assert data["content_landing_context"]["context_pack_compaction"][
-        "full_endpoint"
-    ] == "/api/content/diagnostics"
-    assert data["content_landing_context"]["context_pack_compaction"][
-        "purpose"
-    ] == "landing_context"
+    assert data["content_landing_context"]["source_connectors"] == ["google_search_console"]
+    assert (
+        data["content_landing_context"]["context_pack_compaction"]["full_endpoint"]
+        == "/api/content/diagnostics"
+    )
+    assert (
+        data["content_landing_context"]["context_pack_compaction"]["purpose"] == "landing_context"
+    )
     if content_payload["query_page_count"] > 0:
         assert data["content_landing_context"]["live_data_available"] is True
         assert data["content_landing_context"]["query_page_candidates"]
@@ -18967,9 +18481,7 @@ def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
         assert first_candidate["page"]
         assert first_candidate["query"]
         assert first_candidate["evidence_ids"]
-    assert data["ads_diagnostics"]["context_pack_compaction"][
-        "metric_facts_removed"
-    ] is True
+    assert data["ads_diagnostics"]["context_pack_compaction"]["metric_facts_removed"] is True
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
@@ -19012,9 +18524,10 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert readiness["payload_preview"][0]["api_mutation_ready"] is False
     assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
     assert readiness["source_connector_labels"] == ["Google Ads", "GA4"]
-    assert "dowód" in readiness["evidence_summary_label"] or "dowod" in readiness[
-        "evidence_summary_label"
-    ]
+    assert (
+        "dowód" in readiness["evidence_summary_label"]
+        or "dowod" in readiness["evidence_summary_label"]
+    )
     assert isinstance(readiness["campaign_rows_evaluated"], int)
     assert isinstance(readiness["campaign_channel_counts"], dict)
     assert isinstance(readiness["demand_gen_campaign_rows"], list)
@@ -19041,12 +18554,11 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert "rekomendacja uruchomienia Demand Gen" in readiness["blocked_claims"]
     assert "sections" not in data["ga4_diagnostics"]
     assert '"metric_facts":' not in json.dumps(data["ga4_diagnostics"])
-    assert data["ga4_diagnostics"]["context_pack_compaction"][
-        "full_endpoint"
-    ] == "/api/ga4/diagnostics"
-    assert data["ads_diagnostics"]["context_pack_compaction"][
-        "metric_facts_removed"
-    ] is True
+    assert (
+        data["ga4_diagnostics"]["context_pack_compaction"]["full_endpoint"]
+        == "/api/ga4/diagnostics"
+    )
+    assert data["ads_diagnostics"]["context_pack_compaction"]["metric_facts_removed"] is True
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
@@ -19069,9 +18581,10 @@ def test_codex_context_pack_scopes_demand_gen_without_full_ga4_builder(
     assert response.status_code == 200
     data = response.json()
     assert "demand_gen_readiness" in data
-    assert data["ga4_diagnostics"]["context_pack_compaction"][
-        "full_endpoint"
-    ] == "/api/ga4/diagnostics"
+    assert (
+        data["ga4_diagnostics"]["context_pack_compaction"]["full_endpoint"]
+        == "/api/ga4/diagnostics"
+    )
 
 
 def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
@@ -19085,9 +18598,7 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert data["metric_tiles"]["braki"] == len(data["missing_read_contracts"])
     assert data["source_connectors"] == ["google_ads", "google_analytics_4"]
     assert data["source_connector_labels"] == ["Google Ads", "GA4"]
-    assert "dowód" in data["evidence_summary_label"] or "dowod" in data[
-        "evidence_summary_label"
-    ]
+    assert "dowód" in data["evidence_summary_label"] or "dowod" in data["evidence_summary_label"]
     assert data["action_ids"] == ["act_review_demand_gen_readiness"]
     assert data["payload_preview"][0]["preview_contract"] == (
         "demand_gen_readiness_review_preview_v1"
@@ -19297,19 +18808,11 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
     assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24
     assert data["demand_gen_landing_quality_rows"][0]["engagement_rate"] == 0.75
-    assert data["demand_gen_campaign_mode_review_rows"][0]["campaign_name"] == (
-        "Demand Gen Test"
-    )
-    assert data["demand_gen_campaign_rows"][0]["advertising_channel_type_label"] == (
-        "Demand Gen"
-    )
+    assert data["demand_gen_campaign_mode_review_rows"][0]["campaign_name"] == ("Demand Gen Test")
+    assert data["demand_gen_campaign_rows"][0]["advertising_channel_type_label"] == ("Demand Gen")
     assert data["demand_gen_campaign_rows"][0]["campaign_status_label"] == "wstrzymana"
-    assert data["demand_gen_campaign_rows"][0]["evidence_summary_label"] == (
-        "1 dowód źródłowy"
-    )
-    assert data["demand_gen_ad_group_ad_rows"][0]["evidence_summary_label"] == (
-        "1 dowód źródłowy"
-    )
+    assert data["demand_gen_campaign_rows"][0]["evidence_summary_label"] == ("1 dowód źródłowy")
+    assert data["demand_gen_ad_group_ad_rows"][0]["evidence_summary_label"] == ("1 dowód źródłowy")
     assert data["demand_gen_creative_asset_rows"][0]["evidence_summary_label"] == (
         "1 dowód źródłowy"
     )

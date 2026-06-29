@@ -61,7 +61,7 @@ def test_google_ads_oauth_exchange_writes_env_without_printing_token(
 ) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(
-        '\n'.join(
+        "\n".join(
             [
                 'GOOGLE_ADS_CLIENT_ID="client-id-test"',
                 'GOOGLE_ADS_CLIENT_SECRET="client-secret-test"',  # pragma: allowlist secret
@@ -110,7 +110,7 @@ def test_google_ads_oauth_exchange_with_client_secret_file_keeps_env_client_pair
 ) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(
-        '\n'.join(
+        "\n".join(
             [
                 'GOOGLE_ADS_CLIENT_ID="deleted-client-id"',
                 'GOOGLE_ADS_CLIENT_SECRET="deleted-client-secret"',  # pragma: allowlist secret
