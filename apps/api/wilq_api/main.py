@@ -1115,10 +1115,14 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     },
+    "wilq-content-strategist": {"act_prepare_content_refresh_queue"},
     "wilq-custom-segments": {
         "act_prepare_custom_segments_from_search_terms",
     },
     "wilq-demand-gen-operator": {DEMAND_GEN_READINESS_REVIEW_ACTION_ID},
+    "wilq-ga4-analyst": {"act_review_ga4_tracking_quality"},
+    "wilq-gsc-content-doctor": {"act_prepare_content_refresh_queue"},
+    "wilq-localo-operator": {"act_review_localo_visibility_facts"},
     "wilq-social-publisher": {
         "act_prepare_facebook_social_drafts",
         "act_prepare_linkedin_social_drafts",
@@ -1212,7 +1216,7 @@ def _skill_scoped_context_pack(
             for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
-            _compact_action_dump_for_context(action.model_dump(mode="json"))
+            _compact_action_dump_for_context(action.model_dump(mode="json"), skill=skill)
             for action in scoped_actions
         ],
         "connector_refresh_runs": [
@@ -3130,7 +3134,7 @@ def _custom_segments_diagnostics_for_context(
     return compact
 
 
-def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
+def _compact_action_dump_for_context(action: dict[str, Any], *, skill: str) -> dict[str, Any]:
     compact = dict(action)
     if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
         compact["human_diagnosis"] = (
@@ -3195,7 +3199,10 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact["preview_cards_included"] = len(compact["preview_cards"])
     payload = compact.get("payload")
     if isinstance(payload, dict):
-        if _action_payload_should_survive_skill_context(str(compact.get("id") or "")):
+        if _action_payload_should_survive_skill_context(
+            str(compact.get("id") or ""),
+            skill=skill,
+        ):
             _compact_action_payload_for_context(
                 payload,
                 action_id=str(compact.get("id") or ""),
@@ -3206,16 +3213,22 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     return compact
 
 
-def _action_payload_should_survive_skill_context(action_id: str) -> bool:
-    return action_id in {
-        "act_prepare_content_refresh_queue",
-        "act_review_ga4_tracking_quality",
-        "act_review_localo_visibility_facts",
-        "act_review_ads_search_term_ngrams",
-        "act_prepare_ads_campaign_review_queue",
-        "act_prepare_custom_segments_from_search_terms",
-        "act_review_demand_gen_readiness",
+def _action_payload_should_survive_skill_context(action_id: str, *, skill: str) -> bool:
+    allowed_by_skill: dict[str, set[str]] = {
+        "wilq-content-strategist": {"act_prepare_content_refresh_queue"},
+        "wilq-gsc-content-doctor": {"act_prepare_content_refresh_queue"},
+        "wilq-ga4-analyst": {"act_review_ga4_tracking_quality"},
+        "wilq-localo-operator": {"act_review_localo_visibility_facts"},
+        "wilq-ads-doctor": {
+            "act_review_ads_search_term_ngrams",
+            "act_prepare_ads_campaign_review_queue",
+            "act_prepare_custom_segments_from_search_terms",
+        },
+        "wilq-custom-segments": {"act_prepare_custom_segments_from_search_terms"},
+        "wilq-campaign-builder": {"act_prepare_ads_campaign_review_queue"},
+        "wilq-demand-gen-operator": {"act_review_demand_gen_readiness"},
     }
+    return action_id in allowed_by_skill.get(skill, set())
 
 
 def _compact_action_payload_for_context(payload: dict[str, Any], *, action_id: str) -> None:

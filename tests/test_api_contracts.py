@@ -5557,6 +5557,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     context_action_by_id = {
         action["id"]: action for action in context_payload["active_action_objects"]
     }
+    assert set(context_action_by_id) == {"act_review_ga4_tracking_quality"}
     context_preview = context_action_by_id["act_review_ga4_tracking_quality"]["payload"][
         "payload_preview"
     ][0]
@@ -18352,6 +18353,8 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
     assert data["content_diagnostics"]["evidence_ids"]
     assert "sections" not in data["content_diagnostics"]
     assert '"metric_facts":' not in json.dumps(data["content_diagnostics"])
+    action_ids = {action["id"] for action in data["active_action_objects"]}
+    assert action_ids == {"act_prepare_content_refresh_queue"}
     assert data["context_pack_compaction"]["connector_refresh_runs_compacted"] is True
     assert data["context_pack_compaction"]["evidence_summaries_compacted"] is True
     assert data["context_pack_compaction"]["knowledge_card_summaries_compacted"] is True
@@ -18386,6 +18389,8 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
         "read-only",
         "review-only",
         "ActionObject",
+        "ga4_tracking_quality_review_v1",
+        "tracking_quality_review",
     ):
         assert forbidden_term not in serialized_operator_context
 
