@@ -136,6 +136,10 @@ API status later contradicts this state.
   as `GSC: brak` or `Overlap GSC`; API labels now distinguish confirmed GSC or
   WordPress matches from missing overlap. Focused API/dashboard tests,
   typecheck/lint, language guards, context-pack guard and browser proof passed.
+- Custom Segments and Tactical Queue dashboard traces no longer use generic
+  `brak` empty states for evidence, human review, audience forecasts or action
+  availability. Focused dashboard tests, typecheck/lint and language guard
+  passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

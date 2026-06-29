@@ -120,7 +120,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
         <TraceLine
           label="Akcje"
           values={group.action_summary_label ? [group.action_summary_label] : []}
-          empty="brak"
+          empty="brak akcji do sprawdzenia"
         />
         <TraceLine label="Granice wniosków" values={group.blocked_claim_labels} />
       </div>
@@ -179,7 +179,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
               label="Akcje do sprawdzenia"
               values={item.action_ids}
               kind="actions"
-              empty="brak"
+              empty="brak akcji do sprawdzenia"
             />
           </div>
         </details>

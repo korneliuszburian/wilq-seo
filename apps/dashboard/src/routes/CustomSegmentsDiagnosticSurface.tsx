@@ -118,14 +118,14 @@ export function AdsCustomSegmentCandidatesPanel({
               <TraceLine
                 label="Ocena człowieka"
                 values={candidate.human_review_gate_labels}
-                empty="brak"
+                empty="brak oceny człowieka"
               />
               <TraceLine label="Hasła źródłowe" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
               <TraceLine
                 label="Dowody"
                 values={[candidate.evidence_summary_label]}
-                empty="brak"
+                empty="brak dowodów źródłowych"
               />
               <TraceLine
                 label="Nie wolno twierdzić"
@@ -178,7 +178,10 @@ export function AdsCustomSegmentAudienceForecastPanel({
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                odbiorcy: {typeof row.audience_size === "number" ? row.audience_size : "brak"}
+                odbiorcy:{" "}
+                {typeof row.audience_size === "number"
+                  ? row.audience_size
+                  : "brak prognozy odbiorców"}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">{row.reason}</p>
@@ -187,7 +190,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
               <TraceLine
                 label="Dowody"
                 values={[row.evidence_summary_label]}
-                empty="brak"
+                empty="brak dowodów źródłowych"
               />
               <TraceLine
                 label="Nie wolno twierdzić"

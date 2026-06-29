@@ -186,6 +186,7 @@ describe("TacticalQueuePanel", () => {
     expect(section?.textContent).toContain("Akcje");
     expect(section?.textContent).toContain("1 akcja do sprawdzenia");
     const routeSource = readFileSync("src/routes/TacticalQueuePanel.tsx", "utf8");
+    expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain("{item.domain_label} / {item.intent_label} / {item.priority_label}");
   });
 });
