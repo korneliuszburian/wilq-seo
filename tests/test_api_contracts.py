@@ -5568,7 +5568,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         == "/europejski-zielony-lad-co-to-takiego/"
     )
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
-    assert sections["ga4_tracking_readiness"]["status_label"] == "brak metryk konwersji"
+    assert sections["ga4_tracking_readiness"]["status_label"] == (
+        "metryki konwersji niepotwierdzone"
+    )
     assert "spadek konwersji" in sections["ga4_tracking_readiness"]["blocked_claims"]
 
     assert sections["ga4_action_safety"]["status"] == "ready"
@@ -6180,7 +6182,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["freshness_label"] in {
         "świeże dane",
         "dane wymagają odświeżenia",
-        "brak danych",
+        "świeżość danych niepotwierdzona",
         "świeżość niepotwierdzona",
     }
     assert merchant_decision["decision_state"] in {
@@ -13785,6 +13787,24 @@ def test_ads_recommendation_row_exposes_marketer_preview_card() -> None:
     assert "CAMPAIGN_BUDGET" not in dumped
     assert "101" not in dumped
     assert "701" not in dumped
+
+
+def test_ads_recommendation_impact_reason_does_not_turn_missing_cost_into_zero() -> None:
+    from wilq.briefing.ads_recommendations import _recommendation_review_reason
+
+    reason = _recommendation_review_reason(
+        recommendation_type="CAMPAIGN_BUDGET",
+        impact_available=True,
+        delta_clicks=None,
+        delta_cost_micros=None,
+        delta_conversions=None,
+        missing_metrics=[],
+    )
+
+    assert "zmiana kliknięć niepotwierdzona" in reason
+    assert "zmiana kosztu niepotwierdzona" in reason
+    assert "zmiana konwersji niepotwierdzona" in reason
+    assert "zmiana kosztu 0" not in reason
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(

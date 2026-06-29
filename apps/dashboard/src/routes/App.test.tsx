@@ -20,7 +20,7 @@ const connectors = [
     available_credential_sources: [],
     credential_source_summary_label: "Nie ma źródeł konfiguracji; nie traktuj integracji jako gotowej",
     freshness: { state: "missing" },
-    freshness_label: "brak danych",
+    freshness_label: "świeżość danych niepotwierdzona",
     supported_actions: []
   }
 ];
@@ -749,9 +749,9 @@ const evidence = [
     source_id: "google_ads",
     collected_at: "2026-06-17T10:00:00Z",
     freshness: { state: "missing" },
-    freshness_label: "brak danych",
+    freshness_label: "świeżość danych niepotwierdzona",
     summary: "Google Ads ma braki dostępu.",
-    trace_summary_label: "Google Ads: status źródła danych, brak danych",
+    trace_summary_label: "Google Ads: status źródła danych, świeżość danych niepotwierdzona",
     raw_ref: null
   },
   {
@@ -5681,7 +5681,7 @@ const ga4Diagnostics = {
       label: "Gotowość pomiaru konwersji",
       title: "GA4: gotowość pomiaru konwersji",
       status: "missing",
-      status_label: "brak metryk konwersji",
+      status_label: "metryki konwersji niepotwierdzone",
       summary: "WILQ ma 1 metrykę zachowania i 0 metryk konwersji albo kluczowych zdarzeń.",
       diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
       next_step: "Sprawdź propozycję w WILQ i zatrzymaj wnioski o konwersjach bez metryk.",
@@ -7007,7 +7007,7 @@ function mockDashboardApi(url: string) {
                 status: "blocked",
                 priority: 14,
                 summary:
-                  "GA4 ma 1 grupę stron wejścia, źródeł ruchu i kampanii i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Blokada oznacza brak danych do wniosków o zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych.",
+                  "GA4 ma 1 grupę stron wejścia, źródeł ruchu i kampanii i 1 decyzję do kontroli: pomiar=1, jakość ruchu=0. Blokada oznacza, że nie ma potwierdzonych podstaw do wniosków o zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych.",
                 next_step:
                   "Otwórz /ga4 i przejdź przez kolejkę decyzji. Sprawdź jakość pomiaru w WILQ.",
                 source_connectors: ["google_analytics_4"],

@@ -534,7 +534,11 @@ def _merchant_refresh_status_label(status: object) -> str:
 
 
 def _merchant_live_data_status_label(live_data_available: bool) -> str:
-    return "metryki pliku produktowego dostępne" if live_data_available else "brak metryk pliku produktowego"
+    return (
+        "metryki pliku produktowego dostępne"
+        if live_data_available
+        else "metryki pliku produktowego niepotwierdzone"
+    )
 
 
 def _merchant_freshness_label(status: object) -> str:
@@ -542,7 +546,7 @@ def _merchant_freshness_label(status: object) -> str:
     labels = {
         "fresh": "dane świeże",
         "stale": "dane do odświeżenia",
-        "missing": "brak odczytu",
+        "missing": "odczyt niepotwierdzony",
         "blocked": "odczyt zablokowany",
     }
     return labels.get(normalized, "świeżość danych do sprawdzenia")

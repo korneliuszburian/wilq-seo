@@ -382,13 +382,13 @@ def _recommendation_review_reason(
     if impact_available:
         impact_part = (
             f"podgląd wpływu: zmiana kliknięć {_format_signed_number(delta_clicks)}, "
-            f"zmiana kosztu {_format_micros(delta_cost_micros) or '0'}, "
+            f"zmiana kosztu {_format_micros(delta_cost_micros) or 'niepotwierdzona'}, "
             f"zmiana konwersji {_format_signed_number(delta_conversions)}"
         )
     else:
         impact_part = (
-            "brak metryk wpływu; wymagane ręczne sprawdzenie typu rekomendacji "
-            f"i brakujących metryk: {_missing_metric_labels(missing_metrics) or 'brak'}"
+            "metryki wpływu niepotwierdzone; wymagane ręczne sprawdzenie typu rekomendacji "
+            f"i brakujących metryk: {_missing_metric_labels(missing_metrics) or 'nie wskazano'}"
         )
     return (
         f"Rekomendacja: {_recommendation_type_label(recommendation_type)}. {impact_part}. "
@@ -505,7 +505,7 @@ def _float_metric_delta(base: float | None, potential: float | None) -> float | 
 
 def _format_signed_number(value: int | float | None) -> str:
     if value is None:
-        return "brak danych"
+        return "niepotwierdzona"
     if isinstance(value, float) and not value.is_integer():
         formatted = f"{value:+.2f}"
     else:

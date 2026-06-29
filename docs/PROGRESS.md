@@ -51,6 +51,11 @@ API status later contradicts this state.
 
 ## Latest Verified Product State
 
+- Command Center, shared evidence freshness, GA4/Merchant freshness and Ads
+  recommendation impact copy no longer turn unknown/missing data into bare
+  `brak danych`, `brak odczytu` or a false zero-cost impact. Live
+  `/api/dashboard/command-center` scan is clean, and focused API/dashboard
+  checks plus marketer/context/operator language guards passed.
 - Action preview, Content, GA4 and tactical WordPress labels no longer use bare
   `brak`/`brak danych` fallbacks for missing review, URL, WordPress-match,
   percentage or Ads custom-segment values. They now describe the unconfirmed

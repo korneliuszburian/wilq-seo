@@ -609,7 +609,7 @@ def _impact_comparison_summary_part_label(part: str) -> str:
 def freshness_state_label(state: str | None) -> str:
     labels = {
         "fresh": "świeże dane",
-        "missing": "brak danych",
+        "missing": "świeżość danych niepotwierdzona",
         "stale": "dane wymagają odświeżenia",
         "unknown": "świeżość niepotwierdzona",
     }

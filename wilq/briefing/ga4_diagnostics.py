@@ -481,7 +481,7 @@ def _ga4_refresh_status_label(status: object) -> str:
 
 
 def _ga4_live_data_status_label(live_data_available: bool) -> str:
-    return "metryki GA4 dostępne" if live_data_available else "brak metryk GA4"
+    return "metryki GA4 dostępne" if live_data_available else "metryki GA4 niepotwierdzone"
 
 
 def _ga4_freshness_label(status: object) -> str:
@@ -489,7 +489,7 @@ def _ga4_freshness_label(status: object) -> str:
     labels = {
         "fresh": "dane świeże",
         "stale": "dane do odświeżenia",
-        "missing": "brak odczytu",
+        "missing": "odczyt niepotwierdzony",
         "blocked": "odczyt zablokowany",
     }
     return labels.get(normalized, "świeżość danych do sprawdzenia")
@@ -504,7 +504,7 @@ def _ga4_section_status_label(status: object) -> str:
     labels = {
         "ready": "gotowe",
         "blocked": "zablokowane",
-        "missing": "brak metryk konwersji",
+        "missing": "metryki konwersji niepotwierdzone",
     }
     return labels.get(normalized, "status sekcji do sprawdzenia")
 

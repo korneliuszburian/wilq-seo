@@ -1650,7 +1650,7 @@ def _ga4_item_from_tactical(
         title=(
             "GA4: pomiar i jakość ruchu do kontroli"
             if live_data_available
-            else "GA4: brak danych do oceny ruchu"
+            else "GA4: ocena ruchu niepotwierdzona"
         ),
         route="/ga4",
         status="blocked",
@@ -1660,8 +1660,9 @@ def _ga4_item_from_tactical(
             f"{_count_phrase(measurement_issue_count, 'problem pomiaru', 'problemy pomiaru', 'problemów pomiaru')}, "
             f"{_count_phrase(traffic_quality_count, 'decyzję jakości ruchu', 'decyzje jakości ruchu', 'decyzji jakości ruchu')} i "
             f"{_count_phrase(len(matched_items), 'dopasowanie WordPress', 'dopasowania WordPress', 'dopasowań WordPress')}. "
-            "Blokada oznacza brak danych do wniosków o zwrocie z reklam, przychodzie, "
-            "spadku konwersji i naprawionym pomiarze; to nie jest awaria źródła danych."
+            "Blokada oznacza, że nie ma potwierdzonych podstaw do wniosków o zwrocie "
+            "z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; "
+            "to nie jest awaria źródła danych."
         ),
         next_step=(
             "Otwórz widok GA4, sprawdź kolejkę jakości ruchu i przejdź przez "
@@ -2426,9 +2427,9 @@ def _decision_observation(
         if "Blokada oznacza" in brief_item.summary:
             return brief_item.summary
         return (
-            f"{brief_item.summary} Blokada oznacza brak danych do wniosków o "
-            "zwrocie z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; "
-            "to nie jest awaria źródła danych."
+            f"{brief_item.summary} Blokada oznacza, że nie ma potwierdzonych podstaw "
+            "do wniosków o zwrocie z reklam, przychodzie, spadku konwersji "
+            "i naprawionym pomiarze; to nie jest awaria źródła danych."
         )
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
