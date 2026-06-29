@@ -36,6 +36,11 @@ Date: 2026-06-29
   query labels. The producing API/domain sources now emit natural Polish metric
   phrases with basic plural handling. Focused API tests, dashboard tests, live
   `/api/dashboard/command-center`, browser proof and both language guards passed.
+- Google Ads campaign triage no longer summarizes priority counts with
+  report-style equality copy. The Ads diagnostics API now emits natural Polish
+  priority phrases such as pilne kampanie and campaigns with a high review
+  signal. Focused Ads API tests, live `/api/ads/diagnostics?view=summary` and
+  the marketer language guard passed.
 - Knowledge operating map no longer marks the daily plan as unusable only
   because it contains blocked decisions. `Plan dnia WILQ` now reports
   `gotowe z blokadami`: the process is usable for the marketer, while blocked

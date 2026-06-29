@@ -2387,8 +2387,10 @@ def _campaign_triage_read_contract(
             title="Kolejność oceny kampanii Ads",
             summary=(
                 f"WILQ połączył aktywność kampanii, wskaźniki, budżet, rekomendacje i "
-                f"udział w wyświetleniach dla {len(rows)} kampanii. Pilne={urgent_rows}, "
-                f"wysokie={high_rows}. To nie jest ocena zmarnowanego budżetu, "
+                f"udział w wyświetleniach dla {len(rows)} kampanii. "
+                f"{_urgent_ads_campaign_count_label(urgent_rows)} i "
+                f"{_high_signal_ads_campaign_count_label(high_rows)}. "
+                "To nie jest ocena zmarnowanego budżetu, "
                 "opłacalności, kosztu pozyskania celu ani zwrotu z reklam; "
                 "to kolejność ręcznej oceny."
             ),
@@ -2432,6 +2434,22 @@ def _campaign_triage_read_contract(
         action_ids=[],
         next_step="Najpierw zbierz fakty kampanii Google Ads bez zapisu zmian.",
     )
+
+
+def _urgent_ads_campaign_count_label(count: int) -> str:
+    if count == 1:
+        return "1 pilna kampania"
+    if 2 <= count <= 4:
+        return f"{count} pilne kampanie"
+    return f"{count} pilnych kampanii"
+
+
+def _high_signal_ads_campaign_count_label(count: int) -> str:
+    if count == 1:
+        return "1 kampania o wysokim sygnale"
+    if 2 <= count <= 4:
+        return f"{count} kampanie o wysokim sygnale"
+    return f"{count} kampanii o wysokim sygnale"
 
 
 def _campaign_triage_row(

@@ -320,6 +320,14 @@ FORBIDDEN_PHRASES = (
         "Use natural Polish metric phrases in operator summaries, not key=value report copy.",
     ),
     ForbiddenPhrase(
+        "Pilne=",
+        "Use natural Polish priority phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
+        "wysokie=",
+        "Use natural Polish priority phrases in operator summaries, not key=value report copy.",
+    ),
+    ForbiddenPhrase(
         "GSC↔WP",
         "Use Treści znalezione w WordPress or explicit GSC/WordPress wording.",
     ),

@@ -12235,6 +12235,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_decision["priority"] == 18
     assert campaign_triage_decision["decision_type"] == "review_campaign_triage"
     assert campaign_triage_decision["title"] == "Ustal kolejność oceny kampanii Ads"
+    assert "Pilne=" not in campaign_triage_decision["summary"]
+    assert "wysokie=" not in campaign_triage_decision["summary"]
+    assert "0 pilnych kampanii" in campaign_triage_decision["summary"]
+    assert "1 kampania o wysokim sygnale" in campaign_triage_decision["summary"]
     assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == ("Brand Search")
     assert campaign_triage_decision["campaign_triage_rows"][0]["roas"] == 37.5625
     assert campaign_triage_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
@@ -12890,7 +12894,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     campaign_ready_row = business_ready_payload["campaign_read_contract"]["campaign_rows"][0]
     assert campaign_ready_row["target_status"] == "within_target"
     assert campaign_ready_row["target_status_label"] == "zwrot z reklam w granicy celu"
-    assert "target=zwrot z reklam w granicy celu" in campaign_ready_row["review_reason"]
+    assert "cel: zwrot z reklam w granicy celu" in campaign_ready_row["review_reason"]
     assert "review_target_context" in campaign_ready_row["human_review_gates"]
     assert "profit_margin" not in derived_ready_contract["missing_read_contracts"]
     assert "target_roas" in derived_ready_contract["allowed_metrics"]

@@ -84,6 +84,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
   metric phrases instead of report-style equality copy. Guardrails block the
   worst metric-format, GSC slash-shorthand and English query-label regressions
   in active source surfaces.
+- Google Ads campaign triage now uses natural Polish priority phrases in the
+  API-owned summary instead of report-style count formatting.
 - Cleanup has moved many Ads, Merchant, GA4, Localo, Ahrefs, Knowledge,
   tactical queue, Procesy and action-detail labels from dashboard helpers into
   API/domain/shared-schema fields.
