@@ -63,3 +63,20 @@ def test_context_pack_guard_blocks_top_level_action_payload_key() -> None:
             "Use action_plan in skill context packs; keep payload on action detail endpoints.",
         )
     ]
+
+
+def test_context_pack_guard_blocks_required_mapping_key() -> None:
+    payload = {
+        "expert_capabilities": [
+            {"id": "cap_bad", "required_mapping": []},
+            {"id": "cap_good", "required_inputs": []},
+        ],
+    }
+
+    assert _context_pack_structure_errors(payload) == [
+        (
+            "$.expert_capabilities[0].required_mapping",
+            "required_mapping_key",
+            "Use required_inputs in compact skill context packs.",
+        )
+    ]

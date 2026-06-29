@@ -131,6 +131,8 @@ API status later contradicts this state.
 - Skill context-pack actions expose compacted execution context as
   `action_plan`; the technical `payload` key remains on action detail endpoints
   and is guarded out of `active_action_objects`.
+- Skill context-pack expert capabilities use `required_inputs` instead of the
+  technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -180,6 +182,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks or refresh_run'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'content_strategist_payload or ga4'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'expert_capabilities or expert_rule_summaries'`
 - `rtk uv run pytest tests/test_context_pack_language_guard.py -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`

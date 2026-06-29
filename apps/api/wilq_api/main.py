@@ -671,8 +671,8 @@ def _compact_expert_capability_for_operator_context(capability: ExpertCapability
         "id": dumped.get("id"),
         "domain": dumped.get("domain"),
         "source_rule_id": dumped.get("source_rule_id"),
-        "required_mapping": [],
-        "required_mapping_total": required_mapping_total,
+        "required_inputs": [],
+        "required_inputs_total": required_mapping_total,
         "output_contract": "Pełny kontrakt: /api/expert/capabilities.",
         "requires_evidence": dumped.get("requires_evidence", True),
     }

@@ -134,14 +134,30 @@ def _context_pack_structure_errors(payload: Mapping[str, Any]) -> list[tuple[str
     errors: list[tuple[str, str, str]] = []
     actions = payload.get("active_action_objects")
     if not isinstance(actions, Sequence) or isinstance(actions, (str, bytes, bytearray)):
-        return errors
+        actions = []
     for index, action in enumerate(actions):
-        if isinstance(action, Mapping) and "payload" in action:
+        if not isinstance(action, Mapping):
+            continue
+        if "payload" in action:
             errors.append(
                 (
                     f"$.active_action_objects[{index}].payload",
                     "action_payload_key",
                     "Use action_plan in skill context packs; keep payload on action detail endpoints.",
+                )
+            )
+    capabilities = payload.get("expert_capabilities")
+    if not isinstance(capabilities, Sequence) or isinstance(
+        capabilities, (str, bytes, bytearray)
+    ):
+        return errors
+    for index, capability in enumerate(capabilities):
+        if isinstance(capability, Mapping) and "required_mapping" in capability:
+            errors.append(
+                (
+                    f"$.expert_capabilities[{index}].required_mapping",
+                    "required_mapping_key",
+                    "Use required_inputs in compact skill context packs.",
                 )
             )
     return errors

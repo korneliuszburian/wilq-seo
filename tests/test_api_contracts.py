@@ -7681,12 +7681,13 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
     assert payload["context_pack_compaction"]["raw_history_omitted"] is True
     assert payload["expert_capabilities"]
     assert all(
-        capability["required_mapping"] == [] for capability in payload["expert_capabilities"]
+        capability["required_inputs"] == [] for capability in payload["expert_capabilities"]
     )
     assert all(
-        isinstance(capability["required_mapping_total"], int)
+        isinstance(capability["required_inputs_total"], int)
         for capability in payload["expert_capabilities"]
     )
+    assert "required_mapping" not in json.dumps(payload["expert_capabilities"])
     assert payload["connector_refresh_runs"][0]["id"] == "refresh_ahrefs_raw_history_test"
     assert payload["connector_refresh_runs"][0]["evidence_ids"] == [
         "ev_refresh_refresh_ahrefs_raw_history_test"
@@ -19299,11 +19300,12 @@ def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     rule_ids = {rule["id"] for rule in data["expert_rule_summaries"]}
     assert "ads_principles_v1" in rule_ids
     assert data["expert_capabilities"]
-    assert all(capability["required_mapping"] == [] for capability in data["expert_capabilities"])
+    assert all(capability["required_inputs"] == [] for capability in data["expert_capabilities"])
     assert all(
-        isinstance(capability["required_mapping_total"], int)
+        isinstance(capability["required_inputs_total"], int)
         for capability in data["expert_capabilities"]
     )
+    assert "required_mapping" not in json.dumps(data["expert_capabilities"])
 
 
 def test_knowledge_playbooks_are_machine_readable_and_evidence_gated() -> None:
