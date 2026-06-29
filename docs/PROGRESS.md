@@ -129,6 +129,13 @@ API status later contradicts this state.
   decision sources, evidence, actions, source connectors or missing metrics.
   Focused Merchant route tests, dashboard typecheck/lint, language guards and
   browser proof passed.
+- Merchant product-performance rows now use API-owned labels for missing
+  Ads/GA4 product metrics. Product cards show concrete states such as
+  `kliknięcia Ads do potwierdzenia`, `koszt Ads do potwierdzenia`,
+  `zakupy GA4 do potwierdzenia` and `przychód GA4 do potwierdzenia` instead
+  of context-free `brak`. Focused Merchant API/dashboard/shared-schema tests,
+  dashboard typecheck/lint, marketer/context-pack language guards, live API
+  proof and browser proof passed.
 - Localo and Ahrefs dashboard evidence traces no longer use generic `brak`
   empty states. Focused route tests, dashboard typecheck/lint, language guards
   and browser proofs passed.
@@ -295,6 +302,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'ga4 and context_pack'`
 - `rtk uv run ruff check wilq/actions/ga4/tracking_quality.py wilq/actions/service.py apps/api/wilq_api/main.py scripts/context_pack_language_guard.py tests/test_context_pack_language_guard.py`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant_product_performance_readiness or merchant_diagnostics_promotes_ads_product_state_review_decision'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`

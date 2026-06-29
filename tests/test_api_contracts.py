@@ -103,6 +103,7 @@ from wilq.briefing.merchant_diagnostics import (
     _merchant_freshness_label,
     _merchant_price_impact_readiness,
     _merchant_product_performance_readiness,
+    _merchant_product_performance_readiness_with_operator_labels,
     _merchant_refresh_status_label,
     _merchant_risk_label,
     _merchant_status_label,
@@ -14167,11 +14168,17 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
     assert row.product_id == product_id
     assert row.sample_title == "Sorbent chemiczny 10 kg"
     assert row.ads_clicks == 14
+    assert row.ads_clicks_label == ""
     assert row.ads_cost_micros == 2750000
+    assert row.ads_cost_label == ""
     assert row.ads_conversions == 1.5
+    assert row.ads_conversions_label == ""
     assert row.ads_conversion_value == 320.0
+    assert row.ads_conversion_value_label == ""
     assert row.ga4_ecommerce_purchases == 2.0
+    assert row.ga4_ecommerce_purchases_label == ""
     assert row.ga4_purchase_revenue == 410.0
+    assert row.ga4_purchase_revenue_label == ""
     assert row.missing_metrics == []
     assert "efekt naprawy produktu" in row.blocked_claims
     assert "zapis do pliku produktowego" in row.blocked_claims
@@ -14275,6 +14282,19 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         "ads_conversion_value",
         "ga4_purchase_revenue",
     ]
+    labeled_readiness = _merchant_product_performance_readiness_with_operator_labels(
+        readiness
+    )
+    labeled_row = labeled_readiness.performance_rows[0]
+    assert labeled_row.ads_clicks_label == "kliknięcia Ads do potwierdzenia"
+    assert labeled_row.ads_cost_label == "koszt Ads do potwierdzenia"
+    assert labeled_row.ads_conversions_label == "konwersje Ads do potwierdzenia"
+    assert labeled_row.ads_conversion_value_label == (
+        "wartość konwersji Ads do potwierdzenia"
+    )
+    assert labeled_row.ga4_ecommerce_purchases_label == "2"
+    assert labeled_row.ga4_purchase_revenue_label == "przychód GA4 do potwierdzenia"
+    assert "brak" not in labeled_row.ads_cost_label
 
 
 def test_merchant_product_performance_readiness_blocks_state_only_product_join() -> None:
@@ -14642,6 +14662,12 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert row["ads_product_availability"] == "OUT_OF_STOCK"
     assert row["ads_product_availability_label"] == "niedostępny"
     assert row["ads_product_price_label"] == "123.45 PLN"
+    assert row["ads_clicks_label"] == "kliknięcia Ads do potwierdzenia"
+    assert row["ads_cost_label"] == "koszt Ads do potwierdzenia"
+    assert row["ads_conversions_label"] == "konwersje Ads do potwierdzenia"
+    assert row["ads_conversion_value_label"] == "wartość konwersji Ads do potwierdzenia"
+    assert row["ga4_ecommerce_purchases_label"] == "zakupy GA4 do potwierdzenia"
+    assert row["ga4_purchase_revenue_label"] == "przychód GA4 do potwierdzenia"
     assert "ads_clicks" in row["missing_metrics"]
     assert "kliknięcia Ads" in row["missing_metric_labels"]
     assert "ads_clicks" not in row["missing_metric_labels"]

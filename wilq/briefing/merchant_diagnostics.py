@@ -438,10 +438,32 @@ def _merchant_product_performance_readiness_with_operator_labels(
                         "ads_product_price_label": _merchant_micros_price_label(
                             row.ads_product_price_micros,
                             row.ads_product_currency_code,
+                            missing_label="cena Ads do potwierdzenia",
+                        ),
+                        "ads_clicks_label": _merchant_number_label(
+                            row.ads_clicks,
+                            missing_label="kliknięcia Ads do potwierdzenia",
                         ),
                         "ads_cost_label": _merchant_micros_price_label(
                             row.ads_cost_micros,
                             row.ads_product_currency_code,
+                            missing_label="koszt Ads do potwierdzenia",
+                        ),
+                        "ads_conversions_label": _merchant_number_label(
+                            row.ads_conversions,
+                            missing_label="konwersje Ads do potwierdzenia",
+                        ),
+                        "ads_conversion_value_label": _merchant_number_label(
+                            row.ads_conversion_value,
+                            missing_label="wartość konwersji Ads do potwierdzenia",
+                        ),
+                        "ga4_ecommerce_purchases_label": _merchant_number_label(
+                            row.ga4_ecommerce_purchases,
+                            missing_label="zakupy GA4 do potwierdzenia",
+                        ),
+                        "ga4_purchase_revenue_label": _merchant_number_label(
+                            row.ga4_purchase_revenue,
+                            missing_label="przychód GA4 do potwierdzenia",
                         ),
                         "missing_metric_labels": _merchant_missing_metric_labels(
                             row.missing_metrics
@@ -600,12 +622,20 @@ def _merchant_ads_product_availability_label(availability: object) -> str:
 def _merchant_micros_price_label(
     value: int | float | None,
     currency_code: str | None,
+    *,
+    missing_label: str = "kwota do potwierdzenia",
 ) -> str:
     if value is None:
-        return "brak"
+        return missing_label
     amount = value / 1_000_000
     currency = currency_code or "PLN"
     return f"{amount:.2f} {currency}"
+
+
+def _merchant_number_label(value: int | float | None, *, missing_label: str) -> str:
+    if value is None:
+        return missing_label
+    return f"{value:g}"
 
 
 def _merchant_missing_metric_labels(metrics: Iterable[str]) -> list[str]:

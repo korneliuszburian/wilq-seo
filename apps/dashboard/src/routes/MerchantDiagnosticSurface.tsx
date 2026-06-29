@@ -745,10 +745,10 @@ function MerchantProductPerformanceRowCard({
         <MetricTile label="Status Ads" value={row.ads_product_status_label} />
         <MetricTile label="Dostępność Ads" value={row.ads_product_availability_label} />
         <MetricTile label="Cena Ads" value={row.ads_product_price_label} />
-        <MetricTile label="Kliknięcia Ads" value={row.ads_clicks ?? "brak"} />
+        <MetricTile label="Kliknięcia Ads" value={row.ads_clicks_label} />
         <MetricTile label="Koszt Ads" value={row.ads_cost_label} />
-        <MetricTile label="Zakupy GA4" value={row.ga4_ecommerce_purchases ?? "brak"} />
-        <MetricTile label="Przychód GA4" value={row.ga4_purchase_revenue ?? "brak"} />
+        <MetricTile label="Zakupy GA4" value={row.ga4_ecommerce_purchases_label} />
+        <MetricTile label="Przychód GA4" value={row.ga4_purchase_revenue_label} />
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine

@@ -3742,12 +3742,17 @@ class MerchantProductPerformanceRow(BaseModel):
     ads_product_price_delta_micros: int | None = None
     ads_product_price_delta_percent: float | None = None
     ads_clicks: int | None = None
+    ads_clicks_label: str = ""
     ads_cost_micros: int | None = None
     ads_cost_label: str = ""
     ads_conversions: float | None = None
+    ads_conversions_label: str = ""
     ads_conversion_value: float | None = None
+    ads_conversion_value_label: str = ""
     ga4_ecommerce_purchases: float | None = None
+    ga4_ecommerce_purchases_label: str = ""
     ga4_purchase_revenue: float | None = None
+    ga4_purchase_revenue_label: str = ""
     missing_metrics: list[str] = Field(default_factory=list)
     missing_metric_labels: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
