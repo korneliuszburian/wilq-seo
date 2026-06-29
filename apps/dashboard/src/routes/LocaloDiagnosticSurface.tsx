@@ -4,7 +4,13 @@ import { ClipboardCheck, ShieldAlert } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
-import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import {
+  BlockerNotice,
+  LabelChipRow,
+  LoadingBand,
+  MetricTile,
+  PlainChipRow
+} from "../components/OperatorPrimitives";
 import { TraceLine } from "../components/TraceLine";
 
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
@@ -53,22 +59,13 @@ export function LocaloDiagnosticSurface() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              Źródło Localo: {data.connector_status_label}
-              <span className="sr-only">; </span>
-            </span>
-            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.access_probe.status_label}
-              <span className="sr-only">; </span>
-            </span>
-            {latestRefresh ? (
-              <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {data.latest_refresh_status_label}
-                <span className="sr-only">; </span>
-              </span>
-            ) : null}
-          </div>
+          <PlainChipRow
+            values={[
+              `Źródło Localo: ${data.connector_status_label}`,
+              data.access_probe.status_label,
+              latestRefresh ? `ostatni odczyt: ${data.latest_refresh_status_label}` : null
+            ]}
+          />
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-700">{data.access_probe.summary}</p>
         {latestRefresh?.errors.length ? (

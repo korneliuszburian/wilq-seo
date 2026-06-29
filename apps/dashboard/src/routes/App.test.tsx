@@ -8542,6 +8542,12 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("GSC↔WP")).not.toBeInTheDocument();
     expect(screen.queryByText("Ahrefs↔WP")).not.toBeInTheDocument();
     expect(screen.getByText("Adresy i podgląd")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest opcjonalny i nie jest docelowym adresem SEO."
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/`ekologus\.pl`/)).not.toBeInTheDocument();
     expect(screen.queryByText(/URL do sprawdzenia:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Review URL-i:/)).not.toBeInTheDocument();
     expect(screen.queryByText("Input do kontroli URL-i")).not.toBeInTheDocument();

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { LabelChipRow } from "./OperatorPrimitives";
+import { LabelChipRow, PlainChipRow } from "./OperatorPrimitives";
 
 describe("LabelChipRow", () => {
   it("separates adjacent labelled chips in readable text", () => {
@@ -35,5 +35,26 @@ describe("LabelChipRow", () => {
     );
 
     expect(container.textContent).toBe("Typ: decyzja Priorytet: pilne");
+  });
+});
+
+describe("PlainChipRow", () => {
+  it("renders status chips without hidden punctuation separators", () => {
+    const { container } = render(
+      <PlainChipRow
+        values={[
+          "dostęp skonfigurowany",
+          null,
+          "dane świeże",
+          "ostatni odczyt: zakończony"
+        ]}
+      />
+    );
+
+    expect(container.textContent).toBe(
+      "dostęp skonfigurowany dane świeże ostatni odczyt: zakończony"
+    );
+    expect(container.querySelector(".sr-only")).toBeNull();
+    expect(container.textContent).not.toContain(";");
   });
 });

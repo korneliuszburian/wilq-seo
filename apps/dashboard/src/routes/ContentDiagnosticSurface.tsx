@@ -12,7 +12,13 @@ import {
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { formatContentMetricValue } from "../lib/contentLabels";
-import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import {
+  BlockerNotice,
+  LabelChipRow,
+  LoadingBand,
+  MetricTile,
+  PlainChipRow
+} from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import {
@@ -82,21 +88,12 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_status_label || "stan danych treści do sprawdzenia"}
-              <span className="sr-only">; </span>
-            </span>
-            {data.connectors.map((connector) => (
-              <span
-                key={connector.id}
-                className="rounded-md border border-line px-2 py-1 text-slate-600"
-              >
-                {connector.label}: {connector.status_label}
-                <span className="sr-only">; </span>
-              </span>
-            ))}
-          </div>
+          <PlainChipRow
+            values={[
+              data.live_data_status_label || "stan danych treści do sprawdzenia",
+              ...data.connectors.map((connector) => `${connector.label}: ${connector.status_label}`)
+            ]}
+          />
         </div>
         <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>
@@ -566,8 +563,8 @@ function ContentSelectedDecisionPanel({
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy. Adres podglądu
-            jest opcjonalny i nie jest docelowym adresem SEO.
+            ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest
+            opcjonalny i nie jest docelowym adresem SEO.
           </p>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine

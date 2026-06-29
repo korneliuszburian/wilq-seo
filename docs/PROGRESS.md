@@ -122,6 +122,9 @@ API status later contradicts this state.
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;
   focused API, dashboard, language-guard and browser checks passed.
+- Main dashboard status chips no longer expose hidden semicolon separators or
+  markdown backticks in marketer-facing text. Content and Merchant browser proof
+  passed after the shared chip cleanup.
 - Marketing brief, Merchant, GA4 and Ahrefs blocked-read summaries use Polish
   operator status labels instead of raw refresh status enum values.
 - Command Center decision freshness notes use Polish source and freshness

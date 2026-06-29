@@ -8,7 +8,13 @@ import {
   getAdsDiagnosticsSummary,
   getConnectors
 } from "../lib/api";
-import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import {
+  BlockerNotice,
+  LabelChipRow,
+  LoadingBand,
+  MetricTile,
+  PlainChipRow
+} from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { ActionFocus } from "./ActionPanels";
 import {
@@ -120,22 +126,13 @@ export function AdsDoctorSurface() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.connector.label}: {data.connector_status_label}
-              <span className="sr-only">; </span>
-            </span>
-            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_status_label}
-              <span className="sr-only">; </span>
-            </span>
-            {latestRefresh ? (
-              <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni odczyt: {data.latest_refresh_status_label}
-                <span className="sr-only">; </span>
-              </span>
-            ) : null}
-          </div>
+          <PlainChipRow
+            values={[
+              `${data.connector.label}: ${data.connector_status_label}`,
+              data.live_data_status_label,
+              latestRefresh ? `ostatni odczyt: ${data.latest_refresh_status_label}` : null
+            ]}
+          />
         </div>
         {latestRefresh?.errors.length ? (
           <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">

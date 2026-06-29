@@ -60,3 +60,28 @@ export function LabelChipRow({
     </div>
   );
 }
+
+export function PlainChipRow({
+  values,
+  className = ""
+}: {
+  values: Array<string | null | undefined>;
+  className?: string;
+}) {
+  const visibleValues = values.filter(
+    (value): value is string => typeof value === "string" && value.trim().length > 0
+  );
+
+  if (visibleValues.length === 0) return null;
+
+  return (
+    <div className={`flex flex-wrap gap-2 text-xs ${className}`.trim()}>
+      {visibleValues.map((value, index) => (
+        <span key={value}>
+          <span className="rounded-md border border-line px-2 py-1 text-slate-600">{value}</span>
+          {index < visibleValues.length - 1 ? " " : null}
+        </span>
+      ))}
+    </div>
+  );
+}
