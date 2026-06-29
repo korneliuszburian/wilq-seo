@@ -13,7 +13,11 @@ export function WorkflowRunList({
   workflowLabelsById?: Map<string, string>;
 }) {
   if (runs.length === 0) {
-    return <p className="text-sm text-slate-600">Brak zapisanych uruchomień procesu.</p>;
+    return (
+      <p className="text-sm text-slate-600">
+        Nie ma zapisanych uruchomień procesu; nie traktuj procesu jako wykonanej automatyzacji.
+      </p>
+    );
   }
 
   return (

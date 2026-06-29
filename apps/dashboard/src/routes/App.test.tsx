@@ -8342,7 +8342,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("data.evidence_summary_label");
     expect(routeSource).toContain("conversionReadiness.missing_read_contract_summary_label");
-    expect(routeSource).toContain("brak etykiety akcji z WILQ");
+    expect(routeSource).toContain(
+      "WILQ nie podał etykiety akcji; nie traktuj tej decyzji jako gotowej do działania"
+    );
     expect(routeSource).not.toContain('empty="brak"');
     expect(routeSource).not.toContain("values={conversionReadiness.missing_read_contract_labels}");
     expect(routeSource).not.toContain("liczba akcji do sprawdzenia");

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { Workflow } from "../lib/api";
-import { WorkflowRegistryList } from "./WorkflowPanels";
+import { WorkflowRegistryList, WorkflowRunList } from "./WorkflowPanels";
 
 describe("WorkflowPanels", () => {
   afterEach(() => {
@@ -67,5 +67,15 @@ describe("WorkflowPanels", () => {
     expect(routeSource).toContain("workflow.blocked_claim_summary_label");
     expect(routeSource).not.toContain("workflow.missing_contract_labels.join");
     expect(routeSource).not.toContain("workflow.blocked_claim_labels.join");
+  });
+
+  it("explains empty workflow runs as missing execution proof", () => {
+    render(<WorkflowRunList runs={[]} />);
+
+    expect(
+      screen.getByText(
+        "Nie ma zapisanych uruchomień procesu; nie traktuj procesu jako wykonanej automatyzacji."
+      )
+    ).toBeInTheDocument();
   });
 });

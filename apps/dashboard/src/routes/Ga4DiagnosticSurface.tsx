@@ -227,7 +227,9 @@ function Ga4ExpandableActionsPanel({
   actionSummaryLabel: string;
 }) {
   const [showActions, setShowActions] = useState(false);
-  const actionCountLabel = actionSummaryLabel.trim() || "brak etykiety akcji z WILQ";
+  const actionCountLabel =
+    actionSummaryLabel.trim() ||
+    "WILQ nie podał etykiety akcji; nie traktuj tej decyzji jako gotowej do działania";
   const actionCountSentence = `WILQ pokazuje dla GA4: ${actionCountLabel}.`;
 
   return (

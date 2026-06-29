@@ -631,12 +631,12 @@ function AdsOptimizerReadinessPanel({
         <AdsOptimizerReadinessGroup
           title="Gotowe do oceny"
           items={readyItems}
-          empty="Brak obszarów gotowych do oceny."
+          empty="WILQ nie wskazał obszarów gotowych do oceny; nie traktuj tego panelu jako listy działań Ads."
         />
         <AdsOptimizerReadinessGroup
           title="Zablokowane wnioski i zapis zmian"
           items={blockedItems}
-          empty="Brak aktywnych blokad."
+          empty="WILQ nie zgłosił aktywnych blokad; nadal sprawdź dowody przed zmianą w Ads."
         />
       </div>
 
@@ -2241,7 +2241,9 @@ function AdsNegativeKeywordCandidatesPanel({
               {candidate.review_reason}
             </p>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Bezpieczeństwo: {candidate.safety_status_label || "brak statusu"}
+              Bezpieczeństwo:{" "}
+              {candidate.safety_status_label ||
+                "WILQ nie podał statusu bezpieczeństwa; zostaw to jako ręczny przegląd"}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <MetricTile label="Kliknięcia" value={adsNumber(candidate.clicks)} />

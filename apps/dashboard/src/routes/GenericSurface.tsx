@@ -415,7 +415,9 @@ function ConnectorAccessSummary({ connectors }: { connectors: ConnectorStatus[] 
   const disabled = connectors.filter((connector) => connector.status === "disabled");
 
   if (connectors.length === 0) {
-    return <BlockerNotice message="Brak statusu źródeł danych w WILQ." />;
+    return (
+      <BlockerNotice message="WILQ nie ma statusu źródeł danych; odśwież integracje przed oceną gotowości." />
+    );
   }
 
   return (

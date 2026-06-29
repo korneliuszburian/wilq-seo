@@ -21,6 +21,9 @@ Date: 2026-06-29
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Marketer-facing UI and skill output must use Polish operating language.
+- Marketer-facing text must defend itself: every empty, missing or blocked
+  state has to say what it means for the next decision, not just that data is
+  absent.
 - Raw IDs, connector trace, raw payloads and audit details belong only in
   technical detail.
 - Dirty copy must be fixed in typed API/schema/view-model/domain source, not
@@ -174,6 +177,12 @@ API status later contradicts this state.
   contain `empty="brak..."`, `?? "brak"` or `|| "brak"` fallbacks. Focused Ads
   source test, dashboard typecheck/lint, marketer language guard and
   `git diff --check` passed.
+- GA4 action summary, Ads optimizer readiness, negative-keyword safety, workflow
+  run history and connector-status fallbacks now explain the operational
+  consequence of missing labels or runs. The dashboard says when a panel is not
+  a list of actions, when a process is not executed automation, and when source
+  status must be refreshed before judging readiness. Focused dashboard tests,
+  typecheck/lint, marketer language guard and `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.
