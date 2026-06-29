@@ -474,7 +474,7 @@ Previous verified local slice:
 
 - Content source-label cleanup: connector refresh runs now expose
   API-owned `connector_label`, content diagnostics/preflight decision objects
-  expose `source_connector_labels`, and Content Planner no longer maps
+  expose `source_connector_labels`, and Treści no longer maps
   connector IDs in React.
   Verification:
   - `rtk uv run pytest tests/test_api_contracts.py::test_operator_label_fallbacks_do_not_expose_raw_connector_ids tests/test_api_contracts.py::test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q`

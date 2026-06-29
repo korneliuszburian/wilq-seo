@@ -370,21 +370,21 @@ Human review is a required transition before draft handoff.
 
 Review fields:
 
-- reviewed_by
-- factual accuracy
-- brand voice
-- sales value
-- helpfulness
-- duplicate risk
-- legal safety
-- CTA quality
-- internal link quality
-- decision
-- notes
+- kto sprawdził
+- poprawność faktów
+- zgodność z głosem marki
+- wartość sprzedażowa
+- użyteczność dla odbiorcy
+- ryzyko duplikacji
+- bezpieczeństwo prawne
+- jakość CTA
+- jakość linkowania wewnętrznego
+- decyzja
+- notatki
 
 Acceptance:
 
-- No draft is publish-ready without a completed human check.
+- Żaden szkic nie jest gotowy do publikacji bez zakończonego sprawdzenia przez człowieka.
 - Review feedback becomes reusable knowledge.
 
 ## Milestone 9 - Structured Draft Generation
@@ -1021,7 +1021,7 @@ WILQ is complete for this long-range goal when:
 - Latest Content source-label proof: focused API/schema/dashboard tests,
   dashboard typecheck, live contract smoke, marketer language guard and
   browser text proof passed after moving content refresh/source connector
-  labels to API contracts and removing Content Planner's local connector-ID
+  labels to API contracts and removing Treści local connector-ID
   mapping.
 - Latest Google Ads budget-copy proof: focused dashboard route tests, marketer
   language guard, live context-pack guard, WILQ API connector/Ads diagnostics
