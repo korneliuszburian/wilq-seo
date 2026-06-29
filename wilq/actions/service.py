@@ -3952,12 +3952,15 @@ def _action_review_gate(
         )
     elif action.mode == ActionMode.apply and action.validation_status == "valid" and apply_allowed:
         status = "ready_to_apply"
-        summary = "Akcja jest sprawdzona w WILQ i wymaga jawnego potwierdzenia zapisu zmian."
+        summary = (
+            "Kontrola WILQ potwierdza warunki zapisu; operator nadal musi jawnie "
+            "potwierdzić zapis zmian."
+        )
     elif action.validation_status == "valid":
         status = "validated_prepare_only"
         summary = (
-            "Akcja jest sprawdzona w WILQ do przygotowania; zapis zmian nadal "
-            "wymaga osobnego kontraktu."
+            "Kontrola WILQ potwierdza warunki przygotowania; zapis zmian nadal "
+            "wymaga osobnego kontraktu i zgody operatora."
         )
     else:
         status = "pending_validation"
@@ -4484,7 +4487,7 @@ def _action_evidence_summary_label(evidence_ids: list[str]) -> str:
 def _action_validation_status_label(value: str) -> str:
     labels = {
         "not_validated": "nie sprawdzono w WILQ",
-        "valid": "sprawdzone w WILQ",
+        "valid": "kontrola WILQ poprawna",
         "invalid": "wymaga poprawek",
     }
     return labels.get(value, "status sprawdzenia")
@@ -4493,7 +4496,7 @@ def _action_validation_status_label(value: str) -> str:
 def _action_review_gate_status_label(value: str) -> str:
     labels = {
         "pending_validation": "czeka na sprawdzenie",
-        "validated_prepare_only": "sprawdzone w WILQ",
+        "validated_prepare_only": "kontrola WILQ poprawna",
         "ready_to_apply": "gotowe do potwierdzenia",
         "blocked_apply": "zapis zmian zablokowany",
     }
@@ -4785,7 +4788,7 @@ def _operator_state_label(value: str) -> str:
         "allowed": "dopuszczone",
         "missing": "brak",
         "pending_validation": "czeka na sprawdzenie",
-        "validated_prepare_only": "sprawdzone w WILQ",
+        "validated_prepare_only": "kontrola WILQ poprawna",
         "ready_to_apply": "gotowe do potwierdzenia",
         "blocked_apply": "zapis zmian zablokowany",
     }

@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- `/actions` no longer labels validated-but-still-reviewable actions as
+  `sprawdzone w WILQ`. The action API now distinguishes contract validation
+  from human review with `kontrola WILQ poprawna`, while the action status
+  remains `gotowa do sprawdzenia`. Live API and browser proof for `/actions`
+  returned zero hits for the misleading old label in action validation and
+  review-gate copy.
 - Action reason copy no longer mixes Polish with the raw English word
   `evidence`. The negative-keyword review reason now says `bieżące dowody`,
   and `/api/actions` plus `/actions` browser proof returned zero hits for the
