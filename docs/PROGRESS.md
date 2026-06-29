@@ -126,6 +126,9 @@ API status later contradicts this state.
   repeated record-level facts into readable signal counts instead of repeating
   the same gap phrase. Focused Ahrefs/content API tests, dashboard route tests,
   language guards and browser proof for `/ahrefs` passed.
+- Ahrefs authority summaries now format large ranking values with Polish
+  grouping and keep the competitor-read sentence separated, so the summary is
+  readable without dashboard-side cleanup.
 - Action detail now hides legacy English apply/audit summaries from the
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;

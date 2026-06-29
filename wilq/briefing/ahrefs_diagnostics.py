@@ -1136,7 +1136,7 @@ def _ahrefs_decision_queue(
                 decision_type_label=_ahrefs_decision_type_label("review_authority_context"),
                 title="Użyj Ahrefs tylko jako kontekstu autorytetu",
                 summary=(
-                    f"{_authority_summary(authority_facts)} "
+                    f"{_authority_summary(authority_facts)}. "
                     f"{_competitor_read_summary(competitor_read_facts)}"
                 ),
                 rationale=(
@@ -1347,9 +1347,9 @@ def _authority_summary(authority_facts: list[MetricFact]) -> str:
     ahrefs_rank = _fact_value(authority_facts, "ahrefs_rank")
     parts = []
     if domain_rating is not None:
-        parts.append(f"ocena domeny Ahrefs: {domain_rating}")
+        parts.append(f"ocena domeny Ahrefs: {_ahrefs_metric_value_label(domain_rating)}")
     if ahrefs_rank is not None:
-        parts.append(f"pozycja w rankingu Ahrefs: {ahrefs_rank}")
+        parts.append(f"pozycja w rankingu Ahrefs: {_ahrefs_metric_value_label(ahrefs_rank)}")
     return ", ".join(parts) if parts else "brak faktów autorytetu"
 
 
@@ -1363,10 +1363,20 @@ def _competitor_read_summary(competitor_read_facts: list[MetricFact]) -> str:
     return (
         "Odczyt konkurencji organicznej: "
         f"{_ahrefs_read_status_label(status)}, "
-        f"liczba konkurentów: {rows if rows is not None else 0}, "
+        f"liczba konkurentów: {_ahrefs_metric_value_label(rows if rows is not None else 0)}, "
         f"kraj: {_ahrefs_country_label(country)}, "
         f"zakres: {_ahrefs_read_mode_label(mode)}."
     )
+
+
+def _ahrefs_metric_value_label(value: int | float | str) -> str:
+    if isinstance(value, int):
+        return f"{value:,}".replace(",", " ")
+    if isinstance(value, float):
+        if value.is_integer():
+            return f"{int(value):,}".replace(",", " ")
+        return f"{value:,.2f}".replace(",", " ").replace(".", ",")
+    return str(value)
 
 
 def _missing_authority_summary(
