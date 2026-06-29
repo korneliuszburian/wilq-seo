@@ -120,6 +120,10 @@ Date: 2026-06-29
 - Tactical queue API now uses Polish `Treści i GSC` / `Treści` labels instead
   of old mixed content labels, and Ahrefs blocked-claim copy now uses Polish
   wording for missing GSC/WordPress checks.
+- `/actions` first-screen priority cards now describe the safe operating step
+  instead of pointing at technical details. Raw action data remains behind the
+  explicit technical toggle; proof:
+  `.local-lab/proof/actions-technical-drawer-20260629.txt`.
 - Merchant, Ads, GA4, Demand Gen, Localo and social touched preview surfaces use
   API-owned preview cards or display labels instead of raw payload shape.
 - Localo top metric tiles use API/domain missing-data summary labels instead

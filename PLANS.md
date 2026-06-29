@@ -1028,3 +1028,7 @@ WILQ is complete for this long-range goal when:
   tactical-queue API scan, context-pack guard, browser text proof and
   `git diff --check` passed after moving tactical domain labels to Polish
   `Treści` wording and replacing the remaining English Ahrefs blocked claim.
+- Latest actions proof: focused dashboard tests, dashboard typecheck, language
+  guards and browser snapshot proof passed after removing first-screen
+  technical-detail wording from `/actions` priority cards and keeping raw
+  action data behind the technical toggle.

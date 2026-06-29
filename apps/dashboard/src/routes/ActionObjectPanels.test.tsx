@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import type { ReactElement, ReactNode } from "react";
@@ -111,7 +111,7 @@ describe("ActionObjectPanels", () => {
               last_mutation_blocker_summary_label: "brak blokad"
             },
             preview_cards: [],
-            payload: {},
+            payload: { raw_debug_value: "wartość tylko do audytu" },
             audit_events: []
           } as ActionObject
         ]}
@@ -132,6 +132,13 @@ describe("ActionObjectPanels", () => {
       "href",
       "/evidence/evidence_merchant_policy_status"
     );
+    expect(screen.queryByText(/Domyślnie schowany/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/wartość tylko do audytu/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż dane techniczne akcji" }));
+
+    expect(screen.getByText(/Domyślnie schowany/)).toBeInTheDocument();
+    expect(screen.getByText(/wartość tylko do audytu/)).toBeInTheDocument();
   });
 
   it("does not join action metadata with slash copy", () => {

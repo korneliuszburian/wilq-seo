@@ -345,6 +345,9 @@ Known cleanup already started:
   collapsing to generic "wartość wymiaru do sprawdzenia".
 - Merchant, Treści and Ahrefs browser proof now passes the targeted
   stale-term scan for visible `ID` proof-count and product-ID wording.
+- `/actions` priority cards now describe the safe operating step and keep raw
+  action data behind the explicit technical toggle instead of showing
+  technical-detail wording on the first screen.
 
 ## 9. Current Goal
 

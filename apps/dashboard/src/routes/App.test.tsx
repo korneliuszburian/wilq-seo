@@ -7491,6 +7491,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
+    expect(screen.getAllByText(/Zanim cokolwiek zapiszesz, otwórz akcję/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Szczegóły techniczne są dostępne/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/rejestru technicznego/i)).not.toBeInTheDocument();
     expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
     expect(screen.getByText("Do sprawdzenia")).toBeInTheDocument();
     expect(screen.queryByText("Najważniejsze akcje demo")).not.toBeInTheDocument();

@@ -189,7 +189,7 @@ export function ActionsSurface() {
           ) : (
             <p className="mt-2 rounded-md border border-line bg-white p-3 text-sm leading-6 text-slate-600">
               Pozostałe akcje są dostępne po rozwinięciu. Domyślny widok ma pomagać wybrać
-              następne sprawdzenie, nie przeglądać całego rejestru technicznego naraz.
+              następne sprawdzenie, nie przeglądać całej kolejki naraz.
             </p>
           )}
         </section>
@@ -220,7 +220,8 @@ function ActionPriorityFocus({ actions }: { actions: ActionObject[] }) {
             <div>
               <h3 className="text-sm font-semibold">{action.title}</h3>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Sprawdzenie przed zapisem zmian. Szczegóły techniczne są dostępne po otwarciu akcji.
+                Zanim cokolwiek zapiszesz, otwórz akcję i sprawdź dowody, podgląd zmian
+                oraz decyzję człowieka.
               </p>
             </div>
             <StatusBadge value={action.validation_status} label={action.validation_status_label} />
