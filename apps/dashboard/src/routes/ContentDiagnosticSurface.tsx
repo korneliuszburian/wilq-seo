@@ -225,8 +225,8 @@ function ContentExpandableActionsPanel({
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {actionSummaryLabel} dla Treści.
-            Otwórz je dopiero wtedy, gdy chcesz zapisać decyzję człowieka,
+            WILQ pokazuje dla Treści: {actionSummaryLabel}.
+            Otwórz tę sekcję dopiero wtedy, gdy chcesz zapisać decyzję człowieka,
             wygenerować podgląd zmian albo sprawdzić warunki bezpiecznego zapisu.
           </p>
         </div>

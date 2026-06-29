@@ -2006,6 +2006,12 @@ def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:
     return _merchant_attribute_key(left) == _merchant_attribute_key(right)
 
 
+def _merchant_issue_decision_title(issue_label: str, attribute_label: str) -> str:
+    if attribute_label and attribute_label not in {"atrybut", "atrybut nieznany"}:
+        return f"Merchant: problem z atrybutem: {attribute_label} - {issue_label}"
+    return f"Merchant: sprawdź problem pliku produktowego - {issue_label}"
+
+
 def _merchant_attribute_key(value: str | None) -> str:
     normalized = (value or "").removeprefix("n:").strip().lower()
     return "".join(char for char in normalized if char.isalnum())
@@ -2595,7 +2601,7 @@ def _merchant_decision_from_cluster_group(
         ),
         decision_type="review_issue_cluster",
         status="ready",
-        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        title=_merchant_issue_decision_title(display_issue_type, display_attribute),
         summary=(
             f"Ten sam problem Merchant występuje w {len(clusters)} raportach: "
             f"{', '.join(context_labels)}. Największy raport pokazuje "
@@ -2697,7 +2703,7 @@ def _merchant_decision_from_cluster(
         id=f"merchant_decision_{cluster.id}",
         decision_type="review_issue_cluster",
         status="ready",
-        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        title=_merchant_issue_decision_title(display_issue_type, display_attribute),
         summary=(
             f"{cluster.reported_issue_summary_label} "
             f"{cluster.severity_label or _merchant_severity_label(cluster.severity)}"
@@ -2769,7 +2775,7 @@ def _merchant_decision_from_tactical_item(
         id=f"merchant_decision_{item.id}",
         decision_type="review_feed_status",
         status="ready",
-        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        title=_merchant_issue_decision_title(display_issue_type, display_attribute),
         summary=item.diagnosis,
         issue_cluster_ids=[],
         issue_type=issue_type,

@@ -13585,7 +13585,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["issue_clusters"]
     cluster = payload["issue_clusters"][0]
     assert cluster["issue_type"] == "availability_updated"
-    assert cluster["issue_type_label"] == "zmiana dostępności do sprawdzenia"
+    assert cluster["issue_type_label"] == "zmiana dostępności"
     assert cluster["affected_attribute"] == "n:availability"
     assert cluster["affected_attribute_label"] == "dostępność"
     assert cluster["country"] == "PL"
@@ -13624,7 +13624,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["drilldown_source_label"] == "grupy problemów pliku produktowego"
     assert operator_summary["count_semantics"] == "reported_issue_occurrences"
     assert operator_summary["count_semantics_label"] == "wystąpienia problemów w raportach"
-    assert "zmiana dostępności do sprawdzenia" in operator_summary["issue_types"]
+    assert "zmiana dostępności" in operator_summary["issue_types"]
     assert operator_summary["source_connectors"] == ["google_merchant_center"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
     assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
@@ -13638,9 +13638,9 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["decision_type_label"] == "przegląd problemu pliku produktowego"
     assert decision["status"] == "ready"
     assert decision["status_label"] == "gotowe"
-    assert decision["title"] == ("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
+    assert decision["title"] == ("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
     assert decision["issue_type"] == "availability_updated"
-    assert decision["issue_type_label"] == "zmiana dostępności do sprawdzenia"
+    assert decision["issue_type_label"] == "zmiana dostępności"
     assert decision["affected_attribute"] == "n:availability"
     assert decision["affected_attribute_label"] == "dostępność"
     assert decision["reporting_context_label"] == "reklamy produktowe"
@@ -13663,7 +13663,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
     assert decision_preview["cluster_id"] == cluster["id"]
     assert decision_preview["issue_type"] == "availability_updated"
-    assert decision_preview["issue_type_label"] == "zmiana dostępności do sprawdzenia"
+    assert decision_preview["issue_type_label"] == "zmiana dostępności"
     assert decision_preview["affected_attribute"] == "n:availability"
     assert decision_preview["affected_attribute_label"] == "dostępność"
     assert decision_preview["metric_snapshot"] == {"issue_product_count": 23}
@@ -13777,7 +13777,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert merchant_preview_card["kind"] == "merchant_feed_issue_review"
     assert merchant_preview_card["title_label"] == "Problem pliku produktowego do sprawdzenia"
     assert merchant_preview_card["subtitle_label"] == (
-        "zmiana dostępności do sprawdzenia / dostępność"
+        "dostępność - zmiana dostępności"
     )
     assert merchant_preview_card["status_label"] == "zapis zmian zablokowany"
     assert {"label": "Próbki produktów", "value": "1 próbka z nazwą produktu"} in (
@@ -13800,7 +13800,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert merchant_preview["operation_type"] == "MerchantIssueClusterReview"
     assert merchant_preview["cluster_id"] == cluster["id"]
     assert merchant_preview["issue_type"] == "availability_updated"
-    assert merchant_preview["issue_type_label"] == "zmiana dostępności do sprawdzenia"
+    assert merchant_preview["issue_type_label"] == "zmiana dostępności"
     assert merchant_preview["affected_attribute"] == "n:availability"
     assert merchant_preview["affected_attribute_label"] == "dostępność"
     assert merchant_preview["metric_snapshot"] == {"issue_product_count": 23}
@@ -13831,7 +13831,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     merchant_card_text = json.dumps(merchant_card, ensure_ascii=False)
     assert "online~pl~PL~SKU-001" not in json.dumps(preview_payload["preview_items"])
     assert preview_card_row_values(merchant_card, "Problem") == [
-        "zmiana dostępności do sprawdzenia"
+        "zmiana dostępności"
     ]
     assert preview_card_row_values(merchant_card, "Atrybut") == ["dostępność"]
     assert "Sorbent chemiczny 10 kg" in merchant_card_text

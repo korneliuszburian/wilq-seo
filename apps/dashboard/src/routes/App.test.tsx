@@ -4347,7 +4347,7 @@ const metricFacts = [
     },
     dimension_value_labels: {
       affected_attribute: "dostępność",
-      issue_type: "zmiana dostępności do sprawdzenia",
+      issue_type: "zmiana dostępności",
       reporting_context: "reklamy produktowe",
       resolution: "wymaga działania po stronie Merchant",
       severity: "bez wpływu"
@@ -4688,7 +4688,7 @@ const tacticalQueue = {
     },
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
-      title: "Merchant: sprawdź availability updated / n:availability",
+      title: "Merchant: problem z atrybutem: dostępność - zmiana dostępności",
       meta: "Merchant / triage pliku produktowego / najpierw",
       diagnosis: "1 problem pliku produktowego Merchant wymaga review.",
       next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego pliku produktowego.",
@@ -4922,7 +4922,7 @@ const merchantDiagnostics = {
     drilldown_source_label: "grupy problemów pliku produktowego",
     count_semantics: "reported_issue_occurrences",
     count_semantics_label: "wystąpienia problemów w raportach",
-    issue_types: ["zmiana dostępności do sprawdzenia"],
+    issue_types: ["zmiana dostępności"],
     source_connectors: ["google_merchant_center"],
     source_connector_labels: ["Merchant Center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
@@ -4946,7 +4946,7 @@ const merchantDiagnostics = {
     {
       id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_type: "availability_updated",
-      issue_type_label: "zmiana dostępności do sprawdzenia",
+      issue_type_label: "zmiana dostępności",
       severity: "NOT_IMPACTED",
       severity_label: "bez wpływu",
       resolution: "MERCHANT_ACTION",
@@ -4978,13 +4978,13 @@ const merchantDiagnostics = {
       decision_type_label: "przegląd problemu pliku produktowego",
       status: "ready",
       status_label: "gotowe",
-      title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
+      title: "Merchant: problem z atrybutem: dostępność - zmiana dostępności",
       summary:
         "23 zgłoszenia problemu bez wpływu / wymaga działania po stronie Merchant dla PL / reklamy produktowe.",
       cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
       issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
       issue_type: "availability_updated",
-      issue_type_label: "zmiana dostępności do sprawdzenia",
+      issue_type_label: "zmiana dostępności",
       severity: "NOT_IMPACTED",
       severity_label: "bez wpływu",
       resolution: "MERCHANT_ACTION",
@@ -8010,10 +8010,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
     expect(
-      screen.getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
+      screen.getByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
     ).toBeInTheDocument();
     const merchantDecisionCard = screen
-      .getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
+      .getByText("Merchant: problem z atrybutem: dostępność - zmiana dostępności")
       .closest("article");
     expect(merchantDecisionCard).not.toBeNull();
     expect(within(merchantDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
@@ -8026,7 +8026,7 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("Zgłoszenia").length).toBeGreaterThan(0);
     expect(screen.queryByText("zgłoszenia: 23")).not.toBeInTheDocument();
-    expect(screen.getByText("problem: zmiana dostępności do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("problem: zmiana dostępności")).toBeInTheDocument();
     expect(screen.getByText("atrybut: dostępność")).toBeInTheDocument();
     expect(screen.getByText("kontekst: reklamy produktowe")).toBeInTheDocument();
     expect(screen.queryByText("problem: availability_updated")).not.toBeInTheDocument();

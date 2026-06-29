@@ -3746,10 +3746,7 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
                 id=str(item.get("id") or f"merchant_preview_{index}"),
                 kind="merchant_feed_issue_review",
                 title_label="Problem pliku produktowego do sprawdzenia",
-                subtitle_label=(
-                    f"{item.get('issue_type_label') or 'problem'} / "
-                    f"{item.get('affected_attribute_label') or 'atrybut'}"
-                ),
+                subtitle_label=_merchant_preview_subtitle(item),
                 status_label="zapis zmian zablokowany",
                 rows=rows,
                 apply_state_label=_apply_state_label(item.get("apply_allowed")),
@@ -3757,6 +3754,14 @@ def _merchant_preview_cards(payload: dict[str, Any]) -> list[ActionPreviewCardVi
             )
         )
     return cards
+
+
+def _merchant_preview_subtitle(item: dict[str, Any]) -> str:
+    issue_label = str(item.get("issue_type_label") or "problem pliku produktowego")
+    attribute_label = str(item.get("affected_attribute_label") or "").strip()
+    if attribute_label and attribute_label not in {"atrybut", "atrybut do sprawdzenia"}:
+        return f"{attribute_label} - {issue_label}"
+    return issue_label
 
 
 def _prioritized_merchant_preview_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:

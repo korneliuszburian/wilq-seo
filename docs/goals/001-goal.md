@@ -86,6 +86,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
   in active source surfaces.
 - Google Ads campaign triage now uses natural Polish priority phrases in the
   API-owned summary instead of report-style count formatting.
+- Merchant issue decisions now use clean Polish issue and attribute wording,
+  for example `Merchant: problem z atrybutem: link produktu - błąd strony produktu`.
+  Merchant action preview cards avoid slash-combined issue/attribute labels,
+  and Merchant/Treści/Google Ads/GA4 action intro copy no longer creates broken
+  singular grammar from the API action count label.
 - Merchant attribute matching uses canonical comparison keys instead of
   underscore-to-space normalization, and active dashboard/API tests no longer
   keep old report-style metric phrasing as positive expected copy.

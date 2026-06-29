@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 MERCHANT_ISSUE_LABELS = {
-    "availability_updated": "zmiana dostępności do sprawdzenia",
+    "availability_updated": "zmiana dostępności",
     "attribute_pending_review": "atrybut czeka na sprawdzenie",
     "image too small for high resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
     "image_too_small_for_high_resolution": "zdjęcie za małe dla wysokiej rozdzielczości",
@@ -12,7 +12,7 @@ MERCHANT_ISSUE_LABELS = {
     "Missing image": "brak zdjęcia produktu",
     "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
     "problem pliku produktowego": "problem pliku produktowego",
-    "violated_discovery_ads_policy_experiment2": "naruszenie zasad reklam Discovery do sprawdzenia",
+    "violated_discovery_ads_policy_experiment2": "naruszenie zasad reklam Discovery",
 }
 
 MERCHANT_ATTRIBUTE_LABELS = {

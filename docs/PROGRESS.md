@@ -30,6 +30,14 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Merchant issue decisions now use source labels such as
+  `Merchant: problem z atrybutem: link produktu - błąd strony produktu`
+  instead of slash-combined raw issue/attribute wording. Merchant action
+  preview cards use the same clean issue/attribute order, and the expandable
+  action intro copy in Merchant, Treści, Google Ads and GA4 no longer creates
+  broken singular grammar from `1 akcja do sprawdzenia`. Focused API tests,
+  dashboard route tests, both language guards and browser proof for
+  `/merchant`, `/content-planner`, `/ads-doctor` and `/ga4` passed.
 - Centrum pracy, powiązane action-plan summaries, tactical queue GSC/content
   diagnoses and Ads/content diagnostic summaries no longer use report-style
   equality metric copy, slash shorthand for GSC query/page counts or English

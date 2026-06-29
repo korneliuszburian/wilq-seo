@@ -240,8 +240,7 @@ function Ga4ExpandableActionsPanel({
 }) {
   const [showActions, setShowActions] = useState(false);
   const actionCountLabel = actionSummaryLabel.trim() || "brak etykiety akcji z WILQ";
-  const actionCountSentence =
-    actions.length === 1 ? "WILQ ma jedną akcję dla GA4." : `WILQ ma ${actionCountLabel} dla GA4.`;
+  const actionCountSentence = `WILQ pokazuje dla GA4: ${actionCountLabel}.`;
 
   return (
     <section className="rounded-md border border-line bg-white p-4">

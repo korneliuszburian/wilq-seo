@@ -183,7 +183,7 @@ function MerchantExpandableActionsPanel({
             Akcje do sprawdzenia
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ ma {actionSummaryLabel} dla Merchant. Otwórz ją dopiero wtedy, gdy
+            WILQ pokazuje dla Merchant: {actionSummaryLabel}. Otwórz tę sekcję dopiero wtedy, gdy
             chcesz zapisać przegląd człowieka, wygenerować podgląd zmian albo
             sprawdzić warunki bezpiecznego zapisu.
           </p>

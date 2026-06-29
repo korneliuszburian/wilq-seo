@@ -51,7 +51,7 @@ const actionFixture: ActionObject = {
         preview_contract: "merchant_feed_issue_review_preview_v1",
         operation_type: "MerchantIssueClusterReview",
         issue_type: "availability_updated",
-        issue_type_label: "zmiana dostępności do sprawdzenia",
+        issue_type_label: "zmiana dostępności",
         affected_attribute: "n:availability",
         affected_attribute_label: "dostępność",
         metric_snapshot: { issue_product_count: 23 },
@@ -70,10 +70,10 @@ const actionFixture: ActionObject = {
       id: "merchant_feed_issue_review_1",
       kind: "merchant_feed_issue_review",
       title_label: "Problem pliku produktowego do sprawdzenia",
-      subtitle_label: "zmiana dostępności do sprawdzenia / dostępność",
+      subtitle_label: "dostępność - zmiana dostępności",
       status_label: "zapis zmian zablokowany",
       rows: [
-        { label: "Problem", value: "zmiana dostępności do sprawdzenia" },
+        { label: "Problem", value: "zmiana dostępności" },
         { label: "Atrybut", value: "dostępność" },
         { label: "Zgłoszenia", value: "23 zgłoszeń problemu" },
         { label: "Próbki produktów", value: "1 próbka z nazwą produktu" },
@@ -1590,8 +1590,8 @@ describe("Action detail route", () => {
     await waitFor(() =>
       expect(screen.getByText("Problem pliku produktowego do sprawdzenia")).toBeInTheDocument()
     );
-    expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
-    expect(screen.getByText("Problem: zmiana dostępności do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("dostępność - zmiana dostępności")).toBeInTheDocument();
+    expect(screen.getByText("Problem: zmiana dostępności")).toBeInTheDocument();
     expect(screen.getByText("Atrybut: dostępność")).toBeInTheDocument();
     expect(screen.getByText("Zgłoszenia: 23 zgłoszeń problemu")).toBeInTheDocument();
     expect(screen.getByText("Próbki produktów: 1 próbka z nazwą produktu")).toBeInTheDocument();
@@ -1599,7 +1599,7 @@ describe("Action detail route", () => {
     expect(screen.queryByText("online~pl~PL~SKU-001")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody: 1 dowód źródłowy")).toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_merchant_feed")).not.toBeInTheDocument();
-    expect(screen.getByText("zmiana dostępności do sprawdzenia / dostępność")).toBeInTheDocument();
+    expect(screen.getByText("dostępność - zmiana dostępności")).toBeInTheDocument();
     expect(screen.queryByText("availability_updated / n:availability")).not.toBeInTheDocument();
     expect(screen.queryByText(/wymaga etykiety problemu z WILQ/)).not.toBeInTheDocument();
     expect(screen.queryByText(/online~pl~PL~SKU-001/)).not.toBeInTheDocument();
