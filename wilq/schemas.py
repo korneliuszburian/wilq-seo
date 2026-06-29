@@ -1348,12 +1348,12 @@ def _tactical_dimension_value_label(key: str, value: str) -> str:
     labels_by_key = {
         "wordpress_match": {
             "found": "znaleziono w WordPress",
-            "missing": "brak w WordPress",
+            "missing": "niepotwierdzone w WordPress",
         },
         "wordpress_match_confidence": {
             "exact_url": "dokładny adres URL",
             "same_path": "ten sam adres ścieżki",
-            "missing": "brak dopasowania",
+            "missing": "dopasowanie niepotwierdzone",
         },
         "reporting_context": {
             "ALL_CONTEXTS": "wszystkie miejsca emisji",

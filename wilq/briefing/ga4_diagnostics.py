@@ -82,13 +82,13 @@ GA4_SECTION_LABELS = {
 }
 GA4_WORDPRESS_MATCH_LABELS = {
     "found": "potwierdzony",
-    "missing": "brak potwierdzenia",
+    "missing": "niepotwierdzone w WordPress",
 }
 GA4_WORDPRESS_MATCH_CONFIDENCE_LABELS = {
     "exact_url": "dokładny adres URL",
     "host_alias_sitemap": "alias hosta z mapy strony",
     "path_fallback": "dopasowanie ścieżki",
-    "missing": "brak dopasowania",
+    "missing": "dopasowanie niepotwierdzone",
 }
 GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
 GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]

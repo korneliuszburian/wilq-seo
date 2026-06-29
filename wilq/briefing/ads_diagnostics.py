@@ -3189,7 +3189,7 @@ def _format_float(value: float) -> str:
 
 def _format_signed_number(value: int | float | None) -> str:
     if value is None:
-        return "brak"
+        return "wartość niepotwierdzona"
     numeric_value = float(value)
     if numeric_value == 0:
         return "0"
@@ -4693,13 +4693,13 @@ def _custom_segment_source_quality(
 
 def _search_term_impressions_review_value(rows: list[AdsSearchTermMetricRow]) -> str:
     if not any(row.impressions is not None for row in rows):
-        return "brak danych"
+        return "niepotwierdzone"
     return str(sum(row.impressions or 0 for row in rows))
 
 
 def _search_term_cost_review_value(rows: list[AdsSearchTermMetricRow]) -> str:
     if not any(row.cost_micros is not None for row in rows):
-        return "brak danych"
+        return "niepotwierdzony"
     return _format_micros(sum(row.cost_micros or 0 for row in rows)) or "0"
 
 
@@ -7033,7 +7033,7 @@ def _ads_business_use_labels(values: Iterable[object]) -> list[str]:
 
 def _ads_strategy_review_status_label(status: object) -> str:
     labels = {
-        "missing": "brak oceny",
+        "missing": "ocena strategii niepotwierdzona",
         "approved_for_prepare": "zatwierdzone do przygotowania",
         "needs_changes": "wymaga zmian",
         "rejected": "odrzucone",
@@ -7078,7 +7078,7 @@ def _ads_channel_type_label(channel_type: object | None) -> str:
 
 def _ads_budget_period_label(period: object | None) -> str:
     if period is None or str(period) == "":
-        return "okres: brak"
+        return "okres budżetu niepotwierdzony"
     labels = {
         "DAILY": "dzienny",
         "CUSTOM_PERIOD": "niestandardowy okres",

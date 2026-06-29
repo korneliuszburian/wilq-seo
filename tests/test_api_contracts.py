@@ -3793,7 +3793,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert strategy_readiness["status"] == "blocked"
     assert strategy_readiness["status_label"] == "zablokowane"
     assert strategy_readiness["latest_review_status"] == "missing"
-    assert strategy_readiness["latest_review_status_label"] == "brak oceny"
+    assert strategy_readiness["latest_review_status_label"] == (
+        "ocena strategii niepotwierdzona"
+    )
     assert strategy_readiness["latest_review_outcome"] is None
     assert strategy_readiness["apply_allowed"] is False
     assert strategy_readiness["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
@@ -3946,7 +3948,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert strategy_preview_card["title_label"] == "Ocena strategii Ads do zapisania"
     strategy_preview_rows = {row["label"]: row["value"] for row in strategy_preview_card["rows"]}
     assert strategy_preview_rows["Marża"] == "35%"
-    assert strategy_preview_rows["Ostatni przegląd strategii"] == ("brak zapisanego przeglądu")
+    assert strategy_preview_rows["Ostatni przegląd strategii"] == (
+        "przegląd strategii nie jest zapisany"
+    )
     strategy_marketer_card_text = str(
         {
             key: strategy_preview_card[key]
@@ -13491,8 +13495,8 @@ def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> Non
         rejected_terms=[],
     )
 
-    assert "wyświetlenia brak danych" in reason
-    assert "koszt brak danych" in reason
+    assert "wyświetlenia niepotwierdzone" in reason
+    assert "koszt niepotwierdzony" in reason
     assert "wyświetlenia=0" not in reason
     assert "koszt=0.00" not in reason
 

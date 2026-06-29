@@ -978,7 +978,7 @@ const adsDiagnostics = {
       summary:
         "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może tylko przygotować kolejki oceny.",
       latest_review_status: "missing",
-      latest_review_status_label: "brak oceny",
+      latest_review_status_label: "ocena strategii niepotwierdzona",
       latest_review_outcome: null,
       reviewed_by: null,
       reviewed_at: null,
@@ -5632,9 +5632,9 @@ const ga4Diagnostics = {
       campaign_name: "Ekologus Ogólna",
       campaign_name_label: "Ekologus Ogólna",
       wordpress_match: "missing",
-      wordpress_match_label: "brak potwierdzenia",
+      wordpress_match_label: "niepotwierdzone w WordPress",
       wordpress_match_confidence: "missing",
-      wordpress_match_confidence_label: "brak dopasowania",
+      wordpress_match_confidence_label: "dopasowanie niepotwierdzone",
       wordpress_content_url: null,
       source_connectors: ["google_analytics_4"],
       source_connector_labels: ["GA4"],
@@ -7729,7 +7729,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Gotowość oceny strategii Ads" })
     ).toBeInTheDocument();
-    expect(screen.getAllByText("brak oceny").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ocena strategii niepotwierdzona").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ocena wskaźników względem celu/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Source terms:/)).not.toBeInTheDocument();
@@ -8283,7 +8283,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("zaangażowanie")).toBeInTheDocument();
     expect(screen.getAllByText(/Strona wejścia: \/oferta\//).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Źródło: google \/ cpc/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/WordPress: brak potwierdzenia/)).toBeInTheDocument();
+    expect(screen.getByText(/WordPress: niepotwierdzone w WordPress/)).toBeInTheDocument();
     expect(screen.getAllByText(/Gotowość pomiaru/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Pokaż pełny przegląd GA4" }));
     expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();

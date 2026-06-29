@@ -51,6 +51,12 @@ API status later contradicts this state.
 
 ## Latest Verified Product State
 
+- Action preview, Content, GA4 and tactical WordPress labels no longer use bare
+  `brak`/`brak danych` fallbacks for missing review, URL, WordPress-match,
+  percentage or Ads custom-segment values. They now describe the unconfirmed
+  fact at API/schema/domain source, and no React label remapper was added.
+  Focused API tests, dashboard route tests, ruff I/F, marketer/context/operator
+  language guards, live API proof and `git diff --check` passed.
 - `App.tsx` route composition uses a dedicated route renderer map. Focused
   dashboard tests, typecheck, lint, Fallow audit/health, language guards,
   `git diff --check` and browser proof for `/merchant`, `/content-planner` and

@@ -2072,7 +2072,7 @@ def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
 
 def _metric_sentence(facts: list[MetricFact]) -> str:
     if not facts:
-        return "Najważniejsze fakty: brak metryk do pokazania"
+        return "Najważniejsze fakty: nie ma potwierdzonych metryk do pokazania"
     samples = ", ".join(f"{_metric_fact_label(fact.name)}: {fact.value}" for fact in facts[:4])
     if len(facts) > 4:
         return f"Najważniejsze fakty: {samples} i kolejne sygnały w dowodach"
@@ -2098,7 +2098,11 @@ def _metric_fact_label(name: str) -> str:
     return labels.get(name, "metryka źródłowa")
 
 
-def _plain_metric_value_label(value: Any, *, missing_label: str = "brak") -> str:
+def _plain_metric_value_label(
+    value: Any,
+    *,
+    missing_label: str = "wartość niepotwierdzona",
+) -> str:
     if isinstance(value, bool):
         return "tak" if value else "nie"
     if isinstance(value, int):
@@ -2115,7 +2119,7 @@ def _content_primary_url_label(item: dict[str, Any]) -> str:
         value = item.get(key)
         if isinstance(value, str) and value:
             return value
-    return "brak URL"
+    return "URL niepotwierdzony"
 
 
 def _content_metric_snapshot_label(value: Any) -> str:
@@ -2944,11 +2948,15 @@ def _wordpress_draft_handoff_preview_cards(
             _preview_row("Temat", str(item.get("topic") or "treść do sprawdzenia")),
             _preview_row(
                 "URL publiczny",
-                str(item.get("source_public_url") or item.get("final_canonical_url") or "brak"),
+                str(
+                    item.get("source_public_url")
+                    or item.get("final_canonical_url")
+                    or "URL publiczny niepotwierdzony"
+                ),
             ),
             _preview_row(
                 "URL kanoniczny",
-                str(item.get("final_canonical_url") or "brak"),
+                str(item.get("final_canonical_url") or "URL kanoniczny niepotwierdzony"),
             ),
         ]
         preview_url = item.get("preview_url")
@@ -3422,15 +3430,27 @@ def _ga4_tracking_quality_preview_cards(
         rows = [
             _preview_row(
                 "Strona wejścia",
-                str(item.get("landing_page_label") or item.get("landing_page") or "brak"),
+                str(
+                    item.get("landing_page_label")
+                    or item.get("landing_page")
+                    or "strona wejścia niepotwierdzona"
+                ),
             ),
             _preview_row(
                 "Źródło",
-                str(item.get("source_medium_label") or item.get("source_medium") or "brak"),
+                str(
+                    item.get("source_medium_label")
+                    or item.get("source_medium")
+                    or "źródło ruchu niepotwierdzone"
+                ),
             ),
             _preview_row(
                 "Kampania",
-                str(item.get("campaign_name_label") or item.get("campaign_name") or "brak"),
+                str(
+                    item.get("campaign_name_label")
+                    or item.get("campaign_name")
+                    or "kampania niepotwierdzona"
+                ),
             ),
         ]
         rows.extend(_metric_snapshot_preview_rows(metric_snapshot, metric_labels))
@@ -3695,7 +3715,7 @@ def _ads_business_context_preview_rows(
 
 def _ads_strategy_review_summary(value: Any) -> str:
     if not isinstance(value, dict):
-        return "brak zapisanego przeglądu"
+        return "przegląd strategii nie jest zapisany"
     outcome = value.get("outcome")
     labels = {
         "approved_for_prepare": "zatwierdzone do przygotowania",
@@ -3711,7 +3731,7 @@ def _ads_strategy_review_summary(value: Any) -> str:
 def _configured_source_count_label(values: list[str]) -> str:
     count = len(values)
     if count == 0:
-        return "brak ustawionych pól"
+        return "żadne pole nie jest ustawione lokalnie"
     if count == 1:
         return "1 pole ustawione lokalnie"
     if 2 <= count <= 4:
@@ -3721,7 +3741,7 @@ def _configured_source_count_label(values: list[str]) -> str:
 
 def _percentage_label(value: Any) -> str:
     if not isinstance(value, int | float):
-        return "brak"
+        return "wartość procentowa niepotwierdzona"
     numeric_label = f"{value * 100:.2f}".rstrip("0").rstrip(".")
     return f"{numeric_label}%"
 
@@ -3814,7 +3834,7 @@ def _micros_money_label(
     value: Any,
     currency_code: str = "PLN",
     *,
-    missing_label: str = "brak",
+    missing_label: str = "kwota niepotwierdzona",
 ) -> str:
     if not isinstance(value, int | float):
         return missing_label
@@ -4846,7 +4866,7 @@ def _operator_state_label(value: str) -> str:
         "blocked": "zablokowane",
         "ready": "gotowe",
         "allowed": "dopuszczone",
-        "missing": "brak",
+        "missing": "status niepotwierdzony",
         "pending_validation": "czeka na sprawdzenie",
         "validated_prepare_only": "kontrola WILQ poprawna",
         "ready_to_apply": "gotowe do potwierdzenia",

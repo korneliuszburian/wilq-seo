@@ -1215,7 +1215,10 @@ const adsStrategyReviewActionFixture: ActionObject = {
           value: "nie ustawiono; WILQ nie ocenia kosztu celu"
         },
         { label: "Ustawione pola", value: "3 pola ustawione lokalnie" },
-        { label: "Ostatni przegląd strategii", value: "brak zapisanego przeglądu" },
+        {
+          label: "Ostatni przegląd strategii",
+          value: "przegląd strategii nie jest zapisany",
+        },
         {
           label: "Warunki przeglądu",
           value: "człowiek sprawdza strategię, sprawdź model marży, sprawdź cel biznesowy, sprawdź cel budżetu od człowieka, sprawdź dopasowanie do celu"
@@ -1950,7 +1953,9 @@ describe("Action detail route", () => {
     );
     expect(screen.getByText("Ocena strategii Ads do zapisania")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
-    expect(screen.getByText(/Ostatni przegląd strategii: brak zapisanego przeglądu/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ostatni przegląd strategii: przegląd strategii nie jest zapisany/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Warunki przeglądu: człowiek sprawdza strategię/)).toBeInTheDocument();
     expect(screen.getByText(/Warunki sprawdzenia: sprawdź model marży/)).toBeInTheDocument();
     expect(screen.getByText(/Czego nie wolno twierdzić: ocena opłacalności/)).toBeInTheDocument();

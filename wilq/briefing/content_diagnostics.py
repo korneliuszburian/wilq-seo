@@ -136,13 +136,13 @@ AHREFS_OFF_TOPIC_TERMS = (
 )
 CONTENT_WORDPRESS_MATCH_LABELS = {
     "found": "potwierdzony",
-    "missing": "brak potwierdzenia",
+    "missing": "niepotwierdzone w WordPress",
 }
 CONTENT_WORDPRESS_MATCH_CONFIDENCE_LABELS = {
     "exact_url": "dokładny URL",
     "host_alias_sitemap": "alias hosta z sitemap",
     "path_fallback": "dopasowanie ścieżki",
-    "missing": "brak dopasowania",
+    "missing": "dopasowanie niepotwierdzone",
 }
 CONTENT_PREFLIGHT_MODE_LABELS = {
     "preserve": "zachować",
@@ -2367,7 +2367,7 @@ def _wordpress_match_tile(wordpress_match: str) -> str:
     if wordpress_match == "found":
         return "znaleziono"
     if wordpress_match == "missing":
-        return "brak"
+        return "niepotwierdzono w WordPress"
     return "niepewne"
 
 
