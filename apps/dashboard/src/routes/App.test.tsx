@@ -832,7 +832,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: aktywność kampanii",
     summary:
-      "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt=164,59 zł, konwersje=2.5, wartość konwersji=450.75.",
+      "WILQ ma 1 wiersz kampanii: 107 kliknięć, 2783 wyświetlenia, koszt 164,59 zł, 2.5 konwersji i wartość konwersji 450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: [],
     blocked_claims: ["werdykt kosztu pozyskania celu", "werdykt zwrotu z reklam", "werdykt marnowania budżetu na zapytaniach", "werdykt przepalonego budżetu"],
@@ -2200,7 +2200,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: zapytania użytkowników",
     summary:
-      "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wartość konwersji=120.",
+      "WILQ ma 1 wiersz zapytań: 12 kliknięć, 140 wyświetleń, koszt 9,00 zł, 1 konwersja i wartość konwersji 120.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -2282,7 +2282,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: kolejność review zapytań",
     summary:
-      "WILQ ma 1 wierszy wyszukiwanych haseł do ręcznej oceny: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wiersze bez konwersji=0.",
+      "WILQ ma 1 wiersz wyszukiwanych haseł do ręcznej oceny: 12 kliknięć, 140 wyświetleń, koszt 9,00 zł, 1 konwersja i brak wierszy bez konwersji.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -2349,7 +2349,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: n-gramy zapytań",
     summary:
-      "WILQ zgrupował 1 n-gramów z 1 wystąpień listy wyszukiwanych haseł: kliknięcia=12, koszt=9,00 zł.",
+      "WILQ zgrupował 1 n-gram z 1 wystąpienia listy wyszukiwanych haseł: 12 kliknięć i koszt 9,00 zł.",
     allowed_metrics: [
       "ngram",
       "ngram_size",
@@ -2404,7 +2404,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: 90-dniowy odczyt bezpieczeństwa zapytań",
     summary:
-      "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt=8,00 zł, konwersje=0, wartość konwersji=0.",
+      "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytania: 10 kliknięć, 120 wyświetleń, koszt 8,00 zł, bez konwersji i bez wartości konwersji.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -2563,7 +2563,7 @@ const adsDiagnostics = {
         review_priority: "wysokie",
         review_score: 65,
         review_reason:
-          "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
+          "WILQ ma 1 wyszukiwane hasło: 12 kliknięć, 140 wyświetleń, koszt 9.00, 1 konwersja i brak odrzuconych terminów. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
         human_review_gates: [
           "sprawdź intencję wyszukiwanych haseł",
           "odrzuć brand, konkurencję i frazy o niskiej intencji",
@@ -2813,7 +2813,7 @@ const adsDiagnostics = {
         review_priority: "wysokie",
         review_score: 53,
         review_reason:
-          "Bieżący odczyt: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst dopasowań słów kluczowych=1 wierszy. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
+          "Bieżący odczyt: 6 kliknięć, koszt 5.00 i bez konwersji; 90 dni: 10 kliknięć, koszt 8.00 i bez konwersji; kontekst dopasowań słów kluczowych obejmuje 1 wiersz. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
         human_review_gates: [
           "sprawdź intencję zapytania",
           "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
@@ -3038,7 +3038,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj aktywność kampanii Google Ads",
       summary:
-        "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt=164,59 zł, konwersje=2.5, wartość konwersji=450.75.",
+        "WILQ ma 1 wiersz kampanii: 107 kliknięć, 2783 wyświetlenia, koszt 164,59 zł, 2.5 konwersji i wartość konwersji 450.75.",
       rationale:
         "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach.",
       next_step: "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów.",
@@ -3637,7 +3637,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj zapytania z reklam bez automatycznych wykluczeń",
       summary:
-        "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt=9,00 zł, konwersje=1, wartość konwersji=120.",
+        "WILQ ma 1 wiersz zapytań: 12 kliknięć, 140 wyświetleń, koszt 9,00 zł, 1 konwersja i wartość konwersji 120.",
       rationale:
         "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia i konwersje.",
       next_step: "Przejrzyj zapytania z najwyższym kosztem.",
@@ -3688,7 +3688,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Sprawdź 90-dniową historię zapytań przed wykluczeniami",
       summary:
-        "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt=8,00 zł, konwersje=0, wartość konwersji=0.",
+        "WILQ ma 90-dniowy odczyt bezpieczeństwa dla 1 zapytania: 10 kliknięć, 120 wyświetleń, koszt 8,00 zł, bez konwersji i bez wartości konwersji.",
       rationale:
         "WILQ ma oddzielny 90-dniowy odczyt listy wyszukiwanych haseł jako hamulec bezpieczeństwa.",
       next_step:
@@ -3804,7 +3804,7 @@ const adsDiagnostics = {
           review_priority: "wysokie",
           review_score: 53,
           review_reason:
-            "Bieżący odczyt: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst dopasowań słów kluczowych=1 wiersz. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
+            "Bieżący odczyt: 6 kliknięć, koszt 5.00 i bez konwersji; 90 dni: 10 kliknięć, koszt 8.00 i bez konwersji; kontekst dopasowań słów kluczowych obejmuje 1 wiersz. To jest kolejność oceny, nie ocena zmarnowanego budżetu.",
           human_review_gates: [
             "sprawdź intencję zapytania",
             "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
@@ -4022,7 +4022,7 @@ const adsDiagnostics = {
           review_priority: "wysokie",
           review_score: 65,
           review_reason:
-            "Wyszukiwane hasła=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
+            "WILQ ma 1 wyszukiwane hasło: 12 kliknięć, 140 wyświetleń, koszt 9.00, 1 konwersja i brak odrzuconych terminów. To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, kierowania reklam ani wpływu na kampanię.",
           human_review_gates: [
             "sprawdź intencję wyszukiwanych haseł",
             "odrzuć brand, konkurencję i frazy o niskiej intencji",
@@ -6881,7 +6881,7 @@ function mockFetch() {
                 priority: 12,
                 metric_tiles: { "zapytania i adresy z GSC": 1, "WordPress": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
-                  "GSC i WordPress tworzą kolejkę treści: zapytania i URL-e=1, dopasowanie WordPress=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o zapytania, URL-e i spis treści, nie obietnica leadów ani wzrostów pozycji.",
+                  "GSC i WordPress tworzą kolejkę treści: 1 para zapytania i adresu, 1 dopasowanie WordPress, 1 decyzja, 120 wyświetleń i 12 kliknięć. To jest decyzja odświeżenia, scalenia, nowej treści albo blokady oparta o zapytania, adresy i spis treści, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
                   'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja odświeżenia albo scalenia, nie nowy artykuł. Pełny widok zapytań, URL-i i spisu treści jest w /content-planner.',
                 bezpieczny_next_step:

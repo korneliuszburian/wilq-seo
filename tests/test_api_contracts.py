@@ -42,6 +42,7 @@ from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
     _ads_recommendation_type_label,
+    _merchant_attribute_key as _action_merchant_attribute_key,
     _operator_audit_summary_text,
     _social_draft_actions,
     apply_action,
@@ -86,6 +87,7 @@ from wilq.briefing.localo_diagnostics import (
 from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fact_label
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_diagnostics import (
+    _merchant_attribute_key as _diagnostic_merchant_attribute_key,
     _merchant_connector_status_label,
     _merchant_freshness_label,
     _merchant_price_impact_readiness,
@@ -6451,7 +6453,24 @@ def test_command_center_merchant_decision_count_matches_grouped_issue_decisions(
     merchant_item = brief_by_id["daily_merchant_feed"]
     assert merchant_item["metric_tiles"]["typy problemów"] == 1
     assert merchant_item["metric_tiles"]["decyzje"] == 1
-    assert "decyzje=1" in merchant_item["summary"]
+    assert "1 decyzja do przejścia" in merchant_item["summary"]
+
+
+def test_merchant_attribute_keys_are_canonical_matching_keys_not_labels() -> None:
+    values = [
+        "n:unit_pricing_measure",
+        "unit_pricing_measure",
+        "unit pricing measure",
+        "Unit-Pricing Measure",
+    ]
+
+    action_keys = {_action_merchant_attribute_key(value) for value in values}
+    diagnostic_keys = {_diagnostic_merchant_attribute_key(value) for value in values}
+
+    assert action_keys == {"unitpricingmeasure"}
+    assert diagnostic_keys == {"unitpricingmeasure"}
+    assert "_" not in next(iter(action_keys))
+    assert " " not in next(iter(action_keys))
 
 
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
@@ -13181,8 +13200,8 @@ def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> Non
         rejected_terms=[],
     )
 
-    assert "wyświetlenia=brak danych" in reason
-    assert "koszt=brak danych" in reason
+    assert "wyświetlenia brak danych" in reason
+    assert "koszt brak danych" in reason
     assert "wyświetlenia=0" not in reason
     assert "koszt=0.00" not in reason
 

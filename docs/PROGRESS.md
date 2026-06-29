@@ -41,6 +41,10 @@ Date: 2026-06-29
   priority phrases such as pilne kampanie and campaigns with a high review
   signal. Focused Ads API tests, live `/api/ads/diagnostics?view=summary` and
   the marketer language guard passed.
+- Merchant attribute matching no longer uses underscore-to-space
+  normalization. It now uses canonical comparison keys, while marketer labels
+  stay in explicit label fields. Dashboard fixtures and API tests no longer
+  preserve old report-style metric phrasing as positive expected copy.
 - Knowledge operating map no longer marks the daily plan as unusable only
   because it contains blocked decisions. `Plan dnia WILQ` now reports
   `gotowe z blokadami`: the process is usable for the marketer, while blocked
@@ -429,9 +433,9 @@ Date: 2026-06-29
 5. Dashboard still needs focused cleanup for any newly found payload-derived
    panels. Compact skill context active actions are now guarded against raw
    payload leakage.
-6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
-   normalizers used for equality matching, not visible operator labels; keep
-   them out of copy paths.
+6. Merchant attribute-key matching now uses canonical comparison keys instead
+   of underscore-to-space label normalization. Do not reintroduce generic
+   underscore humanization as a compatibility layer.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs have focused tests, and
    `scripts/context_pack_language_guard.py` now guards live compact skill

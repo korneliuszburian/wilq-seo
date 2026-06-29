@@ -1973,8 +1973,8 @@ API proof:
 - At the time of this eval, `ads_review_budget_context` kept
   `shared_budget_distribution` as the only missing read contract. The later
   shared-budget distribution slice fixed that specific gap.
-- `ads_review_change_history` remains blocked with metric tiles `zmiany=0`,
-  `kampanie=0`.
+- `ads_review_change_history` remains blocked with zero changes and zero
+  campaigns in its metric tiles.
 - `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` keeps compact Ads
   samples at 3 rows and reports total/included counts in
   `context_pack_compaction`.

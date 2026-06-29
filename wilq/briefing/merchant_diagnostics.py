@@ -2008,7 +2008,7 @@ def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:
 
 def _merchant_attribute_key(value: str | None) -> str:
     normalized = (value or "").removeprefix("n:").strip().lower()
-    return normalized.replace("_", " ")
+    return "".join(char for char in normalized if char.isalnum())
 
 
 def _operator_summary(

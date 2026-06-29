@@ -86,6 +86,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   in active source surfaces.
 - Google Ads campaign triage now uses natural Polish priority phrases in the
   API-owned summary instead of report-style count formatting.
+- Merchant attribute matching uses canonical comparison keys instead of
+  underscore-to-space normalization, and active dashboard/API tests no longer
+  keep old report-style metric phrasing as positive expected copy.
 - Cleanup has moved many Ads, Merchant, GA4, Localo, Ahrefs, Knowledge,
   tactical queue, Procesy and action-detail labels from dashboard helpers into
   API/domain/shared-schema fields.
@@ -342,8 +345,9 @@ are resolved or explicitly deferred.
    have typed-preview-card coverage. Action validation errors for Ads, GA4 and
    Localo now return Polish operator copy from source validators, with focused
    regression coverage for forbidden technical fragments.
-6. Remaining active `replace("_", " ")` scan hits are Merchant attribute-key
-   normalizers used for equality matching, not visible operator labels.
+6. Merchant attribute-key matching now uses canonical comparison keys instead
+   of underscore-to-space label normalization. Do not reintroduce generic
+   underscore humanization as a compatibility layer.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
    and content-strategist context packs have focused tests, and
    `scripts/context_pack_language_guard.py` now guards live compact skill
