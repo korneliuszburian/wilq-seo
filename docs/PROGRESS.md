@@ -157,6 +157,12 @@ API status later contradicts this state.
   clarifies when data is only context, when a recommendation is not justified,
   and when human review is still required. Focused source test, dashboard
   typecheck/lint, marketer language guard and `git diff --check` passed.
+- Ads Doctor empty states now explain missing metrics, review, evidence,
+  actions, source conditions, allowed uses, blocked uses, policy and human
+  review as decision limits. Active dashboard routes/components no longer
+  contain `empty="brak..."`, `?? "brak"` or `|| "brak"` fallbacks. Focused Ads
+  source test, dashboard typecheck/lint, marketer language guard and
+  `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

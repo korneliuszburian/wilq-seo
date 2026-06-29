@@ -409,7 +409,7 @@ function AdsMarketSnapshot({
         <TraceLine
           label="Nie wolno twierdzić"
           values={[summary.blocked_claim_summary_label]}
-          empty="brak zablokowanych obietnic"
+          empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
         />
       </div>
     </section>
@@ -500,7 +500,7 @@ function AdsOperatorSummary({
             <TraceLine
               label="Metryki dostępne"
               values={allowedMetrics}
-              empty="brak metryk do pokazania"
+              empty="WILQ nie podał metryk; nie oceniaj skuteczności z tego panelu."
             />
             <TraceLine
               label="Waluta konta"
@@ -511,22 +511,22 @@ function AdsOperatorSummary({
             <TraceLine
               label="Wymagana ocena"
               values={[operatorReviewGateSummary]}
-              empty="brak wymaganej oceny"
+              empty="WILQ nie podał wymaganej oceny; zostaje ręczny review."
             />
             <TraceLine
               label="Dowody"
               values={[summary.evidence_summary_label]}
-              empty="brak dowodów źródłowych"
+              empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
             />
             <TraceLine
               label="Akcje do sprawdzenia"
               values={[summary.action_summary_label]}
-              empty="brak akcji do sprawdzenia"
+              empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
             />
             <TraceLine
               label="Nie wolno twierdzić"
               values={[blockedClaimSummary]}
-              empty="brak zablokowanych obietnic"
+              empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
             />
           </div>
         </div>
@@ -584,12 +584,12 @@ function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
               <TraceLine
                 label="Akcje"
                 values={[decision.action_summary_label]}
-                empty="brak akcji do sprawdzenia"
+                empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
               />
               <TraceLine
                 label="Nie wolno"
                 values={[decision.blocked_claim_summary_label]}
-                empty="brak zablokowanych obietnic"
+                empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
               />
             </div>
           </article>
@@ -649,17 +649,17 @@ function AdsOptimizerReadinessPanel({
         <TraceLine
           label="Nie wolno twierdzić"
           values={[contract.blocked_claim_summary_label]}
-          empty="brak zablokowanych obietnic"
+          empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
         />
         <TraceLine
           label="Dowody"
           values={[contract.evidence_summary_label]}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
         />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[contract.action_summary_label]}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
         />
       </div>
     </div>
@@ -713,7 +713,7 @@ function AdsOptimizerReadinessGroup({
               <TraceLine
                 label="Warunki źródłowe"
                 values={[item.source_contract_summary_label]}
-                empty="brak warunków źródłowych"
+                empty="WILQ nie podał warunków źródłowych; nie wykonuj zmiany bez sprawdzenia."
               />
               <TraceLine
                 label="Braki"
@@ -723,7 +723,7 @@ function AdsOptimizerReadinessGroup({
               <TraceLine
                 label="Blokady"
                 values={[item.blocked_claim_summary_label]}
-                empty="brak zablokowanych obietnic"
+                empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
               />
             </div>
           </article>
@@ -805,13 +805,13 @@ function AdsDecisionCard({
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
         />
         <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[decision.action_summary_label]}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
         />
         {decision.operator_review_gates.length > 0 ? (
           <TraceLine
@@ -970,14 +970,14 @@ function AdsMetricEvidencePanel({
         <TraceLine
           label="Wymaga oceny"
           values={[operatorReviewGateSummary]}
-          empty="brak wymaganej oceny"
+          empty="WILQ nie podał wymaganej oceny; zostaje ręczny review."
         />
         <TraceLine label="Nie wolno twierdzić" values={[blockedClaimSummary]} />
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
           label="Sekcje źródłowe"
           values={data.sections.map((section) => section.title)}
-          empty="brak sekcji źródłowych do pokazania"
+          empty="WILQ nie podał sekcji źródłowych; ten panel nie uzasadnia decyzji."
         />
       </div>
     </section>
@@ -1006,27 +1006,27 @@ function AdsBusinessTargetInterpretationPanel({
         <TraceLine
           label="Wolno użyć jako"
           values={interpretation.allowed_use_labels}
-          empty="brak dozwolonego użycia"
+          empty="WILQ nie podał dozwolonego użycia; nie rozszerzaj wniosku poza review."
         />
         <TraceLine
           label="Zablokowane użycia"
           values={interpretation.blocked_use_labels}
-          empty="brak zablokowanych użyć"
+          empty="WILQ nie podał zablokowanych użyć; nadal obowiązują blokady obietnic z kontraktu."
         />
         <TraceLine
           label="Braki"
           values={interpretation.missing_requirement_labels}
-          empty="brak brakujących wymagań"
+          empty="WILQ nie zgłosił brakujących wymagań; nadal sprawdź dowody przed akcją."
         />
         <TraceLine
           label="Polityki"
           values={[interpretation.policy_summary_label]}
-          empty="brak polityki oceny"
+          empty="WILQ nie podał polityki oceny; nie automatyzuj decyzji."
         />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[interpretation.action_summary_label]}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
         />
       </div>
       <div className="mt-3 rounded-md border border-line bg-white p-3">
@@ -1067,7 +1067,7 @@ function AdsBusinessTargetInterpretationPanel({
           <TraceLine
             label="Wymagane sprawdzenie"
             values={[strategyReadiness.required_validation_summary_label]}
-            empty="brak wymaganego sprawdzenia"
+            empty="WILQ nie podał wymaganego sprawdzenia; nie wykonuj zmiany bez review."
           />
           <TraceLine
             label="Braki"
@@ -1077,12 +1077,12 @@ function AdsBusinessTargetInterpretationPanel({
           <TraceLine
             label="Nie wolno twierdzić"
             values={[strategyReadiness.blocked_claim_summary_label]}
-            empty="brak zablokowanych obietnic"
+            empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
           />
           <TraceLine
             label="Akcje do sprawdzenia"
             values={[strategyReadiness.action_summary_label]}
-            empty="brak akcji do sprawdzenia"
+            empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
           />
         </div>
       </div>
@@ -1244,7 +1244,7 @@ function AdsCampaignTriageRowsPanel({
               <TraceLine
                 label="Wymagana ocena"
                 values={[row.human_review_gate_summary_label]}
-                empty="brak wymaganej oceny"
+                empty="WILQ nie podał wymaganej oceny; zostaje ręczny review."
               />
               <TraceLine
                 label="Braki"
@@ -1254,12 +1254,12 @@ function AdsCampaignTriageRowsPanel({
               <TraceLine
                 label="Dowody"
                 values={[row.evidence_summary_label]}
-                empty="brak dowodów źródłowych"
+                empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
               />
               <TraceLine
                 label="Akcje do sprawdzenia"
                 values={[row.action_summary_label]}
-                empty="brak akcji do sprawdzenia"
+                empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
               />
             </div>
           </article>
@@ -1606,7 +1606,7 @@ function AdsRecommendationRowsPanel({
             <TraceLine
               label="Ocena człowieka"
               values={[row.human_review_gate_summary_label]}
-              empty="brak oceny człowieka"
+              empty="WILQ nie ma oceny człowieka; nie wykonuj zmiany bez review."
             />
             <TraceLine
               label="Nie wolno twierdzić"
@@ -1775,7 +1775,7 @@ function AdsChangeImpactReadinessPanel({
         <TraceLine
           label="Metryki dostępne"
           values={contract.allowed_metric_labels}
-          empty="brak metryk do pokazania"
+          empty="WILQ nie podał metryk; nie oceniaj skuteczności z tego panelu."
         />
         <TraceLine
           label="Brakujące dane"
@@ -1785,13 +1785,13 @@ function AdsChangeImpactReadinessPanel({
         <TraceLine
           label="Nie wolno twierdzić"
           values={[contract.blocked_claim_summary_label]}
-          empty="brak zablokowanych obietnic"
+          empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
         />
         <LinkedTraceLine
           label="Dowody"
           values={contract.evidence_ids.slice(0, 6)}
           kind="evidence"
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
         />
       </div>
     </div>
@@ -1832,7 +1832,7 @@ function AdsChangeImpactReadinessCard({
         <TraceLine
           label="Zmienione pola"
           values={row.changed_field_labels}
-          empty="brak pól"
+          empty="WILQ nie podał zmienionych pól; nie oceniaj wpływu zmiany bez historii."
         />
         <TraceLine
           label="Braki"
@@ -1842,13 +1842,13 @@ function AdsChangeImpactReadinessCard({
         <TraceLine
           label="Blokady"
           values={[row.blocked_claim_summary_label]}
-          empty="brak zablokowanych obietnic"
+          empty="WILQ nie zgłosił dodatkowych zablokowanych obietnic."
         />
         <LinkedTraceLine
           label="Dowody"
           values={row.evidence_ids}
           kind="evidence"
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji Ads."
         />
       </div>
     </article>
@@ -2287,7 +2287,7 @@ function AdsNegativeKeywordCandidatesPanel({
               <TraceLine
                 label="Ocena człowieka"
                 values={candidate.human_review_gate_labels}
-                empty="brak oceny człowieka"
+                empty="WILQ nie ma oceny człowieka; nie wykonuj zmiany bez review."
               />
               <TraceLine label="Wymagane kontrole" values={candidate.required_check_labels} />
               <LinkedTraceLine
@@ -2353,7 +2353,7 @@ function AdsBlockedHandoffPanel({
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[handoff.action_summary_label]}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd Ads."
         />
         <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claim_labels} />
       </div>
