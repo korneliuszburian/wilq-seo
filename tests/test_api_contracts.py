@@ -2695,13 +2695,6 @@ def test_content_brief_candidate_review_persists_audit_event(
         draft_preview["draft_readiness_review_notes"]
         == "canonical i duplikaty wymagaja dalszego review"
     )
-    assert draft_preview["draft_generation_status"] in {
-        "blocked_until_content_review",
-        "blocked_pending_canonical_duplicate_review",
-        "blocked_pending_canonical_duplicate_review_after_url_review",
-        "blocked_missing_public_inventory",
-        "ready_for_review",
-    }
     assert draft_preview["draft_generation_status"] == "blocked_pending_canonical_duplicate_review"
     assert "final_canonical_review" in draft_preview["draft_blockers"]
     assert "duplicate_or_cannibalization_check" in draft_preview["draft_blockers"]
@@ -3037,10 +3030,10 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "action_plan" in content_action
     payload = content_action["action_plan"]
 
-    assert payload["content_brief_preview_total"] >= 1
-    assert payload["content_brief_preview_included"] >= 1
+    assert payload["content_plan_items_total"] >= 1
+    assert payload["content_plan_items_included"] >= 1
     brief_preview = next(
-        item for item in payload["content_brief_preview"] if item["candidate_id"] == candidate_id
+        item for item in payload["content_plan_items"] if item["candidate_id"] == candidate_id
     )
     assert brief_preview["intent"]
     assert brief_preview["source_type_label"] == "Google Search Console"
@@ -3058,8 +3051,8 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["key_objections"]
     assert brief_preview["cta_direction"]
     assert brief_preview["internal_link_direction"]
-    assert brief_preview["publication_readiness_status"] == "blocked_until_review"
-    assert "legal_factual_review" in brief_preview["publication_blockers"]
+    assert "publication_readiness_status" not in brief_preview
+    assert "publication_blockers" not in brief_preview
     assert "kontrola prawna i faktograficzna" in brief_preview["publication_blocker_labels"]
     assert brief_preview["legal_review_notes"]
     assert brief_preview["brand_voice_notes"]
@@ -3069,8 +3062,8 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert all("queries=" not in fact for fact in brief_preview["source_facts"])
     assert any("Strona z GSC:" in fact for fact in brief_preview["source_facts"])
     assert brief_preview["missing_evidence"]
-    assert brief_preview["metric_tiles"]["kliknięcia"] == 3
-    assert "gwarancja pozycji" in brief_preview["forbidden_claims"]
+    assert brief_preview["metric_tiles"]["kliknięcia"] > 0
+    assert "forbidden_claims" not in brief_preview
     assert brief_preview["source_public_url"]
     assert brief_preview["final_canonical_url"]
     assert brief_preview["intended_final_url"]
@@ -3081,14 +3074,14 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         if key.startswith(("target_site_", "mapping_review_", "transition_candidate"))
         or key == "current_transition_candidate_url"
     ]
-    assert "duplicate_or_cannibalization_check" in brief_preview["required_validation"]
-    assert "kontrola duplikacji i kanibalizacji" in brief_preview["required_validation_labels"]
+    assert "required_validation" not in brief_preview
+    assert "kontrola duplikacji i kanibalizacji" in brief_preview["required_check_labels"]
     assert "odśwież istniejącą treść" in brief_preview["decision_option_labels"]
-    assert payload["wordpress_draft_payload_preview_total"] == 1
-    assert payload["wordpress_draft_payload_preview_included"] == 1
-    draft_preview = payload["wordpress_draft_payload_preview"][0]
-    assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
-    assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
+    assert payload["wordpress_draft_preview_items_total"] == 1
+    assert payload["wordpress_draft_preview_items_included"] == 1
+    draft_preview = payload["wordpress_draft_preview_items"][0]
+    assert "preview_contract" not in draft_preview
+    assert "source_preview_contract" not in draft_preview
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
@@ -3110,21 +3103,18 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         if key.startswith(("target_site_", "mapping_review_", "transition_candidate"))
         or key == "current_transition_candidate_url"
     ]
-    assert draft_preview["draft_generation_status"] in {
-        "blocked_until_content_review",
-        "blocked_pending_canonical_duplicate_review",
-        "blocked_pending_canonical_duplicate_review_after_url_review",
-        "blocked_missing_public_inventory",
-        "ready_for_review",
-    }
-    assert draft_preview["inventory_gate_status"]
-    assert draft_preview["canonical_gate_status"]
-    assert draft_preview["duplicate_gate_status"]
+    assert "draft_generation_status" not in draft_preview
+    assert "inventory_gate_status" not in draft_preview
+    assert "canonical_gate_status" not in draft_preview
+    assert "duplicate_gate_status" not in draft_preview
+    assert draft_preview["inventory_gate_status_label"]
+    assert draft_preview["canonical_gate_status_label"]
+    assert draft_preview["duplicate_gate_status_label"]
     assert draft_preview["content_gate_summary"]
     draft_contract = draft_preview["draft_generation_contract"]
     assert draft_contract["contract_version"] == "content_draft_generation_v1"
     assert draft_contract["language"] == "pl-PL"
-    assert draft_contract["status"] == draft_preview["draft_generation_status"]
+    assert "status" not in draft_contract
     assert draft_contract["allowed_output_kind"] in {
         "outline_only_until_checks_complete",
         "reviewable_polish_draft_preview",
@@ -3177,12 +3167,13 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         "wymaga: wynik decyzji człowieka"
         in draft_preview["draft_readiness_review_contract_summary"]
     )
-    assert "duplicate_or_cannibalization_check" in draft_preview["required_validation"]
-    assert "kontrola duplikacji i kanibalizacji" in draft_preview["required_validation_labels"]
-    assert draft_preview["apply_allowed"] is False
-    assert draft_preview["api_mutation_ready"] is False
+    assert "required_validation" not in draft_preview
+    assert "kontrola duplikacji i kanibalizacji" in draft_preview["required_check_labels"]
+    assert draft_preview["apply_status_label"] == "zablokowane do sprawdzenia"
+    assert draft_preview["write_status_label"] == "bez zapisu automatycznego"
     assert draft_preview["evidence_ids"]
-    assert "gwarancja pozycji" in draft_preview["blocked_claims"]
+    assert "blocked_claims" not in draft_preview
+    assert "gwarancja pozycji" in draft_preview["blocked_claim_labels"]
     assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
 
 

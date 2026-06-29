@@ -120,6 +120,7 @@ CONTENT_CONTRACT_LABELS = {
     "new_content_without_inventory_check": "nowa treść bez sprawdzenia spisu",
     "notes": "notatki",
     "outline_only_until_checks_complete": "plan treści do czasu kontroli",
+    "present": "jest",
     "prepare_only_review_recorded": "zapisano ocenę przygotowania",
     "non_public_url_as_final_canonical": "niepubliczny URL jako finalny URL kanoniczny",
     "publish_ready_claim": "obietnica gotowości do publikacji",
@@ -160,6 +161,7 @@ CONTENT_CONTRACT_LABELS = {
     "blocked_until_relevance_review": "zablokowane do sprawdzenia dopasowania",
     "create_blocked_until_duplicate_check": "utworzenie zablokowane do kontroli duplikacji",
     "manual_merge_or_create_review": "ręcznie rozstrzygnij scalenie albo utworzenie",
+    "missing": "brak",
     "not_applicable": "nie dotyczy",
     "28d_before_publish": "28 dni przed publikacją",
     "7d_after_publish": "7 dni po publikacji",
@@ -418,6 +420,9 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 **url_semantics,
                 **content_gate_status,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
+                "wordpress_inventory_match_label": _content_contract_label(
+                    "present" if wordpress_match else "missing"
+                ),
                 "decision_options": decision_options,
                 "decision_option_labels": _content_contract_labels(decision_options),
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
@@ -669,8 +674,11 @@ def _wordpress_draft_payload_preview(
         "content_url_review_reviewed_url": ((url_review or {}).get("reviewed_url") or None),
         "content_url_review_notes": ((url_review or {}).get("review_notes") or None),
         "inventory_gate_status": inventory_gate_status,
+        "inventory_gate_status_label": _content_contract_label(inventory_gate_status),
         "canonical_gate_status": canonical_gate_status,
+        "canonical_gate_status_label": _content_contract_label(canonical_gate_status),
         "duplicate_gate_status": duplicate_gate_status,
+        "duplicate_gate_status_label": _content_contract_label(duplicate_gate_status),
         "content_gate_summary": preview.get("content_gate_summary")
         if isinstance(preview.get("content_gate_summary"), str)
         else None,
@@ -1221,34 +1229,52 @@ def _content_gate_status_for_brief(
     wordpress_match: bool,
 ) -> dict[str, str]:
     if source_type == "gsc_query_page" and mode == "refresh" and wordpress_match:
-        return {
-            "inventory_gate_status": "confirmed_current_inventory",
-            "canonical_gate_status": "public_canonical_confirmed",
-            "duplicate_gate_status": "existing_public_content_requires_refresh_or_merge",
-            "content_gate_summary": (
+        return _content_gate_status_payload(
+            inventory_gate_status="confirmed_current_inventory",
+            canonical_gate_status="public_canonical_confirmed",
+            duplicate_gate_status="existing_public_content_requires_refresh_or_merge",
+            content_gate_summary=(
                 "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
                 "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje "
                 "zablokowana przed kontrolą duplikacji."
             ),
-        }
+        )
     if source_type == "gsc_query_page":
-        return {
-            "inventory_gate_status": "missing_inventory_match",
-            "canonical_gate_status": "blocked_until_inventory_review",
-            "duplicate_gate_status": "create_blocked_until_duplicate_check",
-            "content_gate_summary": (
+        return _content_gate_status_payload(
+            inventory_gate_status="missing_inventory_match",
+            canonical_gate_status="blocked_until_inventory_review",
+            duplicate_gate_status="create_blocked_until_duplicate_check",
+            content_gate_summary=(
                 "GSC pokazuje popyt, ale WordPress nie potwierdza URL. Plan nowej treści "
                 "jest zablokowany do czasu kontroli spisu, adresu kanonicznego i duplikatów."
             ),
-        }
-    return {
-        "inventory_gate_status": "not_applicable",
-        "canonical_gate_status": "blocked_until_relevance_review",
-        "duplicate_gate_status": "manual_merge_or_create_review",
-        "content_gate_summary": (
+        )
+    return _content_gate_status_payload(
+        inventory_gate_status="not_applicable",
+        canonical_gate_status="blocked_until_relevance_review",
+        duplicate_gate_status="manual_merge_or_create_review",
+        content_gate_summary=(
             "To jest propozycja z Ahrefs do sprawdzenia, nie decyzja create. Najpierw "
             "potwierdź popyt GSC, inventory WordPress i duplikaty."
         ),
+    )
+
+
+def _content_gate_status_payload(
+    *,
+    inventory_gate_status: str,
+    canonical_gate_status: str,
+    duplicate_gate_status: str,
+    content_gate_summary: str,
+) -> dict[str, str]:
+    return {
+        "inventory_gate_status": inventory_gate_status,
+        "inventory_gate_status_label": _content_contract_label(inventory_gate_status),
+        "canonical_gate_status": canonical_gate_status,
+        "canonical_gate_status_label": _content_contract_label(canonical_gate_status),
+        "duplicate_gate_status": duplicate_gate_status,
+        "duplicate_gate_status_label": _content_contract_label(duplicate_gate_status),
+        "content_gate_summary": content_gate_summary,
     }
 
 

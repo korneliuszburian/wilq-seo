@@ -110,6 +110,12 @@ def test_context_pack_guard_blocks_raw_content_status_keys() -> None:
                             "publication_readiness_status": "blocked_until_review",
                             "publication_blockers": ["canonical_review"],
                             "forbidden_claims": ["ranking_guarantee"],
+                            "inventory_gate_status": "confirmed_current_inventory",
+                            "canonical_gate_status": "public_canonical_confirmed",
+                            "duplicate_gate_status": (
+                                "existing_public_content_requires_refresh_or_merge"
+                            ),
+                            "wordpress_inventory_match": "present",
                         }
                     ]
                 },
@@ -140,6 +146,26 @@ def test_context_pack_guard_blocks_raw_content_status_keys() -> None:
             "$.active_action_objects[0].action_plan.content_plan_items[0].forbidden_claims",
             "technical_action_plan_key",
             "Use marketer-readable compact action plan keys instead of forbidden_claims.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].inventory_gate_status",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of inventory_gate_status.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].canonical_gate_status",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of canonical_gate_status.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].duplicate_gate_status",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of duplicate_gate_status.",
+        ),
+        (
+            "$.active_action_objects[0].action_plan.content_plan_items[0].wordpress_inventory_match",
+            "technical_action_plan_key",
+            "Use marketer-readable compact action plan keys instead of wordpress_inventory_match.",
         ),
     ]
 

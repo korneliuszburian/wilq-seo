@@ -3429,6 +3429,8 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("member_type", None)
     if "status_label" in value:
         value.pop("status", None)
+    if "draft_generation_status_label" in value:
+        value.pop("draft_generation_status", None)
     if "target_status_label" in value:
         value.pop("target_status", None)
     if "missing_requirement_labels" in value:
@@ -3439,6 +3441,14 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         value.pop("publication_readiness_status", None)
     if "publication_blocker_labels" in value:
         value.pop("publication_blockers", None)
+    if "inventory_gate_status_label" in value:
+        value.pop("inventory_gate_status", None)
+    if "canonical_gate_status_label" in value:
+        value.pop("canonical_gate_status", None)
+    if "duplicate_gate_status_label" in value:
+        value.pop("duplicate_gate_status", None)
+    if "wordpress_inventory_match_label" in value:
+        value.pop("wordpress_inventory_match", None)
     _label_action_plan_metric_snapshot(value)
 
     apply_allowed = value.pop("apply_allowed", None)
@@ -3738,11 +3748,15 @@ def _compact_content_brief_preview_for_context(
         "intended_final_url",
         "final_canonical_url",
         "inventory_gate_status",
+        "inventory_gate_status_label",
         "canonical_gate_status",
+        "canonical_gate_status_label",
         "duplicate_gate_status",
+        "duplicate_gate_status_label",
         "content_gate_summary",
         "competitor_domain",
         "wordpress_inventory_match",
+        "wordpress_inventory_match_label",
         "gsc_demand",
         "metric_snapshot",
         "metric_snapshot_labels",

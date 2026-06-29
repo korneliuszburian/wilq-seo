@@ -166,6 +166,10 @@ API status later contradicts this state.
   IDs, custom-segment preview IDs, `safety_contract`, `target_scope`,
   `member_type` or `audit_required`; full action endpoints retain technical
   payload details for validation/review.
+- Content skill plan items now use labeled inventory, canonical, duplicate and
+  WordPress inventory gate fields. Raw gate status keys stay out of compact
+  skill context, while full action endpoints retain technical payload details
+  for validation/review.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
@@ -219,6 +223,8 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'expert_capabilities or expert_rule_summaries'`
 - `rtk uv run pytest tests/test_context_pack_language_guard.py -q`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or content'`
+- `rtk uv run ruff check wilq/actions/content_refresh.py apps/api/wilq_api/main.py scripts/context_pack_language_guard.py tests/test_context_pack_language_guard.py`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
