@@ -611,7 +611,7 @@ def _combined_decision_freshness(
     )
     last_success_values = [state.last_success_at for state in states if state.last_success_at]
     notes = ", ".join(
-        f"{connector_id}={state.state}"
+        f"{source_connector_label(connector_id)}: {freshness_state_label(state.state)}"
         for connector_id, state in zip(source_connectors, states, strict=False)
     )
     return FreshnessState(

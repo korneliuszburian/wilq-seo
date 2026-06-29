@@ -6048,6 +6048,10 @@ def test_command_center_exposes_polish_operator_brief(
     if merchant_decision["freshness"]["state"] == "stale":
         assert merchant_decision["decision_state"] == "stale"
     assert "Świeżość źródeł decyzji" in merchant_decision["freshness"]["notes"]
+    assert "google_merchant_center=" not in merchant_decision["freshness"]["notes"]
+    assert "=fresh" not in merchant_decision["freshness"]["notes"]
+    assert "=stale" not in merchant_decision["freshness"]["notes"]
+    assert "Merchant Center:" in merchant_decision["freshness"]["notes"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
     assert merchant_decision["priority_label"] == "najpierw"
     assert merchant_decision["decision_state_label"] in {
