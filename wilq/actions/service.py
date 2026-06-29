@@ -2098,7 +2098,7 @@ def _metric_fact_label(name: str) -> str:
     return labels.get(name, "metryka źródłowa")
 
 
-def _plain_metric_value_label(value: Any) -> str:
+def _plain_metric_value_label(value: Any, *, missing_label: str = "brak") -> str:
     if isinstance(value, bool):
         return "tak" if value else "nie"
     if isinstance(value, int):
@@ -2107,7 +2107,7 @@ def _plain_metric_value_label(value: Any) -> str:
         return f"{value:.2f}".rstrip("0").rstrip(".")
     if isinstance(value, str) and value:
         return value
-    return "brak"
+    return missing_label
 
 
 def _content_primary_url_label(item: dict[str, Any]) -> str:
@@ -3668,11 +3668,17 @@ def _ads_business_context_preview_rows(
         _preview_row("Cel budżetu", _plain_metric_value_label(context.get("budget_goal"))),
         _preview_row(
             "Docelowy zwrot z reklam",
-            _plain_metric_value_label(context.get("target_roas")),
+            _plain_metric_value_label(
+                context.get("target_roas"),
+                missing_label="nie ustawiono; WILQ nie ocenia opłacalności Ads",
+            ),
         ),
         _preview_row(
             "Docelowy koszt pozyskania celu",
-            _micros_money_label(context.get("target_cpa_micros")),
+            _micros_money_label(
+                context.get("target_cpa_micros"),
+                missing_label="nie ustawiono; WILQ nie ocenia kosztu celu",
+            ),
         ),
         _preview_row(
             "Ustawione pola",
@@ -3798,9 +3804,14 @@ def _merchant_issue_count_label(value: Any) -> str:
     return "brak liczby zgłoszeń"
 
 
-def _micros_money_label(value: Any, currency_code: str = "PLN") -> str:
+def _micros_money_label(
+    value: Any,
+    currency_code: str = "PLN",
+    *,
+    missing_label: str = "brak",
+) -> str:
     if not isinstance(value, int | float):
-        return "brak"
+        return missing_label
     return f"{value / 1_000_000:.2f} {currency_code}"
 
 

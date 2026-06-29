@@ -3860,8 +3860,14 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert target_preview_rows["Marża"] == "35%"
     assert target_preview_rows["Cel biznesowy"] == "lead quality review"
     assert target_preview_rows["Cel budżetu"] == "protect current monthly budget"
-    assert target_preview_rows["Docelowy zwrot z reklam"] == "brak"
-    assert target_preview_rows["Docelowy koszt pozyskania celu"] == "brak"
+    assert (
+        target_preview_rows["Docelowy zwrot z reklam"]
+        == "nie ustawiono; WILQ nie ocenia opłacalności Ads"
+    )
+    assert (
+        target_preview_rows["Docelowy koszt pozyskania celu"]
+        == "nie ustawiono; WILQ nie ocenia kosztu celu"
+    )
     assert target_preview_rows["Ustawione pola"] == "3 pola ustawione lokalnie"
     target_marketer_card_text = str(
         {

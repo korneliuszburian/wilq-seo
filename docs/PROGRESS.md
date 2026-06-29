@@ -152,6 +152,12 @@ API status later contradicts this state.
   conditions. Shared trace rows also no longer default to context-free `brak`.
   Focused Ads route tests, dashboard typecheck/lint, language guard and browser
   proof passed.
+- Google Ads target-guardrail action previews no longer show context-free
+  `Docelowy zwrot z reklam: brak` or `Docelowy koszt pozyskania celu: brak`.
+  The API preview now says that the Ads target is not set and which business
+  conclusion WILQ therefore will not make. Focused target-guardrail API tests,
+  action-detail route tests, dashboard typecheck/lint, marketer/context-pack
+  language guards, live API proof and browser proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof
@@ -303,6 +309,7 @@ API status later contradicts this state.
 - `rtk uv run ruff check wilq/actions/ga4/tracking_quality.py wilq/actions/service.py apps/api/wilq_api/main.py scripts/context_pack_language_guard.py tests/test_context_pack_language_guard.py`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant_product_performance_readiness or merchant_diagnostics_promotes_ads_product_state_review_decision'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'target_guardrail'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`

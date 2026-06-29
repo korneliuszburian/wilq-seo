@@ -1059,8 +1059,14 @@ const adsTargetGuardrailActionFixture: ActionObject = {
           label: "Cel budżetu",
           value: "wstępnie chronić obecny budżet; eskalować tylko po review"
         },
-        { label: "Docelowy zwrot z reklam", value: "brak" },
-        { label: "Docelowy koszt pozyskania celu", value: "brak" },
+        {
+          label: "Docelowy zwrot z reklam",
+          value: "nie ustawiono; WILQ nie ocenia opłacalności Ads"
+        },
+        {
+          label: "Docelowy koszt pozyskania celu",
+          value: "nie ustawiono; WILQ nie ocenia kosztu celu"
+        },
         { label: "Ustawione pola", value: "3 pola ustawione lokalnie" },
         {
           label: "Opcje celu",
@@ -1180,8 +1186,14 @@ const adsStrategyReviewActionFixture: ActionObject = {
           label: "Cel budżetu",
           value: "wstępnie chronić obecny budżet; eskalować tylko po review"
         },
-        { label: "Docelowy zwrot z reklam", value: "brak" },
-        { label: "Docelowy koszt pozyskania celu", value: "brak" },
+        {
+          label: "Docelowy zwrot z reklam",
+          value: "nie ustawiono; WILQ nie ocenia opłacalności Ads"
+        },
+        {
+          label: "Docelowy koszt pozyskania celu",
+          value: "nie ustawiono; WILQ nie ocenia kosztu celu"
+        },
         { label: "Ustawione pola", value: "3 pola ustawione lokalnie" },
         { label: "Ostatni przegląd strategii", value: "brak zapisanego przeglądu" },
         {
@@ -1858,8 +1870,18 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
     expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
-    expect(screen.getByText(/Docelowy zwrot z reklam: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Docelowy koszt pozyskania celu: brak/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Docelowy zwrot z reklam: nie ustawiono; WILQ nie ocenia opłacalności Ads/
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Docelowy koszt pozyskania celu: nie ustawiono; WILQ nie ocenia kosztu celu/
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Docelowy zwrot z reklam: brak/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Docelowy koszt pozyskania celu: brak/)).not.toBeInTheDocument();
     expect(screen.getByText(/Ustawione pola: 3 pola ustawione lokalnie/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: docelowy zwrot z reklam albo koszt pozyskania celu/)).toBeInTheDocument();
     expect(screen.getByText(/Opcje celu: docelowy zwrot z reklam, docelowy koszt pozyskania celu/)).toBeInTheDocument();
