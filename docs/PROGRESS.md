@@ -118,6 +118,10 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Action detail now hides legacy English apply/audit summaries from the
+  marketer-facing history. The GA4 action detail shows "Zapis zmian
+  zablokowany" and a Polish safety summary instead of raw apply-contract text;
+  focused API, dashboard, language-guard and browser checks passed.
 - Marketing brief, Merchant, GA4 and Ahrefs blocked-read summaries use Polish
   operator status labels instead of raw refresh status enum values.
 - Command Center decision freshness notes use Polish source and freshness

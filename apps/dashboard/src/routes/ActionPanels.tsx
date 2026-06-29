@@ -134,7 +134,8 @@ export function ActionPreviewControls({ action }: { action: ActionObject }) {
             Podgląd zmian
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Generuje podgląd zmian i zapis audytu bez zmian w zewnętrznych systemach.
+            Pokazuje, co WILQ sprawdzi. Nie zapisuje zmian w zewnętrznych systemach;
+            zapisuje tylko ślad sprawdzenia.
           </p>
         </div>
         <button

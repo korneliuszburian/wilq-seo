@@ -46,11 +46,13 @@ from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.payloads import validate_action_payload
 from wilq.actions.service import (
     _ads_recommendation_type_label,
-    _merchant_attribute_key as _action_merchant_attribute_key,
     _operator_audit_summary_text,
     _social_draft_actions,
     apply_action,
     list_actions,
+)
+from wilq.actions.service import (
+    _merchant_attribute_key as _action_merchant_attribute_key,
 )
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
@@ -94,6 +96,8 @@ from wilq.briefing.localo_labels import localo_contract_label, localo_metric_fac
 from wilq.briefing.marketing_brief import _blocker_summary, build_marketing_brief
 from wilq.briefing.merchant_diagnostics import (
     _merchant_attribute_key as _diagnostic_merchant_attribute_key,
+)
+from wilq.briefing.merchant_diagnostics import (
     _merchant_connector_status_label,
     _merchant_freshness_assessment,
     _merchant_freshness_label,
@@ -2879,7 +2883,7 @@ def test_actions_api_drops_legacy_content_review_audit_terms(
         if event["id"] == "audit_legacy_content_url_review"
     )
     assert legacy_event["summary"] == (
-        "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
     )
     assert legacy_event["details"]["checked_items"]
     assert "content_draft_readiness_review" not in legacy_event["details"]
@@ -3186,7 +3190,9 @@ def test_legacy_raw_audit_summary_is_not_rewritten_with_string_labels() -> None:
 
     cleaned = _operator_audit_summary_text(summary)
 
-    assert cleaned == ("Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu.")
+    assert cleaned == (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+    )
     assert "payload_apply_allowed_false" not in cleaned
     assert "candidate:" not in cleaned
     assert "blocked_claim:" not in cleaned
@@ -3243,13 +3249,50 @@ def test_action_review_gate_hides_raw_legacy_review_summary(
 
     summary = response.json()["review_gate"]["last_review_summary"]
 
-    assert summary == ("Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu.")
+    assert summary == (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+    )
     assert "Wynik review" not in summary
     assert "Blockery" not in summary
     assert "candidate:" not in summary
     assert "source_type:" not in summary
     assert "payload_apply_allowed_false" not in summary
     assert "blocked_claim:" not in summary
+
+
+def test_action_detail_hides_legacy_apply_audit_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "legacy_apply_audit.sqlite3"))
+
+    local_state_store().save_audit_event(
+        AuditEvent(
+            id="audit_legacy_apply_summary",
+            action_id="act_review_ga4_tracking_quality",
+            event_type="apply_confirmation_missing",
+            actor="wilq_api",
+            summary=(
+                "Explicit apply confirmation is required.; "
+                "Action must be validated before apply.; "
+                "Action mode must be apply before external execution."
+            ),
+            evidence_ids=["ev_refresh_refresh_google_analytics_4_action_test"],
+        )
+    )
+
+    response = client.get("/api/actions/act_review_ga4_tracking_quality")
+    assert response.status_code == 200
+
+    serialized = json.dumps(response.json(), ensure_ascii=False)
+    assert (
+        "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
+        in serialized
+    )
+    assert "Zapis zmian zablokowany" in serialized
+    assert "Explicit apply confirmation is required" not in serialized
+    assert "Action must be validated before apply" not in serialized
+    assert "Action mode must be apply before external execution" not in serialized
 
 
 def test_daily_context_pack_preserves_action_preview_audit(

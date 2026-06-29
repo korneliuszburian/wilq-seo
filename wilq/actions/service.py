@@ -4593,7 +4593,7 @@ def _action_audit_summary_for_operator(event: AuditEvent) -> str:
 def _operator_audit_summary_text(summary: str) -> str:
     clean_summary = str(summary or "").strip()
     if _contains_raw_audit_contract_text(clean_summary):
-        return "Starsze zdarzenie audytu zapisane przed oczyszczeniem języka produktu."
+        return "Historyczny ślad bezpieczeństwa. Nie zapisano zmian w zewnętrznych systemach."
     clean_summary = _remove_raw_audit_identifiers(clean_summary)
     return _normalize_operator_summary_text(clean_summary)
 
@@ -4669,6 +4669,9 @@ def _contains_raw_audit_contract_text(summary: str) -> bool:
         "target" "_site",
         "target" "_site" "_",
         "target" "_site" "_migration",
+        "Explicit apply confirmation is required",
+        "Action must be validated before apply",
+        "Action mode must be apply before external execution",
     )
     return any(fragment in summary for fragment in raw_fragments)
 
@@ -4727,6 +4730,7 @@ def _action_audit_event_label(event_type: str) -> str:
         "action_apply_confirmation_blocked": "Potwierdzenie zablokowane",
         "action_impact_check_completed": "Sprawdzenie efektu zapisane",
         "action_impact_check_blocked": "Sprawdzenie efektu zablokowane",
+        "apply_confirmation_missing": "Zapis zmian zablokowany",
         "action_apply_blocked": "Zapis zmian zablokowany",
         "action_apply_completed": "Zapis zmian wykonany",
     }
