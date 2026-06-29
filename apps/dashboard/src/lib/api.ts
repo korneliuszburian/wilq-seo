@@ -1,6 +1,5 @@
 import {
   ActionObjectSchema,
-  ActionApplyResultSchema,
   ActionConfirmResultSchema,
   ActionImpactCheckResultSchema,
   ActionPreviewResultSchema,
@@ -11,11 +10,9 @@ import {
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentPreflightResponseSchema,
-  ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
-  ExpertRuleSchema,
   Ga4DiagnosticsResponseSchema,
   KnowledgeCardSchema,
   KnowledgeOperatingMapResponseSchema,
@@ -23,15 +20,11 @@ import {
   MarketingBriefSchema,
   MarketingPlaybookSchema,
   MerchantDiagnosticsResponseSchema,
-  MetricFactSchema,
-  MetricStoreStatusSchema,
   OpportunitySchema,
   TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
   type ActionObject,
-  type ActionApplyRequest,
-  type ActionApplyResult,
   type ActionConfirmRequest,
   type ActionConfirmResult,
   type ActionImpactCheckRequest,
@@ -60,7 +53,6 @@ import {
   type MarketingPlaybook,
   type MerchantDiagnosticsResponse,
   type MetricFact,
-  type MetricStoreStatus,
   type Opportunity,
   type TacticalQueueResponse,
   type Workflow,
@@ -146,18 +138,6 @@ export function getConnectors(): Promise<ConnectorStatus[]> {
   return apiGet("/api/connectors", z.array(ConnectorStatusSchema));
 }
 
-export function getConnectorRefreshRuns(): Promise<ConnectorRefreshRun[]> {
-  return apiGet("/api/connectors/refresh-runs", z.array(ConnectorRefreshRunSchema));
-}
-
-export function getMetricFacts(limit = 24): Promise<MetricFact[]> {
-  return apiGet(`/api/metrics?limit=${limit}`, z.array(MetricFactSchema));
-}
-
-export function getMetricStoreStatus(): Promise<MetricStoreStatus> {
-  return apiGet("/api/metrics/status", MetricStoreStatusSchema);
-}
-
 export function getOpportunities(): Promise<Opportunity[]> {
   return apiGet("/api/opportunities", z.array(OpportunitySchema));
 }
@@ -202,32 +182,6 @@ export function impactCheckAction(
   return apiPost(`/api/actions/${actionId}/impact-check`, ActionImpactCheckResultSchema, request);
 }
 
-export function applyAction(
-  actionId: string,
-  request: ActionApplyRequest
-): Promise<ActionApplyResult> {
-  return apiApplyAction(actionId, request);
-}
-
-async function apiApplyAction(
-  actionId: string,
-  request: ActionApplyRequest
-): Promise<ActionApplyResult> {
-  const response = await fetch(`${API_BASE}/api/actions/${actionId}/apply`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request)
-  });
-  const payload = await response.json();
-  if (!response.ok && payload && typeof payload === "object" && "detail" in payload) {
-    return ActionApplyResultSchema.parse(payload.detail);
-  }
-  if (!response.ok) {
-    throw new Error(`API request failed: /api/actions/${actionId}/apply`);
-  }
-  return ActionApplyResultSchema.parse(payload);
-}
-
 export function getEvidence(): Promise<Evidence[]> {
   return apiGet("/api/evidence", z.array(EvidenceSchema));
 }
@@ -244,10 +198,6 @@ export function getWorkflowRuns(): Promise<WorkflowRun[]> {
   return apiGet("/api/workflow-runs", z.array(WorkflowRunSchema));
 }
 
-export function getExpertRules(): Promise<ExpertRule[]> {
-  return apiGet("/api/expert/rules", z.array(ExpertRuleSchema));
-}
-
 export function getKnowledgeCards(): Promise<KnowledgeCard[]> {
   return apiGet("/api/knowledge/cards", z.array(KnowledgeCardSchema));
 }
@@ -262,7 +212,6 @@ export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapRespons
 
 export type {
   ActionObject,
-  ActionApplyResult,
   ActionConfirmResult,
   ActionImpactCheckResult,
   ActionPreviewCardViewModel,
@@ -289,7 +238,6 @@ export type {
   MarketingPlaybook,
   MerchantDiagnosticsResponse,
   MetricFact,
-  MetricStoreStatus,
   Opportunity,
   TacticalQueueResponse,
   Workflow,

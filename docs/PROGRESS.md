@@ -31,14 +31,15 @@ Date: 2026-06-29
 ## Latest Verified State
 
 - Fallow is now wired as the repo's JS/TS structure scanner through
-  `.fallowrc.json` and root package scripts. Full scan currently reports
-  existing dashboard debt: 7 unused exports, 1 unused dependency, 2 unlisted
-  dependencies, 83 duplicate clone groups, 22.8% duplicated lines and 18
-  functions over complexity thresholds. The highest-priority cleanup targets
-  are `GenericSurface.tsx`, `OperatingRouteSurfaces.tsx`, the monolithic
+  `.fallowrc.json` and root package scripts. Dead-code and dependency hygiene
+  are now clean: zero unused exports, zero unused dependencies and zero
+  unlisted dependencies. Full scan still reports inherited dashboard debt: 83
+  duplicate clone groups, 22.9% duplicated lines and 18 functions over
+  complexity thresholds. The highest-priority cleanup targets are
+  `GenericSurface.tsx`, `OperatingRouteSurfaces.tsx`, the monolithic
   `App.test.tsx`, and repeated dashboard route panels. `fallow:audit` is the
   practical changed-file gate for now; full `fallow:summary` is intentionally
-  red until the inherited debt is cleaned.
+  red until the inherited duplication and complexity are cleaned.
 - Merchant review cards no longer expose slash-combined decision type,
   priority, issue/context summaries or the stale `audit zmiany` wording. The
   producing API now emits labelled Polish decision summaries, dashboard cards

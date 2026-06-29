@@ -12,7 +12,7 @@ import {
   ShoppingBag
 } from "lucide-react";
 
-export const primaryRoutes = [
+const primaryRoutes = [
   { to: "/command-center", label: "Centrum pracy", icon: Activity },
   { to: "/merchant", label: "Merchant", icon: ShoppingBag },
   { to: "/content-planner", label: "Treści", icon: FileText },

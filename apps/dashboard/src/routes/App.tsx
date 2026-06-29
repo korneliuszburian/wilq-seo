@@ -252,7 +252,7 @@ export function createWilqRouter({
   });
 }
 
-export const router = createWilqRouter();
+const router = createWilqRouter();
 
 declare module "@tanstack/react-router" {
   interface Register {
