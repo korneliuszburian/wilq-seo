@@ -1249,7 +1249,7 @@ def _marketing_brief_connector_label(connector_id: str) -> str:
 
 def _marketing_brief_evidence_count_label(count: int) -> str:
     if count == 0:
-        return "brak dowodów źródłowych"
+        return "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
     if count == 1:
         return "1 dowód źródłowy"
     if 2 <= count <= 4:
@@ -1259,7 +1259,7 @@ def _marketing_brief_evidence_count_label(count: int) -> str:
 
 def _marketing_brief_action_count_label(count: int) -> str:
     if count == 0:
-        return "brak akcji do sprawdzenia"
+        return "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     if count == 1:
         return "1 akcja do sprawdzenia"
     if 2 <= count <= 4:

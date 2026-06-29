@@ -596,7 +596,10 @@ def _combined_decision_freshness(
     freshness_by_connector: dict[str, FreshnessState],
 ) -> FreshnessState:
     if not source_connectors:
-        return FreshnessState(state="unknown", notes="Brak źródeł danych w decyzji.")
+        return FreshnessState(
+            state="unknown",
+            notes="Nie ma źródeł danych dla tej decyzji; nie traktuj jej jako gotowej rekomendacji.",
+        )
     states = [
         freshness_by_connector.get(
             connector_id,

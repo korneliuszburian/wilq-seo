@@ -876,7 +876,7 @@ def _localo_source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
 def _localo_evidence_summary_label(evidence_ids: Iterable[str]) -> str:
     count = len(list(evidence_ids))
     if count == 0:
-        return "brak dowodów źródłowych"
+        return "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
     if count == 1:
         return "1 dowód źródłowy"
     if 2 <= count <= 4:

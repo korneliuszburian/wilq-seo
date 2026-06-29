@@ -199,8 +199,8 @@ describe("ActionPanels", () => {
     expect(source).not.toContain('empty="brak błędów"');
     expect(source).not.toContain('empty="brak ostrzeżeń"');
     expect(source).not.toContain('empty="brak blokad potwierdzenia"');
-    expect(source).not.toContain('empty="brak źródeł danych"');
-    expect(source).not.toContain('"brak dowodów źródłowych"');
+    expect(source).not.toMatch(/empty="brak (źródeł|dowodów)/);
+    expect(source).not.toMatch(/"brak dowodów/);
     expect(source).toContain("nie traktuj tej akcji jako gotowej rekomendacji");
     expect(source).toContain("WILQ nie zgłosił blokad podglądu");
     expect(source).toContain("WILQ nie zgłosił błędów sprawdzenia");

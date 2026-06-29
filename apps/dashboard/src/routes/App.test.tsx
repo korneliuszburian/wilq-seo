@@ -18,7 +18,7 @@ const connectors = [
     missing_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
     missing_credentials_summary_label: "1 pole",
     available_credential_sources: [],
-    credential_source_summary_label: "brak źródeł konfiguracji",
+    credential_source_summary_label: "Nie ma źródeł konfiguracji; nie traktuj integracji jako gotowej",
     freshness: { state: "missing" },
     freshness_label: "brak danych",
     supported_actions: []
@@ -6039,7 +6039,7 @@ const ahrefsDiagnostics = {
     status: "ready",
     status_label: "gotowe",
     title: "Luki SEO z Ahrefs",
-    summary: "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: dane kompletne.",
+    summary: "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: Dane kompletne dla tej decyzji.",
     available_read_contracts: [
       "ahrefs_authority_summary",
       "ahrefs_gap_metric_facts",
@@ -6060,7 +6060,7 @@ const ahrefsDiagnostics = {
     ],
     missing_read_contracts: [],
     missing_read_contract_labels: [],
-    missing_read_contract_summary_label: "dane kompletne",
+    missing_read_contract_summary_label: "Dane kompletne dla tej decyzji",
     allowed_evidence: [
       "domain_rating",
       "ahrefs_rank",
@@ -6090,7 +6090,7 @@ const ahrefsDiagnostics = {
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: [],
-    action_summary_label: "brak akcji do sprawdzenia",
+    action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
     gap_records: [
       {
         id: "ahrefs_gap_content_gap_test",
@@ -6285,7 +6285,7 @@ const ahrefsDiagnostics = {
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
     evidence_summary_label: "1 dowód źródłowy",
     action_ids: [],
-    action_summary_label: "brak akcji do sprawdzenia",
+    action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
     blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
     blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"]
   },
@@ -6346,7 +6346,7 @@ const ahrefsDiagnostics = {
         ahrefs_rank: "pozycja w rankingu Ahrefs"
       },
       action_ids: [],
-      action_summary_label: "brak akcji do sprawdzenia",
+      action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
       blocked_claims: [
         "wzrost ruchu",
         "wzrost autorytetu"
@@ -6365,7 +6365,7 @@ const ahrefsDiagnostics = {
       decision_type_label: "sprawdzenie luk",
       title: "Przejrzyj rekordy luk Ahrefs",
       summary:
-        "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: dane kompletne.",
+        "WILQ ma 2 rekordy luk z Ahrefs. Brakujące dane: Dane kompletne dla tej decyzji.",
       rationale:
         "To są konkretne rekordy z dowodami Ahrefs, więc mogą wejść do sprawdzenia SEO i treści.",
       next_step:
@@ -6412,7 +6412,7 @@ const ahrefsDiagnostics = {
         ahrefs_content_gap_count: "luki treści"
       },
       action_ids: [],
-      action_summary_label: "brak akcji do sprawdzenia",
+      action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -6436,7 +6436,7 @@ const ahrefsDiagnostics = {
       metric_facts: [],
       metric_fact_labels: {},
       action_ids: [],
-      action_summary_label: "brak akcji do sprawdzenia",
+      action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
       blocked_claims: [],
       blocked_claim_labels: [],
       risk: "low"
@@ -6455,7 +6455,7 @@ const ahrefsDiagnostics = {
       metric_facts: [],
       metric_fact_labels: {},
       action_ids: [],
-      action_summary_label: "brak akcji do sprawdzenia",
+      action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
       blocked_claims: ["wzrost ruchu", "wzrost autorytetu"],
       blocked_claim_labels: ["wzrost ruchu", "wzrost autorytetu"],
       risk: "low"
@@ -6469,7 +6469,7 @@ const ahrefsDiagnostics = {
   evidence_summary_label: "3 dowody źródłowe",
   source_connector_labels: ["Ahrefs"],
   action_ids: [],
-  action_summary_label: "brak akcji do sprawdzenia",
+  action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
   blocker_count: 1
 };
 
@@ -6784,7 +6784,7 @@ const knowledgeOperatingMap = {
   expert_rule_count: 1,
   binding_count: 1,
   blocked_binding_summary_label: "brak zablokowanych decyzji",
-  missing_contract_summary_label: "dane kompletne",
+  missing_contract_summary_label: "Dane kompletne dla tej decyzji",
   blocked_claim_count_summary_label: "1 zablokowana obietnica",
   bindings: [
     {
@@ -6811,7 +6811,7 @@ const knowledgeOperatingMap = {
       required_evidence_summary_label: "2 wymagane dowody",
       missing_contracts: [],
       missing_contract_labels: [],
-      missing_contract_summary_label: "dane kompletne",
+      missing_contract_summary_label: "Dane kompletne dla tej decyzji",
       missing_contract_detail_label: "brak",
       has_missing_contracts: false,
       blocked_claims: ["ocena zmarnowanego budżetu"],
@@ -7405,7 +7405,7 @@ function mockWorkflowAndKnowledgeApi(url: string) {
               metric_tiles: { decyzje: 4, blokady: 0, źródła: 1, akcje: 1 },
               missing_contracts: [],
               missing_contract_labels: [],
-              missing_contract_summary_label: "dane kompletne",
+              missing_contract_summary_label: "Dane kompletne dla tej decyzji",
               missing_contract_detail_label: "brak",
               risk: "low",
               risk_label: "niskie ryzyko"
@@ -8661,7 +8661,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Brakujące dane: brak/)).not.toBeInTheDocument();
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
-    expect(screen.getByText("dane kompletne")).toBeInTheDocument();
+    expect(screen.getByText("Dane kompletne dla tej decyzji")).toBeInTheDocument();
     expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();
     expect(screen.queryByText(/typed Ahrefs gap records/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/gap read contract/i)).not.toBeInTheDocument();

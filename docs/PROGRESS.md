@@ -118,6 +118,12 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Central operator summary labels now explain decision limits instead of
+  returning bare `brak ...` placeholders. Missing sources, evidence, actions,
+  knowledge, required evidence, lineage, blocked promises and credential source
+  summaries tell the marketer whether the item is safe to treat as a
+  recommendation. Focused API/dashboard tests, marketer/context-pack language
+  guards, dashboard typecheck/lint and `git diff --check` passed.
 - Demand Gen metric rows now expose self-defending marketer labels from the
   typed API/schema contract. The dashboard no longer renders generic `brak`
   fallbacks or local Ads cost/GA4 percent formatters for Demand Gen metrics.

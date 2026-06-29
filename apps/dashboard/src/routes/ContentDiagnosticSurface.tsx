@@ -480,7 +480,7 @@ function ContentSelectedDecisionPanel({
   const panelEvidenceSummary =
     marketerDecision?.evidence_summary ??
     primaryDecision?.evidence_summary_label ??
-    "brak dowodów źródłowych";
+    "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji";
   const panelSourceConnectors =
     marketerDecision?.source_connector_labels?.length
       ? marketerDecision.source_connector_labels

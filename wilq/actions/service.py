@@ -4511,7 +4511,7 @@ def _action_status_label(value: ActionStatus | str) -> str:
 def _action_evidence_summary_label(evidence_ids: list[str]) -> str:
     count = len(evidence_ids)
     if count == 0:
-        return "brak dowodów źródłowych"
+        return "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
     if count == 1:
         return "1 dowód źródłowy"
     if 2 <= count <= 4:

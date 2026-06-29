@@ -319,7 +319,7 @@ def ads_channel_type_label(channel_type: object | None) -> str:
 def blocked_claim_summary_label(claims: Iterable[str]) -> str:
     labels = blocked_claim_labels(claims)
     if not labels:
-        return "brak zakazanych obietnic"
+        return "WILQ nie zgłosił zakazanych obietnic; nadal sprawdź dowody przed publikacją"
     return ", ".join(labels)
 
 
@@ -353,14 +353,14 @@ def source_connector_labels(connector_ids: Iterable[str]) -> list[str]:
 def source_connector_summary_label(connector_ids: Iterable[str]) -> str:
     labels = source_connector_labels(connector_ids)
     if not labels:
-        return "brak źródeł danych"
+        return "Nie ma źródeł danych; nie traktuj tego jako rekomendacji"
     return ", ".join(labels)
 
 
 def evidence_count_label(evidence_ids: Iterable[str]) -> str:
     count = len(list(evidence_ids))
     if count == 0:
-        return "brak dowodów źródłowych"
+        return "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
     if count == 1:
         return "1 dowód źródłowy"
     if 2 <= count <= 4:
@@ -371,7 +371,7 @@ def evidence_count_label(evidence_ids: Iterable[str]) -> str:
 def action_count_label(action_ids: Iterable[str]) -> str:
     count = len(list(action_ids))
     if count == 0:
-        return "brak akcji do sprawdzenia"
+        return "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     if count == 1:
         return "1 akcja do sprawdzenia"
     if 2 <= count <= 4:
@@ -382,7 +382,7 @@ def action_count_label(action_ids: Iterable[str]) -> str:
 def source_contract_count_label(contract_ids: Iterable[str]) -> str:
     count = len(list(contract_ids))
     if count == 0:
-        return "brak warunków źródłowych"
+        return "Nie ma warunków źródłowych; sprawdź dane przed decyzją"
     if count == 1:
         return "1 warunek źródłowy"
     if 2 <= count <= 4:
@@ -393,7 +393,7 @@ def source_contract_count_label(contract_ids: Iterable[str]) -> str:
 def policy_count_label(policy_ids: Iterable[str]) -> str:
     count = len(list(policy_ids))
     if count == 0:
-        return "brak polityk"
+        return "Nie ma polityk decyzyjnych; nie traktuj tego jako gotowej reguły"
     if count == 1:
         return "1 polityka"
     if 2 <= count <= 4:
@@ -404,7 +404,7 @@ def policy_count_label(policy_ids: Iterable[str]) -> str:
 def required_validation_count_label(required_validation: Iterable[str]) -> str:
     count = len(list(required_validation))
     if count == 0:
-        return "brak wymaganego sprawdzenia"
+        return "Nie wskazano wymaganego sprawdzenia; decyzja wymaga ręcznej oceny"
     if count == 1:
         return "1 wymagane sprawdzenie"
     if 2 <= count <= 4:
@@ -415,7 +415,7 @@ def required_validation_count_label(required_validation: Iterable[str]) -> str:
 def credential_field_count_label(fields: Iterable[str]) -> str:
     count = len(list(fields))
     if count == 0:
-        return "brak brakujących pól dostępu"
+        return "Pola dostępu kompletne w tym sprawdzeniu"
     if count == 1:
         return "1 pole"
     if 2 <= count <= 4:
@@ -426,7 +426,7 @@ def credential_field_count_label(fields: Iterable[str]) -> str:
 def credential_source_count_label(sources: Iterable[str]) -> str:
     count = len(list(sources))
     if count == 0:
-        return "brak źródeł konfiguracji"
+        return "Nie ma źródeł konfiguracji; nie traktuj integracji jako gotowej"
     if count == 1:
         return "1 źródło"
     if 2 <= count <= 4:
@@ -439,7 +439,7 @@ def reported_issue_occurrence_count_label(count: int) -> str:
     last_two = absolute % 100
     last = absolute % 10
     if absolute == 0:
-        return "brak zgłoszeń problemu"
+        return "Nie ma zgłoszeń problemu w tym odczycie"
     if absolute == 1:
         return "1 zgłoszenie problemu"
     if last >= 2 and last <= 4 and not (last_two >= 12 and last_two <= 14):
@@ -450,7 +450,7 @@ def reported_issue_occurrence_count_label(count: int) -> str:
 def mapped_action_type_count_label(action_types: Iterable[str]) -> str:
     count = len(list(action_types))
     if count == 0:
-        return "brak typów akcji do sprawdzenia"
+        return "Nie ma typów akcji do sprawdzenia; zostaje ręczna ocena"
     if count == 1:
         return "1 typ akcji do sprawdzenia"
     if 2 <= count <= 4:
@@ -465,7 +465,7 @@ def knowledge_reference_count_label(
 ) -> str:
     count = len(list(knowledge_card_ids)) + len(list(playbook_ids)) + len(list(expert_rule_ids))
     if count == 0:
-        return "brak użytej wiedzy"
+        return "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
     if count == 1:
         return "1 element wiedzy użyty w decyzji"
     if 2 <= count <= 4:
@@ -476,7 +476,7 @@ def knowledge_reference_count_label(
 def required_evidence_count_label(required_evidence: Iterable[str]) -> str:
     count = len(list(required_evidence))
     if count == 0:
-        return "brak wymaganych dowodów"
+        return "Nie wskazano wymaganych dowodów; nie odblokowuje to publikacji ani zapisu"
     if count == 1:
         return "1 wymagany dowód"
     if 2 <= count <= 4:
@@ -487,7 +487,7 @@ def required_evidence_count_label(required_evidence: Iterable[str]) -> str:
 def source_lineage_count_label(source_lineage: Iterable[str]) -> str:
     count = len(list(source_lineage))
     if count == 0:
-        return "brak śladów źródłowych"
+        return "Nie ma śladów źródłowych; nie traktuj tego jako sprawdzonej wiedzy"
     if count == 1:
         return "1 ślad źródłowy"
     if 2 <= count <= 4:
@@ -498,7 +498,7 @@ def source_lineage_count_label(source_lineage: Iterable[str]) -> str:
 def workflow_error_count_label(errors: Iterable[str]) -> str:
     count = len(list(errors))
     if count == 0:
-        return "brak błędów procesu"
+        return "Nie zgłoszono błędów procesu; nadal sprawdź wynik przed zapisem"
     if count == 1:
         return "1 błąd procesu"
     if 2 <= count <= 4:
@@ -549,7 +549,7 @@ def missing_contract_labels(contracts: Iterable[object]) -> list[str]:
 def missing_contract_count_label(contracts: Iterable[object]) -> str:
     count = len(missing_contract_labels(contracts))
     if count == 0:
-        return "dane kompletne"
+        return "Dane kompletne dla tej decyzji"
     if count == 1:
         return "1 brakujący zakres danych"
     if 2 <= count <= 4:
@@ -560,7 +560,7 @@ def missing_contract_count_label(contracts: Iterable[object]) -> str:
 def blocked_claim_count_label(claims: Iterable[str]) -> str:
     count = len(blocked_claim_labels(claims))
     if count == 0:
-        return "brak zablokowanych obietnic"
+        return "WILQ nie zgłosił zablokowanych obietnic; nadal sprawdź dowody przed publikacją"
     if count == 1:
         return "1 zablokowana obietnica"
     if 2 <= count <= 4:
@@ -571,7 +571,7 @@ def blocked_claim_count_label(claims: Iterable[str]) -> str:
 def blocker_count_label(blockers: Iterable[object]) -> str:
     count = len([blocker for blocker in blockers if str(blocker).strip()])
     if count == 0:
-        return "brak blokad"
+        return "Nie zgłoszono blokad; nadal sprawdź dowody i zgodę człowieka"
     if count == 1:
         return "1 blokada"
     if 2 <= count <= 4:

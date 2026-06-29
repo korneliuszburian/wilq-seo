@@ -43,7 +43,7 @@ describe("formatContentMetricValue", () => {
     expect(routeSource).not.toContain('empty="brak potwierdzonych podobnych URL-i"');
     expect(routeSource).not.toContain('empty="brak podglądu"');
     expect(routeSource).not.toContain('empty="brak trybów decyzji"');
-    expect(routeSource).not.toContain('empty="brak dowodów źródłowych"');
+    expect(routeSource).not.toMatch(/empty="brak dowodów/);
     expect(routeSource).not.toContain('empty="brak wspólnych zapytań w GSC"');
     expect(routeSource).not.toContain('empty="brak powiązanych URL-i WordPress"');
     expect(routeSource).toContain("nie traktuj dev hosta jako adresu kanonicznego");

@@ -29,9 +29,9 @@ describe("WorkflowPanels", () => {
             source_connector_labels: ["Localo"],
             source_connector_summary_label: "Localo",
             evidence_ids: [],
-            evidence_summary_label: "brak dowodów źródłowych",
+            evidence_summary_label: "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji",
             action_ids: [],
-            action_summary_label: "brak akcji do sprawdzenia",
+            action_summary_label: "Nie ma akcji do sprawdzenia; zostaje ręczna ocena",
             blocked_claims: ["local_ranking_uplift_claim"],
             blocked_claim_labels: ["obietnica do sprawdzenia"],
             blocked_claim_summary_label: "1 zablokowana obietnica",
@@ -48,7 +48,7 @@ describe("WorkflowPanels", () => {
     );
 
     expect(screen.getByText("Źródła danych: Localo")).toBeInTheDocument();
-    expect(screen.getByText("Dowody: brak dowodów źródłowych")).toBeInTheDocument();
+    expect(screen.getByText("Dowody: Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji")).toBeInTheDocument();
     expect(screen.getByText("Brakujące dane: 1 brakujący zakres danych")).toBeInTheDocument();
     expect(screen.getByText("Granice wniosków: 1 zablokowana obietnica")).toBeInTheDocument();
     expect(screen.queryByText(/^Źródła danych: localo$/)).not.toBeInTheDocument();

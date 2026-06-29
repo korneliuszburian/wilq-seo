@@ -1473,7 +1473,7 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == ("odczyt zakończony")
     assert connector_refresh_status_label(ConnectorRefreshStatus.blocked) == ("odczyt zablokowany")
     assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
-    assert knowledge_reference_count_label() == "brak użytej wiedzy"
+    assert knowledge_reference_count_label() == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
     assert (
         knowledge_reference_count_label(
             playbook_ids=["content_playbook_v1"],
@@ -1531,7 +1531,7 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     )
 
     assert "2 dowody źródłowe" in configured_compact["summary"]
-    assert "brak brakujących pól dostępu" in configured_compact["summary"]
+    assert "Pola dostępu kompletne w tym sprawdzeniu" in configured_compact["summary"]
     assert "dowody 2" not in configured_compact["summary"]
     assert "braki dostępu 0" not in configured_compact["summary"]
 
@@ -1690,18 +1690,18 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
     assert knowledge_binding.route_label == "widok do sprawdzenia"
     assert raw_value not in knowledge_binding.route_label
-    assert knowledge_binding.source_connector_summary_label == "brak źródeł danych"
-    assert knowledge_binding.evidence_summary_label == "brak dowodów źródłowych"
-    assert knowledge_binding.action_summary_label == "brak akcji do sprawdzenia"
-    assert knowledge_binding.knowledge_summary_label == "brak użytej wiedzy"
-    assert knowledge_binding.required_evidence_summary_label == "brak wymaganych dowodów"
-    assert knowledge_binding.missing_contract_summary_label == "dane kompletne"
+    assert knowledge_binding.source_connector_summary_label == "Nie ma źródeł danych; nie traktuj tego jako rekomendacji"
+    assert knowledge_binding.evidence_summary_label == "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
+    assert knowledge_binding.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert knowledge_binding.knowledge_summary_label == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
+    assert knowledge_binding.required_evidence_summary_label == "Nie wskazano wymaganych dowodów; nie odblokowuje to publikacji ani zapisu"
+    assert knowledge_binding.missing_contract_summary_label == "Dane kompletne dla tej decyzji"
     assert knowledge_binding.missing_contract_detail_label == "brak"
     assert knowledge_binding.has_missing_contracts is False
-    assert knowledge_binding.blocked_claim_summary_label == "brak zakazanych obietnic"
-    assert knowledge_binding.blocked_claim_count_summary_label == "brak zablokowanych obietnic"
+    assert knowledge_binding.blocked_claim_summary_label == "WILQ nie zgłosił zakazanych obietnic; nadal sprawdź dowody przed publikacją"
+    assert knowledge_binding.blocked_claim_count_summary_label == "WILQ nie zgłosił zablokowanych obietnic; nadal sprawdź dowody przed publikacją"
     assert knowledge_binding.has_blocked_claims is False
-    assert knowledge_binding.source_lineage_summary_label == "brak śladów źródłowych"
+    assert knowledge_binding.source_lineage_summary_label == "Nie ma śladów źródłowych; nie traktuj tego jako sprawdzonej wiedzy"
 
     knowledge_blocked_claim_binding = KnowledgeDecisionBinding(
         id="binding_unknown_claim",
@@ -5078,7 +5078,7 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert ahrefs_item["evidence_ids"] == refresh_response.json()["evidence_ids"][-1:]
     assert ahrefs_item["source_connector_labels"] == ["Ahrefs"]
     assert ahrefs_item["evidence_summary_label"] == "1 dowód źródłowy"
-    assert ahrefs_item["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert ahrefs_item["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert ahrefs_item["kind"] == "metric"
     assert ahrefs_item["kind_label"] == "fakt z danych"
     assert ahrefs_item["metric_facts"]
@@ -5688,7 +5688,7 @@ def test_ga4_operator_summary_uses_conversion_ready_copy(
     assert payload.conversion_readiness_contract.missing_read_contracts == []
     assert (
         payload.conversion_readiness_contract.missing_read_contract_summary_label
-        == "dane kompletne"
+        == "Dane kompletne dla tej decyzji"
     )
     assert "Brak metryk konwersji" not in payload.operator_summary.summary
     assert "metryki konwersji" in payload.operator_summary.summary
@@ -5966,11 +5966,11 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     assert decisions[0].campaign_name_label == "brak kampanii w raporcie"
     assert decisions[0].source_connector_labels == ["GA4"]
     assert decisions[0].evidence_summary_label == "1 dowód źródłowy"
-    assert decisions[0].action_summary_label == "brak akcji do sprawdzenia"
+    assert decisions[0].action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert payload.evidence_summary_label == "4 dowody źródłowe"
-    assert payload.action_summary_label == "brak akcji do sprawdzenia"
-    assert payload.operator_summary.action_summary_label == "brak akcji do sprawdzenia"
-    assert payload.conversion_readiness_contract.action_summary_label == "brak akcji do sprawdzenia"
+    assert payload.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert payload.operator_summary.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert payload.conversion_readiness_contract.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
 
 
 def test_command_center_exposes_polish_operator_brief(
@@ -7572,7 +7572,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
     assert gap_contract["evidence_summary_label"] == "1 dowód źródłowy"
-    assert gap_contract["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert "luka treści" in gap_contract["blocked_claims"]
     assert "luka treści" in gap_contract["blocked_claim_labels"]
     assert gap_contract["operator_review_gates"] == [
@@ -7593,7 +7593,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["metric_tiles"]["zakres konkurencji"] == "subdomeny"
     assert authority_decision["metric_tiles"]["luki Ahrefs"] == 0
     assert authority_decision["evidence_summary_label"] == "1 dowód źródłowy"
-    assert authority_decision["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert authority_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
     assert "konkurenci organiczni" in authority_decision["allowed_evidence_labels"]
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
@@ -7617,7 +7617,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert block_decision["metric_tiles"]["brakujące dane"] == 5
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
     assert block_decision["evidence_summary_label"] == "1 dowód źródłowy"
-    assert block_decision["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert block_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ahrefs_operator_summary"
     assert operator_summary["title"] == "Co marketer ma wiedzieć o Ahrefs"
@@ -7635,7 +7635,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
     assert operator_summary["evidence_summary_label"] == "1 dowód źródłowy"
-    assert operator_summary["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert operator_summary["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert "luka treści" in operator_summary["blocked_claims"]
     assert "luka treści" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
@@ -7889,7 +7889,7 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert gap_contract["status"] == "ready"
     assert gap_contract["status_label"] == "gotowe"
     assert gap_contract["evidence_summary_label"]
-    assert gap_contract["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert gap_contract["missing_read_contracts"] == []
     assert gap_contract["available_read_contracts"] == [
         "ahrefs_authority_summary",
@@ -8127,7 +8127,7 @@ def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noi
         if decision["id"] == "ahrefs_review_gap_records"
     )
     assert review_decision["evidence_summary_label"]
-    assert review_decision["action_summary_label"] == "brak akcji do sprawdzenia"
+    assert review_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert "ahrefs_block_gap_claims_without_records" not in decision_ids
 
 
@@ -12332,7 +12332,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["missing_read_contracts"] == []
     assert negative_keywords_contract["missing_read_contract_labels"] == []
     assert negative_keywords_contract["missing_read_contract_summary_label"] == (
-        "dane kompletne"
+        "Dane kompletne dla tej decyzji"
     )
     assert "dodanie wykluczających słów kluczowych" in negative_keywords_contract["blocked_claims"]
     assert (
