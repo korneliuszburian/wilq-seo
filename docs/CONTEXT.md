@@ -11,12 +11,14 @@ Przeczytaj w tej kolejności:
 1. `AGENTS.md` - stałe reguły pracy, sekrety, lokalne ścieżki i gotchas.
 2. `docs/goals/001-goal.md` - jedyny aktywny goal i kolejka następnych zadań.
 3. `docs/PROGRESS.md` - krótki aktualny stan, aktywne luki i następny ruch.
-4. `docs/evals/skill-coverage-audit.md` - aktualna tabela pokrycia 12 skillów.
-5. `docs/evals/skill-eval-ledger.md` - szczegóły manualnych i non-interactive
+4. `bd prime` and `bd ready --json` - operational issue graph for the current
+   cleanup queue.
+5. `docs/evals/skill-coverage-audit.md` - aktualna tabela pokrycia 12 skillów.
+6. `docs/evals/skill-eval-ledger.md` - szczegóły manualnych i non-interactive
    przebiegów skillów.
-6. `docs/architecture/bdos-class-wilq-operating-system.md` - produktowa
+7. `docs/architecture/bdos-class-wilq-operating-system.md` - produktowa
    poprzeczka “lepszy BDOS”.
-7. `docs/infra/001.md` i `docs/audits/001-output.md` - pierwotny scope i
+8. `docs/infra/001.md` i `docs/audits/001-output.md` - pierwotny scope i
    audyt, tylko gdy trzeba sprawdzić źródłowy intent.
 
 ## Current Product Direction
@@ -76,6 +78,8 @@ Active gaps live in:
 - `docs/PROGRESS.md` - short current readout, latest proof and active gaps.
 - `PLAN.md` - canonical cleanup plan.
 - `PLANS.md` - deferred long-range product path.
+- `bd ready --json` - current operational work graph. Do not duplicate this as
+  markdown TODOs.
 
 ## Current Important Boundaries
 

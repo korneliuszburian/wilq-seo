@@ -8,6 +8,8 @@ product path after the active cleanup is green.
 ## How To Use This File
 
 - Read `PLAN.md` first.
+- Use `bd prime` and `bd ready --json` for the active operational work graph.
+  Do not duplicate beads issues as markdown TODO lists.
 - Do not implement broad product layers until the current cleanup goal is
   complete.
 - Keep this file self-contained and short enough to be useful after context

@@ -162,6 +162,11 @@ shortcut is found:
 Do not create append-only planning clutter. Prune outdated done/history from
 active docs instead of layering new plans over old plans.
 
+Operational task tracking lives in beads. Use `bd prime`, `bd ready --json`,
+`bd show <id>`, `bd update <id> --claim` and `bd close <id>` for the active
+work graph. Do not duplicate the beads issue list as markdown TODOs in this
+plan.
+
 ## 7. OpenAI Goal And Prompt Standards
 
 Use these official standards as operating requirements:

@@ -143,6 +143,9 @@ are resolved or explicitly deferred.
 ## Execution Policy
 
 - Use `rtk` before every shell command.
+- Use beads for operational task tracking: run `bd prime` and
+  `bd ready --json` after recovery, claim work with `bd update <id> --claim`,
+  and do not recreate the same queue as markdown TODOs.
 - Use `scripts/local_stack.sh start|status|logs|restart|stop` for the local
   WILQ API/dashboard runtime; do not hand-roll detached API or dashboard
   processes.

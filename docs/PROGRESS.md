@@ -20,6 +20,9 @@ Date: 2026-06-29
   decisions by default.
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
+- Beads (`bd`) is the operational task graph for current cleanup work. Run
+  `bd prime` and `bd ready --json` after recovery. Parent issue:
+  `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
