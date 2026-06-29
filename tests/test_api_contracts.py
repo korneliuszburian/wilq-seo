@@ -5109,7 +5109,10 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         "plan treści bez sprawdzenia GSC i WordPress" in item["blocked_claims"]
         for item in ahrefs_items
     )
-    assert all("content brief without" not in " ".join(item["blocked_claims"]) for item in ahrefs_items)
+    assert all(
+        "content brief without" not in " ".join(item["blocked_claims"])
+        for item in ahrefs_items
+    )
     assert all(item["dimensions"].get("competitor_domain") != "cuk.pl" for item in ahrefs_items)
     for item in queue["items"]:
         assert item["domain_label"]

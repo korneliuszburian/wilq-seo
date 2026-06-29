@@ -19,7 +19,10 @@ def load_localo_smoke() -> ModuleType:
 
 def localo_context_pack() -> dict[str, Any]:
     return {
-        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+        "strict_instruction": (
+            "Codex nie może podawać metryk bez odczytu z WILQ API "
+            "i dowodów źródłowych."
+        ),
         "connector_status": [],
         "evidence_summaries": [{"id": "ev_refresh_refresh_localo_completed"}],
         "top_opportunities": [],

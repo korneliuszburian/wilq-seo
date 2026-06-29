@@ -35,7 +35,9 @@ UAT_ROUTE_ORDER = [
             "Marketer rozumie, że zgłoszenia problemów nie są automatycznie "
             "unikalnymi SKU i że zapis do feedu ani odzyskanie zatwierdzeń nie są obiecane."
         ),
-        "fail_condition": "Marketer oczekuje automatycznej naprawy feedu albo odzyskania zatwierdzeń.",
+        "fail_condition": (
+            "Marketer oczekuje automatycznej naprawy feedu albo odzyskania zatwierdzeń."
+        ),
     },
     {
         "key": "content",
@@ -62,7 +64,9 @@ UAT_ROUTE_ORDER = [
             "zmarnowany budżet, skalowanie budżetu i zapis zmian są zablokowane "
             "bez celów biznesowych, sprawdzenia i audytu."
         ),
-        "fail_condition": "Marketer oczekuje automatycznego optymalizatora albo werdyktu opłacalności.",
+        "fail_condition": (
+            "Marketer oczekuje automatycznego optymalizatora albo werdyktu opłacalności."
+        ),
     },
     {
         "key": "ga4",
@@ -381,7 +385,11 @@ def render_readable_list(value: list[Any], *, indent: int) -> list[str]:
             title = item.get("decyzja") or item.get("widok") or item.get("etykieta")
             if title:
                 lines.append(f"{prefix}- {title}")
-                nested = {key: nested_value for key, nested_value in item.items() if key != "decyzja"}
+                nested = {
+                    key: nested_value
+                    for key, nested_value in item.items()
+                    if key != "decyzja"
+                }
                 lines.extend(render_readable_mapping(nested, indent=indent + 1))
             else:
                 lines.extend(render_readable_mapping(item, indent=indent))

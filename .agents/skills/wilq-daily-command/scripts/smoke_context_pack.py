@@ -91,12 +91,12 @@ def normalize_for_marker_check(value: str) -> str:
         char
         for char in unicodedata.normalize("NFKD", value.lower())
         if not unicodedata.combining(char)
-    )
+    ).replace("ł", "l")
 
 
 def has_metric_evidence_guardrails(value: str) -> bool:
     normalized = normalize_for_marker_check(value)
-    return "metryk" in normalized and ("dowod" in normalized or "evidence" in normalized)
+    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
 
 
 def main() -> int:
@@ -198,7 +198,9 @@ def validate_command_center(command_center: Any, *, compact: bool = False) -> No
         raise SystemExit("Command center is not an object")
     instruction = str(command_center.get("strict_instruction", ""))
     if not has_metric_evidence_guardrails(instruction):
-        raise SystemExit("Command center strict instruction lacks metric/evidence guardrails")
+        raise SystemExit(
+            "Instrukcja Centrum pracy nie zawiera zasad metryk i dowodów źródłowych"
+        )
     operator_brief = command_center.get("operator_brief") or []
     if not compact:
         if not isinstance(operator_brief, list) or not operator_brief:
@@ -335,7 +337,7 @@ def validate_marketing_brief(brief: Any) -> None:
         raise SystemExit(f"Marketing brief language is not pl-PL: {brief.get('language')}")
     instruction = str(brief.get("strict_instruction", ""))
     if not has_metric_evidence_guardrails(instruction):
-        raise SystemExit("Marketing brief strict instruction lacks metric/evidence guardrails")
+        raise SystemExit("Instrukcja briefu nie zawiera zasad metryk i dowodów źródłowych")
     section_ids = {section.get("id") for section in brief.get("sections", [])}
     missing_sections = sorted(REQUIRED_BRIEF_SECTIONS - section_ids)
     if missing_sections:

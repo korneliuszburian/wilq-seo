@@ -8,7 +8,6 @@ from typing import Any
 
 from scripts.record_marketer_uat_result import build_uat_result_report, load_json
 
-
 REQUIRED_DOCS = [
     Path("PLAN.md"),
     Path("PLANS.md"),

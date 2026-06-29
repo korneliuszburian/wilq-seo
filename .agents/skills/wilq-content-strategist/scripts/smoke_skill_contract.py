@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -80,6 +81,15 @@ def assert_current_content_url_keys(value: dict[str, Any], label: str) -> None:
             f"{label} exposes non-current content URL fields: " + ", ".join(unexpected_url_keys)
         )
 
+
+
+def has_polish_metric_source_guardrails(value: str) -> bool:
+    normalized = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    ).replace("ł", "l")
+    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
@@ -203,9 +213,11 @@ def main() -> int:
             }
         )
 
-    instruction = str(pack.get("strict_instruction", "")).lower()
-    if "must not invent metrics" not in instruction or "evidence" not in instruction:
-        raise SystemExit("Context pack strict instruction does not include evidence guardrails")
+    instruction = str(pack.get("strict_instruction", ""))
+    if not has_polish_metric_source_guardrails(instruction):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
 
     print(
         json.dumps(
@@ -370,14 +382,23 @@ def validate_content_action_preview(
     if not isinstance(payload, dict):
         raise SystemExit("Content action payload must be an object")
     url_contract = payload.get("content_url_review_contract")
-    if not isinstance(url_contract, dict):
-        raise SystemExit("Content action lacks content_url_review_contract")
-    if url_contract.get("contract") != "content_url_preflight_review_v1":
-        raise SystemExit("Content URL review contract has invalid version")
-    if url_contract.get("scope") != "review_only":
-        raise SystemExit("Content URL review contract must be review_only")
-    if "wordpress_publish" not in set(url_contract.get("blocked_outputs") or []):
-        raise SystemExit("Content URL review contract must block wordpress_publish")
+    url_summary = payload.get("content_url_review_summary")
+    if isinstance(url_contract, dict):
+        if url_contract.get("contract") != "content_url_preflight_review_v1":
+            raise SystemExit("Content URL review contract has invalid version")
+        if url_contract.get("scope") != "review_only":
+            raise SystemExit("Content URL review contract must be review_only")
+        if "wordpress_publish" not in set(url_contract.get("blocked_outputs") or []):
+            raise SystemExit("Content URL review contract must block wordpress_publish")
+    elif isinstance(url_summary, dict):
+        if int(url_summary.get("required_fields_total") or 0) <= 0:
+            raise SystemExit("Content URL review summary lacks required field count")
+        if int(url_summary.get("allowed_outcomes_total") or 0) <= 0:
+            raise SystemExit("Content URL review summary lacks allowed outcome count")
+        if "URL" not in str(url_summary.get("next_step") or ""):
+            raise SystemExit("Content URL review summary lacks readable next step")
+    else:
+        raise SystemExit("Content action lacks URL review contract or summary")
     assert_current_content_url_keys(payload, "Content action payload")
     previews = payload.get("content_brief_preview")
     if not require_preview and previews is None:
@@ -525,6 +546,45 @@ def validate_wordpress_draft_handoff_action_preview(active_actions: Any) -> None
     if not isinstance(wordpress_draft_action, dict):
         raise SystemExit("WordPress draft handoff action must be an object")
     payload = wordpress_draft_action.get("payload")
+    if payload is None:
+        preview_cards = wordpress_draft_action.get("preview_cards")
+        if not isinstance(preview_cards, list) or not preview_cards:
+            raise SystemExit("WordPress draft handoff context-pack lacks preview cards")
+        card_text = json.dumps(
+            [
+                {
+                    "title_label": card.get("title_label"),
+                    "subtitle_label": card.get("subtitle_label"),
+                    "status_label": card.get("status_label"),
+                    "rows": card.get("rows"),
+                }
+                for card in preview_cards
+                if isinstance(card, dict)
+            ],
+            ensure_ascii=False,
+        )
+        for required_label in (
+            "Szkic WordPress do sprawdzenia",
+            "URL publiczny",
+            "URL kanoniczny",
+            "zapis zmian zablokowany",
+        ):
+            if required_label not in card_text:
+                raise SystemExit(
+                    "WordPress draft handoff context-pack preview lacks "
+                    f"{required_label!r}"
+                )
+        for forbidden_marker in (
+            "candidate_id",
+            "wordpress_draft_handoff_preview_v1",
+            "wordpress_draft_handoff_review",
+        ):
+            if forbidden_marker in card_text:
+                raise SystemExit(
+                    "WordPress draft handoff context-pack preview exposes "
+                    f"technical marker {forbidden_marker!r}"
+                )
+        return
     if not isinstance(payload, dict):
         raise SystemExit("WordPress draft handoff action payload must be an object")
     if "post_publication_measurement_plan_v1" not in set(

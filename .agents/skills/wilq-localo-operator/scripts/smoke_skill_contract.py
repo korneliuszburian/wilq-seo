@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -55,6 +56,15 @@ def latest_localo_run_from_pack(
         return localo_refresh_runs[0], "context_pack.connector_refresh_runs"
     return None, "missing"
 
+
+
+def has_polish_metric_source_guardrails(value: str) -> bool:
+    normalized = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    ).replace("ł", "l")
+    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
@@ -255,9 +265,11 @@ def main() -> int:
             }
         )
 
-    instruction = str(pack.get("strict_instruction", "")).lower()
-    if "must not invent metrics" not in instruction or "evidence" not in instruction:
-        raise SystemExit("Context pack strict instruction does not include evidence guardrails")
+    instruction = str(pack.get("strict_instruction", ""))
+    if not has_polish_metric_source_guardrails(instruction):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
     action_validations = []
     active_action_ids = [action.get("id") for action in pack.get("active_action_objects", [])]
     if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids:

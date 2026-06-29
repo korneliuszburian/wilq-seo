@@ -88,7 +88,7 @@ def normalize_for_marker_check(value: str) -> str:
         char
         for char in unicodedata.normalize("NFKD", value.lower())
         if not unicodedata.combining(char)
-    )
+    ).replace("ł", "l")
 
 
 health = request_json("/api/health")
@@ -102,10 +102,8 @@ if brief.get("language") != "pl-PL":
     errors.append(f"language must be pl-PL, got {brief.get('language')!r}")
 
 instruction = normalize_for_marker_check(str(brief.get("strict_instruction", "")))
-if "metryk" not in instruction or not (
-    "dowod" in instruction or "evidence" in instruction
-):
-    errors.append("strict_instruction must mention metric and evidence/dowody guardrails")
+if "metryk" not in instruction or "dowod" not in instruction or "zrodl" not in instruction:
+    errors.append("strict_instruction musi wymagać metryk i dowodów źródłowych")
 
 sections = brief.get("sections")
 if not isinstance(sections, list):

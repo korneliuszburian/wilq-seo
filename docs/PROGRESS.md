@@ -75,6 +75,12 @@ Date: 2026-06-29
   of raw JSON blocks. The machine JSON remains available through `--format json`
   for recording/completion checks, but the marketer handoff no longer leads
   with technical field names.
+- Skill smoke guardrails now validate the Polish WILQ instruction for metrics
+  and source evidence instead of stale English proof wording. Content skill
+  smoke accepts condensed context-pack preview cards for WordPress draft handoff
+  while full payload contracts stay verified through API tests. Merchant
+  Playwright proof now checks the current technical label `Klucz dowodu w WILQ`
+  after opening evidence details.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

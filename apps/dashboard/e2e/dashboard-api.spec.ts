@@ -347,7 +347,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: /Merchant Center/ })).toBeVisible();
     await expect(page.getByText("Źródło: Merchant Center")).toBeVisible();
     await page.getByRole("button", { name: "Pokaż szczegóły techniczne dowodu" }).click();
-    await expect(page.getByText(/ID dowodu: ev_refresh_refresh_google_merchant_center/)).toBeVisible();
+    await expect(page.getByText(/Klucz dowodu w WILQ: ev_refresh_refresh_google_merchant_center/)).toBeVisible();
   });
 
   test("localo route exposes aggregate facts without unsupported local claims", async ({ page }) => {

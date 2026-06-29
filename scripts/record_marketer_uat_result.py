@@ -118,7 +118,10 @@ def validate_uat_payload(payload: dict[str, Any]) -> list[str]:
             continue
         route_result = normalize_route_result(key, parsed_payload.get(key))
         if route_result["result"] not in {"pass", "fail"}:
-            errors.append(f"Wynik widoku {POLISH_INPUT_FIELDS[key]} musi zaczynać się od zaliczone albo niezaliczone")
+            errors.append(
+                f"Wynik widoku {POLISH_INPUT_FIELDS[key]} musi zaczynać się "
+                "od zaliczone albo niezaliczone"
+            )
     if normalize_ready(parsed_payload.get("ready_without_developer")) not in {"yes", "no"}:
         errors.append("gotowe_bez_developera musi mieć wartość tak albo nie")
     return errors

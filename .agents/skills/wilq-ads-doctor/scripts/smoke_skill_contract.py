@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -46,6 +47,15 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
     except urllib.error.URLError as exc:
         raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
 
+
+
+def has_polish_metric_source_guardrails(value: str) -> bool:
+    normalized = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", value.lower())
+        if not unicodedata.combining(char)
+    ).replace("ł", "l")
+    return "metryk" in normalized and "dowod" in normalized and "zrodl" in normalized
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
@@ -661,9 +671,11 @@ def main() -> int:
             }
         )
 
-    instruction = str(pack.get("strict_instruction", "")).lower()
-    if "must not invent metrics" not in instruction or "evidence" not in instruction:
-        raise SystemExit("Context pack strict instruction does not include evidence guardrails")
+    instruction = str(pack.get("strict_instruction", ""))
+    if not has_polish_metric_source_guardrails(instruction):
+        raise SystemExit(
+            "Instrukcja context-packa nie zawiera polskich zasad metryk i dowodów źródłowych"
+        )
 
     print(
         json.dumps(

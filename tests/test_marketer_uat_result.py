@@ -18,9 +18,11 @@ def test_uat_result_report_turns_failures_and_confusion_into_tasks() -> None:
             "notatka": "Nie było jasne, że zgłoszenia nie są unikalnymi SKU.",
         },
         "treści": "zaliczone widzę BDO jako odświeżenie albo scalenie",
-        "google_ads": "zaliczone rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane",
+        "google_ads": (
+            "zaliczone rozumiem, że kosztu pozyskania celu ani zwrotu z reklam są zablokowane"
+        ),
         "ga4": "niezaliczone (not set) wyglądało jak zła kampania",
-        "największy_realny_zysk": "Widok treści daje gotowy brief do review.",
+        "największy_realny_zysk": "Widok treści daje gotowy brief do sprawdzenia.",
         "największa_niejasność": "Merchant count semantics",
         "nowe_zadania": ["Dodać tooltip przy liczbie zgłoszeń Merchant"],
         "gotowe_bez_developera": "nie",
