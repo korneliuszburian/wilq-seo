@@ -81,8 +81,14 @@ API status later contradicts this state.
   shared-schema tests, live shared-schema smoke, full dashboard tests, lint,
   production build, Fallow changed-file audit, marketer/context-pack language
   guards and browser proof for `/command-center` passed after the upgrade.
+- `tailwindcss` has been upgraded to `4.3.1` with `@tailwindcss/postcss`.
+  Dashboard CSS now uses the Tailwind v4 import path with the existing config
+  explicitly loaded. Dashboard typecheck, full dashboard test suite, lint,
+  production build, Fallow changed-file audit, marketer/context-pack language
+  guards, browser proof for `/command-center` and generated CSS proof for WILQ
+  custom colors passed after the upgrade.
 - The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest, Tailwind and `@vitejs/plugin-react`.
+  as separate verified slices: Vite, Vitest and `@vitejs/plugin-react`.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
   dashboard duplication and complexity debt.
