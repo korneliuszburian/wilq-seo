@@ -7043,7 +7043,7 @@ def _ads_strategy_review_status_label(status: object) -> str:
 
 def _ads_campaign_status_label(status: object | None) -> str:
     if status is None or str(status) == "":
-        return "status: brak"
+        return "status kampanii niepotwierdzony"
     labels = {
         "ENABLED": "aktywna",
         "PAUSED": "wstrzymana",
@@ -7057,7 +7057,7 @@ def _ads_campaign_status_label(status: object | None) -> str:
 
 def _ads_channel_type_label(channel_type: object | None) -> str:
     if channel_type is None or str(channel_type) == "":
-        return "kanał: brak"
+        return "typ kampanii niepotwierdzony"
     labels = {
         "SEARCH": "sieć wyszukiwania",
         "PERFORMANCE_MAX": "Performance Max",
@@ -7264,7 +7264,7 @@ def _ads_keyword_criterion_status_label(status: object | None) -> str:
         "UNSPECIFIED": "status nieokreślony",
     }
     if status is None or str(status) == "":
-        return "status: brak"
+        return "status słowa niepotwierdzony"
     value = str(status)
     return labels.get(value, "status słowa do sprawdzenia")
 

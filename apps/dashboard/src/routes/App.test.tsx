@@ -7792,9 +7792,7 @@ describe("WILQ dashboard", () => {
     );
     expect(routeSource).not.toContain("{row.review_priority} / {row.review_score}");
     expect(routeSource).not.toContain("{row.review_priority} / wynik {row.review_score}");
-    expect(routeSource).not.toContain(
-      "{row.advertising_channel_type_label ?? \"kanał: brak\"} /"
-    );
+    expect(routeSource).toContain("adsMissingChannelLabel");
     expect(routeSource).not.toContain("{row.advertising_channel_type_label} / {row.budget_period_label}");
     expect(routeSource).not.toContain(
       "{share.advertising_channel_type_label} / {share.campaign_status_label}"

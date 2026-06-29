@@ -1863,6 +1863,9 @@ def test_ads_label_fallbacks_do_not_expose_raw_vendor_values() -> None:
         "pre_change_performance_window_v2",
     ):
         assert forbidden not in joined
+    assert _ads_campaign_status_label(None) == "status kampanii niepotwierdzony"
+    assert _ads_channel_type_label(None) == "typ kampanii niepotwierdzony"
+    assert _ads_keyword_criterion_status_label(None) == "status słowa niepotwierdzony"
 
 
 def test_ads_entity_display_labels_do_not_expose_raw_ids() -> None:

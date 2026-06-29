@@ -222,6 +222,11 @@ API status later contradicts this state.
   state what remains unconfirmed before product-file review. Focused Merchant
   source/render tests, marketer language guard, `git diff --check` and browser
   proof for `/merchant` passed.
+- Ads missing status/channel fallbacks now come from API/domain labels instead
+  of bare status/channel placeholders. Missing campaign status, channel type and
+  keyword status explain that the state is unconfirmed. Focused pytest, App route
+  test, ruff import/name checks, marketer language guard and browser proof for
+  `/ads-doctor` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

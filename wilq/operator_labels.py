@@ -305,14 +305,14 @@ def metric_fact_label(name: object, source_connector: object | None = None) -> s
 def ads_campaign_status_label(status: object | None) -> str:
     value = str(status or "").strip().upper()
     if not value:
-        return "status: brak"
+        return "status kampanii niepotwierdzony"
     return ADS_CAMPAIGN_STATUS_LABELS.get(value, UNKNOWN_ADS_CAMPAIGN_STATUS_LABEL)
 
 
 def ads_channel_type_label(channel_type: object | None) -> str:
     value = str(channel_type or "").strip().upper()
     if not value:
-        return "kanał: brak"
+        return "typ kampanii niepotwierdzony"
     return ADS_CHANNEL_TYPE_LABELS.get(value, UNKNOWN_ADS_CHANNEL_TYPE_LABEL)
 
 

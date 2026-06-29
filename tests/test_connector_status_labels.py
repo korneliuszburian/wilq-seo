@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 
 from wilq.connectors.registry import get_connector_status
+from wilq.operator_labels import ads_campaign_status_label, ads_channel_type_label
 from wilq.schemas import (
     AdsCampaignMetricRow,
     AdsCampaignTriageRow,
@@ -158,3 +159,8 @@ def test_ads_campaign_rows_hydrate_operator_enum_labels() -> None:
     assert metric_row.advertising_channel_type_label == "sieć wyszukiwania"
     assert triage_row.campaign_status_label == "wstrzymana"
     assert triage_row.advertising_channel_type_label == "Demand Gen"
+
+
+def test_ads_operator_label_missing_values_explain_unconfirmed_state() -> None:
+    assert ads_campaign_status_label(None) == "status kampanii niepotwierdzony"
+    assert ads_channel_type_label(None) == "typ kampanii niepotwierdzony"
