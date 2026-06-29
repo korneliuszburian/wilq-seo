@@ -141,6 +141,10 @@ API status later contradicts this state.
   so `/ga4` shows `Brakujące dane: dane kompletne` when conversion/key-event
   data is present instead of relying on a route fallback. Focused GA4 API,
   dashboard, shared-schema, language-guard and browser proof passed.
+- GA4 action preview blocked-claim labels now use concrete claim names instead
+  of repeated fallback text like `wniosek GA4 do sprawdzenia`; focused GA4 API
+  tests, language guards and browser proof for
+  `/actions/act_review_ga4_tracking_quality` passed.
 - `AGENTS.md` now codifies the marketer-content rule: first-screen summaries,
   decision cards and empty states must be understandable without developer
   translation and must state the decision, reason, proof, blocker or next safe

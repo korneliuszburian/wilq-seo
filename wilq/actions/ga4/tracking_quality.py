@@ -230,6 +230,15 @@ def _blocked_claim_label(value: str) -> str:
     labels = {
         "conversion_rate": "współczynnik konwersji",
         "roas": "zwrot z reklam",
+        "współczynnik konwersji": "współczynnik konwersji",
+        "zwrot z reklam": "zwrot z reklam",
+        "przychód": "przychód",
+        "opłacalność": "opłacalność",
+        "spadek konwersji": "spadek konwersji",
+        "diagnoza lejka": "diagnoza lejka",
+        "ocena atrybucji": "ocena atrybucji",
+        "naprawiony pomiar": "naprawiony pomiar",
+        "zapis w GA4": "zapis w GA4",
     }
     return labels.get(value, "wniosek GA4 do sprawdzenia")
 

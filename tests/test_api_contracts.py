@@ -5553,6 +5553,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert preview["operation_type_label"] != preview["operation_type"]
     assert preview["metric_snapshot_labels"]["active_users"] == "aktywni użytkownicy"
     assert preview["metric_snapshot_labels"]["engagement_rate"] == "zaangażowanie"
+    assert preview["blocked_claim_labels"] == preview["blocked_claims"]
+    assert "wniosek GA4 do sprawdzenia" not in preview["blocked_claim_labels"]
+    assert len(preview["blocked_claim_labels"]) == len(set(preview["blocked_claim_labels"]))
     assert "review_conversion_or_key_event_mapping" in preview["required_validation"]
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
@@ -5575,6 +5578,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "ga4_tracking_quality_review_v1" not in ga4_marketer_card_text
     assert "active_users" not in ga4_marketer_card_text
     assert "source_metric_names" not in ga4_marketer_card_text
+    assert "wniosek GA4 do sprawdzenia" not in ga4_marketer_card_text
 
     validation_response = client.post(
         "/api/actions/act_review_ga4_tracking_quality/validate",
