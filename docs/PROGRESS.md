@@ -113,6 +113,10 @@ Date: 2026-06-29
   2026-06-29 covered `command-center`, `merchant`, `content-planner`,
   `ads-doctor`, `ga4`, `localo`, `ahrefs`, `knowledge`, `actions` and
   `workflows`.
+- Playwright marketer demo proof passed again on 2026-06-29T04:23Z for the
+  path from Centrum pracy through Merchant, Treści, GA4, Google Ads and Localo;
+  screenshots live under
+  `.local-lab/proof/dashboard-demo/2026-06-29T04-23-01-046Z/`.
 - Content active semantics use public/final URL wording. Active content
   diagnostics/actions no longer expose dev-site placement semantics as product
   logic.
