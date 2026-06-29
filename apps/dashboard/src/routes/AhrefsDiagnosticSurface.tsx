@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck } from "lucide-react";
 
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { TraceLine } from "../components/TraceLine";
 
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
@@ -123,17 +123,13 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex flex-wrap gap-1.5 text-xs text-slate-600">
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Źródło: Ahrefs
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Typ: {decision.decision_type_label || "decyzja"}
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Priorytet: {decision.priority_label}
-            </span>
-          </div>
+          <LabelChipRow
+            chips={[
+              { label: "Źródło", value: "Ahrefs" },
+              { label: "Typ", value: decision.decision_type_label || "decyzja" },
+              { label: "Priorytet", value: decision.priority_label }
+            ]}
+          />
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">

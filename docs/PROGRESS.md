@@ -30,6 +30,14 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Dashboard metadata chips now use one shared labelled-chip renderer with
+  explicit readable separators. Localo, Ahrefs, Centrum pracy, tactical queue,
+  workflow brief cards, Baza wiedzy, Merchant fallback issues and content
+  Ahrefs candidates no longer depend on repeated hand-written chip markup.
+  Focused component and route tests, marketer/context-pack language guards and
+  browser proof for `/localo`, `/command-center` and `/ahrefs` returned zero
+  hits for glued fragments such as `LocaloTyp`, `AhrefsTyp` and
+  `decyzjaPriorytet`.
 - `scripts/live_contract_smoke.py` now checks live `/api/content/diagnostics`
   for stale dev-preview URL semantics. The smoke fails if content diagnostics
   expose `ekologus.dev.proudsite.pl`, `target_site`, `mapping_review` or

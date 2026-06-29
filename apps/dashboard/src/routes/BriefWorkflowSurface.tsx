@@ -8,7 +8,7 @@ import {
   MarketingBriefItem
 } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { ActionFocus } from "./ActionPanels";
@@ -121,14 +121,13 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-600">
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Rodzaj: {item.kind_label}
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Priorytet: {item.priority_label}
-            </span>
-          </div>
+          <LabelChipRow
+            className="mt-2"
+            chips={[
+              { label: "Rodzaj", value: item.kind_label },
+              { label: "Priorytet", value: item.priority_label }
+            ]}
+          />
         </div>
         <StatusBadge value={item.risk} label={item.risk_label} />
       </div>

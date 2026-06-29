@@ -12,7 +12,7 @@ import {
 } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 import { formatContentMetricValue } from "../lib/contentLabels";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import {
@@ -814,17 +814,14 @@ function ContentDecisionCard({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="text-sm font-semibold text-ink">{candidate.topic}</div>
-                    <div className="mt-1 flex flex-wrap gap-1 text-xs text-slate-600">
-                      <span className="rounded border border-line bg-white px-2 py-1">
-                        Typ: {candidate.gap_type_label || "typ luki do sprawdzenia"}
-                      </span>
-                      <span className="rounded border border-line bg-white px-2 py-1">
-                        Trafność: {candidate.relevance_status_label || "trafność do sprawdzenia"}
-                      </span>
-                      <span className="rounded border border-line bg-white px-2 py-1">
-                        Ocena WILQ: {candidate.relevance_score}
-                      </span>
-                    </div>
+                    <LabelChipRow
+                      className="mt-1 gap-1"
+                      chips={[
+                        { label: "Typ", value: candidate.gap_type_label || "typ luki do sprawdzenia" },
+                        { label: "Trafność", value: candidate.relevance_status_label || "trafność do sprawdzenia" },
+                        { label: "Ocena WILQ", value: candidate.relevance_score }
+                      ]}
+                    />
                   </div>
                   <div className="flex flex-wrap gap-1 text-xs">
                     <span className="rounded border border-line bg-white px-2 py-1">

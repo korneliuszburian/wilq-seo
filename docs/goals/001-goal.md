@@ -80,6 +80,12 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Shared dashboard labelled chips now render adjacent metadata with explicit
+  readable separators. Localo, Ahrefs, Centrum pracy, tactical queue, workflow
+  brief cards, Baza wiedzy, Merchant fallback issues and content Ahrefs
+  candidates use the same renderer, and focused tests/browser proof guard
+  against glued text such as `LocaloTyp`, `AhrefsTyp` and
+  `decyzjaPriorytet`.
 - Live contract smoke now guards content diagnostics URL semantics. It fails
   if `/api/content/diagnostics` exposes `ekologus.dev.proudsite.pl`,
   `target_site`, `mapping_review` or migration-map terms, and the latest run

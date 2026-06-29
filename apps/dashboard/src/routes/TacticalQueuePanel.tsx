@@ -2,7 +2,7 @@ import { ClipboardCheck } from "lucide-react";
 
 import { TacticalQueueResponse } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
-import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 
@@ -143,17 +143,14 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-600">
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Obszar: {item.domain_label}
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Zadanie: {item.intent_label}
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Priorytet: {item.priority_label}
-            </span>
-          </div>
+          <LabelChipRow
+            className="mt-2"
+            chips={[
+              { label: "Obszar", value: item.domain_label },
+              { label: "Zadanie", value: item.intent_label },
+              { label: "Priorytet", value: item.priority_label }
+            ]}
+          />
         </div>
         <StatusBadge value={item.risk} label={item.risk_label} />
       </div>

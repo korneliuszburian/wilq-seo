@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck, Copy } from "lucide-react";
 
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 import { CommandCenterResponse, getCommandCenter } from "../lib/api";
@@ -33,14 +33,12 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
           <article key={item.id} className="rounded-md border border-line bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="flex flex-wrap gap-1.5 text-xs text-slate-600">
-                  <span className="rounded border border-line bg-white px-2 py-1">
-                    Typ: decyzja
-                  </span>
-                  <span className="rounded border border-line bg-white px-2 py-1">
-                    Priorytet: {item.priority_label}
-                  </span>
-                </div>
+                <LabelChipRow
+                  chips={[
+                    { label: "Typ", value: "decyzja" },
+                    { label: "Priorytet", value: item.priority_label }
+                  ]}
+                />
                 <h3 className="mt-1 text-base font-semibold tracking-normal">
                   {item.title}
                 </h3>

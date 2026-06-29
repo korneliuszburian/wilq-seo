@@ -5,7 +5,7 @@ import {
   KnowledgeOperatingMapResponse,
   MarketingPlaybook
 } from "../lib/api";
-import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 
 export function KnowledgeDecisionImpactPanel({ map }: { map: KnowledgeOperatingMapResponse }) {
@@ -231,14 +231,13 @@ function KnowledgeCardItem({ card }: { card: KnowledgeCard }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">{card.display_title}</h3>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-600">
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Typ: {card.card_type_label}
-            </span>
-            <span className="rounded border border-line bg-white px-2 py-1">
-              Źródło: {card.source_type_label}
-            </span>
-          </div>
+          <LabelChipRow
+            className="mt-2"
+            chips={[
+              { label: "Typ", value: card.card_type_label },
+              { label: "Źródło", value: card.source_type_label }
+            ]}
+          />
         </div>
         <span className="inline-flex min-h-7 items-center rounded border border-line bg-white px-2 text-xs font-medium text-ink">
           Pewność {Math.round(card.confidence * 100)}%

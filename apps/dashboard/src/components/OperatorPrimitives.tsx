@@ -32,3 +32,31 @@ export function MetricTile({
     </div>
   );
 }
+
+export function LabelChipRow({
+  chips,
+  className = ""
+}: {
+  chips: Array<{
+    label: string;
+    value: number | string | null | undefined;
+  }>;
+  className?: string;
+}) {
+  const visibleChips = chips.filter((chip) => `${chip.value ?? ""}`.trim().length > 0);
+
+  if (visibleChips.length === 0) return null;
+
+  return (
+    <div className={`flex flex-wrap gap-1.5 text-xs text-slate-600 ${className}`.trim()}>
+      {visibleChips.map((chip, index) => (
+        <span key={`${chip.label}:${chip.value}`}>
+          <span className="rounded border border-line bg-white px-2 py-1">
+            {chip.label}: {chip.value}
+          </span>
+          {index < visibleChips.length - 1 ? " " : null}
+        </span>
+      ))}
+    </div>
+  );
+}
