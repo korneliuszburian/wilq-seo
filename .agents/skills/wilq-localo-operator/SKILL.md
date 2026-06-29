@@ -44,6 +44,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 - `GET /api/health`
 - `GET /api/system/status`
+- `GET /api/localo/diagnostics`
 - `POST /api/codex/context-pack`
 - `GET /api/marketing/brief`
 - `GET /api/connectors`

@@ -73,7 +73,7 @@ Wymagane powierzchnie źródeł danych dla tego skilla:
 
 Każda rekomendacja musi zawierać identyfikatory źródeł danych i identyfikatory dowodów z WILQ API. Merchant Diagnostics sections i tactical items traktuj jako główne źródło. Jeśli dowody są zagregowane, stare, niepełne albo zablokowane dostępem do źródła danych, powiedz to wprost.
 
-Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_gotowość.status=blocked`, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`, odpowiedź musi mieć sekcję "Czego nie wiemy" i nie może udawać kolejki produkt-po-produkcie, zwrotu z reklam na poziomie produktu, wpływu ceny ani wpływu naprawy na przychód.
+Jeśli `/api/merchant/diagnostics` zwraca `unknowns`, `product_sample_readiness.status=blocked`, `product_performance_readiness.status=blocked` albo `price_impact_readiness.status=blocked`, odpowiedź musi mieć sekcję "Czego nie wiemy" i nie może udawać kolejki produkt-po-produkcie, zwrotu z reklam na poziomie produktu, wpływu ceny ani wpływu naprawy na przychód.
 
 </evidence_requirements>
 

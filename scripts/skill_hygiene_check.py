@@ -63,6 +63,8 @@ FORBIDDEN_SKILL_PROSE = {
     "Command Center",
     "Content Planner",
     "Ads Doctor",
+    "product_sample_gotowość",
+    "product_sample_gotowosc",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900

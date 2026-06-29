@@ -80,6 +80,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Merchant skill contracts now point at the canonical
+  `product_sample_readiness` field, and skill hygiene blocks the stale
+  `product_sample_gotowość` hybrid name from returning. Localo skill allowed
+  endpoints now list `GET /api/localo/diagnostics`, matching the workflow and
+  reference contract.
 - Shared metric fact chips now show metric value, dimensions, change and
   freshness as separate labelled Polish chips. Browser proof for `/localo`
   confirmed Localo metric facts no longer use slash-combined copy such as

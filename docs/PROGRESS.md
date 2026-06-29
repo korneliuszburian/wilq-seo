@@ -30,6 +30,11 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Merchant skill contracts now use the canonical
+  `product_sample_readiness` field instead of the stale
+  `product_sample_gotowość` hybrid name. Localo skill allowed endpoints now
+  explicitly include `GET /api/localo/diagnostics`. Skill hygiene, Merchant
+  smoke, Localo smoke, both language guards and `git diff --check` passed.
 - Shared metric fact chips now render metric value, dimensions, delta and
   freshness as separate labelled Polish chips instead of one slash-combined
   sentence. Focused dashboard tests and browser proof for `/localo` confirmed
