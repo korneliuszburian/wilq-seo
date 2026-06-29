@@ -104,6 +104,9 @@ API status later contradicts this state.
   technical registry fallback language from primary surfaces.
 - `scripts/live_contract_smoke.py` guards live content diagnostics against
   stale dev-preview URL and migration-era semantics.
+- `tests/test_operator_endpoint_language_guard.py` now guards the main
+  operator endpoints against stale route names, dev-preview/migration
+  semantics and action-model jargon in serialized API output.
 
 ## Current Blockers And Deferred Work
 
@@ -139,6 +142,7 @@ API status later contradicts this state.
 - `rtk pnpm --dir apps/dashboard build`
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
+- `rtk uv run pytest tests/test_operator_endpoint_language_guard.py -q`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
 - browser proof with `agent-browser` for touched routes
