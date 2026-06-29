@@ -8,7 +8,7 @@ import {
   getAdsDiagnosticsSummary,
   getConnectors
 } from "../lib/api";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { ActionFocus } from "./ActionPanels";
 import {
@@ -556,9 +556,13 @@ function AdsStartHerePanel({ decisions }: { decisions: AdsDecisionItem[] }) {
                 <div className="text-sm font-semibold leading-5 text-ink">
                   Krok {index + 1}: {decision.title}
                 </div>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {decision.decision_type_label} / {decision.status_label}
-                </p>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Typ", value: decision.decision_type_label },
+                    { label: "Status", value: decision.status_label }
+                  ]}
+                />
               </div>
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-700">
@@ -683,9 +687,12 @@ function AdsOptimizerReadinessGroup({
                   {item.title}
                 </p>
               </div>
-              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {item.status_label} / {item.risk_label}
-              </span>
+              <LabelChipRow
+                chips={[
+                  { label: "Status", value: item.status_label },
+                  { label: "Ryzyko", value: item.risk_label }
+                ]}
+              />
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-700">
               {item.summary}
@@ -729,9 +736,13 @@ function AdsDecisionCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {decision.decision_type_label} / {decision.status_label}
-          </p>
+          <LabelChipRow
+            className="mt-1"
+            chips={[
+              { label: "Typ", value: decision.decision_type_label },
+              { label: "Status", value: decision.status_label }
+            ]}
+          />
         </div>
         <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
           ryzyko: {decision.risk_label}
@@ -1014,9 +1025,12 @@ function AdsBusinessTargetInterpretationPanel({
               {strategyReadiness.summary}
             </p>
           </div>
-          <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-            {strategyReadiness.status_label} / {strategyReadiness.latest_review_status_label}
-          </span>
+          <LabelChipRow
+            chips={[
+              { label: "Status", value: strategyReadiness.status_label },
+              { label: "Ostatnie sprawdzenie", value: strategyReadiness.latest_review_status_label }
+            ]}
+          />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
           <MetricTile
@@ -1095,9 +1109,12 @@ function AdsCampaignRowsTable({
             <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}`}>
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
               <td className="py-2 pr-4 text-xs">
-                <div className="font-semibold text-ink">
-                  {row.review_priority} / {row.review_score}
-                </div>
+                <LabelChipRow
+                  chips={[
+                    { label: "Priorytet", value: row.review_priority },
+                    { label: "Ocena WILQ", value: row.review_score }
+                  ]}
+                />
                 <div className="mt-1 text-slate-500">{row.human_review_gate_summary_label}</div>
                 {row.target_status !== "no_target" ? (
                   <div className="mt-1 text-slate-500">{row.target_status_label}</div>
@@ -1175,14 +1192,21 @@ function AdsCampaignTriageRowsPanel({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h4 className="text-sm font-semibold text-ink">{row.campaign_name}</h4>
-                <p className="mt-1 text-xs text-slate-500">
-                  {row.advertising_channel_type_label ?? "kanał: brak"} /{" "}
-                  {row.campaign_status_label ?? "status: brak"} / {row.target_status_label}
-                </p>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Kanał", value: row.advertising_channel_type_label ?? "brak danych" },
+                    { label: "Status", value: row.campaign_status_label ?? "brak danych" },
+                    { label: "Cel", value: row.target_status_label }
+                  ]}
+                />
               </div>
-              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                  {row.review_priority} / wynik {row.review_score}
-              </span>
+              <LabelChipRow
+                chips={[
+                  { label: "Priorytet", value: row.review_priority },
+                  { label: "Ocena WILQ", value: row.review_score }
+                ]}
+              />
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
@@ -1338,9 +1362,13 @@ function AdsBudgetPacingRowsTable({
             <tr key={`${row.campaign_id ?? "unknown"}-${row.budget_id ?? row.budget_name}`}>
               <td className="py-2 pl-3 pr-4 font-medium text-ink">
                 <div>{row.campaign_name}</div>
-                <div className="text-xs font-normal text-slate-500">
-                  {row.advertising_channel_type_label} / {row.budget_period_label}
-                </div>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Kanał", value: row.advertising_channel_type_label },
+                    { label: "Budżet", value: row.budget_period_label }
+                  ]}
+                />
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {adsCost(row.budget_amount_micros, currencyCode)}
@@ -1446,9 +1474,13 @@ function AdsSharedBudgetDistributionPanel({
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <div className="font-semibold text-ink">{share.campaign_name}</div>
-                      <div className="mt-1 text-slate-500">
-                        {share.advertising_channel_type_label} / {share.campaign_status_label}
-                      </div>
+                      <LabelChipRow
+                        className="mt-1"
+                        chips={[
+                          { label: "Kanał", value: share.advertising_channel_type_label },
+                          { label: "Status", value: share.campaign_status_label }
+                        ]}
+                      />
                     </div>
                     <div className="text-right text-slate-700">
                       <div>{adsCost(share.cost_micros_7d, currencyCode)}</div>
@@ -1518,9 +1550,12 @@ function AdsRecommendationRowsPanel({
                   są dostępne w danych akcji.
                 </div>
               </div>
-              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {row.review_priority} / {row.review_score}
-              </span>
+              <LabelChipRow
+                chips={[
+                  { label: "Priorytet", value: row.review_priority },
+                  { label: "Ocena WILQ", value: row.review_score }
+                ]}
+              />
             </div>
             <div className="mt-1 text-xs leading-5 text-slate-600">
               {row.review_reason}
@@ -1878,11 +1913,14 @@ function AdsSearchTermReviewSummaryPanel({
                 className="rounded-md border border-line bg-white p-2"
               >
                 <div className="text-sm font-medium text-ink">{row.search_term}</div>
-                <div className="mt-1 text-xs text-slate-600">
-                  {row.campaign_label || "brak kampanii w odczycie"} / koszt{" "}
-                  {adsCost(row.cost_micros, currencyCode)} / konwersje{" "}
-                  {adsNumber(row.conversions)}
-                </div>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Kampania", value: row.campaign_label || "brak kampanii w odczycie" },
+                    { label: "Koszt", value: adsCost(row.cost_micros, currencyCode) },
+                    { label: "Konwersje", value: adsNumber(row.conversions) }
+                  ]}
+                />
               </div>
             ))}
           </div>
@@ -2165,14 +2203,20 @@ function AdsNegativeKeywordCandidatesPanel({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h4 className="text-sm font-semibold text-ink">{candidate.search_term}</h4>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {candidate.campaign_label || "brak kampanii w odczycie"} /{" "}
-                  {candidate.ad_group_label || "brak grupy reklam w odczycie"}
-                </p>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Kampania", value: candidate.campaign_label || "brak kampanii w odczycie" },
+                    { label: "Grupa reklam", value: candidate.ad_group_label || "brak grupy reklam w odczycie" }
+                  ]}
+                />
               </div>
-              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {candidate.review_priority} / {candidate.review_score}
-              </span>
+              <LabelChipRow
+                chips={[
+                  { label: "Priorytet", value: candidate.review_priority },
+                  { label: "Ocena WILQ", value: candidate.review_score }
+                ]}
+              />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {candidate.review_reason}
@@ -2208,10 +2252,15 @@ function AdsNegativeKeywordCandidatesPanel({
                   Istniejące słowa kluczowe w tej grupie
                 </div>
                 {candidate.keyword_context_rows.slice(0, 4).map((row) => (
-                  <div key={`${row.criterion_id ?? row.keyword_text}-${row.match_type}`}>
-                    {row.keyword_text} / {row.match_type_label}
-                    {row.negative_label ? ` / ${row.negative_label}` : ""}
-                  </div>
+                  <LabelChipRow
+                    key={`${row.criterion_id ?? row.keyword_text}-${row.match_type}`}
+                    className="mt-1"
+                    chips={[
+                      { label: "Słowo", value: row.keyword_text },
+                      { label: "Dopasowanie", value: row.match_type_label },
+                      { label: "Status", value: row.negative_label }
+                    ]}
+                  />
                 ))}
               </div>
             ) : null}

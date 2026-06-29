@@ -7734,6 +7734,23 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.blocked_claim_summary_label");
     expect(routeSource).toContain("row.human_review_gate_summary_label");
     expect(routeSource).toContain("row.changed_field_summary_label");
+    expect(routeSource).not.toContain("{decision.decision_type_label} / {decision.status_label}");
+    expect(routeSource).not.toContain("{item.status_label} / {item.risk_label}");
+    expect(routeSource).not.toContain(
+      "{strategyReadiness.status_label} / {strategyReadiness.latest_review_status_label}"
+    );
+    expect(routeSource).not.toContain("{row.review_priority} / {row.review_score}");
+    expect(routeSource).not.toContain("{row.review_priority} / wynik {row.review_score}");
+    expect(routeSource).not.toContain(
+      "{row.advertising_channel_type_label ?? \"kanał: brak\"} /"
+    );
+    expect(routeSource).not.toContain("{row.advertising_channel_type_label} / {row.budget_period_label}");
+    expect(routeSource).not.toContain(
+      "{share.advertising_channel_type_label} / {share.campaign_status_label}"
+    );
+    expect(routeSource).not.toContain("} / koszt{\" \"}");
+    expect(routeSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
+    expect(routeSource).not.toContain("{row.keyword_text} / {row.match_type_label}");
     expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.changed_field_labels.slice(0, 4).join");

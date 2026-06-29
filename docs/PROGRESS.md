@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Google Ads decision cards, strategy readiness, campaign triage, budget,
+  recommendation and search-term panels no longer join status, priority, score,
+  campaign, cost or conversion metadata with slash shorthand. They use labelled
+  chips instead. `App.test.tsx` now blocks the removed Ads slash templates, and
+  browser proof on `/ads-doctor` after expanding the full review returned zero
+  hits for the guarded slash fragments.
 - GA4, Localo and Ahrefs status headings no longer use slash-combined first
   screen copy such as `Status GA4 / pomiar i jakość ruchu`,
   `Status Localo / widoczność lokalna` or `Status Ahrefs / dowody SEO`.
