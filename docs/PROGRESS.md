@@ -122,6 +122,9 @@ API status later contradicts this state.
   `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
   Focused dashboard tests, typecheck, lint, language guards, `git diff --check`
   and browser proof passed.
+- GA4 dashboard trace lines no longer use generic `brak` empty states for
+  measurement readiness, evidence or sources. Focused GA4 route tests,
+  dashboard typecheck/lint, language guards and browser proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

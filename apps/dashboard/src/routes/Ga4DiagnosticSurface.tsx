@@ -376,7 +376,7 @@ function Ga4OperatorSummary({
                   ? [trackingSection.status_label, trackingSection.summary]
                   : []
               }
-              empty="brak"
+              empty="brak oceny gotowości pomiaru"
             />
             <TraceLine
               label="Konwersje i zdarzenia kluczowe"
@@ -476,9 +476,13 @@ function Ga4DecisionCard({
         <TraceLine
           label="Dowody w WILQ"
           values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
-          empty="brak"
+          empty="brak dowodów źródłowych"
         />
-        <TraceLine label="Źródła" values={decision.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Źródła"
+          values={decision.source_connector_labels}
+          empty="brak źródeł danych"
+        />
         <TraceLine
           label="Akcje do sprawdzenia"
           values={[decision.action_summary_label]}
@@ -526,7 +530,11 @@ function Ga4DiagnosticProof({
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => section.label)} />
         <TraceLine label="Dowody" values={[data.evidence_summary_label]} />
-        <TraceLine label="Źródła" values={data.source_connector_labels} empty="brak" />
+        <TraceLine
+          label="Źródła"
+          values={data.source_connector_labels}
+          empty="brak źródeł danych"
+        />
         <TraceLine label="Akcje" values={[data.action_summary_label]} />
         <TraceLine
           label="Nie wolno twierdzić"
