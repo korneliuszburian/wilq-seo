@@ -5,7 +5,7 @@ description: 'Planuje strategię treści Ekologus z WILQ API, dowodami, kartami 
 
 # WILQ Strateg treści
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

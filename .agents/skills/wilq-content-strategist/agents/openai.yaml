@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ Content Strategist"
-  short_description: "Planuje treści, briefy i refresh z evidence WILQ"
+  display_name: "WILQ Strategia treści"
+  short_description: "Planuje treści, briefy i odświeżenia z dowodami WILQ"
   default_prompt: "Użyj $wilq-content-strategist: przygotuj plan treści dla Ekologus z GSC, GA4, Ahrefs, Merchant i spisu treści WordPress."

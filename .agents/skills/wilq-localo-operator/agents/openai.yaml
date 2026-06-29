@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ Localo Operator"
+  display_name: "WILQ Widoczność lokalna"
   short_description: "Obsługuje Localo, GBP i lokalną widoczność"
-  default_prompt: "Użyj $wilq-localo-operator: sprawdź lokalną widoczność Ekologus albo pokaż blocker Localo, jeśli nie ma świeżego evidence."
+  default_prompt: "Użyj $wilq-localo-operator: sprawdź lokalną widoczność Ekologus albo pokaż blokadę Localo, jeśli nie ma świeżych dowodów."

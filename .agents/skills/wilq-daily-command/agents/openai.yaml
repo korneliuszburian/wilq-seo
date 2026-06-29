@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ Daily Command"
+  display_name: "WILQ Centrum pracy"
   short_description: "Dzienny plan pracy marketera z WILQ API"
-  default_prompt: "Użyj $wilq-daily-command: pokaż, co dziś powinien zrobić marketer Ekologus na podstawie realnych metryk, evidence IDs i blockerów."
+  default_prompt: "Użyj $wilq-daily-command: pokaż, co dziś powinien zrobić marketer Ekologus na podstawie realnych metryk, identyfikatorów dowodów i blokad."

@@ -4,7 +4,7 @@
 
 Gotowość lokalnej widoczności oraz akcje do sprawdzenia Localo/GBP.
 
-Oczekiwany wynik: status status dostępu Localo, lokalne blokady widoczności i bezpieczne następne kroki. Jeśli OAuth działa, ale brakuje danych, powiedz to wprost. Korzystaj z `statusów odczytu danych`: obietnicę wolno oprzeć tylko na kontrakcie ze statusem `ready`. Gotowe dane Localo traktuj jako evidence zapisanym w WILQ, a `zadania lokalne`, zapis zmian i każdy kontrakt bez statusu `ready` trzymaj jako blocker.
+Oczekiwany wynik: status dostępu Localo, lokalne blokady widoczności i bezpieczne następne kroki. Jeśli OAuth działa, ale brakuje danych, powiedz to wprost. Korzystaj z `statusów odczytu danych`: obietnicę wolno oprzeć tylko na kontrakcie ze statusem `ready`. Gotowe dane Localo traktuj jako dowody zapisane w WILQ, a `zadania lokalne`, zapis zmian i każdy kontrakt bez statusu `ready` trzymaj jako blokadę.
 
 ## Wymagany kontekst API
 
@@ -23,7 +23,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
 2. `Dowody`: identyfikatory dowodów, identyfikatory źródeł danych, notatki freshness i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: co wspiera evidence, z niepewnością gdy dowody są zagregowane, stare albo niepełne. Dla Localo agregatów danych wolno mówić o liczbie lokalizacji, monitorowanych fraz, średniej widoczności/grid position i recenzjach tylko wtedy, gdy te metryki są w `localo_diagnostics`.
+3. `Diagnoza`: co wspierają dowody, z niepewnością gdy dowody są zagregowane, stare albo niepełne. Dla Localo agregatów danych wolno mówić o liczbie lokalizacji, monitorowanych fraz, średniej widoczności/grid position i recenzjach tylko wtedy, gdy te metryki są w `localo_diagnostics`.
 4. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.

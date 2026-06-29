@@ -5,7 +5,7 @@ description: Proponuje akcje do sprawdzenia segmentów niestandardowych Google A
 
 # WILQ Segmenty Niestandardowe
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

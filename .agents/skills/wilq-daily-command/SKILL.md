@@ -5,7 +5,7 @@ description: Uruchamia dzienny polski WILQ brief operacyjny dla Ekologus z dowod
 
 # WILQ Dzienny plan
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

@@ -55,6 +55,11 @@ Date: 2026-06-29
   stale-language scan repeatable. `scripts/verify.sh` runs it against the
   temporary skill API before skill smokes, and `scripts/pre_demo_gate.sh` runs
   it against the managed local API before dashboard/skill demo checks.
+- Active Codex skill interface names, prompts and response contracts now use
+  Polish operator wording instead of old English working names, raw proof-ID
+  wording, blocker jargon or mixed query/page wording.
+  `scripts/marketer_language_guard.py` now guards that class of phrases in
+  active skill/docs/test contracts.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-29T00:20-00:22Z, and
   `/api/connectors` reports fresh `last_success_at` values for all three.

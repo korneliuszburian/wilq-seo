@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ GA4 Analyst"
+  display_name: "WILQ Analityka GA4"
   short_description: "Analizuje jakość ruchu, strony wejścia i pomiar GA4"
   default_prompt: "Użyj $wilq-ga4-analyst: sprawdź, które strony wejścia i źródła ruchu w Ekologus wymagają uwagi, bez obietnic bez dowodów."

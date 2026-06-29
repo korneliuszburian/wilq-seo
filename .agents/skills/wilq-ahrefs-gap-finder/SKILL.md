@@ -3,9 +3,9 @@ name: wilq-ahrefs-gap-finder
 description: Analizuje dane Ahrefs dla Ekologus przez WILQ API i wskazuje defensywne okazje SEO, treściowe i backlinkowe. Użyj, gdy marketer pyta "gdzie konkurencja ma przewagę SEO?", "jakie mamy luki treści?", "co mówi Ahrefs o domenie?", "jak wykorzystać DR/backlinki?", albo pyta o luki względem konkurencji, rozbudowę treści/linków, kontekst autorytetu lub priorytety SEO z Ahrefs. Musi cytować WILQ identyfikatory dowodów i nie wolno zmyślać wartości Ahrefs.
 ---
 
-# WILQ Ahrefs Gap Finder
+# WILQ Luki z Ahrefs
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

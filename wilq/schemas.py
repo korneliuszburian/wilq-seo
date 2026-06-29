@@ -547,7 +547,7 @@ class ActionObject(BaseModel):
     @classmethod
     def evidence_ids_not_blank(cls, value: list[str]) -> list[str]:
         if any(not item.strip() for item in value):
-            raise ValueError("ActionObject evidence IDs must not be blank")
+            raise ValueError("Identyfikatory dowodów akcji nie mogą być puste")
         return value
 
 

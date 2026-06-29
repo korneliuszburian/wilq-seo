@@ -127,6 +127,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
   repeatable. `scripts/verify.sh` runs it against the temporary skill API, and
   `scripts/pre_demo_gate.sh` runs it against the managed local API before
   dashboard/skill demo checks.
+- Active skill interface names, prompts and response contracts now use Polish
+  operator wording instead of old English working names, raw proof-ID wording
+  or blocker phrasing. The marketer language guard now fails that class of
+  phrases in active skill/docs/test contracts.
 - Active actions with operator preview payloads now have a focused guard that
   requires typed preview cards, so new preview payloads do not fall back to raw
   shape-derived rows.

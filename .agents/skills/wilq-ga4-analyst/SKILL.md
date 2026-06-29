@@ -3,9 +3,9 @@ name: wilq-ga4-analyst
 description: Analizuje zachowanie GA4 dla Ekologus z dowodami z WILQ API. Użyj, gdy marketer pyta "które strony wejścia działają słabo?", "czy ruch z kampanii ma sens?", "czemu użytkownicy nie angażują się?", "czy pomiar jest zepsuty?", "porównaj źródła ruchu", albo pyta o zaangażowanie, sesje, jakość kampanii/źródła, diagnostykę konwersji lub braki pomiaru. Musi cytować GA4 identyfikatory dowodów i nie wolno zmyślać wartości GA4.
 ---
 
-# WILQ GA4 Analyst
+# WILQ Analityka GA4
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

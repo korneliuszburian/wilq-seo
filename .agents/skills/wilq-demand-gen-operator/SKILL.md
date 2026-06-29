@@ -5,7 +5,7 @@ description: Obsługuje gotowość Demand Gen, jakość kreacji i workflow Ads-t
 
 # WILQ Demand Gen Operator
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

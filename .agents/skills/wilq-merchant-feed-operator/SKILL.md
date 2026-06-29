@@ -3,9 +3,9 @@ name: wilq-merchant-feed-operator
 description: Analizuje dowody Merchant Center dla produktów i feedu Ekologus przez WILQ API i przygotowuje bezpieczną kolejkę sprawdzenia problemów feedu. Użyj, gdy marketer pyta "czy feed produktowy jest OK?", "które produkty mają problemy?", "co blokuje Shopping/PMax produkty?", "sprawdź odrzucone produkty", "przygotuj kolejkę przeglądu problemów feedu", albo pyta o diagnostykę Merchant, ryzyka widoczności produktów, poprawki feedu, typy problemów, atrybuty, dostępność, ceny, GTIN/obrazy lub zatwierdzenia produktów. Nie wolno zmieniać danych produktu bez akcji sprawdzonych w WILQ i audytu.
 ---
 
-# WILQ Merchant Feed Operator
+# WILQ Merchant Center
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

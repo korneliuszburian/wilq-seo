@@ -1,11 +1,11 @@
 ---
 name: wilq-campaign-builder
-description: Buduje bezpieczne akcje kampanii Google Ads do sprawdzenia dla Ekologus przez kontrakty WILQ API. Użyj, gdy marketer pyta "stwórz strukturę kampanii", "zaplanuj PMax/Search/Shopping", "przygotuj kampanię na usługę/produkt", "jakie keywords/assets/sitelinki?", "daj podgląd zmian", albo chce strukturę kampanii, plan ad group, pomysły keyword/asset, budżety, targeting lub bezpieczny podgląd zmian. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
+description: Buduje bezpieczne akcje kampanii Google Ads do sprawdzenia dla Ekologus przez kontrakty WILQ API. Użyj, gdy marketer pyta "stwórz strukturę kampanii", "zaplanuj PMax/Search/Shopping", "przygotuj kampanię na usługę/produkt", "jakie słowa kluczowe, materiały i sitelinki?", "daj podgląd zmian", albo chce strukturę kampanii, plan grup reklam, pomysły słów kluczowych i materiałów, budżety, kierowanie lub bezpieczny podgląd zmian. Musi sprawdzać propozycje w WILQ przed zapisem zmian i nie wolno omijać audytu.
 ---
 
-# WILQ Campaign Builder
+# WILQ Plan kampanii
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,13 +13,13 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 
 - "Przygotuj strukturę kampanii Search dla tej usługi Ekologus."
 - "Zbuduj draft PMax/Shopping bez zapisu zmian."
-- "Jakie assets, keywords i sitelinki możemy przygotować z obecnego evidence?"
+- "Jakie materiały, słowa kluczowe i sitelinki możemy przygotować z obecnych dowodów?"
 - "Pokaż podgląd zmian i ryzyka przed zapisem zmian."
 
 </triggers>

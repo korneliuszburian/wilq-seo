@@ -3,9 +3,9 @@ name: wilq-social-publisher
 description: Przygotowuje bezpieczne akcje do sprawdzenia dla treści LinkedIn/Facebook dla Ekologus przez dowody z WILQ API i sprawdzenie w WILQ. Użyj, gdy marketer pyta "przygotuj post z tych danych", "co opublikować na Facebooku albo LinkedIn?", "zamień insight z GSC/GA4/Merchant/Ads na post", "zrób kolejkę social", albo pyta o adaptację danych na social, szkice postów oparte na dowodach, ponowne użycie treści lub gotowość publikacji. Nie wolno publikować ani szkicować niewspartych obietnic bez dowodów WILQ.
 ---
 
-# WILQ Social Publisher
+# WILQ Posty społecznościowe
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

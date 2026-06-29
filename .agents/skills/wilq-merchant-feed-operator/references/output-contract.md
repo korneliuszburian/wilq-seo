@@ -1,10 +1,10 @@
-# WILQ Merchant Feed Operator Kontrakt odpowiedzi
+# WILQ Merchant Center Kontrakt odpowiedzi
 
 ## Cel
 
-Triage Merchant Center dla product status, feed issues i product visibility.
+Przegląd Merchant Center dla stanu produktów, problemów pliku produktowego i widoczności produktów.
 
-Oczekiwany wynik: podsumowanie feed issues i produktowe akcje do sprawdzenia z identyfikatorami dowodów Merchant oraz blokady sprawdzenia.
+Oczekiwany wynik: podsumowanie problemów pliku produktowego i produktowe akcje do sprawdzenia z identyfikatorami dowodów Merchant oraz blokady sprawdzenia.
 
 ## Wymagany kontekst API
 

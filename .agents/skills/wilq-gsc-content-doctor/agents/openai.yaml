@@ -1,4 +1,4 @@
 interface:
-  display_name: "WILQ GSC Content Doctor"
-  short_description: "Zamienia GSC query/page na decyzje SEO/content"
-  default_prompt: "Użyj $wilq-gsc-content-doctor: znajdź strony z impressions, CTR i pozycjami, które warto odświeżyć albo połączyć."
+  display_name: "WILQ Treści z GSC"
+  short_description: "Zamienia zapytania i adresy z GSC na decyzje o treściach"
+  default_prompt: "Użyj $wilq-gsc-content-doctor: znajdź strony z wyświetleniami, CTR i pozycjami, które warto odświeżyć albo połączyć."

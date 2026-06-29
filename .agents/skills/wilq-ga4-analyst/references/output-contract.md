@@ -1,4 +1,4 @@
-# WILQ GA4 Analyst Kontrakt odpowiedzi
+# WILQ Analityka GA4 Kontrakt odpowiedzi
 
 ## Cel
 

@@ -5,7 +5,7 @@ description: Obsługuje proces Localo i lokalnej widoczności dla Ekologus przez
 
 # WILQ Localo Operator
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 

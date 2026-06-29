@@ -184,7 +184,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "GSC",
                 "treści",
                 "content_diagnostics",
-                "query/page",
+                "zapytania i adresy",
                 "decision_queue",
                 "merge_create_after_inventory_check",
                 "inventory_check_before_create",
@@ -231,11 +231,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
-            "terms": {
-                "Merchant Center",
-                "feed",
-                "product",
-                "merchant_diagnostics",
+                "terms": {
+                    "Merchant Center",
+                    "plik produktowy",
+                    "produkty",
+                    "merchant_diagnostics",
                 "freshness_assessment",
                 "decision_queue",
                 "unknowns",

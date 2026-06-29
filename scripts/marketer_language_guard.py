@@ -181,6 +181,66 @@ FORBIDDEN_PHRASES = (
         "Use akcje do sprawdzenia in marketer-facing copy.",
     ),
     ForbiddenPhrase(
+        "Ads Doctor",
+        "Use Google Ads or WILQ Google Ads in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Daily Command",
+        "Use Centrum pracy in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Content Strategist",
+        "Use Strategia treści in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Campaign Builder",
+        "Use Plan kampanii in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Gap Finder",
+        "Use Luki z Ahrefs in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Social Publisher",
+        "Use Posty społecznościowe in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Feed Operator",
+        "Use Merchant Center or plik produktowy language in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "GA4 Analyst",
+        "Use Analityka GA4 in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Content Doctor",
+        "Use Treści z GSC in marketer-facing skill labels.",
+    ),
+    ForbiddenPhrase(
+        "Skill Contract",
+        "Use Kontrakt skilla in active skill docs.",
+    ),
+    ForbiddenPhrase(
+        "Trigger Contract",
+        "Use Kiedy używać in active skill docs.",
+    ),
+    ForbiddenPhrase(
+        "evidence IDs",
+        "Use identyfikatory dowodów in operator-facing skill prompts.",
+    ),
+    ForbiddenPhrase(
+        "blockerów",
+        "Use blokad in operator-facing skill prompts.",
+    ),
+    ForbiddenPhrase(
+        "feed issues",
+        "Use problemy pliku produktowego in Merchant copy.",
+    ),
+    ForbiddenPhrase(
+        "query/page",
+        "Use zapytania i adresy in content copy.",
+    ),
+    ForbiddenPhrase(
         "akcja WILQ",
         "Use akcja do sprawdzenia or sprawdzenie w WILQ.",
     ),

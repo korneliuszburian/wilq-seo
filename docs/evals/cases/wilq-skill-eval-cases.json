@@ -135,14 +135,14 @@
   {
     "skill": "wilq-gsc-content-doctor",
     "surface_path": "/content-planner",
-    "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
+    "task_pl": "Na podstawie dostępnych dowodów z GSC wskaż jedną bezpieczną diagnozę treści i co marketer ma zrobić dalej.",
     "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
     "expected_terms_pl": [
       "Treści",
       "GSC",
       "treści",
       "content_diagnostics",
-      "query/page",
+      "zapytania i adresy",
       "decision_queue",
       "merge_create_after_inventory_check",
       "inventory_check_before_create",
@@ -343,7 +343,7 @@
     "task_pl": "Oceń, czy można przygotować propozycję kampanii albo podgląd zmian. Nie proponuj zapisu zmian bez akcji sprawdzonej w WILQ.",
     "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
     "expected_terms_pl": [
-      "Campaign Builder",
+      "Plan kampanii",
       "ads_diagnostics",
       "content_landing_context",
       "query_page_candidates",
@@ -403,7 +403,7 @@
   {
     "skill": "wilq-demand-gen-operator",
     "surface_path": "/ads-doctor/demand-gen",
-    "task_pl": "Oceń Demand Gen readiness i asset/traffic-quality blockers tylko z WILQ evidence oraz action validation gates.",
+    "task_pl": "Oceń gotowość Demand Gen, jakość materiałów i jakość ruchu tylko z dowodów WILQ oraz sprawdzenia w WILQ.",
     "expected_connectors": ["google_ads", "google_analytics_4"],
     "expected_terms_pl": [
       "Demand Gen",
@@ -457,13 +457,13 @@
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
-    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis do feedu są zablokowane bez odpowiednich kontraktów.",
-    "messy_task_pl": "Czy feed jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj ponownego zatwierdzenia ani odzyskanego przychodu.",
+    "task_pl": "Sprawdź dowody Merchant dla pliku produktowego i produktów oraz wskaż, czy można przygotować bezpieczną akcję do sprawdzenia bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że zwrot z reklam na poziomie produktu, odzyskany przychód produktu, wpływ zmiany ceny, ponowne zatwierdzenie produktu oraz zapis pliku produktowego są zablokowane bez odpowiednich kontraktów.",
+    "messy_task_pl": "Czy plik produktowy jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj ponownego zatwierdzenia ani odzyskanego przychodu.",
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
       "Merchant Center",
-      "feed",
-      "product",
+      "plik produktowy",
+      "produkty",
       "merchant_diagnostics",
       "freshness_assessment",
       "decision_queue",

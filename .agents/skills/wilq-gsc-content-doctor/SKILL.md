@@ -3,9 +3,9 @@ name: wilq-gsc-content-doctor
 description: Zamienia dowody Google Search Console dla Ekologus w SEO/content diagnostics przez WILQ API. Użyj, gdy marketer pyta "które strony odświeżyć?", "gdzie mamy dużo wyświetlenia i niski CTR?", "jakie query tracą kliknięcia?", "co poprawić w treściach SEO?", "które strony scalić/utworzyć/odświeżyć/zablokować?", albo pyta o zapytania, strony, CTR, wyświetlenia, pozycje, spadek efektów treści, szanse blisko topu, przepisanie treści lub szanse SEO. Musi zwracać identyfikatory dowodów i nie wolno zmyślać metryk wyszukiwania.
 ---
 
-# WILQ GSC Content Doctor
+# WILQ Treści z GSC
 
-## Skill Contract
+## Kontrakt skilla
 
 <operating_rule>
 
@@ -13,7 +13,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 </operating_rule>
 
-## Trigger Contract
+## Kiedy używać
 
 <triggers>
 
