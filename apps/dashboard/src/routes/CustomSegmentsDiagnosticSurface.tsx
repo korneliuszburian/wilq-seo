@@ -3,7 +3,7 @@ import { ShieldAlert } from "lucide-react";
 
 import { AdsDiagnosticsResponse, getAdsDiagnostics } from "../lib/api";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
-import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LabelChipRow, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 
@@ -47,13 +47,20 @@ export function AdsCustomSegmentCandidatesPanel({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h4 className="text-sm font-semibold text-ink">{candidate.name}</h4>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {candidate.intent} / pewność: {candidate.confidence_label}
-                </p>
+                <LabelChipRow
+                  className="mt-1"
+                  chips={[
+                    { label: "Cel segmentu", value: candidate.intent },
+                    { label: "Pewność", value: candidate.confidence_label }
+                  ]}
+                />
               </div>
-              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {candidate.review_priority} / {candidate.review_score}
-              </span>
+              <LabelChipRow
+                chips={[
+                  { label: "Priorytet", value: candidate.review_priority },
+                  { label: "Ocena WILQ", value: candidate.review_score }
+                ]}
+              />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {candidate.review_reason}
@@ -94,11 +101,14 @@ export function AdsCustomSegmentCandidatesPanel({
                 <div className="mt-1 grid gap-1">
                   {candidate.keyword_planner_ideas.slice(0, compact ? 2 : 4).map((idea) => (
                     <div key={`${candidate.id}-${idea.idea_text}`} className="text-slate-700">
-                      <span className="font-medium text-ink">{idea.idea_text}</span>
-                      {typeof idea.avg_monthly_searches === "number" ? (
-                        <span> / średnie miesięczne wyszukiwania: {idea.avg_monthly_searches}</span>
-                      ) : null}
-                      {idea.competition ? <span> / konkurencja: {idea.competition}</span> : null}
+                      <div className="font-medium text-ink">{idea.idea_text}</div>
+                      <LabelChipRow
+                        className="mt-1"
+                        chips={[
+                          { label: "Średnie miesięczne wyszukiwania", value: idea.avg_monthly_searches },
+                          { label: "Konkurencja", value: idea.competition }
+                        ]}
+                      />
                     </div>
                   ))}
                 </div>

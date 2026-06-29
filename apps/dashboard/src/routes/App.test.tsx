@@ -7874,6 +7874,10 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("contract.missing_read_contract_summary_label");
     expect(routeSource).toContain("contract.operator_review_gate_summary_label");
     expect(routeSource).toContain("candidate.preview_card");
+    expect(routeSource).not.toContain("{candidate.intent} / pewność:");
+    expect(routeSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
+    expect(routeSource).not.toContain(" / średnie miesięczne wyszukiwania:");
+    expect(routeSource).not.toContain(" / konkurencja:");
     expect(routeSource).not.toContain("candidate.payload_preview");
     expect(routeSource).not.toContain("contract.missing_read_contracts.length");
     expect(routeSource).not.toContain("contract.operator_review_gates.length");

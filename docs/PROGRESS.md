@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Custom Segments cards no longer join intent, confidence, priority, score,
+  Keyword Planner volume or competition metadata with slash shorthand. They use
+  labelled chips for segment review and keyword ideas. The custom-segments
+  route test blocks the removed templates, and browser proof on
+  `/ads-doctor/custom-segments` returned zero hits for the guarded slash
+  fragments.
 - Google Ads decision cards, strategy readiness, campaign triage, budget,
   recommendation and search-term panels no longer join status, priority, score,
   campaign, cost or conversion metadata with slash shorthand. They use labelled

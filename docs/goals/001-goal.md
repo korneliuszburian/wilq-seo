@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Custom Segments cards now label intent, confidence, priority, score, Keyword
+  Planner volume and competition metadata instead of joining them with slash
+  shorthand. Focused route tests and browser proof on
+  `/ads-doctor/custom-segments` guard the cleaned segment-review surface.
 - Google Ads review panels now label decision/status, readiness, priority,
   score, campaign, cost and conversion metadata instead of joining those values
   with slash shorthand. Focused route tests and browser proof on expanded
