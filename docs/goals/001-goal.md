@@ -80,6 +80,10 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Tactical queue API copy now emits labelled Polish metadata and titles instead
+  of slash-combined group, GA4 and Merchant fragments. Focused API/dashboard
+  tests, both language guards, live tactical-queue proof and `/command-center`
+  browser proof guard the cleaned source copy.
 - Custom Segments cards now label intent, confidence, priority, score, Keyword
   Planner volume and competition metadata instead of joining them with slash
   shorthand. Focused route tests and browser proof on

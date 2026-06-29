@@ -4595,7 +4595,7 @@ const tacticalQueue = {
   items: [
     {
       id: "tq_ga4_landing",
-      title: "GA4: /oferta/ / google / cpc",
+      title: "GA4: sprawdź /oferta/; źródło ruchu: google / cpc",
       domain: "ga4",
       intent: "landing_page_quality",
       priority: 25,
@@ -4640,7 +4640,7 @@ const tacticalQueue = {
     },
     {
       id: "tq_merchant_issue",
-      title: "Merchant: NOT_IMPACTED / availability_updated / PL",
+      title: "Merchant: problem z dostępnością; zmiana dostępności; kraj PL",
       domain: "merchant",
       intent: "merchant_feed_triage",
       priority: 27,
@@ -4662,7 +4662,7 @@ const tacticalQueue = {
     {
       id: "gsc_seo:content_refresh:https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
       title: "SEO: odśwież /europejski-zielony-lad-co-to-takiego/ (2 query)",
-      meta: "SEO / odświeżenie treści / najpierw",
+      meta: "Obszar: Treści i GSC. Zadanie: odświeżenie treści. Priorytet: najpierw.",
       diagnosis:
         "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: kliknięcia: 12, wyświetlenia: 120.",
       next_step: "Przygotuj odświeżenie istniejącej strony i sprawdź duplikaty w WordPress.",
@@ -4675,8 +4675,8 @@ const tacticalQueue = {
     },
     {
       id: "ga4:landing_page_quality:/oferta/:google / cpc",
-      title: "GA4: sprawdź /oferta/ / google / cpc",
-      meta: "GA4 / jakość strony wejścia / najpierw",
+      title: "GA4: sprawdź /oferta/; źródło ruchu: google / cpc",
+      meta: "Obszar: GA4. Zadanie: jakość strony wejścia. Priorytet: najpierw.",
       diagnosis: "1 grupa ruchu GA4 wymaga sprawdzenia jakości strony wejścia.",
       next_step: "Sprawdź dopasowanie komunikatu, CTA i pomiar przed oceną kampanii.",
       priority: 25,
@@ -4689,7 +4689,7 @@ const tacticalQueue = {
     {
       id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
       title: "Merchant: problem z atrybutem: dostępność - zmiana dostępności",
-      meta: "Merchant / triage pliku produktowego / najpierw",
+      meta: "Obszar: Merchant. Zadanie: triage pliku produktowego. Priorytet: najpierw.",
       diagnosis: "1 problem pliku produktowego Merchant wymaga review.",
       next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego pliku produktowego.",
       priority: 27,
@@ -8100,7 +8100,6 @@ describe("WILQ dashboard", () => {
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
-    expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
     expect(screen.queryByText(/total_products: 10900/)).not.toBeInTheDocument();
     expect(screen.getByText("produkty w pliku produktowym")).toBeInTheDocument();
     expect(screen.queryByText(/FREE_LISTINGS|SHOPPING_ADS|MERCHANT_ACTION|NOT_IMPACTED/)).not.toBeInTheDocument();

@@ -104,7 +104,7 @@ const queue: TacticalQueueResponse = {
     {
       id: "gsc_seo:content_create:https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
       title: "SEO: zweryfikuj treść /europejski-zielony-lad-co-to-takiego/ (2 query)",
-      meta: "SEO / nowa treść / najpierw",
+      meta: "Obszar: Treści i GSC. Zadanie: nowa treść. Priorytet: najpierw.",
       diagnosis:
         "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: kliknięcia: 70, wyświetlenia: 1666.",
       next_step: "Najpierw sprawdź duplikaty w WordPress.",
@@ -150,7 +150,7 @@ describe("TacticalQueuePanel", () => {
     expect(section?.textContent).toContain("Obszar: Treści i GSC");
     expect(section?.textContent).toContain("Zadanie: nowa treść");
     expect(section?.textContent).toContain("Priorytet: wysoki priorytet");
-    expect(section?.textContent).not.toContain("Treści i GSC / nowa treść / wysoki priorytet");
+    expect(section?.textContent).not.toMatch(/[A-Za-zĄ-Żąćęłńóśźż ]+ \/ [A-Za-zĄ-Żąćęłńóśźż ]+ \/ [A-Za-zĄ-Żąćęłńóśźż ]+/);
     expect(scope.getAllByText("Szczegóły techniczne").length).toBeGreaterThan(0);
     expect(section?.textContent).toContain("Dowody źródłowe");
     expect(section?.textContent).toContain("Akcje do sprawdzenia");

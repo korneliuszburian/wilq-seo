@@ -285,9 +285,9 @@ def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGrou
         id=_compact_tactical_group_key(first),
         title=_compact_tactical_title(first, len(items)),
         meta=(
-            f"{_tactical_domain_label(first.domain)} / "
-            f"{_tactical_intent_label(first.intent)} / "
-            f"{_priority_label(first.priority)}"
+            f"Obszar: {_tactical_domain_label(first.domain)}. "
+            f"Zadanie: {_tactical_intent_label(first.intent)}. "
+            f"Priorytet: {_priority_label(first.priority)}."
         ),
         diagnosis=_compact_tactical_diagnosis(
             first,
@@ -316,14 +316,15 @@ def _compact_tactical_title(item: TacticalQueueItem, group_size: int) -> str:
             f"({group_size} {_polish_query_label(group_size)})"
         )
     if item.domain == OpportunityDomain.ga4:
+        landing_label = item.dimensions.get("landing_page", "strona wejścia")
+        source_label = item.dimensions.get("source_medium", "źródło ruchu")
         return (
-            f"GA4: sprawdź {item.dimensions.get('landing_page', 'landing')} / "
-            f"{item.dimensions.get('source_medium', 'źródło')}"
+            f"GA4: sprawdź {landing_label}; źródło ruchu: {source_label}"
         )
     if item.domain == OpportunityDomain.merchant:
         return (
             "Merchant: sprawdź "
-            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem pliku produktowego'))} / "
+            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem pliku produktowego'))}; "
             f"{_merchant_dimension_label(item.dimensions.get('affected_attribute', 'atrybut'))}"
         )
     return item.title
@@ -596,9 +597,9 @@ def _ga4_quality_items(
             TacticalQueueItem(
                 id=f"tq_ga4_{_stable_slug(landing_page)}_{_stable_slug(source_medium)}",
                 title=(
-                    f"Problem pomiaru GA4: {landing_page} / {source_medium}"
+                    f"Problem pomiaru GA4: {landing_page}; źródło ruchu: {source_medium}"
                     if has_not_set_dimension
-                    else f"GA4: {landing_page} / {source_medium}"
+                    else f"GA4: {landing_page}; źródło ruchu: {source_medium}"
                 ),
                 domain=OpportunityDomain.ga4,
                 intent=intent,
@@ -681,7 +682,7 @@ def _merchant_feed_items(
                     f"tq_merchant_issue_{_stable_slug(country)}_"
                     f"{_stable_slug(severity)}_{_stable_slug(issue_type)}"
                 ),
-                title=f"Merchant: {severity_label} / {issue_label} / {country}",
+                title=f"Merchant: {severity_label}; {issue_label}; kraj {country}",
                 domain=OpportunityDomain.merchant,
                 intent="merchant_feed_triage",
                 priority=_merchant_issue_priority(severity, product_count, index),
@@ -725,7 +726,7 @@ def _merchant_feed_items(
         items.append(
             TacticalQueueItem(
                 id=f"tq_merchant_status_{_stable_slug(country)}_{_stable_slug(reporting_context)}",
-                title=f"Merchant: status produktów {country} / {reporting_context}",
+                title=f"Merchant: status produktów w kraju {country}; kontekst: {reporting_context}",
                 domain=OpportunityDomain.merchant,
                 intent="merchant_feed_triage",
                 priority=45 + index,

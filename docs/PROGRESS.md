@@ -30,6 +30,12 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Tactical queue source copy no longer joins compact group meta, GA4 titles or
+  Merchant titles with slash shorthand. The API now emits labelled Polish
+  wording such as `Obszar`, `Zadanie`, `Priorytet`, `źródło ruchu` and
+  `kraj`. Focused API/dashboard tests, marketer/context-pack guards, live
+  `/api/marketing/tactical-queue` proof and `/command-center` browser proof
+  passed after stack restart.
 - Custom Segments cards no longer join intent, confidence, priority, score,
   Keyword Planner volume or competition metadata with slash shorthand. They use
   labelled chips for segment review and keyword ideas. The custom-segments

@@ -5116,7 +5116,10 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert all(group["evidence_summary_label"] for group in queue["compact_groups"])
     assert all(group["action_summary_label"] for group in queue["compact_groups"])
     assert all(group["blocked_claim_labels"] for group in queue["compact_groups"])
-    assert all("Content /" not in group["meta"] for group in queue["compact_groups"])
+    assert all(" / " not in group["meta"] for group in queue["compact_groups"])
+    assert all("Obszar:" in group["meta"] for group in queue["compact_groups"])
+    assert all("Zadanie:" in group["meta"] for group in queue["compact_groups"])
+    assert all("Priorytet:" in group["meta"] for group in queue["compact_groups"])
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
     assert all("clicks=" not in item["diagnosis"] for item in content_items)
@@ -5129,11 +5132,13 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     ga4_items = [item for item in queue["items"] if item["intent"] == "landing_page_quality"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in ga4_items)
     assert all("wordpress_match_confidence" in item["dimensions"] for item in ga4_items)
+    assert all("źródło ruchu:" in item["title"] for item in ga4_items)
     merchant_items = [item for item in queue["items"] if item["intent"] == "merchant_feed_triage"]
     assert any(item["dimensions"].get("issue_type") == "missing_image" for item in merchant_items)
     assert any(
         item["dimensions"].get("affected_attribute") == "image_link" for item in merchant_items
     )
+    assert all(" / " not in item["title"] for item in merchant_items)
     ahrefs_items = [item for item in queue["items"] if item["source_connectors"] == ["ahrefs"]]
     assert ahrefs_items
     assert any(
@@ -5752,9 +5757,10 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     ]
     titles = [decision.title for decision in decisions]
     assert titles == [
-        "GA4: napraw pomiar - brak strony wejścia w raporcie / brak źródła i medium w raporcie",
-        "GA4: napraw pomiar - brak strony wejścia w raporcie / google / organic",
+        "GA4: napraw pomiar - brak strony wejścia w raporcie; źródło ruchu: brak źródła i medium w raporcie",
+        "GA4: napraw pomiar - brak strony wejścia w raporcie; źródło ruchu: google / organic",
     ]
+    assert all(" / brak" not in title for title in titles)
     assert decisions[0].landing_page_label == "brak strony wejścia w raporcie"
     assert decisions[0].source_medium_label == "brak źródła i medium w raporcie"
     assert decisions[0].campaign_name_label == "brak kampanii w raporcie"

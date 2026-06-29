@@ -1068,7 +1068,7 @@ def _ga4_measurement_title(landing_page: str | None, source_medium: str | None) 
         source_medium,
         missing_label="brak źródła i medium w raporcie",
     )
-    return f"GA4: napraw pomiar - {landing_label} / {source_label}"
+    return f"GA4: napraw pomiar - {landing_label}; źródło ruchu: {source_label}"
 
 
 def _ga4_decision_status(decision_type: Ga4DecisionType) -> Literal["ready", "blocked"]:
