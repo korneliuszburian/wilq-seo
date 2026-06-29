@@ -8213,7 +8213,10 @@ describe("WILQ dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sprawdź w WILQ" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("poprawna")).toBeInTheDocument();
-    expect(screen.getByText("Błędy: brak")).toBeInTheDocument();
+    expect(screen.getByText("Błędy: brak błędów")).toBeInTheDocument();
+    expect(screen.getByText("Ostrzeżenia: brak ostrzeżeń")).toBeInTheDocument();
+    expect(screen.queryByText("Błędy: brak")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ostrzeżenia: brak")).not.toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "Sprawdź w WILQ" })[0]
     ).toHaveAttribute("href", "/actions/act_review_merchant_feed_issues");

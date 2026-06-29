@@ -118,6 +118,10 @@ API status later contradicts this state.
   summaries, knowledge-card titles or audit summaries from raw connector,
   source, card or event types. Focused API contract coverage guards those
   fallbacks.
+- Action detail validation now uses self-explanatory empty states such as
+  `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
+  Focused dashboard tests, typecheck, lint, language guards, `git diff --check`
+  and browser proof passed.
 - Localo marketer-facing summaries now use correct Polish aggregate-count
   wording and all shared metric tiles render decimal values with Polish number
   formatting. Focused API/dashboard tests, language guards and browser proof

@@ -186,7 +186,11 @@ function ActionPreviewResultPanel({
         Pozycje podglądu: {result.preview_items.length}/{result.preview_items_total}
         {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
       </div>
-      <TraceLine label="Blokady podglądu" values={result.blocker_labels} empty="brak" />
+      <TraceLine
+        label="Blokady podglądu"
+        values={result.blocker_labels}
+        empty="brak blokad podglądu"
+      />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
     </div>
   );
@@ -210,7 +214,7 @@ export function ActionIdFocus({
           <TraceLine
             label="Akcje"
             values={actionIds.length > 0 ? [actionSummaryLabel] : []}
-            empty="brak"
+            empty="brak akcji do sprawdzenia"
           />
         </div>
       </div>
@@ -337,12 +341,12 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
         <TraceLine
           label="Warunki"
           values={gate.operator_checklist_labels.slice(0, 6)}
-          empty="brak"
+          empty="brak dodatkowych warunków"
         />
         <TraceLine
           label="Blokady zapisu zmian"
           values={[gate.apply_blocker_summary_label]}
-          empty="brak"
+          empty="brak blokad zapisu zmian"
         />
       </div>
       <div className="mt-2 text-slate-600">
@@ -371,7 +375,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <TraceLine
             label="Co blokuje zapis"
             values={[gate.last_mutation_blocker_summary_label]}
-            empty="brak"
+            empty="brak blokad zapisu"
           />
         </div>
       ) : null}
@@ -494,8 +498,12 @@ function ActionValidationResultPanel({
       <div>
         Wynik: <span className="font-semibold">{validation.status_label}</span>
       </div>
-      <TraceLine label="Błędy" values={validation.errors} empty="brak" />
-      <TraceLine label="Ostrzeżenia" values={validation.warnings} empty="brak" />
+      <TraceLine label="Błędy" values={validation.errors} empty="brak błędów" />
+      <TraceLine
+        label="Ostrzeżenia"
+        values={validation.warnings}
+        empty="brak ostrzeżeń"
+      />
     </div>
   );
 }
@@ -522,7 +530,11 @@ function ActionConfirmResultPanel({
       <div>
         Potwierdzenie: <span className="font-semibold">{result.status_label}</span>
       </div>
-      <TraceLine label="Blokady potwierdzenia" values={result.blocker_labels} empty="brak" />
+      <TraceLine
+        label="Blokady potwierdzenia"
+        values={result.blocker_labels}
+        empty="brak blokad potwierdzenia"
+      />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.
@@ -608,9 +620,17 @@ function ActionImpactCheckResultPanel({
         Porównanie: {result.pre_window_days} dni przed zmianą / {result.post_window_days} dni po zmianie.
       </div>
       <div>Metryki z dowodami: {result.metric_fact_count}</div>
-      <TraceLine label="Źródła" values={result.source_connector_labels} empty="brak" />
+      <TraceLine
+        label="Źródła"
+        values={result.source_connector_labels}
+        empty="brak źródeł danych"
+      />
       <div>Dowody: {result.evidence_summary_label || "brak dowodów źródłowych"}</div>
-      <TraceLine label="Blokady sprawdzenia efektu" values={result.blocker_labels} empty="brak" />
+      <TraceLine
+        label="Blokady sprawdzenia efektu"
+        values={result.blocker_labels}
+        empty="brak blokad sprawdzenia efektu"
+      />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
       <div>
         Zapis zmian nadal: {result.review_gate.apply_allowed ? "dopuszczony" : "zablokowany"}.
