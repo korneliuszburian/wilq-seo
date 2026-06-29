@@ -114,6 +114,9 @@ API status later contradicts this state.
   the major `v24` path while v24.2 capabilities enter WILQ as explicit read or
   review contracts. A focused contract test prevents accidental `v24.2`/`v24_2`
   endpoint churn.
+- Codex context-pack compaction no longer builds operator-facing evidence
+  summaries or knowledge-card titles from raw connector/source/card types.
+  Focused API contract coverage guards those fallbacks.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -156,6 +159,7 @@ API status later contradicts this state.
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
 - `rtk uv run pytest tests/test_operator_endpoint_language_guard.py -q`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`

@@ -580,14 +580,19 @@ def _compact_evidence_for_operator_context(evidence: Evidence) -> dict[str, Any]
     freshness_state = None
     if isinstance(freshness, dict):
         freshness_state = freshness.get("state")
+    source_connector = dumped.get("source_connector")
+    source_type = dumped.get("source_type")
+    source_label = source_connector_label(source_connector)
+    source_type_label = evidence_source_type_label(source_type)
+    freshness_label = freshness_state_label(freshness_state)
     compact_freshness = {
         "state": freshness_state or "unknown",
         "checked_at": freshness.get("checked_at") if isinstance(freshness, dict) else None,
         "notes": None,
     }
     summary = (
-        f"Dowód {dumped.get('id')}: źródło {dumped.get('source_connector')}, "
-        f"typ {dumped.get('source_type')}, świeżość {freshness_state or 'unknown'}. "
+        f"Dowód {dumped.get('id')}: źródło {source_label}, "
+        f"typ {source_type_label}, świeżość {freshness_label}. "
         "Decyzję bierz z aktualnych diagnostyk WILQ."
     )
     return {
@@ -605,15 +610,18 @@ def _compact_evidence_for_operator_context(evidence: Evidence) -> dict[str, Any]
 def _compact_knowledge_card_for_operator_context(card: KnowledgeCard) -> dict[str, Any]:
     dumped = card.model_dump(mode="json")
     card_type = dumped.get("card_type") or "knowledge"
+    card_type_label = dumped.get("card_type_label") or "typ wiedzy do sprawdzenia"
     return {
         "id": dumped.get("id"),
         "card_type": card_type,
-        "title": f"Karta wiedzy: {card_type}",
+        "title": f"Karta wiedzy: {card_type_label}",
+        "card_type_label": card_type_label,
         "summary": (
             "Skondensowana karta wiedzy. Używaj jej jako reguły pomocniczej; "
             "decyzje muszą wynikać z aktualnych diagnostyk WILQ, dowodów i źródeł danych."
         ),
         "source_type": dumped.get("source_type"),
+        "source_type_label": dumped.get("source_type_label") or "źródło wiedzy do sprawdzenia",
         "source_id": dumped.get("source_id"),
         "source_url_or_path": dumped.get("source_url_or_path"),
         "extracted_at": dumped.get("extracted_at"),

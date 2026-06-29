@@ -11,6 +11,8 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import (
+    _compact_evidence_for_operator_context,
+    _compact_knowledge_card_for_operator_context,
     _compact_metric_fact_for_context,
     _compact_refresh_run_for_operator_context,
     app,
@@ -173,6 +175,7 @@ from wilq.schemas import (
     ConnectorStatusValue,
     ConnectorSummary,
     DailyDecision,
+    Evidence,
     FreshnessState,
     Ga4DecisionItem,
     KnowledgeCard,
@@ -1680,6 +1683,31 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
     assert knowledge_blocked_claim_binding.has_blocked_claims is True
     assert raw_value not in knowledge_blocked_claim_binding.blocked_claim_summary_label
+
+    compact_evidence = _compact_evidence_for_operator_context(
+        Evidence(
+            id="ev_unknown_operator_label",
+            source_connector=raw_value,
+            source_type=raw_value,
+            source_id="unknown-source",
+            freshness=FreshnessState(state="fresh"),
+            summary="Raw vendor evidence summary.",
+        )
+    )
+    assert compact_evidence["summary"] == (
+        "Dowód ev_unknown_operator_label: źródło źródło danych do sprawdzenia, "
+        "typ dowód źródłowy, świeżość świeże dane. "
+        "Decyzję bierz z aktualnych diagnostyk WILQ."
+    )
+    assert raw_value not in compact_evidence["summary"]
+
+    compact_card = _compact_knowledge_card_for_operator_context(knowledge_card)
+    assert compact_card["title"] == "Karta wiedzy: typ wiedzy do sprawdzenia"
+    assert compact_card["card_type_label"] == "typ wiedzy do sprawdzenia"
+    assert compact_card["source_type_label"] == "źródło wiedzy do sprawdzenia"
+    assert raw_value not in compact_card["title"]
+    assert raw_value not in compact_card["card_type_label"]
+    assert raw_value not in compact_card["source_type_label"]
 
     merchant_items = _merchant_feed_items(
         [
