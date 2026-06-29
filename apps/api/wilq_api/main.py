@@ -444,7 +444,7 @@ def _compact_daily_action_for_context(
                 "decision_id": decision.id,
                 "decision_status": decision.status,
                 "decision_title": decision.title,
-                "human_diagnosis": (f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"),
+                "human_diagnosis": _first_context_sentence(decision.co_widzimy),
                 "recommended_reason": decision.bezpieczny_next_step,
                 "source_connectors": decision.source_connectors,
                 "evidence_ids": decision.evidence_ids,
@@ -453,6 +453,13 @@ def _compact_daily_action_for_context(
             }
         )
     return compact
+
+
+def _first_context_sentence(value: str) -> str:
+    for marker in (". To ", ". Blokada ", ". Bez "):
+        if marker in value:
+            return f"{value.split(marker, 1)[0]}."
+    return value
 
 
 def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str, Any]:

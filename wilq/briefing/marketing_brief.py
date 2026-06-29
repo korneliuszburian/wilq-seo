@@ -300,7 +300,7 @@ def _decision_metric_items(decisions: list[DailyDecision]) -> list[MarketingBrie
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=_decision_summary(decision),
+            summary=_decision_observation_summary(decision),
             next_step=decision.bezpieczny_next_step,
             risk=decision.risk,
         )
@@ -330,7 +330,7 @@ def _decision_blocker_items(decisions: list[DailyDecision]) -> list[MarketingBri
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=_decision_summary(decision),
+            summary=_decision_observation_summary(decision),
             next_step=decision.bezpieczny_next_step,
             risk=decision.risk,
             blocker_reason=", ".join(decision.blocked_claims[:4]) or "brak kontraktu",
@@ -390,7 +390,7 @@ def _decision_recommendation_items(
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=decision.dlaczego_to_ma_znaczenie,
+            summary=_decision_reason_summary(decision),
             next_step=decision.bezpieczny_next_step,
             risk=decision.risk,
         )
@@ -408,8 +408,33 @@ def _daily_decision_connector_ids(decisions: list[DailyDecision]) -> set[str]:
     return {connector_id for decision in decisions for connector_id in decision.source_connectors}
 
 
-def _decision_summary(decision: DailyDecision) -> str:
-    return f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
+def _decision_observation_summary(decision: DailyDecision) -> str:
+    return _first_brief_statement(decision.co_widzimy)
+
+
+def _decision_action_summary(decision: DailyDecision) -> str:
+    return (
+        f"Ta akcja dotyczy decyzji: {decision.title}. Sprawdź podgląd zmian, "
+        "blokady i dowody zanim potraktujesz ją jako gotową do zapisu."
+    )
+
+
+def _decision_reason_summary(decision: DailyDecision) -> str:
+    if "google_ads" in decision.source_connectors and "opłacalno" in (
+        decision.dlaczego_to_ma_znaczenie + " " + " ".join(decision.blocked_claims)
+    ):
+        return (
+            "Google Ads ma dane do przeglądu, ale zapis zmian i ocena opłacalności "
+            "zostają zablokowane do sprawdzenia w WILQ."
+        )
+    return _first_brief_statement(decision.dlaczego_to_ma_znaczenie)
+
+
+def _first_brief_statement(value: str) -> str:
+    for marker in (". To ", ". Blokada ", ". Bez "):
+        if marker in value:
+            return f"{value.split(marker, 1)[0]}."
+    return value
 
 
 def _merge_items(
@@ -655,7 +680,7 @@ def _action_item_from_decision(
         evidence_ids=decision.evidence_ids,
         action_ids=[action.id],
         metric_facts=[],
-        summary=_decision_summary(decision),
+        summary=_decision_action_summary(decision),
         next_step=decision.bezpieczny_next_step,
         risk=max(action.risk, decision.risk, key=_risk_rank),
     )

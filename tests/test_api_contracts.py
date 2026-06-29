@@ -6411,7 +6411,30 @@ def test_command_center_ads_plan_uses_live_review_queues(
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
-    sections_by_id = {section["id"]: section for section in brief_response.json()["sections"]}
+    brief_payload = brief_response.json()
+    sections_by_id = {section["id"]: section for section in brief_payload["sections"]}
+    brief_serialized = json.dumps(brief_payload, ensure_ascii=False)
+    assert brief_serialized.count("Google Ads ma kolejki do oceny") <= 1
+    assert "Google Ads ma aktualny odczyt do oceny" not in brief_serialized
+
+    metric_items = sections_by_id["what_we_know"]["items"]
+    ads_metric_item = next(
+        item
+        for item in metric_items
+        if item["id"] == "brief_decision_decision_review_ads_campaign_metrics"
+    )
+    assert ads_metric_item["summary"].count("Google Ads ma") == 1
+    assert "To są kolejki oceny" not in ads_metric_item["summary"]
+
+    action_items = sections_by_id["safe_next_actions"]["items"]
+    ads_action_item = next(
+        item
+        for item in action_items
+        if "act_prepare_ads_campaign_review_queue" in item["action_ids"]
+    )
+    assert "12 kliknięć" not in ads_action_item["summary"]
+    assert "Google Ads ma kolejki do oceny" not in ads_action_item["summary"]
+
     blockers = sections_by_id["what_blocks_us"]
     blocker_titles = {item["title"] for item in blockers["items"]}
     assert "Google Ads: brakuje kontekstu biznesowego do decyzji budżetowych" in blocker_titles

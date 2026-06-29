@@ -194,6 +194,12 @@ API status later contradicts this state.
   longer turns these missing fields into context-free missing-state answers in
   the active surface. Focused Ads dashboard tests, typecheck/lint, marketer
   language guard and `git diff --check` passed.
+- Marketing brief Ads summaries are now condensed at API source. The brief keeps
+  one metric observation, uses short action summaries for Ads actions and keeps
+  the profitability/write blocker in the focus item instead of repeating the
+  full Ads diagnosis across sections. Focused marketing-brief API tests,
+  live `/api/marketing/brief` proof, marketer/context-pack language guards and
+  `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.
