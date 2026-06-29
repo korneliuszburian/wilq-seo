@@ -152,7 +152,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         <TraceLine
           label="Akcje"
           values={item.action_summary_label ? [item.action_summary_label] : []}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; karta zostaje informacją do ręcznej oceny."
         />
       </div>
       {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
@@ -279,7 +279,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
                   .map((item) => item.action_summary_label)
                   .filter((label) => label.length > 0)
               )}
-              empty="brak akcji do sprawdzenia"
+              empty="WILQ nie podał akcji do sprawdzenia; ten widok nie ma podglądu zmian."
             />
           </div>
           {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 6)} /> : null}

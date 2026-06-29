@@ -376,7 +376,7 @@ function Ga4OperatorSummary({
                   ? [trackingSection.status_label, trackingSection.summary]
                   : []
               }
-              empty="brak oceny gotowości pomiaru"
+              empty="WILQ nie podał oceny gotowości pomiaru; nie oceniaj kampanii po tych danych."
             />
             <TraceLine
               label="Konwersje i zdarzenia kluczowe"
@@ -476,12 +476,12 @@ function Ga4DecisionCard({
         <TraceLine
           label="Dowody w WILQ"
           values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj decyzji jako rekomendacji."
         />
         <TraceLine
           label="Źródła"
           values={decision.source_connector_labels}
-          empty="brak źródeł danych"
+          empty="WILQ nie podał źródeł danych; nie oceniaj pomiaru bez źródła."
         />
         <TraceLine
           label="Akcje do sprawdzenia"
@@ -533,7 +533,7 @@ function Ga4DiagnosticProof({
         <TraceLine
           label="Źródła"
           values={data.source_connector_labels}
-          empty="brak źródeł danych"
+          empty="WILQ nie podał źródeł danych; ten panel nie uzasadnia oceny pomiaru."
         />
         <TraceLine label="Akcje" values={[data.action_summary_label]} />
         <TraceLine

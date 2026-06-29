@@ -160,7 +160,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; Ahrefs zostaje kontekstem, nie decyzją."
         />
       </div>
     </article>
@@ -206,7 +206,7 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
         <TraceLine
           label="Dowody"
           values={[contract.evidence_summary_label]}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj luki jako rekomendacji."
         />
       </div>
       {contract.gap_records.length === 0 ? (

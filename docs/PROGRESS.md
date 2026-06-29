@@ -152,6 +152,11 @@ API status later contradicts this state.
   `empty="brak..."` copy and its focused route test guards against regressions.
   Dashboard typecheck/lint, marketer language guard and `git diff --check`
   passed.
+- GA4, Brief Workflow, Localo, Ahrefs and Custom Segments empty states now use
+  decision-limit language instead of bare `brak...` placeholders. The copy
+  clarifies when data is only context, when a recommendation is not justified,
+  and when human review is still required. Focused source test, dashboard
+  typecheck/lint, marketer language guard and `git diff --check` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

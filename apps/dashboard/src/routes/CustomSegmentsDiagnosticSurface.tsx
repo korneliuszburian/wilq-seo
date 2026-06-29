@@ -118,14 +118,14 @@ export function AdsCustomSegmentCandidatesPanel({
               <TraceLine
                 label="Ocena człowieka"
                 values={candidate.human_review_gate_labels}
-                empty="brak oceny człowieka"
+                empty="WILQ nie ma oceny człowieka; nie dodawaj segmentu bez review."
               />
               <TraceLine label="Hasła źródłowe" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
               <TraceLine
                 label="Dowody"
                 values={[candidate.evidence_summary_label]}
-                empty="brak dowodów źródłowych"
+                empty="WILQ nie podał dowodów źródłowych; nie traktuj segmentu jako gotowego kierowania."
               />
               <TraceLine
                 label="Nie wolno twierdzić"
@@ -190,7 +190,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
               <TraceLine
                 label="Dowody"
                 values={[row.evidence_summary_label]}
-                empty="brak dowodów źródłowych"
+                empty="WILQ nie podał dowodów źródłowych; nie oceniaj zasięgu bez źródła."
               />
               <TraceLine
                 label="Nie wolno twierdzić"
