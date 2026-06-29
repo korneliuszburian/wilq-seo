@@ -391,6 +391,8 @@ API status later contradicts this state.
 - Localo and Command Center now explain missing Localo read contracts as
   unconfirmed/unconnected data scopes from API/domain copy instead of bare
   missing-data placeholders.
+- Knowledge operating map now explains complete missing-data detail labels as
+  a full operator sentence instead of a bare missing-state fallback.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,

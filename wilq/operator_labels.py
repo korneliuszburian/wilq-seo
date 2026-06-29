@@ -557,6 +557,13 @@ def missing_contract_count_label(contracts: Iterable[object]) -> str:
     return f"{count} brakujących zakresów danych"
 
 
+def missing_contract_detail_label(contracts: Iterable[object]) -> str:
+    labels = missing_contract_labels(contracts)
+    if not labels:
+        return "Nie ma brakujących zakresów danych dla tej decyzji"
+    return ", ".join(labels)
+
+
 def blocked_claim_count_label(claims: Iterable[str]) -> str:
     count = len(blocked_claim_labels(claims))
     if count == 0:

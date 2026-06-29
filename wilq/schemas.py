@@ -23,6 +23,7 @@ from wilq.operator_labels import (
     mapped_action_type_count_label,
     metric_fact_label,
     missing_contract_count_label,
+    missing_contract_detail_label,
     policy_count_label,
     reported_issue_occurrence_count_label,
     required_evidence_count_label,
@@ -1074,8 +1075,8 @@ class KnowledgeDecisionBinding(BaseModel):
                 self.missing_contracts
             )
         if not self.missing_contract_detail_label:
-            self.missing_contract_detail_label = (
-                ", ".join(self.missing_contract_labels) if self.missing_contract_labels else "brak"
+            self.missing_contract_detail_label = missing_contract_detail_label(
+                self.missing_contract_labels or self.missing_contracts
             )
         self.has_blocked_claims = bool(self.blocked_claim_labels or self.blocked_claims)
         if not self.blocked_claim_summary_label:

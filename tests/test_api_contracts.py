@@ -1698,7 +1698,10 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert knowledge_binding.knowledge_summary_label == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
     assert knowledge_binding.required_evidence_summary_label == "Nie wskazano wymaganych dowodów; nie odblokowuje to publikacji ani zapisu"
     assert knowledge_binding.missing_contract_summary_label == "Dane kompletne dla tej decyzji"
-    assert knowledge_binding.missing_contract_detail_label == "brak"
+    assert (
+        knowledge_binding.missing_contract_detail_label
+        == "Nie ma brakujących zakresów danych dla tej decyzji"
+    )
     assert knowledge_binding.has_missing_contracts is False
     assert knowledge_binding.blocked_claim_summary_label == "WILQ nie zgłosił zakazanych obietnic; nadal sprawdź dowody przed publikacją"
     assert knowledge_binding.blocked_claim_count_summary_label == "WILQ nie zgłosił zablokowanych obietnic; nadal sprawdź dowody przed publikacją"

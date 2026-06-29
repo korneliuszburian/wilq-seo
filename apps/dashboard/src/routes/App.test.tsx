@@ -6812,7 +6812,7 @@ const knowledgeOperatingMap = {
       missing_contracts: [],
       missing_contract_labels: [],
       missing_contract_summary_label: "Dane kompletne dla tej decyzji",
-      missing_contract_detail_label: "brak",
+      missing_contract_detail_label: "Nie ma brakujących zakresów danych dla tej decyzji",
       has_missing_contracts: false,
       blocked_claims: ["ocena zmarnowanego budżetu"],
       blocked_claim_labels: ["ocena zmarnowanego budżetu"],
@@ -7409,7 +7409,7 @@ function mockWorkflowAndKnowledgeApi(url: string) {
               missing_contracts: [],
               missing_contract_labels: [],
               missing_contract_summary_label: "Dane kompletne dla tej decyzji",
-              missing_contract_detail_label: "brak",
+              missing_contract_detail_label: "Nie ma brakujących zakresów danych dla tej decyzji",
               risk: "low",
               risk_label: "niskie ryzyko"
             },
