@@ -260,6 +260,7 @@ describe("CommandCenter route", () => {
     expect(routeSource).not.toContain("decisionFreshnessLabel");
     expect(routeSource).not.toContain("function decisionStatusBadgeValue");
     expect(routeSource).not.toContain("item.freshness?.state");
+    expect(routeSource).not.toContain("Decyzja / {item.priority_label}");
     expect(routeSource).toContain("item.co_widzimy");
     expect(routeSource).toContain("item.decision_state_label");
     expect(routeSource).toContain("item.freshness_label");

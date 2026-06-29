@@ -231,9 +231,14 @@ function KnowledgeCardItem({ card }: { card: KnowledgeCard }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">{card.display_title}</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {card.card_type_label} / {card.source_type_label}
-          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-600">
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Typ: {card.card_type_label}
+            </span>
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Źródło: {card.source_type_label}
+            </span>
+          </div>
         </div>
         <span className="inline-flex min-h-7 items-center rounded border border-line bg-white px-2 text-xs font-medium text-ink">
           Pewność {Math.round(card.confidence * 100)}%

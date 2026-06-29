@@ -30,6 +30,10 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Centrum pracy and Baza wiedzy now render decision/card metadata as labelled
+  Polish chips instead of slash-combined fragments such as `Decyzja / priorytet`
+  or `typ wiedzy / źródło`. Focused dashboard tests and browser proof for
+  `/command-center` and expanded `/knowledge` passed.
 - Tactical queue, Merchant fallback issue cards and workflow brief cards now
   render metadata as labelled Polish chips instead of slash-combined fragments
   such as `obszar / zadanie / priorytet` or `rodzaj / priorytet`. Focused

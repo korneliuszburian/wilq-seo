@@ -86,6 +86,9 @@ action IDs and audit fields may stay in technical contracts or drawers.
   in active source surfaces.
 - Google Ads campaign triage now uses natural Polish priority phrases in the
   API-owned summary instead of report-style count formatting.
+- Centrum pracy and Baza wiedzy now show labelled Polish decision/card metadata
+  instead of slash-combined fragments such as `Decyzja / priorytet` or
+  `typ wiedzy / źródło`.
 - Tactical queue, Merchant fallback issue cards and workflow brief cards now
   show labelled Polish metadata chips instead of slash-combined developer
   fragments for area/task/priority or kind/priority.

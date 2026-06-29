@@ -40,10 +40,12 @@ describe("KnowledgePanels", () => {
       />
     );
 
-    expect(screen.getByText(/wzorzec Ads \/ zasada pracy/)).toBeInTheDocument();
-    expect(screen.getByText("Źródło: zasada pracy")).toBeInTheDocument();
+    expect(screen.getByText("Typ: wzorzec Ads")).toBeInTheDocument();
+    expect(screen.getAllByText("Źródło: zasada pracy").length).toBeGreaterThan(0);
     expect(screen.getByText("Źródła wiedzy: 1 ślad źródłowy")).toBeInTheDocument();
     expect(screen.getByText("Pewność 90%")).toBeInTheDocument();
+    expect(screen.queryByText(/wzorzec Ads \/ zasada pracy/)).not.toBeInTheDocument();
+    expect(routeSource).not.toContain("{card.card_type_label} / {card.source_type_label}");
     expect(screen.queryByText(/playbook marketingowy/i)).not.toBeInTheDocument();
   });
 
