@@ -8229,6 +8229,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("action.preview_cards");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("data.evidence_summary_label");
+    expect(routeSource).toContain("brak etykiety akcji z WILQ");
+    expect(routeSource).not.toContain("liczba akcji do sprawdzenia");
     expect(routeSource).not.toContain("action.payload.payload_preview");
     expect(routeSource).not.toContain("function formatGa4EvidenceCount");
     expect(routeSource).not.toContain("function formatGa4ActionCount");

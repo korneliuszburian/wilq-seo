@@ -104,6 +104,10 @@ Date: 2026-06-29
   `ActionFocus` / `ActionIdFocus`. The UI layer no longer names this shared
   action surface after the technical `ActionObject` model, while the API type
   remains unchanged at the contract boundary.
+- GA4 expandable action panel no longer masks a missing API action label with
+  the route-local fallback `liczba akcji do sprawdzenia`. If the API label is
+  missing, the dashboard now shows the explicit failure signal
+  `brak etykiety akcji z WILQ`, and `App.test.tsx` guards that behavior.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,
