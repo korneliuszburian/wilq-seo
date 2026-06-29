@@ -40,6 +40,9 @@ describe("MetricFactChips", () => {
     expect(screen.getByText(/Zmiany konkurencji/)).toBeInTheDocument();
     expect(screen.getByText(/obszar: widoczność konkurencji/)).toBeInTheDocument();
     expect(screen.getByText(/zakres: aktywne miejsca/)).toBeInTheDocument();
+    expect(screen.getByText("Dane: odświeżone 1h temu")).toBeInTheDocument();
+    expect(screen.queryByText(/ \/ obszar:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ \/ odświeżone/)).not.toBeInTheDocument();
     expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
     expect(screen.queryByText(/localo_competitor_change_count/)).not.toBeInTheDocument();
     expect(screen.queryByText(/competitor_visibility/)).not.toBeInTheDocument();
@@ -104,5 +107,48 @@ describe("MetricFactChips", () => {
     expect(within(container).getByText(/Wymiar bez etykiety: wartość do sprawdzenia/)).toBeInTheDocument();
     expect(within(container).queryByText(/obszar: widoczność konkurencji/)).not.toBeInTheDocument();
     expect(within(container).queryByText(/competitor_visibility/)).not.toBeInTheDocument();
+  });
+
+  it("keeps metric details as labelled chips instead of slash-combined copy", () => {
+    const { container } = render(
+      <MetricFactChips
+        facts={[
+          {
+            name: "average_grid_rank",
+            metric_label: "średnia pozycja w siatce",
+            value: 3,
+            period: "localo_mcp_read",
+            source_connector: "localo",
+            evidence_id: "ev_refresh_localo_test",
+            dimensions: {
+              contract: "local_rankings",
+              scope: "active_places"
+            },
+            dimension_labels: {
+              contract: "obszar",
+              scope: "zakres"
+            },
+            dimension_value_labels: {
+              contract: "lokalne pozycje",
+              scope: "aktywne miejsca"
+            },
+            unit: null,
+            delta: null,
+            delta_percent: null,
+            trend: "unknown",
+            freshness_label: "odświeżone 8h temu"
+          }
+        ]}
+      />
+    );
+
+    expect(within(container).getByText("średnia pozycja w siatce: 3")).toBeInTheDocument();
+    expect(within(container).getByText("obszar: lokalne pozycje")).toBeInTheDocument();
+    expect(within(container).getByText("zakres: aktywne miejsca")).toBeInTheDocument();
+    expect(within(container).getByText("Dane: odświeżone 8h temu")).toBeInTheDocument();
+    expect(container.textContent).not.toContain(" / obszar:");
+    expect(container.textContent).not.toContain(" / odświeżone");
+    expect(container.textContent).not.toContain("3obszar");
+    expect(container.textContent).not.toContain("miejscaDane");
   });
 });

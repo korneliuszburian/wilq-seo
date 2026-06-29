@@ -80,6 +80,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Shared metric fact chips now show metric value, dimensions, change and
+  freshness as separate labelled Polish chips. Browser proof for `/localo`
+  confirmed Localo metric facts no longer use slash-combined copy such as
+  ` / obszar:` or ` / odświeżone`, and the readable text keeps spaces between
+  chip labels.
 - Centrum pracy and the content/Ads summaries it consumes now use natural Polish
   metric phrases instead of report-style equality copy. Guardrails block the
   worst metric-format, GSC slash-shorthand and English query-label regressions

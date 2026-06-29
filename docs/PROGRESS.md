@@ -30,6 +30,11 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Shared metric fact chips now render metric value, dimensions, delta and
+  freshness as separate labelled Polish chips instead of one slash-combined
+  sentence. Focused dashboard tests and browser proof for `/localo` confirmed
+  Localo metric facts no longer expose fragments such as ` / obszar:` or
+  ` / odświeżone`, and the readable text no longer glues chips together.
 - Localo and Ahrefs decision cards now render source, decision type and
   priority as labelled Polish chips instead of slash-combined fragments such as
   `Localo / typ / priorytet` or `Ahrefs / typ / priorytet`. Focused dashboard
