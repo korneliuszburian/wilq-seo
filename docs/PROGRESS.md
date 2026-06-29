@@ -114,6 +114,10 @@ API status later contradicts this state.
   the major `v24` path while v24.2 capabilities enter WILQ as explicit read or
   review contracts. A focused contract test prevents accidental `v24.2`/`v24_2`
   endpoint churn.
+- `docs/goals/001-goal.md` has been condensed back into an active goal
+  contract: current state, active findings, execution policy, verification and
+  completion definition. Detailed slice history remains in git/proof artifacts,
+  not in the active goal.
 
 ## Current Blockers And Deferred Work
 
