@@ -59,6 +59,7 @@ describe("formatContentMetricValue", () => {
     expect(formatContentMetricValue("clicks", 123)).toBe("123");
     expect(formatContentMetricValue("impressions", 4429)).toBe("4429");
     expect(formatContentMetricValue("wordpress_match", true)).toBe("tak");
+    expect(formatContentMetricValue("clicks", null)).toBe("metryka niepotwierdzona");
   });
 
   it("keeps removed content preview helpers out of the dashboard label registry", () => {

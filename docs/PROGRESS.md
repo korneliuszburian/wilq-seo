@@ -203,6 +203,11 @@ API status later contradicts this state.
   full Ads diagnosis across sections. Focused marketing-brief API tests,
   live `/api/marketing/brief` proof, marketer/context-pack language guards and
   `git diff --check` passed.
+- Content metric tiles no longer show a bare missing-state word when a metric
+  value is unavailable. They say `metryka niepotwierdzona`, while the Treści
+  route continues to explain actual blockers and next safe steps in the page
+  flow. Focused content dashboard tests, marketer language guard,
+  `git diff --check` and browser proof for `/content-planner` passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

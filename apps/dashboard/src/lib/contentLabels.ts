@@ -3,7 +3,7 @@ export function formatContentMetricValue(
   value: string | number | boolean | null
 ) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
-  if (value === null) return "brak";
+  if (value === null) return "metryka niepotwierdzona";
   const numericValue = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numericValue)) return value;
   if (metricName === "ctr" || metricName === "engagement_rate") {
