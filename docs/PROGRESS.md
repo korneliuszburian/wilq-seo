@@ -51,6 +51,9 @@ Date: 2026-06-29
   raw Merchant issue-type values. Live scans for daily, content, Merchant, Ads,
   GA4, Localo and Ahrefs context packs returned zero hits for the guarded
   technical terms.
+- `scripts/context_pack_language_guard.py` now makes that live context-pack
+  stale-language scan repeatable and `scripts/verify.sh` runs it against the
+  temporary skill API before skill smokes.
 - Connector status now uses the latest successful `vendor_read` when available.
   GSC, GA4 and Merchant were refreshed live on 2026-06-28T23:52Z, and
   `/api/connectors` now reports fresh `last_success_at` values for all three.
@@ -235,8 +238,9 @@ Date: 2026-06-29
    normalizers used for equality matching, not visible operator labels; keep
    them out of copy paths.
 7. Continue checking compacted context-packs after dashboard/API cleanup. Daily
-   and content-strategist context packs now have string-value guards; extend
-   the same pattern when another skill context changes.
+   and content-strategist context packs have focused tests, and
+   `scripts/context_pack_language_guard.py` now guards live compact skill
+   contexts across the core skill set.
 8. Continue focused browser audits when touched routes change. The latest
    expanded audit of core routes and action details is clean; any future long
    blocker/review list must be condensed at API/domain source, not trimmed in
@@ -254,6 +258,7 @@ Most recent verified local slice:
   Full action detail remains available through `/api/actions/{action_id}` and
   typed preview cards.
   Verification:
+  - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
   - `rtk uv run pytest tests/test_api_contracts.py::test_daily_context_pack_uses_daily_decisions_for_action_summaries tests/test_api_contracts.py::test_daily_context_pack_preserves_action_review_gates tests/test_api_contracts.py::test_codex_context_pack_scopes_merchant_payload_preview -q`
   - `rtk uv run pytest tests/test_api_contracts.py::test_codex_context_pack_scopes_content_strategist_payload tests/test_api_contracts.py::test_ads_doctor_context_pack_uses_summary_diagnostics -q`
   - `rtk scripts/local_stack.sh restart`

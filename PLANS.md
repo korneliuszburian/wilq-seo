@@ -552,6 +552,9 @@ WILQ is complete for this long-range goal when:
   preview-card IDs and raw Merchant issue-type values. Live context-pack scans
   for daily, content, Merchant, Ads, GA4, Localo and Ahrefs returned zero hits
   for the guarded technical terms.
+- 2026-06-29: Added `scripts/context_pack_language_guard.py` and wired it into
+  `scripts/verify.sh`, so the live compact context-pack stale-language scan is
+  now repeatable instead of living only as an ad hoc proof command.
 - 2026-06-29: Daily context-pack connector statuses now carry API-owned Polish
   status/freshness labels and operator-safe summaries. Skill context no longer
   receives empty freshness labels or `status configured` summaries for
@@ -861,6 +864,10 @@ WILQ is complete for this long-range goal when:
   raw active-action payloads, payload key lists, raw apply-blocker keys, raw
   Ahrefs contract/metric keys and raw Merchant preview issue keys from compact
   skill contexts.
+- Latest self-improving guardrail: `scripts/context_pack_language_guard.py`
+  checks the core skill context packs for stale route names, raw payload
+  wording, dev/migration terms and raw vendor/action values, and `verify.sh`
+  runs it against the temporary skill API.
 - Latest accepted proof: Merchant, Treści and Ahrefs no longer show
   targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
   and the focused API/dashboard checks plus language guard passed.
