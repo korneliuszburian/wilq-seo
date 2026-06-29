@@ -302,7 +302,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
               primaryDecision.affected_attribute_label,
               primaryDecision.country
             ].filter((value): value is string => Boolean(value))}
-            empty="brak zakresu"
+            empty="WILQ nie podał pełnego zakresu problemu; sprawdź typ, atrybut i kraj przed decyzją."
           />
         </div>
 
@@ -315,7 +315,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Akcje"
             values={[primaryDecision.action_summary_label]}
-            empty="brak akcji"
+            empty="WILQ nie podał akcji; zostaje ręczny przegląd Merchant."
           />
           {primaryDecision.action_ids[0] ? (
             <a
@@ -336,7 +336,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Źródło decyzji"
             values={[summary.decision_source_label, summary.drilldown_source_label]}
-            empty="brak źródła decyzji"
+            empty="WILQ nie podał źródła decyzji; nie traktuj liczników jako rekomendacji."
           />
           <TraceLine label="Znaczenie liczników" values={[summary.count_semantics_label]} />
         </div>
@@ -350,12 +350,12 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Źródła"
             values={primaryDecision.source_connector_labels}
-            empty="brak źródeł danych"
+            empty="WILQ nie podał źródeł danych; nie oceniaj pliku bez odczytu."
           />
           <TraceLine
             label="Dowody"
             values={primaryDecision.evidence_summary_label ? [primaryDecision.evidence_summary_label] : []}
-            empty="brak dowodów źródłowych"
+            empty="WILQ nie podał dowodów źródłowych; nie traktuj tego jako rekomendacji."
           />
           {data.latest_refresh ? (
             <TraceLine
@@ -381,7 +381,7 @@ function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResp
           <TraceLine
             label="Brakujące wejścia"
             values={requiredValidationSummary ? [requiredValidationSummary] : []}
-            empty="brak brakujących wejść"
+            empty="WILQ nie zgłosił brakujących wejść dla tego przeglądu."
           />
         </div>
 
@@ -562,17 +562,17 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             <TraceLine
               label="Typy problemów"
               values={summary.issue_types}
-              empty="brak typów problemów"
+              empty="WILQ nie podał typów problemów; zacznij od odczytu Merchant."
             />
             <TraceLine
               label="Dowody"
               values={summary.evidence_summary_label ? [summary.evidence_summary_label] : []}
-              empty="brak dowodów źródłowych"
+              empty="WILQ nie podał dowodów źródłowych; nie traktuj trybu pracy jako rekomendacji."
             />
             <TraceLine
               label="Akcje"
               values={[summary.action_summary_label]}
-              empty="brak akcji do sprawdzenia"
+              empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczna ocena."
             />
             <TraceLine
               label="Nie wolno twierdzić"
@@ -702,12 +702,12 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
         <TraceLine
           label="Źródła"
           values={readiness.source_connector_labels}
-          empty="brak źródeł danych"
+          empty="WILQ nie podał źródeł danych; nie łącz Merchant z Ads/GA4 bez odczytu."
         />
         <TraceLine
           label="Dowody"
           values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie oceniaj gotowości połączenia."
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -759,17 +759,17 @@ function MerchantProductPerformanceRowCard({
             row.country,
             row.reporting_context_label
           ].filter((value): value is string => Boolean(value))}
-          empty="brak kontekstu problemu"
+          empty="WILQ nie podał kontekstu problemu; nie edytuj produktu bez sprawdzenia."
         />
         <TraceLine
           label="Źródła"
           values={row.source_connector_labels}
-          empty="brak źródeł danych"
+          empty="WILQ nie podał źródeł danych; nie oceniaj wiersza bez odczytu Merchant."
         />
         <TraceLine
           label="Dowody"
           values={row.evidence_summary_label ? [row.evidence_summary_label] : []}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj wiersza jako rekomendacji."
         />
         <TraceLine
           label="Brakujące metryki"
@@ -815,12 +815,12 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
         <TraceLine
           label="Źródła"
           values={readiness.source_connector_labels}
-          empty="brak źródeł danych"
+          empty="WILQ nie podał źródeł danych; nie oceniaj wpływu ceny bez odczytu."
         />
         <TraceLine
           label="Dowody"
           values={readiness.evidence_summary_label ? [readiness.evidence_summary_label] : []}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie oceniaj wpływu ceny jako pewnego."
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -902,7 +902,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
             <TraceLine
               label="Tytuły"
               values={decision.sample_titles.slice(0, 4)}
-              empty="brak tytułów"
+              empty="WILQ nie podał tytułów próbek; identyfikuj produkt w Merchant przed oceną."
             />
             <p className="mt-1 text-xs text-slate-500">
               To są przykłady z odczytu Merchant, nie pełna lista SKU ani gotowa zmiana pliku produktowego.
@@ -919,12 +919,12 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <TraceLine
           label="Dowody"
           values={decision.evidence_summary_label ? [decision.evidence_summary_label] : []}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tej decyzji jako rekomendacji."
         />
         <TraceLine
           label="Akcje"
           values={[decision.action_summary_label]}
-          empty="brak akcji do sprawdzenia"
+          empty="WILQ nie podał akcji do sprawdzenia; zostaje ręczny przegląd."
         />
         <TraceLine
           label="Nie wolno twierdzić"
@@ -975,7 +975,7 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
         <TraceLine
           label="Akcje"
           values={[data.action_summary_label]}
-          empty="brak akcji"
+          empty="WILQ nie podał akcji; panel zostaje tylko podsumowaniem dowodów."
         />
         <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
       </div>

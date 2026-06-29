@@ -8177,9 +8177,12 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("row.ga4_ecommerce_purchases_label");
     expect(routeSource).toContain("row.ga4_purchase_revenue_label");
     expect(routeSource).not.toContain('empty="brak"');
+    expect(routeSource).not.toContain('empty="brak');
     expect(routeSource).not.toContain('row.ads_clicks ?? "brak"');
     expect(routeSource).not.toContain('row.ga4_ecommerce_purchases ?? "brak"');
     expect(routeSource).not.toContain('row.ga4_purchase_revenue ?? "brak"');
+    expect(routeSource).toContain("nie traktuj tego jako rekomendacji");
+    expect(routeSource).toContain("nie oceniaj pliku bez odczytu");
     expect(routeSource).not.toContain("{decision.decision_type_label} /");
     expect(routeSource).not.toContain(" / ${cluster.reporting_context_label}");
     expect(routeSource).not.toContain("formatMerchantIdCount");

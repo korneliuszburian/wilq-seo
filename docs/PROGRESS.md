@@ -146,6 +146,12 @@ API status later contradicts this state.
   overlap limit the recommendation. The dashboard explicitly says not to treat
   a dev host as canonical and not to start writing without the content check.
   Focused content dashboard tests passed.
+- Merchant empty states now explain the operational limit when scope, actions,
+  decision source, data sources, evidence, validation inputs, issue types,
+  product context or sample titles are missing. The route no longer uses
+  `empty="brak..."` copy and its focused route test guards against regressions.
+  Dashboard typecheck/lint, marketer language guard and `git diff --check`
+  passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.
