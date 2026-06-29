@@ -136,7 +136,8 @@ API status later contradicts this state.
   `required_validation`, `apply_allowed`, `api_mutation_ready` or
   `destructive`, and no longer repeats raw action type/connector/mode fields.
   Compact action plans now use preview lists and Polish status labels for
-  operator-facing skill context.
+  operator-facing skill context. Raw `source_metric_names` are also removed
+  from compact action plans; metric meaning must come through labels/summaries.
 - Skill context-pack expert capabilities use `required_inputs` instead of the
   technical `required_mapping` field name.
 - `docs/goals/001-goal.md` has been condensed back into an active goal

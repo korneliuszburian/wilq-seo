@@ -24,6 +24,7 @@ FORBIDDEN_ACTION_PLAN_KEYS = (
     "connector",
     "mode",
     "operation_type",
+    "source_metric_names",
     "payload_preview",
     "budget_payload_preview",
     "custom_segment_payload_preview",

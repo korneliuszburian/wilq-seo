@@ -3359,6 +3359,7 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
     value.pop("mode", None)
 
     value.pop("operation_type", None)
+    value.pop("source_metric_names", None)
 
     preview_contract_label = value.pop("preview_contract_label", None)
     if isinstance(preview_contract_label, str) and preview_contract_label:
