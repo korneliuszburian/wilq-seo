@@ -30,6 +30,11 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Dashboard lint tooling now uses current compatible releases:
+  `eslint@10.6.0`, `@eslint/js@10.0.1`,
+  `typescript-eslint@8.62.0` and
+  `eslint-plugin-react-hooks@7.1.1`. Dashboard lint, typecheck, focused route
+  tests and Fallow dead-code/audit checks passed after the upgrade.
 - Fallow is now wired as the repo's JS/TS structure scanner through
   `.fallowrc.json` and root package scripts. Dead-code and dependency hygiene
   are now clean: zero unused exports, zero unused dependencies and zero

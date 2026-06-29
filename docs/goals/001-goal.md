@@ -80,6 +80,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
 
 ## Current State
 
+- Dashboard lint tooling is on current compatible releases:
+  `eslint@10.6.0`, `@eslint/js@10.0.1`,
+  `typescript-eslint@8.62.0` and
+  `eslint-plugin-react-hooks@7.1.1`, with lint, typecheck, focused route tests
+  and Fallow dead-code/audit checks passing.
 - Fallow JS/TS scanning is wired with `.fallowrc.json` and root package
   scripts. Dead-code and dependency hygiene are clean, while the current full
   scan still exposes inherited dashboard debt rather than a green repo: high
