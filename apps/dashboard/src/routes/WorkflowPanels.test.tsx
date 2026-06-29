@@ -22,7 +22,7 @@ describe("WorkflowPanels", () => {
             status: "blocked",
             status_label: "zablokowane",
             route: null,
-            route_label: "Localo",
+            route_label: null,
             skill_id: "wilq-localo-operator",
             safe_next_step: "Domknij brakujące dane przed oceną lokalnej widoczności.",
             source_connectors: ["localo"],
@@ -48,6 +48,10 @@ describe("WorkflowPanels", () => {
     );
 
     expect(screen.getByText("Źródła danych: Localo")).toBeInTheDocument();
+    expect(screen.getByText("Widok procesu niepodłączony do osobnej strony")).toBeInTheDocument();
+    expect(
+      screen.getByText(/nie ma osobnego widoku; korzystaj z opisu procesu/)
+    ).toBeInTheDocument();
     expect(screen.getByText("Dowody: Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji")).toBeInTheDocument();
     expect(screen.getByText("Brakujące dane: 1 brakujący zakres danych")).toBeInTheDocument();
     expect(screen.getByText("Granice wniosków: 1 zablokowana obietnica")).toBeInTheDocument();
@@ -65,6 +69,7 @@ describe("WorkflowPanels", () => {
     const routeSource = readFileSync("src/routes/WorkflowPanels.tsx", "utf8");
     expect(routeSource).toContain("workflow.missing_contract_detail_label");
     expect(routeSource).toContain("workflow.blocked_claim_summary_label");
+    expect(routeSource).not.toContain("brak przypisanego widoku");
     expect(routeSource).not.toContain("workflow.missing_contract_labels.join");
     expect(routeSource).not.toContain("workflow.blocked_claim_labels.join");
   });

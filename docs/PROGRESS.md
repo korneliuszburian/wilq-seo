@@ -379,6 +379,8 @@ API status later contradicts this state.
 - Marketer language guard now blocks bare Ads missing status/channel
   placeholders, so future cleanup cannot reintroduce unexplained first-screen
   missing-state copy.
+- Workflow cards now explain when a process has no dedicated route instead of
+  rendering bare missing-view fallback text.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -441,6 +443,7 @@ API status later contradicts this state.
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_marketer_language_guard.py -q`
+- `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
 - `rtk pnpm outdated -r`
 - browser proof with `agent-browser` for touched routes

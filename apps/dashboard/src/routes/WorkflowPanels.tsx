@@ -84,7 +84,7 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
         <div>
           <h3 className="text-sm font-semibold">{workflow.label}</h3>
           <p className="mt-1 text-xs text-slate-500">
-            {workflow.route_label ?? "brak przypisanego widoku"}
+            {workflow.route_label ?? "Widok procesu niepodłączony do osobnej strony"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -111,7 +111,7 @@ function WorkflowSummaryCard({ workflow }: { workflow: Workflow }) {
               Otwórz
             </Link>
           ) : (
-            "brak"
+            "nie ma osobnego widoku; korzystaj z opisu procesu"
           )}
         </div>
       </div>
