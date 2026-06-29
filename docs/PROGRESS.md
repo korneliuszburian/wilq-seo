@@ -59,9 +59,12 @@ API status later contradicts this state.
   was required: `@tanstack/react-query@5.101.2`,
   `@playwright/test@1.61.1`, `postcss@8.5.16` and
   `autoprefixer@10.5.2`.
+- `lucide-react` has been upgraded to `1.22.0`. Dashboard typecheck, focused
+  route tests, lint, production build, Fallow changed-file audit and browser
+  proof for `/command-center` passed after the upgrade.
 - The remaining outdated JS packages are major migrations and must be handled
-  as separate verified slices: Vite, Vitest, Zod, Tailwind, lucide-react,
-  jsdom, `@vitejs/plugin-react`, `@types/node` and TypeScript.
+  as separate verified slices: Vite, Vitest, Zod, Tailwind, jsdom,
+  `@vitejs/plugin-react`, `@types/node` and TypeScript.
 - Fallow is wired through `.fallowrc.json` and root package scripts. Dead-code
   and dependency hygiene are clean; full structural cleanup still has inherited
   dashboard duplication and complexity debt.
@@ -103,6 +106,7 @@ API status later contradicts this state.
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand`
 - `rtk pnpm --dir apps/dashboard lint`
+- `rtk pnpm --dir apps/dashboard build`
 - `rtk pnpm fallow:audit --format compact --no-cache`
 - `rtk pnpm fallow health --hotspots --targets --format compact --no-cache`
 - `rtk uv run python scripts/marketer_language_guard.py`
