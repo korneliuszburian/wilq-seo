@@ -124,6 +124,8 @@ API status later contradicts this state.
   labels instead of raw `connector_id=state` pairs.
 - Tactical queue Ahrefs diagnoses use Polish gap/context labels instead of raw
   `gap_type` values, backticks or `key=value` URL context.
+- Codex context-pack refresh-run summaries use Polish evidence/access count
+  labels instead of numeric fragments like `dowody 2` or `braki dostępu 0`.
 - `docs/goals/001-goal.md` has been condensed back into an active goal
   contract: current state, active findings, execution policy, verification and
   completion definition. Detailed slice history remains in git/proof artifacts,
@@ -170,6 +172,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py::test_command_center_exposes_polish_operator_brief -q`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'blocked_refresh_summaries or operator_label_fallbacks'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks'`
+- `rtk uv run pytest tests/test_api_contracts.py -q -k 'operator_label_fallbacks or refresh_run'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'merchant and (price_impact or groups_reporting_contexts or context_pack)'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`

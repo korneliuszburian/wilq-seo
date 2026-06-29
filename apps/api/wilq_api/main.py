@@ -108,6 +108,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
 from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.operator_labels import (
     connector_refresh_status_label,
+    credential_field_count_label,
     evidence_count_label,
     evidence_source_type_label,
     freshness_state_label,
@@ -492,10 +493,13 @@ def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, 
     metric_labels = [metric_fact_label(key, connector_id) for key in metric_keys]
     source_label = source_connector_label(str(run.get("connector_id") or ""))
     status_label = connector_refresh_status_label(run.get("status"))
+    evidence_summary_label = evidence_count_label(str(item) for item in evidence_ids)
+    missing_credentials_summary_label = credential_field_count_label(
+        str(item) for item in missing_credentials
+    )
     summary = (
-        f"Odczyt danych {source_label}: "
-        f"{status_label}, dowody {len(evidence_ids)}, "
-        f"braki dostępu {len(missing_credentials)}."
+        f"Odczyt danych {source_label}: {status_label}; "
+        f"{evidence_summary_label}; {missing_credentials_summary_label}."
     )
     return {
         "id": run.get("id"),

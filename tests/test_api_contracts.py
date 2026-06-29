@@ -1501,6 +1501,25 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert compact["status_label"] == "status odczytu do sprawdzenia"
     assert unknown_connector not in compact["summary"]
     assert "new_raw_status" not in compact["summary"]
+    assert "1 dowód źródłowy" in compact["summary"]
+    assert "1 pole" in compact["summary"]
+    assert "dowody 1" not in compact["summary"]
+    assert "braki dostępu 1" not in compact["summary"]
+
+    configured_compact = _compact_refresh_run_for_operator_context(
+        {
+            "id": "refresh_configured",
+            "connector_id": "google_merchant_center",
+            "status": "completed",
+            "evidence_ids": ["ev_one", "ev_two"],
+            "missing_credentials": [],
+        }
+    )
+
+    assert "2 dowody źródłowe" in configured_compact["summary"]
+    assert "brak brakujących pól dostępu" in configured_compact["summary"]
+    assert "dowody 2" not in configured_compact["summary"]
+    assert "braki dostępu 0" not in configured_compact["summary"]
 
 
 def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
