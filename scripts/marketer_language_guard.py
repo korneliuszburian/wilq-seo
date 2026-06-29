@@ -257,6 +257,34 @@ FORBIDDEN_PHRASES = (
         "Use zapytania i adresy in content copy.",
     ),
     ForbiddenPhrase(
+        "Zapytania/URL",
+        "Use Zapytania i adresy z GSC in content copy.",
+    ),
+    ForbiddenPhrase(
+        "GSC↔WP",
+        "Use Treści znalezione w WordPress or explicit GSC/WordPress wording.",
+    ),
+    ForbiddenPhrase(
+        "Ahrefs↔WP",
+        "Use Luki Ahrefs powiązane z WordPress.",
+    ),
+    ForbiddenPhrase(
+        "GSC overlap",
+        "Use Powiązanie z GSC.",
+    ),
+    ForbiddenPhrase(
+        "WP overlap",
+        "Use Powiązanie z WordPress.",
+    ),
+    ForbiddenPhrase(
+        "GSC/WordPress",
+        "Use GSC i WordPress without slash shorthand.",
+    ),
+    ForbiddenPhrase(
+        "WordPress/GSC",
+        "Use WordPress, GSC i Ahrefs without slash shorthand.",
+    ),
+    ForbiddenPhrase(
         "akcja WILQ",
         "Use akcja do sprawdzenia or sprawdzenie w WILQ.",
     ),

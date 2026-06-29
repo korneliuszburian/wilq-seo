@@ -30,6 +30,13 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Treści top metric tiles now come from the API-owned
+  `operator_summary.metric_tiles` instead of route-local labels. The visible
+  `/content-planner` screen shows `Zapytania i adresy z GSC`,
+  `Treści znalezione w WordPress` and `Luki Ahrefs powiązane z WordPress`;
+  live API and browser proof returned zero hits for the old slash/arrow
+  shortcuts, English overlap wording and visible raw inventory wording. The
+  marketer language guard now blocks those stale content metric shortcuts.
 - Active skill contracts, Ads/Merchant/Localo operator copy and the marketing
   brief no longer use `akcje sprawdzone w WILQ` / `akcji sprawdzonej w WILQ`
   wording. They now describe actions as `akcje do sprawdzenia w WILQ` and keep
@@ -229,7 +236,7 @@ Date: 2026-06-29
   evidence and action summary labels instead of route-local count formatting.
 - Tactical queue API now uses Polish `Treści i GSC` / `Treści` labels instead
   of old mixed content labels, and Ahrefs blocked-claim copy now uses Polish
-  wording for missing GSC/WordPress checks.
+  wording for missing GSC and WordPress checks.
 - `/actions` first-screen priority cards now describe the safe operating step
   instead of pointing at technical details. Raw action data remains behind the
   explicit technical toggle; proof:
@@ -597,7 +604,7 @@ Previous verified local slice:
 
 - Connector/content live-data label cleanup: `ConnectorStatus` hydrates Polish
   status labels, `/api/connectors` has no empty status labels, and Treści shows
-  API-owned `live_data_status_label` for GSC/WordPress readiness.
+  API-owned `live_data_status_label` for GSC and WordPress readiness.
   Verification:
   - `rtk uv run pytest tests/test_connector_status_labels.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q`
   - `rtk pnpm --dir apps/dashboard typecheck`

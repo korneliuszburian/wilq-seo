@@ -3960,6 +3960,7 @@ class ContentOperatorSummary(BaseModel):
     action_summary_label: str = ""
     blocked_claims: list[str] = Field(default_factory=list)
     blocked_claim_labels: list[str] = Field(default_factory=list)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def hydrate_operator_labels(self) -> ContentOperatorSummary:

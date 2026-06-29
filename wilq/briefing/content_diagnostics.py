@@ -355,6 +355,8 @@ def build_content_diagnostics(
             *(action_id for decision in decision_queue for action_id in decision.action_ids),
         ]
     )
+    query_page_count = _query_page_count(content_tactical_items)
+    matched_inventory_count = _matched_inventory_count(content_tactical_items)
     response_source_connectors = _unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
@@ -367,9 +369,15 @@ def build_content_diagnostics(
         latest_refreshes=[_content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
         live_data_available=live_data_available,
         live_data_status_label=_content_live_data_status_label(live_data_available),
-        query_page_count=_query_page_count(content_tactical_items),
-        matched_inventory_count=_matched_inventory_count(content_tactical_items),
-        operator_summary=_operator_summary(decision_queue, sections, action_ids),
+        query_page_count=query_page_count,
+        matched_inventory_count=matched_inventory_count,
+        operator_summary=_operator_summary(
+            decision_queue,
+            sections,
+            action_ids,
+            query_page_count=query_page_count,
+            matched_inventory_count=matched_inventory_count,
+        ),
         marketer_decision=_content_marketer_decision(decision_queue, sections),
         decision_queue=decision_queue,
         sections=sections,
@@ -408,15 +416,19 @@ def _operator_summary(
     decisions: list[ContentDecisionItem],
     sections: list[ContentDiagnosticSection],
     action_ids: list[str],
+    *,
+    query_page_count: int,
+    matched_inventory_count: int,
 ) -> ContentOperatorSummary:
     top_decisions = decisions[:4]
     current_site_match_count = sum(
         1 for decision in decisions if _content_decision_has_public_final_canonical(decision)
     )
+    ahrefs_wordpress_overlap_count = _ahrefs_wordpress_overlap_count(decisions)
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
         summary=(
-            "WILQ łączy zapytania i URL-e z GSC ze spisem treści WordPress. "
+            "WILQ łączy zapytania i adresy z GSC ze spisem treści WordPress. "
             "Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero "
             "twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną "
             "leady, pozycje albo konwersje."
@@ -453,7 +465,22 @@ def _operator_summary(
         blocked_claim_labels=_content_blocked_claim_labels(
             claim for section in sections for claim in section.blocked_claims
         ),
+        metric_tiles={
+            "Zapytania i adresy z GSC": query_page_count,
+            "Treści znalezione w WordPress": matched_inventory_count,
+            "Luki Ahrefs powiązane z WordPress": ahrefs_wordpress_overlap_count,
+            "Decyzje treści": len(decisions),
+        },
     )
+
+
+def _ahrefs_wordpress_overlap_count(decisions: list[ContentDecisionItem]) -> int:
+    for decision in decisions:
+        if decision.decision_type == "review_ahrefs_gap_records":
+            value = decision.metric_tiles.get("Powiązanie z WordPress")
+            if isinstance(value, (int, float)):
+                return int(value)
+    return 0
 
 
 def _content_marketer_decision(
@@ -697,8 +724,8 @@ def _content_marketer_why(decision: ContentDecisionItem) -> str:
         )
     if decision.decision_type == "review_ahrefs_gap_records":
         return (
-            "Ahrefs może wskazać temat do sprawdzenia, ale sam gap konkurencji nie "
-            "wystarcza do decyzji o nowej publikacji bez GSC i inventory."
+            "Ahrefs może wskazać temat do sprawdzenia, ale sama luka konkurencji nie "
+            "wystarcza do decyzji o nowej publikacji bez GSC i spisu treści."
         )
     return (
         "Brakuje podstawowych danych z GSC lub WordPress, więc WILQ może pokazać "
@@ -725,7 +752,7 @@ def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
         return "Napraw lub potwierdź tracking GA4, a potem wróć do oceny treści."
     if decision.decision_type == "review_ahrefs_gap_records":
         return (
-            "Porównaj gap z GSC i WordPress; traktuj go jako inspirację "
+            "Porównaj lukę z GSC i WordPress; traktuj ją jako inspirację "
             "do sprawdzenia, nie gotową decyzję."
         )
     return "Uruchom odczyt danych GSC i spisu treści WordPress, potem odśwież widok treści."
@@ -809,7 +836,7 @@ def _content_marketer_h2_direction(decision: ContentDecisionItem) -> list[str]:
         ]
     if decision.decision_type == "block_as_tracking_not_content":
         return ["brak pomiaru", "co trzeba naprawić przed oceną treści"]
-    return ["gap do sprawdzenia", "popyt w GSC", "dopasowanie do oferty Ekologus"]
+    return ["luka do sprawdzenia", "popyt w GSC", "dopasowanie do oferty Ekologus"]
 
 
 def _content_marketer_faq_direction(decision: ContentDecisionItem) -> list[str]:
@@ -1788,7 +1815,7 @@ def _ahrefs_gap_record_decisions(
                 f"{len(relevant_scores)} {relevant_label}, "
                 f"{len(review_scores)} {review_label} do ręcznej oceny i "
                 f"{len(off_topic_scores)} {off_topic_label} poza zakresem. "
-                "To jest materiał do sprawdzenia z GSC/WordPress, nie obietnica wzrostu ruchu."
+                "To jest materiał do sprawdzenia z GSC i WordPress, nie obietnica wzrostu ruchu."
             ),
             priority=18 if relevant_scores else 32 if review_scores else 45,
             metric_tiles={
@@ -1796,8 +1823,8 @@ def _ahrefs_gap_record_decisions(
                 "pasujące": len(relevant_scores),
                 "do sprawdzenia": len(review_scores),
                 "poza zakresem": len(off_topic_scores),
-                "GSC overlap": gsc_overlap_count,
-                "WP overlap": wordpress_overlap_count,
+                "Powiązanie z GSC": gsc_overlap_count,
+                "Powiązanie z WordPress": wordpress_overlap_count,
                 "luki treści": gap_counts["content_gap"],
                 "luki linków zwrotnych": gap_counts["backlink_gap"],
             },
@@ -1828,7 +1855,7 @@ def _ahrefs_gap_record_decisions(
             next_step=(
                 f"Najpierw przejrzyj pasujące rekordy: {topic_hint}. Odrzuć "
                 f"{len(off_topic_scores)} rekordów poza zakresem i dopiero potem "
-                "połącz sensowne tematy z GSC/WordPress jako odświeżenie, scalenie, "
+                "połącz sensowne tematy z GSC i WordPress jako odświeżenie, scalenie, "
                 "zachowanie, utworzenie albo blokadę."
             ),
             risk=ActionRisk.medium if candidate_scores else ActionRisk.high,

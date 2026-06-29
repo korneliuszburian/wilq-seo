@@ -1975,7 +1975,8 @@ export const MerchantOperatorSummarySchema = z.object({
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([])
+  blocked_claim_labels: z.array(z.string()).default([]),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({})
 });
 
 export const MerchantFreshnessAssessmentSchema = z.object({
@@ -2257,7 +2258,8 @@ export const ContentOperatorSummarySchema = z.object({
   action_ids: z.array(z.string()),
   action_summary_label: z.string().default(""),
   blocked_claims: z.array(z.string()),
-  blocked_claim_labels: z.array(z.string()).default([])
+  blocked_claim_labels: z.array(z.string()).default([]),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({})
 });
 
 export const ContentMarketerDecisionSchema = z.object({

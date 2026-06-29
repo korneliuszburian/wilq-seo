@@ -51,7 +51,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
   const data = diagnostics.data;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
-  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
+  const operatorMetricTiles = contentOperatorMetricTiles(data);
   const latestStatuses = data.latest_refreshes.map((refresh) => {
     return `${refresh.connector_label}: ${refresh.status_label}`;
   });
@@ -62,15 +62,15 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok SEO i treści z danych WILQ. Łączy zapytania i URL-e z GSC,
+            Dedykowany widok SEO i treści z danych WILQ. Łączy zapytania i adresy z GSC,
             spis treści WordPress i akcje do sprawdzenia, żeby marketer wiedział co odświeżyć,
             scalić, utworzyć albo zablokować bez duplikowania treści.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Zapytania/URL" value={data.query_page_count} />
-          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
-          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
+          {operatorMetricTiles.slice(0, 3).map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
         </div>
       </div>
 
@@ -162,7 +162,7 @@ function ContentExpandableBriefPanel({ actions }: { actions: ActionObject[] }) {
 
 function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsResponse }) {
   const [showReview, setShowReview] = useState(false);
-  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
+  const operatorMetricTiles = contentOperatorMetricTiles(data);
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -173,13 +173,13 @@ function ContentExpandableReviewPanel({ data }: { data: ContentDiagnosticsRespon
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Rozwiń pełny przegląd, gdy chcesz zobaczyć kolejkę decyzji, status
-            WordPress/GSC/Ahrefs, dowody w WILQ i bramę bezpieczeństwa treści.
+            WordPress, GSC i Ahrefs, dowody w WILQ i bramę bezpieczeństwa treści.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={data.decision_queue.length} />
-          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
-          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
+          {operatorMetricTiles.slice(1, 4).map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
         </div>
       </div>
 
@@ -398,7 +398,7 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
             To są propozycje do sprawdzenia w WILQ. Każda wymaga kontroli
-            GSC/WordPress, duplikatów i decyzji operatora przed jakąkolwiek
+            GSC i WordPress, duplikatów i decyzji operatora przed jakąkolwiek
             zmianą treści.
           </p>
         </div>
@@ -637,7 +637,7 @@ function ContentSelectedDecisionPanel({
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
   const summary = data.operator_summary;
-  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
+  const operatorMetricTiles = contentOperatorMetricTiles(data);
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const topDecisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
@@ -659,10 +659,9 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Zapytania/URL" value={data.query_page_count} />
-          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
-          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
-          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          {operatorMetricTiles.map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
         </div>
       </div>
 
@@ -719,12 +718,8 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
   );
 }
 
-function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
-  const ahrefsDecision = data.decision_queue.find(
-    (decision) => decision.decision_type === "review_ahrefs_gap_records"
-  );
-  const value = ahrefsDecision?.metric_tiles?.["WP overlap"];
-  return typeof value === "number" ? value : 0;
+function contentOperatorMetricTiles(data: ContentDiagnosticsResponse) {
+  return Object.entries(data.operator_summary.metric_tiles);
 }
 
 function ContentDecisionCard({

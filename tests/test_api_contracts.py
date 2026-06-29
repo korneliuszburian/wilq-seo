@@ -14847,6 +14847,17 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "akcj" in operator_summary["action_summary_label"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claims"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claim_labels"]
+    assert operator_summary["metric_tiles"]["Zapytania i adresy z GSC"] == payload[
+        "query_page_count"
+    ]
+    assert operator_summary["metric_tiles"]["Treści znalezione w WordPress"] == payload[
+        "matched_inventory_count"
+    ]
+    assert operator_summary["metric_tiles"]["Luki Ahrefs powiązane z WordPress"] == 1
+    assert operator_summary["metric_tiles"]["Decyzje treści"] == len(payload["decision_queue"])
+    assert "Zapytania/URL" not in operator_summary["metric_tiles"]
+    assert "GSC↔WP" not in operator_summary["metric_tiles"]
+    assert "Ahrefs↔WP" not in operator_summary["metric_tiles"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
     marketer_decision = payload["marketer_decision"]
@@ -15007,11 +15018,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "pasujące": 3,
         "do sprawdzenia": 0,
         "poza zakresem": 1,
-        "GSC overlap": 1,
-        "WP overlap": 1,
+        "Powiązanie z GSC": 1,
+        "Powiązanie z WordPress": 1,
         "luki treści": 2,
         "luki linków zwrotnych": 1,
     }
+    assert "GSC overlap" not in ahrefs_decision["metric_tiles"]
+    assert "WP overlap" not in ahrefs_decision["metric_tiles"]
     assert {"zielony ład", "audyt środowiskowy", "pozwolenie zintegrowane"}.issubset(
         set(ahrefs_decision["queries"])
     )

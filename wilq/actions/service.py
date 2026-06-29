@@ -955,7 +955,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             recommended_reason=(
                 "W widoku Treści przygotuj kolejkę zachowania, odświeżenia, scalenia, "
                 "nowej treści albo blokady. "
-                "Traktuj plan treści jako materiał do sprawdzenia: GSC/WordPress może dać "
+                "Traktuj plan treści jako materiał do sprawdzenia: GSC i WordPress mogą dać "
                 "odświeżenie albo scalenie, a Ahrefs tylko tematy do oceny po "
                 "dodatkowym sprawdzeniu popytu z GSC i spisu treści."
             ),
@@ -1810,7 +1810,7 @@ def _wordpress_draft_handoff_action(
         evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
         metrics=content_action_metrics,
         human_diagnosis=(
-            "WILQ ma kolejkę treści z GSC/WordPress/Ahrefs i może przygotować "
+            "WILQ ma kolejkę treści z GSC, WordPress i Ahrefs i może przygotować "
             "wyłącznie zablokowany podgląd szkicu WordPress. To nie jest zapis "
             "ani publikacja."
         ),

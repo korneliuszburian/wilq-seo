@@ -153,7 +153,7 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Treści preflight, summary, decision, proof and action panels use API/domain
   evidence and action summary labels instead of route-local count formatting.
 - Tactical queue labels no longer expose old mixed content wording; Ahrefs
-  blocked-claim copy uses Polish wording for missing GSC/WordPress checks.
+  blocked-claim copy uses Polish wording for missing GSC and WordPress checks.
 - `/actions` priority cards no longer put technical-detail wording on the
   first screen; raw action data remains behind the explicit technical toggle.
 - Ads live-data diagnostics and evidence detail no longer expose `ID dowodu`
@@ -290,7 +290,7 @@ action IDs and audit fields may stay in technical contracts or drawers.
   summaries to Codex skills.
 - Connector status objects hydrate Polish `status_label` values at the shared
   backend schema boundary, and Treści diagnostics expose API-owned
-  `live_data_status_label` for GSC/WordPress readiness.
+  `live_data_status_label` for GSC and WordPress readiness.
 - Metric facts hydrate Polish `metric_label` values at the shared backend
   schema boundary, and live contract smoke now prevents empty or raw snake_case
   metric labels from returning in metric fact contracts.

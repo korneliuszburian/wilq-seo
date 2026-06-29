@@ -5218,7 +5218,19 @@ const contentDiagnostics = {
       "obietnica wzrostu konwersji",
       "gwarancja pozycji",
       "wzrost ruchu"
-    ]
+    ],
+    blocked_claim_labels: [
+      "wzrost liczby leadów",
+      "obietnica wzrostu konwersji",
+      "gwarancja pozycji",
+      "wzrost ruchu"
+    ],
+    metric_tiles: {
+      "Zapytania i adresy z GSC": 1,
+      "Treści znalezione w WordPress": 1,
+      "Luki Ahrefs powiązane z WordPress": 1,
+      "Decyzje treści": 2
+    }
   },
   decision_queue: [
     {
@@ -5293,8 +5305,8 @@ const contentDiagnostics = {
         pasujące: 1,
         "do sprawdzenia": 0,
         "poza zakresem": 0,
-        "GSC overlap": 1,
-        "WP overlap": 1,
+        "Powiązanie z GSC": 1,
+        "Powiązanie z WordPress": 1,
         "luki treści": 1,
         "luki linków zwrotnych": 0
       },
@@ -8451,8 +8463,12 @@ describe("WILQ dashboard", () => {
       () => expect(screen.getByText("Stan danych treści")).toBeInTheDocument(),
       { timeout: 10_000 }
     );
-    expect(screen.getAllByText("GSC↔WP").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("Ahrefs↔WP").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Zapytania i adresy z GSC").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Treści znalezione w WordPress").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Luki Ahrefs powiązane z WordPress").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Zapytania/URL")).not.toBeInTheDocument();
+    expect(screen.queryByText("GSC↔WP")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ahrefs↔WP")).not.toBeInTheDocument();
     expect(screen.getByText("Adresy i podgląd")).toBeInTheDocument();
     expect(screen.queryByText(/URL do sprawdzenia:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Review URL-i:/)).not.toBeInTheDocument();

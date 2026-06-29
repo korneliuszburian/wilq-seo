@@ -1508,7 +1508,7 @@ def _content_summary_with_ahrefs(
         f"rekordy={ahrefs_metric_tiles.get('rekordy Ahrefs', 0)}, "
         f"luki treści={ahrefs_metric_tiles.get('luki Ahrefs', 0)}, "
         f"luki linków={ahrefs_metric_tiles.get('luki linków', 0)}. "
-        "To jest materiał do połączenia z GSC/WordPress, nie obietnica wzrostu."
+        "To jest materiał do połączenia z GSC i WordPress, nie obietnica wzrostu."
     )
     return f"{ahrefs_summary} {tactical_summary}".strip()
 

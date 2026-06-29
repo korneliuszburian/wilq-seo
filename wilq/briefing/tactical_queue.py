@@ -977,7 +977,7 @@ def _ahrefs_confirmation_text(confirmation: AhrefsContentConfirmation) -> str:
         return "GSC potwierdza overlap tematu; WordPress wymaga sprawdzenia."
     if confirmation.wordpress_overlap_urls:
         return "WordPress potwierdza overlap tematu; GSC demand wymaga sprawdzenia."
-    return "Brak overlapu z GSC/WordPress w bieżącym evidence."
+    return "Brak powiązania z GSC i WordPress w bieżących dowodach."
 
 
 def _ahrefs_gap_next_step(
