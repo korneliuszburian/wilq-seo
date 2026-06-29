@@ -158,7 +158,11 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <div>Klucz dowodu w WILQ: {evidence.id}</div>
             <div>Klucz źródła: {evidence.source_id}</div>
-            <div>Referencja źródłowa: {evidence.raw_ref ?? "brak"}</div>
+            <div>
+              Referencja źródłowa:{" "}
+              {evidence.raw_ref ??
+                "WILQ nie dostał osobnej referencji od źródła; decyzja musi opierać się na podsumowaniu, świeżości i śladzie dowodu."}
+            </div>
           </div>
         </TechnicalDetailsPanel>
       </section>

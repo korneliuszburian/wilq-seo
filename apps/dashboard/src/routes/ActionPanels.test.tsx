@@ -190,6 +190,15 @@ describe("ActionPanels", () => {
     expect(source).not.toContain("Zapisuje okno");
     expect(source).not.toContain("Okna:");
   });
+
+  it("uses self-defending empty states instead of bare brak placeholders", () => {
+    const source = readFileSync("src/routes/ActionPanels.tsx", "utf8");
+    expect(source).not.toContain('empty="brak etykiety dowodów z WILQ"');
+    expect(source).not.toContain('empty="brak blokad podglądu"');
+    expect(source).not.toContain('empty="brak dodatkowych warunków"');
+    expect(source).toContain("nie traktuj tej akcji jako gotowej rekomendacji");
+    expect(source).toContain("WILQ nie zgłosił blokad podglądu");
+  });
 });
 
 function renderWithQueryClient(ui: ReactElement) {

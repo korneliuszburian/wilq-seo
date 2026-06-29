@@ -129,6 +129,12 @@ API status later contradicts this state.
   processes hammering the dashboard after Vite restarted; after closing them
   and restarting the canonical stack, `/api/health` returned in 0.001 s and
   `/api/demand-gen/diagnostics` returned in 1.47 s.
+- Marketer-facing empty states now have to defend the decision surface: action
+  evidence, action preview blockers, review conditions, workflow outcomes,
+  brief workflow evidence, expert rule action mapping and evidence source
+  references explain what the missing state means instead of showing bare
+  `brak` placeholders. Focused dashboard tests, dashboard typecheck/lint,
+  marketer language guard and `git diff --check` passed.
 - Action detail validation now uses self-explanatory empty states such as
   `brak błędów` and `brak ostrzeżeń` instead of context-free `brak`.
   Focused dashboard tests, typecheck, lint, language guards, `git diff --check`

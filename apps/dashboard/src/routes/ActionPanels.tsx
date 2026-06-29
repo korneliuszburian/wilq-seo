@@ -90,7 +90,7 @@ function ActionEvidenceTrace({ action }: { action: ActionObject }) {
       <TraceLine
         label="Dowody"
         values={[]}
-        empty="brak etykiety dowodów z WILQ"
+        empty="WILQ nie podał podsumowania dowodów; nie traktuj tej akcji jako gotowej rekomendacji."
       />
     );
   }
@@ -189,7 +189,7 @@ function ActionPreviewResultPanel({
       <TraceLine
         label="Blokady podglądu"
         values={result.blocker_labels}
-        empty="brak blokad podglądu"
+        empty="WILQ nie zgłosił blokad podglądu."
       />
       <div>Ślad bezpieczeństwa: {result.audit_event.event_type_label}</div>
     </div>
@@ -341,7 +341,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
         <TraceLine
           label="Warunki"
           values={gate.operator_checklist_labels.slice(0, 6)}
-          empty="brak dodatkowych warunków"
+          empty="WILQ nie podał dodatkowych warunków; nadal obowiązuje sprawdzenie i jawna zgoda."
         />
         <TraceLine
           label="Blokady zapisu zmian"

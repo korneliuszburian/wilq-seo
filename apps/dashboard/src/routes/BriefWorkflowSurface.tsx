@@ -142,7 +142,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         <TraceLine
           label="Dowody"
           values={item.evidence_summary_label ? [item.evidence_summary_label] : []}
-          empty="brak etykiety dowodów z WILQ"
+          empty="WILQ nie podał podsumowania dowodów; tej karty nie wolno traktować jak gotowej rekomendacji."
         />
         <TraceLine
           label="Źródła"
@@ -265,7 +265,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
                   .map((item) => item.evidence_summary_label)
                   .filter((label) => label.length > 0)
               )}
-              empty="brak etykiety dowodów z WILQ"
+              empty="WILQ nie podał podsumowania dowodów; ten widok nie może samodzielnie uzasadnić decyzji."
             />
             <TraceLine
               label="Źródła"

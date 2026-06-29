@@ -2014,4 +2014,10 @@ describe("Action detail route", () => {
       'gate.last_mutation_audit_event_id ? "zapisany" : "brak"'
     );
   });
+
+  it("does not show a bare brak fallback for evidence source references", () => {
+    const source = readFileSync("src/routes/DetailPanels.tsx", "utf8");
+    expect(source).not.toContain('evidence.raw_ref ?? "brak"');
+    expect(source).toContain("decyzja musi opierać się na podsumowaniu");
+  });
 });

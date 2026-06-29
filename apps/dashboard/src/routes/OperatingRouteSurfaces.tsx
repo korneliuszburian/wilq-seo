@@ -514,12 +514,15 @@ function WorkflowOutcomeCard({
   suffix: string;
   detail: string;
 }) {
+  const outcomeCopy =
+    count > 0
+      ? `WILQ ma ${count} ${suffix}. ${detail}`
+      : `WILQ nie ma jeszcze ${suffix}. Nie traktuj tego procesu jak gotowej decyzji bez dowodów i akcji do sprawdzenia. ${detail}`;
+
   return (
     <article className="rounded-md border border-line bg-white p-4 text-sm text-slate-700">
       <h3 className="font-semibold text-ink">{title}</h3>
-      <p className="mt-2 leading-6">
-        WILQ ma {count || "brak"} {suffix}. {detail}
-      </p>
+      <p className="mt-2 leading-6">{outcomeCopy}</p>
     </article>
   );
 }

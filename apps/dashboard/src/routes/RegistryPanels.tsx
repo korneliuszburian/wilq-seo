@@ -232,6 +232,7 @@ export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
 
 function ExpertRuleCard({ rule }: { rule: ExpertRule }) {
   const [showDetails, setShowDetails] = useState(false);
+  const recommendedActionSummary = rule.recommended_actions.slice(0, 3).join(", ");
 
   return (
     <article className="rounded-md border border-line bg-white p-4">
@@ -259,7 +260,11 @@ function ExpertRuleCard({ rule }: { rule: ExpertRule }) {
           <div>Domena: {rule.domain}</div>
           <div>Wersja: {rule.version}</div>
           <div>Źródło reguły: {rule.source_anchor}</div>
-          <div>Typy akcji: {rule.recommended_actions.slice(0, 3).join(", ") || "brak"}</div>
+          <div>
+            Typy akcji:{" "}
+            {recommendedActionSummary ||
+              "nie przypisano akcji; reguła może tylko wspierać ocenę z dowodami"}
+          </div>
         </div>
       ) : null}
     </article>

@@ -198,4 +198,42 @@ describe("RegistryPanels", () => {
     expect(screen.getByText("Źródło reguły: Google Ads raw search terms")).toBeInTheDocument();
     expect(screen.getByText(/negative_keyword_candidate/)).toBeInTheDocument();
   });
+
+  it("expert rule cards explain missing action mappings without bare brak copy", () => {
+    render(
+      <ExpertRuleList
+        rules={[
+          ({
+            id: "content_review_guard",
+            name: "Reguła sprawdzenia treści",
+            domain: "content",
+            version: 1,
+            source_anchor: "WILQ content rules",
+            source_path: "wilq/expert/content/review.yaml",
+            when_to_use: "Gdy trzeba sprawdzić treść.",
+            required_inputs: ["content_plan"],
+            diagnostic_logic: ["review_claims"],
+            recommended_actions: [],
+            risk_notes: "Needs review.",
+            output_contract: "Reguła nie zastępuje dowodów.",
+            capabilities: [],
+            required_mapping: [],
+            requires_evidence: true
+          } satisfies ExpertRule)
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż szczegóły reguły" }));
+
+    expect(
+      screen.getByText(
+        "Typy akcji: nie przypisano akcji; reguła może tylko wspierać ocenę z dowodami"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Typy akcji: brak")).not.toBeInTheDocument();
+
+    const source = readFileSync("src/routes/RegistryPanels.tsx", "utf8");
+    expect(source).not.toContain('join(", ") || "brak"');
+  });
 });
