@@ -30,6 +30,11 @@ Date: 2026-06-29
 
 ## Latest Verified State
 
+- Localo and Ahrefs decision cards now render source, decision type and
+  priority as labelled Polish chips instead of slash-combined fragments such as
+  `Localo / typ / priorytet` or `Ahrefs / typ / priorytet`. Focused dashboard
+  tests, both language guards and browser proof for `/localo` and `/ahrefs`
+  passed.
 - Centrum pracy and Baza wiedzy now render decision/card metadata as labelled
   Polish chips instead of slash-combined fragments such as `Decyzja / priorytet`
   or `typ wiedzy / źródło`. Focused dashboard tests and browser proof for

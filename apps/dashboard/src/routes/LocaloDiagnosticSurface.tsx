@@ -229,9 +229,17 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Localo / {decision.decision_type_label} / {decision.priority_label}
-          </p>
+          <div className="flex flex-wrap gap-1.5 text-xs text-slate-600">
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Źródło: Localo
+            </span>
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Typ: {decision.decision_type_label}
+            </span>
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Priorytet: {decision.priority_label}
+            </span>
+          </div>
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
         </div>
         <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">

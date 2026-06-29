@@ -89,6 +89,8 @@ action IDs and audit fields may stay in technical contracts or drawers.
 - Centrum pracy and Baza wiedzy now show labelled Polish decision/card metadata
   instead of slash-combined fragments such as `Decyzja / priorytet` or
   `typ wiedzy / źródło`.
+- Localo and Ahrefs decision cards now show labelled Polish source/type/priority
+  metadata instead of slash-combined fragments.
 - Tactical queue, Merchant fallback issue cards and workflow brief cards now
   show labelled Polish metadata chips instead of slash-combined developer
   fragments for area/task/priority or kind/priority.
