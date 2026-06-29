@@ -129,6 +129,10 @@ API status later contradicts this state.
 - Ahrefs authority summaries now format large ranking values with Polish
   grouping and keep the competitor-read sentence separated, so the summary is
   readable without dashboard-side cleanup.
+- Ahrefs and Localo decision cards now label supporting proof as `Na czym można
+  się oprzeć` instead of the contract-like `Dozwolone dowody`; focused
+  dashboard tests, typecheck/lint, language guards and browser proof for both
+  routes passed.
 - Action detail now hides legacy English apply/audit summaries from the
   marketer-facing history. The GA4 action detail shows "Zapis zmian
   zablokowany" and a Polish safety summary instead of raw apply-contract text;

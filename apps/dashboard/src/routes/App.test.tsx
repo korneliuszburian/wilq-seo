@@ -8461,6 +8461,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("dostęp MCP")).not.toBeInTheDocument();
     expect(screen.getAllByText("dane Localo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("brakujące dane").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Na czym można się oprzeć:/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
     expect(screen.getByText("5 brakujących danych")).toBeInTheDocument();
     expect(screen.getByText("blokady obietnic")).toBeInTheDocument();
     expect(screen.queryByText(/metryka WILQ/)).not.toBeInTheDocument();
@@ -8625,6 +8627,8 @@ describe("WILQ dashboard", () => {
     expect(within(ahrefsGapContract as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.getAllByText("ocena domeny Ahrefs").length).toBeGreaterThan(0);
     expect(screen.getAllByText("pozycja w rankingu Ahrefs").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Na czym można się oprzeć:/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Dozwolone dowody/)).not.toBeInTheDocument();
     expect(screen.getByText("Luki do sprawdzenia")).toBeInTheDocument();
     expect(screen.getByText("brak brakujących danych")).toBeInTheDocument();
     expect(screen.getByText("2 zablokowane obietnice")).toBeInTheDocument();

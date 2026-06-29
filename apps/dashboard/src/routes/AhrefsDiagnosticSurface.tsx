@@ -145,7 +145,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
-          label="Dozwolone dowody"
+          label="Na czym można się oprzeć"
           values={decision.allowed_evidence_labels}
         />
         <TraceLine
