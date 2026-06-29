@@ -323,12 +323,12 @@ function ContentPreflightPanel({
             <TraceLine
               label="Brakuje"
               values={item.missing_inputs.slice(0, 5)}
-              empty="brak dodatkowych braków w tej bramce"
+              empty="WILQ nie zgłosił dodatkowych brakujących wejść w tej bramce."
             />
             <TraceLine
               label="Zakazy"
               values={item.blocked_claims.slice(0, 5)}
-              empty="brak dodatkowych zakazów w tej bramce"
+              empty="WILQ nie zgłosił dodatkowych zakazanych obietnic w tej bramce."
             />
           </div>
           <div className="rounded-md border border-line bg-white p-3">
@@ -336,7 +336,7 @@ function ContentPreflightPanel({
             <TraceLine
               label="Podobne URL-e"
               values={item.similar_existing_urls.slice(0, 4).map(shortPath)}
-              empty="brak potwierdzonych podobnych URL-i"
+              empty="WILQ nie potwierdził podobnych URL-i; przed tworzeniem nadal sprawdź spis treści."
             />
             <TraceLine
               label="Dowody"
@@ -584,7 +584,7 @@ function ContentSelectedDecisionPanel({
                 marketerDecision?.preview_url ??
                   ""
               ].filter(Boolean).map(shortPath)}
-              empty="brak podglądu"
+              empty="Adres podglądu nie jest podany; nie traktuj dev hosta jako adresu kanonicznego."
             />
             <TraceLine
               label="Docelowo"
@@ -680,7 +680,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             <TraceLine
               label="Tryby decyzji"
               values={summary.decision_type_labels}
-              empty="brak trybów decyzji"
+              empty="WILQ nie podał trybów decyzji; nie wybieraj pisania bez sprawdzenia."
             />
             <TraceLine
               label="Dopasowania WordPress"
@@ -698,7 +698,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             <TraceLine
               label="Dowody"
               values={[summary.evidence_summary_label]}
-              empty="brak dowodów źródłowych"
+              empty="WILQ nie podał dowodów źródłowych; nie traktuj przeglądu jako rekomendacji."
             />
             <TraceLine label="Akcje" values={[summary.action_summary_label]} />
             <TraceLine
@@ -842,12 +842,12 @@ function ContentDecisionCard({
                 <TraceLine
                   label="Wspólne zapytania GSC"
                   values={candidate.gsc_overlap_terms.slice(0, 3)}
-                  empty="brak wspólnych zapytań w GSC"
+                  empty="WILQ nie potwierdził wspólnych zapytań w GSC; traktuj propozycję jako sprawdzenie."
                 />
                 <TraceLine
                   label="Powiązane URL-e WordPress"
                   values={candidate.wordpress_overlap_urls.map(shortPath).slice(0, 3)}
-                  empty="brak powiązanych URL-i WordPress"
+                  empty="WILQ nie potwierdził powiązanych URL-i WordPress; sprawdź spis przed tworzeniem."
                 />
               </div>
             ))}
@@ -858,7 +858,7 @@ function ContentDecisionCard({
         <TraceLine
           label="Dowody"
           values={[decision.evidence_summary_label]}
-          empty="brak dowodów źródłowych"
+          empty="WILQ nie podał dowodów źródłowych; nie traktuj tej decyzji jako rekomendacji."
         />
         <TraceLine label="Źródła" values={decision.source_connector_labels} />
         <TraceLine label="Akcje" values={[decision.action_summary_label]} />

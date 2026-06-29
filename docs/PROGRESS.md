@@ -141,6 +141,11 @@ API status later contradicts this state.
   `brak ostrzeżeń`, `brak dowodów do pokazania` or `brak akcji do sprawdzenia`
   as the operator-facing answer. Focused dashboard tests, dashboard
   typecheck/lint, marketer language guard and `git diff --check` passed.
+- Content Planner empty states now explain why missing preflight inputs,
+  similar URLs, preview URL, decision modes, evidence, GSC overlap or WordPress
+  overlap limit the recommendation. The dashboard explicitly says not to treat
+  a dev host as canonical and not to start writing without the content check.
+  Focused content dashboard tests passed.
 - Action detail validation no longer uses context-free `brak` answers. The
   validation result now says that WILQ did not report errors or warnings, so the
   positive empty state is tied to an actual check.

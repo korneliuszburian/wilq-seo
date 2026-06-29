@@ -38,6 +38,17 @@ describe("formatContentMetricValue", () => {
     expect(routeSource).toContain("section.blocked_claim_labels");
     expect(routeSource).toContain("summary.blocked_claim_labels");
     expect(routeSource).toContain("fact.metric_label");
+    expect(routeSource).not.toContain('empty="brak dodatkowych braków w tej bramce"');
+    expect(routeSource).not.toContain('empty="brak dodatkowych zakazów w tej bramce"');
+    expect(routeSource).not.toContain('empty="brak potwierdzonych podobnych URL-i"');
+    expect(routeSource).not.toContain('empty="brak podglądu"');
+    expect(routeSource).not.toContain('empty="brak trybów decyzji"');
+    expect(routeSource).not.toContain('empty="brak dowodów źródłowych"');
+    expect(routeSource).not.toContain('empty="brak wspólnych zapytań w GSC"');
+    expect(routeSource).not.toContain('empty="brak powiązanych URL-i WordPress"');
+    expect(routeSource).toContain("nie traktuj dev hosta jako adresu kanonicznego");
+    expect(routeSource).toContain("nie wybieraj pisania bez sprawdzenia");
+    expect(routeSource).toContain("nie traktuj tej decyzji jako rekomendacji");
   });
 
   it("formats marketer-facing SEO metric values without raw float noise", () => {
