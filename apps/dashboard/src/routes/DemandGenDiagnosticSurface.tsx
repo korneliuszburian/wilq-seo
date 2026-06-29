@@ -158,9 +158,10 @@ export function DemandGenDiagnosticSurface() {
                   Odczyt jakości stron wejścia
                 </div>
                 <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  {row.landing_page} / {row.source_medium ?? "brak źródła"}
-                </p>
+                <div className="mt-1 grid gap-1 text-xs text-slate-500">
+                  <span>Strona wejścia: {row.landing_page_label}</span>
+                  <span>Źródło ruchu: {row.source_medium_label}</span>
+                </div>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   <MetricTile label="Aktywni" value={row.active_users ?? "brak"} />
                   <MetricTile label="Sesje" value={row.sessions ?? "brak"} />

@@ -18850,6 +18850,10 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert data["demand_gen_creative_asset_rows"][0]["impressions"] == 44
     assert data["demand_gen_landing_quality_rows"][0]["campaign_name"] == "Demand Gen Test"
     assert data["demand_gen_landing_quality_rows"][0]["landing_page"] == "/dg-test/"
+    assert data["demand_gen_landing_quality_rows"][0]["landing_page_label"] == "/dg-test/"
+    assert data["demand_gen_landing_quality_rows"][0]["source_medium_label"] == (
+        "google / cpc"
+    )
     assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
     assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24
     assert data["demand_gen_landing_quality_rows"][0]["engagement_rate"] == 0.75

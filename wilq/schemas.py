@@ -3298,7 +3298,9 @@ class DemandGenLandingQualityRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
     landing_page: str
+    landing_page_label: str = ""
     source_medium: str | None = None
+    source_medium_label: str = ""
     active_users: int | None = None
     sessions: int | None = None
     engagement_rate: float | None = None
@@ -3307,6 +3309,10 @@ class DemandGenLandingQualityRow(BaseModel):
 
     @model_validator(mode="after")
     def fill_summary_labels(self) -> DemandGenLandingQualityRow:
+        if not self.landing_page_label:
+            self.landing_page_label = self.landing_page or "brak strony wejścia w raporcie"
+        if not self.source_medium_label:
+            self.source_medium_label = self.source_medium or "brak źródła ruchu"
         if not self.evidence_summary_label:
             self.evidence_summary_label = evidence_count_label(self.evidence_ids)
         return self

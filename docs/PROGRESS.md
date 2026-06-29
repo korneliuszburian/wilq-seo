@@ -108,6 +108,10 @@ Date: 2026-06-29
   the route-local fallback `liczba akcji do sprawdzenia`. If the API label is
   missing, the dashboard now shows the explicit failure signal
   `brak etykiety akcji z WILQ`, and `App.test.tsx` guards that behavior.
+- Demand Gen landing-quality cards no longer join landing page and traffic
+  source with slash copy. They render API-owned `landing_page_label` and
+  `source_medium_label` as separate labelled lines, with a dashboard test
+  guarding against returning to `/oferta/ / google / cpc` copy.
 - Connector status now uses the latest successful `vendor_read` when available.
   On 2026-06-29T04:15Z, GSC, GA4 and Merchant refreshed live with
   `vendor_data_collected=true`, and on 2026-06-29T00:20-00:43Z Google Ads,

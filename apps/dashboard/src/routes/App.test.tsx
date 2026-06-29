@@ -6464,15 +6464,15 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads. Kanały w odczycie: PMax: 8, Search: 10. Kampanie Demand Gen/Discovery: 0. WILQ ma dowody Ads i GA4 do oceny ruchu. Odczyty reklam i kreacji Demand Gen są traktowane jako dostępne tylko wtedy, gdy API zwraca je w dostępnych danych. Nadal brakuje danych: jakość stron wejścia według kampanii, kontrola trybu kampanii. To blokuje użyteczną rekomendację; nie jest to problem treści polecenia.",
+    "WILQ ocenił 18 kampanii Ads. Kanały w odczycie: PMax: 8, Search: 10. Kampanie Demand Gen/Discovery: 0. WILQ ma dowody Ads i GA4 do oceny ruchu. Odczyty reklam, kreacji i jakości stron wejścia Demand Gen są dostępne, ale nadal brakuje kontroli trybu kampanii. To blokuje użyteczną rekomendację; nie jest to problem treści polecenia.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
     "kampanie Demand Gen": 0,
     "reklamy Demand Gen": 1,
     "kreacje Demand Gen": 1,
-    "strony wejścia Demand Gen": 0,
-    braki: 2
+    "strony wejścia Demand Gen": 1,
+    braki: 1
   },
   available_read_contracts: [
     "google_ads_campaign_activity",
@@ -6482,12 +6482,10 @@ const demandGenDiagnostics = {
     "demand_gen_readiness_review_action_object",
     "demand_gen_campaign_rows",
     "demand_gen_ad_group_ad_rows",
-    "demand_gen_creative_asset_rows"
+    "demand_gen_creative_asset_rows",
+    "demand_gen_landing_quality_by_campaign"
   ],
-  missing_read_contracts: [
-    "demand_gen_landing_quality_by_campaign",
-    "demand_gen_campaign_mode_review"
-  ],
+  missing_read_contracts: ["demand_gen_campaign_mode_review"],
   available_read_contract_labels: [
     "aktywność kampanii Google Ads",
     "kontekst budżetu Google Ads",
@@ -6496,12 +6494,10 @@ const demandGenDiagnostics = {
     "akcja sprawdzenia Demand Gen",
     "odczyt kampanii Demand Gen/Discovery",
     "odczyt reklam Demand Gen",
-    "odczyt materiałów kreatywnych"
+    "odczyt materiałów kreatywnych",
+    "jakość stron wejścia według kampanii"
   ],
-  missing_read_contract_labels: [
-    "jakość stron wejścia według kampanii",
-    "kontrola trybu kampanii"
-  ],
+  missing_read_contract_labels: ["kontrola trybu kampanii"],
   operator_review_gate_labels: [
     "konkretne dowody Demand Gen",
     "sprawdzenie strategii przez człowieka",
@@ -6577,12 +6573,10 @@ const demandGenDiagnostics = {
         "demand_gen_readiness_review_action_object",
         "demand_gen_campaign_rows",
         "demand_gen_ad_group_ad_rows",
-        "demand_gen_creative_asset_rows"
+        "demand_gen_creative_asset_rows",
+        "demand_gen_landing_quality_by_campaign"
       ],
-      missing_read_contracts: [
-        "demand_gen_landing_quality_by_campaign",
-        "demand_gen_campaign_mode_review"
-      ],
+      missing_read_contracts: ["demand_gen_campaign_mode_review"],
       available_read_contract_labels: [
         "aktywność kampanii Google Ads",
         "kontekst budżetu Google Ads",
@@ -6591,12 +6585,10 @@ const demandGenDiagnostics = {
         "akcja sprawdzenia Demand Gen",
         "odczyt kampanii Demand Gen/Discovery",
         "odczyt reklam Demand Gen",
-        "odczyt materiałów kreatywnych"
+        "odczyt materiałów kreatywnych",
+        "jakość stron wejścia według kampanii"
       ],
-      missing_read_contract_labels: [
-        "jakość stron wejścia według kampanii",
-        "kontrola trybu kampanii"
-      ],
+      missing_read_contract_labels: ["kontrola trybu kampanii"],
       required_validation: [
         "review_ads_campaign_channel_context",
         "review_ga4_landing_source_campaign_context",
@@ -6638,11 +6630,8 @@ const demandGenDiagnostics = {
         { label: "Kampanie Demand Gen", value: "0" },
         { label: "Grupy reklam Demand Gen", value: "1" },
         { label: "Kreacje i zasoby", value: "1" },
-        { label: "Odczyty jakości stron wejścia", value: "0" },
-        {
-          label: "Braki",
-          value: "jakość stron wejścia według kampanii, kontrola trybu kampanii"
-        },
+        { label: "Odczyty jakości stron wejścia", value: "1" },
+        { label: "Braki", value: "kontrola trybu kampanii" },
         {
           label: "Warunki sprawdzenia",
           value:
@@ -6684,8 +6673,23 @@ const demandGenDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_google_ads_demand_gen"]
     }
   ],
+  demand_gen_landing_quality_rows: [
+    {
+      campaign_id: "103",
+      campaign_name: "Demand Gen Test",
+      landing_page: "/oferta/",
+      landing_page_label: "/oferta/",
+      source_medium: "google / cpc",
+      source_medium_label: "google / cpc",
+      active_users: 20,
+      sessions: 30,
+      engagement_rate: 0.125,
+      evidence_ids: ["ev_refresh_refresh_ga4_test"],
+      evidence_summary_label: "1 dowód źródłowy"
+    }
+  ],
   next_step:
-    "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, potwierdź dostępność danych o jakości stron wejścia i kontroli trybu kampanii.",
+    "Sprawdź gotowość Demand Gen w WILQ jako akcję tylko do przeglądu. Zanim WILQ pokaże propozycje uruchomienia albo zmiany trybu kampanii, potwierdź kontrolę trybu kampanii.",
   risk: "medium"
 };
 
@@ -8599,6 +8603,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/sprawdzenie kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getAllByText(/jakość stron wejścia według kampanii/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/kontrola trybu kampanii/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Strona wejścia: /oferta/")).toBeInTheDocument();
+    expect(screen.getByText("Źródło ruchu: google / cpc")).toBeInTheDocument();
+    expect(screen.queryByText("/oferta/ / google / cpc")).not.toBeInTheDocument();
     expect(screen.getAllByText(/Google Ads/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/GA4/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/google_ads/)).not.toBeInTheDocument();
@@ -8620,8 +8627,11 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.preview_cards");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("row.evidence_summary_label");
+    expect(routeSource).toContain("row.landing_page_label");
+    expect(routeSource).toContain("row.source_medium_label");
     expect(routeSource).toContain("row.advertising_channel_type_label");
     expect(routeSource).toContain("row.campaign_status_label");
+    expect(routeSource).not.toContain("{row.landing_page} / {row.source_medium");
     expect(routeSource).not.toContain("data.campaign_channel_labels[channel] ?? channel");
     expect(routeSource).not.toContain("formatDemandGenIdCount");
     expect(routeSource).not.toContain("formatDemandGenEvidenceCount");
