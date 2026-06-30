@@ -16,9 +16,8 @@ from wilq.content.canonical.urls import (
     content_decision_final_canonical_url,
     content_decision_has_public_final_canonical,
     content_decision_url_semantics,
-    content_normalized_path,
-    content_normalized_url,
 )
+from wilq.content.inventory.gates import content_inventory_gate_status
 from wilq.content.preflight.verdicts import (
     content_preflight_mode,
     content_preflight_next_step,
@@ -1428,7 +1427,7 @@ def _gsc_content_decisions(
             source_url=page,
             wordpress_content_url=wordpress_content_url,
         )
-        gate_status = _content_gate_status(
+        gate_status = content_inventory_gate_status(
             decision_type=decision_type,
             wordpress_match=wordpress_match,
         )
@@ -1490,115 +1489,6 @@ def _gsc_content_decisions(
             )
         )
     return decisions
-
-
-def _wordpress_inventory_details_by_path(
-    metric_facts: list[MetricFact],
-) -> dict[str, dict[str, str]]:
-    details_by_path: dict[str, dict[str, str]] = {}
-    for fact in metric_facts:
-        if not fact.source_connector.startswith("wordpress_"):
-            continue
-        if fact.name != "content_object_seen":
-            continue
-        url = fact.dimensions.get("content_url")
-        if not url:
-            continue
-        path = content_normalized_path(url)
-        if not path:
-            continue
-        candidate = {
-            "content_type": fact.dimensions.get("content_type", ""),
-            "status": fact.dimensions.get("status", ""),
-            "inventory_source": fact.dimensions.get("inventory_source", ""),
-            "modified_gmt": fact.dimensions.get("modified_gmt", ""),
-            "title_or_h1": fact.dimensions.get("title_or_h1", ""),
-            "canonical_url": fact.dimensions.get("canonical_url", ""),
-        }
-        current = details_by_path.get(path)
-        if current is None or _inventory_detail_score(candidate) > _inventory_detail_score(current):
-            details_by_path[path] = candidate
-    return details_by_path
-
-
-def _wordpress_inventory_details_by_url(
-    metric_facts: list[MetricFact],
-) -> dict[str, dict[str, str]]:
-    details_by_url: dict[str, dict[str, str]] = {}
-    for fact in metric_facts:
-        if not fact.source_connector.startswith("wordpress_"):
-            continue
-        if fact.name != "content_object_seen":
-            continue
-        url = fact.dimensions.get("content_url")
-        normalized_url = content_normalized_url(url)
-        if not normalized_url:
-            continue
-        candidate = {
-            "content_type": fact.dimensions.get("content_type", ""),
-            "status": fact.dimensions.get("status", ""),
-            "inventory_source": fact.dimensions.get("inventory_source", ""),
-            "modified_gmt": fact.dimensions.get("modified_gmt", ""),
-            "title_or_h1": fact.dimensions.get("title_or_h1", ""),
-            "canonical_url": fact.dimensions.get("canonical_url", ""),
-        }
-        current = details_by_url.get(normalized_url)
-        if current is None or _inventory_detail_score(candidate) > _inventory_detail_score(current):
-            details_by_url[normalized_url] = candidate
-    return details_by_url
-
-
-def _inventory_detail_score(details: dict[str, str]) -> int:
-    return sum(1 for value in details.values() if value)
-
-
-def _content_gate_status(
-    *,
-    decision_type: ContentDecisionType,
-    wordpress_match: str,
-) -> dict[str, str]:
-    if decision_type == "refresh_or_merge" and wordpress_match == "found":
-        return {
-            "inventory_gate_status": "confirmed_current_inventory",
-            "canonical_gate_status": "public_canonical_confirmed",
-            "duplicate_gate_status": "existing_public_content_requires_refresh_or_merge",
-            "content_gate_summary": (
-                "Spis treści potwierdza istniejący URL. WILQ traktuje to jako "
-                "odświeżenie albo scalenie, nie nowy artykuł; nowa treść pozostaje zablokowana "
-                "przed kontrolą duplikacji."
-            ),
-        }
-    if decision_type == "merge_create_after_inventory_check":
-        return {
-            "inventory_gate_status": "missing_inventory_match",
-            "canonical_gate_status": "blocked_until_content_url_review",
-            "duplicate_gate_status": "manual_merge_or_create_review",
-            "content_gate_summary": (
-                "GSC pokazuje klaster zapytań bez potwierdzonego inventory. "
-                "Najpierw potrzebna kontrola URL i duplikatów; dopiero potem "
-                "scalenie albo nowa treść."
-            ),
-        }
-    if decision_type == "inventory_check_before_create":
-        return {
-            "inventory_gate_status": "missing_inventory_match",
-            "canonical_gate_status": "blocked_until_inventory_review",
-            "duplicate_gate_status": "create_blocked_until_duplicate_check",
-            "content_gate_summary": (
-                "GSC pokazuje popyt, ale WordPress nie potwierdza URL. "
-                "Plan nowej treści jest zablokowany do czasu kontroli spisu, adresu kanonicznego "
-                "i duplikatów."
-            ),
-        }
-    return {
-        "inventory_gate_status": "not_applicable",
-        "canonical_gate_status": "not_applicable",
-        "duplicate_gate_status": "not_applicable",
-        "content_gate_summary": (
-            "Ta decyzja nie jest bezpośrednim planem treści; wymaga osobnego "
-            "sprawdzenia przed użyciem w planie treści."
-        ),
-    }
 
 
 def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:

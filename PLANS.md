@@ -511,6 +511,11 @@ dashboard logic fork.
   `wilq/briefing/content_diagnostics.py` to
   `wilq/content/preflight/verdicts.py` without changing content diagnostics
   behavior.
+- Third content domain extraction moved inventory/canonical/duplicate gate
+  status rules from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/inventory/gates.py` without changing content diagnostics
+  behavior, and removed unused private WordPress inventory detail helpers rather
+  than preserving dead code in a new module.
 
 Current next action:
 
@@ -519,7 +524,8 @@ Current ready/in-progress Goal 002 slices are:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
-  in progress after the canonical URL and preflight verdict extraction slices.
+  in progress after the canonical URL, preflight verdict and inventory gate
+  extraction slices.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -558,8 +564,9 @@ Current outcome:
 - Anti-slop baseline is implemented and recorded as proof.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
-  home. Inventory, full preflight contracts, planning, claims, drafting, handoff
-  and measurement modules still need behavior extraction.
+  home, and inventory gate rules now have a domain home. Full inventory records,
+  full preflight contracts, planning, claims, drafting, handoff and measurement
+  modules still need behavior extraction.
 
 Current risk:
 
