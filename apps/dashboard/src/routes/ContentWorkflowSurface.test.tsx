@@ -3,8 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemSnapshot,
+  postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse
 } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
@@ -15,6 +17,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return {
     ...actual,
     getContentWorkItemSnapshot: vi.fn(),
+    postContentWorkItemWordPressDraftExecution: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
   };
@@ -28,6 +31,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(saveContentWorkItemSnapshotAudit).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() }).wordpress_handoff
+    );
+    vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
+      wordpressDraftExecutionResponse()
     );
   });
 
@@ -63,7 +69,10 @@ describe("ContentWorkflowSurface", () => {
     ]);
     expect(screen.getAllByText("BDO dla firm")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
+    expect(screen.getByText(/Ten krok nie wykonuje zewnętrznego zapisu/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
     expect(screen.getByText("zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Nie wolno jeszcze oceniać efektu")).toBeInTheDocument();
@@ -103,6 +112,7 @@ describe("ContentWorkflowSurface", () => {
         })
       });
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
   it("submits a matching audit only after WILQ exposes an approved human review", async () => {
@@ -134,9 +144,10 @@ describe("ContentWorkflowSurface", () => {
         }
       });
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
-  it("keeps the handoff controls disabled when a draft-only handoff is already prepared", async () => {
+  it("prepares a draft-only WordPress dry-run after handoff", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
     );
@@ -154,6 +165,21 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByRole("button", { name: "Audyt zapisany" })).toBeDisabled();
     expect(screen.getByText(/przekazanie do WordPress pozostaje przygotowane tylko jako szkic/))
       .toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" }));
+
+    await waitFor(() => {
+      expect(postContentWorkItemWordPressDraftExecution).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemWordPressDraftExecution).mock.calls[0]?.[0]).toEqual({
+      handoff: wordpressHandoff(),
+      draft_package: draftPackage(),
+      mode: "dry_run"
+    });
+    expect(await screen.findByRole("button", { name: "Podgląd szkicu gotowy" })).toBeDisabled();
+    expect(screen.getByText(/WordPress dostałby status draft/)).toBeInTheDocument();
+    expect(screen.getByText(/Publikacja: zablokowana/)).toBeInTheDocument();
+    expect(screen.getByText(/Nadpisywanie treści: zablokowane/)).toBeInTheDocument();
   });
 });
 
@@ -431,5 +457,28 @@ function wordpressHandoff() {
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     publish_allowed: false,
     destructive_update_allowed: false
+  };
+}
+
+function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecutionResponse {
+  return {
+    execution_result: {
+      status: "dry_run_ready",
+      mode: "dry_run",
+      payload: {
+        connector: "wordpress_ekologus",
+        endpoint_kind: "posts",
+        post_status: "draft",
+        title: "BDO dla firm",
+        content_markdown: "# BDO dla firm",
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+        publish_allowed: false,
+        destructive_update_allowed: false
+      },
+      wordpress_post_id: null,
+      external_write_attempted: false,
+      blockers: []
+    }
   };
 }

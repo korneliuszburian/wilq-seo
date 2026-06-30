@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
-  saveContentWorkItemSnapshotHumanReview
+  saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemWordPressDraftExecutionResponse
 } from "../lib/api";
 import {
   buildWorkflowSteps,
@@ -19,6 +21,7 @@ type WorkflowSafetyPanelsProps = {
   draft: ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
   handoff: ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
   window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"];
+  executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
 };
 
 export function ContentWorkflowSurface() {
@@ -36,6 +39,9 @@ export function ContentWorkflowSurface() {
   const auditMutation = useMutation({
     mutationFn: saveContentWorkItemSnapshotAudit,
     onSuccess: refreshWorkflow
+  });
+  const executionMutation = useMutation({
+    mutationFn: postContentWorkItemWordPressDraftExecution
   });
 
   if (workflow.isLoading) return <LoadingBand />;
@@ -65,6 +71,8 @@ export function ContentWorkflowSurface() {
         data={data}
         reviewPending={reviewMutation.isPending}
         auditPending={auditMutation.isPending}
+        executionPending={executionMutation.isPending}
+        executionResult={executionMutation.data?.execution_result ?? null}
         onReview={() => {
           if (!draft) return;
           reviewMutation.mutate({
@@ -101,8 +109,22 @@ export function ContentWorkflowSurface() {
             }
           });
         }}
+        onExecutionDryRun={() => {
+          if (!handoff || !draft) return;
+          executionMutation.mutate({
+            handoff,
+            draft_package: draft,
+            mode: "dry_run"
+          });
+        }}
       />
-      <WorkflowSafetyPanels data={data} draft={draft} handoff={handoff} window={window} />
+      <WorkflowSafetyPanels
+        data={data}
+        draft={draft}
+        handoff={handoff}
+        window={window}
+        executionResult={executionMutation.data?.execution_result ?? null}
+      />
     </main>
   );
 }
@@ -176,14 +198,20 @@ function WorkflowOperatorControls({
   data,
   reviewPending,
   auditPending,
+  executionPending,
+  executionResult,
   onReview,
-  onAudit
+  onAudit,
+  onExecutionDryRun
 }: {
   data: ContentWorkflowSnapshot;
   reviewPending: boolean;
   auditPending: boolean;
+  executionPending: boolean;
+  executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
   onReview: () => void;
   onAudit: () => void;
+  onExecutionDryRun: () => void;
 }) {
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
@@ -191,6 +219,12 @@ function WorkflowOperatorControls({
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const reviewDisabledReason = reviewControlDisabledReason(data, Boolean(draft), reviewPending);
   const auditDisabledReason = auditControlDisabledReason(data, auditPending);
+  const executionDisabledReason = executionControlDisabledReason(
+    Boolean(draft),
+    Boolean(handoff),
+    executionPending,
+    executionResult
+  );
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -221,6 +255,12 @@ function WorkflowOperatorControls({
             disabledReason={auditDisabledReason}
             pending={auditPending}
             onClick={onAudit}
+          />
+          <WorkflowControlButton
+            label={executionResult ? "Podgląd szkicu gotowy" : "Sprawdź podgląd szkicu"}
+            disabledReason={executionDisabledReason}
+            pending={executionPending}
+            onClick={onExecutionDryRun}
           />
         </div>
       </div>
@@ -261,10 +301,11 @@ function WorkflowSafetyPanels({
   data,
   draft,
   handoff,
-  window
+  window,
+  executionResult
 }: WorkflowSafetyPanelsProps) {
   return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-3">
+    <div className="mt-6 grid gap-4 lg:grid-cols-4">
       <SafetyPanel
         icon={<FileText aria-hidden="true" size={18} />}
         title="Paczka szkicu"
@@ -274,6 +315,11 @@ function WorkflowSafetyPanels({
         icon={<ShieldCheck aria-hidden="true" size={18} />}
         title="WordPress zostaje w trybie szkicu"
         text={handoffSafetyText(handoff?.publish_allowed)}
+      />
+      <SafetyPanel
+        icon={<ShieldCheck aria-hidden="true" size={18} />}
+        title="Podgląd szkicu WordPress"
+        text={wordpressExecutionSafetyText(executionResult)}
       />
       <SafetyPanel
         icon={<Clock3 aria-hidden="true" size={18} />}
@@ -322,6 +368,24 @@ function handoffSafetyText(publishAllowed?: boolean) {
   return "Handoff przygotowuje tylko szkic. Publikacja i nadpisanie treści są zablokowane.";
 }
 
+function wordpressExecutionSafetyText(
+  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null
+) {
+  if (!result) {
+    return "Po audycie WILQ może pokazać, co trafiłoby do WordPress. Ten krok nie wykonuje zewnętrznego zapisu.";
+  }
+  if (result.external_write_attempted) {
+    return "Zatrzymaj workflow: podgląd nie powinien wykonywać zewnętrznego zapisu.";
+  }
+  if (result.status === "blocked") {
+    return result.blockers[0]?.reason ?? "WILQ zablokował przygotowanie podglądu szkicu.";
+  }
+  if (result.payload) {
+    return `Podgląd gotowy: WordPress dostałby status ${result.payload.post_status}. Publikacja: zablokowana. Nadpisywanie treści: zablokowane.`;
+  }
+  return "WILQ sprawdził przekazanie, ale nie zwrócił paczki podglądu.";
+}
+
 function measurementSafetyText(
   window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"]
 ) {
@@ -355,6 +419,19 @@ function auditControlDisabledReason(data: ContentWorkflowSnapshot, pending: bool
       "WILQ nie odblokował przekazania do WordPress po sprawdzeniu."
     );
   }
+  return null;
+}
+
+function executionControlDisabledReason(
+  hasDraft: boolean,
+  hasHandoff: boolean,
+  pending: boolean,
+  result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null
+) {
+  if (pending) return "WILQ przygotowuje podgląd szkicu WordPress.";
+  if (result) return "Podgląd szkicu WordPress jest już przygotowany dla tej sesji.";
+  if (!hasDraft) return "Najpierw WILQ musi przygotować paczkę szkicu.";
+  if (!hasHandoff) return "Najpierw zapisz audyt i przygotuj przekazanie szkicu do WordPress.";
   return null;
 }
 

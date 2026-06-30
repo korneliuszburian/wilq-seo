@@ -978,6 +978,10 @@ Current outcome:
   package. It does not write to WordPress in dry-run mode, keeps publish and
   destructive update disabled, and blocks live write until a future adapter is
   explicitly enabled.
+- `/content-workflow` now exposes that WordPress dry-run contract as a typed
+  marketer-facing step. After review and audit, the route can request the
+  dry-run through the WILQ API, show the draft-only payload status and keep
+  publication, destructive update and external write disabled.
 
 Current risk:
 

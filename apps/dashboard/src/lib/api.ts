@@ -17,6 +17,8 @@ import {
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
+  ContentWorkItemWordPressDraftExecutionRequestSchema,
+  ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ConnectorStatusSchema,
@@ -55,6 +57,8 @@ import {
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
+  type ContentWorkItemWordPressDraftExecutionRequest,
+  type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
@@ -217,6 +221,16 @@ export function postContentWorkItemWordPressDraftHandoff(
   );
 }
 
+export function postContentWorkItemWordPressDraftExecution(
+  request: ContentWorkItemWordPressDraftExecutionRequest
+): Promise<ContentWorkItemWordPressDraftExecutionResponse> {
+  return apiPost(
+    "/api/content/work-items/wordpress-draft-execution",
+    ContentWorkItemWordPressDraftExecutionResponseSchema,
+    ContentWorkItemWordPressDraftExecutionRequestSchema.parse(request)
+  );
+}
+
 export function postContentWorkItemMeasurementWindow(
   request: unknown
 ): Promise<ContentWorkItemMeasurementWindowResponse> {
@@ -334,6 +348,8 @@ export type {
   ContentWorkItemMeasurementWindowResponse,
   ContentWorkItemPreflightResponse,
   ContentWorkItemSalesBriefResponse,
+  ContentWorkItemWordPressDraftExecutionRequest,
+  ContentWorkItemWordPressDraftExecutionResponse,
   ContentWorkItemWordPressDraftHandoffResponse,
   ContentWorkItemWorkflowSnapshotResponse,
   ConnectorRefreshRun,

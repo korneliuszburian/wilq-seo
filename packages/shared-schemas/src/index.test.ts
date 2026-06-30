@@ -8,6 +8,8 @@ import {
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
+  ContentWorkItemWordPressDraftExecutionRequestSchema,
+  ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
@@ -492,6 +494,54 @@ describe("Content work item workflow schemas", () => {
             publish_allowed: false,
             destructive_update_allowed: false
           },
+          blockers: []
+        }
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemWordPressDraftExecutionRequestSchema.safeParse({
+        handoff: {
+          id: "wordpress_draft_handoff_content_work_item_bdo",
+          work_item_id: "content_work_item_bdo",
+          draft_package_id: "draft_package_content_work_item_bdo",
+          human_review_id: "human_review_bdo",
+          audit_id: "audit_bdo",
+          connector: "wordpress_ekologus",
+          operation_type: "create_wordpress_draft",
+          status: "prepared",
+          post_status: "draft",
+          title: "BDO dla firm",
+          final_canonical_url: "https://ekologus.pl/bdo/",
+          intended_final_url: "https://ekologus.pl/bdo/",
+          preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          publish_allowed: false,
+          destructive_update_allowed: false
+        },
+        draft_package: draftPackage,
+        mode: "dry_run"
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemWordPressDraftExecutionResponseSchema.safeParse({
+        execution_result: {
+          status: "dry_run_ready",
+          mode: "dry_run",
+          payload: {
+            connector: "wordpress_ekologus",
+            endpoint_kind: "posts",
+            post_status: "draft",
+            title: "BDO dla firm",
+            content_markdown: "# BDO dla firm",
+            final_canonical_url: "https://ekologus.pl/bdo/",
+            evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+            publish_allowed: false,
+            destructive_update_allowed: false
+          },
+          wordpress_post_id: null,
+          external_write_attempted: false,
           blockers: []
         }
       }).success

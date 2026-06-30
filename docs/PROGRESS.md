@@ -420,6 +420,11 @@ API status later contradicts this state.
   matching draft package. It keeps `post_status=draft`, `publish_allowed=false`,
   `destructive_update_allowed=false` and `external_write_attempted=false`.
   Live write mode is explicitly blocked until a future adapter is enabled.
+- Beads task `wilq-seo-ee2` wires the WordPress draft dry-run into the
+  `/content-workflow` dashboard and shared TS schemas. After review/audit and a
+  prepared handoff, the route can ask WILQ API for a dry-run preview, show that
+  WordPress would receive only a draft, and keep publication/destructive update
+  disabled.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

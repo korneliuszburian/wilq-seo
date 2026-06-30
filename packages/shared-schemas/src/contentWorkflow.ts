@@ -242,6 +242,44 @@ export const ContentWorkItemWordPressDraftHandoffResponseSchema = z.object({
   handoff_result: ContentWordPressDraftHandoffResultSchema
 });
 
+export const ContentWordPressDraftExecutionPayloadSchema = z.object({
+  connector: z.literal("wordpress_ekologus"),
+  endpoint_kind: z.literal("posts"),
+  post_status: z.literal("draft"),
+  title: z.string(),
+  content_markdown: z.string(),
+  final_canonical_url: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  publish_allowed: z.boolean(),
+  destructive_update_allowed: z.boolean()
+});
+
+export const ContentWordPressDraftExecutionBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+export const ContentWordPressDraftExecutionResultSchema = z.object({
+  status: z.enum(["dry_run_ready", "created", "blocked"]),
+  mode: z.enum(["dry_run", "live"]),
+  payload: ContentWordPressDraftExecutionPayloadSchema.nullable().optional(),
+  wordpress_post_id: z.string().nullable().optional(),
+  external_write_attempted: z.boolean(),
+  blockers: z.array(ContentWordPressDraftExecutionBlockerSchema).default([])
+});
+
+export const ContentWorkItemWordPressDraftExecutionRequestSchema = z.object({
+  handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
+  draft_package: ContentDraftPackageSchema.nullable().optional(),
+  mode: z.enum(["dry_run", "live"]).default("dry_run")
+});
+
+export const ContentWorkItemWordPressDraftExecutionResponseSchema = z.object({
+  execution_result: ContentWordPressDraftExecutionResultSchema
+});
+
 export const ContentDateRangeSchema = z.object({
   start: z.string(),
   end: z.string()
@@ -304,6 +342,12 @@ export type ContentWorkItemSnapshotAuditRequest = z.infer<
 >;
 export type ContentWorkItemWordPressDraftHandoffResponse = z.infer<
   typeof ContentWorkItemWordPressDraftHandoffResponseSchema
+>;
+export type ContentWorkItemWordPressDraftExecutionRequest = z.infer<
+  typeof ContentWorkItemWordPressDraftExecutionRequestSchema
+>;
+export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
+  typeof ContentWorkItemWordPressDraftExecutionResponseSchema
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
