@@ -683,9 +683,13 @@ Current ready/in-progress Goal 002 slices are:
   prompt instructions, closed. `wilq/content/claims/ledger.py` now blocks
   guarantees, measurement-dependent outcome claims and unreviewed legal/risk/
   environmental claims before draft readiness.
-- `wilq-seo-pnz` - next product slice after or alongside Claim Ledger: add
-  Sales Brief v1 from a valid work item/preflight, evidence, final URL and
-  measurement plan.
+- `wilq-seo-pnz` - Sales Brief v1, closed. `wilq/content/briefs/sales.py`
+  now builds a typed brief only from valid work item, preflight, inventory,
+  claim ledger, source facts, final canonical URL and measurement plan inputs.
+- `wilq-seo-dhf` - next product slice: add Draft Package v1. Draft packages
+  must be outline-first, not publish-ready, and must include brief ID, claim
+  ledger ID, section-to-evidence mapping, blocked claims removed and human
+  review questions.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -733,6 +737,10 @@ behavior must land in focused content/domain modules with tests first.
   advice.
   Reason: unsupported guarantees, SEO/performance/business outcome claims and
   legal-adjacent claims must block draft readiness deterministically.
+- Decision: Sales Brief v1 is a typed contract, not a prompt draft.
+  Reason: later SDK/Codex draft generation must consume buyer problem, source
+  facts, final URL, forbidden claims and measurement plan instead of inventing
+  them inside a prompt.
 
 ## Outcomes & Retrospective
 

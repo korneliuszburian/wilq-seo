@@ -221,6 +221,17 @@ API status later contradicts this state.
   Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Beads task `wilq-seo-pnz` is closed. `wilq/content/briefs/sales.py` now
+  defines Sales Brief v1 as a typed contract built from `ContentWorkItem`,
+  ContentPreflight v2, Content Inventory v1, Claim Ledger v1 and explicit
+  source facts. The brief contains buyer problem, buyer trigger, target reader,
+  search intent, service fit, final canonical URL, existing content plan,
+  H1/H2/FAQ/CTA direction, internal link direction, forbidden claims, missing
+  evidence and measurement plan. Focused tests prove no brief is produced
+  without required evidence/source facts, valid final URL semantics, preflight
+  allowance or measurement plan. `tests/content` (74 tests), Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
