@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import cast
 
+from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.review.human import ContentHumanReview
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import state_db_path
@@ -52,6 +53,50 @@ class ContentWorkflowStore:
             return None
         return ContentHumanReview.model_validate(json.loads(cast(str, row["payload_json"])))
 
+    def save_audit(
+        self,
+        audit: ContentWordPressDraftAuditEnvelope,
+    ) -> ContentWordPressDraftAuditEnvelope:
+        redacted = ContentWordPressDraftAuditEnvelope.model_validate(
+            redact_mapping(audit.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_workflow_audits (audit_id, human_review_id, payload_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(audit_id) DO UPDATE SET
+                  human_review_id = excluded.human_review_id,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.audit_id,
+                    redacted.human_review_id,
+                    _model_json(redacted),
+                ),
+            )
+        return redacted
+
+    def latest_audit_for_review(
+        self,
+        human_review_id: str,
+    ) -> ContentWordPressDraftAuditEnvelope | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_workflow_audits
+                WHERE human_review_id = ?
+                ORDER BY audit_id DESC
+                LIMIT 1
+                """,
+                (human_review_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentWordPressDraftAuditEnvelope.model_validate(
+            json.loads(cast(str, row["payload_json"]))
+        )
+
     def _connect(self) -> sqlite3.Connection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
@@ -69,7 +114,16 @@ class ContentWorkflowStore:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_workflow_audits (
+              audit_id TEXT PRIMARY KEY,
+              human_review_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
 
 
-def _model_json(review: ContentHumanReview) -> str:
-    return json.dumps(review.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+def _model_json(model: ContentHumanReview | ContentWordPressDraftAuditEnvelope) -> str:
+    return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))

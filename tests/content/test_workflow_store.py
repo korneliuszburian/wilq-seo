@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.store import ContentWorkflowStore
 
@@ -25,3 +26,21 @@ def test_content_workflow_store_persists_human_review(tmp_path: Path) -> None:
     assert saved == review
     assert loaded == review
     assert store.latest_human_review("content_work_item_other") is None
+
+
+def test_content_workflow_store_persists_audit_for_human_review(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    audit = ContentWordPressDraftAuditEnvelope(
+        audit_id="audit_bdo",
+        actor="wilku",
+        reason="Zatwierdzony szkic może trafić do WordPress jako draft.",
+        evidence_ids=["ev_gsc_bdo"],
+        human_review_id="human_review_bdo",
+    )
+
+    saved = store.save_audit(audit)
+    loaded = store.latest_audit_for_review("human_review_bdo")
+
+    assert saved == audit
+    assert loaded == audit
+    assert store.latest_audit_for_review("human_review_other") is None

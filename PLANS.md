@@ -952,6 +952,12 @@ Current outcome:
   SQLite state and later applied by `GET /api/content/work-items/snapshot`.
   Invalid review for a different work item is not stored as approval. WordPress
   handoff still remains null/blocked until an audit envelope exists.
+- The snapshot now also has a persisted audit-envelope path. After a valid
+  stored Human Review, a matching audit can be stored and later snapshot reads
+  can produce a prepare-only WordPress handoff contract. This still does not
+  write to WordPress, does not publish, does not allow destructive updates and
+  does not allow measurement success/failure claims before the observation
+  window is ready.
 
 Current risk:
 

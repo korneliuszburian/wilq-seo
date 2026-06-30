@@ -6,6 +6,7 @@ import {
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
@@ -453,6 +454,18 @@ describe("Content work item workflow schemas", () => {
           evidence_ids: ["ev_gsc_bdo"],
           blocked_claims_handled: [],
           draft_package_id: "draft_package_content_work_item_bdo"
+        }
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemSnapshotAuditRequestSchema.safeParse({
+        audit: {
+          audit_id: "audit_bdo",
+          actor: "wilku",
+          reason: "Zatwierdzony szkic może trafić do WordPress jako draft.",
+          evidence_ids: ["ev_gsc_bdo"],
+          human_review_id: "human_review_bdo"
         }
       }).success
     ).toBe(true);

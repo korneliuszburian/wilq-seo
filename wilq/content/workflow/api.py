@@ -153,6 +153,10 @@ class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):
     review: ContentHumanReview
 
 
+class ContentWorkItemSnapshotAuditRequest(BaseModel):
+    audit: ContentWordPressDraftAuditEnvelope
+
+
 def build_content_work_item_preflight_response(
     request: ContentWorkItemPreflightRequest,
 ) -> ContentWorkItemPreflightResponse:
@@ -302,6 +306,7 @@ def build_content_work_item_measurement_window_response(
 def build_content_work_item_diagnostics_snapshot_response(
     diagnostics: ContentDiagnosticsResponse,
     human_review: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
     item = _work_item_from_decision(decision)
@@ -311,6 +316,7 @@ def build_content_work_item_diagnostics_snapshot_response(
         claim_ledger=_claim_ledger_from_decision(item),
         seed=_sales_brief_seed_from_decision(decision),
         human_review_record=human_review,
+        audit=audit,
     )
 
 
@@ -324,6 +330,19 @@ def build_content_work_item_snapshot_human_review_response(
     ).human_review
 
 
+def build_content_work_item_snapshot_audit_response(
+    diagnostics: ContentDiagnosticsResponse,
+    request: ContentWorkItemSnapshotAuditRequest,
+    *,
+    human_review: ContentHumanReview | None,
+) -> ContentWorkItemWordPressDraftHandoffResponse:
+    return build_content_work_item_diagnostics_snapshot_response(
+        diagnostics,
+        human_review=human_review,
+        audit=request.audit,
+    ).wordpress_handoff
+
+
 def _build_content_work_item_snapshot_response(
     *,
     item: ContentWorkItem,
@@ -331,6 +350,7 @@ def _build_content_work_item_snapshot_response(
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
     human_review_record: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     measurement_window_id = f"measure_{item.id}"
 
@@ -405,7 +425,7 @@ def _build_content_work_item_snapshot_response(
             item=human_review.reviewed_item,
             draft_package=draft,
             human_review=human_review.review,
-            audit=None,
+            audit=audit,
         )
     )
     measurement_window = build_content_work_item_measurement_window_response(

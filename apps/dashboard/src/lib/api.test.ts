@@ -8,6 +8,7 @@ import {
   postContentWorkItemPreflight,
   postContentWorkItemSalesBrief,
   postContentWorkItemWordPressDraftHandoff,
+  saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview
 } from "./api";
 
@@ -43,6 +44,10 @@ const responseByPath: Record<string, unknown> = {
     review: humanReview(),
     blockers: [],
     wordpress_handoff_allowed: true
+  },
+  "/api/content/work-items/snapshot/audit": {
+    item: workItem(),
+    handoff_result: { handoff: wordpressHandoff(), blockers: [] }
   },
   "/api/content/work-items/wordpress-draft-handoff": {
     item: workItem(),
@@ -107,6 +112,15 @@ describe("content workflow API helpers", () => {
     await postContentWorkItemDraftPackage({ item: workItem(), claim_ledger: {}, seed: {} });
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
+    await saveContentWorkItemSnapshotAudit({
+      audit: {
+        audit_id: "audit_bdo",
+        actor: "wilku",
+        reason: "Zatwierdzony szkic może trafić do WordPress jako draft.",
+        evidence_ids: ["ev_gsc_bdo"],
+        human_review_id: "human_review_bdo"
+      }
+    });
     await postContentWorkItemWordPressDraftHandoff({ item: workItem() });
     await postContentWorkItemMeasurementWindow({
       item: workItem(),
@@ -122,6 +136,7 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/draft-package",
       "/api/content/work-items/human-review",
       "/api/content/work-items/snapshot/human-review",
+      "/api/content/work-items/snapshot/audit",
       "/api/content/work-items/wordpress-draft-handoff",
       "/api/content/work-items/measurement-window"
     ]);

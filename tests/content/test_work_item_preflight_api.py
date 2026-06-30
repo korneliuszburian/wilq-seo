@@ -1025,3 +1025,91 @@ def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
     persisted = client.get("/api/content/work-items/snapshot").json()
     assert persisted["human_review"]["review"] is None
     assert persisted["human_review"]["reviewed_item"]["human_review_status"] == "missing"
+
+
+def test_content_work_item_snapshot_persists_matching_audit_envelope(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    initial = client.get("/api/content/work-items/snapshot").json()
+    item = initial["preflight"]["item"]
+    draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    review = _human_review(
+        id=f"human_review_{item['id']}",
+        work_item_id=item["id"],
+        evidence_ids=item["evidence_ids"],
+        draft_package_id=draft["id"],
+        blocked_claims_handled=[],
+    )
+    client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
+
+    audit = {
+        "audit_id": f"audit_{item['id']}",
+        "actor": "wilku",
+        "reason": "Zatwierdzony szkic może trafić do WordPress jako draft.",
+        "evidence_ids": item["evidence_ids"],
+        "human_review_id": review["id"],
+    }
+    response = client.post("/api/content/work-items/snapshot/audit", json={"audit": audit})
+    assert response.status_code == 200
+    assert response.json()["handoff_result"]["blockers"] == []
+
+    persisted = client.get("/api/content/work-items/snapshot").json()
+    handoff = persisted["wordpress_handoff"]["handoff_result"]["handoff"]
+    assert handoff["post_status"] == "draft"
+    assert handoff["publish_allowed"] is False
+    assert handoff["destructive_update_allowed"] is False
+    assert handoff["human_review_id"] == review["id"]
+    assert handoff["audit_id"] == audit["audit_id"]
+    assert handoff["evidence_ids"] == item["evidence_ids"]
+
+    window = persisted["measurement_window"]["measurement_window_result"]["window"]
+    assert window["handoff_id"] == handoff["id"]
+    assert window["success_claim_allowed"] is False
+
+
+def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    initial = client.get("/api/content/work-items/snapshot").json()
+    item = initial["preflight"]["item"]
+    draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    review = _human_review(
+        id=f"human_review_{item['id']}",
+        work_item_id=item["id"],
+        evidence_ids=item["evidence_ids"],
+        draft_package_id=draft["id"],
+    )
+    client.post("/api/content/work-items/snapshot/human-review", json={"review": review})
+
+    response = client.post(
+        "/api/content/work-items/snapshot/audit",
+        json={
+            "audit": {
+                "audit_id": f"audit_{item['id']}",
+                "actor": "wilku",
+                "reason": "Zatwierdzony szkic może trafić do WordPress jako draft.",
+                "evidence_ids": item["evidence_ids"],
+                "human_review_id": "human_review_other",
+            }
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["handoff_result"]["handoff"] is None
+    assert "audit_human_review_mismatch" in [
+        blocker["code"] for blocker in response.json()["handoff_result"]["blockers"]
+    ]
+
+    persisted = client.get("/api/content/work-items/snapshot").json()
+    assert persisted["wordpress_handoff"]["handoff_result"]["handoff"] is None
+    assert "missing_audit" in [
+        blocker["code"]
+        for blocker in persisted["wordpress_handoff"]["handoff_result"]["blockers"]
+    ]

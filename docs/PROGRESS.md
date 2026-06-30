@@ -391,6 +391,13 @@ API status later contradicts this state.
   Later `GET /api/content/work-items/snapshot` applies that real review, while
   WordPress handoff remains null/blocked until an audit envelope exists. Wrong
   work-item review is rejected and not stored as approval.
+- Beads task `wilq-seo-di8` adds the persisted audit envelope path for the
+  diagnostics-derived snapshot. After a real stored review,
+  `POST /api/content/work-items/snapshot/audit` stores only a matching audit
+  envelope and later snapshot reads can return a prepare-only WordPress handoff
+  contract with `post_status=draft`, `publish_allowed=false` and
+  `destructive_update_allowed=false`. Mismatched audit is not stored as handoff
+  approval, and measurement success/failure claims remain blocked.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

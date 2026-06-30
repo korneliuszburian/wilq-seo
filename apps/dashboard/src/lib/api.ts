@@ -15,6 +15,7 @@ import {
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
@@ -52,6 +53,7 @@ import {
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
+  type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
@@ -192,6 +194,16 @@ export function saveContentWorkItemSnapshotHumanReview(
     "/api/content/work-items/snapshot/human-review",
     ContentWorkItemHumanReviewResponseSchema,
     ContentWorkItemSnapshotHumanReviewRequestSchema.parse(request)
+  );
+}
+
+export function saveContentWorkItemSnapshotAudit(
+  request: ContentWorkItemSnapshotAuditRequest
+): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
+  return apiPost(
+    "/api/content/work-items/snapshot/audit",
+    ContentWorkItemWordPressDraftHandoffResponseSchema,
+    ContentWorkItemSnapshotAuditRequestSchema.parse(request)
   );
 }
 

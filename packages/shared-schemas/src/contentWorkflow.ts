@@ -201,6 +201,18 @@ export const ContentWorkItemSnapshotHumanReviewRequestSchema = z.object({
   review: ContentHumanReviewSchema
 });
 
+export const ContentWordPressDraftAuditEnvelopeSchema = z.object({
+  audit_id: z.string(),
+  actor: z.string(),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  human_review_id: z.string()
+});
+
+export const ContentWorkItemSnapshotAuditRequestSchema = z.object({
+  audit: ContentWordPressDraftAuditEnvelopeSchema
+});
+
 export const ContentWordPressDraftHandoffSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -286,6 +298,9 @@ export type ContentWorkItemHumanReviewResponse = z.infer<
 >;
 export type ContentWorkItemSnapshotHumanReviewRequest = z.infer<
   typeof ContentWorkItemSnapshotHumanReviewRequestSchema
+>;
+export type ContentWorkItemSnapshotAuditRequest = z.infer<
+  typeof ContentWorkItemSnapshotAuditRequestSchema
 >;
 export type ContentWorkItemWordPressDraftHandoffResponse = z.infer<
   typeof ContentWorkItemWordPressDraftHandoffResponseSchema
