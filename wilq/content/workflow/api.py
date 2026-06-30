@@ -17,6 +17,10 @@ from wilq.content.drafts.package import (
     ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
+from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationResult,
+    build_structured_draft_generation_contract,
+)
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
     ContentWordPressDraftHandoff,
@@ -100,6 +104,18 @@ class ContentWorkItemDraftPackageResponse(BaseModel):
     preflight_verdict: ContentPreflightVerdict
     sales_brief_result: ContentSalesBriefBuildResult
     draft_package_result: ContentDraftPackageBuildResult
+
+
+class ContentWorkItemStructuredDraftGenerationRequest(BaseModel):
+    item: ContentWorkItem
+    sales_brief: ContentSalesBrief | None = None
+    claim_ledger: ContentClaimLedger | None = None
+    draft_package: ContentDraftPackage | None = None
+
+
+class ContentWorkItemStructuredDraftGenerationResponse(BaseModel):
+    item: ContentWorkItem
+    structured_generation_result: StructuredDraftGenerationResult
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
@@ -248,6 +264,20 @@ def build_content_work_item_draft_package_response(
             preflight=preflight_verdict,
             sales_brief=sales_brief_result.brief,
             claim_ledger=request.claim_ledger,
+        ),
+    )
+
+
+def build_content_work_item_structured_draft_generation_response(
+    request: ContentWorkItemStructuredDraftGenerationRequest,
+) -> ContentWorkItemStructuredDraftGenerationResponse:
+    return ContentWorkItemStructuredDraftGenerationResponse(
+        item=request.item,
+        structured_generation_result=build_structured_draft_generation_contract(
+            item=request.item,
+            sales_brief=request.sales_brief,
+            claim_ledger=request.claim_ledger,
+            draft_package=request.draft_package,
         ),
     )
 

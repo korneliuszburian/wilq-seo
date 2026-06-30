@@ -7,6 +7,7 @@ import {
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
   postContentWorkItemSalesBrief,
+  postContentWorkItemStructuredDraftGeneration,
   postContentWorkItemWordPressDraftHandoff,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview
@@ -30,6 +31,13 @@ const responseByPath: Record<string, unknown> = {
     preflight_verdict: preflightVerdict("draft_allowed"),
     sales_brief_result: { brief: salesBrief(), blockers: [] },
     draft_package_result: { draft_package: draftPackage(), blockers: [] }
+  },
+  "/api/content/work-items/structured-draft-generation": {
+    item: workItem(),
+    structured_generation_result: {
+      contract: structuredDraftGenerationContract(),
+      blockers: []
+    }
   },
   "/api/content/work-items/human-review": {
     item: workItem(),
@@ -110,6 +118,12 @@ describe("content workflow API helpers", () => {
     await postContentWorkItemPreflight({ item: workItem() });
     await postContentWorkItemSalesBrief({ item: workItem(), claim_ledger: {}, seed: {} });
     await postContentWorkItemDraftPackage({ item: workItem(), claim_ledger: {}, seed: {} });
+    await postContentWorkItemStructuredDraftGeneration({
+      item: workItem(),
+      sales_brief: salesBrief(),
+      claim_ledger: {},
+      draft_package: draftPackage()
+    });
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
     await saveContentWorkItemSnapshotAudit({
@@ -134,6 +148,7 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/preflight",
       "/api/content/work-items/sales-brief",
       "/api/content/work-items/draft-package",
+      "/api/content/work-items/structured-draft-generation",
       "/api/content/work-items/human-review",
       "/api/content/work-items/snapshot/human-review",
       "/api/content/work-items/snapshot/audit",
@@ -167,6 +182,22 @@ function workItem(overrides: Record<string, unknown> = {}) {
     inventory_status: "resolved",
     canonical_status: "resolved",
     duplicate_status: "checked",
+    preflight_status: "handoff_allowed",
+    preserve_first_plan_status: "approved",
+    sales_brief_status: "approved",
+    sales_brief_id: "sales_brief_content_work_item_bdo",
+    claim_ledger_status: "approved",
+    claim_ledger_id: "claim_ledger_bdo",
+    draft_package_status: "ready",
+    draft_package_id: "draft_package_content_work_item_bdo",
+    human_review_status: "missing",
+    human_review_id: null,
+    wordpress_handoff_status: "missing",
+    wordpress_post_id: null,
+    measurement_window_status: "planned",
+    measurement_window_id: "measurement_window_content_work_item_bdo",
+    audit_status: "missing",
+    audit_id: null,
     ...overrides
   };
 }
@@ -272,6 +303,54 @@ function draftPackage() {
     claims_used: [],
     claims_removed_or_blocked: [],
     human_review_questions: ["Czy to brzmi jak Ekologus?"],
+    publish_ready: false
+  };
+}
+
+function structuredDraftGenerationContract() {
+  return {
+    schema_name: "wilq_content_structured_draft_v1",
+    strict_schema: true,
+    model_input: {
+      work_item_id: "content_work_item_bdo",
+      language: "pl-PL",
+      draft_kind: "section_draft",
+      title: "BDO dla firm",
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      source_public_url: "https://ekologus.pl/bdo/",
+      preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+      target_reader: "właściciel firmy",
+      buyer_problem: "nie wie, jak podejść do BDO",
+      buyer_trigger: "zbliża się kontrola",
+      search_intent: "informacyjno-usługowy",
+      service_fit: "obsługa środowiskowa",
+      cta_direction: "Skontaktuj się z Ekologus.",
+      sections: [
+        {
+          heading: "Kogo dotyczy BDO",
+          purpose: "Sekcja konspektu do napisania po sprawdzeniu planu.",
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          draft_notes: ["Zachowaj kierunek H1"]
+        }
+      ],
+      source_facts: [
+        {
+          evidence_id: "ev_gsc_bdo",
+          source_connector: "google_search_console",
+          summary: "GSC pokazuje popyt na temat BDO."
+        }
+      ],
+      claims_allowed: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+      claims_removed_or_blocked: [],
+      human_review_questions: ["Czy to brzmi jak Ekologus?"]
+    },
+    output_schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: { sections: { type: "array" } }
+    },
+    system_instruction: "Pisz wyłącznie z przekazanych faktów.",
+    user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
     publish_ready: false
   };
 }

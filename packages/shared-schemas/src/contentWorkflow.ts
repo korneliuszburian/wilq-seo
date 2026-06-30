@@ -176,6 +176,67 @@ export const ContentWorkItemDraftPackageResponseSchema = z.object({
   draft_package_result: ContentDraftPackageBuildResultSchema
 });
 
+export const StructuredDraftSourceFactSchema = z.object({
+  evidence_id: z.string(),
+  source_connector: z.string(),
+  summary: z.string()
+});
+
+export const StructuredDraftSectionInputSchema = z.object({
+  heading: z.string(),
+  purpose: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  draft_notes: z.array(z.string()).default([])
+});
+
+export const StructuredDraftGenerationInputSchema = z.object({
+  work_item_id: z.string(),
+  language: z.literal("pl-PL"),
+  draft_kind: z.enum(["section_draft", "full_draft"]),
+  title: z.string(),
+  final_canonical_url: z.string(),
+  source_public_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  target_reader: z.string(),
+  buyer_problem: z.string(),
+  buyer_trigger: z.string(),
+  search_intent: z.string(),
+  service_fit: z.string(),
+  cta_direction: z.string(),
+  sections: z.array(StructuredDraftSectionInputSchema).default([]),
+  source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
+  claims_allowed: z.array(z.string()).default([]),
+  claims_removed_or_blocked: z.array(z.string()).default([]),
+  human_review_questions: z.array(z.string()).default([])
+});
+
+export const StructuredDraftGenerationContractSchema = z.object({
+  schema_name: z.literal("wilq_content_structured_draft_v1"),
+  strict_schema: z.literal(true),
+  model_input: StructuredDraftGenerationInputSchema,
+  output_schema: z.record(z.string(), z.unknown()),
+  system_instruction: z.string(),
+  user_instruction: z.string(),
+  publish_ready: z.literal(false)
+});
+
+export const StructuredDraftGenerationResultSchema = z.object({
+  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
+  blockers: z.array(ContentWorkflowBlockerSchema).default([])
+});
+
+export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  sales_brief: ContentSalesBriefSchema.nullable().optional(),
+  claim_ledger: z.unknown().nullable().optional(),
+  draft_package: ContentDraftPackageSchema.nullable().optional()
+});
+
+export const ContentWorkItemStructuredDraftGenerationResponseSchema = z.object({
+  item: ContentWorkItemSchema,
+  structured_generation_result: StructuredDraftGenerationResultSchema
+});
+
 export const ContentHumanReviewSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -338,6 +399,12 @@ export type ContentWorkItemSalesBriefResponse = z.infer<
 >;
 export type ContentWorkItemDraftPackageResponse = z.infer<
   typeof ContentWorkItemDraftPackageResponseSchema
+>;
+export type ContentWorkItemStructuredDraftGenerationRequest = z.infer<
+  typeof ContentWorkItemStructuredDraftGenerationRequestSchema
+>;
+export type ContentWorkItemStructuredDraftGenerationResponse = z.infer<
+  typeof ContentWorkItemStructuredDraftGenerationResponseSchema
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema

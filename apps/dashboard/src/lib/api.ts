@@ -15,6 +15,8 @@ import {
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemStructuredDraftGenerationRequestSchema,
+  ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
@@ -55,6 +57,8 @@ import {
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
+  type ContentWorkItemStructuredDraftGenerationRequest,
+  type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemWordPressDraftExecutionRequest,
@@ -178,6 +182,16 @@ export function postContentWorkItemDraftPackage(
     "/api/content/work-items/draft-package",
     ContentWorkItemDraftPackageResponseSchema,
     request
+  );
+}
+
+export function postContentWorkItemStructuredDraftGeneration(
+  request: ContentWorkItemStructuredDraftGenerationRequest
+): Promise<ContentWorkItemStructuredDraftGenerationResponse> {
+  return apiPost(
+    "/api/content/work-items/structured-draft-generation",
+    ContentWorkItemStructuredDraftGenerationResponseSchema,
+    ContentWorkItemStructuredDraftGenerationRequestSchema.parse(request)
   );
 }
 
@@ -348,6 +362,8 @@ export type {
   ContentWorkItemMeasurementWindowResponse,
   ContentWorkItemPreflightResponse,
   ContentWorkItemSalesBriefResponse,
+  ContentWorkItemStructuredDraftGenerationRequest,
+  ContentWorkItemStructuredDraftGenerationResponse,
   ContentWorkItemWordPressDraftExecutionRequest,
   ContentWorkItemWordPressDraftExecutionResponse,
   ContentWorkItemWordPressDraftHandoffResponse,

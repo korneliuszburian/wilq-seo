@@ -441,6 +441,12 @@ API status later contradicts this state.
   write to WordPress or mark content publish-ready. Focused structured draft
   tests, full `tests/content`, Ruff, mypy, complexity audit and
   `git diff --check` passed.
+- Beads task `wilq-seo-up9` exposes that structured draft generation contract
+  through WILQ API and shared dashboard schemas. New
+  `POST /api/content/work-items/structured-draft-generation` returns a typed
+  strict-schema contract or typed blockers; dashboard `api.ts` has only a thin
+  parser/helper. This still does not call OpenAI, generate prose, write to
+  WordPress or mark content publish-ready.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

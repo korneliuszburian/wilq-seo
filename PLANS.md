@@ -994,6 +994,11 @@ Current outcome:
   instructions only after the matching Sales Brief, Claim Ledger and Draft
   Package gates pass. This slice intentionally does not call OpenAI, write to
   WordPress or mark content publish-ready.
+- WILQ API now exposes that structured generation contract at
+  `POST /api/content/work-items/structured-draft-generation`, and shared
+  dashboard schemas parse the response. The endpoint returns a strict-schema
+  contract or typed blockers only; live OpenAI calls and prose generation remain
+  a later explicit adapter slice.
 
 Current risk:
 
