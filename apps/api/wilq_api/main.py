@@ -14,6 +14,7 @@ from apps.api.wilq_api import (
     context_compaction,
     context_ga4,
     context_knowledge,
+    context_marketing,
     context_merchant,
     context_trace,
 )
@@ -117,10 +118,8 @@ from wilq.schemas import (
     ExpertCapability,
     ExpertRuleSummary,
     KnowledgeCard,
-    MarketingBrief,
     MetricFact,
     Opportunity,
-    TacticalQueueResponse,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.metric_store import metric_store
@@ -312,7 +311,7 @@ def _daily_command_context_pack(
             for capability in list_expert_capabilities()
         ],
         "command_center": _compact_command_center_for_daily_context(command),
-        "marketing_brief": _compact_marketing_brief_for_daily_context(brief),
+        "marketing_brief": context_marketing.compact_marketing_brief_for_daily_context(brief),
         "context_pack_compaction": {
             "mode": "daily_default",
             "full_context_available": True,
@@ -536,187 +535,6 @@ def _compact_daily_decision_for_context(decision: dict[str, Any]) -> dict[str, A
     return compact
 
 
-def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[str, Any]:
-    dumped = brief.model_dump(mode="json")
-    compact_sections = []
-    for section in dumped["sections"]:
-        compact_items = []
-        for item in section["items"]:
-            item_copy = dict(item)
-            metric_facts = item_copy.get("metric_facts", [])
-            item_copy["metric_fact_count"] = len(metric_facts)
-            item_copy["metric_facts"] = [
-                context_compaction.compact_metric_fact_for_context(fact)
-                for fact in metric_facts[:3]
-            ]
-            compact_items.append(item_copy)
-        section_copy = dict(section)
-        section_copy["items"] = compact_items
-        compact_sections.append(section_copy)
-    return {
-        "generated_at": dumped["generated_at"],
-        "language": dumped["language"],
-        "strict_instruction": dumped["strict_instruction"],
-        "connector_summary": dumped["connector_summary"],
-        "sections": compact_sections,
-        "top_metric_facts": [
-            context_compaction.compact_metric_fact_for_context(fact)
-            for fact in dumped.get("top_metric_facts", [])[:8]
-        ],
-        "evidence_ids": dumped["evidence_ids"],
-        "action_ids": dumped["action_ids"],
-        "blocker_count": dumped["blocker_count"],
-        "recommendation_count": dumped["recommendation_count"],
-    }
-
-
-def _compact_marketing_brief_for_skill_context(
-    brief: MarketingBrief,
-    *,
-    include_top_metric_facts: bool = True,
-) -> dict[str, Any]:
-    dumped = brief.model_dump(mode="json")
-    compact_sections = []
-    item_total = 0
-    for section in dumped.get("sections", []):
-        items = section.get("items", []) if isinstance(section, dict) else []
-        item_total += len(items)
-        compact_items = []
-        for item in items[:3]:
-            if not isinstance(item, dict):
-                continue
-            metric_facts = item.get("metric_facts")
-            compact_items.append(
-                {
-                    "id": item.get("id"),
-                    "title": item.get("title"),
-                    "kind": item.get("kind"),
-                    "priority": item.get("priority"),
-                    "source_connectors": item.get("source_connectors") or [],
-                    "evidence_ids": (item.get("evidence_ids") or [])[:6],
-                    "action_ids": item.get("action_ids") or [],
-                    "summary": context_compaction.context_pack_text(item.get("summary"), limit=180),
-                    "next_step": context_compaction.context_pack_text(
-                        item.get("next_step"), limit=180
-                    ),
-                    "risk": item.get("risk"),
-                    "metric_fact_count": (
-                        len(metric_facts) if isinstance(metric_facts, list) else 0
-                    ),
-                }
-            )
-        compact_sections.append(
-            {
-                "id": section.get("id"),
-                "title": section.get("title"),
-                "description": context_compaction.context_pack_text(
-                    section.get("description"), limit=180
-                ),
-                "items": compact_items,
-                "items_total": len(items),
-                "items_included": len(compact_items),
-            }
-        )
-    return {
-        "generated_at": dumped.get("generated_at"),
-        "language": dumped.get("language"),
-        "strict_instruction": dumped.get("strict_instruction"),
-        "connector_summary": dumped.get("connector_summary"),
-        "sections": compact_sections,
-        "top_metric_facts": [
-            context_compaction.compact_metric_fact_for_context(fact)
-            for fact in dumped.get("top_metric_facts", [])[:5]
-            if isinstance(fact, dict)
-        ]
-        if include_top_metric_facts
-        else [],
-        "evidence_ids": (dumped.get("evidence_ids") or [])[:20],
-        "action_ids": dumped.get("action_ids") or [],
-        "blocker_count": dumped.get("blocker_count"),
-        "recommendation_count": dumped.get("recommendation_count"),
-        "context_pack_compaction": {
-            "sections_compacted": True,
-            "items_total": item_total,
-            "items_per_section_limit": 3,
-            "top_metric_facts_limit": 5 if include_top_metric_facts else 0,
-            "full_endpoint": "/api/marketing/brief",
-        },
-    }
-
-
-def _compact_tactical_queue_for_skill_context(
-    queue: TacticalQueueResponse,
-) -> dict[str, Any]:
-    dumped = queue.model_dump(mode="json")
-    raw_items = dumped.get("items")
-    items: list[Any] = raw_items if isinstance(raw_items, list) else []
-    raw_groups = dumped.get("compact_groups")
-    groups: list[Any] = raw_groups if isinstance(raw_groups, list) else []
-    compact_items = []
-    for item in items[:8]:
-        if not isinstance(item, dict):
-            continue
-        metric_facts = item.get("metric_facts")
-        compact_items.append(
-            {
-                "id": item.get("id"),
-                "title": item.get("title"),
-                "domain": item.get("domain"),
-                "intent": item.get("intent"),
-                "priority": item.get("priority"),
-                "risk": item.get("risk"),
-                "source_connectors": item.get("source_connectors") or [],
-                "evidence_ids": (item.get("evidence_ids") or [])[:6],
-                "action_ids": item.get("action_ids") or [],
-                "diagnosis": context_compaction.context_pack_text(item.get("diagnosis"), limit=180),
-                "next_step": context_compaction.context_pack_text(item.get("next_step"), limit=180),
-                "blocked_claims": (item.get("blocked_claims") or [])[:6],
-                "metric_fact_count": (len(metric_facts) if isinstance(metric_facts, list) else 0),
-            }
-        )
-    compact_groups = []
-    for group in groups[:8]:
-        if not isinstance(group, dict):
-            continue
-        compact_groups.append(
-            {
-                "id": group.get("id"),
-                "title": group.get("title"),
-                "meta": group.get("meta"),
-                "diagnosis": context_compaction.context_pack_text(
-                    group.get("diagnosis"), limit=180
-                ),
-                "next_step": context_compaction.context_pack_text(
-                    group.get("next_step"), limit=180
-                ),
-                "priority": group.get("priority"),
-                "risk": group.get("risk"),
-                "source_connectors": group.get("source_connectors") or [],
-                "evidence_ids": (group.get("evidence_ids") or [])[:6],
-                "action_ids": group.get("action_ids") or [],
-                "blocked_claims": (group.get("blocked_claims") or [])[:6],
-            }
-        )
-    return {
-        "generated_at": dumped.get("generated_at"),
-        "language": dumped.get("language"),
-        "strict_instruction": dumped.get("strict_instruction"),
-        "items": compact_items,
-        "compact_groups": compact_groups,
-        "evidence_ids": (dumped.get("evidence_ids") or [])[:20],
-        "action_ids": dumped.get("action_ids") or [],
-        "context_pack_compaction": {
-            "items_compacted": True,
-            "items_total": len(items),
-            "items_included": len(compact_items),
-            "compact_groups_total": len(groups),
-            "compact_groups_included": len(compact_groups),
-            "metric_facts_removed": True,
-            "full_endpoint": "/api/marketing/tactical-queue",
-        },
-    }
-
-
 def _daily_context_opportunities(
     opportunities: list[Opportunity],
     source_connectors: set[str],
@@ -756,7 +574,7 @@ def _skill_scoped_context_pack(
         evidence_id for action in scoped_actions for evidence_id in action.evidence_ids
     )
     if skill == "wilq-social-publisher":
-        diagnostics["social_draft_context"] = _social_draft_context_for_context(
+        diagnostics["social_draft_context"] = context_marketing.social_draft_context_for_context(
             scoped_actions,
             connectors,
         )
@@ -929,77 +747,15 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
     if skill == "wilq-social-publisher":
         runtime = build_daily_runtime()
         return {
-            "marketing_brief": _compact_marketing_brief_for_skill_context(
+            "marketing_brief": context_marketing.compact_marketing_brief_for_skill_context(
                 runtime.marketing_brief,
                 include_top_metric_facts=False,
             ),
-            "tactical_queue": _compact_tactical_queue_for_skill_context(build_tactical_queue()),
+            "tactical_queue": context_marketing.compact_tactical_queue_for_skill_context(
+                build_tactical_queue()
+            ),
         }
     return {"marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json")}
-
-
-def _social_draft_context_for_context(
-    actions: list[ActionObject],
-    connectors: list[ConnectorStatus],
-) -> dict[str, Any]:
-    social_actions = sorted(
-        [
-            action
-            for action in actions
-            if action.id
-            in {
-                "act_prepare_facebook_social_drafts",
-                "act_prepare_linkedin_social_drafts",
-            }
-        ],
-        key=lambda action: action.id,
-    )
-    connector_status_by_id = {connector.id: connector for connector in connectors}
-    missing_publish_access = {
-        connector_id: connector_status_by_id[connector_id].missing_credentials
-        for connector_id in ("linkedin", "facebook")
-        if connector_id in connector_status_by_id
-        and connector_status_by_id[connector_id].missing_credentials
-    }
-    source_inputs: list[dict[str, Any]] = []
-    draft_constraints: list[str] = []
-    blocked_claims = ["opublikowanie posta", "wzrost skuteczności social"]
-    source_metric_names: list[str] = []
-    source_connectors: list[str] = []
-    evidence_ids: list[str] = []
-    for action in social_actions:
-        payload = action.payload
-        if isinstance(payload, dict):
-            source_inputs.extend(
-                item for item in payload.get("source_inputs", []) if isinstance(item, dict)
-            )
-            draft_constraints.extend(
-                str(item) for item in payload.get("draft_constraints", []) if item
-            )
-            blocked_claims.extend(str(item) for item in payload.get("blocked_claims", []) if item)
-            source_metric_names.extend(
-                str(item) for item in payload.get("source_metric_names", []) if item
-            )
-            source_connectors.extend(
-                str(item) for item in payload.get("source_connectors", []) if item
-            )
-        evidence_ids.extend(action.evidence_ids)
-    return {
-        "mode": "review_only",
-        "publish_allowed": False,
-        "missing_publish_access": missing_publish_access,
-        "draft_action_ids": [action.id for action in social_actions],
-        "source_inputs": source_inputs[:8],
-        "draft_constraints": sorted(set(draft_constraints)),
-        "blocked_claims": sorted(set(blocked_claims)),
-        "source_metric_names": sorted(set(source_metric_names)),
-        "source_connectors": sorted(set(source_connectors)),
-        "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
-        "operator_next_step": (
-            "Przygotuj szkice do sprawdzenia z dowodami; publikacja pozostaje "
-            "zablokowana do czasu konfiguracji uprawnień LinkedIn/Facebook."
-        ),
-    }
 
 
 def _demand_gen_diagnostics_for_context() -> dict[str, Any]:

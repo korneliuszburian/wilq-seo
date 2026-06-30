@@ -453,6 +453,13 @@ API status later contradicts this state.
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. Full Ruff on the historical `test_api_contracts.py` monolith still
   has existing line-length debt and was not broadened in this slice.
+- `apps/api/wilq_api/context_marketing.py` now owns compact marketing brief,
+  tactical queue and social draft context shaping for Codex context-pack
+  payloads. `main.py` delegates daily marketing brief compaction, social skill
+  diagnostics and social publisher scoped context to that runtime module.
+  Focused daily/social context-pack tests, Ruff/mypy for touched API files,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
