@@ -481,6 +481,15 @@ API status later contradicts this state.
   context-pack and diagnostics tests, Ruff/mypy for touched API files,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- `apps/api/wilq_api/context_action_payload.py` and
+  `apps/api/wilq_api/context_action_previews.py` now own compact action payload
+  and preview-card shaping for Codex context packs. `main.py` delegates daily
+  action review-gate compaction and skill `active_action_objects` compaction to
+  those runtime modules instead of keeping the action payload helpers locally.
+  Focused daily/action/content/GSC/Ads/custom-segment/campaign-builder/Demand
+  Gen/social context-pack tests, Ruff/mypy for touched API files,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

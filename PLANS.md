@@ -713,7 +713,10 @@ Current ready/in-progress Goal 002 slices are:
   campaign-candidate context compaction to `apps/api/wilq_api/context_ads.py`.
   Fourteenth partial slice moved Demand Gen context-pack diagnostics and
   readiness-contract construction to `apps/api/wilq_api/context_demand_gen.py`.
-  Larger action-payload compaction helpers still need extraction.
+  Fifteenth partial slice moved compact action payload and preview-card shaping
+  to `apps/api/wilq_api/context_action_payload.py` and
+  `apps/api/wilq_api/context_action_previews.py`. `main.py` still owns
+  top-level context-pack orchestration and generic daily/skill summary helpers.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
@@ -858,8 +861,9 @@ Current outcome:
   `apps/api/wilq_api/context_merchant.py`; shared compaction, trace, scope,
   knowledge, GA4, Ahrefs, marketing/social, content/GSC, Ads and action helpers
   also have focused runtime modules. Demand Gen context diagnostics also now
-  have a focused runtime module. `main.py` still owns larger action-payload
-  context builders.
+  have a focused runtime module. Action payload and preview compaction now also
+  have focused runtime modules. `main.py` still owns top-level context-pack
+  orchestration and generic daily/skill summary helpers.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision
