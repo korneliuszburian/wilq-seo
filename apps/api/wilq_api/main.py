@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api import context_actions, context_compaction, context_knowledge
+from apps.api.wilq_api import context_actions, context_compaction, context_knowledge, context_trace
 from apps.api.wilq_api.context_cache import (
     clear_skill_context_cache,
     read_skill_context_cache,
@@ -245,8 +245,8 @@ def _daily_command_context_pack(
     active_actions = daily_runtime.core_actions
     connectors = daily_runtime.connectors
     decisions_by_action_id = _daily_decisions_by_action_id(command.daily_decisions)
-    evidence_ids = _daily_context_evidence_ids(command, brief, active_actions)
-    source_connectors = _daily_context_connectors(command, brief, active_actions)
+    evidence_ids = context_trace.daily_context_evidence_ids(command, brief, active_actions)
+    source_connectors = context_trace.daily_context_connectors(command, brief, active_actions)
     scoped_opportunities = _daily_context_opportunities(
         opportunities,
         source_connectors,
@@ -811,33 +811,6 @@ def _compact_tactical_queue_for_skill_context(
     }
 
 
-def _daily_context_evidence_ids(
-    command: CommandCenterResponse,
-    brief: MarketingBrief,
-    actions: list[ActionObject],
-) -> set[str]:
-    evidence_ids = set(brief.evidence_ids)
-    evidence_ids.update(_collect_values_by_key(command.model_dump(mode="json"), "evidence_ids"))
-    for action in actions:
-        evidence_ids.update(action.evidence_ids)
-    return evidence_ids
-
-
-def _daily_context_connectors(
-    command: CommandCenterResponse,
-    brief: MarketingBrief,
-    actions: list[ActionObject],
-) -> set[str]:
-    source_connectors = set(
-        _collect_values_by_key(command.model_dump(mode="json"), "source_connectors")
-    )
-    source_connectors.update(
-        _collect_values_by_key(brief.model_dump(mode="json"), "source_connectors")
-    )
-    source_connectors.update(action.connector for action in actions)
-    return source_connectors
-
-
 def _daily_context_opportunities(
     opportunities: list[Opportunity],
     source_connectors: set[str],
@@ -846,7 +819,7 @@ def _daily_context_opportunities(
     return [
         opportunity
         for opportunity in opportunities
-        if _connectors_intersect(opportunity.source_connectors, source_connectors)
+        if context_trace.connectors_intersect(opportunity.source_connectors, source_connectors)
     ][:max_opportunities]
 
 
@@ -867,7 +840,11 @@ def _skill_scoped_context_pack(
     actions = context_actions.full_context_actions_for_skill(None)
     diagnostics = _diagnostics_for_skill(skill)
     actions = context_actions.skill_context_actions_for_skill(skill, actions, diagnostics)
-    evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
+    evidence_ids = context_trace.evidence_ids_from_context(
+        diagnostics,
+        actions,
+        scoped_connectors,
+    )
     scoped_actions = context_actions.actions_for_scope(actions, scoped_connectors)
     evidence_ids.update(
         evidence_id for action in scoped_actions for evidence_id in action.evidence_ids
@@ -4072,34 +4049,6 @@ def _drop_empty_decision_row_lists_for_context(data: dict[str, Any]) -> None:
             decision["omitted_empty_row_lists_count"] = omitted_count
 
 
-def _evidence_ids_from_context(
-    diagnostics: dict[str, Any],
-    actions: list[ActionObject],
-    scoped_connectors: set[str],
-) -> set[str]:
-    evidence_ids: set[str] = set()
-    for value in diagnostics.values():
-        evidence_ids.update(_collect_values_by_key(value, "evidence_ids"))
-    for action in actions:
-        if action.connector in scoped_connectors:
-            evidence_ids.update(action.evidence_ids)
-    return evidence_ids
-
-
-def _collect_values_by_key(value: Any, key: str) -> set[str]:
-    values: set[str] = set()
-    if isinstance(value, dict):
-        for item_key, item_value in value.items():
-            if item_key == key and isinstance(item_value, list):
-                values.update(str(item) for item in item_value if item)
-            else:
-                values.update(_collect_values_by_key(item_value, key))
-    elif isinstance(value, list):
-        for item in value:
-            values.update(_collect_values_by_key(item, key))
-    return values
-
-
 def _opportunities_for_skill_scope(
     skill: str,
     opportunities: list[Opportunity],
@@ -4109,7 +4058,7 @@ def _opportunities_for_skill_scope(
     scoped = [
         opportunity
         for opportunity in opportunities
-        if _connectors_intersect(opportunity.source_connectors, scoped_connectors)
+        if context_trace.connectors_intersect(opportunity.source_connectors, scoped_connectors)
     ]
     allowed_action_ids = SKILL_ACTION_ID_SCOPES.get(skill)
     if allowed_action_ids is None:
@@ -4119,7 +4068,3 @@ def _opportunities_for_skill_scope(
         for opportunity in scoped
         if opportunity.action_ids and set(opportunity.action_ids).issubset(allowed_action_ids)
     ][:max_opportunities]
-
-
-def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
-    return bool(set(values).intersection(scoped_connectors))

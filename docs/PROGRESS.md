@@ -427,6 +427,12 @@ API status later contradicts this state.
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. This is still behavior-preserving context runtime extraction, not new
   content product behavior.
+- `apps/api/wilq_api/context_trace.py` now owns context traceability helpers for
+  daily evidence IDs, daily source connectors, skill-scoped evidence IDs,
+  recursive value collection and connector-scope intersection. Focused
+  context-pack tests, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
