@@ -18,6 +18,7 @@ from apps.api.wilq_api.routers.expert import router as expert_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
 from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
+from apps.api.wilq_api.routers.opportunities import router as opportunities_router
 from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
 from wilq.actions.google_ads.business_context import (
@@ -103,7 +104,7 @@ from wilq.operator_labels import (
     source_connector_label,
     source_connector_labels,
 )
-from wilq.opportunities.engine import get_opportunity, list_opportunities
+from wilq.opportunities.engine import list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -175,6 +176,7 @@ app.include_router(expert_router)
 app.include_router(jobs_router)
 app.include_router(knowledge_router)
 app.include_router(metrics_router)
+app.include_router(opportunities_router)
 app.include_router(system_router)
 app.include_router(workflows_router)
 
@@ -4623,24 +4625,6 @@ def ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
 @app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)
 def demand_gen_diagnostics() -> DemandGenReadinessContract:
     return _build_demand_gen_readiness_contract()
-
-
-@app.get("/api/opportunities", response_model=list[Opportunity])
-def opportunities() -> list[Opportunity]:
-    return list_opportunities()
-
-
-@app.get("/api/opportunities/{opportunity_id}", response_model=Opportunity)
-def opportunity(opportunity_id: str) -> Opportunity:
-    item = get_opportunity(opportunity_id)
-    if item is None:
-        raise HTTPException(status_code=404, detail=f"Unknown opportunity: {opportunity_id}")
-    return item
-
-
-@app.post("/api/opportunities/recompute", response_model=list[Opportunity])
-def recompute_opportunities() -> list[Opportunity]:
-    return list_opportunities()
 
 
 @app.get("/api/actions")

@@ -187,6 +187,14 @@ API status later contradicts this state.
   response shapes. Focused system API tests, route-shape smoke, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 opportunities router extraction moved `/api/opportunities*`
+  endpoints from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/opportunities.py` without changing endpoint paths
+  or response shapes. Context-pack construction still calls
+  `list_opportunities()` directly until context runtime extraction. Focused
+  opportunities API tests, route-shape smoke, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
