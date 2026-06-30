@@ -695,7 +695,8 @@ Current ready/in-progress Goal 002 slices are:
   `apps/api/wilq_api/context_knowledge.py`; fourth partial slice moved
   context-pack action selection and skill action scoping to
   `apps/api/wilq_api/context_actions.py`; fifth partial slice moved shared
-  compaction helpers to `apps/api/wilq_api/context_compaction.py`. Heavy
+  compaction helpers to `apps/api/wilq_api/context_compaction.py`; sixth partial
+  slice moved neutral context utility helpers into the same module. Heavy
   domain-specific builders and larger diagnostic/action compaction helpers still
   need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after

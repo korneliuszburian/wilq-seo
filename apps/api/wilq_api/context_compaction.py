@@ -126,3 +126,45 @@ def compact_dimensions_for_context(
             value_label if len(value_label) <= 160 else f"{value_label[:157]}..."
         )
     return compact
+
+
+def context_pack_text(value: Any, limit: int) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if len(value) <= limit:
+        return value
+    return f"{value[: limit - 3]}..."
+
+
+def without_metric_facts(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: without_metric_facts(item)
+            for key, item in value.items()
+            if key != "metric_facts" and not key.endswith("_metric_facts")
+        }
+    if isinstance(value, list):
+        return [without_metric_facts(item) for item in value]
+    return value
+
+
+def list_at(data: dict[str, Any], *path: str) -> list[Any]:
+    current: Any = data
+    for key in path:
+        if not isinstance(current, dict):
+            return []
+        current = current.get(key)
+    return current if isinstance(current, list) else []
+
+
+def metric_value(facts: list[Any], name: str) -> float | int | str | None:
+    for fact in facts:
+        if getattr(fact, "name", None) == name:
+            return getattr(fact, "value", None)
+    return None
+
+
+def numeric_or_zero(value: Any) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    return 0.0

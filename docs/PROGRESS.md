@@ -420,6 +420,13 @@ API status later contradicts this state.
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. `main.py` still owns domain-specific context builders and larger
   action/diagnostic compaction functions, so `wilq-seo-462` remains open.
+- `apps/api/wilq_api/context_compaction.py` also now owns neutral context-pack
+  utility helpers for text truncation, recursive metric-fact removal, nested
+  list lookup, simple metric-value lookup and numeric fallback. Focused
+  context-pack/metric/audit tests, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed. This is still behavior-preserving context runtime extraction, not new
+  content product behavior.
 
 ## Latest Verified Product State
 

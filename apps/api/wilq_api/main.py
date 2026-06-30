@@ -370,9 +370,7 @@ def _compact_daily_action_for_context(
                 "decision_id": decision.id,
                 "decision_status": decision.status,
                 "decision_title": decision.title,
-                "human_diagnosis": context_compaction.first_context_sentence(
-                    decision.co_widzimy
-                ),
+                "human_diagnosis": context_compaction.first_context_sentence(decision.co_widzimy),
                 "recommended_reason": decision.bezpieczny_next_step,
                 "source_connectors": decision.source_connectors,
                 "evidence_ids": decision.evidence_ids,
@@ -392,8 +390,8 @@ def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str
         "type": dumped.get("type"),
         "severity": dumped.get("severity"),
         "risk": dumped.get("risk"),
-        "summary": _context_pack_text(dumped.get("summary"), limit=180),
-        "next_step": _context_pack_text(dumped.get("next_step"), limit=160),
+        "summary": context_compaction.context_pack_text(dumped.get("summary"), limit=180),
+        "next_step": context_compaction.context_pack_text(dumped.get("next_step"), limit=160),
         "source_connectors": dumped.get("source_connectors"),
         "evidence_ids": dumped.get("evidence_ids"),
         "action_ids": dumped.get("action_ids"),
@@ -691,8 +689,10 @@ def _compact_marketing_brief_for_skill_context(
                     "source_connectors": item.get("source_connectors") or [],
                     "evidence_ids": (item.get("evidence_ids") or [])[:6],
                     "action_ids": item.get("action_ids") or [],
-                    "summary": _context_pack_text(item.get("summary"), limit=180),
-                    "next_step": _context_pack_text(item.get("next_step"), limit=180),
+                    "summary": context_compaction.context_pack_text(item.get("summary"), limit=180),
+                    "next_step": context_compaction.context_pack_text(
+                        item.get("next_step"), limit=180
+                    ),
                     "risk": item.get("risk"),
                     "metric_fact_count": (
                         len(metric_facts) if isinstance(metric_facts, list) else 0
@@ -703,7 +703,9 @@ def _compact_marketing_brief_for_skill_context(
             {
                 "id": section.get("id"),
                 "title": section.get("title"),
-                "description": _context_pack_text(section.get("description"), limit=180),
+                "description": context_compaction.context_pack_text(
+                    section.get("description"), limit=180
+                ),
                 "items": compact_items,
                 "items_total": len(items),
                 "items_included": len(compact_items),
@@ -760,8 +762,8 @@ def _compact_tactical_queue_for_skill_context(
                 "source_connectors": item.get("source_connectors") or [],
                 "evidence_ids": (item.get("evidence_ids") or [])[:6],
                 "action_ids": item.get("action_ids") or [],
-                "diagnosis": _context_pack_text(item.get("diagnosis"), limit=180),
-                "next_step": _context_pack_text(item.get("next_step"), limit=180),
+                "diagnosis": context_compaction.context_pack_text(item.get("diagnosis"), limit=180),
+                "next_step": context_compaction.context_pack_text(item.get("next_step"), limit=180),
                 "blocked_claims": (item.get("blocked_claims") or [])[:6],
                 "metric_fact_count": (len(metric_facts) if isinstance(metric_facts, list) else 0),
             }
@@ -775,8 +777,12 @@ def _compact_tactical_queue_for_skill_context(
                 "id": group.get("id"),
                 "title": group.get("title"),
                 "meta": group.get("meta"),
-                "diagnosis": _context_pack_text(group.get("diagnosis"), limit=180),
-                "next_step": _context_pack_text(group.get("next_step"), limit=180),
+                "diagnosis": context_compaction.context_pack_text(
+                    group.get("diagnosis"), limit=180
+                ),
+                "next_step": context_compaction.context_pack_text(
+                    group.get("next_step"), limit=180
+                ),
                 "priority": group.get("priority"),
                 "risk": group.get("risk"),
                 "source_connectors": group.get("source_connectors") or [],
@@ -1181,7 +1187,9 @@ def _demand_gen_readiness_contract(
 ) -> DemandGenReadinessContract:
     campaign_rows = [
         row
-        for row in _list_at(ads_diagnostics, "campaign_read_contract", "campaign_rows")
+        for row in context_compaction.list_at(
+            ads_diagnostics, "campaign_read_contract", "campaign_rows"
+        )
         if isinstance(row, dict)
     ]
     channel_counts = _campaign_channel_counts(campaign_rows)
@@ -1429,7 +1437,7 @@ def _compact_campaign_row_for_demand_gen(row: dict[str, Any]) -> AdsCampaignMetr
 def _compact_content_diagnostics_for_context(
     content_diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
-    compact = dict(_without_metric_facts(content_diagnostics))
+    compact = dict(context_compaction.without_metric_facts(content_diagnostics))
     decision_queue = compact.get("decision_queue")
     if isinstance(decision_queue, list):
         compact["decision_queue"] = [
@@ -1566,7 +1574,7 @@ def _is_ahrefs_evidence_id(evidence_id: str) -> bool:
 def _compact_ahrefs_diagnostics_for_context(
     ahrefs_diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
-    compact = dict(_without_metric_facts(ahrefs_diagnostics))
+    compact = dict(context_compaction.without_metric_facts(ahrefs_diagnostics))
     sections = compact.pop("sections", [])
     connector = compact.get("connector")
     if isinstance(connector, dict):
@@ -1678,7 +1686,7 @@ def _compact_labelled_contract_list_for_context(
 def _compact_ga4_diagnostics_for_context(
     ga4_diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
-    compact = dict(_without_metric_facts(ga4_diagnostics))
+    compact = dict(context_compaction.without_metric_facts(ga4_diagnostics))
     sections = compact.pop("sections", [])
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
@@ -1692,7 +1700,7 @@ def _compact_ga4_diagnostics_for_context(
 def _compact_merchant_diagnostics_for_context(
     merchant_diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
-    compact = dict(_without_metric_facts(merchant_diagnostics))
+    compact = dict(context_compaction.without_metric_facts(merchant_diagnostics))
     sections = compact.pop("sections", [])
     issue_clusters = compact.pop("issue_clusters", [])
     decision_queue = compact.pop("decision_queue", [])
@@ -1756,7 +1764,9 @@ def _compact_merchant_issue_clusters_for_context(value: Any) -> list[dict[str, A
                 "rozwiązanie": cluster.get("resolution_label") or "wymaga sprawdzenia w Merchant",
                 "zgłoszenia": cluster.get("product_count"),
                 "country": cluster.get("country"),
-                "next_step": _context_pack_text(cluster.get("next_step"), limit=180),
+                "next_step": context_compaction.context_pack_text(
+                    cluster.get("next_step"), limit=180
+                ),
                 "evidence_ids": (cluster.get("evidence_ids") or [])[:3],
                 "action_id": cluster.get("action_id"),
             }
@@ -1781,8 +1791,8 @@ def _compact_merchant_decision_queue_for_context(value: Any) -> list[dict[str, A
             "problem": decision.get("issue_type_label") or "problem feedu",
             "atrybut": decision.get("affected_attribute_label") or "atrybut",
             "kontekst": (decision.get("reporting_context_label") or "kontekst raportowania"),
-            "summary": _context_pack_text(decision.get("summary"), limit=220),
-            "next_step": _context_pack_text(decision.get("next_step"), limit=200),
+            "summary": context_compaction.context_pack_text(decision.get("summary"), limit=220),
+            "next_step": context_compaction.context_pack_text(decision.get("next_step"), limit=200),
             "metric_tiles": decision.get("metric_tiles") or {},
             "change_preview_total": (
                 len(change_preview) if isinstance(change_preview, list) else 0
@@ -1867,8 +1877,8 @@ def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
     if diagnostic_candidates:
         diagnostic_candidates.sort(
             key=lambda item: (
-                _numeric_or_zero(item.get("impressions")),
-                _numeric_or_zero(item.get("clicks")),
+                context_compaction.numeric_or_zero(item.get("impressions")),
+                context_compaction.numeric_or_zero(item.get("clicks")),
             ),
             reverse=True,
         )
@@ -1907,8 +1917,8 @@ def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
     ]
     candidates.sort(
         key=lambda item: (
-            _numeric_or_zero(item.get("impressions")),
-            _numeric_or_zero(item.get("clicks")),
+            context_compaction.numeric_or_zero(item.get("impressions")),
+            context_compaction.numeric_or_zero(item.get("clicks")),
         ),
         reverse=True,
     )
@@ -1993,10 +2003,10 @@ def _campaign_builder_query_page_candidate(
     return {
         "page": page,
         "query": query,
-        "clicks": _metric_value(facts, "clicks"),
-        "impressions": _metric_value(facts, "impressions"),
-        "ctr": _metric_value(facts, "ctr"),
-        "average_position": _metric_value(facts, "average_position"),
+        "clicks": context_compaction.metric_value(facts, "clicks"),
+        "impressions": context_compaction.metric_value(facts, "impressions"),
+        "ctr": context_compaction.metric_value(facts, "ctr"),
+        "average_position": context_compaction.metric_value(facts, "average_position"),
         "evidence_ids": sorted({fact.evidence_id for fact in facts if fact.evidence_id}),
         "source_connectors": ["google_search_console"],
         "blocked_claims": [
@@ -2007,61 +2017,48 @@ def _campaign_builder_query_page_candidate(
     }
 
 
-def _metric_value(facts: list[MetricFact], name: str) -> float | int | str | None:
-    for fact in facts:
-        if fact.name == name:
-            return fact.value
-    return None
-
-
-def _numeric_or_zero(value: Any) -> float:
-    if isinstance(value, int | float):
-        return float(value)
-    return 0.0
-
-
 def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict[str, Any]:
-    compact = dict(_without_metric_facts(ads_diagnostics))
+    compact = dict(context_compaction.without_metric_facts(ads_diagnostics))
     _compact_latest_refresh_for_context(compact)
-    campaign_rows = _list_at(compact, "campaign_read_contract", "campaign_rows")
-    campaign_triage_rows = _list_at(
+    campaign_rows = context_compaction.list_at(compact, "campaign_read_contract", "campaign_rows")
+    campaign_triage_rows = context_compaction.list_at(
         compact,
         "campaign_triage_read_contract",
         "triage_rows",
     )
-    kpi_rows = _list_at(compact, "derived_kpi_read_contract", "kpi_rows")
-    budget_rows = _list_at(compact, "budget_pacing_read_contract", "budget_rows")
-    search_term_rows = _list_at(
+    kpi_rows = context_compaction.list_at(compact, "derived_kpi_read_contract", "kpi_rows")
+    budget_rows = context_compaction.list_at(compact, "budget_pacing_read_contract", "budget_rows")
+    search_term_rows = context_compaction.list_at(
         compact,
         "search_terms_read_contract",
         "search_term_rows",
     )
-    search_term_ngram_rows = _list_at(
+    search_term_ngram_rows = context_compaction.list_at(
         compact,
         "search_term_ngram_read_contract",
         "ngram_rows",
     )
-    safety_rows = _list_at(
+    safety_rows = context_compaction.list_at(
         compact,
         "search_term_safety_read_contract",
         "safety_rows",
     )
-    keyword_context_rows = _list_at(
+    keyword_context_rows = context_compaction.list_at(
         compact,
         "keyword_match_context_read_contract",
         "context_rows",
     )
-    recommendation_payload_preview = _list_at(
+    recommendation_payload_preview = context_compaction.list_at(
         compact,
         "recommendations_read_contract",
         "payload_preview",
     )
-    custom_payload_preview = _list_at(
+    custom_payload_preview = context_compaction.list_at(
         compact,
         "custom_segments_read_contract",
         "payload_preview",
     )
-    negative_payload_preview = _list_at(
+    negative_payload_preview = context_compaction.list_at(
         compact,
         "negative_keywords_read_contract",
         "payload_preview",
@@ -2077,14 +2074,14 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ADS_CONTEXT_DECISION_ROW_LIMIT,
     )
     _compact_campaign_triage_rows_for_context(
-        _list_at(compact, "campaign_triage_read_contract", "triage_rows")
+        context_compaction.list_at(compact, "campaign_triage_read_contract", "triage_rows")
     )
     _limit_contract_rows(
         compact,
         ("budget_pacing_read_contract", "budget_rows"),
         ADS_CONTEXT_ROW_LIMIT,
     )
-    budget_payload_preview = _list_at(
+    budget_payload_preview = context_compaction.list_at(
         compact,
         "budget_pacing_read_contract",
         "payload_preview",
@@ -2095,10 +2092,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ADS_CONTEXT_DECISION_ROW_LIMIT,
     )
     _compact_budget_apply_preview_for_context(
-        _list_at(compact, "budget_pacing_read_contract", "payload_preview")
+        context_compaction.list_at(compact, "budget_pacing_read_contract", "payload_preview")
     )
     _compact_budget_row_payload_preview_for_context(
-        _list_at(compact, "budget_pacing_read_contract", "budget_rows")
+        context_compaction.list_at(compact, "budget_pacing_read_contract", "budget_rows")
     )
     _limit_contract_rows(
         compact,
@@ -2185,55 +2182,63 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "decision_row_payloads_omitted": True,
         "empty_decision_row_lists_omitted": True,
         "campaign_rows_total": len(campaign_rows),
-        "campaign_rows_included": len(_list_at(compact, "campaign_read_contract", "campaign_rows")),
+        "campaign_rows_included": len(
+            context_compaction.list_at(compact, "campaign_read_contract", "campaign_rows")
+        ),
         "campaign_triage_rows_total": len(campaign_triage_rows),
         "campaign_triage_rows_included": len(
-            _list_at(compact, "campaign_triage_read_contract", "triage_rows")
+            context_compaction.list_at(compact, "campaign_triage_read_contract", "triage_rows")
         ),
         "derived_kpi_rows_total": len(kpi_rows),
         "budget_rows_total": len(budget_rows),
         "budget_rows_included": len(
-            _list_at(compact, "budget_pacing_read_contract", "budget_rows")
+            context_compaction.list_at(compact, "budget_pacing_read_contract", "budget_rows")
         ),
         "budget_payload_preview_total": len(budget_payload_preview),
         "budget_payload_preview_included": len(
-            _list_at(compact, "budget_pacing_read_contract", "payload_preview")
+            context_compaction.list_at(compact, "budget_pacing_read_contract", "payload_preview")
         ),
         "search_term_rows_total": len(search_term_rows),
         "search_term_rows_included": len(
-            _list_at(compact, "search_terms_read_contract", "search_term_rows")
+            context_compaction.list_at(compact, "search_terms_read_contract", "search_term_rows")
         ),
         "search_term_ngram_rows_total": len(search_term_ngram_rows),
         "search_term_ngram_rows_included": len(
-            _list_at(compact, "search_term_ngram_read_contract", "ngram_rows")
+            context_compaction.list_at(compact, "search_term_ngram_read_contract", "ngram_rows")
         ),
         "search_term_safety_rows_total": len(safety_rows),
         "search_term_safety_rows_included": len(
-            _list_at(compact, "search_term_safety_read_contract", "safety_rows")
+            context_compaction.list_at(compact, "search_term_safety_read_contract", "safety_rows")
         ),
         "keyword_match_context_rows_total": len(keyword_context_rows),
         "keyword_match_context_rows_included": len(
-            _list_at(compact, "keyword_match_context_read_contract", "context_rows")
+            context_compaction.list_at(
+                compact, "keyword_match_context_read_contract", "context_rows"
+            )
         ),
         "recommendation_apply_preview_total": len(recommendation_payload_preview),
         "recommendation_apply_preview_included": len(
-            _list_at(compact, "recommendations_read_contract", "payload_preview")
+            context_compaction.list_at(compact, "recommendations_read_contract", "payload_preview")
         ),
         "recommendation_row_payload_previews_omitted": True,
         "custom_segment_payload_preview_total": len(custom_payload_preview),
         "custom_segment_payload_preview_included": len(
-            _list_at(compact, "custom_segments_read_contract", "payload_preview")
+            context_compaction.list_at(compact, "custom_segments_read_contract", "payload_preview")
         ),
         "custom_segment_candidate_search_term_rows_compacted": True,
         "negative_keyword_payload_preview_total": len(negative_payload_preview),
         "negative_keyword_payload_preview_included": len(
-            _list_at(compact, "negative_keywords_read_contract", "payload_preview")
+            context_compaction.list_at(
+                compact, "negative_keywords_read_contract", "payload_preview"
+            )
         ),
         "negative_keyword_candidates_total": len(
-            _list_at(ads_diagnostics, "negative_keywords_read_contract", "candidates")
+            context_compaction.list_at(
+                ads_diagnostics, "negative_keywords_read_contract", "candidates"
+            )
         ),
         "negative_keyword_candidates_included": len(
-            _list_at(compact, "negative_keywords_read_contract", "candidates")
+            context_compaction.list_at(compact, "negative_keywords_read_contract", "candidates")
         ),
         "negative_keyword_candidate_context_rows_compacted": True,
         "optimizer_readiness_compacted": isinstance(
@@ -2275,8 +2280,8 @@ def _compact_ads_strategy_review_readiness_for_context(data: dict[str, Any]) -> 
         "zapis rekomendacji",
         "automatic optimization",
     ]
-    summary = _context_pack_text(contract.get("summary"), limit=170)
-    next_step = _context_pack_text(contract.get("next_step"), limit=160)
+    summary = context_compaction.context_pack_text(contract.get("summary"), limit=170)
+    next_step = context_compaction.context_pack_text(contract.get("next_step"), limit=160)
     compact_contract = {
         key: contract.get(key)
         for key in (
@@ -2387,7 +2392,7 @@ def _compact_ads_optimizer_readiness_for_context(data: dict[str, Any]) -> None:
             if key in item
         }
         if item.get("status") == "blocked":
-            compact_item["next_step"] = _context_pack_text(
+            compact_item["next_step"] = context_compaction.context_pack_text(
                 item.get("next_step"),
                 limit=150,
             )
@@ -2431,7 +2436,7 @@ def _compact_ads_decision_queue_for_context(data: dict[str, Any]) -> None:
         "post_change_performance_window",
         "human_confirm_before_apply",
     ]
-    for decision in _list_at(data, "decision_queue"):
+    for decision in context_compaction.list_at(data, "decision_queue"):
         if not isinstance(decision, dict):
             continue
         for key, limit in (
@@ -2439,7 +2444,7 @@ def _compact_ads_decision_queue_for_context(data: dict[str, Any]) -> None:
             ("rationale", 125),
             ("next_step", 135),
         ):
-            compact_text = _context_pack_text(decision.get(key), limit=limit)
+            compact_text = context_compaction.context_pack_text(decision.get(key), limit=limit)
             if compact_text is not None:
                 decision[key] = compact_text
         decision["allowed_metrics"] = _priority_limited_strings(
@@ -2487,14 +2492,6 @@ def _priority_limited_strings(value: Any, required: list[str], limit: int) -> li
         if len(result) >= limit:
             break
     return result
-
-
-def _context_pack_text(value: Any, limit: int) -> str | None:
-    if not isinstance(value, str):
-        return None
-    if len(value) <= limit:
-        return value
-    return f"{value[: limit - 3]}..."
 
 
 def _compact_budget_row_payload_preview_for_context(rows: list[Any]) -> None:
@@ -3327,7 +3324,9 @@ def _compact_merchant_issue_preview_for_context(
         if not isinstance(item, dict):
             continue
         compact_item = {key: item[key] for key in keep_keys if key in item}
-        compact_item["issue_summary"] = _context_pack_text(item.get("reason"), limit=180)
+        compact_item["issue_summary"] = context_compaction.context_pack_text(
+            item.get("reason"), limit=180
+        )
         required_validation = compact_item.get("required_validation_labels")
         if isinstance(required_validation, list):
             compact_item["required_validation_total"] = len(required_validation)
@@ -3348,7 +3347,7 @@ def _compact_merchant_price_impact_preview_for_context(
     compact = {
         "preview_contract": preview.get("preview_contract"),
         "preview_contract_label": preview.get("preview_contract_label"),
-        "reason": _context_pack_text(preview.get("reason"), limit=180),
+        "reason": context_compaction.context_pack_text(preview.get("reason"), limit=180),
         "api_mutation_ready": preview.get("api_mutation_ready"),
         "apply_allowed": preview.get("apply_allowed"),
         "destructive": preview.get("destructive"),
@@ -3692,9 +3691,7 @@ def _compact_campaign_candidates_for_context(
                 "campaign_status": candidate.get("campaign_status"),
                 "campaign_status_label": candidate.get("campaign_status_label"),
                 "advertising_channel_type": candidate.get("advertising_channel_type"),
-                "advertising_channel_type_label": candidate.get(
-                    "advertising_channel_type_label"
-                ),
+                "advertising_channel_type_label": candidate.get("advertising_channel_type_label"),
                 "review_priority": candidate.get("review_priority"),
                 "review_score": candidate.get("review_score"),
                 "review_reason": candidate.get("review_reason"),
@@ -3723,27 +3720,6 @@ def _compact_campaign_candidates_for_context(
         if len(compact_candidates) >= ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT:
             break
     return compact_candidates
-
-
-def _without_metric_facts(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {
-            key: _without_metric_facts(item)
-            for key, item in value.items()
-            if key != "metric_facts" and not key.endswith("_metric_facts")
-        }
-    if isinstance(value, list):
-        return [_without_metric_facts(item) for item in value]
-    return value
-
-
-def _list_at(data: dict[str, Any], *path: str) -> list[Any]:
-    current: Any = data
-    for key in path:
-        if not isinstance(current, dict):
-            return []
-        current = current.get(key)
-    return current if isinstance(current, list) else []
 
 
 def _limit_contract_rows(
@@ -3804,7 +3780,7 @@ def _limit_candidate_rows(
     rows_key: str,
     limit: int,
 ) -> None:
-    candidates = _list_at(data, *candidates_path)
+    candidates = context_compaction.list_at(data, *candidates_path)
     for candidate in candidates:
         if isinstance(candidate, dict) and isinstance(candidate.get(rows_key), list):
             candidate[rows_key] = candidate[rows_key][:limit]
@@ -3814,13 +3790,13 @@ def _drop_candidate_nested_payload_preview(
     data: dict[str, Any],
     candidates_path: tuple[str, str],
 ) -> None:
-    for candidate in _list_at(data, *candidates_path):
+    for candidate in context_compaction.list_at(data, *candidates_path):
         if isinstance(candidate, dict):
             candidate.pop("payload_preview", None)
 
 
 def _compact_negative_keyword_candidate_context_rows_for_context(data: dict[str, Any]) -> None:
-    candidates = _list_at(data, "negative_keywords_read_contract", "candidates")
+    candidates = context_compaction.list_at(data, "negative_keywords_read_contract", "candidates")
     for candidate in candidates:
         if not isinstance(candidate, dict):
             continue
@@ -3846,7 +3822,7 @@ def _compact_negative_keyword_candidate_context_rows_for_context(data: dict[str,
 
 
 def _compact_custom_segment_candidate_search_term_rows_for_context(data: dict[str, Any]) -> None:
-    candidates = _list_at(data, "custom_segments_read_contract", "candidates")
+    candidates = context_compaction.list_at(data, "custom_segments_read_contract", "candidates")
     for candidate in candidates:
         if not isinstance(candidate, dict):
             continue
@@ -3974,7 +3950,7 @@ def _drop_candidate_keys(
     candidates_path: tuple[str, str],
     keys: tuple[str, ...],
 ) -> None:
-    for candidate in _list_at(data, *candidates_path):
+    for candidate in context_compaction.list_at(data, *candidates_path):
         if not isinstance(candidate, dict):
             continue
         for key in keys:
@@ -3982,7 +3958,7 @@ def _drop_candidate_keys(
 
 
 def _limit_decision_rows(data: dict[str, Any]) -> None:
-    for decision in _list_at(data, "decision_queue"):
+    for decision in context_compaction.list_at(data, "decision_queue"):
         if not isinstance(decision, dict):
             continue
         for rows_key in (
@@ -4032,7 +4008,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
 
 
 def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
-    for decision in _list_at(data, "decision_queue"):
+    for decision in context_compaction.list_at(data, "decision_queue"):
         if not isinstance(decision, dict):
             continue
         for rows_key in (
@@ -4083,7 +4059,7 @@ def _drop_empty_decision_row_lists_for_context(data: dict[str, Any]) -> None:
         "negative_keyword_candidates",
         "negative_keyword_payload_preview",
     )
-    for decision in _list_at(data, "decision_queue"):
+    for decision in context_compaction.list_at(data, "decision_queue"):
         if not isinstance(decision, dict):
             continue
         omitted_count = 0
