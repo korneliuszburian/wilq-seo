@@ -474,6 +474,13 @@ API status later contradicts this state.
   Ads/custom-segment/campaign-builder/Demand Gen context-pack tests, Ruff/mypy
   for touched API files, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- `apps/api/wilq_api/context_demand_gen.py` now owns Demand Gen context-pack
+  diagnostics and readiness-contract construction used by both the skill
+  context and `/api/demand-gen/diagnostics`. `main.py` delegates the Demand Gen
+  router builder and skill payload to that runtime module. Focused Demand Gen
+  context-pack and diagnostics tests, Ruff/mypy for touched API files,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

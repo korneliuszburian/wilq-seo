@@ -19595,7 +19595,7 @@ def test_demand_gen_metric_rows_expose_self_defending_labels() -> None:
 
 
 def test_demand_gen_readiness_uses_ads_summary_view(monkeypatch: pytest.MonkeyPatch) -> None:
-    import apps.api.wilq_api.main as api_main
+    from apps.api.wilq_api import context_demand_gen
 
     requested_views: list[str] = []
 
@@ -19608,16 +19608,16 @@ def test_demand_gen_readiness_uses_ads_summary_view(monkeypatch: pytest.MonkeyPa
         requested_views.append(view)
         return FakeAdsDiagnostics()
 
-    monkeypatch.setattr(api_main, "_demand_gen_google_ads_metric_facts", lambda: [])
-    monkeypatch.setattr(api_main, "_demand_gen_ga4_metric_facts", lambda: [])
-    monkeypatch.setattr(api_main, "build_ads_diagnostics", fake_build_ads_diagnostics)
+    monkeypatch.setattr(context_demand_gen, "_demand_gen_google_ads_metric_facts", lambda: [])
+    monkeypatch.setattr(context_demand_gen, "_demand_gen_ga4_metric_facts", lambda: [])
+    monkeypatch.setattr(context_demand_gen, "build_ads_diagnostics", fake_build_ads_diagnostics)
     monkeypatch.setattr(
-        api_main,
-        "_demand_gen_readiness_contract",
+        context_demand_gen,
+        "_readiness_contract",
         lambda ads, ga4, demand_gen_facts, ga4_facts: "demand_gen_contract",
     )
 
-    assert api_main._build_demand_gen_readiness_contract() == "demand_gen_contract"
+    assert context_demand_gen.build_readiness_contract() == "demand_gen_contract"
     assert requested_views == ["summary"]
 
 
