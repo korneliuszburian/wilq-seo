@@ -3,6 +3,15 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.actions.service import _action_audit_event_label
+from wilq.operator_labels import (
+    connector_refresh_status_label,
+    credential_field_count_label,
+    evidence_count_label,
+    freshness_state_label,
+    metric_fact_label,
+    source_connector_label,
+)
+from wilq.schemas import ConnectorStatus, connector_status_label
 
 
 def first_context_sentence(value: str) -> str:
@@ -183,3 +192,125 @@ def priority_limited_strings(value: Any, required: list[str], limit: int) -> lis
         if len(result) >= limit:
             break
     return result
+
+
+def compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, Any]:
+    raw_evidence_ids = run.get("evidence_ids")
+    evidence_ids: list[Any] = raw_evidence_ids if isinstance(raw_evidence_ids, list) else []
+    raw_missing_credentials = run.get("missing_credentials")
+    missing_credentials: list[Any] = (
+        raw_missing_credentials if isinstance(raw_missing_credentials, list) else []
+    )
+    checked_credentials = (
+        run.get("checked_credentials") if isinstance(run.get("checked_credentials"), list) else []
+    )
+    metric_summary = run.get("metric_summary")
+    metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
+    connector_id = str(run.get("connector_id") or "")
+    metric_labels = [metric_fact_label(key, connector_id) for key in metric_keys]
+    source_label = source_connector_label(str(run.get("connector_id") or ""))
+    status_label = connector_refresh_status_label(run.get("status"))
+    evidence_summary_label = evidence_count_label(str(item) for item in evidence_ids)
+    missing_credentials_summary_label = credential_field_count_label(
+        str(item) for item in missing_credentials
+    )
+    summary = (
+        f"Odczyt danych {source_label}: {status_label}; "
+        f"{evidence_summary_label}; {missing_credentials_summary_label}."
+    )
+    return {
+        "id": run.get("id"),
+        "connector_id": run.get("connector_id"),
+        "status": run.get("status"),
+        "status_label": status_label,
+        "connector_label": source_label,
+        "started_at": run.get("started_at"),
+        "completed_at": run.get("completed_at"),
+        "summary": summary,
+        "evidence_ids": evidence_ids,
+        "missing_credentials": missing_credentials,
+        "checked_credentials": checked_credentials,
+        "external_call_attempted": bool(run.get("external_call_attempted")),
+        "vendor_data_collected": bool(run.get("vendor_data_collected")),
+        "metric_summary": {
+            "metric_key_count": len(metric_keys),
+            "metric_labels": metric_labels[:8],
+            "metric_labels_included": min(len(metric_labels), 8),
+        },
+        "errors": [],
+        "redacted": True,
+    }
+
+
+def compact_connector_status_for_operator_context(
+    connector: ConnectorStatus | dict[str, Any],
+) -> dict[str, Any]:
+    dumped = (
+        connector.model_dump(mode="json")
+        if isinstance(connector, ConnectorStatus)
+        else dict(connector)
+    )
+    freshness = dumped.get("freshness")
+    compact_freshness: Any
+    if isinstance(freshness, dict):
+        freshness_state = freshness.get("state") or "unknown"
+        compact_freshness = {
+            "state": freshness_state,
+            "label": freshness_state_label(str(freshness_state)),
+            "checked_at": freshness.get("checked_at"),
+            "last_success_at": freshness.get("last_success_at"),
+            "notes": freshness.get("notes"),
+        }
+    else:
+        compact_freshness = freshness
+    capabilities = dumped.get("capabilities")
+    supported_actions = dumped.get("supported_actions")
+    missing_credentials = dumped.get("missing_credentials")
+    status_label = dumped.get("status_label") or connector_status_label(
+        str(dumped.get("status") or "unknown")
+    )
+    freshness_label = (
+        compact_freshness.get("label")
+        if isinstance(compact_freshness, dict)
+        else freshness_state_label(None)
+    )
+    return {
+        "id": dumped.get("id"),
+        "label": dumped.get("label"),
+        "status": dumped.get("status"),
+        "status_label": status_label,
+        "configured": dumped.get("configured"),
+        "freshness": compact_freshness,
+        "last_success_at": dumped.get("last_success_at"),
+        "missing_credentials": (
+            missing_credentials if isinstance(missing_credentials, list) else []
+        ),
+        "capability_count": len(capabilities) if isinstance(capabilities, list) else 0,
+        "supported_action_count": (
+            len(supported_actions) if isinstance(supported_actions, list) else 0
+        ),
+        "summary": (
+            f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
+            f"{status_label}; {freshness_label}."
+        ),
+    }
+
+
+def compact_labelled_contract_list_for_context(
+    payload: dict[str, Any],
+    *,
+    raw_key: str,
+    label_key: str,
+) -> None:
+    raw_values = payload.get(raw_key)
+    labels = payload.get(label_key)
+    raw_count = len(raw_values) if isinstance(raw_values, list) else 0
+    if isinstance(labels, list):
+        payload[f"{label_key}_total"] = len(labels)
+        payload[label_key] = labels[:6]
+        payload[f"{label_key}_included"] = len(payload[label_key])
+    elif raw_count:
+        payload[f"{label_key}_total"] = raw_count
+        payload[f"{label_key}_included"] = 0
+    payload[f"{raw_key}_total"] = raw_count
+    payload.pop(raw_key, None)

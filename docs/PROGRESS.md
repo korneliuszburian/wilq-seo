@@ -445,6 +445,14 @@ API status later contradicts this state.
   helper. Focused GA4/Demand Gen context-pack tests, Ruff, mypy for touched API
   files, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- `apps/api/wilq_api/context_ahrefs.py` now owns Ahrefs skill context
+  compaction. Connector-status, refresh-run and labelled-contract compaction
+  helpers moved to `apps/api/wilq_api/context_compaction.py`, and the
+  `test_api_contracts.py` import was moved off the old private `main.py`
+  helper. Focused Ahrefs/context-pack tests, Ruff/mypy for touched API files,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed. Full Ruff on the historical `test_api_contracts.py` monolith still
+  has existing line-length debt and was not broadened in this slice.
 
 ## Latest Verified Product State
 

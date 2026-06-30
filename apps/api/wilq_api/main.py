@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from apps.api.wilq_api import (
     context_actions,
+    context_ahrefs,
     context_compaction,
     context_ga4,
     context_knowledge,
@@ -98,12 +99,9 @@ from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
 )
 from wilq.operator_labels import (
-    connector_refresh_status_label,
-    credential_field_count_label,
     evidence_count_label,
     evidence_source_type_label,
     freshness_state_label,
-    metric_fact_label,
     source_connector_label,
     source_connector_labels,
 )
@@ -123,7 +121,6 @@ from wilq.schemas import (
     MetricFact,
     Opportunity,
     TacticalQueueResponse,
-    connector_status_label,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.metric_store import metric_store
@@ -279,7 +276,7 @@ def _daily_command_context_pack(
         "current_product_rules": CONTEXT_PRODUCT_RULES,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
-            _compact_connector_status_for_operator_context(connector)
+            context_compaction.compact_connector_status_for_operator_context(connector)
             for connector in connectors
             if connector.id in source_connectors
         ],
@@ -407,109 +404,7 @@ def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str
 
 
 def _compact_refresh_run_for_daily_context(run: dict[str, Any]) -> dict[str, Any]:
-    return _compact_refresh_run_for_operator_context(run)
-
-
-def _compact_refresh_run_for_operator_context(run: dict[str, Any]) -> dict[str, Any]:
-    raw_evidence_ids = run.get("evidence_ids")
-    evidence_ids: list[Any] = raw_evidence_ids if isinstance(raw_evidence_ids, list) else []
-    raw_missing_credentials = run.get("missing_credentials")
-    missing_credentials: list[Any] = (
-        raw_missing_credentials if isinstance(raw_missing_credentials, list) else []
-    )
-    checked_credentials = (
-        run.get("checked_credentials") if isinstance(run.get("checked_credentials"), list) else []
-    )
-    metric_summary = run.get("metric_summary")
-    metric_keys = sorted(metric_summary.keys()) if isinstance(metric_summary, dict) else []
-    connector_id = str(run.get("connector_id") or "")
-    metric_labels = [metric_fact_label(key, connector_id) for key in metric_keys]
-    source_label = source_connector_label(str(run.get("connector_id") or ""))
-    status_label = connector_refresh_status_label(run.get("status"))
-    evidence_summary_label = evidence_count_label(str(item) for item in evidence_ids)
-    missing_credentials_summary_label = credential_field_count_label(
-        str(item) for item in missing_credentials
-    )
-    summary = (
-        f"Odczyt danych {source_label}: {status_label}; "
-        f"{evidence_summary_label}; {missing_credentials_summary_label}."
-    )
-    return {
-        "id": run.get("id"),
-        "connector_id": run.get("connector_id"),
-        "status": run.get("status"),
-        "status_label": status_label,
-        "connector_label": source_label,
-        "started_at": run.get("started_at"),
-        "completed_at": run.get("completed_at"),
-        "summary": summary,
-        "evidence_ids": evidence_ids,
-        "missing_credentials": missing_credentials,
-        "checked_credentials": checked_credentials,
-        "external_call_attempted": bool(run.get("external_call_attempted")),
-        "vendor_data_collected": bool(run.get("vendor_data_collected")),
-        "metric_summary": {
-            "metric_key_count": len(metric_keys),
-            "metric_labels": metric_labels[:8],
-            "metric_labels_included": min(len(metric_labels), 8),
-        },
-        "errors": [],
-        "redacted": True,
-    }
-
-
-def _compact_connector_status_for_operator_context(
-    connector: ConnectorStatus | dict[str, Any],
-) -> dict[str, Any]:
-    dumped = (
-        connector.model_dump(mode="json")
-        if isinstance(connector, ConnectorStatus)
-        else dict(connector)
-    )
-    freshness = dumped.get("freshness")
-    compact_freshness: Any
-    if isinstance(freshness, dict):
-        freshness_state = freshness.get("state") or "unknown"
-        compact_freshness = {
-            "state": freshness_state,
-            "label": freshness_state_label(str(freshness_state)),
-            "checked_at": freshness.get("checked_at"),
-            "last_success_at": freshness.get("last_success_at"),
-            "notes": freshness.get("notes"),
-        }
-    else:
-        compact_freshness = freshness
-    capabilities = dumped.get("capabilities")
-    supported_actions = dumped.get("supported_actions")
-    missing_credentials = dumped.get("missing_credentials")
-    status_label = dumped.get("status_label") or connector_status_label(
-        str(dumped.get("status") or "unknown")
-    )
-    freshness_label = (
-        compact_freshness.get("label")
-        if isinstance(compact_freshness, dict)
-        else freshness_state_label(None)
-    )
-    return {
-        "id": dumped.get("id"),
-        "label": dumped.get("label"),
-        "status": dumped.get("status"),
-        "status_label": status_label,
-        "configured": dumped.get("configured"),
-        "freshness": compact_freshness,
-        "last_success_at": dumped.get("last_success_at"),
-        "missing_credentials": (
-            missing_credentials if isinstance(missing_credentials, list) else []
-        ),
-        "capability_count": len(capabilities) if isinstance(capabilities, list) else 0,
-        "supported_action_count": (
-            len(supported_actions) if isinstance(supported_actions, list) else 0
-        ),
-        "summary": (
-            f"Źródło danych {dumped.get('label') or dumped.get('id')}: "
-            f"{status_label}; {freshness_label}."
-        ),
-    }
+    return context_compaction.compact_refresh_run_for_operator_context(run)
 
 
 def _compact_evidence_for_operator_context(evidence: Evidence) -> dict[str, Any]:
@@ -893,7 +788,7 @@ def _skill_scoped_context_pack(
         "current_product_rules": CONTEXT_PRODUCT_RULES,
         "available_connectors": [connector.id for connector in connectors],
         "connector_status": [
-            _compact_connector_status_for_operator_context(connector)
+            context_compaction.compact_connector_status_for_operator_context(connector)
             for connector in connectors
             if connector.id in scoped_connectors
         ],
@@ -906,7 +801,7 @@ def _skill_scoped_context_pack(
             for action in scoped_actions
         ],
         "connector_refresh_runs": [
-            _compact_refresh_run_for_operator_context(run.model_dump(mode="json"))
+            context_compaction.compact_refresh_run_for_operator_context(run.model_dump(mode="json"))
             for run in list_connector_refresh_runs()[:25]
             if run.connector_id in scoped_connectors
         ][:connector_refresh_run_limit],
@@ -986,7 +881,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         }
     if skill == "wilq-ahrefs-gap-finder":
         return {
-            "ahrefs_diagnostics": _compact_ahrefs_diagnostics_for_context(
+            "ahrefs_diagnostics": context_ahrefs.compact_ahrefs_diagnostics_for_context(
                 build_ahrefs_diagnostics().model_dump(mode="json")
             )
         }
@@ -1437,14 +1332,14 @@ def _compact_content_diagnostics_for_context(
     connectors = compact.get("connectors")
     if isinstance(connectors, list):
         compact["connectors"] = [
-            _compact_connector_status_for_operator_context(connector)
+            context_compaction.compact_connector_status_for_operator_context(connector)
             for connector in connectors
             if isinstance(connector, dict)
         ]
     latest_refreshes = compact.get("latest_refreshes")
     if isinstance(latest_refreshes, list):
         compact["latest_refreshes"] = [
-            _compact_refresh_run_for_operator_context(refresh)
+            context_compaction.compact_refresh_run_for_operator_context(refresh)
             for refresh in latest_refreshes
             if isinstance(refresh, dict)
         ]
@@ -1557,118 +1452,6 @@ def _compact_gsc_content_diagnostics_for_context(
 
 def _is_ahrefs_evidence_id(evidence_id: str) -> bool:
     return "_ahrefs" in evidence_id
-
-
-def _compact_ahrefs_diagnostics_for_context(
-    ahrefs_diagnostics: dict[str, Any],
-) -> dict[str, Any]:
-    compact = dict(context_compaction.without_metric_facts(ahrefs_diagnostics))
-    sections = compact.pop("sections", [])
-    connector = compact.get("connector")
-    if isinstance(connector, dict):
-        compact["connector"] = _compact_connector_status_for_operator_context(connector)
-    connector_status = compact.get("connector_status")
-    if isinstance(connector_status, dict):
-        compact["connector_status"] = _compact_connector_status_for_operator_context(
-            connector_status
-        )
-    latest_refresh = compact.get("latest_refresh")
-    if isinstance(latest_refresh, dict):
-        compact["latest_refresh"] = _compact_refresh_run_for_operator_context(latest_refresh)
-    gap_contract = compact.get("gap_read_contract")
-    if isinstance(gap_contract, dict):
-        _compact_labelled_contract_list_for_context(
-            gap_contract,
-            raw_key="available_read_contracts",
-            label_key="available_read_contract_labels",
-        )
-        _compact_labelled_contract_list_for_context(
-            gap_contract,
-            raw_key="allowed_evidence",
-            label_key="allowed_evidence_labels",
-        )
-        _compact_labelled_contract_list_for_context(
-            gap_contract,
-            raw_key="missing_read_contracts",
-            label_key="missing_read_contract_labels",
-        )
-        gap_records = gap_contract.pop("gap_records", [])
-        gap_record_count = gap_contract.get("gap_record_count")
-        if gap_record_count is None:
-            gap_contract["gap_record_count"] = (
-                len(gap_records) if isinstance(gap_records, list) else 0
-            )
-        gap_contract["gap_records_omitted"] = True
-        gap_contract["gap_records_total"] = len(gap_records) if isinstance(gap_records, list) else 0
-    operator_summary = compact.get("operator_summary")
-    if isinstance(operator_summary, dict):
-        _compact_labelled_contract_list_for_context(
-            operator_summary,
-            raw_key="available_read_contracts",
-            label_key="available_read_contract_labels",
-        )
-        _compact_labelled_contract_list_for_context(
-            operator_summary,
-            raw_key="missing_read_contracts",
-            label_key="missing_read_contract_labels",
-        )
-    decision_queue = compact.get("decision_queue")
-    if isinstance(decision_queue, list):
-        compact["decision_queue"] = [
-            _compact_ahrefs_decision_for_context(decision)
-            for decision in decision_queue
-            if isinstance(decision, dict)
-        ]
-    compact["context_pack_compaction"] = {
-        "metric_facts_removed": True,
-        "sections_omitted": True,
-        "sections_total": len(sections) if isinstance(sections, list) else 0,
-        "latest_refresh_compacted": isinstance(latest_refresh, dict),
-        "gap_records_omitted": isinstance(gap_contract, dict),
-        "full_endpoint": "/api/ahrefs/diagnostics",
-    }
-    return compact
-
-
-def _compact_ahrefs_decision_for_context(decision: dict[str, Any]) -> dict[str, Any]:
-    compact = dict(decision)
-    _compact_labelled_contract_list_for_context(
-        compact,
-        raw_key="allowed_evidence",
-        label_key="allowed_evidence_labels",
-    )
-    _compact_labelled_contract_list_for_context(
-        compact,
-        raw_key="missing_read_contracts",
-        label_key="missing_read_contract_labels",
-    )
-    metric_fact_labels = compact.get("metric_fact_labels")
-    if isinstance(metric_fact_labels, dict):
-        labels = list(metric_fact_labels.values())
-        compact["metric_fact_labels_total"] = len(labels)
-        compact["metric_fact_labels"] = labels[:8]
-        compact["metric_fact_labels_included"] = len(compact["metric_fact_labels"])
-    return compact
-
-
-def _compact_labelled_contract_list_for_context(
-    payload: dict[str, Any],
-    *,
-    raw_key: str,
-    label_key: str,
-) -> None:
-    raw_values = payload.get(raw_key)
-    labels = payload.get(label_key)
-    raw_count = len(raw_values) if isinstance(raw_values, list) else 0
-    if isinstance(labels, list):
-        payload[f"{label_key}_total"] = len(labels)
-        payload[label_key] = labels[:6]
-        payload[f"{label_key}_included"] = len(payload[label_key])
-    elif raw_count:
-        payload[f"{label_key}_total"] = raw_count
-        payload[f"{label_key}_included"] = 0
-    payload[f"{raw_key}_total"] = raw_count
-    payload.pop(raw_key, None)
 
 
 def _content_landing_context_for_campaign_builder() -> dict[str, Any]:

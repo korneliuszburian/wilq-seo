@@ -14,11 +14,11 @@ from apps.api.wilq_api.context_compaction import (
     compact_audit_event_for_daily_context,
     compact_audit_event_for_skill_context,
     compact_metric_fact_for_context,
+    compact_refresh_run_for_operator_context,
 )
 from apps.api.wilq_api.main import (
     _compact_evidence_for_operator_context,
     _compact_knowledge_card_for_operator_context,
-    _compact_refresh_run_for_operator_context,
     app,
 )
 from wilq.actions.content_refresh import (
@@ -1490,7 +1490,7 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
         == "2 elementy wiedzy użyte w decyzji"
     )
 
-    compact = _compact_refresh_run_for_operator_context(
+    compact = compact_refresh_run_for_operator_context(
         {
             "id": "refresh_unknown_vendor",
             "connector_id": unknown_connector,
@@ -1528,7 +1528,7 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert "dowody 1" not in compact["summary"]
     assert "braki dostępu 1" not in compact["summary"]
 
-    configured_compact = _compact_refresh_run_for_operator_context(
+    configured_compact = compact_refresh_run_for_operator_context(
         {
             "id": "refresh_configured",
             "connector_id": "google_merchant_center",
