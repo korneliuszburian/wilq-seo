@@ -190,6 +190,41 @@ def _handoff_audit(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _wordpress_handoff(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": "wordpress_draft_handoff_content_work_item_bdo",
+        "work_item_id": "content_work_item_bdo",
+        "draft_package_id": "draft_package_content_work_item_bdo",
+        "human_review_id": "human_review_bdo",
+        "audit_id": "audit_bdo",
+        "title": "BDO dla firm: co trzeba sprawdzić przed działaniem",
+        "final_canonical_url": "https://ekologus.pl/bdo/",
+        "intended_final_url": "https://ekologus.pl/bdo/",
+        "preview_url": "https://ekologus.dev.proudsite.pl/bdo/",
+        "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _baseline_period(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "start": "2026-05-01",
+        "end": "2026-05-31",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _observation_period(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "start": "2026-07-01",
+        "end": "2026-07-31",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
     assert response.status_code == 200
@@ -247,6 +282,22 @@ def _post_wordpress_handoff(payload: dict[str, Any]) -> dict[str, Any]:
     assert response.status_code == 200
     data = response.json()
     assert sorted(data) == ["handoff_result", "item"]
+    return data
+
+
+def _post_measurement_window(payload: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post(
+        "/api/content/work-items/measurement-window",
+        json=payload,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert sorted(data) == [
+        "item",
+        "measurement_window_result",
+        "outcome_blockers",
+        "updated_item",
+    ]
     return data
 
 
@@ -626,4 +677,94 @@ def test_content_work_item_wordpress_handoff_api_blocks_dev_canonical() -> None:
     assert data["handoff_result"]["handoff"] is None
     assert "invalid_final_canonical" in [
         blocker["code"] for blocker in data["handoff_result"]["blockers"]
+    ]
+
+
+def test_content_work_item_measurement_window_api_schedules_planned_window() -> None:
+    data = _post_measurement_window(
+        {
+            "item": _item(),
+            "handoff": _wordpress_handoff(),
+            "baseline_period": _baseline_period(),
+            "observation_period": _observation_period(),
+            "allowed_metrics": ["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
+            "source_connectors": ["google_search_console", "google_analytics_4"],
+        }
+    )
+
+    result = data["measurement_window_result"]
+    assert result["blockers"] == []
+    window = result["window"]
+    assert window["id"] == "measurement_window_content_work_item_bdo"
+    assert window["status"] == "planned"
+    assert window["handoff_id"] == "wordpress_draft_handoff_content_work_item_bdo"
+    assert window["content_url"] == "https://ekologus.pl/bdo/"
+    assert window["earliest_verdict_date"] == "2026-08-01"
+    assert window["success_claim_allowed"] is False
+    assert window["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+    assert data["updated_item"]["measurement_window_status"] == "planned"
+    assert (
+        data["updated_item"]["measurement_window_id"]
+        == "measurement_window_content_work_item_bdo"
+    )
+    assert [blocker["code"] for blocker in data["outcome_blockers"]] == [
+        "measurement_window_not_ready"
+    ]
+
+
+def test_content_work_item_measurement_window_api_blocks_missing_metrics() -> None:
+    data = _post_measurement_window(
+        {
+            "item": _item(),
+            "handoff": _wordpress_handoff(),
+            "baseline_period": _baseline_period(),
+            "observation_period": _observation_period(),
+            "allowed_metrics": [],
+            "source_connectors": ["google_search_console"],
+        }
+    )
+
+    assert data["measurement_window_result"]["window"] is None
+    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
+        "missing_allowed_metrics"
+    ]
+    assert data["updated_item"]["measurement_window_status"] == "missing"
+    assert data["outcome_blockers"] == []
+
+
+def test_content_work_item_measurement_window_api_blocks_missing_connectors() -> None:
+    data = _post_measurement_window(
+        {
+            "item": _item(),
+            "handoff": _wordpress_handoff(),
+            "baseline_period": _baseline_period(),
+            "observation_period": _observation_period(),
+            "allowed_metrics": ["gsc_clicks"],
+            "source_connectors": [],
+        }
+    )
+
+    assert data["measurement_window_result"]["window"] is None
+    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
+        "missing_source_connector"
+    ]
+
+
+def test_content_work_item_measurement_window_api_blocks_dev_canonical() -> None:
+    data = _post_measurement_window(
+        {
+            "item": _item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"),
+            "handoff": _wordpress_handoff(
+                final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"
+            ),
+            "baseline_period": _baseline_period(),
+            "observation_period": _observation_period(),
+            "allowed_metrics": ["gsc_clicks"],
+            "source_connectors": ["google_search_console"],
+        }
+    )
+
+    assert data["measurement_window_result"]["window"] is None
+    assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
+        "invalid_final_canonical"
     ]

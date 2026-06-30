@@ -7,6 +7,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementWindowRequest,
+    ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
     ContentWorkItemPreflightResponse,
     ContentWorkItemSalesBriefRequest,
@@ -15,6 +17,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemWordPressDraftHandoffResponse,
     build_content_work_item_draft_package_response,
     build_content_work_item_human_review_response,
+    build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
     build_content_work_item_wordpress_draft_handoff_response,
@@ -71,3 +74,13 @@ def content_work_item_wordpress_draft_handoff(
     request: ContentWorkItemWordPressDraftHandoffRequest,
 ) -> ContentWorkItemWordPressDraftHandoffResponse:
     return build_content_work_item_wordpress_draft_handoff_response(request)
+
+
+@router.post(
+    "/api/content/work-items/measurement-window",
+    response_model=ContentWorkItemMeasurementWindowResponse,
+)
+def content_work_item_measurement_window(
+    request: ContentWorkItemMeasurementWindowRequest,
+) -> ContentWorkItemMeasurementWindowResponse:
+    return build_content_work_item_measurement_window_response(request)

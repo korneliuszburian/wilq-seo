@@ -16,6 +16,7 @@ from wilq.content.drafts.package import (
 )
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
+    ContentWordPressDraftHandoff,
     ContentWordPressDraftHandoffResult,
     build_content_wordpress_draft_handoff,
 )
@@ -24,6 +25,15 @@ from wilq.content.inventory.records import (
     ContentInventoryRecord,
     ContentInventoryResolution,
     resolve_content_inventory,
+)
+from wilq.content.measurement.window import (
+    ContentDateRange,
+    ContentMeasurementMetric,
+    ContentMeasurementWindowBlocker,
+    ContentMeasurementWindowBuildResult,
+    apply_content_measurement_window_to_work_item,
+    build_content_measurement_window,
+    content_measurement_window_outcome_blockers,
 )
 from wilq.content.preflight.workflow import (
     ContentPreflightVerdict,
@@ -108,6 +118,22 @@ class ContentWorkItemWordPressDraftHandoffRequest(BaseModel):
 class ContentWorkItemWordPressDraftHandoffResponse(BaseModel):
     item: ContentWorkItem
     handoff_result: ContentWordPressDraftHandoffResult
+
+
+class ContentWorkItemMeasurementWindowRequest(BaseModel):
+    item: ContentWorkItem
+    handoff: ContentWordPressDraftHandoff | None = None
+    baseline_period: ContentDateRange
+    observation_period: ContentDateRange
+    allowed_metrics: list[ContentMeasurementMetric] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+
+
+class ContentWorkItemMeasurementWindowResponse(BaseModel):
+    item: ContentWorkItem
+    updated_item: ContentWorkItem
+    measurement_window_result: ContentMeasurementWindowBuildResult
+    outcome_blockers: list[ContentMeasurementWindowBlocker] = Field(default_factory=list)
 
 
 def build_content_work_item_preflight_response(
@@ -220,6 +246,37 @@ def build_content_work_item_wordpress_draft_handoff_response(
             draft_package=request.draft_package,
             human_review=request.human_review,
             audit=request.audit,
+        ),
+    )
+
+
+def build_content_work_item_measurement_window_response(
+    request: ContentWorkItemMeasurementWindowRequest,
+) -> ContentWorkItemMeasurementWindowResponse:
+    measurement_result = build_content_measurement_window(
+        item=request.item,
+        handoff=request.handoff,
+        baseline_period=request.baseline_period,
+        observation_period=request.observation_period,
+        allowed_metrics=request.allowed_metrics,
+        source_connectors=request.source_connectors,
+    )
+    updated_item = (
+        apply_content_measurement_window_to_work_item(
+            request.item,
+            measurement_result.window,
+        )
+        if measurement_result.window is not None
+        else request.item
+    )
+    return ContentWorkItemMeasurementWindowResponse(
+        item=request.item,
+        updated_item=updated_item,
+        measurement_window_result=measurement_result,
+        outcome_blockers=(
+            content_measurement_window_outcome_blockers(measurement_result.window)
+            if measurement_result.window is not None
+            else []
         ),
     )
 

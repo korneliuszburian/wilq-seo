@@ -332,6 +332,16 @@ API status later contradicts this state.
   and evidence preservation. Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 Measurement Window API bridge started under `wilq-seo-44e`.
+  `POST /api/content/work-items/measurement-window` now calls the typed Content
+  Measurement Window v1 builder and returns a planned observation window or
+  typed blockers. The response applies `measurement_window_status/id` to the
+  returned work item only when a window is created and exposes outcome blockers
+  while `success_claim_allowed=false`. Focused API tests prove valid planned
+  window after handoff, missing-metrics blocker, missing-source-connector
+  blocker, dev canonical blocker, early outcome blocker and evidence
+  preservation. Ruff, mypy and
+  `scripts/audit_complexity.py --changed --allow-frozen` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

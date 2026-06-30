@@ -799,6 +799,12 @@ Current ready/in-progress Goal 002 slices are:
   Draft Handoff v1 as a typed prepare-only, draft-only contract. It returns
   handoff blockers or a prepared handoff, but does not call WordPress, create a
   post, publish content or allow destructive updates.
+- `wilq-seo-44e` - content measurement window API bridge, closed.
+  `POST /api/content/work-items/measurement-window` exposes Content Measurement
+  Window v1 as a typed contract after WordPress draft handoff. It returns a
+  planned observation window, applies `measurement_window_status/id` to the
+  returned work item, keeps `success_claim_allowed=false` while planned and
+  exposes outcome blockers before `earliest_verdict_date`.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
