@@ -342,6 +342,15 @@ API status later contradicts this state.
   blocker, dev canonical blocker, early outcome blocker and evidence
   preservation. Ruff, mypy and
   `scripts/audit_complexity.py --changed --allow-frozen` passed.
+- Goal 002 API chain smoke started under `wilq-seo-8tu`. A focused
+  fixture-backed API test now calls the content work item endpoints in order:
+  preflight, Sales Brief, Draft Package, Human Review, WordPress draft handoff
+  and Measurement Window. The proof asserts evidence IDs persist,
+  `publish_ready=false`, WordPress `publish_allowed=false`,
+  `destructive_update_allowed=false`, Measurement Window
+  `success_claim_allowed=false` and early outcome blockers are present. Focused
+  pytest, Ruff, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

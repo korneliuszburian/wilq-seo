@@ -805,6 +805,11 @@ Current ready/in-progress Goal 002 slices are:
   planned observation window, applies `measurement_window_status/id` to the
   returned work item, keeps `success_claim_allowed=false` while planned and
   exposes outcome blockers before `earliest_verdict_date`.
+- `wilq-seo-8tu` - content workflow API chain smoke, closed.
+  Focused API tests now prove one fixture-backed Ekologus content work item can
+  pass through preflight, Sales Brief, Draft Package, Human Review, WordPress
+  draft handoff and Measurement Window endpoints while preserving evidence IDs,
+  draft-only WordPress safety and blocked early outcome claims.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

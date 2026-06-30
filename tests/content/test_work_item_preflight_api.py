@@ -768,3 +768,132 @@ def test_content_work_item_measurement_window_api_blocks_dev_canonical() -> None
     assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
         "invalid_final_canonical"
     ]
+
+
+def test_content_work_item_api_chain_keeps_all_content_production_gates() -> None:
+    preflight = _post_preflight(
+        {
+            "item": _item(),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+        }
+    )
+    assert preflight["preflight_verdict"]["status"] == "plan_allowed"
+    assert preflight["preflight_verdict"]["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+
+    sales_brief = _post_sales_brief(
+        {
+            "item": _item(
+                preserve_first_plan_status="approved",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": _draft_claim_ledger(),
+            "seed": _sales_brief_seed(),
+        }
+    )
+    brief = sales_brief["sales_brief_result"]["brief"]
+    assert brief["id"] == "sales_brief_content_work_item_bdo"
+    assert brief["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+
+    draft_package = _post_draft_package(
+        {
+            "item": _item(
+                preflight_status="draft_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id=brief["id"],
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": _draft_claim_ledger(),
+            "seed": _sales_brief_seed(),
+            "sales_brief": brief,
+        }
+    )
+    draft = draft_package["draft_package_result"]["draft_package"]
+    assert draft["id"] == "draft_package_content_work_item_bdo"
+    assert draft["brief_id"] == brief["id"]
+    assert draft["publish_ready"] is False
+    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
+        "ev_gsc_bdo",
+        "ev_wp_bdo",
+    ]
+
+    human_review = _post_human_review(
+        {
+            "item": _item(
+                preflight_status="handoff_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id=brief["id"],
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                draft_package_status="ready",
+                draft_package_id=draft["id"],
+                audit_status="recorded",
+                audit_id="audit_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "review": _human_review(draft_package_id=draft["id"]),
+            "draft_package": draft,
+            "claim_ledger": _draft_claim_ledger(),
+        }
+    )
+    reviewed_item = human_review["reviewed_item"]
+    assert human_review["wordpress_handoff_allowed"] is True
+    assert reviewed_item["human_review_status"] == "approved"
+
+    wordpress_handoff = _post_wordpress_handoff(
+        {
+            "item": reviewed_item,
+            "draft_package": draft,
+            "human_review": _human_review(draft_package_id=draft["id"]),
+            "audit": _handoff_audit(),
+        }
+    )
+    handoff = wordpress_handoff["handoff_result"]["handoff"]
+    assert handoff["post_status"] == "draft"
+    assert handoff["publish_allowed"] is False
+    assert handoff["destructive_update_allowed"] is False
+    assert handoff["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+
+    measurement = _post_measurement_window(
+        {
+            "item": _item(
+                preflight_status="handoff_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id=brief["id"],
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                draft_package_status="ready",
+                draft_package_id=draft["id"],
+                human_review_status="approved",
+                human_review_id="human_review_bdo",
+                audit_status="recorded",
+                audit_id="audit_bdo",
+                measurement_window_status="missing",
+                measurement_window_id=None,
+            ),
+            "handoff": handoff,
+            "baseline_period": _baseline_period(),
+            "observation_period": _observation_period(),
+            "allowed_metrics": ["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
+            "source_connectors": ["google_search_console", "google_analytics_4"],
+        }
+    )
+    window = measurement["measurement_window_result"]["window"]
+    assert window["status"] == "planned"
+    assert window["success_claim_allowed"] is False
+    assert measurement["updated_item"]["measurement_window_id"] == window["id"]
+    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
+        "measurement_window_not_ready"
+    ]
