@@ -999,6 +999,12 @@ Current outcome:
   dashboard schemas parse the response. The endpoint returns a strict-schema
   contract or typed blockers only; live OpenAI calls and prose generation remain
   a later explicit adapter slice.
+- Structured generation now also has a safe OpenAI Structured Outputs runtime
+  dry-run at `POST /api/content/work-items/structured-draft-runtime`. It builds
+  the strict `json_schema` payload that a future OpenAI SDK adapter will send,
+  blocks live mode by default and parses fake structured outputs in tests. It
+  still does not call OpenAI from WILQ API, generate prose, write to WordPress
+  or mark content publish-ready.
 
 Current risk:
 

@@ -12,12 +12,18 @@ from wilq.content.briefs.sales import (
     build_content_sales_brief,
 )
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
+from wilq.content.drafts.openai_runtime import (
+    OpenAIStructuredDraftRuntimeMode,
+    OpenAIStructuredDraftRuntimeResult,
+    execute_openai_structured_draft_generation,
+)
 from wilq.content.drafts.package import (
     ContentDraftPackage,
     ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
 from wilq.content.drafts.structured_generation import (
+    StructuredDraftGenerationContract,
     StructuredDraftGenerationResult,
     build_structured_draft_generation_contract,
 )
@@ -116,6 +122,16 @@ class ContentWorkItemStructuredDraftGenerationRequest(BaseModel):
 class ContentWorkItemStructuredDraftGenerationResponse(BaseModel):
     item: ContentWorkItem
     structured_generation_result: StructuredDraftGenerationResult
+
+
+class ContentWorkItemStructuredDraftRuntimeRequest(BaseModel):
+    contract: StructuredDraftGenerationContract | None = None
+    model: str | None = None
+    mode: OpenAIStructuredDraftRuntimeMode = "dry_run"
+
+
+class ContentWorkItemStructuredDraftRuntimeResponse(BaseModel):
+    runtime_result: OpenAIStructuredDraftRuntimeResult
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
@@ -279,6 +295,19 @@ def build_content_work_item_structured_draft_generation_response(
             claim_ledger=request.claim_ledger,
             draft_package=request.draft_package,
         ),
+    )
+
+
+def build_content_work_item_structured_draft_runtime_response(
+    request: ContentWorkItemStructuredDraftRuntimeRequest,
+) -> ContentWorkItemStructuredDraftRuntimeResponse:
+    return ContentWorkItemStructuredDraftRuntimeResponse(
+        runtime_result=execute_openai_structured_draft_generation(
+            contract=request.contract,
+            model=request.model,
+            mode=request.mode,
+            live_generation_enabled=False,
+        )
     )
 
 

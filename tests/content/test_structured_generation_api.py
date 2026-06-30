@@ -168,3 +168,59 @@ def test_structured_draft_generation_api_returns_typed_blockers() -> None:
     assert {"missing_draft_package", "missing_sales_brief", "missing_claim_ledger"} <= {
         blocker["code"] for blocker in result["blockers"]
     }
+
+
+def test_structured_draft_runtime_api_returns_dry_run_payload() -> None:
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-runtime",
+        json={"contract": contract, "model": "gpt-5"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["runtime_result"]
+    assert result["status"] == "dry_run_ready"
+    assert result["external_call_attempted"] is False
+    assert result["output"] is None
+    format_payload = result["request_payload"]["text"]["format"]
+    assert format_payload["type"] == "json_schema"
+    assert format_payload["name"] == "wilq_content_structured_draft_v1"
+    assert format_payload["strict"] is True
+
+
+def test_structured_draft_runtime_api_blocks_live_mode() -> None:
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-runtime",
+        json={"contract": contract, "model": "gpt-5", "mode": "live"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["runtime_result"]
+    assert result["status"] == "blocked"
+    assert result["external_call_attempted"] is False
+    assert "live_generation_disabled" in {
+        blocker["code"] for blocker in result["blockers"]
+    }

@@ -447,6 +447,13 @@ API status later contradicts this state.
   strict-schema contract or typed blockers; dashboard `api.ts` has only a thin
   parser/helper. This still does not call OpenAI, generate prose, write to
   WordPress or mark content publish-ready.
+- Beads task `wilq-seo-sap` adds a safe OpenAI Structured Outputs runtime
+  dry-run. The new content-domain adapter builds a `responses.create` payload
+  with strict `json_schema`, blocks live mode unless a separately audited
+  adapter enables it, and parses fake structured outputs in tests. New
+  `POST /api/content/work-items/structured-draft-runtime` exposes only the
+  dry-run/live-block contract; it still does not call OpenAI from the WILQ API,
+  generate prose, write to WordPress or mark content publish-ready.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
