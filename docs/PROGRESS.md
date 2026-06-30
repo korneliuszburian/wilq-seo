@@ -390,6 +390,11 @@ API status later contradicts this state.
   tests passed for daily action preview audit, metric-invention instruction and
   content strategist scoping. A lowercase audit-summary copy mismatch was fixed
   while preserving response meaning.
+- `apps/api/wilq_api/context_scopes.py` now owns skill connector, keyword,
+  action, knowledge-card and expert-rule scope maps. `main.py` still consumes
+  those maps while the heavy diagnostics/context builders await extraction.
+  Focused context-pack tests passed again for daily action preview audit,
+  metric-invention instruction and content strategist scoping.
 
 ## Latest Verified Product State
 

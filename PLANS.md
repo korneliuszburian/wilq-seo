@@ -689,8 +689,9 @@ Current ready/in-progress Goal 002 slices are:
   technical anti-slop task to move heavy Codex context-pack internals out of
   `main.py` without changing `/api/codex/*` response shapes. First partial
   slice moved request-skill parsing and skill context-pack cache to
-  `apps/api/wilq_api/context_cache.py`; heavy builders and compaction helpers
-  still need extraction.
+  `apps/api/wilq_api/context_cache.py`; second partial slice moved skill scope
+  maps to `apps/api/wilq_api/context_scopes.py`. Heavy builders and compaction
+  helpers still need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
