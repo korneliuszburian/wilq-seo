@@ -531,6 +531,12 @@ dashboard logic fork.
   `wilq/content/measurement/decisions.py`. GA4 `(not set)` and tracking gaps
   remain measurement blockers, not content rewrite recommendations, and focused
   measurement tests now cover that behavior directly.
+- Seventh content domain extraction moved Ahrefs gap review decision
+  construction from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/planning/ahrefs.py`. The briefing module now passes
+  knowledge/expert IDs into the Ahrefs planner, while relevance scoring,
+  candidate rows and off-topic filtering are tested directly in the content
+  planning domain.
 
 Current next action:
 
@@ -540,8 +546,8 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
-  planning helper, GSC decision builder and GA4 measurement-blocker extraction
-  slices.
+  planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
+  review extraction slices.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -583,6 +589,7 @@ Current outcome:
   home, inventory gate rules now have a domain home, and content decision
   planning helpers plus GSC content decision construction now have a domain
   home. GA4 tracking-gap content blockers now also have a measurement-domain
+  home. Ahrefs gap review decision construction now also has a planning-domain
   home. Full inventory records, full preflight contracts, claims, drafting,
   handoff and broader measurement modules still need behavior extraction.
 

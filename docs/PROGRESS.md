@@ -123,6 +123,14 @@ API status later contradicts this state.
   diagnostics contract tests, Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 Ahrefs gap review decision construction moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/planning/ahrefs.py`. This is behavior-preserving extraction:
+  focused Ahrefs planning tests now cover relevant/off-topic filtering,
+  candidate rows, GSC/WordPress overlap labels and blocked growth claims. The
+  same content diagnostics contract tests, Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
