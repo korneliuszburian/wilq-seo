@@ -429,6 +429,11 @@ API status later contradicts this state.
   into the WILQ API snapshot as `operator_steps`. The dashboard now renders
   those API-owned marketer labels/statuses instead of building local workflow
   step semantics in React.
+- Beads task `wilq-seo-ffk` reduces `ContentSelectedDecisionPanel` complexity
+  without changing content dashboard behavior or product rules. The selected
+  content decision panel now uses a small view model plus focused rendering
+  components instead of one large React function. Focused route tests,
+  dashboard typecheck, dashboard lint and Fallow changed audit passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

@@ -985,6 +985,10 @@ Current outcome:
 - Content workflow snapshot now includes API-owned `operator_steps`.
   `/content-workflow` renders those marketer-facing step labels/statuses from
   the WILQ API instead of rebuilding the workflow wording locally in React.
+- The selected decision panel inside `ContentDiagnosticSurface.tsx` now uses a
+  small view model and focused rendering components instead of one large React
+  function. This is a behavior-preserving cleanup slice for Fallow debt; it
+  does not add content logic, copy translators or WordPress behavior.
 
 Current risk:
 

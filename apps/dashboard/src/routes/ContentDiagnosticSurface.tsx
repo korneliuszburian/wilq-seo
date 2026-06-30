@@ -29,6 +29,7 @@ import { shortPath } from "./TacticalQueuePanel";
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
 type ContentMetricFact = ContentDiagnosticsResponse["sections"][number]["metric_facts"][number];
+type ContentMarketerDecision = NonNullable<ContentDiagnosticsResponse["marketer_decision"]>;
 type ContentPreflightItem = ContentPreflightResponse["items"][number];
 
 export function ContentDiagnosticSurface({ title }: { title: string }) {
@@ -452,43 +453,9 @@ function ContentSelectedDecisionPanel({
 }: {
   data: ContentDiagnosticsResponse;
 }) {
-  const summary = data.operator_summary;
-  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
-  const topDecisions = summary.top_decision_ids
-    .map((decisionId) => decisionsById.get(decisionId))
-    .filter((decision): decision is ContentDecisionItem => Boolean(decision));
-  const primaryDecision =
-    (data.marketer_decision?.technical_decision_id
-      ? decisionsById.get(data.marketer_decision.technical_decision_id)
-      : undefined) ??
-    topDecisions[0] ??
-    data.decision_queue[0];
-  const blockedClaims = uniqueValues([
-    ...(primaryDecision?.blocked_claims ?? [])
-  ]);
-  const missingInputs = uniqueValues([
-    ...(primaryDecision?.inventory_gate_status_label ? [primaryDecision.inventory_gate_status_label] : []),
-    ...(primaryDecision?.canonical_gate_status_label ? [primaryDecision.canonical_gate_status_label] : []),
-    ...(primaryDecision?.duplicate_gate_status_label ? [primaryDecision.duplicate_gate_status_label] : [])
-  ]);
-  const sourceConnectorLabels = uniqueValues([
-    ...(primaryDecision?.source_connector_labels ?? [])
-  ]);
-  const marketerDecision = data.marketer_decision;
-  const panelBlockedClaims = marketerDecision?.blocked_claims ?? blockedClaims;
-  const panelMissingInputs = marketerDecision?.missing_inputs ?? missingInputs;
-  const panelEvidenceSummary =
-    marketerDecision?.evidence_summary ??
-    primaryDecision?.evidence_summary_label ??
-    "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji";
-  const panelSourceConnectors =
-    marketerDecision?.source_connector_labels?.length
-      ? marketerDecision.source_connector_labels
-      : sourceConnectorLabels;
-  const panelMeasurementPlan =
-    marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan();
+  const model = contentSelectedDecisionModel(data);
 
-  if (!primaryDecision) {
+  if (!model) {
     return (
       <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
         <h2 className="text-base font-semibold tracking-normal text-ink">
@@ -501,135 +468,334 @@ function ContentSelectedDecisionPanel({
 
   return (
     <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            {marketerDecision?.mode_label ?? "Dzisiejszy plan treści do sprawdzenia"}
-          </div>
-          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-            {marketerDecision?.decision ??
-              primaryDecision.title ??
-              "Wybrany temat do zachowania albo odświeżenia"}
-          </h2>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-            {marketerDecision?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
-          {contentSelectedMetricTiles(primaryDecision, marketerDecision?.metric_tiles).map(([label, value]) => (
-            <MetricTile key={label} label={label} value={value} />
-          ))}
-        </div>
-      </div>
-
+      <ContentSelectedDecisionHeader model={model} />
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {marketerDecision?.why_it_matters ?? primaryDecision.rationale}
-          </p>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
-          <p className="mt-2 text-sm font-medium leading-6 text-ink">
-            {marketerDecision?.safe_next_action ?? primaryDecision.next_step}
-          </p>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Kierunek treści</h3>
-          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine
-              label="H1"
-              values={marketerDecision?.h1_direction ? [marketerDecision.h1_direction] : []}
-              empty="do doprecyzowania w planie treści"
-            />
-            <TraceLine
-              label="H2"
-              values={marketerDecision?.h2_direction?.slice(0, 3) ?? []}
-              empty="do doprecyzowania w planie treści"
-            />
-            <TraceLine
-              label="FAQ"
-              values={marketerDecision?.faq_direction?.slice(0, 3) ?? []}
-              empty="do doprecyzowania w planie treści"
-            />
-            <TraceLine
-              label="Wezwanie do działania"
-              values={marketerDecision?.cta_direction ? [marketerDecision.cta_direction] : []}
-              empty="do doprecyzowania w planie treści"
-            />
-          </div>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest
-            opcjonalny i nie jest docelowym adresem SEO.
-          </p>
-          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine
-              label="Źródło"
-              values={[
-                marketerDecision?.source_public_url ??
-                  primaryDecision.page ??
-                  ""
-              ]
-                .filter(Boolean)
-                .map(shortPath)}
-              empty="adres źródłowy do potwierdzenia"
-            />
-            <TraceLine
-              label="Podgląd"
-              values={[
-                marketerDecision?.preview_url ??
-                  ""
-              ].filter(Boolean).map(shortPath)}
-              empty="Adres podglądu nie jest podany; nie traktuj dev hosta jako adresu kanonicznego."
-            />
-            <TraceLine
-              label="Docelowo"
-              values={[
-                marketerDecision?.final_canonical_url ??
-                  marketerDecision?.intended_final_url ??
-                  ""
-              ]
-                .filter(Boolean)
-                .map(shortPath)}
-              empty="do potwierdzenia"
-            />
-          </div>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
-          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Dowody" values={[panelEvidenceSummary]} />
-            <TraceLine label="Źródła" values={panelSourceConnectors} />
-            <TraceLine
-              label="Fakty"
-              values={marketerDecision?.source_facts?.slice(0, 4) ?? []}
-              empty="zobacz szczegóły niżej"
-            />
-          </div>
-        </div>
-        <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
-          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine
-              label="Blokady"
-              values={panelBlockedClaims.slice(0, 6)}
-            />
-            <TraceLine label="Brakuje" values={panelMissingInputs.slice(0, 6)} />
-          </div>
-        </div>
+        <ContentSelectedReasonCards model={model} />
+        <ContentSelectedDirectionCard marketerDecision={model.marketerDecision} />
+        <ContentSelectedUrlCard model={model} />
+        <ContentSelectedEvidenceCard model={model} />
+        <ContentSelectedBlockersCard model={model} />
       </div>
+      <ContentSelectedMeasurementCard measurementPlan={model.panelMeasurementPlan} />
+    </section>
+  );
+}
 
-      <div className="mt-3 rounded-md border border-line bg-white p-3">
-        <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          {panelMeasurementPlan}
+function contentSelectedDecisionModel(data: ContentDiagnosticsResponse) {
+  const primaryDecision = contentSelectedPrimaryDecision(data);
+  if (!primaryDecision) return null;
+
+  const marketerDecision = data.marketer_decision ?? null;
+  const panelText = contentSelectedPanelText(primaryDecision, marketerDecision);
+  return {
+    marketerDecision,
+    primaryDecision,
+    ...panelText
+  };
+}
+
+function contentSelectedPrimaryDecision(data: ContentDiagnosticsResponse) {
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const selectedDecisionId = data.marketer_decision?.technical_decision_id;
+  if (selectedDecisionId) return decisionsById.get(selectedDecisionId) ?? data.decision_queue[0];
+  const topDecisionId = data.operator_summary.top_decision_ids[0];
+  if (topDecisionId) return decisionsById.get(topDecisionId) ?? data.decision_queue[0];
+  return data.decision_queue[0];
+}
+
+function contentSelectedPanelText(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return {
+    titleLabel: contentSelectedTitleLabel(marketerDecision),
+    title: contentSelectedTitle(primaryDecision, marketerDecision),
+    intro: contentSelectedIntro(primaryDecision, marketerDecision),
+    whyItMatters: contentSelectedWhy(primaryDecision, marketerDecision),
+    safeNextAction: contentSelectedNextAction(primaryDecision, marketerDecision),
+    panelBlockedClaims: contentSelectedBlockedClaims(primaryDecision, marketerDecision),
+    panelMissingInputs: contentSelectedMissingInputs(primaryDecision, marketerDecision),
+    panelEvidenceSummary: contentSelectedEvidenceSummary(primaryDecision, marketerDecision),
+    panelSourceConnectors: contentSelectedSourceConnectors(primaryDecision, marketerDecision),
+    panelMeasurementPlan: contentSelectedMeasurementPlanText(marketerDecision),
+    sourceUrlValues: contentSelectedSourceUrlValues(primaryDecision, marketerDecision),
+    previewUrlValues: contentSelectedPreviewUrlValues(marketerDecision),
+    finalUrlValues: contentSelectedFinalUrlValues(marketerDecision)
+  };
+}
+
+function contentSelectedTitleLabel(marketerDecision: ContentMarketerDecision | null) {
+  return marketerDecision?.mode_label ?? "Dzisiejszy plan treści do sprawdzenia";
+}
+
+function contentSelectedTitle(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return (
+    marketerDecision?.decision ??
+    primaryDecision.title ??
+    "Wybrany temat do zachowania albo odświeżenia"
+  );
+}
+
+function contentSelectedIntro(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return marketerDecision?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale;
+}
+
+function contentSelectedWhy(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return marketerDecision?.why_it_matters ?? primaryDecision.rationale;
+}
+
+function contentSelectedNextAction(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return marketerDecision?.safe_next_action ?? primaryDecision.next_step;
+}
+
+function contentSelectedBlockedClaims(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return marketerDecision?.blocked_claims ?? uniqueValues(primaryDecision.blocked_claims);
+}
+
+function contentSelectedMissingInputs(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return marketerDecision?.missing_inputs ?? contentSelectedGateLabels(primaryDecision);
+}
+
+function contentSelectedEvidenceSummary(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return (
+    marketerDecision?.evidence_summary ??
+    primaryDecision.evidence_summary_label ??
+    "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
+  );
+}
+
+function contentSelectedSourceConnectors(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  if (marketerDecision?.source_connector_labels?.length) {
+    return marketerDecision.source_connector_labels;
+  }
+  return uniqueValues(primaryDecision.source_connector_labels);
+}
+
+function contentSelectedMeasurementPlanText(marketerDecision: ContentMarketerDecision | null) {
+  return marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan();
+}
+
+function contentSelectedGateLabels(primaryDecision: ContentDecisionItem) {
+  return uniqueValues([
+    primaryDecision.inventory_gate_status_label,
+    primaryDecision.canonical_gate_status_label,
+    primaryDecision.duplicate_gate_status_label
+  ].filter(isPresentLabel));
+}
+
+function contentSelectedSourceUrlValues(
+  primaryDecision: ContentDecisionItem,
+  marketerDecision: ContentMarketerDecision | null
+) {
+  return [marketerDecision?.source_public_url ?? primaryDecision.page ?? ""]
+    .filter(Boolean)
+    .map(shortPath);
+}
+
+function contentSelectedPreviewUrlValues(marketerDecision: ContentMarketerDecision | null) {
+  return [marketerDecision?.preview_url ?? ""].filter(Boolean).map(shortPath);
+}
+
+function contentSelectedFinalUrlValues(marketerDecision: ContentMarketerDecision | null) {
+  return [
+    marketerDecision?.final_canonical_url ??
+      marketerDecision?.intended_final_url ??
+      ""
+  ]
+    .filter(Boolean)
+    .map(shortPath);
+}
+
+function ContentSelectedDecisionHeader({
+  model
+}: {
+  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
+}) {
+  const { marketerDecision, primaryDecision } = model;
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <div className="text-xs font-semibold uppercase tracking-normal text-action">
+          {model.titleLabel}
+        </div>
+        <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+          {model.title}
+        </h2>
+        <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+          {model.intro}
         </p>
       </div>
-    </section>
+      <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+        {contentSelectedMetricTiles(primaryDecision, marketerDecision?.metric_tiles).map(([label, value]) => (
+          <MetricTile key={label} label={label} value={value} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ContentSelectedReasonCards({
+  model
+}: {
+  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
+}) {
+  return (
+    <>
+      <div className="rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          {model.whyItMatters}
+        </p>
+      </div>
+      <div className="rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
+        <p className="mt-2 text-sm font-medium leading-6 text-ink">
+          {model.safeNextAction}
+        </p>
+      </div>
+    </>
+  );
+}
+
+function ContentSelectedDirectionCard({
+  marketerDecision
+}: {
+  marketerDecision: ContentMarketerDecision | null | undefined;
+}) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <h3 className="text-sm font-semibold text-ink">Kierunek treści</h3>
+      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+        <TraceLine
+          label="H1"
+          values={marketerDecision?.h1_direction ? [marketerDecision.h1_direction] : []}
+          empty="do doprecyzowania w planie treści"
+        />
+        <TraceLine
+          label="H2"
+          values={marketerDecision?.h2_direction?.slice(0, 3) ?? []}
+          empty="do doprecyzowania w planie treści"
+        />
+        <TraceLine
+          label="FAQ"
+          values={marketerDecision?.faq_direction?.slice(0, 3) ?? []}
+          empty="do doprecyzowania w planie treści"
+        />
+        <TraceLine
+          label="Wezwanie do działania"
+          values={marketerDecision?.cta_direction ? [marketerDecision.cta_direction] : []}
+          empty="do doprecyzowania w planie treści"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ContentSelectedUrlCard({
+  model
+}: {
+  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
+}) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        ekologus.pl i sklep.ekologus.pl są źródłem prawdy. Adres podglądu jest
+        opcjonalny i nie jest docelowym adresem SEO.
+      </p>
+      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+        <TraceLine
+          label="Źródło"
+          values={model.sourceUrlValues}
+          empty="adres źródłowy do potwierdzenia"
+        />
+        <TraceLine
+          label="Podgląd"
+          values={model.previewUrlValues}
+          empty="Adres podglądu nie jest podany; nie traktuj dev hosta jako adresu kanonicznego."
+        />
+        <TraceLine
+          label="Docelowo"
+          values={model.finalUrlValues}
+          empty="do potwierdzenia"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ContentSelectedEvidenceCard({
+  model
+}: {
+  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
+}) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
+      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+        <TraceLine label="Dowody" values={[model.panelEvidenceSummary]} />
+        <TraceLine label="Źródła" values={model.panelSourceConnectors} />
+        <TraceLine
+          label="Fakty"
+          values={model.marketerDecision?.source_facts?.slice(0, 4) ?? []}
+          empty="zobacz szczegóły niżej"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ContentSelectedBlockersCard({
+  model
+}: {
+  model: NonNullable<ReturnType<typeof contentSelectedDecisionModel>>;
+}) {
+  return (
+    <div className="rounded-md border border-line bg-white p-3">
+      <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
+      <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+        <TraceLine
+          label="Blokady"
+          values={model.panelBlockedClaims.slice(0, 6)}
+        />
+        <TraceLine label="Brakuje" values={model.panelMissingInputs.slice(0, 6)} />
+      </div>
+    </div>
+  );
+}
+
+function ContentSelectedMeasurementCard({ measurementPlan }: { measurementPlan: string }) {
+  return (
+    <div className="mt-3 rounded-md border border-line bg-white p-3">
+      <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        {measurementPlan}
+      </p>
+    </div>
   );
 }
 
@@ -965,4 +1131,8 @@ function contentSelectedMeasurementPlan() {
 
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));
+}
+
+function isPresentLabel(value: string | null | undefined): value is string {
+  return Boolean(value);
 }
