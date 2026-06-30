@@ -16,6 +16,7 @@ from wilq.content.canonical.urls import (
     content_decision_final_canonical_url,
     content_decision_has_public_final_canonical,
 )
+from wilq.content.measurement.decisions import ga4_tracking_gap_decisions
 from wilq.content.planning.decisions import (
     ContentDecisionType,
     content_decision_sort_key,
@@ -1288,7 +1289,11 @@ def _content_decision_queue(
             knowledge_card_ids=GSC_CONTENT_KNOWLEDGE_CARD_IDS,
             expert_rule_ids=GSC_CONTENT_EXPERT_RULE_IDS,
         ),
-        *_ga4_tracking_gap_decisions(items),
+        *ga4_tracking_gap_decisions(
+            items,
+            knowledge_card_ids=GA4_TRACKING_KNOWLEDGE_CARD_IDS,
+            expert_rule_ids=GA4_TRACKING_EXPERT_RULE_IDS,
+        ),
         *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
     if decisions:
@@ -1352,58 +1357,6 @@ def _content_vendor_read_blocker_decision(
         ),
         risk=ActionRisk.medium,
     )
-
-
-def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
-    tracking_gaps = [
-        item
-        for item in _unique_tactical_items(items)
-        if item.domain == OpportunityDomain.ga4 and item.intent == "tracking_gap"
-    ]
-    if not tracking_gaps:
-        return []
-    evidence_ids = _unique(
-        evidence_id for item in tracking_gaps for evidence_id in item.evidence_ids
-    )
-    metric_facts = _unique_metric_facts(
-        fact for item in tracking_gaps for fact in item.metric_facts
-    )
-    return [
-        ContentDecisionItem(
-            id="content_decision_ga4_tracking_gap_block",
-            decision_type="block_as_tracking_not_content",
-            status="blocked",
-            title="Zablokuj braki w pomiarze GA4 jako zadania contentowe",
-            priority=12,
-            metric_tiles={
-                "blokady": len(tracking_gaps),
-                "dowody": len(evidence_ids),
-                "braki pomiaru": len(tracking_gaps),
-            },
-            source_connectors=["google_analytics_4"],
-            evidence_ids=evidence_ids,
-            metric_facts=metric_facts[:8],
-            action_ids=_unique(
-                action_id for item in tracking_gaps for action_id in item.action_ids
-            ),
-            knowledge_card_ids=list(GA4_TRACKING_KNOWLEDGE_CARD_IDS),
-            expert_rule_ids=list(GA4_TRACKING_EXPERT_RULE_IDS),
-            blocked_claims=_unique(
-                [
-                    *(claim for item in tracking_gaps for claim in item.blocked_claims),
-                    "przepisanie treści",
-                    "wzrost konwersji",
-                    "zwrot z reklam",
-                ]
-            ),
-            rationale=(
-                "GA4 `(not set)` i tracking_gap wskazują problem pomiaru, "
-                "nie gotową rekomendację treści."
-            ),
-            next_step="Przekaż do sprawdzenia trackingu GA4 zamiast tworzyć rewrite treści.",
-            risk=ActionRisk.medium,
-        )
-    ]
 
 
 def _ahrefs_gap_record_decisions(

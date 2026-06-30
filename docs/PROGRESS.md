@@ -115,6 +115,14 @@ API status later contradicts this state.
   diagnostics contract tests, Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 GA4 tracking-gap content blocker moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/measurement/decisions.py`. This is behavior-preserving
+  extraction: focused measurement tests now cover GA4 tracking gaps as
+  measurement blockers, not content rewrite recommendations. The same content
+  diagnostics contract tests, Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

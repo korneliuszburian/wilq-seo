@@ -526,6 +526,11 @@ dashboard logic fork.
   `wilq/content/planning/decisions.py`. The briefing module now passes
   knowledge/expert IDs into the domain function instead of owning the GSC
   preserve/refresh/merge/create decision builder.
+- Sixth content domain extraction moved GA4 tracking-gap content blocking from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/measurement/decisions.py`. GA4 `(not set)` and tracking gaps
+  remain measurement blockers, not content rewrite recommendations, and focused
+  measurement tests now cover that behavior directly.
 
 Current next action:
 
@@ -534,9 +539,9 @@ Current ready/in-progress Goal 002 slices are:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
-  in progress after the canonical URL, preflight verdict and inventory gate
-  extraction slices plus the content planning helper and GSC decision builder
-  extraction.
+  in progress after the canonical URL, preflight verdict, inventory gate,
+  planning helper, GSC decision builder and GA4 measurement-blocker extraction
+  slices.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -577,8 +582,9 @@ Current outcome:
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision
   planning helpers plus GSC content decision construction now have a domain
+  home. GA4 tracking-gap content blockers now also have a measurement-domain
   home. Full inventory records, full preflight contracts, claims, drafting,
-  handoff and measurement modules still need behavior extraction.
+  handoff and broader measurement modules still need behavior extraction.
 
 Current risk:
 
