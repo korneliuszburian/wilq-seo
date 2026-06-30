@@ -9,9 +9,10 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 
+from apps.api.wilq_api.context_models import ContextPackRequest
 from apps.api.wilq_api.routers.actions import create_actions_router
+from apps.api.wilq_api.routers.codex import create_codex_router
 from apps.api.wilq_api.routers.connectors import create_connectors_router
 from apps.api.wilq_api.routers.demand_gen import create_demand_gen_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
@@ -101,7 +102,6 @@ from wilq.opportunities.engine import list_opportunities
 from wilq.schemas import (
     ActionObject,
     AdsCampaignMetricRow,
-    CodexRun,
     CommandCenterResponse,
     ConnectorStatus,
     DailyDecision,
@@ -117,7 +117,6 @@ from wilq.schemas import (
     connector_status_label,
 )
 from wilq.security.redaction import redact_mapping
-from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 DEFAULT_CORS_ORIGINS = (
@@ -196,14 +195,6 @@ async def require_local_api_access(request: Request, call_next: Any) -> Any:
             content={"detail": "WILQ API is local-only by default."},
         )
     return await call_next(request)
-
-
-class ContextPackRequest(BaseModel):
-    skill: str | None = None
-    skill_id: str | None = None
-    focus: str | None = None
-    max_opportunities: int = Field(default=5, ge=1, le=25)
-    full_context: bool = False
 
 
 def _request_skill(request: ContextPackRequest | None) -> str | None:
@@ -1243,6 +1234,7 @@ def clear_api_view_model_caches() -> None:
 
 app.include_router(create_actions_router(clear_api_view_model_caches))
 app.include_router(create_connectors_router(clear_api_view_model_caches))
+app.include_router(create_codex_router(context_pack))
 
 
 def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
@@ -4540,23 +4532,3 @@ def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
     return bool(set(values).intersection(scoped_connectors))
-
-
-@app.get("/api/codex/context")
-def codex_context() -> dict[str, Any]:
-    return context_pack()
-
-
-@app.post("/api/codex/context-pack")
-def codex_context_pack(request: ContextPackRequest) -> dict[str, Any]:
-    return context_pack(request)
-
-
-@app.post("/api/codex/runs", response_model=CodexRun)
-def create_codex_run(run: CodexRun) -> CodexRun:
-    return local_state_store().save_codex_run(run)
-
-
-@app.get("/api/codex/runs", response_model=list[CodexRun])
-def codex_runs() -> list[CodexRun]:
-    return local_state_store().list_codex_runs()

@@ -603,13 +603,21 @@ dashboard logic fork.
   without moving the context-heavy readiness builder yet. The router receives
   the current builder as an injected callback. Remaining route groups in
   `main.py` are Codex/context endpoints.
+- Twelfth API router extraction moved Codex context and Codex run endpoints
+  from `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/codex.py`.
+  `ContextPackRequest` now lives in `apps/api/wilq_api/context_models.py`.
+  The router receives the existing `context_pack` callable as an injected
+  builder; the heavy context-pack construction still remains in `main.py` for
+  a later runtime extraction. `main.py` no longer declares direct
+  `@app.get`/`@app.post` route handlers.
 
 Current next action:
 
 Continue with the next ready extraction slice from `bd ready --json`.
 Current ready/in-progress Goal 002 slices are:
 
-- `wilq-seo-hdl` - behavior-preserving API router extraction.
+- `wilq-seo-hdl` - behavior-preserving API router extraction, closed after the
+  Codex router slice.
   First slice moved read-only connector endpoints to a router. Second slice
   moved jobs and job-run endpoints to a jobs router. Third slice moved
   evidence and metric read endpoints to dedicated routers. Fourth slice moved
@@ -623,14 +631,19 @@ Current ready/in-progress Goal 002 slices are:
   after mutating calls. Tenth slice moved connector refresh POST to the
   connectors router while preserving cache clearing after refresh. Eleventh
   slice moved Demand Gen diagnostics to a router while leaving the readiness
-  builder in `main.py` for a later context extraction.
+  builder in `main.py` for a later context extraction. Twelfth slice moved
+  Codex context and Codex run endpoints to a Codex router while leaving the
+  context-pack builder in `main.py` for a later runtime extraction.
+- `wilq-seo-462` - follow-up context-pack runtime extraction, open. This is a
+  technical anti-slop task to move heavy Codex context-pack internals out of
+  `main.py` without changing `/api/codex/*` response shapes.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
   review, vendor-read blocker and marketer preflight view extraction slices.
 
-Do not add new content workflow behavior before behavior-preserving extraction
-begins.
+Do not add new content workflow behavior to frozen monolith files. New Goal 002
+behavior must land in focused content/domain modules with tests first.
 
 ## Surprises & Discoveries
 
@@ -673,8 +686,9 @@ Current outcome:
   router home. Command center, marketing and read-only domain diagnostics
   endpoints also now have a diagnostics router home. Action, audit and
   mutation-audit endpoints also now have an actions router home. Demand Gen
-  diagnostics also now has a router home. Only Codex/context endpoints remain
-  routed directly from `main.py`.
+  diagnostics also now has a router home. Codex context and Codex run endpoints
+  also now have a router home. `main.py` no longer declares direct route
+  handlers, but still owns heavy context-pack builder internals.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

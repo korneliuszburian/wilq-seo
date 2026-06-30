@@ -233,8 +233,22 @@ API status later contradicts this state.
   injected callback; the context-heavy builder remains in `main.py` for a later
   scoped context extraction. Focused Demand Gen API/context tests, route-shape
   smoke, Ruff, mypy, `scripts/audit_complexity.py --changed --allow-frozen`
-  and `git diff --check` passed. `main.py` now keeps only Codex/context
-  endpoints.
+  and `git diff --check` passed. At that slice, `main.py` still kept only
+  Codex/context endpoints.
+- Goal 002 Codex router extraction moved `/api/codex/context`,
+  `/api/codex/context-pack` and `/api/codex/runs` from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/codex.py`
+  without changing endpoint paths or response shapes. `ContextPackRequest`
+  now lives in `apps/api/wilq_api/context_models.py`. The router receives the
+  existing `context_pack` callable as an injected builder; heavy context-pack
+  construction remains in `main.py` for a later runtime extraction. Focused
+  Codex/context API tests, route-shape smoke, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed. `main.py` no longer declares direct route
+  handlers.
+- Beads task `wilq-seo-hdl` is closed. Remaining heavy context-pack runtime
+  extraction is tracked separately as `wilq-seo-462`, so router extraction is
+  not conflated with context-pack internals.
 
 ## Latest Verified Product State
 
