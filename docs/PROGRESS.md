@@ -440,6 +440,11 @@ API status later contradicts this state.
   keeps Merchant context helper copies. Focused Merchant/context-pack tests,
   Ruff, mypy for touched API files, `scripts/audit_complexity.py --changed
   --allow-frozen` and `git diff --check` passed.
+- `apps/api/wilq_api/context_ga4.py` now owns GA4 skill context compaction and
+  the Demand Gen context path reuses that module instead of a local `main.py`
+  helper. Focused GA4/Demand Gen context-pack tests, Ruff, mypy for touched API
+  files, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 
 ## Latest Verified Product State
 

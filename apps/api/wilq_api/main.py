@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from apps.api.wilq_api import (
     context_actions,
     context_compaction,
+    context_ga4,
     context_knowledge,
     context_merchant,
     context_trace,
@@ -1003,7 +1004,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         }
     if skill == "wilq-ga4-analyst":
         return {
-            "ga4_diagnostics": _compact_ga4_diagnostics_for_context(
+            "ga4_diagnostics": context_ga4.compact_ga4_diagnostics_for_context(
                 build_ga4_diagnostics().model_dump(mode="json")
             )
         }
@@ -1121,7 +1122,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
             },
             allowed_action_ids=SKILL_ACTION_ID_SCOPES["wilq-demand-gen-operator"],
         ),
-        "ga4_diagnostics": _compact_ga4_diagnostics_for_context(ga4_diagnostics),
+        "ga4_diagnostics": context_ga4.compact_ga4_diagnostics_for_context(ga4_diagnostics),
         "demand_gen_readiness": _demand_gen_readiness_contract(
             ads_diagnostics,
             ga4_diagnostics,
@@ -1668,20 +1669,6 @@ def _compact_labelled_contract_list_for_context(
         payload[f"{label_key}_included"] = 0
     payload[f"{raw_key}_total"] = raw_count
     payload.pop(raw_key, None)
-
-
-def _compact_ga4_diagnostics_for_context(
-    ga4_diagnostics: dict[str, Any],
-) -> dict[str, Any]:
-    compact = dict(context_compaction.without_metric_facts(ga4_diagnostics))
-    sections = compact.pop("sections", [])
-    compact["context_pack_compaction"] = {
-        "metric_facts_removed": True,
-        "sections_omitted": True,
-        "sections_total": len(sections) if isinstance(sections, list) else 0,
-        "full_endpoint": "/api/ga4/diagnostics",
-    }
-    return compact
 
 
 def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
