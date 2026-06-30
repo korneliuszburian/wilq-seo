@@ -270,6 +270,17 @@ API status later contradicts this state.
   (88 tests), Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Beads task `wilq-seo-w18` is closed. `wilq/content/measurement/window.py`
+  now defines Content Measurement Window v1 with baseline period, observation
+  period, earliest verdict date, allowed metrics, source connectors, evidence
+  IDs, optional WordPress handoff link and status. Measurement windows block
+  dev preview URLs as measured canonical targets, require at least one allowed
+  metric and source connector, and keep `success_claim_allowed=false` until the
+  observation window is ready for review. Focused tests prove WordPress handoff
+  needs or schedules a measurement window and outcome claims remain blocked
+  before `earliest_verdict_date`. `tests/content` (92 tests), Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

@@ -732,6 +732,11 @@ Current ready/in-progress Goal 002 slices are:
   approved Human Review and audit envelope. It blocks dev preview canonical
   targets, publish-ready draft packages and non-approved review. The handoff is
   `prepared` until a real WordPress post ID exists; it never publishes.
+- `wilq-seo-w18` - Content Measurement Window v1, closed.
+  `wilq/content/measurement/window.py` now records baseline and observation
+  periods, earliest verdict date, allowed metrics, source connectors, evidence
+  IDs and optional WordPress handoff link. Outcome claims stay blocked until the
+  window reaches `ready_for_review` or `closed` after the earliest verdict date.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -796,6 +801,10 @@ behavior must land in focused content/domain modules with tests first.
   Reason: WILQ must not claim draft creation or publication from a local plan;
   the safe contract can prepare `post_status=draft` while keeping publish and
   destructive update paths blocked.
+- Decision: Measurement Window v1 is created before outcome evidence exists.
+  Reason: WILQ can plan the metrics now and still block success/failure language
+  until the observation window reaches the earliest verdict date with usable
+  source data.
 
 ## Outcomes & Retrospective
 

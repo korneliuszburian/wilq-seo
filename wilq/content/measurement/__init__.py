@@ -1,1 +1,1 @@
-"""Content measurement domain helpers."""
+"""Content measurement contracts."""
