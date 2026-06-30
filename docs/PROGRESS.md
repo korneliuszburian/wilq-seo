@@ -476,6 +476,11 @@ API status later contradicts this state.
   the output still maps to WILQ evidence, has no claims needing review and keeps
   `publish_ready=false`. This preview does not create a WordPress draft, does
   not write to WordPress and does not publish anything on `ekologus.pl`.
+- Beads task `wilq-seo-17z` wires that structured draft preview into the
+  `/content-workflow` dashboard route. The marketer can request "Podgląd treści"
+  only after generated structured output exists, see the evidence-mapped title,
+  sections and human review checklist, and still cannot write to WordPress or
+  publish on `ekologus.pl`.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

@@ -4,11 +4,18 @@ import type { ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemSnapshotAuditRequest,
+  type ContentWorkItemSnapshotHumanReviewRequest,
+  type ContentWorkItemStructuredDraftPreviewRequest,
+  type ContentWorkItemStructuredDraftPreviewResponse,
+  type ContentWorkItemStructuredDraftRuntimeRequest,
   type ContentWorkItemStructuredDraftRuntimeResponse,
+  type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse
 } from "../lib/api";
 import {
@@ -24,15 +31,33 @@ type WorkflowSafetyPanelsProps = {
   handoff: ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
   window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"];
   structuredRuntimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null;
+  structuredPreviewResult: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
 };
 
 export function ContentWorkflowSurface() {
-  const queryClient = useQueryClient();
   const workflow = useQuery({
     queryKey: ["content-workflow", "diagnostics-snapshot"],
     queryFn: loadContentWorkflowSnapshot
   });
+
+  if (workflow.isLoading) return <LoadingBand />;
+  if (workflow.error || !workflow.data) return <ContentWorkflowError />;
+  return <ContentWorkflowLoaded data={workflow.data} />;
+}
+
+function ContentWorkflowError() {
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="rounded-md border border-wait/30 bg-wait/10 p-4 text-sm text-wait">
+        Nie udało się odczytać workflow treści z WILQ. Nie pokazujemy decyzji bez kontraktów API.
+      </div>
+    </main>
+  );
+}
+
+function ContentWorkflowLoaded({ data }: { data: ContentWorkflowSnapshot }) {
+  const queryClient = useQueryClient();
   const refreshWorkflow = () =>
     queryClient.invalidateQueries({ queryKey: ["content-workflow", "diagnostics-snapshot"] });
   const reviewMutation = useMutation({
@@ -46,27 +71,20 @@ export function ContentWorkflowSurface() {
   const structuredRuntimeMutation = useMutation({
     mutationFn: postContentWorkItemStructuredDraftRuntime
   });
+  const structuredPreviewMutation = useMutation({
+    mutationFn: postContentWorkItemStructuredDraftPreview
+  });
   const executionMutation = useMutation({
     mutationFn: postContentWorkItemWordPressDraftExecution
   });
-
-  if (workflow.isLoading) return <LoadingBand />;
-  if (workflow.error || !workflow.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <div className="rounded-md border border-wait/30 bg-wait/10 p-4 text-sm text-wait">
-          Nie udało się odczytać workflow treści z WILQ. Nie pokazujemy decyzji bez kontraktów API.
-        </div>
-      </main>
-    );
-  }
-
-  const data = workflow.data;
   const item = data.preflight.item;
   const draft = data.draftPackage.draft_package_result.draft_package;
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const window = data.measurementWindow.measurement_window_result.window;
   const steps = buildWorkflowSteps(data);
+  const structuredRuntimeResult = runtimeResultFrom(structuredRuntimeMutation.data);
+  const structuredPreviewResult = previewResultFrom(structuredPreviewMutation.data);
+  const executionResult = executionResultFrom(executionMutation.data);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -78,73 +96,145 @@ export function ContentWorkflowSurface() {
         reviewPending={reviewMutation.isPending}
         auditPending={auditMutation.isPending}
         structuredRuntimePending={structuredRuntimeMutation.isPending}
+        structuredPreviewPending={structuredPreviewMutation.isPending}
         executionPending={executionMutation.isPending}
-        structuredRuntimeResult={structuredRuntimeMutation.data?.runtime_result ?? null}
-        executionResult={executionMutation.data?.execution_result ?? null}
-        onStructuredRuntimeDryRun={() => {
-          const contract = data.structuredGeneration.structured_generation_result.contract;
-          if (!contract) return;
-          structuredRuntimeMutation.mutate({
-            contract,
-            model: "gpt-5",
-            mode: "dry_run"
-          });
-        }}
-        onReview={() => {
-          if (!draft) return;
-          reviewMutation.mutate({
-            review: {
-              id: `human_review_${item.id}`,
-              work_item_id: item.id,
-              stage: "draft_package",
-              reviewed_by: "wilku",
-              decision: "approved",
-              notes:
-                "Operator zatwierdził brief, ryzykowne twierdzenia i paczkę szkicu do przygotowania szkicu WordPress.",
-              checked_items: [
-                "Brief i paczka szkicu są zgodne z dowodami WILQ.",
-                "Ryzykowne twierdzenia zostały usunięte albo obsłużone.",
-                "Szkic pozostaje materiałem do sprawdzenia, nie publikacją."
-              ],
-              evidence_ids: unique(item.evidence_ids),
-              blocked_claims_handled: unique(draft.claims_removed_or_blocked),
-              draft_package_id: draft.id
-            }
-          });
-        }}
-        onAudit={() => {
-          const review = data.humanReview.review;
-          if (!review) return;
-          auditMutation.mutate({
-            audit: {
-              audit_id: `audit_${item.id}`,
-              actor: "wilku",
-              reason:
-                "Operator zatwierdził przekazanie wyłącznie w trybie szkicu. WordPress może dostać wyłącznie szkic.",
-              evidence_ids: unique(item.evidence_ids),
-              human_review_id: review.id
-            }
-          });
-        }}
-        onExecutionDryRun={() => {
-          if (!handoff || !draft) return;
-          executionMutation.mutate({
-            handoff,
-            draft_package: draft,
-            mode: "dry_run"
-          });
-        }}
+        structuredRuntimeResult={structuredRuntimeResult}
+        structuredPreviewResult={structuredPreviewResult}
+        executionResult={executionResult}
+        onStructuredRuntimeDryRun={() =>
+          submitIfReady(structuredRuntimeDryRunRequest(data), (request) =>
+            structuredRuntimeMutation.mutate(request)
+          )
+        }
+        onStructuredPreview={() =>
+          submitIfReady(structuredPreviewRequest(data, structuredRuntimeResult), (request) =>
+            structuredPreviewMutation.mutate(request)
+          )
+        }
+        onReview={() =>
+          submitIfReady(humanReviewRequest(data, draft), (request) =>
+            reviewMutation.mutate(request)
+          )
+        }
+        onAudit={() =>
+          submitIfReady(auditRequest(data), (request) => auditMutation.mutate(request))
+        }
+        onExecutionDryRun={() =>
+          submitIfReady(wordpressExecutionRequest(draft, handoff), (request) =>
+            executionMutation.mutate(request)
+          )
+        }
       />
       <WorkflowSafetyPanels
         data={data}
         draft={draft}
         handoff={handoff}
         window={window}
-        structuredRuntimeResult={structuredRuntimeMutation.data?.runtime_result ?? null}
-        executionResult={executionMutation.data?.execution_result ?? null}
+        structuredRuntimeResult={structuredRuntimeResult}
+        structuredPreviewResult={structuredPreviewResult}
+        executionResult={executionResult}
       />
     </main>
   );
+}
+
+type DraftPackage = ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
+type WordPressHandoff =
+  ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
+
+function runtimeResultFrom(response: ContentWorkItemStructuredDraftRuntimeResponse | undefined) {
+  return response?.runtime_result ?? null;
+}
+
+function previewResultFrom(response: ContentWorkItemStructuredDraftPreviewResponse | undefined) {
+  return response?.preview_result ?? null;
+}
+
+function executionResultFrom(
+  response: ContentWorkItemWordPressDraftExecutionResponse | undefined
+) {
+  return response?.execution_result ?? null;
+}
+
+function submitIfReady<TRequest>(request: TRequest | null, submit: (request: TRequest) => void) {
+  if (request) submit(request);
+}
+
+function structuredRuntimeDryRunRequest(
+  data: ContentWorkflowSnapshot
+): ContentWorkItemStructuredDraftRuntimeRequest | null {
+  const contract = data.structuredGeneration.structured_generation_result.contract;
+  if (!contract) return null;
+  return {
+    contract,
+    model: "gpt-5",
+    mode: "dry_run"
+  };
+}
+
+function structuredPreviewRequest(
+  data: ContentWorkflowSnapshot,
+  runtimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null
+): ContentWorkItemStructuredDraftPreviewRequest | null {
+  const contract = data.structuredGeneration.structured_generation_result.contract;
+  const output = runtimeResult?.output;
+  if (!contract || !output) return null;
+  return { contract, output };
+}
+
+function humanReviewRequest(
+  data: ContentWorkflowSnapshot,
+  draft: DraftPackage
+): ContentWorkItemSnapshotHumanReviewRequest | null {
+  if (!draft) return null;
+  const item = data.preflight.item;
+  return {
+    review: {
+      id: `human_review_${item.id}`,
+      work_item_id: item.id,
+      stage: "draft_package",
+      reviewed_by: "wilku",
+      decision: "approved",
+      notes:
+        "Operator zatwierdził brief, ryzykowne twierdzenia i paczkę szkicu do przygotowania szkicu WordPress.",
+      checked_items: [
+        "Brief i paczka szkicu są zgodne z dowodami WILQ.",
+        "Ryzykowne twierdzenia zostały usunięte albo obsłużone.",
+        "Szkic pozostaje materiałem do sprawdzenia, nie publikacją."
+      ],
+      evidence_ids: unique(item.evidence_ids),
+      blocked_claims_handled: unique(draft.claims_removed_or_blocked),
+      draft_package_id: draft.id
+    }
+  };
+}
+
+function auditRequest(data: ContentWorkflowSnapshot): ContentWorkItemSnapshotAuditRequest | null {
+  const item = data.preflight.item;
+  const review = data.humanReview.review;
+  if (!review) return null;
+  return {
+    audit: {
+      audit_id: `audit_${item.id}`,
+      actor: "wilku",
+      reason:
+        "Operator zatwierdził przekazanie wyłącznie w trybie szkicu. WordPress może dostać wyłącznie szkic.",
+      evidence_ids: unique(item.evidence_ids),
+      human_review_id: review.id
+    }
+  };
+}
+
+function wordpressExecutionRequest(
+  draft: DraftPackage,
+  handoff: WordPressHandoff
+): ContentWorkItemWordPressDraftExecutionRequest | null {
+  if (!draft || !handoff) return null;
+  return {
+    handoff,
+    draft_package: draft,
+    mode: "dry_run"
+  };
 }
 
 function ContentWorkflowHeader({ topic }: { topic: string }) {
@@ -217,10 +307,13 @@ function WorkflowOperatorControls({
   reviewPending,
   auditPending,
   structuredRuntimePending,
+  structuredPreviewPending,
   executionPending,
   structuredRuntimeResult,
+  structuredPreviewResult,
   executionResult,
   onStructuredRuntimeDryRun,
+  onStructuredPreview,
   onReview,
   onAudit,
   onExecutionDryRun
@@ -229,10 +322,13 @@ function WorkflowOperatorControls({
   reviewPending: boolean;
   auditPending: boolean;
   structuredRuntimePending: boolean;
+  structuredPreviewPending: boolean;
   executionPending: boolean;
   structuredRuntimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null;
+  structuredPreviewResult: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
   onStructuredRuntimeDryRun: () => void;
+  onStructuredPreview: () => void;
   onReview: () => void;
   onAudit: () => void;
   onExecutionDryRun: () => void;
@@ -246,6 +342,12 @@ function WorkflowOperatorControls({
   const structuredRuntimeDisabledReason = structuredRuntimeControlDisabledReason(
     data,
     structuredRuntimePending,
+    structuredRuntimeResult
+  );
+  const structuredPreviewDisabledReason = structuredPreviewControlDisabledReason(
+    data,
+    structuredPreviewPending,
+    structuredPreviewResult,
     structuredRuntimeResult
   );
   const executionDisabledReason = executionControlDisabledReason(
@@ -290,6 +392,12 @@ function WorkflowOperatorControls({
             disabledReason={structuredRuntimeDisabledReason}
             pending={structuredRuntimePending}
             onClick={onStructuredRuntimeDryRun}
+          />
+          <WorkflowControlButton
+            label={structuredPreviewResult ? "Podgląd treści gotowy" : "Pokaż podgląd treści"}
+            disabledReason={structuredPreviewDisabledReason}
+            pending={structuredPreviewPending}
+            onClick={onStructuredPreview}
           />
           <WorkflowControlButton
             label={executionResult ? "Podgląd szkicu gotowy" : "Sprawdź podgląd szkicu"}
@@ -338,10 +446,11 @@ function WorkflowSafetyPanels({
   handoff,
   window,
   structuredRuntimeResult,
+  structuredPreviewResult,
   executionResult
 }: WorkflowSafetyPanelsProps) {
   return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-5">
+    <div className="mt-6 grid gap-4 lg:grid-cols-3">
       <SafetyPanel
         icon={<FileText aria-hidden="true" size={18} />}
         title="Paczka szkicu"
@@ -352,6 +461,7 @@ function WorkflowSafetyPanels({
         title="Szkic treści"
         text={structuredRuntimeSafetyText(structuredRuntimeResult)}
       />
+      <StructuredDraftPreviewPanel result={structuredPreviewResult} />
       <SafetyPanel
         icon={<ShieldCheck aria-hidden="true" size={18} />}
         title="WordPress zostaje w trybie szkicu"
@@ -368,6 +478,58 @@ function WorkflowSafetyPanels({
         text={measurementSafetyText(window)}
       />
     </div>
+  );
+}
+
+function StructuredDraftPreviewPanel({
+  result
+}: {
+  result: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null;
+}) {
+  const preview = result?.preview;
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="rounded-md border border-line bg-surface p-2 text-action">
+          <FileText aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-ink">Podgląd treści</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {structuredPreviewSafetyText(result)}
+          </p>
+          {preview ? (
+            <div className="mt-3 space-y-3 text-sm text-slate-700">
+              <div className="rounded-md border border-line bg-surface p-3">
+                <div className="text-xs uppercase tracking-normal text-slate-500">Tytuł</div>
+                <div className="mt-1 font-semibold text-ink">{preview.title}</div>
+              </div>
+              {preview.sections.slice(0, 2).map((section) => (
+                <div key={section.heading} className="rounded-md border border-line bg-surface p-3">
+                  <div className="font-semibold text-ink">{section.heading}</div>
+                  <p className="mt-2 whitespace-pre-line leading-6">{section.body_markdown}</p>
+                  <div className="mt-2 text-xs text-slate-500">
+                    Dowody sekcji: {section.evidence_ids.join(", ")}
+                  </div>
+                </div>
+              ))}
+              {preview.human_review_checklist.length ? (
+                <div className="rounded-md border border-line bg-surface p-3">
+                  <div className="text-xs uppercase tracking-normal text-slate-500">
+                    Do sprawdzenia przez człowieka
+                  </div>
+                  <ul className="mt-2 space-y-1">
+                    {preview.human_review_checklist.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -415,6 +577,9 @@ function structuredRuntimeSafetyText(
   if (!result) {
     return "WILQ może sprawdzić przygotowanie szkicu bez pisania na żywo. Ten krok nie wywołuje modelu.";
   }
+  if (result.status === "generated" && result.output) {
+    return "Szkic został wygenerowany w kontrolowanym trybie. Przed WordPress musi przejść podgląd treści i sprawdzenie człowieka.";
+  }
   if (result.external_call_attempted) {
     return "Zatrzymaj workflow: próba przygotowania szkicu nie powinna wywoływać modelu na żywo.";
   }
@@ -422,6 +587,21 @@ function structuredRuntimeSafetyText(
     return result.blockers[0]?.reason ?? "WILQ zablokował przygotowanie próby szkicu.";
   }
   return "Próba gotowa: WILQ ma kontrakt szkicu i nie wygenerował treści na żywo.";
+}
+
+function structuredPreviewSafetyText(
+  result: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null
+) {
+  if (!result) {
+    return "Po wygenerowaniu szkicu WILQ pokaże treść do sprawdzenia. To nadal nie jest publikacja.";
+  }
+  if (result.blockers.length) {
+    return result.blockers[0]?.reason ?? "WILQ zablokował podgląd treści.";
+  }
+  if (result.preview) {
+    return "Podgląd gotowy do sprawdzenia przez człowieka. WordPress i publikacja nadal są zablokowane.";
+  }
+  return "WILQ nie zwrócił treści do podglądu.";
 }
 
 function wordpressExecutionSafetyText(
@@ -490,6 +670,26 @@ function structuredRuntimeControlDisabledReason(
       data.structuredGeneration.structured_generation_result.blockers[0]?.reason ??
       "Najpierw WILQ musi przygotować kontrakt szkicu."
     );
+  }
+  return null;
+}
+
+function structuredPreviewControlDisabledReason(
+  data: ContentWorkflowSnapshot,
+  pending: boolean,
+  result: ContentWorkItemStructuredDraftPreviewResponse["preview_result"] | null,
+  runtimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null
+) {
+  if (pending) return "WILQ sprawdza podgląd treści.";
+  if (result) return "Podgląd treści jest już przygotowany dla tej sesji.";
+  if (!data.structuredGeneration.structured_generation_result.contract) {
+    return (
+      data.structuredGeneration.structured_generation_result.blockers[0]?.reason ??
+      "Najpierw WILQ musi przygotować kontrakt szkicu."
+    );
+  }
+  if (!runtimeResult?.output) {
+    return "Najpierw WILQ musi mieć wygenerowany szkic. Sama próba gotowości nie tworzy treści.";
   }
   return null;
 }

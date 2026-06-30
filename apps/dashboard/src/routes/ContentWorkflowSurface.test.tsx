@@ -3,10 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemSnapshot,
+  postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemStructuredDraftPreviewResponse,
   type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse
@@ -19,6 +21,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return {
     ...actual,
     getContentWorkItemSnapshot: vi.fn(),
+    postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
@@ -37,6 +40,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
       structuredDraftRuntimeResponse()
+    );
+    vi.mocked(postContentWorkItemStructuredDraftPreview).mockResolvedValue(
+      structuredDraftPreviewResponse()
     );
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
@@ -78,10 +84,13 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd treści")).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wywołuje modelu/)).toBeInTheDocument();
+    expect(screen.getByText(/Po wygenerowaniu szkicu WILQ pokaże treść/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wykonuje zewnętrznego zapisu/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
     expect(screen.getByText("zablokowany")).toBeInTheDocument();
@@ -125,6 +134,7 @@ describe("ContentWorkflowSurface", () => {
       });
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
+    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -158,6 +168,7 @@ describe("ContentWorkflowSurface", () => {
     });
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
     expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
+    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -184,8 +195,50 @@ describe("ContentWorkflowSurface", () => {
       mode: "dry_run"
     });
     expect(await screen.findByRole("button", { name: "Próba szkicu gotowa" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
+    expect(screen.getByText(/Sama próba gotowości nie tworzy treści/)).toBeInTheDocument();
     expect(screen.getByText(/Próba gotowa/)).toBeInTheDocument();
     expect(screen.getByText(/nie wygenerował treści na żywo/)).toBeInTheDocument();
+    expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
+    expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
+    expect(postContentWorkItemStructuredDraftPreview).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("shows a structured draft preview only after generated text exists", async () => {
+    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
+      structuredDraftRuntimeResponse({ output: structuredDraftOutput(), status: "generated" })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
+
+    await screen.findByRole("button", { name: "Próba szkicu gotowa" });
+    expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż podgląd treści" }));
+
+    await waitFor(() => {
+      expect(postContentWorkItemStructuredDraftPreview).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemStructuredDraftPreview).mock.calls[0]?.[0]).toEqual({
+      contract: structuredDraftGenerationContract(),
+      output: structuredDraftOutput()
+    });
+    expect(await screen.findByRole("button", { name: "Podgląd treści gotowy" })).toBeDisabled();
+    expect(screen.getByText("BDO dla firm - szkic do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText("Kogo dotyczy BDO")).toBeInTheDocument();
+    expect(screen.getByText(/Sprawdź z ekspertem, czy opis obowiązku BDO jest aktualny/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/WordPress i publikacja nadal są zablokowane/)).toBeInTheDocument();
     expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
     expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
@@ -530,8 +583,21 @@ function structuredDraftGenerationContract() {
       search_intent: "informacyjno-usługowy",
       service_fit: "obsługa środowiskowa",
       cta_direction: "Skontaktuj się z Ekologus.",
-      sections: [],
-      source_facts: [],
+      sections: [
+        {
+          heading: "Kogo dotyczy BDO",
+          purpose: "Wyjaśnić, kiedy firma powinna sprawdzić obowiązki BDO.",
+          evidence_ids: ["ev_gsc_bdo"],
+          draft_notes: ["Nie obiecuj pełnej zgodności bez sprawdzenia przypadku."]
+        }
+      ],
+      source_facts: [
+        {
+          evidence_id: "ev_gsc_bdo",
+          source_connector: "google_search_console",
+          summary: "GSC pokazuje popyt na temat BDO."
+        }
+      ],
       claims_allowed: [],
       claims_removed_or_blocked: [],
       human_review_questions: ["Czy to brzmi jak Ekologus?"]
@@ -546,10 +612,18 @@ function structuredDraftGenerationContract() {
   };
 }
 
-function structuredDraftRuntimeResponse(): ContentWorkItemStructuredDraftRuntimeResponse {
+function structuredDraftRuntimeResponse({
+  output = null,
+  status = output ? "generated" : "dry_run_ready",
+  externalCallAttempted = Boolean(output)
+}: {
+  output?: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"]["output"];
+  status?: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"]["status"];
+  externalCallAttempted?: boolean;
+} = {}): ContentWorkItemStructuredDraftRuntimeResponse {
   return {
     runtime_result: {
-      status: "dry_run_ready",
+      status,
       request_payload: {
         model: "gpt-5",
         input: [
@@ -576,8 +650,62 @@ function structuredDraftRuntimeResponse(): ContentWorkItemStructuredDraftRuntime
         temperature: 0.2,
         max_output_tokens: 4000
       },
-      output: null,
-      external_call_attempted: false,
+      output,
+      external_call_attempted: externalCallAttempted,
+      blockers: []
+    }
+  };
+}
+
+function structuredDraftOutput() {
+  return {
+    draft_kind: "section_draft" as const,
+    language: "pl-PL" as const,
+    title: "BDO dla firm - szkic do sprawdzenia",
+    meta_title: "BDO dla firm - szkic",
+    meta_description: "Wyjaśnienie obowiązków BDO dla firm na podstawie sprawdzonych źródeł.",
+    h1: "BDO dla firm",
+    sections: [
+      {
+        heading: "Kogo dotyczy BDO",
+        body_markdown:
+          "BDO może dotyczyć firm, które wytwarzają odpady albo wprowadzają produkty w opakowaniach. WILQ wskazuje ten fragment jako szkic do sprawdzenia, nie poradę prawną.",
+        evidence_ids: ["ev_gsc_bdo"],
+        claims_used: []
+      }
+    ],
+    faq: ["Czy każda firma musi mieć BDO?"],
+    cta: "Skontaktuj się z Ekologus i sprawdź obowiązki dla swojej firmy.",
+    internal_links: ["https://ekologus.pl/kontakt/"],
+    source_facts_used: ["ev_gsc_bdo"],
+    claims_needing_review: [],
+    forbidden_claims_avoided: ["gwarancja pełnej zgodności z przepisami"],
+    human_review_checklist: [
+      "Sprawdź z ekspertem, czy opis obowiązku BDO jest aktualny.",
+      "Sprawdź, czy CTA pasuje do procesu sprzedaży Ekologus."
+    ],
+    publish_ready: false as const
+  };
+}
+
+function structuredDraftPreviewResponse(): ContentWorkItemStructuredDraftPreviewResponse {
+  const output = structuredDraftOutput();
+  return {
+    preview_result: {
+      preview: {
+        title: output.title,
+        meta_title: output.meta_title,
+        meta_description: output.meta_description,
+        h1: output.h1,
+        sections: output.sections,
+        faq: output.faq,
+        cta: output.cta,
+        internal_links: output.internal_links,
+        source_facts_used: output.source_facts_used,
+        forbidden_claims_avoided: output.forbidden_claims_avoided,
+        human_review_checklist: output.human_review_checklist,
+        publish_ready: false
+      },
       blockers: []
     }
   };

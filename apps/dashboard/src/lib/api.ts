@@ -390,6 +390,8 @@ export type {
   ContentWorkItemMeasurementWindowResponse,
   ContentWorkItemPreflightResponse,
   ContentWorkItemSalesBriefResponse,
+  ContentWorkItemSnapshotAuditRequest,
+  ContentWorkItemSnapshotHumanReviewRequest,
   ContentWorkItemStructuredDraftGenerationRequest,
   ContentWorkItemStructuredDraftGenerationResponse,
   ContentWorkItemStructuredDraftPreviewRequest,

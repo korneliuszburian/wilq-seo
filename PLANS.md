@@ -1025,6 +1025,11 @@ Current outcome:
   unresolved claim review and remains `publish_ready=false`. This keeps generated
   text reviewable without automatically creating a WordPress draft or publishing
   on `ekologus.pl`.
+- `/content-workflow` now renders that structured draft preview as "Podgląd
+  treści" only after generated structured output exists. The dashboard shows the
+  evidence-mapped title, sections and human review checklist while WordPress
+  remains a separate draft-only dry-run and no publication on `ekologus.pl` is
+  attempted.
 
 Current risk:
 
