@@ -59,9 +59,9 @@ API status later contradicts this state.
 - Goal 001 cleanup is no longer blocked by missing UAT input because the owner
   explicitly deferred real marketer UAT until WILQ has a stronger content
   production workflow.
-- The safe next product goal is Goal 002: Content Production Engine bez slopu.
-- Goal 002 must start from anti-slop guardrails and content workflow contracts,
-  not from prompt-only drafting or more dashboard labels.
+- Goal 002: Content Production Engine bez slopu is completed as the first safe
+  content draft-preparation layer. Any next product goal should be created as a
+  separate goal instead of extending Goal 002 by stealth.
 - WILQ may now be described as a safe content draft-preparation workflow for
   one diagnostics-derived Ekologus item: evidence, inventory/canonical check,
   duplicate gate, preflight, preserve-first plan, sales brief, claim gate,
@@ -79,7 +79,7 @@ API status later contradicts this state.
   for repository work, deterministic skill smokes, non-interactive evals,
   adversarial operator checks and local orchestration; it must not become the
   production writer or a second product brain.
-- Goal 002 Beads epic is `wilq-seo-zu4`.
+- Goal 002 Beads epic `wilq-seo-zu4` is closed.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,

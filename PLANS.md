@@ -24,6 +24,8 @@ Goal 002 and must stay restartable without chat history.
 
 Goal 002: Content Production Engine bez slopu.
 
+Status: completed on 2026-06-30. Beads epic `wilq-seo-zu4` is closed.
+
 Outcome:
 
 WILQ can take one real Ekologus content item from evidence to a safe WordPress
@@ -890,9 +892,14 @@ behavior must land in focused content/domain modules with tests first.
 Current outcome:
 
 - Goal 001 is no longer blocked by missing UAT input because owner defer exists,
-  but WILQ still cannot claim real marketer UAT or full content-production
-  readiness.
-- Goal 002 now has a concrete product plan and operational Beads graph.
+  but WILQ still cannot claim real marketer UAT.
+- Goal 002 completion definition is satisfied for one diagnostics-derived
+  Ekologus content item. WILQ now has a safe draft-preparation workflow with
+  evidence, inventory/canonical resolution, duplicate check, preflight,
+  preserve-first plan, sales brief, claim gate, draft package, human review,
+  audit, WordPress draft-only handoff/execution dry-run and measurement window.
+  It still cannot be described as a live WordPress publisher or as a system that
+  claims content success before the measurement window has usable data.
 - Anti-slop baseline is implemented and recorded as proof.
 - API router extraction has started. Connector read and refresh endpoints now
   have a router home. Jobs and job-run endpoints also now have a router home.
