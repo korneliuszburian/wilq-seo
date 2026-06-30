@@ -358,6 +358,16 @@ API status later contradicts this state.
   `/api/content/work-items/*` endpoints, with tests proving each helper calls
   the API-owned path. The new schema work lives in
   `packages/shared-schemas/src/contentWorkflow.ts`, not in React route logic.
+- Goal 002 marketer-facing content workflow route started under
+  `wilq-seo-rtt`. Dashboard route `/content-workflow` now renders a first
+  controlled content production path from the existing API-owned workflow
+  contracts: preflight, Sales Brief, Draft Package, Human Review, WordPress
+  draft handoff and Measurement Window. The view shows WordPress as draft-only,
+  keeps outcome claims blocked until the measurement date and hides raw endpoint
+  paths/schema names from the marketer-facing surface. It does not generate
+  content, publish to WordPress or add behavior to `ContentDiagnosticSurface`.
+  Focused dashboard route tests, dashboard typecheck, dashboard lint,
+  `pnpm fallow:audit` and `git diff --check` passed.
   Focused Vitest suites, package typecheck/lint, Fallow audit and
   `git diff --check` passed. Fallow still reports inherited duplicate groups in
   the older shared `index.ts`, but the audit gate found no new changed-file
@@ -1025,6 +1035,10 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'action_apply_requires_validation or apply_ready_action_blocks_without_mutation_adapter'`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'context_pack_scopes_content_strategist_payload or ga4 or localo or ads_doctor_payload or custom_segments_payload or demand_gen_payload'`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
+- `rtk pnpm --filter @wilq/dashboard test -- src/routes/ContentWorkflowSurface.test.tsx`
+- `rtk pnpm -C apps/dashboard typecheck`
+- `rtk pnpm -C apps/dashboard lint`
+- `rtk pnpm fallow:audit`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_marketer_language_guard.py -q`
 - `rtk uv run pytest tests/content/test_preflight_verdicts.py tests/content/test_canonical_urls.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exists -q`

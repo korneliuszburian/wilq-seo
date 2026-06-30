@@ -46,6 +46,11 @@ const ContentDiagnosticSurface = lazy(() =>
     default: module.ContentDiagnosticSurface
   }))
 );
+const ContentWorkflowSurface = lazy(() =>
+  import("./ContentWorkflowSurface").then((module) => ({
+    default: module.ContentWorkflowSurface
+  }))
+);
 const CustomSegmentsDiagnosticSurface = lazy(() =>
   import("./CustomSegmentsDiagnosticSurface").then((module) => ({
     default: module.CustomSegmentsDiagnosticSurface
@@ -82,6 +87,7 @@ const operatingRoutes = [
   "/ahrefs",
   "/localo",
   "/merchant",
+  "/content-workflow",
   "/content-planner",
   "/content-inventory",
   "/social-publisher",
@@ -131,6 +137,11 @@ const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   "/content-planner": () => (
     <LazyRoute>
       <ContentDiagnosticSurface title={briefSurfaceConfigs["/content-planner"].title} />
+    </LazyRoute>
+  ),
+  "/content-workflow": () => (
+    <LazyRoute>
+      <ContentWorkflowSurface />
     </LazyRoute>
   )
 };

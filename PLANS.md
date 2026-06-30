@@ -928,6 +928,12 @@ Current outcome:
   preflight-domain home. Full inventory records, full preflight contracts,
   claims, drafting, handoff and broader measurement modules still need behavior
   extraction.
+- Goal 002 now has a first marketer-facing `/content-workflow` dashboard route.
+  It renders the existing API-owned content workflow contracts in order:
+  preflight, Sales Brief, Draft Package, Human Review, WordPress draft handoff
+  and Measurement Window. The route keeps WordPress draft-only, blocks outcome
+  claims until the measurement window, hides raw endpoint/schema names and does
+  not add behavior to the frozen `ContentDiagnosticSurface`.
 
 Current risk:
 
