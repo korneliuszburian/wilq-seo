@@ -467,6 +467,13 @@ API status later contradicts this state.
   content/GSC/campaign-builder context-pack tests, Ruff/mypy for touched API
   files, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- `apps/api/wilq_api/context_ads.py` now owns Ads Doctor, Ads lite, custom
+  segments and campaign-candidate context compaction for Codex context-pack
+  payloads. `main.py` delegates Ads, custom-segment, campaign-builder Ads
+  context and Demand Gen Ads-lite shaping to that runtime module. Focused
+  Ads/custom-segment/campaign-builder/Demand Gen context-pack tests, Ruff/mypy
+  for touched API files, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 
 ## Latest Verified Product State
 
