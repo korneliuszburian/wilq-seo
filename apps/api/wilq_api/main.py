@@ -6,13 +6,13 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.actions import create_actions_router
-from apps.api.wilq_api.routers.connectors import router as connectors_router
+from apps.api.wilq_api.routers.connectors import create_connectors_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
 from apps.api.wilq_api.routers.expert import router as expert_router
@@ -72,7 +72,7 @@ from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue, clear_tactical_queue_cache
-from wilq.connectors.refresh import list_connector_refresh_runs, run_connector_refresh
+from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import (
     connector_evidence_id,
@@ -102,8 +102,6 @@ from wilq.schemas import (
     AdsCampaignMetricRow,
     CodexRun,
     CommandCenterResponse,
-    ConnectorRefreshRequest,
-    ConnectorRefreshRun,
     ConnectorStatus,
     DailyDecision,
     DemandGenReadinessContract,
@@ -146,7 +144,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(connectors_router)
 app.include_router(diagnostics_router)
 app.include_router(evidence_router)
 app.include_router(expert_router)
@@ -1244,6 +1241,7 @@ def clear_api_view_model_caches() -> None:
 
 
 app.include_router(create_actions_router(clear_api_view_model_caches))
+app.include_router(create_connectors_router(clear_api_view_model_caches))
 
 
 def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
@@ -4538,18 +4536,6 @@ def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
     return bool(set(values).intersection(scoped_connectors))
-
-
-@app.post("/api/connectors/{connector}/refresh", response_model=ConnectorRefreshRun)
-def connector_refresh(
-    connector: str,
-    request: ConnectorRefreshRequest | None = None,
-) -> ConnectorRefreshRun:
-    run = run_connector_refresh(connector, request)
-    if run is None:
-        raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
-    clear_api_view_model_caches()
-    return run
 
 
 @app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)

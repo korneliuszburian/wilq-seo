@@ -593,6 +593,11 @@ dashboard logic fork.
   through an injected callback instead of importing `main.py` from the router.
   Remaining route groups in `main.py` are connector refresh, Demand Gen
   diagnostics and Codex/context endpoints.
+- Tenth API router extraction moved connector refresh POST from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
+  Refresh still clears API view-model caches through an injected callback.
+  Remaining route groups in `main.py` are Demand Gen diagnostics and
+  Codex/context endpoints.
 
 Current next action:
 
@@ -600,9 +605,8 @@ Continue with the next ready extraction slice from `bd ready --json`.
 Current ready/in-progress Goal 002 slices are:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
-  First slice moved read-only connector endpoints to a router; POST refresh
-  remains in `main.py` until cache invalidation is extracted safely. Second
-  slice moved jobs and job-run endpoints to a jobs router. Third slice moved
+  First slice moved read-only connector endpoints to a router. Second slice
+  moved jobs and job-run endpoints to a jobs router. Third slice moved
   evidence and metric read endpoints to dedicated routers. Fourth slice moved
   knowledge and expert-rule endpoints to dedicated routers. Fifth slice moved
   workflow and workflow-run endpoints to a workflows router. Sixth slice moved
@@ -612,7 +616,8 @@ Current ready/in-progress Goal 002 slices are:
   diagnostics router; Demand Gen diagnostics remains in `main.py` until its
   readiness builder is extracted safely. Ninth slice moved action, audit and
   mutation-audit endpoints to an actions router while preserving cache clearing
-  after mutating calls.
+  after mutating calls. Tenth slice moved connector refresh POST to the
+  connectors router while preserving cache clearing after refresh.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
@@ -653,17 +658,15 @@ Current outcome:
   readiness.
 - Goal 002 now has a concrete product plan and operational Beads graph.
 - Anti-slop baseline is implemented and recorded as proof.
-- API router extraction has started. Read-only connector endpoints now have a
-  router home, while cache-affecting connector refresh remains in `main.py`
-  until a safe cache extraction exists. Jobs and job-run endpoints also now
-  have a router home. Evidence and metric read endpoints also now have router
-  homes. Knowledge and expert-rule endpoints also now have router homes.
-  Workflow and workflow-run endpoints also now have a router home. Root, health
-  and system-status endpoints also now have a router home. Opportunity
-  endpoints also now have a router home. Command center, marketing and
-  read-only domain diagnostics endpoints also now have a diagnostics router
-  home. Action, audit and mutation-audit endpoints also now have an actions
-  router home.
+- API router extraction has started. Connector read and refresh endpoints now
+  have a router home. Jobs and job-run endpoints also now have a router home.
+  Evidence and metric read endpoints also now have router homes. Knowledge and
+  expert-rule endpoints also now have router homes. Workflow and workflow-run
+  endpoints also now have a router home. Root, health and system-status
+  endpoints also now have a router home. Opportunity endpoints also now have a
+  router home. Command center, marketing and read-only domain diagnostics
+  endpoints also now have a diagnostics router home. Action, audit and
+  mutation-audit endpoints also now have an actions router home.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

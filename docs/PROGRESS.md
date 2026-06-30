@@ -150,10 +150,11 @@ API status later contradicts this state.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
-  response shapes. Connector refresh POST remains in `main.py` until cache
-  invalidation can be extracted safely. Focused connector API tests, route-shape
-  smoke, Ruff, mypy for the new router, `scripts/audit_complexity.py --changed
-  --allow-frozen` and `git diff --check` passed.
+  response shapes. The first slice left connector refresh POST in `main.py`
+  until cache invalidation could be extracted safely. Focused connector API
+  tests, route-shape smoke, Ruff, mypy for the new router,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 jobs router extraction moved `/api/jobs*` and `/api/job-runs*`
   endpoints from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/jobs.py` without changing endpoint paths or
@@ -216,6 +217,15 @@ API status later contradicts this state.
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. `main.py` now keeps only connector refresh, Demand Gen diagnostics
   and Codex/context endpoints.
+- Goal 002 connector refresh router extraction moved
+  `POST /api/connectors/{connector}/refresh` from `apps/api/wilq_api/main.py`
+  to `apps/api/wilq_api/routers/connectors.py` without changing endpoint path
+  or response shape. The connector router now receives
+  `clear_api_view_model_caches` as an injected callback, so refresh still clears
+  dashboard/context caches after collecting state. Focused connector API tests,
+  route-shape smoke, Ruff, mypy, `scripts/audit_complexity.py --changed
+  --allow-frozen` and `git diff --check` passed. `main.py` now keeps only
+  Demand Gen diagnostics and Codex/context endpoints.
 
 ## Latest Verified Product State
 
