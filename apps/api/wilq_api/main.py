@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api import context_knowledge
 from apps.api.wilq_api.context_cache import (
     clear_skill_context_cache,
     read_skill_context_cache,
@@ -18,9 +19,7 @@ from apps.api.wilq_api.context_models import ContextPackRequest
 from apps.api.wilq_api.context_scopes import (
     SKILL_ACTION_ID_SCOPES,
     SKILL_CONNECTOR_SCOPES,
-    SKILL_EXPERT_RULE_IDS,
     SKILL_KEYWORD_SCOPES,
-    SKILL_KNOWLEDGE_CARD_IDS,
 )
 from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.codex import create_codex_router
@@ -1051,16 +1050,16 @@ def _skill_scoped_context_pack(
         ][:evidence_summary_limit],
         "knowledge_card_summaries": [
             _compact_knowledge_card_for_operator_context(card)
-            for card in _knowledge_cards_for_skill(skill)
+            for card in context_knowledge.knowledge_cards_for_skill(skill)
         ],
         "expert_rule_summaries": [
             _compact_expert_rule_for_operator_context(rule)
-            for rule in _expert_rules_for_skill(skill)
+            for rule in context_knowledge.expert_rules_for_skill(skill)
         ],
         "expert_capabilities": [
             _compact_expert_capability_for_operator_context(capability)
             for capability in list_expert_capabilities()
-            if _text_matches_scope(
+            if context_knowledge.text_matches_scope(
                 [
                     capability.id,
                     capability.domain,
@@ -4304,53 +4303,6 @@ def _actions_for_scope(
 ) -> list[ActionObject]:
     del evidence_ids
     return [action for action in actions if action.connector in scoped_connectors]
-
-
-def _knowledge_cards_for_skill(skill: str) -> list[KnowledgeCard]:
-    explicit_ids = SKILL_KNOWLEDGE_CARD_IDS.get(skill, [])
-    keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
-    cards = compile_playbook_cards()
-    explicit_cards = [card for card in cards if card.id in explicit_ids]
-    scoped_cards = [
-        card
-        for card in cards
-        if card.id not in explicit_ids
-        and _text_matches_scope(
-            [card.id, card.card_type, card.title, card.summary, card.source_id],
-            keywords,
-        )
-    ]
-    return [*explicit_cards, *scoped_cards][:8]
-
-
-def _expert_rules_for_skill(skill: str) -> list[ExpertRuleSummary]:
-    explicit_ids = SKILL_EXPERT_RULE_IDS.get(skill, [])
-    keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
-    rules = list_expert_rule_summaries(limit=50)
-    explicit_rules = [rule for rule in rules if rule.id in explicit_ids]
-    scoped_rules = [
-        rule
-        for rule in rules
-        if rule.id not in explicit_ids
-        and _text_matches_scope(
-            [
-                rule.id,
-                rule.name,
-                rule.domain,
-                rule.source_anchor,
-                rule.output_contract,
-            ],
-            keywords,
-        )
-    ]
-    return [*explicit_rules, *scoped_rules][:8]
-
-
-def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
-    if not keywords:
-        return True
-    haystack = " ".join(values).lower()
-    return any(keyword.lower() in haystack for keyword in keywords)
 
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:

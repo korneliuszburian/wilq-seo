@@ -395,6 +395,13 @@ API status later contradicts this state.
   those maps while the heavy diagnostics/context builders await extraction.
   Focused context-pack tests passed again for daily action preview audit,
   metric-invention instruction and content strategist scoping.
+- `apps/api/wilq_api/context_knowledge.py` now owns skill-scoped knowledge-card
+  and expert-rule selection plus scope text matching. `main.py` now calls that
+  runtime module instead of keeping these helpers locally. Focused context-pack
+  tests passed for daily action preview audit, metric-invention instruction,
+  content strategist scoping and raw-history compaction. `wilq-seo-462` remains
+  open because the heavy context-pack builders and compaction helpers still need
+  extraction.
 
 ## Latest Verified Product State
 

@@ -690,7 +690,9 @@ Current ready/in-progress Goal 002 slices are:
   `main.py` without changing `/api/codex/*` response shapes. First partial
   slice moved request-skill parsing and skill context-pack cache to
   `apps/api/wilq_api/context_cache.py`; second partial slice moved skill scope
-  maps to `apps/api/wilq_api/context_scopes.py`. Heavy builders and compaction
+  maps to `apps/api/wilq_api/context_scopes.py`; third partial slice moved
+  skill-scoped knowledge-card and expert-rule selection to
+  `apps/api/wilq_api/context_knowledge.py`. Heavy builders and compaction
   helpers still need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC

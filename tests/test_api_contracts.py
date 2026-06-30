@@ -7800,7 +7800,7 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
         source_lineage=["Content gap rows", "Backlink gap rows"],
     )
     monkeypatch.setattr(
-        "apps.api.wilq_api.main._knowledge_cards_for_skill",
+        "apps.api.wilq_api.context_knowledge.knowledge_cards_for_skill",
         lambda skill: [dirty_card],
     )
 
