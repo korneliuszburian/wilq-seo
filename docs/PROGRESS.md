@@ -147,6 +147,15 @@ API status later contradicts this state.
   claim labels. The same content diagnostics contract tests, Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Goal 002 content API view-model label helpers moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/labels.py`. This is behavior-preserving
+  extraction: content connector status labels, refresh labels, metric labels,
+  live-data status copy and label hydration for diagnostic sections now have a
+  content-domain home. `tests/content` (32 tests), four content diagnostics API
+  contract tests, Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

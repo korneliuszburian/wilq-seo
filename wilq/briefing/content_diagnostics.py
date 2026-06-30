@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.actions.content_refresh import content_contract_label
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -29,11 +28,17 @@ from wilq.content.preflight.vendor_read import (
     content_vendor_read_blocker_decision,
     refresh_or_connector_evidence_ids,
 )
+from wilq.content.view_models.labels import (
+    content_connector_with_api_label,
+    content_live_data_status_label,
+    content_metric_fact_with_api_label,
+    content_refresh_with_api_label,
+    content_section_with_api_labels,
+)
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     action_count_label,
     evidence_count_label,
-    source_connector_label,
     source_connector_labels,
 )
 from wilq.schemas import (
@@ -41,7 +46,6 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
-    ConnectorStatus,
     ContentDecisionItem,
     ContentDiagnosticSection,
     ContentDiagnosticsResponse,
@@ -87,40 +91,8 @@ AHREFS_CONTENT_EXPERT_RULE_IDS = (
 )
 GA4_TRACKING_KNOWLEDGE_CARD_IDS = ("card_ga4_behavior_diagnostics_playbook",)
 GA4_TRACKING_EXPERT_RULE_IDS = ("ga4_diagnostics_v1",)
-CONTENT_CONNECTOR_STATUS_LABELS = {
-    "configured": "dostęp skonfigurowany",
-    "missing_credentials": "brakuje dostępu",
-    "disabled": "źródło wyłączone",
-    "missing_dependency": "brak zależności",
-    "unreachable": "źródło niedostępne",
-    "auth_error": "błąd dostępu",
-    "rate_limited": "limit odczytu",
-    "error": "błąd źródła",
-}
-CONTENT_REFRESH_STATUS_LABELS = {
-    "completed": "zakończony",
-    "blocked": "zablokowany",
-    "failed": "błąd",
-}
-CONTENT_METRIC_FACT_LABELS = {
-    "ahrefs_backlink_gap_count": "Luki linków z Ahrefs",
-    "ahrefs_competitor_page_count": "Strony konkurencji z Ahrefs",
-    "ahrefs_content_gap_count": "Luki treści z Ahrefs",
-    "ahrefs_organic_keyword_gap_count": "Luki fraz z Ahrefs",
-    "ahrefs_referring_domain_gap_count": "Luki domen linkujących z Ahrefs",
-    "ahrefs_top_page_gap_count": "Mocne strony konkurencji",
-    "average_position": "Pozycja",
-    "clicks": "Kliknięcia",
-    "content_object_count": "Obiekty WordPress",
-    "content_object_seen": "Treść w spisie",
-    "ctr": "CTR",
-    "engaged_sessions": "Sesje zaangażowane",
-    "engagement_rate": "Współczynnik zaangażowania",
-    "impressions": "Wyświetlenia",
-    "pages_total": "Strony WordPress",
-    "posts_total": "Wpisy WordPress",
-    "sessions": "Sesje",
-}
+
+
 def build_content_diagnostics(
     tactical_items: list[TacticalQueueItem] | None = None,
     actions: list[ActionObject] | None = None,
@@ -135,7 +107,7 @@ def build_content_diagnostics(
     metric_facts = (
         metric_facts if metric_facts is not None else _content_metric_facts(CONTENT_CONNECTOR_IDS)
     )
-    metric_facts = [_content_metric_fact_with_api_label(fact) for fact in metric_facts]
+    metric_facts = [content_metric_fact_with_api_label(fact) for fact in metric_facts]
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
     all_tactical_items = (
@@ -169,7 +141,7 @@ def build_content_diagnostics(
             action_ids,
         ),
     ]
-    sections = [_content_section_with_api_labels(section) for section in sections]
+    sections = [content_section_with_api_labels(section) for section in sections]
     evidence_ids = _unique(
         [
             *(evidence_id for section in sections for evidence_id in section.evidence_ids),
@@ -192,10 +164,10 @@ def build_content_diagnostics(
     )
     return ContentDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
-        connectors=[_content_connector_with_api_label(connector) for connector in connectors],
-        latest_refreshes=[_content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
+        connectors=[content_connector_with_api_label(connector) for connector in connectors],
+        latest_refreshes=[content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
         live_data_available=live_data_available,
-        live_data_status_label=_content_live_data_status_label(live_data_available),
+        live_data_status_label=content_live_data_status_label(live_data_available),
         query_page_count=query_page_count,
         matched_inventory_count=matched_inventory_count,
         operator_summary=_operator_summary(
@@ -593,64 +565,10 @@ def _content_decision_with_api_labels(decision: ContentDecisionItem) -> ContentD
             "duplicate_gate_status_label": content_gate_label(decision.duplicate_gate_status),
             "blocked_claim_labels": content_blocked_claim_labels(decision.blocked_claims),
             "metric_facts": [
-                _content_metric_fact_with_api_label(fact) for fact in decision.metric_facts
+                content_metric_fact_with_api_label(fact) for fact in decision.metric_facts
             ],
         }
     )
-
-
-def _content_connector_with_api_label(connector: ConnectorStatus) -> ConnectorStatus:
-    return connector.model_copy(
-        update={"status_label": _content_connector_status_label(str(connector.status))}
-    )
-
-
-def _content_refresh_with_api_label(refresh: ConnectorRefreshRun) -> ConnectorRefreshRun:
-    return refresh.model_copy(
-        update={
-            "connector_label": source_connector_label(refresh.connector_id),
-            "status_label": _content_refresh_status_label(str(refresh.status)),
-        }
-    )
-
-
-def _content_live_data_status_label(live_data_available: bool) -> str:
-    return (
-        "dane GSC i WordPress dostępne"
-        if live_data_available
-        else "brak danych GSC lub WordPress do decyzji"
-    )
-
-
-def _content_section_with_api_labels(
-    section: ContentDiagnosticSection,
-) -> ContentDiagnosticSection:
-    return section.model_copy(
-        update={
-            "metric_facts": [
-                _content_metric_fact_with_api_label(fact) for fact in section.metric_facts
-            ],
-            "evidence_summary_label": evidence_count_label(section.evidence_ids),
-            "action_summary_label": action_count_label(section.action_ids),
-            "blocked_claim_labels": content_blocked_claim_labels(section.blocked_claims),
-        }
-    )
-
-
-def _content_metric_fact_with_api_label(fact: MetricFact) -> MetricFact:
-    return fact.model_copy(update={"metric_label": _content_metric_fact_label(fact.name)})
-
-
-def _content_connector_status_label(value: str) -> str:
-    return CONTENT_CONNECTOR_STATUS_LABELS.get(value, content_contract_label(value))
-
-
-def _content_refresh_status_label(value: str) -> str:
-    return CONTENT_REFRESH_STATUS_LABELS.get(value, content_contract_label(value))
-
-
-def _content_metric_fact_label(value: str) -> str:
-    return CONTENT_METRIC_FACT_LABELS.get(value, content_contract_label(value))
 
 
 def _content_decision_queue(

@@ -548,6 +548,11 @@ dashboard logic fork.
   the response while preserve-first copy, blocked-claim labels, missing inputs,
   concrete gate labels and preflight item view-models are tested directly in
   the content preflight domain.
+- Tenth content domain extraction moved content API view-model label helpers
+  from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/labels.py`. Content connector status labels,
+  refresh labels, metric labels, live-data status copy and section label
+  hydration now live in the content domain instead of the briefing composer.
 - First API router extraction moved read-only connector endpoints from
   `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
   This preserves endpoint paths and response shapes for connector list, status
@@ -640,7 +645,8 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
-  review, vendor-read blocker and marketer preflight view extraction slices.
+  review, vendor-read blocker, marketer preflight view and content API label
+  extraction slices.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
