@@ -674,8 +674,16 @@ Current ready/in-progress Goal 002 slices are:
   dev preview URLs as canonical evidence, closed. `wilq/content/inventory/records.py`
   now returns structured inventory records and preserve/create/block resolution.
 - `wilq-seo-jih` - next product slice: turn ContentPreflight into a first-class
-  workflow verdict over `ContentWorkItem` and Content Inventory v1. Preflight
-  must not draft or write; it only decides the safe next stage.
+  workflow verdict over `ContentWorkItem` and Content Inventory v1, closed.
+  `wilq/content/preflight/workflow.py` now exposes blocked, plan_allowed,
+  brief_allowed, draft_allowed and handoff_allowed states without drafting or
+  writing.
+- `wilq-seo-wxm` - next product slice: add Claim Ledger v1 so risky SEO,
+  business, legal-adjacent and environmental claims are data with statuses, not
+  prompt instructions.
+- `wilq-seo-pnz` - next product slice after or alongside Claim Ledger: add
+  Sales Brief v1 from a valid work item/preflight, evidence, final URL and
+  measurement plan.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -715,6 +723,10 @@ behavior must land in focused content/domain modules with tests first.
   Reason: WILQ needs safe content decisions now; richer extraction can build on
   records that already block missing canonical, dev-preview canonical and
   unresolved duplicate risk.
+- Decision: ContentPreflight v2 is a workflow verdict, not a writer.
+  Reason: preflight should decide allowed next stages and blockers while Sales
+  Brief, Claim Ledger, Draft Package, Human Review and WordPress handoff stay
+  separate audited steps.
 
 ## Outcomes & Retrospective
 

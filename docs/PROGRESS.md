@@ -201,6 +201,17 @@ API status later contradicts this state.
   Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Beads task `wilq-seo-jih` is closed. `wilq/content/preflight/workflow.py`
+  now exposes a ContentPreflight v2 verdict over `ContentWorkItem` and Content
+  Inventory v1 with `blocked`, `plan_allowed`, `brief_allowed`,
+  `draft_allowed` and `handoff_allowed` states. Preflight still does not draft
+  or write; it only exposes allowed next stages, blockers and disabled reasons.
+  Focused tests cover no evidence, missing connector, missing final canonical,
+  dev preview as canonical, existing content preserve-first, duplicate risk,
+  missing brief, missing human review and full handoff allowed.
+  `tests/content` (61 tests), Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
