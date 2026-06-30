@@ -73,11 +73,7 @@ from wilq.briefing.ahrefs_diagnostics import (
     _missing_authority_summary,
 )
 from wilq.briefing.command_center import _decision_state_label
-from wilq.briefing.content_diagnostics import (
-    _content_marketer_blocked_claims,
-    build_content_diagnostics,
-    build_content_preflight,
-)
+from wilq.briefing.content_diagnostics import build_content_diagnostics, build_content_preflight
 from wilq.briefing.ga4_diagnostics import (
     _ga4_connector_status_label,
     _ga4_decision_with_marketer_labels,
@@ -148,6 +144,7 @@ from wilq.connectors.localo.client import (
 )
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
+from wilq.content.preflight.marketer_view import content_marketer_blocked_claims
 from wilq.evidence.registry import (
     connector_evidence_id,
     list_evidence_by_ids,
@@ -1561,7 +1558,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         *missing_contract_labels([raw_value]),
         blocked_claim_label(raw_value),
         *blocked_claim_labels([raw_value]),
-        *_content_marketer_blocked_claims([raw_value]),
+        *content_marketer_blocked_claims([raw_value]),
         _merchant_dimension_label(raw_value),
         merchant_display_label(raw_value),
         merchant_dimension_label(raw_value),

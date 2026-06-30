@@ -139,6 +139,14 @@ API status later contradicts this state.
   diagnostics contract tests, Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 marketer-facing content preflight/decision view construction moved
+  from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/preflight/marketer_view.py`. This is behavior-preserving
+  extraction: focused marketer-view tests now cover preserve-first copy, draft
+  blocking with sales brief allowance, concrete gate labels and generic unknown
+  claim labels. The same content diagnostics contract tests, Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 
 ## Latest Verified Product State
 

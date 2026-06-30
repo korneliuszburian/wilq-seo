@@ -542,6 +542,12 @@ dashboard logic fork.
   `wilq/briefing/content_diagnostics.py` to
   `wilq/content/preflight/vendor_read.py`. Missing read evidence remains a
   content preflight blocker, not a prompt-side fallback.
+- Ninth content domain extraction moved marketer-facing content preflight and
+  decision view construction from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/preflight/marketer_view.py`. The briefing module now composes
+  the response while preserve-first copy, blocked-claim labels, missing inputs,
+  concrete gate labels and preflight item view-models are tested directly in
+  the content preflight domain.
 
 Current next action:
 
@@ -552,7 +558,7 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
-  review plus vendor-read blocker extraction slices.
+  review, vendor-read blocker and marketer preflight view extraction slices.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -596,8 +602,10 @@ Current outcome:
   home. GA4 tracking-gap content blockers now also have a measurement-domain
   home. Ahrefs gap review decision construction now also has a planning-domain
   home. The fallback GSC/WordPress vendor-read blocker now has a preflight-domain
-  home. Full inventory records, full preflight contracts, claims, drafting,
-  handoff and broader measurement modules still need behavior extraction.
+  home. The marketer-facing content preflight/decision view now also has a
+  preflight-domain home. Full inventory records, full preflight contracts,
+  claims, drafting, handoff and broader measurement modules still need behavior
+  extraction.
 
 Current risk:
 
