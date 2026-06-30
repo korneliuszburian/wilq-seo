@@ -583,9 +583,9 @@ dashboard logic fork.
   `apps/api/wilq_api/routers/diagnostics.py`. This includes
   `/api/dashboard/command-center`, `/api/marketing/*`, `/api/ads/diagnostics`,
   `/api/merchant/diagnostics`, `/api/content/*`, `/api/ga4/diagnostics`,
-  `/api/localo/diagnostics` and `/api/ahrefs/diagnostics`. Demand Gen
-  diagnostics remains in `main.py` until its context-heavy readiness builder is
-  extracted safely.
+  `/api/localo/diagnostics` and `/api/ahrefs/diagnostics`. At that slice,
+  Demand Gen diagnostics stayed in `main.py` until its context-heavy readiness
+  builder could be wrapped safely.
 - Ninth API router extraction moved action, audit and mutation-audit endpoints
   from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/actions.py`. Validation, review, preview,
@@ -598,6 +598,11 @@ dashboard logic fork.
   Refresh still clears API view-model caches through an injected callback.
   Remaining route groups in `main.py` are Demand Gen diagnostics and
   Codex/context endpoints.
+- Eleventh API router extraction moved Demand Gen diagnostics from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/demand_gen.py`
+  without moving the context-heavy readiness builder yet. The router receives
+  the current builder as an injected callback. Remaining route groups in
+  `main.py` are Codex/context endpoints.
 
 Current next action:
 
@@ -613,11 +618,12 @@ Current ready/in-progress Goal 002 slices are:
   root, health and system-status endpoints to a system router. Seventh slice
   moved opportunity endpoints to an opportunities router. Eighth slice moved
   command center, marketing and read-only domain diagnostics endpoints to a
-  diagnostics router; Demand Gen diagnostics remains in `main.py` until its
-  readiness builder is extracted safely. Ninth slice moved action, audit and
+  diagnostics router. Ninth slice moved action, audit and
   mutation-audit endpoints to an actions router while preserving cache clearing
   after mutating calls. Tenth slice moved connector refresh POST to the
-  connectors router while preserving cache clearing after refresh.
+  connectors router while preserving cache clearing after refresh. Eleventh
+  slice moved Demand Gen diagnostics to a router while leaving the readiness
+  builder in `main.py` for a later context extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
@@ -666,7 +672,9 @@ Current outcome:
   endpoints also now have a router home. Opportunity endpoints also now have a
   router home. Command center, marketing and read-only domain diagnostics
   endpoints also now have a diagnostics router home. Action, audit and
-  mutation-audit endpoints also now have an actions router home.
+  mutation-audit endpoints also now have an actions router home. Demand Gen
+  diagnostics also now has a router home. Only Codex/context endpoints remain
+  routed directly from `main.py`.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

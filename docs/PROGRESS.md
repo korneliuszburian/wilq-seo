@@ -201,9 +201,9 @@ API status later contradicts this state.
   `/api/content/*`, `/api/ga4/diagnostics`, `/api/localo/diagnostics` and
   `/api/ahrefs/diagnostics` from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/diagnostics.py` without changing endpoint paths
-  or response shapes. Demand Gen diagnostics remains in `main.py` until its
-  context-heavy readiness builder is extracted safely. Focused diagnostics API
-  tests, route-shape smoke, Ruff, mypy, dashboard tests,
+  or response shapes. At that slice, Demand Gen diagnostics stayed in `main.py`
+  until its context-heavy readiness builder could be wrapped safely. Focused
+  diagnostics API tests, route-shape smoke, Ruff, mypy, dashboard tests,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. The touched Localo contract fixture now expects the current
   `token obecny` label instead of the outdated shorter form.
@@ -215,8 +215,8 @@ API status later contradicts this state.
   preview, confirm, impact-check and apply still clear dashboard/context caches
   after mutating state. Focused action API tests, route-shape smoke, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
-  passed. `main.py` now keeps only connector refresh, Demand Gen diagnostics
-  and Codex/context endpoints.
+  passed. At that slice, `main.py` still kept connector refresh, Demand Gen
+  diagnostics and Codex/context endpoints.
 - Goal 002 connector refresh router extraction moved
   `POST /api/connectors/{connector}/refresh` from `apps/api/wilq_api/main.py`
   to `apps/api/wilq_api/routers/connectors.py` without changing endpoint path
@@ -226,6 +226,15 @@ API status later contradicts this state.
   route-shape smoke, Ruff, mypy, `scripts/audit_complexity.py --changed
   --allow-frozen` and `git diff --check` passed. `main.py` now keeps only
   Demand Gen diagnostics and Codex/context endpoints.
+- Goal 002 Demand Gen diagnostics router extraction moved
+  `/api/demand-gen/diagnostics` from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/demand_gen.py` without changing endpoint path or
+  response shape. The router receives the existing readiness builder as an
+  injected callback; the context-heavy builder remains in `main.py` for a later
+  scoped context extraction. Focused Demand Gen API/context tests, route-shape
+  smoke, Ruff, mypy, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed. `main.py` now keeps only Codex/context
+  endpoints.
 
 ## Latest Verified Product State
 

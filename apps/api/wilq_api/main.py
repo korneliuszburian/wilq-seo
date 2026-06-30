@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.connectors import create_connectors_router
+from apps.api.wilq_api.routers.demand_gen import create_demand_gen_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
 from apps.api.wilq_api.routers.expert import router as expert_router
@@ -1485,6 +1486,9 @@ def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
         demand_gen_metric_facts,
         ga4_metric_facts,
     )
+
+
+app.include_router(create_demand_gen_router(_build_demand_gen_readiness_contract))
 
 
 def _demand_gen_ga4_diagnostics_from_metric_facts(
@@ -4536,11 +4540,6 @@ def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
     return bool(set(values).intersection(scoped_connectors))
-
-
-@app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)
-def demand_gen_diagnostics() -> DemandGenReadinessContract:
-    return _build_demand_gen_readiness_contract()
 
 
 @app.get("/api/codex/context")
