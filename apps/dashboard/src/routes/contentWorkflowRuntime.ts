@@ -5,6 +5,7 @@ import {
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
+  type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse
 } from "../lib/api";
@@ -13,6 +14,7 @@ export type ContentWorkflowSnapshot = {
   preflight: ContentWorkItemPreflightResponse;
   salesBrief: ContentWorkItemSalesBriefResponse;
   draftPackage: ContentWorkItemDraftPackageResponse;
+  structuredGeneration: ContentWorkItemStructuredDraftGenerationResponse;
   humanReview: ContentWorkItemHumanReviewResponse;
   wordpressHandoff: ContentWorkItemWordPressDraftHandoffResponse;
   measurementWindow: ContentWorkItemMeasurementWindowResponse;
@@ -32,6 +34,7 @@ function workflowSnapshotFromApi(
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,
     draftPackage: snapshot.draft_package,
+    structuredGeneration: snapshot.structured_generation,
     humanReview: snapshot.human_review,
     wordpressHandoff: snapshot.wordpress_handoff,
     measurementWindow: snapshot.measurement_window,

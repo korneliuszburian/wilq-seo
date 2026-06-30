@@ -198,6 +198,7 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
     draft_package: ContentWorkItemDraftPackageResponse
+    structured_generation: ContentWorkItemStructuredDraftGenerationResponse
     human_review: ContentWorkItemHumanReviewResponse
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
@@ -494,6 +495,27 @@ def _build_content_work_item_snapshot_response(
         )
     )
     draft = draft_package.draft_package_result.draft_package
+    structured_generation = build_content_work_item_structured_draft_generation_response(
+        ContentWorkItemStructuredDraftGenerationRequest(
+            item=item.model_copy(
+                update={
+                    "preflight_status": "draft_allowed",
+                    "preserve_first_plan_status": "approved",
+                    "sales_brief_status": "approved",
+                    "sales_brief_id": None if brief is None else brief.id,
+                    "claim_ledger_status": "approved",
+                    "claim_ledger_id": claim_ledger.id,
+                    "draft_package_status": "ready",
+                    "draft_package_id": None if draft is None else draft.id,
+                    "measurement_window_status": "planned",
+                    "measurement_window_id": measurement_window_id,
+                }
+            ),
+            sales_brief=brief,
+            claim_ledger=claim_ledger,
+            draft_package=draft,
+        )
+    )
     human_review = build_content_work_item_human_review_response(
         ContentWorkItemHumanReviewRequest(
             item=item.model_copy(
@@ -554,6 +576,7 @@ def _build_content_work_item_snapshot_response(
         preflight=preflight,
         sales_brief=sales_brief,
         draft_package=draft_package,
+        structured_generation=structured_generation,
         human_review=human_review,
         wordpress_handoff=wordpress_handoff,
         measurement_window=measurement_window,
@@ -567,6 +590,8 @@ def _content_workflow_operator_steps(
 ) -> list[ContentWorkflowOperatorStep]:
     brief = snapshot.sales_brief.sales_brief_result.brief
     draft = snapshot.draft_package.draft_package_result.draft_package
+    structured_contract = snapshot.structured_generation.structured_generation_result.contract
+    structured_blocker = snapshot.structured_generation.structured_generation_result.blockers[0:1]
     review = snapshot.human_review.review
     handoff = snapshot.wordpress_handoff.handoff_result.handoff
     handoff_blocker = snapshot.wordpress_handoff.handoff_result.blockers[0:1]
@@ -589,6 +614,23 @@ def _content_workflow_operator_steps(
             title="Paczka szkicu",
             status_label="konspekt do sprawdzenia" if draft else "zablokowany",
             summary="WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację.",
+        ),
+        ContentWorkflowOperatorStep(
+            id="structured_draft",
+            title="Szkic treści",
+            status_label="gotowy do próby" if structured_contract else "zablokowany",
+            summary=(
+                "WILQ może sprawdzić przygotowanie szkicu bez pisania na żywo."
+                if structured_contract
+                else (
+                    structured_blocker[0].reason
+                    if structured_blocker
+                    else (
+                        "Szkic pozostaje zablokowany, dopóki plan i twierdzenia "
+                        "nie przejdą bramek."
+                    )
+                )
+            ),
         ),
         ContentWorkflowOperatorStep(
             id="human_review",

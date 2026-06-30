@@ -733,6 +733,34 @@ describe("Content work item workflow schemas", () => {
       handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
       success_claim_allowed: false
     };
+    const structuredContract = {
+      schema_name: "wilq_content_structured_draft_v1",
+      strict_schema: true,
+      model_input: {
+        work_item_id: "content_work_item_bdo",
+        language: "pl-PL",
+        draft_kind: "section_draft",
+        title: "BDO dla firm",
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        source_public_url: "https://ekologus.pl/bdo/",
+        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        target_reader: "właściciel firmy",
+        buyer_problem: "nie wie, jak podejść do BDO",
+        buyer_trigger: "zbliża się kontrola",
+        search_intent: "informacyjno-usługowy",
+        service_fit: "obsługa środowiskowa",
+        cta_direction: "Skontaktuj się z Ekologus.",
+        sections: [],
+        source_facts: [],
+        claims_allowed: [],
+        claims_removed_or_blocked: [],
+        human_review_questions: ["Czy to brzmi jak Ekologus?"]
+      },
+      output_schema: { type: "object", additionalProperties: false },
+      system_instruction: "Pisz wyłącznie z przekazanych faktów.",
+      user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
+      publish_ready: false
+    };
 
     expect(
       ContentWorkItemWorkflowSnapshotResponseSchema.safeParse({
@@ -753,6 +781,10 @@ describe("Content work item workflow schemas", () => {
           preflight_verdict: preflightVerdict,
           sales_brief_result: { brief, blockers: [] },
           draft_package_result: { draft_package: draftPackage, blockers: [] }
+        },
+        structured_generation: {
+          item,
+          structured_generation_result: { contract: structuredContract, blockers: [] }
         },
         human_review: {
           item,

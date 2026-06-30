@@ -174,6 +174,7 @@ function workflowSnapshot() {
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],
     draft_package: responseByPath["/api/content/work-items/draft-package"],
+    structured_generation: responseByPath["/api/content/work-items/structured-draft-generation"],
     human_review: responseByPath["/api/content/work-items/human-review"],
     wordpress_handoff: responseByPath["/api/content/work-items/wordpress-draft-handoff"],
     measurement_window: responseByPath["/api/content/work-items/measurement-window"]

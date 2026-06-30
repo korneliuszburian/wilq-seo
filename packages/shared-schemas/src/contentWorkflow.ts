@@ -458,6 +458,7 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
   draft_package: ContentWorkItemDraftPackageResponseSchema,
+  structured_generation: ContentWorkItemStructuredDraftGenerationResponseSchema,
   human_review: ContentWorkItemHumanReviewResponseSchema,
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,

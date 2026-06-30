@@ -1009,6 +1009,10 @@ Current outcome:
   runtime endpoint. This gives the dashboard a typed boundary for runtime
   dry-run/live-block responses without adding React product logic or surfacing
   technical payloads to the marketer flow.
+- `/content-workflow` now exposes the structured draft runtime dry-run as a
+  marketer-facing step. The route uses the API-owned snapshot contract, lets the
+  operator check draft readiness without live model generation, hides raw
+  OpenAI payload details and still performs no WordPress write or publication.
 
 Current risk:
 

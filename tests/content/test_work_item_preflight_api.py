@@ -935,6 +935,15 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
     assert brief["work_item_id"] == item["id"]
     assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
 
+    structured = data["structured_generation"]["structured_generation_result"]
+    assert structured["blockers"] == []
+    assert structured["contract"]["schema_name"] == "wilq_content_structured_draft_v1"
+    assert structured["contract"]["publish_ready"] is False
+    assert structured["contract"]["model_input"]["work_item_id"] == item["id"]
+    assert structured["contract"]["model_input"]["final_canonical_url"] == item[
+        "final_canonical_url"
+    ]
+
     human_review = data["human_review"]
     assert human_review["review"] is None
     assert human_review["reviewed_item"]["human_review_status"] == "missing"
@@ -964,6 +973,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
         "content_preflight",
         "sales_brief",
         "draft_package",
+        "structured_draft",
         "human_review",
         "wordpress_handoff",
         "measurement_window",
@@ -972,14 +982,16 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
         "Sprawdzenie pisania",
         "Plan sprzedażowy",
         "Paczka szkicu",
+        "Szkic treści",
         "Sprawdzenie człowieka",
         "Szkic w WordPress",
         "Okno pomiaru",
     ]
     assert operator_steps[0]["status_label"] == "można planować"
-    assert operator_steps[3]["status_label"] == "wymaga decyzji"
-    assert operator_steps[4]["status_label"] == "zablokowany"
-    assert operator_steps[5]["status_label"] == "zaplanowane"
+    assert operator_steps[3]["status_label"] == "gotowy do próby"
+    assert operator_steps[4]["status_label"] == "wymaga decyzji"
+    assert operator_steps[5]["status_label"] == "zablokowany"
+    assert operator_steps[6]["status_label"] == "zaplanowane"
     operator_text = " ".join(
         f"{step['title']} {step['status_label']} {step['summary']}" for step in operator_steps
     )

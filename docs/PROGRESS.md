@@ -458,6 +458,11 @@ API status later contradicts this state.
   `api.ts` helper for the structured draft runtime endpoint. The dashboard now
   has a typed boundary for dry-run/live-block runtime responses without adding
   UI product logic, label mappers, live OpenAI calls or WordPress writes.
+- Beads task `wilq-seo-2tv` exposes the structured draft runtime dry-run in the
+  marketer-facing `/content-workflow` route. The workflow snapshot now includes
+  API-owned structured generation status, and the dashboard can check draft
+  readiness through the typed dry-run endpoint without showing raw OpenAI
+  payloads, calling the model live, writing to WordPress or publishing content.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

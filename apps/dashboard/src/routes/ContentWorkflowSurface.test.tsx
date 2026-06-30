@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getContentWorkItemSnapshot,
+  postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWorkflowSnapshotResponse
 } from "../lib/api";
@@ -17,6 +19,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return {
     ...actual,
     getContentWorkItemSnapshot: vi.fn(),
+    postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
     saveContentWorkItemSnapshotHumanReview: vi.fn(),
     saveContentWorkItemSnapshotAudit: vi.fn()
@@ -31,6 +34,9 @@ describe("ContentWorkflowSurface", () => {
     );
     vi.mocked(saveContentWorkItemSnapshotAudit).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() }).wordpress_handoff
+    );
+    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
+      structuredDraftRuntimeResponse()
     );
     vi.mocked(postContentWorkItemWordPressDraftExecution).mockResolvedValue(
       wordpressDraftExecutionResponse()
@@ -63,15 +69,19 @@ describe("ContentWorkflowSurface", () => {
       "Sprawdzenie pisania",
       "Plan sprzedażowy",
       "Paczka szkicu",
+      "Szkic treści",
       "Sprawdzenie człowieka",
       "Szkic w WordPress",
       "Okno pomiaru"
     ]);
     expect(screen.getAllByText("BDO dla firm")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
+    expect(screen.getByText(/Ten krok nie wywołuje modelu/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wykonuje zewnętrznego zapisu/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
     expect(screen.getByText("zablokowany")).toBeInTheDocument();
@@ -81,6 +91,8 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("/api/content")).not.toBeInTheDocument();
     expect(screen.queryByText("ContentWorkItem")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+    expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
+    expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
   });
 
   it("submits a snapshot human review from the current API snapshot", async () => {
@@ -112,6 +124,7 @@ describe("ContentWorkflowSurface", () => {
         })
       });
     expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
+    expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -142,8 +155,39 @@ describe("ContentWorkflowSurface", () => {
           evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
           human_review_id: "human_review_content_work_item_bdo"
         }
-      });
+    });
     expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+    expect(postContentWorkItemStructuredDraftRuntime).not.toHaveBeenCalled();
+    expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
+  });
+
+  it("checks structured draft readiness without live generation or raw payload display", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
+
+    await waitFor(() => {
+      expect(postContentWorkItemStructuredDraftRuntime).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemStructuredDraftRuntime).mock.calls[0]?.[0]).toEqual({
+      contract: structuredDraftGenerationContract(),
+      model: "gpt-5",
+      mode: "dry_run"
+    });
+    expect(await screen.findByRole("button", { name: "Próba szkicu gotowa" })).toBeDisabled();
+    expect(screen.getByText(/Próba gotowa/)).toBeInTheDocument();
+    expect(screen.getByText(/nie wygenerował treści na żywo/)).toBeInTheDocument();
+    expect(screen.queryByText("json_schema")).not.toBeInTheDocument();
+    expect(screen.queryByText("responses.create")).not.toBeInTheDocument();
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
@@ -350,6 +394,13 @@ function workflowSnapshot({
       sales_brief_result: { brief: salesBrief(), blockers: [] },
       draft_package_result: { draft_package: draftPackage(), blockers: [] }
     },
+    structured_generation: {
+      item: workItem(),
+      structured_generation_result: {
+        contract: structuredDraftGenerationContract(),
+        blockers: []
+      }
+    },
     human_review: {
       item: workItem(),
       reviewed_item: reviewedItem,
@@ -461,6 +512,77 @@ function wordpressHandoff() {
   };
 }
 
+function structuredDraftGenerationContract() {
+  return {
+    schema_name: "wilq_content_structured_draft_v1" as const,
+    strict_schema: true as const,
+    model_input: {
+      work_item_id: "content_work_item_bdo",
+      language: "pl-PL" as const,
+      draft_kind: "section_draft" as const,
+      title: "BDO dla firm",
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      source_public_url: "https://ekologus.pl/bdo/",
+      preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+      target_reader: "właściciel firmy",
+      buyer_problem: "nie wie, jak podejść do BDO",
+      buyer_trigger: "zbliża się kontrola",
+      search_intent: "informacyjno-usługowy",
+      service_fit: "obsługa środowiskowa",
+      cta_direction: "Skontaktuj się z Ekologus.",
+      sections: [],
+      source_facts: [],
+      claims_allowed: [],
+      claims_removed_or_blocked: [],
+      human_review_questions: ["Czy to brzmi jak Ekologus?"]
+    },
+    output_schema: {
+      type: "object",
+      additionalProperties: false
+    },
+    system_instruction: "Pisz wyłącznie z przekazanych faktów.",
+    user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
+    publish_ready: false as const
+  };
+}
+
+function structuredDraftRuntimeResponse(): ContentWorkItemStructuredDraftRuntimeResponse {
+  return {
+    runtime_result: {
+      status: "dry_run_ready",
+      request_payload: {
+        model: "gpt-5",
+        input: [
+          {
+            role: "system",
+            content: "Pisz wyłącznie z przekazanych faktów."
+          },
+          {
+            role: "user",
+            content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
+          }
+        ],
+        text: {
+          format: {
+            type: "json_schema",
+            name: "wilq_content_structured_draft_v1",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false
+            }
+          }
+        },
+        temperature: 0.2,
+        max_output_tokens: 4000
+      },
+      output: null,
+      external_call_attempted: false,
+      blockers: []
+    }
+  };
+}
+
 function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecutionResponse {
   return {
     execution_result: {
@@ -503,6 +625,12 @@ function operatorSteps({ review, handoff }: { review: boolean; handoff: boolean 
       title: "Paczka szkicu",
       status_label: "konspekt do sprawdzenia",
       summary: "WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację."
+    },
+    {
+      id: "structured_draft",
+      title: "Szkic treści",
+      status_label: "gotowy do próby",
+      summary: "WILQ może sprawdzić przygotowanie szkicu bez pisania na żywo."
     },
     {
       id: "human_review",

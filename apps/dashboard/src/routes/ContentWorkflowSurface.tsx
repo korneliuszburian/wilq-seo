@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
 import {
+  postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressDraftExecutionResponse
 } from "../lib/api";
 import {
@@ -21,6 +23,7 @@ type WorkflowSafetyPanelsProps = {
   draft: ContentWorkflowSnapshot["draftPackage"]["draft_package_result"]["draft_package"];
   handoff: ContentWorkflowSnapshot["wordpressHandoff"]["handoff_result"]["handoff"];
   window: ContentWorkflowSnapshot["measurementWindow"]["measurement_window_result"]["window"];
+  structuredRuntimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
 };
 
@@ -39,6 +42,9 @@ export function ContentWorkflowSurface() {
   const auditMutation = useMutation({
     mutationFn: saveContentWorkItemSnapshotAudit,
     onSuccess: refreshWorkflow
+  });
+  const structuredRuntimeMutation = useMutation({
+    mutationFn: postContentWorkItemStructuredDraftRuntime
   });
   const executionMutation = useMutation({
     mutationFn: postContentWorkItemWordPressDraftExecution
@@ -71,8 +77,19 @@ export function ContentWorkflowSurface() {
         data={data}
         reviewPending={reviewMutation.isPending}
         auditPending={auditMutation.isPending}
+        structuredRuntimePending={structuredRuntimeMutation.isPending}
         executionPending={executionMutation.isPending}
+        structuredRuntimeResult={structuredRuntimeMutation.data?.runtime_result ?? null}
         executionResult={executionMutation.data?.execution_result ?? null}
+        onStructuredRuntimeDryRun={() => {
+          const contract = data.structuredGeneration.structured_generation_result.contract;
+          if (!contract) return;
+          structuredRuntimeMutation.mutate({
+            contract,
+            model: "gpt-5",
+            mode: "dry_run"
+          });
+        }}
         onReview={() => {
           if (!draft) return;
           reviewMutation.mutate({
@@ -123,6 +140,7 @@ export function ContentWorkflowSurface() {
         draft={draft}
         handoff={handoff}
         window={window}
+        structuredRuntimeResult={structuredRuntimeMutation.data?.runtime_result ?? null}
         executionResult={executionMutation.data?.execution_result ?? null}
       />
     </main>
@@ -198,8 +216,11 @@ function WorkflowOperatorControls({
   data,
   reviewPending,
   auditPending,
+  structuredRuntimePending,
   executionPending,
+  structuredRuntimeResult,
   executionResult,
+  onStructuredRuntimeDryRun,
   onReview,
   onAudit,
   onExecutionDryRun
@@ -207,8 +228,11 @@ function WorkflowOperatorControls({
   data: ContentWorkflowSnapshot;
   reviewPending: boolean;
   auditPending: boolean;
+  structuredRuntimePending: boolean;
   executionPending: boolean;
+  structuredRuntimeResult: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null;
   executionResult: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null;
+  onStructuredRuntimeDryRun: () => void;
   onReview: () => void;
   onAudit: () => void;
   onExecutionDryRun: () => void;
@@ -219,6 +243,11 @@ function WorkflowOperatorControls({
   const handoff = data.wordpressHandoff.handoff_result.handoff;
   const reviewDisabledReason = reviewControlDisabledReason(data, Boolean(draft), reviewPending);
   const auditDisabledReason = auditControlDisabledReason(data, auditPending);
+  const structuredRuntimeDisabledReason = structuredRuntimeControlDisabledReason(
+    data,
+    structuredRuntimePending,
+    structuredRuntimeResult
+  );
   const executionDisabledReason = executionControlDisabledReason(
     Boolean(draft),
     Boolean(handoff),
@@ -255,6 +284,12 @@ function WorkflowOperatorControls({
             disabledReason={auditDisabledReason}
             pending={auditPending}
             onClick={onAudit}
+          />
+          <WorkflowControlButton
+            label={structuredRuntimeResult ? "Próba szkicu gotowa" : "Sprawdź gotowość szkicu"}
+            disabledReason={structuredRuntimeDisabledReason}
+            pending={structuredRuntimePending}
+            onClick={onStructuredRuntimeDryRun}
           />
           <WorkflowControlButton
             label={executionResult ? "Podgląd szkicu gotowy" : "Sprawdź podgląd szkicu"}
@@ -302,14 +337,20 @@ function WorkflowSafetyPanels({
   draft,
   handoff,
   window,
+  structuredRuntimeResult,
   executionResult
 }: WorkflowSafetyPanelsProps) {
   return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-4">
+    <div className="mt-6 grid gap-4 lg:grid-cols-5">
       <SafetyPanel
         icon={<FileText aria-hidden="true" size={18} />}
         title="Paczka szkicu"
         text={draftSafetyText(draft?.publish_ready)}
+      />
+      <SafetyPanel
+        icon={<ShieldCheck aria-hidden="true" size={18} />}
+        title="Szkic treści"
+        text={structuredRuntimeSafetyText(structuredRuntimeResult)}
       />
       <SafetyPanel
         icon={<ShieldCheck aria-hidden="true" size={18} />}
@@ -368,6 +409,21 @@ function handoffSafetyText(publishAllowed?: boolean) {
   return "Handoff przygotowuje tylko szkic. Publikacja i nadpisanie treści są zablokowane.";
 }
 
+function structuredRuntimeSafetyText(
+  result: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null
+) {
+  if (!result) {
+    return "WILQ może sprawdzić przygotowanie szkicu bez pisania na żywo. Ten krok nie wywołuje modelu.";
+  }
+  if (result.external_call_attempted) {
+    return "Zatrzymaj workflow: próba przygotowania szkicu nie powinna wywoływać modelu na żywo.";
+  }
+  if (result.status === "blocked") {
+    return result.blockers[0]?.reason ?? "WILQ zablokował przygotowanie próby szkicu.";
+  }
+  return "Próba gotowa: WILQ ma kontrakt szkicu i nie wygenerował treści na żywo.";
+}
+
 function wordpressExecutionSafetyText(
   result: ContentWorkItemWordPressDraftExecutionResponse["execution_result"] | null
 ) {
@@ -417,6 +473,22 @@ function auditControlDisabledReason(data: ContentWorkflowSnapshot, pending: bool
     return (
       data.humanReview.blockers[0]?.reason ??
       "WILQ nie odblokował przekazania do WordPress po sprawdzeniu."
+    );
+  }
+  return null;
+}
+
+function structuredRuntimeControlDisabledReason(
+  data: ContentWorkflowSnapshot,
+  pending: boolean,
+  result: ContentWorkItemStructuredDraftRuntimeResponse["runtime_result"] | null
+) {
+  if (pending) return "WILQ sprawdza gotowość szkicu.";
+  if (result) return "Próba przygotowania szkicu jest już sprawdzona dla tej sesji.";
+  if (!data.structuredGeneration.structured_generation_result.contract) {
+    return (
+      data.structuredGeneration.structured_generation_result.blockers[0]?.reason ??
+      "Najpierw WILQ musi przygotować kontrakt szkicu."
     );
   }
   return null;
