@@ -408,6 +408,12 @@ API status later contradicts this state.
   missing review, draft package, audit and dev-canonical blockers in Polish
   marketer language; tests guard against jargon leaking back into blocker
   labels, reasons and next steps.
+- Beads task `wilq-seo-3y8` cleans the remaining content workflow blocker
+  messages for workflow state, preflight, inventory, draft package and claim
+  ledger domains. Operator-facing blocker labels, reasons, next steps and
+  review questions no longer use English workflow jargon such as Sales Brief,
+  Claim Ledger, Draft Package, human review, handoff, publish-ready, work item,
+  evidence ID or final canonical URL.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

@@ -967,6 +967,11 @@ Current outcome:
   handoff domains now use Polish marketer language for labels, reasons and next
   steps. Focused tests block workflow jargon from returning to those
   operator-facing blocker fields.
+- Remaining content workflow blocker messages now use Polish marketer language
+  across workflow state, preflight, inventory, draft package and claim ledger
+  domains. Focused tests prevent Sales Brief, Claim Ledger, Draft Package,
+  human review, handoff, publish-ready, work item, evidence ID and final
+  canonical URL from leaking into operator-facing blocker text.
 
 Current risk:
 

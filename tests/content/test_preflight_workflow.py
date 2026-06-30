@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.models import ContentWorkItem
@@ -48,6 +50,11 @@ def test_preflight_blocks_without_evidence() -> None:
     assert verdict.draft_allowed is False
     assert [blocker.code for blocker in verdict.blockers] == ["missing_evidence"]
     assert verdict.blockers[0].blocks_current_stage is True
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in verdict.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_preflight_blocks_without_source_connector() -> None:
@@ -58,6 +65,11 @@ def test_preflight_blocks_without_source_connector() -> None:
 
     assert verdict.status == "blocked"
     assert [blocker.code for blocker in verdict.blockers] == ["missing_source_connector"]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in verdict.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_preflight_blocks_missing_final_canonical() -> None:
@@ -71,6 +83,11 @@ def test_preflight_blocks_missing_final_canonical() -> None:
 
     assert verdict.status == "blocked"
     assert [blocker.code for blocker in verdict.blockers] == ["missing_final_canonical"]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in verdict.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_preflight_blocks_dev_preview_as_canonical() -> None:
@@ -84,6 +101,11 @@ def test_preflight_blocks_dev_preview_as_canonical() -> None:
 
     assert verdict.status == "blocked"
     assert [blocker.code for blocker in verdict.blockers] == ["invalid_final_canonical"]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in verdict.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_preflight_existing_content_allows_preserve_first_plan() -> None:
@@ -96,6 +118,14 @@ def test_preflight_existing_content_allows_preserve_first_plan() -> None:
     assert verdict.recommended_mode == "preserve"
     assert verdict.sales_brief_allowed is False
     assert "missing_preserve_first_plan" in [blocker.code for blocker in verdict.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        [verdict.next_step]
+        + [
+            text
+            for blocker in verdict.blockers
+            for text in (blocker.label, blocker.reason, blocker.next_step)
+        ]
+    )
 
 
 def test_preflight_duplicate_risk_blocks_create() -> None:
@@ -107,6 +137,11 @@ def test_preflight_duplicate_risk_blocks_create() -> None:
     assert verdict.status == "blocked"
     assert [blocker.code for blocker in verdict.blockers] == ["duplicate_risk_high"]
     assert verdict.create_allowed is False
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in verdict.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_preflight_missing_brief_blocks_draft_but_allows_brief() -> None:
@@ -123,6 +158,14 @@ def test_preflight_missing_brief_blocks_draft_but_allows_brief() -> None:
     assert verdict.sales_brief_allowed is True
     assert verdict.draft_allowed is False
     assert "missing_sales_brief" in [blocker.code for blocker in verdict.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        [verdict.next_step]
+        + [
+            text
+            for blocker in verdict.blockers
+            for text in (blocker.label, blocker.reason, blocker.next_step)
+        ]
+    )
 
 
 def test_preflight_missing_human_review_blocks_handoff_but_allows_draft() -> None:
@@ -147,6 +190,14 @@ def test_preflight_missing_human_review_blocks_handoff_but_allows_draft() -> Non
     assert verdict.draft_allowed is True
     assert verdict.wordpress_draft_allowed is False
     assert "missing_human_review" in [blocker.code for blocker in verdict.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        [verdict.next_step]
+        + [
+            text
+            for blocker in verdict.blockers
+            for text in (blocker.label, blocker.reason, blocker.next_step)
+        ]
+    )
 
 
 def test_preflight_allows_handoff_after_review_and_audit() -> None:
@@ -172,5 +223,6 @@ def test_preflight_allows_handoff_after_review_and_audit() -> None:
     assert verdict.status == "handoff_allowed"
     assert verdict.wordpress_draft_allowed is True
     assert verdict.next_step == (
-        "Można przygotować WordPress draft. Publikacja nadal nie jest automatyczna."
+        "Można przygotować szkic w WordPress. Publikacja nadal nie jest automatyczna."
     )
+    assert_marketer_text_has_no_workflow_jargon([verdict.next_step])

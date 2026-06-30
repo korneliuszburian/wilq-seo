@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+
 from wilq.content.workflow.models import (
     ContentWorkItem,
     content_workflow_action_allowed,
@@ -35,14 +37,18 @@ def test_prepare_draft_blocks_missing_required_content_gates() -> None:
         measurement_window_status="missing",
     )
 
-    blocker_codes = [
-        blocker.code for blocker in content_workflow_blockers(item, "prepare_draft")
-    ]
+    blockers = content_workflow_blockers(item, "prepare_draft")
+    blocker_codes = [blocker.code for blocker in blockers]
 
     assert "missing_preflight" in blocker_codes
     assert "missing_sales_brief" in blocker_codes
     assert "missing_claim_ledger" in blocker_codes
     assert "missing_measurement_window" in blocker_codes
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not content_workflow_action_allowed(item, "prepare_draft")
 
 
@@ -63,11 +69,15 @@ def test_prepare_draft_is_allowed_after_brief_claims_and_measurement_plan() -> N
 def test_dev_preview_url_cannot_be_final_canonical() -> None:
     item = _base_item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/")
 
-    blocker_codes = [
-        blocker.code for blocker in content_workflow_blockers(item, "prepare_sales_brief")
-    ]
+    blockers = content_workflow_blockers(item, "prepare_sales_brief")
+    blocker_codes = [blocker.code for blocker in blockers]
 
     assert "invalid_final_canonical" in blocker_codes
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not content_workflow_action_allowed(item, "prepare_sales_brief")
 
 
@@ -84,12 +94,16 @@ def test_wordpress_draft_handoff_blocks_without_human_review_and_audit() -> None
         measurement_window_id="measure_bdo",
     )
 
-    blocker_codes = [
-        blocker.code for blocker in content_workflow_blockers(item, "create_wordpress_draft")
-    ]
+    blockers = content_workflow_blockers(item, "create_wordpress_draft")
+    blocker_codes = [blocker.code for blocker in blockers]
 
     assert "missing_human_review" in blocker_codes
     assert "missing_audit" in blocker_codes
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not content_workflow_action_allowed(item, "create_wordpress_draft")
 
 
@@ -124,6 +138,11 @@ def test_measurement_outcome_claim_is_blocked_until_window_ready() -> None:
 
     assert [blocker.code for blocker in blockers] == ["measurement_window_not_ready"]
     assert "nie może mówić" in blockers[0].reason
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not content_workflow_action_allowed(item, "claim_measurement_outcome")
 
 

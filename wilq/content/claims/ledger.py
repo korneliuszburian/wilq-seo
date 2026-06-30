@@ -84,7 +84,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="blocked",
             evidence_ids=evidence,
-            reason="Gwarancje efektu nie mogą być użyte jako publish-ready language.",
+            reason="Gwarancje efektu nie mogą trafić do gotowego języka szkicu.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
     if claim_type in MEASUREMENT_REQUIRED_CLAIM_TYPES and not measurement_window_ready:
@@ -94,7 +94,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="blocked_until_measurement",
             evidence_ids=evidence,
-            reason="Claim skuteczności wymaga zakończonego okna pomiaru.",
+            reason="Twierdzenie o skuteczności wymaga zakończonego okna pomiaru.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
     if claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES and not human_reviewed:
@@ -104,7 +104,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="needs_human_review",
             evidence_ids=evidence,
-            reason="Claim prawny, ryzyka albo środowiskowy wymaga review człowieka.",
+            reason="Twierdzenie prawne, ryzyka albo środowiskowe wymaga decyzji człowieka.",
         )
     if evidence:
         return ContentClaimLedgerEntry(
@@ -113,7 +113,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="allowed_with_evidence",
             evidence_ids=evidence,
-            reason="Claim ma przypisane dowody źródłowe.",
+            reason="Twierdzenie ma przypisane dowody źródłowe.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
     return ContentClaimLedgerEntry(
@@ -121,7 +121,7 @@ def content_claim_entry(
         claim_text=claim_text,
         claim_type=claim_type,
         status="allowed_general",
-        reason="Claim jest ogólną informacją bez obietnicy efektu.",
+            reason="Twierdzenie jest ogólną informacją bez obietnicy efektu.",
         reviewer_id=reviewer_id if human_reviewed else None,
     )
 
@@ -134,9 +134,9 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                 _blocker(
                     "missing_evidence",
                     entry,
-                    "Brakuje dowodu dla claimu",
-                    "Claim oznaczony jako allowed_with_evidence musi mieć evidence ID.",
-                    "Podłącz dowód albo obniż status claimu.",
+                    "Brakuje dowodu dla twierdzenia",
+                    "Twierdzenie oznaczone jako oparte na dowodzie musi mieć podpięty dowód.",
+                    "Podłącz dowód albo obniż status twierdzenia.",
                 )
             )
         elif entry.status == "needs_human_review":
@@ -144,9 +144,10 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                 _blocker(
                     "needs_human_review",
                     entry,
-                    "Claim wymaga review",
-                    "Ten claim nie może wejść do publish-ready language bez decyzji człowieka.",
-                    "Przekaż claim do review i zapisz decyzję.",
+                    "Twierdzenie wymaga decyzji człowieka",
+                    "To twierdzenie nie może wejść do gotowego języka szkicu "
+                    "bez decyzji człowieka.",
+                    "Przekaż twierdzenie do sprawdzenia i zapisz decyzję.",
                 )
             )
         elif entry.status == "blocked":
@@ -154,9 +155,9 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                 _blocker(
                     "blocked_claim",
                     entry,
-                    "Claim jest zablokowany",
-                    "Ten claim nie może pojawić się jako gotowe twierdzenie w szkicu.",
-                    "Usuń claim albo przepisz go na bezpieczną informację edukacyjną.",
+                    "Twierdzenie jest zablokowane",
+                    "To twierdzenie nie może pojawić się jako gotowe zdanie w szkicu.",
+                    "Usuń twierdzenie albo przepisz je na bezpieczną informację edukacyjną.",
                 )
             )
         elif entry.status == "blocked_until_measurement":
@@ -164,9 +165,9 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                 _blocker(
                     "blocked_until_measurement",
                     entry,
-                    "Claim czeka na pomiar",
+                    "Twierdzenie czeka na pomiar",
                     "Nie wolno twierdzić, że treść dowozi efekt przed końcem okna pomiaru.",
-                    "Zostaw claim poza szkicem do czasu zamknięcia measurement window.",
+                    "Zostaw twierdzenie poza szkicem do czasu zamknięcia okna pomiaru.",
                 )
             )
     return blockers

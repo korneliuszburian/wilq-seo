@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
 
 
@@ -28,7 +30,8 @@ def test_inventory_preserves_existing_public_content_first() -> None:
     assert resolution.similar_existing_urls == ["https://ekologus.pl/bdo/"]
     assert resolution.source_connectors == ["wordpress_ekologus"]
     assert resolution.evidence_ids == ["ev_wp_bdo"]
-    assert "preserve-first" in resolution.next_step
+    assert "istniejącej treści" in resolution.next_step
+    assert_marketer_text_has_no_workflow_jargon([resolution.next_step])
 
 
 def test_inventory_blocks_record_without_final_canonical() -> None:
@@ -40,7 +43,12 @@ def test_inventory_blocks_record_without_final_canonical() -> None:
     assert resolution.status == "blocked"
     assert resolution.recommended_mode == "block"
     assert [blocker.code for blocker in resolution.blockers] == ["missing_final_canonical"]
-    assert "final canonical URL" in resolution.blockers[0].reason
+    assert "publicznego adresu docelowego" in resolution.blockers[0].reason
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in resolution.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_inventory_blocks_dev_preview_as_final_canonical() -> None:
@@ -52,7 +60,12 @@ def test_inventory_blocks_dev_preview_as_final_canonical() -> None:
     assert resolution.status == "blocked"
     assert resolution.recommended_mode == "block"
     assert [blocker.code for blocker in resolution.blockers] == ["invalid_final_canonical"]
-    assert "dev URL nie może być finalnym adresem SEO" in resolution.blockers[0].reason
+    assert "Adres podglądu albo dev" in resolution.blockers[0].reason
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in resolution.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_inventory_blocks_create_when_duplicate_risk_is_unknown() -> None:
@@ -61,6 +74,14 @@ def test_inventory_blocks_create_when_duplicate_risk_is_unknown() -> None:
     assert resolution.status == "blocked"
     assert resolution.recommended_mode == "block"
     assert [blocker.code for blocker in resolution.blockers] == ["duplicate_risk_unresolved"]
+    assert_marketer_text_has_no_workflow_jargon(
+        [resolution.next_step]
+        + [
+            text
+            for blocker in resolution.blockers
+            for text in (blocker.label, blocker.reason, blocker.next_step)
+        ]
+    )
 
 
 def test_inventory_allows_create_candidate_after_clear_duplicate_check() -> None:
@@ -69,7 +90,8 @@ def test_inventory_allows_create_candidate_after_clear_duplicate_check() -> None
     assert resolution.status == "review_required"
     assert resolution.recommended_mode == "create_after_review"
     assert resolution.blockers == []
-    assert "po review i preflight" in resolution.next_step
+    assert "po sprawdzeniu człowieka" in resolution.next_step
+    assert_marketer_text_has_no_workflow_jargon([resolution.next_step])
 
 
 def test_inventory_deduplicates_records_by_public_canonical() -> None:

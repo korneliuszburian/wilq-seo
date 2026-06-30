@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
     ContentClaimLedgerEntry,
@@ -29,6 +31,11 @@ def test_guarantee_claim_is_blocked_from_publish_ready_language() -> None:
 
     assert entry.status == "blocked"
     assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == ["blocked_claim"]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in claim_ledger_blockers(ledger)
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert publish_ready_claims(ledger) == []
     assert not claim_ledger_allows_draft(ledger)
 
@@ -47,6 +54,11 @@ def test_seo_and_business_outcome_claims_wait_for_measurement_window() -> None:
     assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
         "blocked_until_measurement"
     ]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in claim_ledger_blockers(ledger)
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not claim_ledger_allows_draft(ledger)
 
 
@@ -63,6 +75,11 @@ def test_legal_and_environmental_claims_need_human_review() -> None:
     assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
         "needs_human_review"
     ]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in claim_ledger_blockers(ledger)
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not claim_ledger_allows_draft(ledger)
 
 
@@ -112,4 +129,9 @@ def test_allowed_with_evidence_status_without_evidence_blocks_draft() -> None:
     assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
         "missing_evidence"
     ]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in claim_ledger_blockers(ledger)
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
     assert not claim_ledger_allows_draft(ledger)

@@ -68,7 +68,7 @@ def resolve_content_inventory(
                 "duplicate_risk_high",
                 "Wysokie ryzyko duplikacji",
                 "Nie wolno tworzyć nowej treści, gdy podobny temat może już istnieć.",
-                "Najpierw sprawdź podobne URL-e i zdecyduj o preserve, refresh albo merge.",
+                    "Najpierw sprawdź podobne adresy i zdecyduj: zachować, odświeżyć albo scalić.",
             )
         )
     elif duplicate_risk in {"unknown", "review_required"} and not normalized_records:
@@ -77,7 +77,8 @@ def resolve_content_inventory(
                 "duplicate_risk_unresolved",
                 "Nie sprawdzono duplikacji",
                 "Brak istniejącego rekordu nie oznacza jeszcze, że wolno tworzyć nowy URL.",
-                "Uruchom duplicate/canonical/cannibalization check przed create.",
+                    "Sprawdź podobne treści, adres docelowy i ryzyko kanibalizacji "
+                    "przed tworzeniem nowej treści.",
             )
         )
 
@@ -94,7 +95,7 @@ def resolve_content_inventory(
                 evidence_id for record in normalized_records for evidence_id in record.evidence_ids
             ),
             blockers=blockers,
-            next_step="Najpierw rozwiąż inventory, canonical i duplicate blockers.",
+            next_step="Najpierw rozwiąż blokady spisu treści, adresu docelowego i duplikacji.",
         )
 
     if normalized_records:
@@ -110,7 +111,7 @@ def resolve_content_inventory(
                 evidence_id for record in normalized_records for evidence_id in record.evidence_ids
             ),
             next_step=(
-                "Zacznij od preserve-first: zachowaj istniejący URL albo przygotuj "
+                "Zacznij od istniejącej treści: zachowaj istniejący adres albo przygotuj "
                 "odświeżenie/scalenie z dowodami."
             ),
         )
@@ -119,8 +120,8 @@ def resolve_content_inventory(
         status="review_required",
         recommended_mode="create_after_review",
         next_step=(
-            "Nie znaleziono istniejącego rekordu. Można przygotować create candidate "
-            "dopiero po review i preflight."
+            "Nie znaleziono istniejącego rekordu. Można przygotować kandydat do nowej treści "
+            "dopiero po sprawdzeniu człowieka i sprawdzeniu wstępnym."
         ),
     )
 
@@ -134,8 +135,8 @@ def _record_blockers(records: Iterable[ContentInventoryRecord]) -> list[ContentI
                 _blocker(
                     "missing_final_canonical",
                     "Brakuje finalnego adresu",
-                    "Rekord inventory nie może zasilać briefu bez final canonical URL.",
-                    "Ustal publiczny final_canonical_url dla istniejącej treści.",
+                    "Rekord spisu treści nie może zasilać planu bez publicznego adresu docelowego.",
+                    "Ustal publiczny adres docelowy dla istniejącej treści.",
                 )
             )
             continue
@@ -143,9 +144,9 @@ def _record_blockers(records: Iterable[ContentInventoryRecord]) -> list[ContentI
             blockers.append(
                 _blocker(
                     "invalid_final_canonical",
-                    "Nieprawidłowy canonical",
-                    "Preview albo dev URL nie może być finalnym adresem SEO.",
-                    "Ustaw final_canonical_url na publiczny adres Ekologus.",
+                    "Nieprawidłowy adres docelowy",
+                    "Adres podglądu albo dev nie może być finalnym adresem SEO.",
+                    "Ustaw publiczny adres Ekologus jako adres docelowy.",
                 )
             )
     return blockers

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from _marketer_language import assert_marketer_text_has_no_workflow_jargon
+
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefSeed,
@@ -136,6 +138,11 @@ def test_draft_package_blocks_without_draft_allowed_preflight() -> None:
 
     assert result.draft_package is None
     assert "preflight_not_draft_allowed" in [blocker.code for blocker in result.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in result.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_draft_package_blocks_without_sales_brief() -> None:
@@ -149,6 +156,11 @@ def test_draft_package_blocks_without_sales_brief() -> None:
 
     assert result.draft_package is None
     assert "missing_sales_brief" in [blocker.code for blocker in result.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in result.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_draft_package_blocks_when_claim_ledger_is_missing_or_blocking() -> None:
@@ -170,6 +182,12 @@ def test_draft_package_blocks_when_claim_ledger_is_missing_or_blocking() -> None
 
     assert "missing_claim_ledger" in [blocker.code for blocker in missing.blockers]
     assert "claim_ledger_blocks_draft" in [blocker.code for blocker in blocked.blockers]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for result in (missing, blocked)
+        for blocker in result.blockers
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
 
 
 def test_draft_package_is_outline_first_and_not_publish_ready() -> None:
@@ -196,6 +214,7 @@ def test_draft_package_is_outline_first_and_not_publish_ready() -> None:
         "ev_wp_bdo",
     ]
     assert result.draft_package.human_review_questions
+    assert_marketer_text_has_no_workflow_jargon(result.draft_package.human_review_questions)
     assert result.draft_package.claims_used == [
         "Ekologus pomaga firmom w obowiązkach związanych z BDO."
     ]

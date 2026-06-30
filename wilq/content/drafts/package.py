@@ -109,9 +109,9 @@ def build_content_draft_package(
             claims_removed_or_blocked=_unique(blocked_claims),
             human_review_questions=[
                 "Czy szkic brzmi jak Ekologus i nie używa generycznego języka?",
-                "Czy każdy claim sprzedażowy ma dowód albo został usunięty?",
+                "Czy każde twierdzenie sprzedażowe ma dowód albo zostało usunięte?",
                 "Czy CTA pasuje do intencji i nie obiecuje wyniku?",
-                "Czy sekcje odpowiadają briefowi i zachowują istniejący content plan?",
+                "Czy sekcje odpowiadają planowi i zachowują ustalenia dla istniejącej treści?",
             ],
             publish_ready=False,
         )
@@ -130,45 +130,46 @@ def content_draft_package_blockers(
         blockers.append(
             _blocker(
                 "preflight_not_draft_allowed",
-                "Preflight nie pozwala na szkic",
-                "Draft Package może powstać dopiero po przejściu bramek preflightu.",
-                "Doprowadź work item do statusu draft_allowed.",
+                "Sprawdzenie wstępne nie pozwala na szkic",
+                "Paczka szkicu może powstać dopiero po przejściu bramek bezpieczeństwa.",
+                "Doprowadź temat do etapu, w którym szkic jest dozwolony.",
             )
         )
     if sales_brief is None:
         blockers.append(
             _blocker(
                 "missing_sales_brief",
-                "Brakuje Sales Brief",
-                "Draft bez briefu byłby promptową improwizacją.",
-                "Zbuduj i zatwierdź Sales Brief przed szkicem.",
+                "Brakuje planu sprzedażowego",
+                "Szkic bez planu sprzedażowego byłby promptową improwizacją.",
+                "Zbuduj i zatwierdź plan sprzedażowy przed szkicem.",
             )
         )
     elif sales_brief.work_item_id != item.id:
         blockers.append(
             _blocker(
                 "sales_brief_mismatch",
-                "Brief dotyczy innego work itemu",
-                "Draft Package musi używać briefu dla tego samego content work itemu.",
-                "Podaj Sales Brief z poprawnym work_item_id.",
+                "Plan dotyczy innego tematu",
+                "Paczka szkicu musi używać planu dla tego samego tematu.",
+                "Podaj plan sprzedażowy przypisany do tego tematu.",
             )
         )
     if claim_ledger is None:
         blockers.append(
             _blocker(
                 "missing_claim_ledger",
-                "Brakuje Claim Ledger",
-                "Draft nie może powstać bez sprawdzenia claimów.",
-                "Zbuduj Claim Ledger przed szkicem.",
+                "Brakuje sprawdzenia twierdzeń",
+                "Szkic nie może powstać bez sprawdzenia ryzykownych twierdzeń.",
+                "Zbuduj sprawdzenie twierdzeń przed szkicem.",
             )
         )
     elif claim_ledger.work_item_id != item.id or not claim_ledger_allows_draft(claim_ledger):
         blockers.append(
             _blocker(
                 "claim_ledger_blocks_draft",
-                "Claim Ledger blokuje szkic",
-                "Ryzykowne albo niezweryfikowane claimy muszą zostać usunięte lub zatwierdzone.",
-                "Rozwiąż Claim Ledger przed Draft Package.",
+                "Sprawdzenie twierdzeń blokuje szkic",
+                "Ryzykowne albo niezweryfikowane twierdzenia muszą zostać "
+                "usunięte lub zatwierdzone.",
+                "Rozwiąż sprawdzenie twierdzeń przed paczką szkicu.",
             )
         )
     if sales_brief is not None and not sales_brief.source_facts:
@@ -176,8 +177,8 @@ def content_draft_package_blockers(
             _blocker(
                 "missing_evidence_mapping",
                 "Brakuje mapy dowodów",
-                "Draft Package musi mapować sekcje na evidence IDs.",
-                "Uzupełnij source facts w Sales Brief.",
+                "Paczka szkicu musi mapować sekcje na dowody.",
+                "Uzupełnij fakty źródłowe w planie sprzedażowym.",
             )
         )
     return blockers
@@ -189,7 +190,7 @@ def _sections_from_brief(sales_brief: ContentSalesBrief) -> list[ContentDraftSec
     return [
         ContentDraftSection(
             heading=heading,
-            purpose="Sekcja outline-first do napisania po review briefu.",
+            purpose="Sekcja konspektu do napisania po sprawdzeniu planu.",
             evidence_ids=evidence_ids,
             draft_notes=[
                 f"Zachowaj kierunek H1: {sales_brief.h1_direction}",

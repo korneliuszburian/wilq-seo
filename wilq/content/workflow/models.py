@@ -145,7 +145,7 @@ def _source_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]:
             _blocker(
                 "missing_evidence",
                 "Brakuje dowodów",
-                "WILQ nie może przygotować rekomendacji ani treści bez evidence ID.",
+                "WILQ nie może przygotować rekomendacji ani treści bez podpiętego dowodu.",
                 "Najpierw podłącz lub odśwież źródła danych dla tego tematu.",
             )
         )
@@ -155,7 +155,8 @@ def _source_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]:
                 "missing_source_connector",
                 "Brakuje źródła danych",
                 "WILQ nie może używać samej notatki albo promptu jako źródła prawdy.",
-                "Wskaż connector, z którego pochodzi fakt: GSC, WordPress, GA4, Ahrefs lub inny.",
+                "Wskaż źródło danych, z którego pochodzi fakt: GSC, WordPress, "
+                "GA4, Ahrefs lub inne.",
             )
         )
     return blockers
@@ -169,7 +170,8 @@ def _inventory_and_url_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
                 "missing_inventory_resolution",
                 "Nie sprawdzono istniejącej treści",
                 "Najpierw trzeba wiedzieć, czy temat ma już publiczną treść.",
-                "Rozwiąż inventory i wybierz preserve, refresh, merge, create albo block.",
+                "Sprawdź istniejące treści i wybierz: zachować, odświeżyć, "
+                "scalić, utworzyć albo zablokować.",
             )
         )
     if item.canonical_status != "resolved" or not item.final_canonical_url:
@@ -177,7 +179,7 @@ def _inventory_and_url_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
             _blocker(
                 "missing_final_canonical",
                 "Brakuje finalnego adresu",
-                "Draft nie może powstać bez publicznego final canonical URL.",
+                "Szkic nie może powstać bez publicznego docelowego adresu.",
                 "Ustal finalny adres na ekologus.pl albo innym potwierdzonym publicznym hoście.",
             )
         )
@@ -185,9 +187,10 @@ def _inventory_and_url_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
         blockers.append(
             _blocker(
                 "invalid_final_canonical",
-                "Adres podglądu nie może być canonical",
-                "Dev albo preview URL może pomagać w projekcie, ale nie jest finalnym adresem SEO.",
-                "Ustaw final_canonical_url na publiczny adres Ekologus.",
+                "Adres podglądu nie może być docelowy",
+                "Adres dev albo podglądu może pomagać w projekcie, ale nie jest "
+                "publicznym adresem SEO.",
+                "Ustaw publiczny adres Ekologus jako docelowe miejsce treści.",
             )
         )
     if item.duplicate_status != "checked":
@@ -201,7 +204,7 @@ def _inventory_and_url_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
                 code,
                 "Nie zamknięto ryzyka duplikacji",
                 "Nowa treść bez sprawdzenia duplikacji może kanibalizować istniejące URL-e.",
-                "Sprawdź duplicate/canonical/cannibalization gate przed dalszą pracą.",
+                "Sprawdź podobne treści, adres docelowy i ryzyko kanibalizacji przed dalszą pracą.",
             )
         )
     return blockers
@@ -212,18 +215,19 @@ def _preflight_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]:
         return [
             _blocker(
                 "missing_preflight",
-                "Brakuje preflightu",
+                "Brakuje sprawdzenia wstępnego",
                 "WILQ nie może pisać ani briefować bez decyzji, czy temat jest bezpieczny.",
-                "Uruchom ContentPreflight dla tego work itemu.",
+                "Uruchom sprawdzenie wstępne dla tego tematu.",
             )
         ]
     if item.preflight_status == "blocked":
         return [
             _blocker(
                 "blocked_preflight",
-                "Preflight blokuje pisanie",
+                "Sprawdzenie wstępne blokuje pisanie",
                 "Aktualne dane mówią, że nie wolno przejść dalej.",
-                "Rozwiąż blocker preflightu albo zmień tryb pracy na preserve/merge/review.",
+                "Rozwiąż blokadę albo zmień tryb pracy na zachowanie, scalenie "
+                "lub sprawdzenie przez człowieka.",
             )
         ]
     return []
@@ -235,9 +239,9 @@ def _preserve_first_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlock
     return [
         _blocker(
             "missing_preserve_first_plan",
-            "Brakuje decyzji preserve-first",
+            "Brakuje decyzji o istniejącej treści",
             "Najpierw trzeba ustalić, czy zachowujemy, odświeżamy, scalamy czy tworzymy.",
-            "Przygotuj plan preserve-first z inventory i duplicate gate.",
+            "Przygotuj plan pracy na podstawie istniejących treści i ryzyka duplikacji.",
         )
     ]
 
@@ -249,8 +253,8 @@ def _draft_input_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]
             _blocker(
                 "missing_sales_brief",
                 "Brakuje zaakceptowanego briefu",
-                "Draft bez briefu sprzedażowego będzie promptowym slopem.",
-                "Przygotuj i zatwierdź Sales Brief przed szkicem.",
+                "Szkic bez planu sprzedażowego będzie promptową improwizacją.",
+                "Przygotuj i zatwierdź plan sprzedażowy przed szkicem.",
             )
         )
     if item.claim_ledger_status != "approved" or not item.claim_ledger_id:
@@ -258,8 +262,8 @@ def _draft_input_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]
             _blocker(
                 "missing_claim_ledger",
                 "Brakuje sprawdzenia twierdzeń",
-                "Treść nie może używać ryzykownych obietnic bez claim ledger.",
-                "Przygotuj i zatwierdź Claim Ledger przed szkicem.",
+                "Treść nie może używać ryzykownych obietnic bez ich sprawdzenia.",
+                "Sprawdź i zatwierdź ryzykowne twierdzenia przed szkicem.",
             )
         )
     if item.measurement_window_status == "missing" or not item.measurement_window_id:
@@ -268,7 +272,7 @@ def _draft_input_blockers(item: ContentWorkItem) -> list[ContentWorkflowBlocker]
                 "missing_measurement_window",
                 "Brakuje planu pomiaru",
                 "Nie trzeba czekać na wyniki, ale trzeba od razu wiedzieć, co będzie mierzone.",
-                "Utwórz measurement window przed szkicem albo handoffem.",
+                "Utwórz plan pomiaru przed szkicem albo przekazaniem do WordPress.",
             )
         )
     return blockers
@@ -281,8 +285,8 @@ def _wordpress_handoff_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
             _blocker(
                 "missing_draft_package",
                 "Brakuje paczki szkicu",
-                "WordPress draft wymaga gotowego Draft Package z mapą dowodów i claimów.",
-                "Przygotuj Draft Package przed przekazaniem do WordPress.",
+                "Szkic WordPress wymaga gotowej paczki szkicu z mapą dowodów i twierdzeń.",
+                "Przygotuj paczkę szkicu przed przekazaniem do WordPress.",
             )
         )
     if item.human_review_status != "approved" or not item.human_review_id:
@@ -290,8 +294,8 @@ def _wordpress_handoff_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
             _blocker(
                 "missing_human_review",
                 "Brakuje decyzji człowieka",
-                "WordPress draft nie może powstać bez human review.",
-                "Zatwierdź szkic w human review.",
+                "Szkic WordPress nie może powstać bez decyzji człowieka.",
+                "Zatwierdź szkic w sprawdzeniu człowieka.",
             )
         )
     if item.audit_status != "recorded" or not item.audit_id:
@@ -299,8 +303,8 @@ def _wordpress_handoff_blockers(item: ContentWorkItem) -> list[ContentWorkflowBl
             _blocker(
                 "missing_audit",
                 "Brakuje audytu",
-                "Każdy handoff do WordPress musi zostawić ślad audytowy.",
-                "Zapisz audit event przed handoffem.",
+                "Każde przekazanie do WordPress musi zostawić ślad audytowy.",
+                "Zapisz audyt przed przekazaniem do WordPress.",
             )
         )
     return blockers
