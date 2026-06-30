@@ -72,6 +72,11 @@ API status later contradicts this state.
   later GSC/GA4/Ahrefs/Ads/Merchant/Localo signals should become interpretation
   inputs, not a blocker for writing the brief or draft. Success/failure claims
   remain blocked until the measurement window has usable data.
+- Production content generation must use WILQ runtime code through the OpenAI
+  API SDK with Structured Outputs and strict schemas. `codex exec` is reserved
+  for repository work, deterministic skill smokes, non-interactive evals,
+  adversarial operator checks and local orchestration; it must not become the
+  production writer or a second product brain.
 - Goal 002 Beads epic is `wilq-seo-zu4`.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
@@ -230,6 +235,15 @@ API status later contradicts this state.
   evidence and measurement plan. Focused tests prove no brief is produced
   without required evidence/source facts, valid final URL semantics, preflight
   allowance or measurement plan. `tests/content` (74 tests), Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
+- Beads task `wilq-seo-dhf` is closed. `wilq/content/drafts/package.py` now
+  defines Draft Package v1 as an outline-first, not-publish-ready artifact.
+  Draft packages require a `draft_allowed` preflight verdict, matching Sales
+  Brief, matching Claim Ledger and source-fact evidence mapping. The package
+  includes `brief_id`, `claim_ledger_id`, sections, section-to-evidence map,
+  publish-ready claims, removed/blocked claims, human review questions and
+  `publish_ready=false`. `tests/content` (78 tests), Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
