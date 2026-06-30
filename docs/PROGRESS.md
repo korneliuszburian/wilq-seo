@@ -500,6 +500,14 @@ API status later contradicts this state.
   Focused daily/context-pack/operator-label tests, Ruff/mypy for touched API
   files, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- `apps/api/wilq_api/context_skill.py` now owns skill-scoped context-pack
+  orchestration, skill diagnostics dispatch and skill opportunity filtering.
+  `main.py` delegates non-daily skill context packs to that runtime module
+  instead of keeping the per-skill routing, evidence collection and redaction
+  flow locally. Focused context-pack tests for content, GSC, Ads, custom
+  segments, campaign builder, Demand Gen, social, knowledge and expert
+  summaries passed with Ruff, mypy, `scripts/audit_complexity.py --changed
+  --allow-frozen` and `git diff --check`.
 
 ## Latest Verified Product State
 
