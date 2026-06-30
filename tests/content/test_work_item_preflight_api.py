@@ -178,6 +178,18 @@ def _human_review(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _handoff_audit(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "audit_id": "audit_bdo",
+        "actor": "wilku",
+        "reason": "Zatwierdzony szkic może trafić do WordPress jako draft.",
+        "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+        "human_review_id": "human_review_bdo",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
     assert response.status_code == 200
@@ -224,6 +236,17 @@ def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
         "reviewed_item",
         "wordpress_handoff_allowed",
     ]
+    return data
+
+
+def _post_wordpress_handoff(payload: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post(
+        "/api/content/work-items/wordpress-draft-handoff",
+        json=payload,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert sorted(data) == ["handoff_result", "item"]
     return data
 
 
@@ -502,4 +525,105 @@ def test_content_work_item_human_review_api_requires_blocked_claim_handling() ->
     assert data["wordpress_handoff_allowed"] is False
     assert [blocker["code"] for blocker in data["blockers"]] == [
         "unhandled_blocked_claims"
+    ]
+
+
+def test_content_work_item_wordpress_handoff_api_prepares_draft_only_handoff() -> None:
+    data = _post_wordpress_handoff(
+        {
+            "item": _item(
+                preflight_status="handoff_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id="sales_brief_content_work_item_bdo",
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                draft_package_status="ready",
+                draft_package_id="draft_package_content_work_item_bdo",
+                human_review_status="approved",
+                human_review_id="human_review_bdo",
+                audit_status="recorded",
+                audit_id="audit_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "draft_package": _draft_package(),
+            "human_review": _human_review(),
+            "audit": _handoff_audit(),
+        }
+    )
+
+    result = data["handoff_result"]
+    assert result["blockers"] == []
+    handoff = result["handoff"]
+    assert handoff["id"] == "wordpress_draft_handoff_content_work_item_bdo"
+    assert handoff["status"] == "prepared"
+    assert handoff["post_status"] == "draft"
+    assert handoff["publish_allowed"] is False
+    assert handoff["destructive_update_allowed"] is False
+    assert handoff["final_canonical_url"] == "https://ekologus.pl/bdo/"
+    assert handoff["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+
+
+def test_content_work_item_wordpress_handoff_api_blocks_missing_audit() -> None:
+    data = _post_wordpress_handoff(
+        {
+            "item": _item(
+                draft_package_status="ready",
+                draft_package_id="draft_package_content_work_item_bdo",
+                human_review_status="approved",
+                human_review_id="human_review_bdo",
+            ),
+            "draft_package": _draft_package(),
+            "human_review": _human_review(),
+            "audit": None,
+        }
+    )
+
+    assert data["handoff_result"]["handoff"] is None
+    assert [blocker["code"] for blocker in data["handoff_result"]["blockers"]] == [
+        "missing_audit"
+    ]
+
+
+def test_content_work_item_wordpress_handoff_api_blocks_non_approved_review() -> None:
+    data = _post_wordpress_handoff(
+        {
+            "item": _item(
+                draft_package_status="ready",
+                draft_package_id="draft_package_content_work_item_bdo",
+                human_review_status="needs_changes",
+                human_review_id="human_review_bdo",
+            ),
+            "draft_package": _draft_package(),
+            "human_review": _human_review(decision="needs_changes"),
+            "audit": _handoff_audit(),
+        }
+    )
+
+    assert data["handoff_result"]["handoff"] is None
+    assert "human_review_not_approved" in [
+        blocker["code"] for blocker in data["handoff_result"]["blockers"]
+    ]
+
+
+def test_content_work_item_wordpress_handoff_api_blocks_dev_canonical() -> None:
+    data = _post_wordpress_handoff(
+        {
+            "item": _item(
+                final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/",
+                draft_package_status="ready",
+                draft_package_id="draft_package_content_work_item_bdo",
+                human_review_status="approved",
+                human_review_id="human_review_bdo",
+            ),
+            "draft_package": _draft_package(),
+            "human_review": _human_review(),
+            "audit": _handoff_audit(),
+        }
+    )
+
+    assert data["handoff_result"]["handoff"] is None
+    assert "invalid_final_canonical" in [
+        blocker["code"] for blocker in data["handoff_result"]["blockers"]
     ]

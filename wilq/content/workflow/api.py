@@ -14,6 +14,11 @@ from wilq.content.drafts.package import (
     ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
+from wilq.content.handoff.wordpress import (
+    ContentWordPressDraftAuditEnvelope,
+    ContentWordPressDraftHandoffResult,
+    build_content_wordpress_draft_handoff,
+)
 from wilq.content.inventory.records import (
     ContentInventoryDuplicateRisk,
     ContentInventoryRecord,
@@ -91,6 +96,18 @@ class ContentWorkItemHumanReviewResponse(BaseModel):
     review: ContentHumanReview
     blockers: list[ContentHumanReviewBlocker] = Field(default_factory=list)
     wordpress_handoff_allowed: bool = False
+
+
+class ContentWorkItemWordPressDraftHandoffRequest(BaseModel):
+    item: ContentWorkItem
+    draft_package: ContentDraftPackage | None = None
+    human_review: ContentHumanReview | None = None
+    audit: ContentWordPressDraftAuditEnvelope | None = None
+
+
+class ContentWorkItemWordPressDraftHandoffResponse(BaseModel):
+    item: ContentWorkItem
+    handoff_result: ContentWordPressDraftHandoffResult
 
 
 def build_content_work_item_preflight_response(
@@ -189,6 +206,20 @@ def build_content_work_item_human_review_response(
             item=request.item,
             review=request.review,
             draft_package=request.draft_package,
+        ),
+    )
+
+
+def build_content_work_item_wordpress_draft_handoff_response(
+    request: ContentWorkItemWordPressDraftHandoffRequest,
+) -> ContentWorkItemWordPressDraftHandoffResponse:
+    return ContentWorkItemWordPressDraftHandoffResponse(
+        item=request.item,
+        handoff_result=build_content_wordpress_draft_handoff(
+            item=request.item,
+            draft_package=request.draft_package,
+            human_review=request.human_review,
+            audit=request.audit,
         ),
     )
 

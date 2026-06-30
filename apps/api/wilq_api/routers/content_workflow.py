@@ -11,10 +11,13 @@ from wilq.content.workflow.api import (
     ContentWorkItemPreflightResponse,
     ContentWorkItemSalesBriefRequest,
     ContentWorkItemSalesBriefResponse,
+    ContentWorkItemWordPressDraftHandoffRequest,
+    ContentWorkItemWordPressDraftHandoffResponse,
     build_content_work_item_draft_package_response,
     build_content_work_item_human_review_response,
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
+    build_content_work_item_wordpress_draft_handoff_response,
 )
 
 router = APIRouter()
@@ -58,3 +61,13 @@ def content_work_item_human_review(
     request: ContentWorkItemHumanReviewRequest,
 ) -> ContentWorkItemHumanReviewResponse:
     return build_content_work_item_human_review_response(request)
+
+
+@router.post(
+    "/api/content/work-items/wordpress-draft-handoff",
+    response_model=ContentWorkItemWordPressDraftHandoffResponse,
+)
+def content_work_item_wordpress_draft_handoff(
+    request: ContentWorkItemWordPressDraftHandoffRequest,
+) -> ContentWorkItemWordPressDraftHandoffResponse:
+    return build_content_work_item_wordpress_draft_handoff_response(request)

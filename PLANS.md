@@ -794,6 +794,11 @@ Current ready/in-progress Goal 002 slices are:
   `POST /api/content/work-items/human-review` exposes Human Review v1 through
   WILQ API, updates the work item only after blocker-free review, and reports
   whether WordPress handoff is allowed without creating a handoff.
+- `wilq-seo-24b` - content WordPress draft handoff API bridge, closed.
+  `POST /api/content/work-items/wordpress-draft-handoff` exposes WordPress
+  Draft Handoff v1 as a typed prepare-only, draft-only contract. It returns
+  handoff blockers or a prepared handoff, but does not call WordPress, create a
+  post, publish content or allow destructive updates.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

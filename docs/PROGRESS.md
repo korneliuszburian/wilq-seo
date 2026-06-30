@@ -322,6 +322,16 @@ API status later contradicts this state.
   keep handoff disabled. Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 WordPress Draft Handoff API bridge started under `wilq-seo-24b`.
+  `POST /api/content/work-items/wordpress-draft-handoff` now calls the typed
+  WordPress Draft Handoff v1 builder and returns a prepare-only, draft-only
+  handoff contract or typed blockers. It does not call WordPress, create a post,
+  publish content or allow destructive updates. Focused API tests prove valid
+  prepared handoff, missing-audit blocker, non-approved review blocker, dev
+  canonical blocker, `publish_allowed=false`, `destructive_update_allowed=false`
+  and evidence preservation. Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
