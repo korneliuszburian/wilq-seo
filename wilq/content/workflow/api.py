@@ -23,6 +23,11 @@ from wilq.content.handoff.wordpress import (
     ContentWordPressDraftHandoffResult,
     build_content_wordpress_draft_handoff,
 )
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftExecutionMode,
+    ContentWordPressDraftExecutionResult,
+    execute_content_wordpress_draft_handoff,
+)
 from wilq.content.inventory.records import (
     ContentInventoryDuplicateRisk,
     ContentInventoryRecord,
@@ -122,6 +127,16 @@ class ContentWorkItemWordPressDraftHandoffRequest(BaseModel):
 class ContentWorkItemWordPressDraftHandoffResponse(BaseModel):
     item: ContentWorkItem
     handoff_result: ContentWordPressDraftHandoffResult
+
+
+class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
+    handoff: ContentWordPressDraftHandoff | None = None
+    draft_package: ContentDraftPackage | None = None
+    mode: ContentWordPressDraftExecutionMode = "dry_run"
+
+
+class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
+    execution_result: ContentWordPressDraftExecutionResult
 
 
 class ContentWorkItemMeasurementWindowRequest(BaseModel):
@@ -268,6 +283,19 @@ def build_content_work_item_wordpress_draft_handoff_response(
             draft_package=request.draft_package,
             human_review=request.human_review,
             audit=request.audit,
+        ),
+    )
+
+
+def build_content_work_item_wordpress_draft_execution_response(
+    request: ContentWorkItemWordPressDraftExecutionRequest,
+) -> ContentWorkItemWordPressDraftExecutionResponse:
+    return ContentWorkItemWordPressDraftExecutionResponse(
+        execution_result=execute_content_wordpress_draft_handoff(
+            handoff=request.handoff,
+            draft_package=request.draft_package,
+            mode=request.mode,
+            live_write_enabled=False,
         ),
     )
 

@@ -8,6 +8,10 @@ from wilq.content.handoff.wordpress import (
     build_content_wordpress_draft_handoff,
     content_wordpress_draft_handoff_blockers,
 )
+from wilq.content.handoff.wordpress_execution import (
+    ContentWordPressDraftExecutionBlocker,
+    execute_content_wordpress_draft_handoff,
+)
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -51,6 +55,14 @@ def _draft_package(**overrides: object) -> ContentDraftPackage:
         "brief_id": "sales_brief_bdo",
         "claim_ledger_id": "claim_ledger_bdo",
         "title": "BDO dla firm: co sprawdzić",
+        "sections": [
+            {
+                "heading": "Kogo dotyczy BDO",
+                "purpose": "Wyjaśnij, kiedy firma powinna sprawdzić obowiązki BDO.",
+                "evidence_ids": ["ev_gsc_bdo"],
+                "draft_notes": ["Nie obiecuj pełnej zgodności bez sprawdzenia sytuacji."],
+            }
+        ],
         "section_to_evidence_map": [
             {"section_heading": "Kogo dotyczy BDO", "evidence_ids": ["ev_gsc_bdo"]}
         ],
@@ -174,8 +186,151 @@ def test_wordpress_handoff_updates_workflow_as_prepared_or_created() -> None:
     assert created.wordpress_post_id == "123"
 
 
+def test_wordpress_draft_execution_dry_run_returns_draft_only_payload() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+
+    result = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+    )
+
+    assert result.status == "dry_run_ready"
+    assert result.mode == "dry_run"
+    assert result.external_write_attempted is False
+    assert result.wordpress_post_id is None
+    assert result.blockers == []
+    assert result.payload is not None
+    assert result.payload.post_status == "draft"
+    assert result.payload.publish_allowed is False
+    assert result.payload.destructive_update_allowed is False
+    assert result.payload.title == "BDO dla firm: co sprawdzić"
+    assert "# BDO dla firm: co sprawdzić" in result.payload.content_markdown
+    assert "Kogo dotyczy BDO" in result.payload.content_markdown
+
+
+def test_wordpress_draft_execution_blocks_missing_or_mismatched_inputs() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+
+    missing = execute_content_wordpress_draft_handoff(
+        handoff=None,
+        draft_package=None,
+    )
+    mismatched = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(id="draft_package_other"),
+    )
+    publish_ready = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(publish_ready=True),
+    )
+
+    assert {blocker.code for blocker in missing.blockers} == {
+        "missing_handoff",
+        "missing_draft_package",
+    }
+    assert [blocker.code for blocker in mismatched.blockers] == [
+        "draft_package_mismatch"
+    ]
+    assert [blocker.code for blocker in publish_ready.blockers] == [
+        "draft_package_marked_publish_ready"
+    ]
+    _assert_execution_blockers_have_no_jargon(
+        [*missing.blockers, *mismatched.blockers, *publish_ready.blockers]
+    )
+
+
+def test_wordpress_draft_execution_blocks_live_write_without_enabled_adapter() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+
+    disabled = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+    )
+    missing_adapter = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+        live_write_enabled=True,
+    )
+
+    assert disabled.status == "blocked"
+    assert [blocker.code for blocker in disabled.blockers] == ["live_write_not_enabled"]
+    assert disabled.external_write_attempted is False
+    assert [blocker.code for blocker in missing_adapter.blockers] == ["missing_live_adapter"]
+    _assert_execution_blockers_have_no_jargon(
+        [*disabled.blockers, *missing_adapter.blockers]
+    )
+
+
+def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> None:
+    handoff_result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(),
+        audit=_audit(),
+    )
+    assert handoff_result.handoff is not None
+    created_payload_titles: list[str] = []
+
+    def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
+        created_payload_titles.append(payload.title)
+        return "123"
+
+    result = execute_content_wordpress_draft_handoff(
+        handoff=handoff_result.handoff,
+        draft_package=_draft_package(),
+        mode="live",
+        live_write_enabled=True,
+        create_draft=create_draft,
+    )
+
+    assert result.status == "created"
+    assert result.external_write_attempted is True
+    assert result.wordpress_post_id == "123"
+    assert created_payload_titles == ["BDO dla firm: co sprawdzić"]
+
+
 def _assert_operator_blockers_have_no_jargon(
     blockers: list[ContentWordPressDraftHandoffBlocker],
+) -> None:
+    forbidden_terms = [
+        "human review",
+        "review ",
+        "handoff",
+        "claimy",
+        "publish-ready",
+        "audit envelope",
+        "Draft Package",
+        "work item",
+        "final canonical URL",
+    ]
+    for blocker in blockers:
+        text = " ".join([blocker.label, blocker.reason, blocker.next_step])
+        for term in forbidden_terms:
+            assert term.lower() not in text.lower()
+
+
+def _assert_execution_blockers_have_no_jargon(
+    blockers: list[ContentWordPressDraftExecutionBlocker],
 ) -> None:
     forbidden_terms = [
         "human review",

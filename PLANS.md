@@ -972,6 +972,12 @@ Current outcome:
   domains. Focused tests prevent Sales Brief, Claim Ledger, Draft Package,
   human review, handoff, publish-ready, work item, evidence ID and final
   canonical URL from leaking into operator-facing blocker text.
+- WordPress draft execution now has a separate Goal 002 dry-run contract.
+  `POST /api/content/work-items/wordpress-draft-execution` returns a sanitized
+  draft-only payload after valid review, audit, handoff and matching draft
+  package. It does not write to WordPress in dry-run mode, keeps publish and
+  destructive update disabled, and blocks live write until a future adapter is
+  explicitly enabled.
 
 Current risk:
 

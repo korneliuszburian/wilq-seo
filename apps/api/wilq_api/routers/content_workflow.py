@@ -16,6 +16,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
+    ContentWorkItemWordPressDraftExecutionRequest,
+    ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
@@ -27,6 +29,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_sales_brief_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
+    build_content_work_item_wordpress_draft_execution_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
 from wilq.content.workflow.store import content_workflow_store
@@ -136,6 +139,16 @@ def content_work_item_wordpress_draft_handoff(
     request: ContentWorkItemWordPressDraftHandoffRequest,
 ) -> ContentWorkItemWordPressDraftHandoffResponse:
     return build_content_work_item_wordpress_draft_handoff_response(request)
+
+
+@router.post(
+    "/api/content/work-items/wordpress-draft-execution",
+    response_model=ContentWorkItemWordPressDraftExecutionResponse,
+)
+def content_work_item_wordpress_draft_execution(
+    request: ContentWorkItemWordPressDraftExecutionRequest,
+) -> ContentWorkItemWordPressDraftExecutionResponse:
+    return build_content_work_item_wordpress_draft_execution_response(request)
 
 
 @router.post(
