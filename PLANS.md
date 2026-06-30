@@ -553,6 +553,11 @@ dashboard logic fork.
   `wilq/content/view_models/labels.py`. Content connector status labels,
   refresh labels, metric labels, live-data status copy and section label
   hydration now live in the content domain instead of the briefing composer.
+- Eleventh content domain extraction moved the GSC query/page section,
+  WordPress inventory match section and content action safety section from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/sections.py`. The briefing module now composes
+  these sections instead of owning their marketer-facing view logic.
 - First API router extraction moved read-only connector endpoints from
   `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
   This preserves endpoint paths and response shapes for connector list, status
@@ -646,7 +651,8 @@ Current ready/in-progress Goal 002 slices are:
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
   review, vendor-read blocker, marketer preflight view and content API label
-  extraction slices.
+  extraction slices. Diagnostic section builders also now have a content-domain
+  home.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

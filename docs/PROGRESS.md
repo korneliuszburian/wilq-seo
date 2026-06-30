@@ -156,6 +156,14 @@ API status later contradicts this state.
   contract tests, Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- Goal 002 content diagnostic section builders moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/sections.py`. This is behavior-preserving
+  extraction: the GSC query/page section, WordPress inventory match section and
+  content action safety section now have a content-domain home. `tests/content`
+  (36 tests), four content diagnostics API contract tests, Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
