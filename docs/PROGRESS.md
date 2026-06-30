@@ -490,6 +490,16 @@ API status later contradicts this state.
   Gen/social context-pack tests, Ruff/mypy for touched API files,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- `apps/api/wilq_api/context_daily.py` now owns the daily-command context pack,
+  daily action compaction, daily command-center compaction and shared
+  opportunity/evidence/knowledge/expert operator summaries used by skill
+  context packs. `main.py` delegates `wilq-daily-command` context construction
+  and skill scoped summaries to that runtime module instead of keeping daily
+  helper internals locally. The audit-event summary contract was aligned to the
+  existing operator-label test expectation with a capitalized second sentence.
+  Focused daily/context-pack/operator-label tests, Ruff/mypy for touched API
+  files, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 
 ## Latest Verified Product State
 

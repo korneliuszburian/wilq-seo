@@ -55,7 +55,7 @@ def compact_audit_event_for_daily_context(
     event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
     summary = (
         f"Ślad bezpieczeństwa: {event_type_label}. "
-        "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
     )
     return {
         "id": event.get("id"),

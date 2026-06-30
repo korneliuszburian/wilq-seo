@@ -16,11 +16,11 @@ from apps.api.wilq_api.context_compaction import (
     compact_metric_fact_for_context,
     compact_refresh_run_for_operator_context,
 )
-from apps.api.wilq_api.main import (
-    _compact_evidence_for_operator_context,
-    _compact_knowledge_card_for_operator_context,
-    app,
+from apps.api.wilq_api.context_daily import (
+    compact_evidence_for_operator_context,
+    compact_knowledge_card_for_operator_context,
 )
+from apps.api.wilq_api.main import app
 from wilq.actions.content_refresh import (
     _draft_content_block_label,
     _first_metric_or_missing,
@@ -1733,7 +1733,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     assert knowledge_blocked_claim_binding.has_blocked_claims is True
     assert raw_value not in knowledge_blocked_claim_binding.blocked_claim_summary_label
 
-    compact_evidence = _compact_evidence_for_operator_context(
+    compact_evidence = compact_evidence_for_operator_context(
         Evidence(
             id="ev_unknown_operator_label",
             source_connector=raw_value,
@@ -1750,7 +1750,7 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
     assert raw_value not in compact_evidence["summary"]
 
-    compact_card = _compact_knowledge_card_for_operator_context(knowledge_card)
+    compact_card = compact_knowledge_card_for_operator_context(knowledge_card)
     assert compact_card["title"] == "Karta wiedzy: typ wiedzy do sprawdzenia"
     assert compact_card["card_type_label"] == "typ wiedzy do sprawdzenia"
     assert compact_card["source_type_label"] == "źródło wiedzy do sprawdzenia"
@@ -3372,7 +3372,7 @@ def test_daily_context_pack_preserves_action_preview_audit(
     latest_audit_event = merchant_action["latest_audit_event"]
     assert latest_audit_event["event_type"] == "action_preview_generated"
     assert (
-        "szczegóły techniczne są dostępne w szczegółach akcji WILQ"
+        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ"
         in (latest_audit_event["summary"])
     )
     assert "details_keys" not in latest_audit_event
@@ -3615,7 +3615,7 @@ def test_daily_context_pack_preserves_human_review_outcome(
     assert "Brakuje podglądu zmian" not in serialized
     assert merchant_action["latest_audit_event"]["event_type"] == "human_review_needs_changes"
     assert (
-        "szczegóły techniczne są dostępne w szczegółach akcji WILQ"
+        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ"
         in (merchant_action["latest_audit_event"]["summary"])
     )
 
