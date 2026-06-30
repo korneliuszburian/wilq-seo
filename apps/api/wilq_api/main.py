@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api import context_actions, context_knowledge
+from apps.api.wilq_api import context_actions, context_compaction, context_knowledge
 from apps.api.wilq_api.context_cache import (
     clear_skill_context_cache,
     read_skill_context_cache,
@@ -61,10 +61,7 @@ from wilq.actions.google_ads.demand_gen import (
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.actions.service import (
-    _action_audit_event_label,
-    demand_gen_readiness_preview_cards,
-)
+from wilq.actions.service import demand_gen_readiness_preview_cards
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import (
@@ -336,7 +333,7 @@ def _daily_command_context_pack(
         },
         "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
     }
-    pack = _strip_raw_operator_context(pack)
+    pack = context_compaction.strip_raw_operator_context(pack)
     return redact_mapping(pack)
 
 
@@ -346,8 +343,8 @@ def _compact_daily_action_for_context(
 ) -> dict[str, Any]:
     dumped = action.model_dump(mode="json")
     audit_events = dumped.get("audit_events")
-    latest_audit_event = _compact_audit_event_for_daily_context(
-        _latest_audit_event_for_context(audit_events)
+    latest_audit_event = context_compaction.compact_audit_event_for_daily_context(
+        context_compaction.latest_audit_event(audit_events)
     )
     compact = {
         "id": dumped["id"],
@@ -373,7 +370,9 @@ def _compact_daily_action_for_context(
                 "decision_id": decision.id,
                 "decision_status": decision.status,
                 "decision_title": decision.title,
-                "human_diagnosis": _first_context_sentence(decision.co_widzimy),
+                "human_diagnosis": context_compaction.first_context_sentence(
+                    decision.co_widzimy
+                ),
                 "recommended_reason": decision.bezpieczny_next_step,
                 "source_connectors": decision.source_connectors,
                 "evidence_ids": decision.evidence_ids,
@@ -382,13 +381,6 @@ def _compact_daily_action_for_context(
             }
         )
     return compact
-
-
-def _first_context_sentence(value: str) -> str:
-    for marker in (". To ", ". Blokada ", ". Bez "):
-        if marker in value:
-            return f"{value.split(marker, 1)[0]}."
-    return value
 
 
 def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str, Any]:
@@ -572,19 +564,6 @@ def _compact_knowledge_card_for_operator_context(card: KnowledgeCard) -> dict[st
     }
 
 
-def _strip_raw_operator_context(value: Any) -> Any:
-    if isinstance(value, list):
-        return [_strip_raw_operator_context(item) for item in value]
-    if not isinstance(value, dict):
-        return value
-    stripped: dict[str, Any] = {}
-    for key, item in value.items():
-        if key == "mode" and item == "vendor_read":
-            continue
-        stripped[key] = _strip_raw_operator_context(item)
-    return stripped
-
-
 def _compact_expert_rule_for_operator_context(rule: ExpertRuleSummary) -> dict[str, Any]:
     dumped = rule.model_dump(mode="json")
     return {
@@ -611,57 +590,6 @@ def _compact_expert_capability_for_operator_context(capability: ExpertCapability
         "required_inputs_total": required_mapping_total,
         "output_contract": "Pełny kontrakt: /api/expert/capabilities.",
         "requires_evidence": dumped.get("requires_evidence", True),
-    }
-
-
-def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
-    if not isinstance(audit_events, list):
-        return None
-    dict_events = [event for event in audit_events if isinstance(event, dict)]
-    if not dict_events:
-        return None
-    return max(
-        dict_events,
-        key=lambda event: (str(event.get("created_at") or ""), str(event.get("id") or "")),
-    )
-
-
-def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
-    if event is None:
-        return None
-    event_type = event.get("event_type") or "unknown"
-    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
-    summary = (
-        f"Ślad bezpieczeństwa: {event_type_label}. "
-        "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
-    )
-    return {
-        "id": event.get("id"),
-        "action_id": event.get("action_id"),
-        "event_type": event_type,
-        "event_type_label": event_type_label,
-        "actor": event.get("actor"),
-        "created_at": event.get("created_at"),
-        "summary": summary,
-    }
-
-
-def _compact_audit_event_for_skill_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
-    if event is None:
-        return None
-    event_type = event.get("event_type") or "unknown"
-    event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
-    return {
-        "id": event.get("id"),
-        "action_id": event.get("action_id"),
-        "event_type": event_type,
-        "event_type_label": event_type_label,
-        "actor": event.get("actor"),
-        "created_at": event.get("created_at"),
-        "summary": (
-            f"Ślad bezpieczeństwa: {event_type_label}. "
-            "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
-        ),
     }
 
 
@@ -696,7 +624,7 @@ def _compact_daily_decision_for_context(decision: dict[str, Any]) -> dict[str, A
     if isinstance(metric_facts, list):
         compact["metric_fact_count"] = len(metric_facts)
         compact["metric_facts"] = [
-            _compact_metric_fact_for_context(fact)
+            context_compaction.compact_metric_fact_for_context(fact)
             for fact in metric_facts[:8]
             if isinstance(fact, dict)
         ]
@@ -714,7 +642,8 @@ def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[st
             metric_facts = item_copy.get("metric_facts", [])
             item_copy["metric_fact_count"] = len(metric_facts)
             item_copy["metric_facts"] = [
-                _compact_metric_fact_for_context(fact) for fact in metric_facts[:3]
+                context_compaction.compact_metric_fact_for_context(fact)
+                for fact in metric_facts[:3]
             ]
             compact_items.append(item_copy)
         section_copy = dict(section)
@@ -727,7 +656,7 @@ def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[st
         "connector_summary": dumped["connector_summary"],
         "sections": compact_sections,
         "top_metric_facts": [
-            _compact_metric_fact_for_context(fact)
+            context_compaction.compact_metric_fact_for_context(fact)
             for fact in dumped.get("top_metric_facts", [])[:8]
         ],
         "evidence_ids": dumped["evidence_ids"],
@@ -787,7 +716,7 @@ def _compact_marketing_brief_for_skill_context(
         "connector_summary": dumped.get("connector_summary"),
         "sections": compact_sections,
         "top_metric_facts": [
-            _compact_metric_fact_for_context(fact)
+            context_compaction.compact_metric_fact_for_context(fact)
             for fact in dumped.get("top_metric_facts", [])[:5]
             if isinstance(fact, dict)
         ]
@@ -874,54 +803,6 @@ def _compact_tactical_queue_for_skill_context(
             "full_endpoint": "/api/marketing/tactical-queue",
         },
     }
-
-
-def _compact_metric_fact_for_context(fact: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "metric_label": fact.get("metric_label"),
-        "value": fact.get("value"),
-        "unit": fact.get("unit"),
-        "period": fact.get("period"),
-        "source_connector": fact.get("source_connector"),
-        "evidence_id": fact.get("evidence_id"),
-        "dimensions": _compact_dimensions_for_context(
-            fact.get("dimensions"),
-            dimension_labels=fact.get("dimension_labels"),
-            dimension_value_labels=fact.get("dimension_value_labels"),
-        ),
-        "freshness_label": fact.get("freshness_label"),
-        "trend": fact.get("trend"),
-    }
-
-
-def _compact_dimensions_for_context(
-    dimensions: Any,
-    *,
-    dimension_labels: Any = None,
-    dimension_value_labels: Any = None,
-) -> dict[str, str]:
-    if not isinstance(dimensions, dict):
-        return {}
-    labels = dimension_labels if isinstance(dimension_labels, dict) else {}
-    value_labels = dimension_value_labels if isinstance(dimension_value_labels, dict) else {}
-    compact: dict[str, str] = {}
-    for key, _value in list(dimensions.items())[:8]:
-        label = str(labels.get(key) or "").strip()
-        value_label = str(value_labels.get(key) or "").strip()
-        if label in {"", "wymiar"} or value_label in {
-            "",
-            "wartość wymiaru do sprawdzenia",
-        }:
-            continue
-        compact_label = label
-        suffix = 2
-        while compact_label in compact:
-            compact_label = f"{label} {suffix}"
-            suffix += 1
-        compact[compact_label] = (
-            value_label if len(value_label) <= 160 else f"{value_label[:157]}..."
-        )
-    return compact
 
 
 def _daily_context_evidence_ids(
@@ -1075,7 +956,7 @@ def _skill_scoped_context_pack(
         "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
         **diagnostics,
     }
-    pack = _strip_raw_operator_context(pack)
+    pack = context_compaction.strip_raw_operator_context(pack)
     redacted_pack = redact_mapping(pack)
     write_skill_context_cache(request, redacted_pack)
     return redacted_pack
@@ -2927,8 +2808,8 @@ def _compact_action_dump_for_context(action: dict[str, Any], *, skill: str) -> d
         )
         compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
     audit_events = compact.get("audit_events")
-    compact["latest_audit_event"] = _compact_audit_event_for_skill_context(
-        _latest_audit_event_for_context(audit_events)
+    compact["latest_audit_event"] = context_compaction.compact_audit_event_for_skill_context(
+        context_compaction.latest_audit_event(audit_events)
     )
     compact.pop("audit_events", None)
     _compact_action_review_gate_for_context(compact)
@@ -2939,7 +2820,7 @@ def _compact_action_dump_for_context(action: dict[str, Any], *, skill: str) -> d
             []
             if compact.get("id") in {SEARCH_TERM_NGRAM_ACTION_ID, "act_review_merchant_feed_issues"}
             else [
-                _compact_metric_fact_for_context(metric)
+                context_compaction.compact_metric_fact_for_context(metric)
                 for metric in metrics[:1]
                 if isinstance(metric, dict)
             ]

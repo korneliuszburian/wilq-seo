@@ -10,12 +10,14 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from apps.api.wilq_api.context_compaction import (
+    compact_audit_event_for_daily_context,
+    compact_audit_event_for_skill_context,
+    compact_metric_fact_for_context,
+)
 from apps.api.wilq_api.main import (
-    _compact_audit_event_for_daily_context,
-    _compact_audit_event_for_skill_context,
     _compact_evidence_for_operator_context,
     _compact_knowledge_card_for_operator_context,
-    _compact_metric_fact_for_context,
     _compact_refresh_run_for_operator_context,
     app,
 )
@@ -1763,8 +1765,8 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "actor": "operator_test",
         "created_at": "2026-06-29T12:00:00Z",
     }
-    daily_audit = _compact_audit_event_for_daily_context(raw_audit_event)
-    skill_audit = _compact_audit_event_for_skill_context(raw_audit_event)
+    daily_audit = compact_audit_event_for_daily_context(raw_audit_event)
+    skill_audit = compact_audit_event_for_skill_context(raw_audit_event)
     assert daily_audit is not None
     assert skill_audit is not None
     assert daily_audit["event_type_label"] == "Zdarzenie audytu"
@@ -17407,7 +17409,7 @@ def test_compact_metric_fact_context_uses_dimension_labels() -> None:
         },
     )
 
-    compact = _compact_metric_fact_for_context(fact.model_dump(mode="json"))
+    compact = compact_metric_fact_for_context(fact.model_dump(mode="json"))
     serialized = json.dumps(compact, ensure_ascii=False)
 
     assert compact["metric_label"] == "zgłoszenia problemów"
@@ -17442,7 +17444,7 @@ def test_compact_metric_fact_context_omits_generic_dimension_placeholders() -> N
         },
     )
 
-    compact = _compact_metric_fact_for_context(fact.model_dump(mode="json"))
+    compact = compact_metric_fact_for_context(fact.model_dump(mode="json"))
     serialized = json.dumps(compact, ensure_ascii=False)
 
     assert compact["dimensions"] == {"konkurent": "lex.pl"}

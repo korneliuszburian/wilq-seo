@@ -412,6 +412,14 @@ API status later contradicts this state.
   Focused Ads/custom-segment/Demand Gen/context-pack tests, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- `apps/api/wilq_api/context_compaction.py` now owns shared context-pack
+  compaction helpers for first-sentence trimming, raw vendor-mode stripping,
+  audit-event summaries, metric facts and dimension labels. `tests/test_api_contracts.py`
+  now imports those helpers from the runtime module instead of `main.py`.
+  Focused context-pack/metric/audit tests, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed. `main.py` still owns domain-specific context builders and larger
+  action/diagnostic compaction functions, so `wilq-seo-462` remains open.
 
 ## Latest Verified Product State
 
