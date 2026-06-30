@@ -168,3 +168,18 @@ def numeric_or_zero(value: Any) -> float:
     if isinstance(value, int | float):
         return float(value)
     return 0.0
+
+
+def priority_limited_strings(value: Any, required: list[str], limit: int) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    for item in [*required, *value]:
+        if not isinstance(item, str) or item in result:
+            continue
+        if item not in value:
+            continue
+        result.append(item)
+        if len(result) >= limit:
+            break
+    return result

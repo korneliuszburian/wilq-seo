@@ -698,8 +698,11 @@ Current ready/in-progress Goal 002 slices are:
   compaction helpers to `apps/api/wilq_api/context_compaction.py`; sixth partial
   slice moved neutral context utility helpers into the same module; seventh
   partial slice moved context traceability helpers to
-  `apps/api/wilq_api/context_trace.py`. Heavy domain-specific builders and
-  larger diagnostic/action compaction helpers still need extraction.
+  `apps/api/wilq_api/context_trace.py`; eighth partial slice moved Merchant
+  skill context compaction to `apps/api/wilq_api/context_merchant.py` and the
+  shared priority-list helper to `apps/api/wilq_api/context_compaction.py`.
+  Heavy domain-specific builders and larger diagnostic/action compaction helpers
+  still need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
@@ -839,6 +842,12 @@ Current outcome:
   diagnostics also now has a router home. Codex context and Codex run endpoints
   also now have a router home. `main.py` no longer declares direct route
   handlers, but still owns heavy context-pack builder internals.
+- Context-pack runtime extraction is reducing `main.py` without changing
+  `/api/codex/*` response shapes. Merchant skill context compaction now lives in
+  `apps/api/wilq_api/context_merchant.py`; shared compaction, trace, scope,
+  knowledge and action helpers also have focused runtime modules. `main.py`
+  still owns larger content, Ads, GA4, Ahrefs, Demand Gen and social context
+  builders.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

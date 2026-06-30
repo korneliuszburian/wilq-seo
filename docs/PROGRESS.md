@@ -433,6 +433,13 @@ API status later contradicts this state.
   context-pack tests, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- `apps/api/wilq_api/context_merchant.py` now owns Merchant skill context
+  compaction: decision queue summaries, issue cluster summaries, safe Merchant
+  context IDs and Merchant preview compaction. The shared priority-list helper
+  moved to `apps/api/wilq_api/context_compaction.py`, and `main.py` no longer
+  keeps Merchant context helper copies. Focused Merchant/context-pack tests,
+  Ruff, mypy for touched API files, `scripts/audit_complexity.py --changed
+  --allow-frozen` and `git diff --check` passed.
 
 ## Latest Verified Product State
 
