@@ -1013,6 +1013,12 @@ Current outcome:
   marketer-facing step. The route uses the API-owned snapshot contract, lets the
   operator check draft readiness without live model generation, hides raw
   OpenAI payload details and still performs no WordPress write or publication.
+- Structured draft runtime now has a gated OpenAI SDK client boundary. Live
+  generation requires `WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED=true` and a
+  configured SDK/API key; otherwise the API returns typed blockers. Tests prove
+  the runtime can parse strict structured output through an injected SDK client
+  while keeping `publish_ready=false`. This still does not create a WordPress
+  draft, write to WordPress or publish on `ekologus.pl`.
 
 Current risk:
 

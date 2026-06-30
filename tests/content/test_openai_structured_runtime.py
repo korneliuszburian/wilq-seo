@@ -7,6 +7,10 @@ from wilq.content.drafts.openai_runtime import (
     build_openai_structured_draft_request,
     execute_openai_structured_draft_generation,
 )
+from wilq.content.drafts.openai_sdk import (
+    build_openai_sdk_client,
+    openai_structured_draft_live_enabled,
+)
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftGenerationInput,
@@ -189,3 +193,20 @@ def test_runtime_blocks_invalid_structured_output() -> None:
     assert result.status == "blocked"
     assert result.external_call_attempted is True
     assert "invalid_structured_output" in {blocker.code for blocker in result.blockers}
+
+
+def test_sdk_live_flag_is_explicit_opt_in() -> None:
+    assert openai_structured_draft_live_enabled({}) is False
+    assert openai_structured_draft_live_enabled(
+        {"WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED": "false"}
+    ) is False
+    assert openai_structured_draft_live_enabled(
+        {"WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED": "true"}
+    ) is True
+
+
+def test_sdk_client_requires_openai_api_key() -> None:
+    assert build_openai_sdk_client({}) is None
+    client = build_openai_sdk_client({"OPENAI_API_KEY": "test-key"})
+    assert client is not None
+    assert hasattr(client, "responses")

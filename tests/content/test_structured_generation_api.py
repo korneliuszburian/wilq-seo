@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
+import wilq.content.workflow.api as workflow_api
 from apps.api.wilq_api.main import app
 
 
@@ -127,6 +129,50 @@ def _draft_package(**overrides: object) -> dict[str, object]:
     return payload
 
 
+class _FakeResponses:
+    def __init__(self, output: dict[str, object]) -> None:
+        self.output = output
+        self.calls: list[dict[str, object]] = []
+
+    def create(self, **payload: object) -> dict[str, object]:
+        self.calls.append(payload)
+        return {"output_parsed": self.output}
+
+
+class _FakeClient:
+    def __init__(self, output: dict[str, object]) -> None:
+        self.responses = _FakeResponses(output)
+
+
+def _structured_output() -> dict[str, object]:
+    return {
+        "draft_kind": "section_draft",
+        "language": "pl-PL",
+        "title": "BDO dla firm",
+        "meta_title": "BDO dla firm",
+        "meta_description": "Sprawdź, kiedy warto skonsultować obowiązki BDO.",
+        "h1": "BDO dla firm",
+        "sections": [
+            {
+                "heading": "Kogo dotyczy BDO",
+                "body_markdown": "BDO trzeba sprawdzić na podstawie sytuacji firmy.",
+                "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+                "claims_used": [
+                    "Ekologus pomaga firmom uporządkować obowiązki BDO."
+                ],
+            }
+        ],
+        "faq": ["Czy każda firma musi mieć BDO?"],
+        "cta": "Skontaktuj się z Ekologus, żeby omówić sytuację firmy.",
+        "internal_links": ["https://ekologus.pl/kontakt/"],
+        "source_facts_used": ["ev_gsc_bdo", "ev_wp_bdo"],
+        "claims_needing_review": [],
+        "forbidden_claims_avoided": [],
+        "human_review_checklist": ["Czy to brzmi jak Ekologus?"],
+        "publish_ready": False,
+    }
+
+
 def test_structured_draft_generation_api_returns_strict_contract() -> None:
     response = TestClient(app).post(
         "/api/content/work-items/structured-draft-generation",
@@ -224,3 +270,64 @@ def test_structured_draft_runtime_api_blocks_live_mode() -> None:
     assert "live_generation_disabled" in {
         blocker["code"] for blocker in result["blockers"]
     }
+
+
+def test_structured_draft_runtime_api_blocks_live_without_sdk_client(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED", "true")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-runtime",
+        json={"contract": contract, "model": "gpt-5", "mode": "live"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["runtime_result"]
+    assert result["status"] == "blocked"
+    assert result["external_call_attempted"] is False
+    assert "missing_client" in {blocker["code"] for blocker in result["blockers"]}
+
+
+def test_structured_draft_runtime_api_can_use_gated_sdk_client(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED", "true")
+    fake_client = _FakeClient(_structured_output())
+    monkeypatch.setattr(workflow_api, "build_openai_sdk_client", lambda: fake_client)
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-runtime",
+        json={"contract": contract, "model": "gpt-5", "mode": "live"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["runtime_result"]
+    assert result["status"] == "generated"
+    assert result["external_call_attempted"] is True
+    assert result["output"]["publish_ready"] is False
+    assert result["output"]["source_facts_used"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+    assert fake_client.responses.calls[0]["text"]["format"]["strict"] is True

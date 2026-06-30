@@ -13,9 +13,14 @@ from wilq.content.briefs.sales import (
 )
 from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
 from wilq.content.drafts.openai_runtime import (
+    OpenAIClientProtocol,
     OpenAIStructuredDraftRuntimeMode,
     OpenAIStructuredDraftRuntimeResult,
     execute_openai_structured_draft_generation,
+)
+from wilq.content.drafts.openai_sdk import (
+    build_openai_sdk_client,
+    openai_structured_draft_live_enabled,
 )
 from wilq.content.drafts.package import (
     ContentDraftPackage,
@@ -301,13 +306,27 @@ def build_content_work_item_structured_draft_generation_response(
 
 def build_content_work_item_structured_draft_runtime_response(
     request: ContentWorkItemStructuredDraftRuntimeRequest,
+    *,
+    client: OpenAIClientProtocol | None = None,
+    live_generation_enabled: bool | None = None,
 ) -> ContentWorkItemStructuredDraftRuntimeResponse:
+    live_enabled = (
+        openai_structured_draft_live_enabled()
+        if live_generation_enabled is None
+        else live_generation_enabled
+    )
+    runtime_client = (
+        client
+        if client is not None or request.mode != "live" or not live_enabled
+        else build_openai_sdk_client()
+    )
     return ContentWorkItemStructuredDraftRuntimeResponse(
         runtime_result=execute_openai_structured_draft_generation(
             contract=request.contract,
             model=request.model,
             mode=request.mode,
-            live_generation_enabled=False,
+            client=runtime_client,
+            live_generation_enabled=live_enabled,
         )
     )
 

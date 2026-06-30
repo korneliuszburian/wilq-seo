@@ -463,6 +463,13 @@ API status later contradicts this state.
   API-owned structured generation status, and the dashboard can check draft
   readiness through the typed dry-run endpoint without showing raw OpenAI
   payloads, calling the model live, writing to WordPress or publishing content.
+- Beads task `wilq-seo-63l` adds a gated OpenAI SDK client boundary for the
+  structured draft runtime. The runtime still defaults to dry-run, live mode
+  stays blocked unless `WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED=true`, missing
+  SDK/API-key state returns a typed blocker, and tests prove a fake SDK client
+  can return a strict structured draft with `publish_ready=false`. This does not
+  create a WordPress draft, write to WordPress or publish anything on
+  `ekologus.pl`.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

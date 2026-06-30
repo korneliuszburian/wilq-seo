@@ -19,7 +19,8 @@ dependencies = [
   "sqlmodel>=0.0.22",
   "typer>=0.15.1",
   "uvicorn>=0.34.0",
-  "pyyaml>=6.0.2"
+  "pyyaml>=6.0.2",
+  "openai>=2.44.0",
 ]
 
 [project.scripts]
