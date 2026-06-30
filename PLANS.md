@@ -723,6 +723,10 @@ Current ready/in-progress Goal 002 slices are:
   Seventeenth partial slice moved skill-scoped context-pack orchestration,
   diagnostics dispatch and skill opportunity filtering to
   `apps/api/wilq_api/context_skill.py`.
+  Eighteenth partial slice moved full-context context-pack assembly to
+  `apps/api/wilq_api/context_full.py`; `main.py` now delegates daily,
+  skill-scoped and full-context context-pack construction to focused runtime
+  modules.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
@@ -871,8 +875,8 @@ Current outcome:
   have focused runtime modules. Daily-command context construction and shared
   operator summaries now also have a focused runtime module. Skill-scoped
   context-pack orchestration and diagnostics dispatch now also have a focused
-  runtime module. `main.py` now owns app wiring and top-level full-context
-  assembly.
+  runtime module. Full-context assembly now also has a focused runtime module.
+  `main.py` now owns app wiring and context-pack dispatch only.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

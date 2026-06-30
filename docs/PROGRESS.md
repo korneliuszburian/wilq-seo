@@ -508,6 +508,14 @@ API status later contradicts this state.
   segments, campaign builder, Demand Gen, social, knowledge and expert
   summaries passed with Ruff, mypy, `scripts/audit_complexity.py --changed
   --allow-frozen` and `git diff --check`.
+- `apps/api/wilq_api/context_full.py` now owns full-context context-pack
+  assembly for explicit full-context Codex requests. `main.py` delegates the
+  full-context fallback to that runtime module instead of importing domain
+  diagnostics, evidence, connector refresh, knowledge, expert-rule and
+  redaction builders directly. Focused full-context tests, Ruff/mypy for
+  touched API files, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed. Beads task `wilq-seo-462` is ready to close
+  because `main.py` now owns app wiring and context-pack dispatch only.
 
 ## Latest Verified Product State
 
