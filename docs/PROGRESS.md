@@ -460,6 +460,13 @@ API status later contradicts this state.
   Focused daily/social context-pack tests, Ruff/mypy for touched API files,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- `apps/api/wilq_api/context_content.py` now owns Content Planner, GSC content
+  doctor and campaign-builder landing context shaping for Codex context-pack
+  payloads. `main.py` delegates content diagnostics compaction, Ahrefs-filtered
+  GSC context and landing-page candidate context to that runtime module. Focused
+  content/GSC/campaign-builder context-pack tests, Ruff/mypy for touched API
+  files, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 
 ## Latest Verified Product State
 
