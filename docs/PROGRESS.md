@@ -131,6 +131,14 @@ API status later contradicts this state.
   same content diagnostics contract tests, Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 GSC/WordPress vendor-read blocker moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/preflight/vendor_read.py`. This is behavior-preserving
+  extraction: focused vendor-read tests now cover blocker reasons, refresh
+  evidence fallback and the `block_until_vendor_read` decision. The same content
+  diagnostics contract tests, Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

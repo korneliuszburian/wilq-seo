@@ -21,6 +21,11 @@ from wilq.content.planning.decisions import (
     gsc_content_decisions,
     wordpress_match_tile,
 )
+from wilq.content.preflight.vendor_read import (
+    content_blocker_reason,
+    content_vendor_read_blocker_decision,
+    refresh_or_connector_evidence_ids,
+)
 from wilq.content.preflight.verdicts import (
     content_preflight_mode,
     content_preflight_next_step,
@@ -807,14 +812,14 @@ def _query_page_section(
             id="content_query_page_matrix",
             title="GSC: brak metryk zapytań i URL",
             status="blocked",
-            summary=_content_blocker_reason(latest_refreshes, "google_search_console"),
+            summary=content_blocker_reason(latest_refreshes, "google_search_console"),
             diagnosis=(
                 "WILQ nie ma metryk zapytań i URL-i z Google Search Console, więc nie może "
                 "wskazać odświeżenia, nowej treści ani scalenia bez zmyślania intencji."
             ),
             next_step=("Uruchom odczyt danych z GSC i dopiero potem buduj kolejkę treści."),
             source_connectors=["google_search_console"],
-            evidence_ids=_refresh_or_connector_evidence_ids(
+            evidence_ids=refresh_or_connector_evidence_ids(
                 latest_refreshes,
                 "google_search_console",
             ),
@@ -881,14 +886,14 @@ def _inventory_match_section(
             id="content_inventory_match",
             title="WordPress: brak spisu treści",
             status="blocked",
-            summary=_content_blocker_reason(latest_refreshes, "wordpress_ekologus"),
+            summary=content_blocker_reason(latest_refreshes, "wordpress_ekologus"),
             diagnosis=(
                 "WILQ nie ma spisu treści WordPress, więc nie może odróżnić "
                 "odświeżenia albo scalenia od nowej treści bez ryzyka duplikacji."
             ),
             next_step="Odśwież spis treści WordPress i dopiero potem przygotuj plany treści.",
             source_connectors=["wordpress_ekologus", "wordpress_sklep"],
-            evidence_ids=_refresh_or_connector_evidence_ids(
+            evidence_ids=refresh_or_connector_evidence_ids(
                 latest_refreshes,
                 "wordpress_ekologus",
             ),
@@ -991,28 +996,6 @@ def _query_page_count(items: list[TacticalQueueItem]) -> int:
 
 def _matched_inventory_count(items: list[TacticalQueueItem]) -> int:
     return sum(1 for item in items if item.dimensions.get("wordpress_match") == "found")
-
-
-def _content_blocker_reason(
-    latest_refreshes: list[ConnectorRefreshRun],
-    connector_id: str,
-) -> str:
-    latest = next((run for run in latest_refreshes if run.connector_id == connector_id), None)
-    if latest and latest.errors:
-        return latest.errors[0]
-    if latest and latest.summary:
-        return latest.summary
-    return f"Brak wykonanego odczytu danych dla: {source_connector_label(connector_id)}."
-
-
-def _refresh_or_connector_evidence_ids(
-    latest_refreshes: list[ConnectorRefreshRun],
-    connector_id: str,
-) -> list[str]:
-    latest = next((run for run in latest_refreshes if run.connector_id == connector_id), None)
-    if latest:
-        return latest.evidence_ids
-    return [connector_evidence_id(connector_id)]
 
 
 def _unique(values: Iterable[object]) -> list[str]:
@@ -1160,57 +1143,11 @@ def _content_decision_queue(
         ]
     return [
         _content_decision_with_api_labels(
-            _content_vendor_read_blocker_decision(latest_refreshes, action_ids)
+            content_vendor_read_blocker_decision(
+                latest_refreshes,
+                action_ids,
+                knowledge_card_ids=GSC_CONTENT_KNOWLEDGE_CARD_IDS,
+                expert_rule_ids=GSC_CONTENT_EXPERT_RULE_IDS,
+            )
         )
     ]
-
-
-def _content_vendor_read_blocker_decision(
-    latest_refreshes: list[ConnectorRefreshRun],
-    action_ids: list[str],
-) -> ContentDecisionItem:
-    gsc_reason = _content_blocker_reason(latest_refreshes, "google_search_console")
-    wordpress_reason = _content_blocker_reason(latest_refreshes, "wordpress_ekologus")
-    return ContentDecisionItem(
-        id="content_block_vendor_read",
-        decision_type="block_until_vendor_read",
-        status="blocked",
-        title="Content: odczyt GSC i WordPress wymagany przed decyzją",
-        summary=(
-            "WILQ nie ma danych GSC dla zapytań i stron ani spisu treści "
-            "WordPress wystarczających do decyzji: odświeżyć, scalić albo utworzyć."
-        ),
-        priority=5,
-        metric_tiles={"blokady": 2},
-        source_connectors=["google_search_console", "wordpress_ekologus"],
-        evidence_ids=_unique(
-            [
-                *_refresh_or_connector_evidence_ids(
-                    latest_refreshes,
-                    "google_search_console",
-                ),
-                *_refresh_or_connector_evidence_ids(
-                    latest_refreshes,
-                    "wordpress_ekologus",
-                ),
-            ]
-        ),
-        action_ids=action_ids,
-        knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
-        expert_rule_ids=list(GSC_CONTENT_EXPERT_RULE_IDS),
-        blocked_claims=[
-            "rekomendacja bez danych źródłowych",
-            "wzrost pozycji",
-            "wzrost liczby leadów",
-            "automatyczna publikacja",
-        ],
-        rationale=(
-            f"GSC blocker: {gsc_reason} WordPress blocker: {wordpress_reason} "
-            "Bez tych odczytów WILQ może tylko wskazać brak danych, nie decyzję SEO."
-        ),
-        next_step=(
-            "Uruchom odczyt danych z Google Search Console i WordPress, "
-            "potem wróć do diagnozy treści."
-        ),
-        risk=ActionRisk.medium,
-    )

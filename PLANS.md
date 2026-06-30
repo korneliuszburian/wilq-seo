@@ -537,6 +537,11 @@ dashboard logic fork.
   knowledge/expert IDs into the Ahrefs planner, while relevance scoring,
   candidate rows and off-topic filtering are tested directly in the content
   planning domain.
+- Eighth content domain extraction moved the GSC/WordPress vendor-read blocker
+  decision and refresh evidence helpers from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/preflight/vendor_read.py`. Missing read evidence remains a
+  content preflight blocker, not a prompt-side fallback.
 
 Current next action:
 
@@ -547,7 +552,7 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
-  review extraction slices.
+  review plus vendor-read blocker extraction slices.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -590,6 +595,7 @@ Current outcome:
   planning helpers plus GSC content decision construction now have a domain
   home. GA4 tracking-gap content blockers now also have a measurement-domain
   home. Ahrefs gap review decision construction now also has a planning-domain
+  home. The fallback GSC/WordPress vendor-read blocker now has a preflight-domain
   home. Full inventory records, full preflight contracts, claims, drafting,
   handoff and broader measurement modules still need behavior extraction.
 
