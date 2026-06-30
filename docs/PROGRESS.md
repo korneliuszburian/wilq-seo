@@ -3,9 +3,9 @@
 This file is the short recovery ledger. It is not a changelog and must not
 become an append-only transcript.
 
-Full current plan: `PLAN.md`
-Long-range product plan: `PLANS.md`
-Active goal: `docs/goals/001-goal.md`
+Current cleanup plan: `PLAN.md`
+Active product execution plan: `PLANS.md`
+Goal 001 contract: `docs/goals/001-goal.md`
 
 ## Current Readout
 
@@ -20,9 +20,9 @@ Date: 2026-06-30
   decisions by default.
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
-- Beads (`bd`) is the operational task graph for current cleanup work. Run
-  `bd prime` and `bd ready --json` after recovery. Parent issue:
-  `wilq-seo-6rw`.
+- Beads (`bd`) is the operational task graph for current work. Run `bd prime`
+  and `bd ready --json` after recovery. Active Goal 002 epic:
+  `wilq-seo-zu4`. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -85,6 +85,13 @@ API status later contradicts this state.
   This is behavior-preserving extraction: focused canonical tests, two content
   diagnostics contract tests, Ruff, mypy for the new module, import-boundary
   smoke and `git diff --check` passed.
+- Goal 002 content preflight verdict helpers moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/preflight/verdicts.py`. This is behavior-preserving extraction:
+  focused preflight tests, canonical tests, two content diagnostics contract
+  tests, Ruff, mypy for the new module, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
@@ -515,6 +522,10 @@ API status later contradicts this state.
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk uv run python scripts/marketer_language_guard.py`
 - `rtk uv run pytest tests/test_marketer_language_guard.py -q`
+- `rtk uv run pytest tests/content/test_preflight_verdicts.py tests/content/test_canonical_urls.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exists -q`
+- `rtk uv run ruff check wilq/content/preflight/verdicts.py wilq/briefing/content_diagnostics.py tests/content/test_preflight_verdicts.py`
+- `rtk uv run mypy wilq/content/preflight/verdicts.py`
+- `rtk uv run python scripts/audit_complexity.py --changed --allow-frozen --limit 5`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'workflow_label_fallbacks_do_not_expose_raw_values or workflow_missing_contract_detail_fallback_explains_complete_process or workflows_are_decision_backed_operator_contracts'`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`

@@ -19,6 +19,13 @@ from wilq.content.canonical.urls import (
     content_normalized_path,
     content_normalized_url,
 )
+from wilq.content.preflight.verdicts import (
+    content_preflight_mode,
+    content_preflight_next_step,
+    content_preflight_query_overlap,
+    content_preflight_similar_urls,
+    content_preflight_status,
+)
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     action_count_label,
@@ -534,8 +541,8 @@ def _content_marketer_decision(
 
 
 def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightItem:
-    recommended_mode = _content_preflight_mode(decision)
-    status = _content_preflight_status(decision, recommended_mode)
+    recommended_mode = content_preflight_mode(decision)
+    status = content_preflight_status(decision, recommended_mode)
     source_public_url = decision.source_public_url or decision.page
     final_canonical_url = content_decision_final_canonical_url(decision)
     missing_inputs = _content_marketer_missing_inputs(
@@ -576,65 +583,15 @@ def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightIt
         claim_gate_status_label=content_contract_label(claim_gate_status),
         service_fit_status=service_fit_status,
         service_fit_status_label=content_contract_label(service_fit_status),
-        similar_existing_urls=_content_preflight_similar_urls(decision),
-        query_overlap_summary=_content_preflight_query_overlap(decision),
+        similar_existing_urls=content_preflight_similar_urls(decision),
+        query_overlap_summary=content_preflight_query_overlap(decision),
         blocked_claims=_content_marketer_blocked_claims(decision.blocked_claims),
         missing_inputs=missing_inputs,
         evidence_ids=decision.evidence_ids,
         evidence_summary_label=evidence_count_label(decision.evidence_ids),
         source_connectors=decision.source_connectors,
-        next_step=_content_preflight_next_step(decision, recommended_mode, status),
+        next_step=content_preflight_next_step(decision, recommended_mode, status),
     )
-
-
-def _content_preflight_mode(
-    decision: ContentDecisionItem,
-) -> Literal["preserve", "refresh", "merge", "create", "block"]:
-    if decision.decision_type == "refresh_or_merge":
-        return "refresh"
-    if decision.decision_type == "merge_create_after_inventory_check":
-        return "merge"
-    if decision.decision_type == "inventory_check_before_create":
-        return "block"
-    return "block"
-
-
-def _content_preflight_status(
-    decision: ContentDecisionItem,
-    recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"],
-) -> Literal["allowed", "review_required", "blocked"]:
-    if decision.status == "blocked" or recommended_mode == "block":
-        return "blocked"
-    return "review_required"
-
-
-def _content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
-    urls = []
-    if decision.wordpress_match == "found":
-        urls.append(content_decision_final_canonical_url(decision) or decision.source_public_url)
-    urls.extend(url for row in decision.ahrefs_candidate_rows for url in row.wordpress_overlap_urls)
-    return _unique(url for url in urls if url)
-
-
-def _content_preflight_query_overlap(decision: ContentDecisionItem) -> str:
-    if decision.query_count <= 0:
-        return "Brak potwierdzonych wspólnych zapytań."
-    primary = f"; główne zapytanie: {decision.primary_query}" if decision.primary_query else ""
-    return f"{decision.query_count} zapytań z GSC{primary}."
-
-
-def _content_preflight_next_step(
-    decision: ContentDecisionItem,
-    recommended_mode: Literal["preserve", "refresh", "merge", "create", "block"],
-    status: Literal["allowed", "review_required", "blocked"],
-) -> str:
-    if status == "blocked":
-        return decision.next_step
-    if recommended_mode == "refresh":
-        return "Przygotuj plan odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
-    if recommended_mode == "merge":
-        return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
-    return decision.next_step
 
 
 def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
