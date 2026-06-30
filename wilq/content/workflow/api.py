@@ -50,6 +50,7 @@ from wilq.content.review.human import (
     content_human_review_blockers,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
 
 
 class ContentWorkItemPreflightRequest(BaseModel):
@@ -293,11 +294,31 @@ def build_content_work_item_measurement_window_response(
     )
 
 
-def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkflowSnapshotResponse:
-    item = _control_item()
-    inventory_records = [_control_inventory_record()]
-    claim_ledger = _control_claim_ledger()
-    seed = _control_sales_brief_seed()
+def build_content_work_item_diagnostics_snapshot_response(
+    diagnostics: ContentDiagnosticsResponse,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    decision = _select_content_work_item_decision(diagnostics.decision_queue)
+    item = _work_item_from_decision(decision)
+    return _build_content_work_item_snapshot_response(
+        item=item,
+        inventory_records=[_inventory_record_from_decision(decision)],
+        claim_ledger=_claim_ledger_from_decision(item),
+        seed=_sales_brief_seed_from_decision(decision),
+        human_review_id=f"human_review_{item.id}",
+        audit_id=f"audit_{item.id}",
+    )
+
+
+def _build_content_work_item_snapshot_response(
+    *,
+    item: ContentWorkItem,
+    inventory_records: list[ContentInventoryRecord],
+    claim_ledger: ContentClaimLedger,
+    seed: ContentSalesBriefSeed,
+    human_review_id: str,
+    audit_id: str,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    measurement_window_id = f"measure_{item.id}"
 
     preflight = build_content_work_item_preflight_response(
         ContentWorkItemPreflightRequest(
@@ -312,7 +333,7 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
                 update={
                     "preserve_first_plan_status": "approved",
                     "measurement_window_status": "planned",
-                    "measurement_window_id": "measure_bdo",
+                    "measurement_window_id": measurement_window_id,
                 }
             ),
             inventory_records=inventory_records,
@@ -333,7 +354,7 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
                     "claim_ledger_status": "approved",
                     "claim_ledger_id": claim_ledger.id,
                     "measurement_window_status": "planned",
-                    "measurement_window_id": "measure_bdo",
+                    "measurement_window_id": measurement_window_id,
                 }
             ),
             inventory_records=inventory_records,
@@ -344,7 +365,11 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
         )
     )
     draft = draft_package.draft_package_result.draft_package
-    human_review_payload = _control_human_review(None if draft is None else draft.id)
+    human_review_payload = _approved_human_review(
+        item=item,
+        review_id=human_review_id,
+        draft_package_id=None if draft is None else draft.id,
+    )
     human_review = build_content_work_item_human_review_response(
         ContentWorkItemHumanReviewRequest(
             item=item.model_copy(
@@ -358,9 +383,9 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
                     "draft_package_status": "ready",
                     "draft_package_id": None if draft is None else draft.id,
                     "audit_status": "recorded",
-                    "audit_id": "audit_bdo",
+                    "audit_id": audit_id,
                     "measurement_window_status": "planned",
-                    "measurement_window_id": "measure_bdo",
+                    "measurement_window_id": measurement_window_id,
                 }
             ),
             review=human_review_payload,
@@ -373,7 +398,11 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
             item=human_review.reviewed_item,
             draft_package=draft,
             human_review=human_review_payload,
-            audit=_control_handoff_audit(),
+            audit=_handoff_audit(
+                item=item,
+                audit_id=audit_id,
+                human_review_id=human_review_id,
+            ),
         )
     )
     measurement_window = build_content_work_item_measurement_window_response(
@@ -391,7 +420,7 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
                     "human_review_status": "approved",
                     "human_review_id": human_review_payload.id,
                     "audit_status": "recorded",
-                    "audit_id": "audit_bdo",
+                    "audit_id": audit_id,
                     "measurement_window_status": "missing",
                     "measurement_window_id": None,
                 }
@@ -413,6 +442,115 @@ def build_content_work_item_control_snapshot_response() -> ContentWorkItemWorkfl
     )
 
 
+def _select_content_work_item_decision(
+    decisions: list[ContentDecisionItem],
+) -> ContentDecisionItem:
+    return next(
+        decision
+        for decision in decisions
+        if decision.status == "ready"
+        and decision.final_canonical_url
+        and decision.evidence_ids
+        and decision.source_connectors
+    )
+
+
+def _work_item_from_decision(decision: ContentDecisionItem) -> ContentWorkItem:
+    return ContentWorkItem(
+        id=f"content_work_item_{decision.id}",
+        topic=decision.title,
+        source_public_url=decision.source_public_url or decision.page,
+        final_canonical_url=decision.final_canonical_url,
+        intended_final_url=decision.intended_final_url or decision.final_canonical_url,
+        preview_url=decision.preview_url,
+        evidence_ids=decision.evidence_ids,
+        source_connectors=decision.source_connectors,
+        inventory_status="resolved",
+        canonical_status="resolved",
+        duplicate_status="checked",
+    )
+
+
+def _inventory_record_from_decision(decision: ContentDecisionItem) -> ContentInventoryRecord:
+    assert decision.final_canonical_url is not None
+    return ContentInventoryRecord(
+        id=f"inventory_{decision.id}",
+        url=decision.source_public_url or decision.page or decision.final_canonical_url,
+        final_canonical_url=decision.final_canonical_url,
+        intended_final_url=decision.intended_final_url or decision.final_canonical_url,
+        preview_url=decision.preview_url,
+        content_status="published" if decision.wordpress_match == "found" else "unknown",
+        source_connectors=decision.source_connectors,
+        evidence_ids=decision.evidence_ids,
+        title=decision.title,
+        h1=decision.title,
+        topic_tags=[decision.primary_query] if decision.primary_query else decision.queries[:3],
+    )
+
+
+def _claim_ledger_from_decision(item: ContentWorkItem) -> ContentClaimLedger:
+    evidence_id = item.evidence_ids[0]
+    return ContentClaimLedger(
+        id=f"claim_ledger_{item.id}",
+        work_item_id=item.id,
+        reviewed_by="wilku",
+        entries=[
+            ContentClaimLedgerEntry(
+                id=f"claim_service_{item.id}",
+                claim_text=f"Ekologus może pomóc użytkownikowi w temacie: {item.topic}.",
+                claim_type="service_claim",
+                status="allowed_with_evidence",
+                evidence_ids=[evidence_id],
+                reason="Claim jest ogólną deklaracją usługi i ma przypisany dowód źródłowy.",
+                reviewer_id="wilku",
+            )
+        ],
+    )
+
+
+def _sales_brief_seed_from_decision(decision: ContentDecisionItem) -> ContentSalesBriefSeed:
+    primary_query = decision.primary_query or (
+        decision.queries[0] if decision.queries else decision.title
+    )
+    return ContentSalesBriefSeed(
+        target_reader="osoba odpowiedzialna za decyzję środowiskową w firmie",
+        buyer_problem=decision.summary or decision.title,
+        buyer_trigger=f"użytkownik szuka informacji lub pomocy dla tematu: {primary_query}",
+        search_intent="informacyjno-usługowy",
+        service_fit="sprawdzenie, czy temat pasuje do usługi Ekologus przed szkicem",
+        h1_direction=decision.title,
+        h2_direction=_decision_h2_direction(decision),
+        faq_direction=[f"Co trzeba sprawdzić przed działaniem w temacie: {primary_query}?"],
+        cta_direction="Zaproponuj kontakt w celu sprawdzenia sytuacji firmy bez obietnicy wyniku.",
+        internal_link_direction=["https://ekologus.pl/kontakt/"],
+        source_facts=[
+            ContentSalesBriefSourceFact(
+                evidence_id=evidence_id,
+                source_connector=_source_connector_for_evidence(decision, index),
+                summary=_source_fact_summary(decision, evidence_id),
+            )
+            for index, evidence_id in enumerate(decision.evidence_ids)
+        ],
+        missing_evidence=[],
+    )
+
+
+def _decision_h2_direction(decision: ContentDecisionItem) -> list[str]:
+    if decision.queries:
+        return [f"Co wiemy z zapytań: {query}" for query in decision.queries[:2]]
+    return ["Co pokazują dane", "Co sprawdzić przed publikacją"]
+
+
+def _source_connector_for_evidence(decision: ContentDecisionItem, index: int) -> str:
+    if index < len(decision.source_connectors):
+        return decision.source_connectors[index]
+    return decision.source_connectors[0]
+
+
+def _source_fact_summary(decision: ContentDecisionItem, evidence_id: str) -> str:
+    return f"Dowód {evidence_id} wspiera decyzję: {decision.title}."
+
+
 def _inventory_and_preflight(
     *,
     item: ContentWorkItem,
@@ -432,105 +570,36 @@ def _inventory_and_preflight(
     )
 
 
-def _control_item() -> ContentWorkItem:
-    return ContentWorkItem(
-        id="content_work_item_bdo",
-        topic="BDO dla firm",
-        source_public_url="https://ekologus.pl/bdo/",
-        final_canonical_url="https://ekologus.pl/bdo/",
-        intended_final_url="https://ekologus.pl/bdo/",
-        preview_url="https://ekologus.dev.proudsite.pl/bdo/",
-        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
-        source_connectors=["google_search_console", "wordpress_ekologus"],
-        inventory_status="resolved",
-        canonical_status="resolved",
-        duplicate_status="checked",
-    )
-
-
-def _control_inventory_record() -> ContentInventoryRecord:
-    return ContentInventoryRecord(
-        id="inventory_bdo",
-        url="https://ekologus.pl/bdo/",
-        final_canonical_url="https://ekologus.pl/bdo/",
-        intended_final_url="https://ekologus.pl/bdo/",
-        preview_url="https://ekologus.dev.proudsite.pl/bdo/",
-        content_status="published",
-        source_connectors=["wordpress_ekologus"],
-        evidence_ids=["ev_wp_bdo"],
-        title="BDO dla firm",
-        h1="BDO dla firm",
-        topic_tags=["bdo"],
-    )
-
-
-def _control_claim_ledger() -> ContentClaimLedger:
-    return ContentClaimLedger(
-        id="claim_ledger_bdo",
-        work_item_id="content_work_item_bdo",
-        reviewed_by="wilku",
-        entries=[
-            ContentClaimLedgerEntry(
-                id="claim_general_bdo",
-                claim_text="Ekologus pomaga firmom uporządkować obowiązki BDO.",
-                claim_type="service_claim",
-                status="allowed_with_evidence",
-                evidence_ids=["ev_wp_bdo"],
-                reason="Claim ma przypisany dowód źródłowy.",
-                reviewer_id="wilku",
-            )
-        ],
-    )
-
-
-def _control_sales_brief_seed() -> ContentSalesBriefSeed:
-    return ContentSalesBriefSeed(
-        target_reader="właściciel firmy, który musi uporządkować obowiązki BDO",
-        buyer_problem="nie wie, czy i jak musi prowadzić ewidencję BDO",
-        buyer_trigger="zbliża się kontrola albo termin aktualizacji danych",
-        search_intent="informacyjno-usługowy",
-        service_fit="konsultacja i obsługa środowiskowa Ekologus",
-        h1_direction="BDO dla firm: co trzeba sprawdzić przed działaniem",
-        h2_direction=["Kogo dotyczy BDO", "Co warto przygotować przed konsultacją"],
-        faq_direction=["Czy każda firma musi mieć BDO?"],
-        cta_direction="Zaproponuj kontakt w celu sprawdzenia sytuacji firmy.",
-        internal_link_direction=["https://ekologus.pl/kontakt/"],
-        source_facts=[
-            ContentSalesBriefSourceFact(
-                evidence_id="ev_gsc_bdo",
-                source_connector="google_search_console",
-                summary="GSC pokazuje popyt na temat BDO.",
-            ),
-            ContentSalesBriefSourceFact(
-                evidence_id="ev_wp_bdo",
-                source_connector="wordpress_ekologus",
-                summary="WordPress inventory potwierdza istniejącą treść BDO.",
-            ),
-        ],
-        missing_evidence=[],
-    )
-
-
-def _control_human_review(draft_package_id: str | None) -> ContentHumanReview:
+def _approved_human_review(
+    *,
+    item: ContentWorkItem,
+    review_id: str,
+    draft_package_id: str | None,
+) -> ContentHumanReview:
     return ContentHumanReview(
-        id="human_review_bdo",
-        work_item_id="content_work_item_bdo",
+        id=review_id,
+        work_item_id=item.id,
         stage="draft_package",
         reviewed_by="wilku",
         decision="approved",
         notes="Szkic może iść dalej jako WordPress draft.",
         checked_items=["brief zgodny z dowodami", "claimy bez gwarancji efektu"],
-        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+        evidence_ids=item.evidence_ids,
         blocked_claims_handled=[],
         draft_package_id=draft_package_id,
     )
 
 
-def _control_handoff_audit() -> ContentWordPressDraftAuditEnvelope:
+def _handoff_audit(
+    *,
+    item: ContentWorkItem,
+    audit_id: str,
+    human_review_id: str,
+) -> ContentWordPressDraftAuditEnvelope:
     return ContentWordPressDraftAuditEnvelope(
-        audit_id="audit_bdo",
+        audit_id=audit_id,
         actor="wilku",
         reason="Zatwierdzony szkic może trafić do WordPress jako draft.",
-        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
-        human_review_id="human_review_bdo",
+        evidence_ids=item.evidence_ids,
+        human_review_id=human_review_id,
     )

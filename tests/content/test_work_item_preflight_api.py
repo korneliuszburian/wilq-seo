@@ -899,31 +899,40 @@ def test_content_work_item_api_chain_keeps_all_content_production_gates() -> Non
     ]
 
 
-def test_content_work_item_control_snapshot_is_api_owned() -> None:
-    response = TestClient(app).get("/api/content/work-items/control-snapshot")
+def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> None:
+    client = TestClient(app)
+    diagnostics = client.get("/api/content/diagnostics").json()
+    source_decision = next(
+        decision
+        for decision in diagnostics["decision_queue"]
+        if decision["status"] == "ready"
+        and decision.get("final_canonical_url")
+        and decision.get("evidence_ids")
+        and decision.get("source_connectors")
+    )
+
+    response = client.get("/api/content/work-items/snapshot")
     assert response.status_code == 200
     data = response.json()
 
-    preflight = data["preflight"]
-    assert preflight["item"]["id"] == "content_work_item_bdo"
-    assert preflight["item"]["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-    assert preflight["item"]["source_connectors"] == [
-        "google_search_console",
-        "wordpress_ekologus",
-    ]
-    assert preflight["preflight_verdict"]["status"] == "plan_allowed"
+    item = data["preflight"]["item"]
+    assert item["id"] == f"content_work_item_{source_decision['id']}"
+    assert item["topic"] == source_decision["title"]
+    assert item["source_public_url"] == source_decision["source_public_url"]
+    assert item["final_canonical_url"] == source_decision["final_canonical_url"]
+    assert item["preview_url"] == source_decision["preview_url"]
+    assert item["evidence_ids"] == source_decision["evidence_ids"]
+    assert item["source_connectors"] == source_decision["source_connectors"]
+    assert item["id"] != "content_work_item_bdo"
+
+    preflight = data["preflight"]["preflight_verdict"]
+    assert preflight["status"] == "plan_allowed"
+    assert preflight["final_canonical_url"] == source_decision["final_canonical_url"]
+    assert preflight["source_connectors"] == source_decision["source_connectors"]
 
     brief = data["sales_brief"]["sales_brief_result"]["brief"]
-    assert brief["id"] == "sales_brief_content_work_item_bdo"
-    assert brief["final_canonical_url"] == "https://ekologus.pl/bdo/"
-    assert brief["preview_url"] == "https://ekologus.dev.proudsite.pl/bdo/"
-
-    draft = data["draft_package"]["draft_package_result"]["draft_package"]
-    assert draft["publish_ready"] is False
-    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
-        "ev_gsc_bdo",
-        "ev_wp_bdo",
-    ]
+    assert brief["work_item_id"] == item["id"]
+    assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
 
     handoff = data["wordpress_handoff"]["handoff_result"]["handoff"]
     assert handoff["post_status"] == "draft"
@@ -932,6 +941,7 @@ def test_content_work_item_control_snapshot_is_api_owned() -> None:
 
     measurement = data["measurement_window"]
     window = measurement["measurement_window_result"]["window"]
+    assert window["content_url"] == source_decision["final_canonical_url"]
     assert window["success_claim_allowed"] is False
     assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
         "measurement_window_not_ready"

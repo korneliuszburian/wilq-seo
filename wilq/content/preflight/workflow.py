@@ -34,6 +34,8 @@ class ContentPreflightVerdict(BaseModel):
     sales_brief_allowed: bool = False
     draft_allowed: bool = False
     wordpress_draft_allowed: bool = False
+    final_canonical_url: str | None = None
+    preview_url: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     similar_existing_urls: list[str] = Field(default_factory=list)
@@ -220,6 +222,8 @@ def _verdict(
         sales_brief_allowed=status in {"brief_allowed", "draft_allowed", "handoff_allowed"},
         draft_allowed=status in {"draft_allowed", "handoff_allowed"},
         wordpress_draft_allowed=status == "handoff_allowed",
+        final_canonical_url=item.final_canonical_url,
+        preview_url=item.preview_url,
         evidence_ids=item.evidence_ids or inventory_resolution.evidence_ids,
         source_connectors=item.source_connectors or inventory_resolution.source_connectors,
         similar_existing_urls=inventory_resolution.similar_existing_urls,

@@ -373,15 +373,15 @@ API status later contradicts this state.
   the older shared `index.ts`, but the audit gate found no new changed-file
   issues.
 - Goal 002 API-owned content workflow snapshot started under `wilq-seo-93p`.
-  `GET /api/content/work-items/control-snapshot` now returns the first
-  controlled Ekologus BDO workflow snapshot from WILQ API: preflight, Sales
-  Brief, Draft Package, Human Review, WordPress draft handoff and Measurement
-  Window. Dashboard `/content-workflow` now fetches that one snapshot instead
-  of constructing the work item, inventory, claim ledger, review and audit
-  payload locally in React. Shared Zod schemas parse the snapshot shape, and
-  tests prove evidence/source connectors persist, WordPress remains draft-only
-  and outcome claims remain blocked. This is still a controlled API snapshot,
-  not the final dynamic work-item queue.
+  `GET /api/content/work-items/snapshot` now derives the first content workflow
+  snapshot from `build_content_diagnostics().decision_queue` instead of a
+  hardcoded BDO control payload. Dashboard `/content-workflow` fetches that API
+  snapshot instead of constructing the work item, inventory, claim ledger,
+  review and audit payload locally in React. Shared Zod schemas parse the
+  snapshot shape, and tests prove evidence/source connectors persist, final
+  canonical stays on Ekologus public URLs, WordPress remains draft-only and
+  outcome claims remain blocked. The previous public control-snapshot endpoint
+  and backend `_control_*` payload helpers were removed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

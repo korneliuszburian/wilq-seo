@@ -1,5 +1,5 @@
 import {
-  getContentWorkItemControlSnapshot,
+  getContentWorkItemSnapshot,
   type ContentWorkItemDraftPackageResponse,
   type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowResponse,
@@ -21,7 +21,7 @@ export type ContentWorkflowSnapshot = {
 export type WorkflowStep = { title: string; status: string; summary: string };
 
 export async function loadContentWorkflowSnapshot(): Promise<ContentWorkflowSnapshot> {
-  return workflowSnapshotFromApi(await getContentWorkItemControlSnapshot());
+  return workflowSnapshotFromApi(await getContentWorkItemSnapshot());
 }
 
 function workflowSnapshotFromApi(

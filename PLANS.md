@@ -934,13 +934,14 @@ Current outcome:
   and Measurement Window. The route keeps WordPress draft-only, blocks outcome
   claims until the measurement window, hides raw endpoint/schema names and does
   not add behavior to the frozen `ContentDiagnosticSurface`.
-- `/content-workflow` now consumes one API-owned control snapshot from
-  `GET /api/content/work-items/control-snapshot` instead of constructing the
-  BDO work item and workflow payloads in React. This removes the local frontend
-  work-item source for the first controlled path while preserving draft-only
-  WordPress safety and blocked early outcome claims. The next product step is
-  replacing the control snapshot with a real work-item source/queue derived from
-  inventory and diagnostics.
+- `/content-workflow` now consumes a diagnostics-derived API snapshot from
+  `GET /api/content/work-items/snapshot` instead of constructing the BDO work
+  item and workflow payloads in React. The snapshot selects a ready content
+  decision with public final canonical URL, evidence IDs and source connectors
+  from `build_content_diagnostics().decision_queue`, preserves draft-only
+  WordPress safety and keeps early outcome claims blocked. The previous public
+  `control-snapshot` endpoint and backend `_control_*` payload helpers were
+  removed instead of kept as compatibility aliases.
 
 Current risk:
 

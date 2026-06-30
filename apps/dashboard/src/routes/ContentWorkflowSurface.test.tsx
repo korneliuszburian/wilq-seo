@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getContentWorkItemControlSnapshot, type ContentWorkItemWorkflowSnapshotResponse } from "../lib/api";
+import { getContentWorkItemSnapshot, type ContentWorkItemWorkflowSnapshotResponse } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
@@ -9,13 +9,13 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    getContentWorkItemControlSnapshot: vi.fn()
+    getContentWorkItemSnapshot: vi.fn()
   };
 });
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
-    vi.mocked(getContentWorkItemControlSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
   });
 
   afterEach(() => {

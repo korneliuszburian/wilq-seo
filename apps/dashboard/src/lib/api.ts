@@ -136,9 +136,9 @@ export function getContentPreflight(): Promise<ContentPreflightResponse> {
   return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
 }
 
-export function getContentWorkItemControlSnapshot(): Promise<ContentWorkItemWorkflowSnapshotResponse> {
+export function getContentWorkItemSnapshot(): Promise<ContentWorkItemWorkflowSnapshotResponse> {
   return apiGet(
-    "/api/content/work-items/control-snapshot",
+    "/api/content/work-items/snapshot",
     ContentWorkItemWorkflowSnapshotResponseSchema
   );
 }

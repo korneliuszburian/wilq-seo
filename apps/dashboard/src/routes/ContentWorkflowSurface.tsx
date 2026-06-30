@@ -19,7 +19,7 @@ type WorkflowSafetyPanelsProps = {
 
 export function ContentWorkflowSurface() {
   const workflow = useQuery({
-    queryKey: ["content-workflow", "bdo-control-path"],
+    queryKey: ["content-workflow", "diagnostics-snapshot"],
     queryFn: loadContentWorkflowSnapshot
   });
 

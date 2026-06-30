@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  getContentWorkItemControlSnapshot,
+  getContentWorkItemSnapshot,
   postContentWorkItemDraftPackage,
   postContentWorkItemHumanReview,
   postContentWorkItemMeasurementWindow,
@@ -63,24 +63,24 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
-  it("gets the API-owned control snapshot for the content workflow route", async () => {
+  it("gets the API-owned diagnostics-derived snapshot for the content workflow route", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       const path = new URL(String(url)).pathname;
       return {
         ok: true,
         json: async () =>
-          path === "/api/content/work-items/control-snapshot"
+          path === "/api/content/work-items/snapshot"
             ? workflowSnapshot()
             : responseByPath[path]
       } as Response;
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const snapshot = await getContentWorkItemControlSnapshot();
+    const snapshot = await getContentWorkItemSnapshot();
 
     expect(snapshot.preflight.item.id).toBe("content_work_item_bdo");
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
-      "/api/content/work-items/control-snapshot"
+      "/api/content/work-items/snapshot"
     ]);
   });
 

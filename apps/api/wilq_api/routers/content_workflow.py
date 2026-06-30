@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
@@ -16,7 +17,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
-    build_content_work_item_control_snapshot_response,
+    build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_draft_package_response,
     build_content_work_item_human_review_response,
     build_content_work_item_measurement_window_response,
@@ -29,11 +30,11 @@ router = APIRouter()
 
 
 @router.get(
-    "/api/content/work-items/control-snapshot",
+    "/api/content/work-items/snapshot",
     response_model=ContentWorkItemWorkflowSnapshotResponse,
 )
-def content_work_item_control_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
-    return build_content_work_item_control_snapshot_response()
+def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
+    return build_content_work_item_diagnostics_snapshot_response(build_content_diagnostics())
 
 
 @router.post(
