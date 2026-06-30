@@ -934,14 +934,25 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
     assert brief["work_item_id"] == item["id"]
     assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
 
-    handoff = data["wordpress_handoff"]["handoff_result"]["handoff"]
-    assert handoff["post_status"] == "draft"
-    assert handoff["publish_allowed"] is False
-    assert handoff["destructive_update_allowed"] is False
+    human_review = data["human_review"]
+    assert human_review["review"] is None
+    assert human_review["reviewed_item"]["human_review_status"] == "missing"
+    assert human_review["wordpress_handoff_allowed"] is False
+    assert [blocker["code"] for blocker in human_review["blockers"]] == [
+        "missing_human_review"
+    ]
+
+    handoff_result = data["wordpress_handoff"]["handoff_result"]
+    assert handoff_result["handoff"] is None
+    assert [blocker["code"] for blocker in handoff_result["blockers"]] == [
+        "missing_human_review",
+        "missing_audit",
+    ]
 
     measurement = data["measurement_window"]
     window = measurement["measurement_window_result"]["window"]
     assert window["content_url"] == source_decision["final_canonical_url"]
+    assert window["handoff_id"] is None
     assert window["success_claim_allowed"] is False
     assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
         "measurement_window_not_ready"

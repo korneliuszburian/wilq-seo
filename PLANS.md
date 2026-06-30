@@ -942,6 +942,11 @@ Current outcome:
   WordPress safety and keeps early outcome claims blocked. The previous public
   `control-snapshot` endpoint and backend `_control_*` payload helpers were
   removed instead of kept as compatibility aliases.
+- The diagnostics-derived workflow snapshot is now stage-aware: it no longer
+  fabricates an approved Human Review, WordPress draft handoff or audit. The
+  snapshot may show Sales Brief, Draft Package and Measurement Window planning,
+  but `review` stays `null`, WordPress handoff stays blocked/null and outcome
+  claims remain blocked until real review, audit and measurement evidence exist.
 
 Current risk:
 

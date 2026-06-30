@@ -85,10 +85,14 @@ function humanReviewStep(humanReview: ContentWorkflowSnapshot["humanReview"]): W
 function wordpressHandoffStep(
   wordpressHandoff: ContentWorkflowSnapshot["wordpressHandoff"]
 ): WorkflowStep {
+  const handoff = wordpressHandoff.handoff_result.handoff;
+  const blocker = wordpressHandoff.handoff_result.blockers[0];
   return {
     title: "Szkic w WordPress",
-    status: wordpressHandoff.handoff_result.handoff?.post_status ?? "zablokowany",
-    summary: "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
+    status: handoff?.post_status ?? "zablokowany",
+    summary: handoff
+      ? "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
+      : blocker?.reason ?? "WordPress nie dostaje szkicu bez review człowieka i audytu."
   };
 }
 

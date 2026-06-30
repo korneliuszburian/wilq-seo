@@ -376,12 +376,15 @@ API status later contradicts this state.
   `GET /api/content/work-items/snapshot` now derives the first content workflow
   snapshot from `build_content_diagnostics().decision_queue` instead of a
   hardcoded BDO control payload. Dashboard `/content-workflow` fetches that API
-  snapshot instead of constructing the work item, inventory, claim ledger,
-  review and audit payload locally in React. Shared Zod schemas parse the
-  snapshot shape, and tests prove evidence/source connectors persist, final
-  canonical stays on Ekologus public URLs, WordPress remains draft-only and
-  outcome claims remain blocked. The previous public control-snapshot endpoint
-  and backend `_control_*` payload helpers were removed.
+  snapshot instead of constructing workflow payloads locally in React. The
+  diagnostics-derived snapshot is now stage-aware: it keeps `review=null`,
+  blocks WordPress handoff with `missing_human_review`/`missing_audit`, plans
+  measurement without a handoff ID and keeps success/failure claims blocked.
+  Shared Zod schemas parse the snapshot shape, and tests prove evidence/source
+  connectors persist, final canonical stays on Ekologus public URLs and
+  WordPress cannot receive a draft until real review evidence exists. The
+  previous public control-snapshot endpoint and backend `_control_*` payload
+  helpers were removed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

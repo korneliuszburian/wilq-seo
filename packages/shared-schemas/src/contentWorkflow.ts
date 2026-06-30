@@ -192,7 +192,7 @@ export const ContentHumanReviewSchema = z.object({
 export const ContentWorkItemHumanReviewResponseSchema = z.object({
   item: ContentWorkItemSchema,
   reviewed_item: ContentWorkItemSchema,
-  review: ContentHumanReviewSchema,
+  review: ContentHumanReviewSchema.nullable().optional(),
   blockers: z.array(ContentWorkflowBlockerSchema).default([]),
   wordpress_handoff_allowed: z.boolean()
 });

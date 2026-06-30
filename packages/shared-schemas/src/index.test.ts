@@ -405,6 +405,23 @@ describe("Content work item workflow schemas", () => {
       ContentWorkItemHumanReviewResponseSchema.safeParse({
         item,
         reviewed_item: item,
+        review: null,
+        blockers: [
+          {
+            code: "missing_human_review",
+            label: "Brakuje decyzji człowieka",
+            reason: "Snapshot nie może udawać zatwierdzonego review.",
+            next_step: "Zatwierdź brief, claimy i paczkę szkicu."
+          }
+        ],
+        wordpress_handoff_allowed: false
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemHumanReviewResponseSchema.safeParse({
+        item,
+        reviewed_item: item,
         review: {
           id: "human_review_bdo",
           work_item_id: "content_work_item_bdo",

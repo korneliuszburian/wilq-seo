@@ -21,6 +21,7 @@ ContentHumanReviewDecision = Literal[
     "deferred",
 ]
 ContentHumanReviewBlockerCode = Literal[
+    "missing_human_review",
     "wrong_work_item",
     "missing_reviewer",
     "missing_checked_items",
@@ -58,11 +59,21 @@ class ContentHumanReviewBlocker(BaseModel):
 def content_human_review_blockers(
     *,
     item: ContentWorkItem,
-    review: ContentHumanReview,
+    review: ContentHumanReview | None,
     draft_package: ContentDraftPackage | None = None,
     claim_ledger: ContentClaimLedger | None = None,
 ) -> list[ContentHumanReviewBlocker]:
     blockers: list[ContentHumanReviewBlocker] = []
+    if review is None:
+        return [
+            _blocker(
+                "missing_human_review",
+                "Brakuje decyzji człowieka",
+                "Snapshot może pokazać przygotowane etapy, ale nie może udawać "
+                "zatwierdzonego review.",
+                "Zatwierdź brief, claimy i paczkę szkicu przed WordPress handoff.",
+            )
+        ]
     if review.work_item_id != item.id:
         blockers.append(
             _blocker(

@@ -49,6 +49,9 @@ describe("ContentWorkflowSurface", () => {
     ]);
     expect(screen.getByText("BDO dla firm")).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
+    expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
+    expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
+    expect(screen.getByText("zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Nie wolno jeszcze oceniać efektu")).toBeInTheDocument();
     expect(screen.getByText(/Pierwsza ocena po 2026-08-01/)).toBeInTheDocument();
     expect(screen.getByText("Dowody: 2")).toBeInTheDocument();
@@ -196,21 +199,6 @@ function draftPackage() {
   };
 }
 
-function humanReview() {
-  return {
-    id: "human_review_bdo",
-    work_item_id: "content_work_item_bdo",
-    stage: "draft_package",
-    reviewed_by: "wilku",
-    decision: "approved",
-    notes: "Może iść dalej.",
-    checked_items: ["claimy sprawdzone"],
-    evidence_ids: ["ev_gsc_bdo"],
-    blocked_claims_handled: [],
-    draft_package_id: "draft_package_content_work_item_bdo"
-  };
-}
-
 function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
   return {
     preflight: {
@@ -233,14 +221,37 @@ function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
     },
     human_review: {
       item: workItem(),
-      reviewed_item: workItem({ human_review_status: "approved" }),
-      review: humanReview(),
-      blockers: [],
-      wordpress_handoff_allowed: true
+      reviewed_item: workItem({ human_review_status: "missing", human_review_id: null }),
+      review: null,
+      blockers: [
+        {
+          code: "missing_human_review",
+          label: "Brakuje decyzji człowieka",
+          reason: "Snapshot nie może udawać zatwierdzonego review.",
+          next_step: "Zatwierdź brief, claimy i paczkę szkicu."
+        }
+      ],
+      wordpress_handoff_allowed: false
     },
     wordpress_handoff: {
       item: workItem(),
-      handoff_result: { handoff: wordpressHandoff(), blockers: [] }
+      handoff_result: {
+        handoff: null,
+        blockers: [
+          {
+            code: "missing_human_review",
+            label: "Brakuje decyzji człowieka",
+            reason: "WordPress handoff nie może ruszyć bez zatwierdzonego human review.",
+            next_step: "Zatwierdź szkic i claimy przed handoffem."
+          },
+          {
+            code: "missing_audit",
+            label: "Brakuje audytu",
+            reason: "Każdy WordPress handoff musi mieć audit envelope.",
+            next_step: "Zapisz audit_id, actor, reason, evidence IDs i human_review_id."
+          }
+        ]
+      }
     },
     measurement_window: {
       item: workItem(),
@@ -258,27 +269,6 @@ function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
         }
       ]
     }
-  };
-}
-
-function wordpressHandoff(): ContentWorkItemWorkflowSnapshotResponse["wordpress_handoff"]["handoff_result"]["handoff"] {
-  return {
-    id: "wordpress_draft_handoff_content_work_item_bdo",
-    work_item_id: "content_work_item_bdo",
-    draft_package_id: "draft_package_content_work_item_bdo",
-    human_review_id: "human_review_bdo",
-    audit_id: "audit_bdo",
-    connector: "wordpress_ekologus",
-    operation_type: "create_wordpress_draft",
-    status: "prepared",
-    post_status: "draft",
-    title: "BDO dla firm",
-    final_canonical_url: "https://ekologus.pl/bdo/",
-    intended_final_url: "https://ekologus.pl/bdo/",
-    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
-    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
-    publish_allowed: false,
-    destructive_update_allowed: false
   };
 }
 

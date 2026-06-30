@@ -99,7 +99,7 @@ class ContentWorkItemDraftPackageResponse(BaseModel):
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
     item: ContentWorkItem
-    review: ContentHumanReview
+    review: ContentHumanReview | None = None
     draft_package: ContentDraftPackage | None = None
     claim_ledger: ContentClaimLedger | None = None
 
@@ -107,7 +107,7 @@ class ContentWorkItemHumanReviewRequest(BaseModel):
 class ContentWorkItemHumanReviewResponse(BaseModel):
     item: ContentWorkItem
     reviewed_item: ContentWorkItem
-    review: ContentHumanReview
+    review: ContentHumanReview | None = None
     blockers: list[ContentHumanReviewBlocker] = Field(default_factory=list)
     wordpress_handoff_allowed: bool = False
 
@@ -232,7 +232,7 @@ def build_content_work_item_human_review_response(
     )
     reviewed_item = (
         apply_content_human_review_to_work_item(request.item, request.review)
-        if not blockers
+        if request.review is not None and not blockers
         else request.item
     )
     return ContentWorkItemHumanReviewResponse(
@@ -241,6 +241,7 @@ def build_content_work_item_human_review_response(
         review=request.review,
         blockers=blockers,
         wordpress_handoff_allowed=not blockers
+        and request.review is not None
         and content_human_review_allows_wordpress_handoff(
             item=request.item,
             review=request.review,
@@ -304,8 +305,6 @@ def build_content_work_item_diagnostics_snapshot_response(
         inventory_records=[_inventory_record_from_decision(decision)],
         claim_ledger=_claim_ledger_from_decision(item),
         seed=_sales_brief_seed_from_decision(decision),
-        human_review_id=f"human_review_{item.id}",
-        audit_id=f"audit_{item.id}",
     )
 
 
@@ -315,8 +314,6 @@ def _build_content_work_item_snapshot_response(
     inventory_records: list[ContentInventoryRecord],
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
-    human_review_id: str,
-    audit_id: str,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     measurement_window_id = f"measure_{item.id}"
 
@@ -365,11 +362,6 @@ def _build_content_work_item_snapshot_response(
         )
     )
     draft = draft_package.draft_package_result.draft_package
-    human_review_payload = _approved_human_review(
-        item=item,
-        review_id=human_review_id,
-        draft_package_id=None if draft is None else draft.id,
-    )
     human_review = build_content_work_item_human_review_response(
         ContentWorkItemHumanReviewRequest(
             item=item.model_copy(
@@ -382,13 +374,11 @@ def _build_content_work_item_snapshot_response(
                     "claim_ledger_id": claim_ledger.id,
                     "draft_package_status": "ready",
                     "draft_package_id": None if draft is None else draft.id,
-                    "audit_status": "recorded",
-                    "audit_id": audit_id,
                     "measurement_window_status": "planned",
                     "measurement_window_id": measurement_window_id,
                 }
             ),
-            review=human_review_payload,
+            review=None,
             draft_package=draft,
             claim_ledger=claim_ledger,
         )
@@ -397,12 +387,8 @@ def _build_content_work_item_snapshot_response(
         ContentWorkItemWordPressDraftHandoffRequest(
             item=human_review.reviewed_item,
             draft_package=draft,
-            human_review=human_review_payload,
-            audit=_handoff_audit(
-                item=item,
-                audit_id=audit_id,
-                human_review_id=human_review_id,
-            ),
+            human_review=human_review.review,
+            audit=None,
         )
     )
     measurement_window = build_content_work_item_measurement_window_response(
@@ -417,10 +403,10 @@ def _build_content_work_item_snapshot_response(
                     "claim_ledger_id": claim_ledger.id,
                     "draft_package_status": "ready",
                     "draft_package_id": None if draft is None else draft.id,
-                    "human_review_status": "approved",
-                    "human_review_id": human_review_payload.id,
-                    "audit_status": "recorded",
-                    "audit_id": audit_id,
+                    "human_review_status": human_review.reviewed_item.human_review_status,
+                    "human_review_id": human_review.reviewed_item.human_review_id,
+                    "audit_status": "missing",
+                    "audit_id": None,
                     "measurement_window_status": "missing",
                     "measurement_window_id": None,
                 }
@@ -567,39 +553,4 @@ def _inventory_and_preflight(
             item,
             inventory_resolution,
         ),
-    )
-
-
-def _approved_human_review(
-    *,
-    item: ContentWorkItem,
-    review_id: str,
-    draft_package_id: str | None,
-) -> ContentHumanReview:
-    return ContentHumanReview(
-        id=review_id,
-        work_item_id=item.id,
-        stage="draft_package",
-        reviewed_by="wilku",
-        decision="approved",
-        notes="Szkic może iść dalej jako WordPress draft.",
-        checked_items=["brief zgodny z dowodami", "claimy bez gwarancji efektu"],
-        evidence_ids=item.evidence_ids,
-        blocked_claims_handled=[],
-        draft_package_id=draft_package_id,
-    )
-
-
-def _handoff_audit(
-    *,
-    item: ContentWorkItem,
-    audit_id: str,
-    human_review_id: str,
-) -> ContentWordPressDraftAuditEnvelope:
-    return ContentWordPressDraftAuditEnvelope(
-        audit_id=audit_id,
-        actor="wilku",
-        reason="Zatwierdzony szkic może trafić do WordPress jako draft.",
-        evidence_ids=item.evidence_ids,
-        human_review_id=human_review_id,
     )

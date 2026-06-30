@@ -172,6 +172,9 @@ function draftSafetyText(publishReady?: boolean) {
 }
 
 function handoffSafetyText(publishAllowed?: boolean) {
+  if (publishAllowed === undefined) {
+    return "WordPress nie dostaje jeszcze szkicu. Najpierw człowiek musi zatwierdzić brief, claimy i paczkę szkicu, a WILQ musi zapisać audyt.";
+  }
   if (publishAllowed) {
     return "Publikacja wymaga osobnej blokady, bo WILQ nie powinien publikować automatycznie.";
   }
