@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export * from "./contentWorkflow";
+
 export const ConnectorStatusSchema = z.object({
   id: z.string(),
   label: z.string(),

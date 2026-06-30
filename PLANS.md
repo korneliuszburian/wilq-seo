@@ -810,6 +810,12 @@ Current ready/in-progress Goal 002 slices are:
   pass through preflight, Sales Brief, Draft Package, Human Review, WordPress
   draft handoff and Measurement Window endpoints while preserving evidence IDs,
   draft-only WordPress safety and blocked early outcome claims.
+- `wilq-seo-qso` - content workflow dashboard API contracts, closed.
+  Shared Zod schemas and dashboard API helpers now expose the Goal 002
+  `POST /api/content/work-items/*` contracts to frontend code. The new shared
+  schemas live in `packages/shared-schemas/src/contentWorkflow.ts` and
+  `apps/dashboard/src/lib/api.ts` stays a thin API client without React product
+  logic or label remapping.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

@@ -351,6 +351,17 @@ API status later contradicts this state.
   `success_claim_allowed=false` and early outcome blockers are present. Focused
   pytest, Ruff, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- Goal 002 dashboard API boundary started under `wilq-seo-qso`. Shared Zod
+  schemas now parse ContentWorkItem workflow responses for preflight, Sales
+  Brief, Draft Package, Human Review, WordPress draft handoff and Measurement
+  Window. Dashboard `api.ts` now has thin POST helpers for the matching
+  `/api/content/work-items/*` endpoints, with tests proving each helper calls
+  the API-owned path. The new schema work lives in
+  `packages/shared-schemas/src/contentWorkflow.ts`, not in React route logic.
+  Focused Vitest suites, package typecheck/lint, Fallow audit and
+  `git diff --check` passed. Fallow still reports inherited duplicate groups in
+  the older shared `index.ts`, but the audit gate found no new changed-file
+  issues.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

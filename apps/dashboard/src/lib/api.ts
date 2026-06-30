@@ -10,6 +10,12 @@ import {
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentPreflightResponseSchema,
+  ContentWorkItemDraftPackageResponseSchema,
+  ContentWorkItemHumanReviewResponseSchema,
+  ContentWorkItemMeasurementWindowResponseSchema,
+  ContentWorkItemPreflightResponseSchema,
+  ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemWordPressDraftHandoffResponseSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
@@ -39,6 +45,12 @@ import {
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
   type ContentPreflightResponse,
+  type ContentWorkItemDraftPackageResponse,
+  type ContentWorkItemHumanReviewResponse,
+  type ContentWorkItemMeasurementWindowResponse,
+  type ContentWorkItemPreflightResponse,
+  type ContentWorkItemSalesBriefResponse,
+  type ContentWorkItemWordPressDraftHandoffResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type DemandGenReadinessContract,
@@ -120,6 +132,66 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
 
 export function getContentPreflight(): Promise<ContentPreflightResponse> {
   return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
+}
+
+export function postContentWorkItemPreflight(
+  request: unknown
+): Promise<ContentWorkItemPreflightResponse> {
+  return apiPost(
+    "/api/content/work-items/preflight",
+    ContentWorkItemPreflightResponseSchema,
+    request
+  );
+}
+
+export function postContentWorkItemSalesBrief(
+  request: unknown
+): Promise<ContentWorkItemSalesBriefResponse> {
+  return apiPost(
+    "/api/content/work-items/sales-brief",
+    ContentWorkItemSalesBriefResponseSchema,
+    request
+  );
+}
+
+export function postContentWorkItemDraftPackage(
+  request: unknown
+): Promise<ContentWorkItemDraftPackageResponse> {
+  return apiPost(
+    "/api/content/work-items/draft-package",
+    ContentWorkItemDraftPackageResponseSchema,
+    request
+  );
+}
+
+export function postContentWorkItemHumanReview(
+  request: unknown
+): Promise<ContentWorkItemHumanReviewResponse> {
+  return apiPost(
+    "/api/content/work-items/human-review",
+    ContentWorkItemHumanReviewResponseSchema,
+    request
+  );
+}
+
+export function postContentWorkItemWordPressDraftHandoff(
+  request: unknown
+): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
+  return apiPost(
+    "/api/content/work-items/wordpress-draft-handoff",
+    ContentWorkItemWordPressDraftHandoffResponseSchema,
+    request
+  );
+}
+
+export function postContentWorkItemMeasurementWindow(
+  request: unknown
+): Promise<ContentWorkItemMeasurementWindowResponse> {
+  return apiPost(
+    "/api/content/work-items/measurement-window",
+    ContentWorkItemMeasurementWindowResponseSchema,
+    request
+  );
 }
 
 export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {
@@ -224,6 +296,12 @@ export type {
   CommandCenterResponse,
   ContentDiagnosticsResponse,
   ContentPreflightResponse,
+  ContentWorkItemDraftPackageResponse,
+  ContentWorkItemHumanReviewResponse,
+  ContentWorkItemMeasurementWindowResponse,
+  ContentWorkItemPreflightResponse,
+  ContentWorkItemSalesBriefResponse,
+  ContentWorkItemWordPressDraftHandoffResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,

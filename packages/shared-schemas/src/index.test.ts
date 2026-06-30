@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ContentPreflightResponseSchema, MerchantDiagnosticsResponseSchema } from "./index";
+import {
+  ContentWorkItemDraftPackageResponseSchema,
+  ContentWorkItemHumanReviewResponseSchema,
+  ContentWorkItemMeasurementWindowResponseSchema,
+  ContentWorkItemPreflightResponseSchema,
+  ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentPreflightResponseSchema,
+  MerchantDiagnosticsResponseSchema
+} from "./index";
 
 describe("MerchantDiagnosticsResponseSchema", () => {
   it("accepts Merchant price-impact readiness decisions returned by the API", () => {
@@ -192,5 +201,262 @@ describe("ContentPreflightResponseSchema", () => {
     const result = ContentPreflightResponseSchema.safeParse(response);
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe("Content work item workflow schemas", () => {
+  const item = {
+    id: "content_work_item_bdo",
+    topic: "BDO dla firm",
+    source_public_url: "https://ekologus.pl/bdo/",
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    intended_final_url: "https://ekologus.pl/bdo/",
+    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    source_connectors: ["google_search_console", "wordpress_ekologus"],
+    inventory_status: "resolved",
+    canonical_status: "resolved",
+    duplicate_status: "checked",
+    preflight_status: "handoff_allowed",
+    preserve_first_plan_status: "approved",
+    sales_brief_status: "approved",
+    sales_brief_id: "sales_brief_content_work_item_bdo",
+    claim_ledger_status: "approved",
+    claim_ledger_id: "claim_ledger_bdo",
+    draft_package_status: "ready",
+    draft_package_id: "draft_package_content_work_item_bdo",
+    human_review_status: "approved",
+    human_review_id: "human_review_bdo",
+    wordpress_handoff_status: "prepared",
+    wordpress_post_id: null,
+    measurement_window_status: "planned",
+    measurement_window_id: "measurement_window_content_work_item_bdo",
+    audit_status: "recorded",
+    audit_id: "audit_bdo"
+  };
+
+  const blocker = {
+    code: "measurement_window_not_ready",
+    label: "Nie wolno jeszcze oceniać efektu",
+    reason: "Okno obserwacji jeszcze trwa.",
+    next_step: "Wróć po earliest_verdict_date."
+  };
+
+  it("accepts Goal 002 work item workflow API response shapes", () => {
+    expect(
+      ContentWorkItemPreflightResponseSchema.safeParse({
+        item,
+        inventory_resolution: {
+          status: "resolved",
+          recommended_mode: "preserve",
+          matched_url: "https://ekologus.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          duplicate_risk: "clear",
+          blockers: [],
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"]
+        },
+        preflight_verdict: {
+          status: "plan_allowed",
+          recommended_mode: "preserve",
+          create_allowed: false,
+          sales_brief_allowed: false,
+          draft_allowed: false,
+          wordpress_draft_allowed: false,
+          final_canonical_url: "https://ekologus.pl/bdo/",
+          preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          blockers: [],
+          blocked_claims: [],
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          source_connectors: ["google_search_console", "wordpress_ekologus"],
+          next_step: "Zatwierdź preserve-first plan."
+        }
+      }).success
+    ).toBe(true);
+
+    const brief = {
+      id: "sales_brief_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      content_mode: "preserve",
+      source_public_url: "https://ekologus.pl/bdo/",
+      final_canonical_url: "https://ekologus.pl/bdo/",
+      intended_final_url: "https://ekologus.pl/bdo/",
+      preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+      target_reader: "właściciel firmy",
+      buyer_problem: "nie wie, jak podejść do BDO",
+      buyer_trigger: "zbliża się kontrola",
+      search_intent: "informacyjno-usługowy",
+      service_fit: "obsługa środowiskowa",
+      existing_content_plan: "Zacznij od istniejącej treści.",
+      outline: [],
+      allowed_claims: [],
+      forbidden_claims: [],
+      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      measurement_plan: {
+        measurement_window_id: "measurement_window_content_work_item_bdo",
+        allowed_metrics: ["gsc_clicks"],
+        earliest_verdict_date: "2026-08-01",
+        success_claim_allowed: false
+      },
+      draft_allowed: false,
+      human_review_required: true
+    };
+
+    expect(
+      ContentWorkItemSalesBriefResponseSchema.safeParse({
+        item,
+        inventory_resolution: {
+          status: "resolved",
+          recommended_mode: "preserve",
+          matched_url: "https://ekologus.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          duplicate_risk: "clear",
+          blockers: [],
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"]
+        },
+        preflight_verdict: {
+          status: "brief_allowed",
+          recommended_mode: "preserve",
+          create_allowed: false,
+          sales_brief_allowed: true,
+          draft_allowed: false,
+          wordpress_draft_allowed: false,
+          final_canonical_url: "https://ekologus.pl/bdo/",
+          preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          blockers: [],
+          blocked_claims: [],
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          source_connectors: ["google_search_console", "wordpress_ekologus"],
+          next_step: "Przygotuj Sales Brief."
+        },
+        sales_brief_result: { brief, blockers: [] }
+      }).success
+    ).toBe(true);
+
+    const draftPackage = {
+      id: "draft_package_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      brief_id: "sales_brief_content_work_item_bdo",
+      claim_ledger_id: "claim_ledger_bdo",
+      draft_kind: "outline",
+      title: "BDO dla firm",
+      sections: [],
+      section_to_evidence_map: [],
+      claims_used: [],
+      claims_removed_or_blocked: [],
+      human_review_questions: ["Czy to brzmi jak Ekologus?"],
+      publish_ready: false
+    };
+
+    expect(
+      ContentWorkItemDraftPackageResponseSchema.safeParse({
+        item,
+        inventory_resolution: {
+          status: "resolved",
+          recommended_mode: "preserve",
+          matched_url: "https://ekologus.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          duplicate_risk: "clear",
+          blockers: [],
+          evidence_ids: ["ev_wp_bdo"],
+          source_connectors: ["wordpress_ekologus"]
+        },
+        preflight_verdict: {
+          status: "draft_allowed",
+          recommended_mode: "preserve",
+          create_allowed: false,
+          sales_brief_allowed: true,
+          draft_allowed: true,
+          wordpress_draft_allowed: false,
+          final_canonical_url: "https://ekologus.pl/bdo/",
+          preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+          similar_existing_urls: ["https://ekologus.pl/bdo/"],
+          blockers: [],
+          blocked_claims: [],
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          source_connectors: ["google_search_console", "wordpress_ekologus"],
+          next_step: "Przygotuj Draft Package."
+        },
+        sales_brief_result: { brief, blockers: [] },
+        draft_package_result: { draft_package: draftPackage, blockers: [] }
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemHumanReviewResponseSchema.safeParse({
+        item,
+        reviewed_item: item,
+        review: {
+          id: "human_review_bdo",
+          work_item_id: "content_work_item_bdo",
+          stage: "draft_package",
+          reviewed_by: "wilku",
+          decision: "approved",
+          notes: "Może iść dalej.",
+          checked_items: ["claimy sprawdzone"],
+          evidence_ids: ["ev_gsc_bdo"],
+          blocked_claims_handled: [],
+          draft_package_id: "draft_package_content_work_item_bdo"
+        },
+        blockers: [],
+        wordpress_handoff_allowed: true
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemWordPressDraftHandoffResponseSchema.safeParse({
+        item,
+        handoff_result: {
+          handoff: {
+            id: "wordpress_draft_handoff_content_work_item_bdo",
+            work_item_id: "content_work_item_bdo",
+            draft_package_id: "draft_package_content_work_item_bdo",
+            human_review_id: "human_review_bdo",
+            audit_id: "audit_bdo",
+            connector: "wordpress_ekologus",
+            operation_type: "create_wordpress_draft",
+            status: "prepared",
+            post_status: "draft",
+            title: "BDO dla firm",
+            final_canonical_url: "https://ekologus.pl/bdo/",
+            intended_final_url: "https://ekologus.pl/bdo/",
+            preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+            evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+            publish_allowed: false,
+            destructive_update_allowed: false
+          },
+          blockers: []
+        }
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemMeasurementWindowResponseSchema.safeParse({
+        item,
+        updated_item: item,
+        measurement_window_result: {
+          window: {
+            id: "measurement_window_content_work_item_bdo",
+            work_item_id: "content_work_item_bdo",
+            content_url: "https://ekologus.pl/bdo/",
+            baseline_period: { start: "2026-05-01", end: "2026-05-31" },
+            observation_period: { start: "2026-07-01", end: "2026-07-31" },
+            earliest_verdict_date: "2026-08-01",
+            allowed_metrics: ["gsc_clicks"],
+            source_connectors: ["google_search_console"],
+            evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+            status: "planned",
+            handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
+            success_claim_allowed: false
+          },
+          blockers: []
+        },
+        outcome_blockers: [blocker]
+      }).success
+    ).toBe(true);
   });
 });
