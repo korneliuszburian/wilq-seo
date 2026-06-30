@@ -154,6 +154,12 @@ API status later contradicts this state.
   invalidation can be extracted safely. Focused connector API tests, route-shape
   smoke, Ruff, mypy for the new router, `scripts/audit_complexity.py --changed
   --allow-frozen` and `git diff --check` passed.
+- Goal 002 jobs router extraction moved `/api/jobs*` and `/api/job-runs*`
+  endpoints from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/jobs.py` without changing endpoint paths or
+  response shapes. Focused scheduler tests, jobs route-shape smoke, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.connectors import router as connectors_router
+from apps.api.wilq_api.routers.jobs import router as jobs_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
@@ -88,14 +89,7 @@ from wilq.expert.rules import (
     list_expert_rule_summaries,
     list_expert_rules,
 )
-from wilq.jobs.models import JobRun, JobRunRequest, ScheduledJob
-from wilq.jobs.registry import get_job, list_jobs
-from wilq.jobs.scheduler import (
-    get_job_run,
-    list_job_runs,
-    run_job,
-    scheduler_status,
-)
+from wilq.jobs.scheduler import scheduler_status
 from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
     condense_playbooks,
@@ -188,6 +182,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(connectors_router)
+app.include_router(jobs_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 3
@@ -4740,45 +4735,6 @@ def metric_facts(connector_id: str | None = None, limit: int = 100) -> list[Metr
 @app.get("/api/metrics/status")
 def metric_store_status() -> dict[str, Any]:
     return metric_store().status()
-
-
-@app.get("/api/jobs", response_model=list[ScheduledJob])
-def jobs() -> list[ScheduledJob]:
-    return list_jobs()
-
-
-@app.get("/api/jobs/status")
-def jobs_status() -> dict[str, Any]:
-    return scheduler_status()
-
-
-@app.get("/api/jobs/{job_id}", response_model=ScheduledJob)
-def job_detail(job_id: str) -> ScheduledJob:
-    job = get_job(job_id)
-    if job is None:
-        raise HTTPException(status_code=404, detail=f"Unknown job: {job_id}")
-    return job
-
-
-@app.post("/api/jobs/{job_id}/run", response_model=JobRun)
-def run_job_endpoint(job_id: str, request: JobRunRequest | None = None) -> JobRun:
-    run = run_job(job_id, request)
-    if run is None:
-        raise HTTPException(status_code=404, detail=f"Unknown job: {job_id}")
-    return run
-
-
-@app.get("/api/job-runs", response_model=list[JobRun])
-def job_runs() -> list[JobRun]:
-    return list_job_runs()
-
-
-@app.get("/api/job-runs/{run_id}", response_model=JobRun)
-def job_run_detail(run_id: str) -> JobRun:
-    run = get_job_run(run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail=f"Unknown job run: {run_id}")
-    return run
 
 
 @app.get("/api/actions/{action_id}")

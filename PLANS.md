@@ -553,6 +553,10 @@ dashboard logic fork.
   This preserves endpoint paths and response shapes for connector list, status
   and refresh-run reads. Connector refresh POST remains in `main.py` for a
   later cache-aware router slice.
+- Second API router extraction moved jobs and job-run endpoints from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/jobs.py`. Scheduler
+  domain behavior stays in `wilq.jobs`; `main.py` still uses scheduler status
+  only for the system-status aggregate.
 
 Current next action:
 
@@ -561,7 +565,8 @@ Current ready/in-progress Goal 002 slices are:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
   First slice moved read-only connector endpoints to a router; POST refresh
-  remains in `main.py` until cache invalidation is extracted safely.
+  remains in `main.py` until cache invalidation is extracted safely. Second
+  slice moved jobs and job-run endpoints to a jobs router.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
@@ -604,7 +609,8 @@ Current outcome:
 - Anti-slop baseline is implemented and recorded as proof.
 - API router extraction has started. Read-only connector endpoints now have a
   router home, while cache-affecting connector refresh remains in `main.py`
-  until a safe cache extraction exists.
+  until a safe cache extraction exists. Jobs and job-run endpoints also now
+  have a router home.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision
