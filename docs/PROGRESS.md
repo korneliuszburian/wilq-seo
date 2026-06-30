@@ -403,6 +403,11 @@ API status later contradicts this state.
   matching audit through typed WILQ API helpers, then refetches the API-owned
   snapshot. React still does not decide handoff readiness, write to WordPress,
   publish or create destructive updates.
+- Beads task `wilq-seo-6l1` cleans the API-owned operator messages for human
+  review and WordPress draft handoff blockers. The domain contracts now explain
+  missing review, draft package, audit and dev-canonical blockers in Polish
+  marketer language; tests guard against jargon leaking back into blocker
+  labels, reasons and next steps.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

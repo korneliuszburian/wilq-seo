@@ -3,6 +3,7 @@ from __future__ import annotations
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
+    ContentWordPressDraftHandoffBlocker,
     apply_content_wordpress_draft_handoff_to_work_item,
     build_content_wordpress_draft_handoff,
     content_wordpress_draft_handoff_blockers,
@@ -103,6 +104,7 @@ def test_wordpress_handoff_blocks_without_approved_review_audit_and_final_url() 
 
     assert "missing_final_canonical" in [blocker.code for blocker in blockers]
     assert "human_review_not_approved" in [blocker.code for blocker in blockers]
+    _assert_operator_blockers_have_no_jargon(blockers)
     assert "missing_audit" in [blocker.code for blocker in blockers]
 
 
@@ -116,6 +118,7 @@ def test_wordpress_handoff_blocks_dev_preview_as_final_canonical() -> None:
 
     assert result.handoff is None
     assert "invalid_final_canonical" in [blocker.code for blocker in result.blockers]
+    _assert_operator_blockers_have_no_jargon(result.blockers)
 
 
 def test_wordpress_handoff_plan_is_draft_only_and_never_publish() -> None:
@@ -146,6 +149,7 @@ def test_wordpress_handoff_requires_matching_draft_package() -> None:
 
     assert result.handoff is None
     assert "draft_package_mismatch" in [blocker.code for blocker in result.blockers]
+    _assert_operator_blockers_have_no_jargon(result.blockers)
 
 
 def test_wordpress_handoff_updates_workflow_as_prepared_or_created() -> None:
@@ -168,3 +172,23 @@ def test_wordpress_handoff_updates_workflow_as_prepared_or_created() -> None:
     assert prepared.wordpress_post_id is None
     assert created.wordpress_handoff_status == "draft_created"
     assert created.wordpress_post_id == "123"
+
+
+def _assert_operator_blockers_have_no_jargon(
+    blockers: list[ContentWordPressDraftHandoffBlocker],
+) -> None:
+    forbidden_terms = [
+        "human review",
+        "review ",
+        "handoff",
+        "claimy",
+        "publish-ready",
+        "audit envelope",
+        "Draft Package",
+        "work item",
+        "final canonical URL",
+    ]
+    for blocker in blockers:
+        text = " ".join([blocker.label, blocker.reason, blocker.next_step])
+        for term in forbidden_terms:
+            assert term.lower() not in text.lower()

@@ -57,7 +57,7 @@ describe("ContentWorkflowSurface", () => {
       "Sprawdzenie pisania",
       "Plan sprzedażowy",
       "Paczka szkicu",
-      "Review człowieka",
+      "Sprawdzenie człowieka",
       "Szkic w WordPress",
       "Okno pomiaru"
     ]);

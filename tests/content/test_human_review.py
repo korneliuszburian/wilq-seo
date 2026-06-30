@@ -4,6 +4,7 @@ from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.review.human import (
     ContentHumanReview,
+    ContentHumanReviewBlocker,
     apply_content_human_review_to_work_item,
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
@@ -100,6 +101,7 @@ def test_human_review_requires_reviewer_checks_and_evidence() -> None:
         "missing_checked_items",
         "missing_evidence",
     }
+    _assert_operator_blockers_have_no_jargon(blockers)
 
 
 def test_human_review_blocks_wordpress_handoff_when_not_approved() -> None:
@@ -156,6 +158,7 @@ def test_human_review_must_handle_removed_or_blocked_draft_claims() -> None:
 
     assert "unhandled_blocked_claims" in [blocker.code for blocker in missing]
     assert handled == []
+    _assert_operator_blockers_have_no_jargon(missing)
 
 
 def test_claim_ledger_review_must_handle_blocking_claim_ids() -> None:
@@ -189,3 +192,21 @@ def test_claim_ledger_review_must_handle_blocking_claim_ids() -> None:
 
     assert "unhandled_blocked_claims" in [blocker.code for blocker in missing]
     assert handled == []
+    _assert_operator_blockers_have_no_jargon(missing)
+
+
+def _assert_operator_blockers_have_no_jargon(blockers: list[ContentHumanReviewBlocker]) -> None:
+    forbidden_terms = [
+        "human review",
+        "review ",
+        "handoff",
+        "claimy",
+        "publish-ready",
+        "Draft Package",
+        "work item",
+        "evidence ID",
+    ]
+    for blocker in blockers:
+        text = " ".join([blocker.label, blocker.reason, blocker.next_step])
+        for term in forbidden_terms:
+            assert term.lower() not in text.lower()

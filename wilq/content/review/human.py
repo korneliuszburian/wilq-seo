@@ -70,17 +70,18 @@ def content_human_review_blockers(
                 "missing_human_review",
                 "Brakuje decyzji człowieka",
                 "Snapshot może pokazać przygotowane etapy, ale nie może udawać "
-                "zatwierdzonego review.",
-                "Zatwierdź brief, claimy i paczkę szkicu przed WordPress handoff.",
+                "zatwierdzenia człowieka.",
+                "Zatwierdź brief, ryzykowne twierdzenia i paczkę szkicu przed "
+                "przekazaniem do WordPress.",
             )
         ]
     if review.work_item_id != item.id:
         blockers.append(
             _blocker(
                 "wrong_work_item",
-                "Review dotyczy innego tematu",
-                "Decyzja człowieka musi dotyczyć tego samego content work itemu.",
-                "Podaj review z poprawnym work_item_id.",
+                "Sprawdzenie dotyczy innego tematu",
+                "Decyzja człowieka musi dotyczyć tego samego tematu treści.",
+                "Podaj sprawdzenie z poprawnym identyfikatorem tematu.",
             )
         )
     if not review.reviewed_by.strip():
@@ -88,34 +89,34 @@ def content_human_review_blockers(
             _blocker(
                 "missing_reviewer",
                 "Brakuje osoby sprawdzającej",
-                "Human review musi mieć konkretną osobę odpowiedzialną za decyzję.",
-                "Uzupełnij reviewed_by przed zatwierdzeniem.",
+                "Sprawdzenie musi mieć konkretną osobę odpowiedzialną za decyzję.",
+                "Uzupełnij osobę sprawdzającą przed zatwierdzeniem.",
             )
         )
     if not review.checked_items:
         blockers.append(
             _blocker(
                 "missing_checked_items",
-                "Brakuje checklisty review",
+                "Brakuje checklisty sprawdzenia",
                 "Decyzja człowieka musi mówić, co zostało sprawdzone.",
-                "Zapisz checked_items dla briefu, claimów albo szkicu.",
+                "Zapisz checklistę dla briefu, ryzykownych twierdzeń albo szkicu.",
             )
         )
     if not review.evidence_ids:
         blockers.append(
             _blocker(
                 "missing_evidence",
-                "Brakuje dowodów review",
-                "Human review nie może opierać się wyłącznie na opinii bez evidence ID.",
-                "Powiąż review z dowodami, które sprawdził człowiek.",
+                "Brakuje dowodów sprawdzenia",
+                "Sprawdzenie człowieka nie może opierać się wyłącznie na opinii bez dowodów.",
+                "Powiąż sprawdzenie z dowodami, które sprawdził człowiek.",
             )
         )
     if review.decision != "approved":
         blockers.append(
             _blocker(
                 "not_approved",
-                "Review nie zatwierdza dalszego kroku",
-                "Tylko decyzja approved może odblokować następny etap workflow.",
+                "Sprawdzenie nie zatwierdza dalszego kroku",
+                "Tylko zatwierdzona decyzja może odblokować następny etap procesu.",
                 "Zapisz poprawki albo wróć po nowe zatwierdzenie.",
             )
         )
@@ -163,9 +164,9 @@ def _draft_package_blockers(
         return [
             _blocker(
                 "missing_draft_package",
-                "Brakuje paczki szkicu do review",
-                "Review szkicu i handoffu wymaga konkretnego Draft Package.",
-                "Podaj Draft Package przed review WordPress handoff.",
+                "Brakuje paczki szkicu do sprawdzenia",
+                "Sprawdzenie szkicu i przekazania do WordPress wymaga konkretnej paczki szkicu.",
+                "Podaj paczkę szkicu przed sprawdzeniem przekazania do WordPress.",
             )
         ]
     blockers: list[ContentHumanReviewBlocker] = []
@@ -176,18 +177,19 @@ def _draft_package_blockers(
         blockers.append(
             _blocker(
                 "draft_package_mismatch",
-                "Paczka szkicu nie pasuje do review",
-                "Human review musi sprawdzać Draft Package dla tego samego work itemu.",
-                "Podaj draft_package_id zgodny z review i work itemem.",
+                "Paczka szkicu nie pasuje do sprawdzenia",
+                "Sprawdzenie człowieka musi dotyczyć paczki szkicu dla tego samego tematu.",
+                "Podaj paczkę szkicu zgodną ze sprawdzeniem i tematem.",
             )
         )
     if draft_package.publish_ready:
         blockers.append(
             _blocker(
                 "draft_package_marked_publish_ready",
-                "Szkic nie może być publish-ready",
-                "Draft Package jest materiałem do review, nie zgodą na publikację.",
-                "Ustaw publish_ready=false i przeprowadź human review oraz WordPress handoff.",
+                "Szkic nie może udawać gotowości do publikacji",
+                "Paczka szkicu jest materiałem do sprawdzenia, nie zgodą na publikację.",
+                "Zatrzymaj status publikacji i przeprowadź sprawdzenie człowieka oraz "
+                "przekazanie do WordPress.",
             )
         )
     return blockers
@@ -207,10 +209,10 @@ def _claim_handling_blockers(
     return [
         _blocker(
             "unhandled_blocked_claims",
-            "Nie rozliczono zablokowanych claimów",
-            "Review musi pokazać, że ryzykowne claimy zostały usunięte, przepisane albo "
+            "Nie rozliczono zablokowanych twierdzeń",
+            "Sprawdzenie musi pokazać, że ryzykowne twierdzenia zostały usunięte, przepisane albo "
             "jawnie obsłużone.",
-            "Uzupełnij blocked_claims_handled: " + ", ".join(missing),
+            "Uzupełnij listę obsłużonych ryzykownych twierdzeń: " + ", ".join(missing),
         )
     ]
 

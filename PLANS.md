@@ -963,6 +963,10 @@ Current outcome:
   decisions through typed WILQ API helpers and then refetches the API-owned
   snapshot; React does not decide handoff readiness, publish, write to
   WordPress or create destructive updates.
+- API-owned blocker messages for the sprawdzenie człowieka and WordPress draft
+  handoff domains now use Polish marketer language for labels, reasons and next
+  steps. Focused tests block workflow jargon from returning to those
+  operator-facing blocker fields.
 
 Current risk:
 

@@ -147,8 +147,8 @@ def _final_url_blockers(item: ContentWorkItem) -> list[ContentWordPressDraftHand
             _blocker(
                 "missing_final_canonical",
                 "Brakuje finalnego adresu",
-                "WordPress draft nie może powstać bez publicznego final canonical URL.",
-                "Ustal finalny adres publiczny przed handoffem.",
+                "Szkic WordPress nie może powstać bez publicznego finalnego adresu.",
+                "Ustal publiczny adres Ekologus przed przekazaniem szkicu.",
             )
         ]
     if content_url_host(item.final_canonical_url) not in CONTENT_SOURCE_SITE_HOSTS:
@@ -156,8 +156,9 @@ def _final_url_blockers(item: ContentWorkItem) -> list[ContentWordPressDraftHand
             _blocker(
                 "invalid_final_canonical",
                 "Adres podglądu nie może być canonical",
-                "Dev albo preview URL nie może być finalnym adresem WordPress draftu.",
-                "Ustaw final_canonical_url na publiczny adres Ekologus.",
+                "Adres podglądu ani adres techniczny nie może być finalnym adresem "
+                "szkicu WordPress.",
+                "Ustaw finalny adres na publiczny adres Ekologus.",
             )
         ]
     return []
@@ -172,8 +173,8 @@ def _draft_package_blockers(
             _blocker(
                 "missing_draft_package",
                 "Brakuje paczki szkicu",
-                "WordPress handoff wymaga gotowego Draft Package.",
-                "Przygotuj Draft Package przed handoffem.",
+                "Przekazanie do WordPress wymaga gotowej paczki szkicu.",
+                "Przygotuj paczkę szkicu przed przekazaniem do WordPress.",
             )
         ]
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
@@ -184,17 +185,18 @@ def _draft_package_blockers(
             _blocker(
                 "draft_package_mismatch",
                 "Paczka szkicu nie pasuje do tematu",
-                "WordPress handoff musi używać Draft Package dla tego samego work itemu.",
-                "Podaj Draft Package zgodny z work itemem.",
+                "Przekazanie do WordPress musi używać paczki szkicu dla tego samego tematu.",
+                "Podaj paczkę szkicu zgodną z tematem.",
             )
         )
     if draft_package.publish_ready:
         blockers.append(
             _blocker(
                 "draft_package_marked_publish_ready",
-                "Szkic nie może być publish-ready",
-                "WordPress handoff tworzy wyłącznie draft; publikacja jest osobnym procesem.",
-                "Ustaw publish_ready=false i przejdź przez review.",
+                "Szkic nie może udawać gotowości do publikacji",
+                "Przekazanie do WordPress tworzy wyłącznie szkic; publikacja jest "
+                "osobnym procesem.",
+                "Zatrzymaj status publikacji i przejdź przez sprawdzenie człowieka.",
             )
         )
     return blockers
@@ -210,8 +212,8 @@ def _human_review_blockers(
             _blocker(
                 "missing_human_review",
                 "Brakuje decyzji człowieka",
-                "WordPress handoff nie może ruszyć bez zatwierdzonego human review.",
-                "Zatwierdź szkic i claimy przed handoffem.",
+                "Przekazanie do WordPress nie może ruszyć bez zatwierdzenia przez człowieka.",
+                "Zatwierdź szkic i ryzykowne twierdzenia przed przekazaniem.",
             )
         ]
     if not content_human_review_allows_wordpress_handoff(
@@ -227,9 +229,10 @@ def _human_review_blockers(
         return [
             _blocker(
                 "human_review_not_approved",
-                "Human review nie odblokowuje WordPress",
-                "Review musi mieć decyzję approved, checklistę, dowody i obsłużone claimy.",
-                "Rozwiąż review: "
+                "Decyzja człowieka nie odblokowuje WordPress",
+                "Sprawdzenie musi mieć zatwierdzenie, checklistę, dowody i obsłużone "
+                "ryzykowne twierdzenia.",
+                "Rozwiąż sprawdzenie: "
                 + ", ".join(_unique(blocker.label for blocker in details)),
             )
         ]
@@ -245,8 +248,9 @@ def _audit_blockers(
             _blocker(
                 "missing_audit",
                 "Brakuje audytu",
-                "Każdy WordPress handoff musi mieć audit envelope.",
-                "Zapisz audit_id, actor, reason, evidence IDs i human_review_id.",
+                "Każde przekazanie do WordPress musi mieć zapis audytu.",
+                "Zapisz identyfikator audytu, osobę wykonującą, powód, dowody i "
+                "powiązane sprawdzenie.",
             )
         ]
     blockers: list[ContentWordPressDraftHandoffBlocker] = []
@@ -255,17 +259,17 @@ def _audit_blockers(
             _blocker(
                 "missing_audit_evidence",
                 "Audyt nie ma dowodów",
-                "Audit envelope musi zachować evidence IDs użyte przy decyzji.",
-                "Dodaj evidence IDs do audit envelope.",
+                "Zapis audytu musi zachować dowody użyte przy decyzji.",
+                "Dodaj dowody do audytu.",
             )
         )
     if human_review is not None and audit.human_review_id != human_review.id:
         blockers.append(
             _blocker(
                 "audit_human_review_mismatch",
-                "Audyt wskazuje inne review",
-                "Audit envelope musi wskazywać human review, które odblokowało handoff.",
-                "Ustaw audit.human_review_id na zatwierdzony review ID.",
+                "Audyt wskazuje inne sprawdzenie",
+                "Zapis audytu musi wskazywać sprawdzenie człowieka, które odblokowało przekazanie.",
+                "Powiąż audyt z zatwierdzonym sprawdzeniem człowieka.",
             )
         )
     return blockers

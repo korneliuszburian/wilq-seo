@@ -60,8 +60,8 @@ function salesBriefStep(salesBrief: ContentWorkflowSnapshot["salesBrief"]): Work
   const brief = salesBrief.sales_brief_result.brief;
   return {
     title: "Plan sprzedażowy",
-    status: brief ? "gotowy do review" : "zablokowany",
-    summary: brief?.buyer_problem ?? "Brakuje Sales Brief."
+    status: brief ? "gotowy do sprawdzenia" : "zablokowany",
+    summary: brief?.buyer_problem ?? "Brakuje planu sprzedażowego."
   };
 }
 
@@ -69,16 +69,16 @@ function draftPackageStep(draftPackage: ContentWorkflowSnapshot["draftPackage"])
   const draft = draftPackage.draft_package_result.draft_package;
   return {
     title: "Paczka szkicu",
-    status: draft ? "outline do review" : "zablokowany",
+    status: draft ? "konspekt do sprawdzenia" : "zablokowany",
     summary: "WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację."
   };
 }
 
 function humanReviewStep(humanReview: ContentWorkflowSnapshot["humanReview"]): WorkflowStep {
   return {
-    title: "Review człowieka",
+    title: "Sprawdzenie człowieka",
     status: humanReview.wordpress_handoff_allowed ? "zatwierdzone" : "wymaga decyzji",
-    summary: "Bez zatwierdzenia człowieka WordPress draft handoff pozostaje zablokowany."
+    summary: "Bez zatwierdzenia człowieka przekazanie szkicu do WordPress pozostaje zablokowane."
   };
 }
 
@@ -92,7 +92,7 @@ function wordpressHandoffStep(
     status: handoff?.post_status ?? "zablokowany",
     summary: handoff
       ? "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
-      : blocker?.reason ?? "WordPress nie dostaje szkicu bez review człowieka i audytu."
+      : blocker?.reason ?? "WordPress nie dostaje szkicu bez sprawdzenia człowieka i audytu."
   };
 }
 
