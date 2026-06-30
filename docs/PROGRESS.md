@@ -67,6 +67,11 @@ API status later contradicts this state.
   sales brief, claim ledger, draft package, human review, WordPress draft
   handoff and measurement window are implemented and verified end-to-end for at
   least one real Ekologus content item.
+- WILQ must not wait for post-publication metrics before preparing useful
+  content work. Every content item should get a measurement plan up front, and
+  later GSC/GA4/Ahrefs/Ads/Merchant/Localo signals should become interpretation
+  inputs, not a blocker for writing the brief or draft. Success/failure claims
+  remain blocked until the measurement window has usable data.
 - Goal 002 Beads epic is `wilq-seo-zu4`.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
@@ -164,6 +169,19 @@ API status later contradicts this state.
   (36 tests), four content diagnostics API contract tests, Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Goal 002 content operator summary helpers moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/summary.py`. This is behavior-preserving
+  extraction: the operator summary, query/page count, matched inventory count
+  and Ahrefs/WordPress overlap count now have a content-domain home.
+  `tests/content` (39 tests), four content diagnostics API contract tests,
+  Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
+- Beads task `wilq-seo-x4u` is closed. The content diagnostics extraction
+  baseline is complete enough to move from cleanup into product workflow slices.
+  Next ready Goal 002 feature work is `wilq-seo-wiz` for `ContentWorkItem`
+  workflow state and `wilq-seo-acy` for Content Inventory v1.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

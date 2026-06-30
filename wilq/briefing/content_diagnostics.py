@@ -7,7 +7,6 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
-from wilq.content.canonical.urls import content_decision_has_public_final_canonical
 from wilq.content.measurement.decisions import ga4_tracking_gap_decisions
 from wilq.content.planning.ahrefs import ahrefs_gap_record_decisions
 from wilq.content.planning.decisions import (
@@ -36,6 +35,11 @@ from wilq.content.view_models.sections import (
     inventory_match_section,
     query_page_section,
 )
+from wilq.content.view_models.summary import (
+    build_content_operator_summary,
+    content_matched_inventory_count,
+    content_query_page_count,
+)
 from wilq.operator_labels import (
     action_count_label,
     evidence_count_label,
@@ -46,9 +50,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ContentDecisionItem,
-    ContentDiagnosticSection,
     ContentDiagnosticsResponse,
-    ContentOperatorSummary,
     ContentPreflightResponse,
     MetricFact,
     OpportunityDomain,
@@ -163,8 +165,8 @@ def build_content_diagnostics(
             *(action_id for decision in decision_queue for action_id in decision.action_ids),
         ]
     )
-    query_page_count = _query_page_count(content_tactical_items)
-    matched_inventory_count = _matched_inventory_count(content_tactical_items)
+    query_page_count = content_query_page_count(content_tactical_items)
+    matched_inventory_count = content_matched_inventory_count(content_tactical_items)
     response_source_connectors = _unique(
         [
             *(connector for section in sections for connector in section.source_connectors),
@@ -179,7 +181,7 @@ def build_content_diagnostics(
         live_data_status_label=content_live_data_status_label(live_data_available),
         query_page_count=query_page_count,
         matched_inventory_count=matched_inventory_count,
-        operator_summary=_operator_summary(
+        operator_summary=build_content_operator_summary(
             decision_queue,
             sections,
             action_ids,
@@ -218,77 +220,6 @@ def build_content_preflight(
         source_connector_labels=source_connector_labels(source_connectors),
         blocker_count=sum(1 for item in items if item.status == "blocked"),
     )
-
-
-def _operator_summary(
-    decisions: list[ContentDecisionItem],
-    sections: list[ContentDiagnosticSection],
-    action_ids: list[str],
-    *,
-    query_page_count: int,
-    matched_inventory_count: int,
-) -> ContentOperatorSummary:
-    top_decisions = decisions[:4]
-    current_site_match_count = sum(
-        1 for decision in decisions if content_decision_has_public_final_canonical(decision)
-    )
-    ahrefs_wordpress_overlap_count = _ahrefs_wordpress_overlap_count(decisions)
-    return ContentOperatorSummary(
-        title="Co marketer ma zrobić teraz z treściami",
-        summary=(
-            "WILQ łączy zapytania i adresy z GSC ze spisem treści WordPress. "
-            "Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero "
-            "twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną "
-            "leady, pozycje albo konwersje."
-        ),
-        next_step=(
-            "Przejdź przez top decyzje contentowe: odśwież, scal, utwórz albo "
-            "zablokuj. Potem sprawdź w WILQ tylko właściwą akcję."
-        ),
-        top_decision_ids=[decision.id for decision in top_decisions],
-        confirmed_wordpress_count=sum(
-            1 for decision in decisions if decision.wordpress_match == "found"
-        ),
-        missing_wordpress_count=sum(
-            1 for decision in decisions if decision.wordpress_match == "missing"
-        ),
-        current_site_match_count=current_site_match_count,
-        decision_type_labels=_unique(
-            content_decision_type_summary_label(decision.decision_type) for decision in decisions
-        ),
-        source_connectors=_unique(
-            connector for decision in top_decisions for connector in decision.source_connectors
-        ),
-        evidence_ids=_unique(
-            evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
-        ),
-        evidence_summary_label=evidence_count_label(
-            _unique(
-                evidence_id for decision in top_decisions for evidence_id in decision.evidence_ids
-            )
-        ),
-        action_ids=action_ids,
-        action_summary_label=action_count_label(action_ids),
-        blocked_claims=_unique(claim for section in sections for claim in section.blocked_claims),
-        blocked_claim_labels=content_blocked_claim_labels(
-            claim for section in sections for claim in section.blocked_claims
-        ),
-        metric_tiles={
-            "Zapytania i adresy z GSC": query_page_count,
-            "Treści znalezione w WordPress": matched_inventory_count,
-            "Luki Ahrefs powiązane z WordPress": ahrefs_wordpress_overlap_count,
-            "Decyzje treści": len(decisions),
-        },
-    )
-
-
-def _ahrefs_wordpress_overlap_count(decisions: list[ContentDecisionItem]) -> int:
-    for decision in decisions:
-        if decision.decision_type == "review_ahrefs_gap_records":
-            value = decision.metric_tiles.get("Powiązanie z WordPress")
-            if isinstance(value, (int, float)):
-                return int(value)
-    return 0
 
 
 def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:
@@ -344,14 +275,6 @@ def _content_action_ids(actions: list[ActionObject]) -> list[str]:
         if action.id == "act_prepare_content_refresh_queue"
         or action.domain == OpportunityDomain.content
     ]
-
-
-def _query_page_count(items: list[TacticalQueueItem]) -> int:
-    return sum(1 for item in items if item.domain == OpportunityDomain.gsc_seo)
-
-
-def _matched_inventory_count(items: list[TacticalQueueItem]) -> int:
-    return sum(1 for item in items if item.dimensions.get("wordpress_match") == "found")
 
 
 def _unique(values: Iterable[object]) -> list[str]:

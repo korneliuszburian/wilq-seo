@@ -44,6 +44,11 @@ This goal does not build:
 WILQ is not an AI text generator. WILQ is an API-first marketing operating
 system that decides whether writing is allowed, what mode is safe, what claims
 are forbidden, what a human must approve and how the effect will be measured.
+WILQ must not wait for post-publication metrics before preparing useful content
+work. It must prepare the measurement plan up front, then use later GSC, GA4,
+Ahrefs, Ads, Merchant or Localo signals to interpret outcomes and improve the
+next content decision. Measurement is a planning requirement now and a success
+or failure verdict only after the observation window has usable data.
 
 Content production must follow this path:
 
@@ -93,6 +98,8 @@ direct migration is feasible.
 - No human review -> no WordPress draft handoff.
 - No audit -> no write/apply.
 - No measurement window -> no success/failure claim.
+- No waiting for post-publication metrics before preparing content work; create
+  the measurement plan now and reserve outcome claims until the window closes.
 - Existing content is preserve-first.
 - React renders API-owned view models; React does not decide product logic.
 - Codex skills consume WILQ API; skills do not invent business logic.
@@ -558,6 +565,11 @@ dashboard logic fork.
   `wilq/briefing/content_diagnostics.py` to
   `wilq/content/view_models/sections.py`. The briefing module now composes
   these sections instead of owning their marketer-facing view logic.
+- Twelfth content domain extraction moved the content operator summary,
+  query/page count, matched inventory count and Ahrefs/WordPress overlap count
+  from `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/view_models/summary.py`. The briefing module now composes the
+  summary instead of owning this marketer-facing aggregation.
 - First API router extraction moved read-only connector endpoints from
   `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
   This preserves endpoint paths and response shapes for connector list, status
@@ -647,12 +659,17 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-462` - follow-up context-pack runtime extraction, open. This is a
   technical anti-slop task to move heavy Codex context-pack internals out of
   `main.py` without changing `/api/codex/*` response shapes.
-- `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
-  in progress after the canonical URL, preflight verdict, inventory gate,
-  planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
-  review, vendor-read blocker, marketer preflight view and content API label
-  extraction slices. Diagnostic section builders also now have a content-domain
-  home.
+- `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
+  canonical URL, preflight verdict, inventory gate, planning helper, GSC
+  decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
+  blocker, marketer preflight view, content API label, diagnostic section and
+  content operator summary extraction slices.
+- `wilq-seo-wiz` - next product slice: add typed `ContentWorkItem` workflow
+  state and prove that preflight, sales brief, claim ledger, human review,
+  audit and measurement gates cannot be skipped.
+- `wilq-seo-acy` - next product slice: build Content Inventory v1 records that
+  can support preserve/refresh/merge/create/block decisions without treating
+  dev preview URLs as canonical evidence.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -679,6 +696,10 @@ behavior must land in focused content/domain modules with tests first.
 - Decision: Beads tracks operational slices while this file keeps product
   milestones.
   Reason: avoids duplicate TODO systems and keeps recovery concise.
+- Decision: Content work should not wait for post-publication metrics, but every
+  content work item must include a measurement plan before draft or handoff.
+  Reason: WILQ can prepare better content now while reserving success/failure
+  claims until the observation window has real data.
 
 ## Outcomes & Retrospective
 
