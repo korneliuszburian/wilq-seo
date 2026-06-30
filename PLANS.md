@@ -1019,6 +1019,12 @@ Current outcome:
   the runtime can parse strict structured output through an injected SDK client
   while keeping `publish_ready=false`. This still does not create a WordPress
   draft, write to WordPress or publish on `ekologus.pl`.
+- Structured draft output now has a preview contract before WordPress handoff.
+  `POST /api/content/work-items/structured-draft-preview` returns marketer
+  preview fields only when the structured output keeps evidence mapping, has no
+  unresolved claim review and remains `publish_ready=false`. This keeps generated
+  text reviewable without automatically creating a WordPress draft or publishing
+  on `ekologus.pl`.
 
 Current risk:
 

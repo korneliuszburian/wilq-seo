@@ -470,6 +470,12 @@ API status later contradicts this state.
   can return a strict structured draft with `publish_ready=false`. This does not
   create a WordPress draft, write to WordPress or publish anything on
   `ekologus.pl`.
+- Beads task `wilq-seo-n0b` adds a structured draft preview contract before
+  WordPress handoff. `POST /api/content/work-items/structured-draft-preview`
+  turns strict `StructuredDraftOutput` into a marketer-facing preview only when
+  the output still maps to WILQ evidence, has no claims needing review and keeps
+  `publish_ready=false`. This preview does not create a WordPress draft, does
+  not write to WordPress and does not publish anything on `ekologus.pl`.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

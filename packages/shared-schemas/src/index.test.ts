@@ -9,6 +9,7 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
+  ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
@@ -534,6 +535,35 @@ describe("Content work item workflow schemas", () => {
         },
         blockers: [],
         wordpress_handoff_allowed: true
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemStructuredDraftPreviewResponseSchema.safeParse({
+        preview_result: {
+          preview: {
+            title: "BDO dla firm",
+            meta_title: "BDO dla firm",
+            meta_description: "Sprawdź, kiedy warto skonsultować BDO.",
+            h1: "BDO dla firm",
+            sections: [
+              {
+                heading: "Kogo dotyczy BDO",
+                body_markdown: "BDO warto sprawdzić na podstawie sytuacji firmy.",
+                evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+                claims_used: ["Ekologus pomaga firmom uporządkować obowiązki BDO."]
+              }
+            ],
+            faq: ["Czy każda firma musi mieć BDO?"],
+            cta: "Skontaktuj się z Ekologus, żeby omówić sytuację firmy.",
+            internal_links: ["https://ekologus.pl/kontakt/"],
+            source_facts_used: ["ev_gsc_bdo", "ev_wp_bdo"],
+            forbidden_claims_avoided: ["Ta treść zwiększy liczbę leadów."],
+            human_review_checklist: ["Czy to brzmi jak Ekologus?"],
+            publish_ready: false
+          },
+          blockers: []
+        }
       }).success
     ).toBe(true);
 

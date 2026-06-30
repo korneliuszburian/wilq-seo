@@ -27,9 +27,14 @@ from wilq.content.drafts.package import (
     ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
+from wilq.content.drafts.preview import (
+    StructuredDraftPreviewResult,
+    build_structured_draft_preview,
+)
 from wilq.content.drafts.structured_generation import (
     StructuredDraftGenerationContract,
     StructuredDraftGenerationResult,
+    StructuredDraftOutput,
     build_structured_draft_generation_contract,
 )
 from wilq.content.handoff.wordpress import (
@@ -137,6 +142,15 @@ class ContentWorkItemStructuredDraftRuntimeRequest(BaseModel):
 
 class ContentWorkItemStructuredDraftRuntimeResponse(BaseModel):
     runtime_result: OpenAIStructuredDraftRuntimeResult
+
+
+class ContentWorkItemStructuredDraftPreviewRequest(BaseModel):
+    contract: StructuredDraftGenerationContract | None = None
+    output: StructuredDraftOutput | None = None
+
+
+class ContentWorkItemStructuredDraftPreviewResponse(BaseModel):
+    preview_result: StructuredDraftPreviewResult
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
@@ -327,6 +341,17 @@ def build_content_work_item_structured_draft_runtime_response(
             mode=request.mode,
             client=runtime_client,
             live_generation_enabled=live_enabled,
+        )
+    )
+
+
+def build_content_work_item_structured_draft_preview_response(
+    request: ContentWorkItemStructuredDraftPreviewRequest,
+) -> ContentWorkItemStructuredDraftPreviewResponse:
+    return ContentWorkItemStructuredDraftPreviewResponse(
+        preview_result=build_structured_draft_preview(
+            contract=request.contract,
+            output=request.output,
         )
     )
 

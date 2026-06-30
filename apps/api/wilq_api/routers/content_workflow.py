@@ -18,6 +18,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemStructuredDraftGenerationRequest,
     ContentWorkItemStructuredDraftGenerationResponse,
+    ContentWorkItemStructuredDraftPreviewRequest,
+    ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeRequest,
     ContentWorkItemStructuredDraftRuntimeResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
@@ -34,6 +36,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
     build_content_work_item_structured_draft_generation_response,
+    build_content_work_item_structured_draft_preview_response,
     build_content_work_item_structured_draft_runtime_response,
     build_content_work_item_wordpress_draft_execution_response,
     build_content_work_item_wordpress_draft_handoff_response,
@@ -145,6 +148,16 @@ def content_work_item_structured_draft_runtime(
     request: ContentWorkItemStructuredDraftRuntimeRequest,
 ) -> ContentWorkItemStructuredDraftRuntimeResponse:
     return build_content_work_item_structured_draft_runtime_response(request)
+
+
+@router.post(
+    "/api/content/work-items/structured-draft-preview",
+    response_model=ContentWorkItemStructuredDraftPreviewResponse,
+)
+def content_work_item_structured_draft_preview(
+    request: ContentWorkItemStructuredDraftPreviewRequest,
+) -> ContentWorkItemStructuredDraftPreviewResponse:
+    return build_content_work_item_structured_draft_preview_response(request)
 
 
 @router.post(

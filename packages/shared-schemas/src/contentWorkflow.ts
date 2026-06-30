@@ -289,6 +289,17 @@ export const OpenAIStructuredDraftRuntimeResultSchema = z.object({
   blockers: z.array(OpenAIStructuredDraftRuntimeBlockerSchema).default([])
 });
 
+export const StructuredDraftPreviewSchema = StructuredDraftOutputSchema.omit({
+  draft_kind: true,
+  language: true,
+  claims_needing_review: true
+});
+
+export const StructuredDraftPreviewResultSchema = z.object({
+  preview: StructuredDraftPreviewSchema.nullable().optional(),
+  blockers: z.array(ContentWorkflowBlockerSchema).default([])
+});
+
 export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
   item: ContentWorkItemSchema,
   sales_brief: ContentSalesBriefSchema.nullable().optional(),
@@ -309,6 +320,15 @@ export const ContentWorkItemStructuredDraftRuntimeRequestSchema = z.object({
 
 export const ContentWorkItemStructuredDraftRuntimeResponseSchema = z.object({
   runtime_result: OpenAIStructuredDraftRuntimeResultSchema
+});
+
+export const ContentWorkItemStructuredDraftPreviewRequestSchema = z.object({
+  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
+  output: StructuredDraftOutputSchema.nullable().optional()
+});
+
+export const ContentWorkItemStructuredDraftPreviewResponseSchema = z.object({
+  preview_result: StructuredDraftPreviewResultSchema
 });
 
 export const ContentHumanReviewSchema = z.object({
@@ -486,6 +506,12 @@ export type ContentWorkItemStructuredDraftRuntimeRequest = z.infer<
 >;
 export type ContentWorkItemStructuredDraftRuntimeResponse = z.infer<
   typeof ContentWorkItemStructuredDraftRuntimeResponseSchema
+>;
+export type ContentWorkItemStructuredDraftPreviewRequest = z.infer<
+  typeof ContentWorkItemStructuredDraftPreviewRequestSchema
+>;
+export type ContentWorkItemStructuredDraftPreviewResponse = z.infer<
+  typeof ContentWorkItemStructuredDraftPreviewResponseSchema
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema

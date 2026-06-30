@@ -173,6 +173,12 @@ def _structured_output() -> dict[str, object]:
     }
 
 
+def _structured_output_with_review_claim() -> dict[str, object]:
+    output = _structured_output()
+    output["claims_needing_review"] = ["Niepotwierdzona obietnica wyniku."]
+    return output
+
+
 def test_structured_draft_generation_api_returns_strict_contract() -> None:
     response = TestClient(app).post(
         "/api/content/work-items/structured-draft-generation",
@@ -331,3 +337,55 @@ def test_structured_draft_runtime_api_can_use_gated_sdk_client(
     assert result["output"]["publish_ready"] is False
     assert result["output"]["source_facts_used"] == ["ev_gsc_bdo", "ev_wp_bdo"]
     assert fake_client.responses.calls[0]["text"]["format"]["strict"] is True
+
+
+def test_structured_draft_preview_api_returns_marketer_preview() -> None:
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-preview",
+        json={"contract": contract, "output": _structured_output()},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["preview_result"]
+    assert result["blockers"] == []
+    preview = result["preview"]
+    assert preview["title"] == "BDO dla firm"
+    assert preview["publish_ready"] is False
+    assert preview["sections"][0]["heading"] == "Kogo dotyczy BDO"
+    assert preview["source_facts_used"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+
+
+def test_structured_draft_preview_api_blocks_claims_needing_review() -> None:
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-preview",
+        json={"contract": contract, "output": _structured_output_with_review_claim()},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["preview_result"]
+    assert result["preview"] is None
+    assert [blocker["code"] for blocker in result["blockers"]] == ["claims_need_review"]

@@ -8,6 +8,7 @@ import {
   postContentWorkItemPreflight,
   postContentWorkItemSalesBrief,
   postContentWorkItemStructuredDraftGeneration,
+  postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftHandoff,
   saveContentWorkItemSnapshotAudit,
@@ -43,6 +44,12 @@ const responseByPath: Record<string, unknown> = {
   },
   "/api/content/work-items/structured-draft-runtime": {
     runtime_result: structuredDraftRuntimeResult()
+  },
+  "/api/content/work-items/structured-draft-preview": {
+    preview_result: {
+      preview: structuredDraftPreview(),
+      blockers: []
+    }
   },
   "/api/content/work-items/human-review": {
     item: workItem(),
@@ -134,6 +141,10 @@ describe("content workflow API helpers", () => {
       model: "gpt-5",
       mode: "dry_run"
     });
+    await postContentWorkItemStructuredDraftPreview({
+      contract: structuredDraftGenerationContract(),
+      output: structuredDraftOutput()
+    });
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
     await saveContentWorkItemSnapshotAudit({
@@ -160,6 +171,7 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/draft-package",
       "/api/content/work-items/structured-draft-generation",
       "/api/content/work-items/structured-draft-runtime",
+      "/api/content/work-items/structured-draft-preview",
       "/api/content/work-items/human-review",
       "/api/content/work-items/snapshot/human-review",
       "/api/content/work-items/snapshot/audit",
@@ -402,6 +414,51 @@ function structuredDraftRuntimeResult() {
     output: null,
     external_call_attempted: false,
     blockers: []
+  };
+}
+
+function structuredDraftOutput() {
+  return {
+    draft_kind: "section_draft" as const,
+    language: "pl-PL" as const,
+    title: "BDO dla firm",
+    meta_title: "BDO dla firm",
+    meta_description: "Sprawdź, kiedy warto skonsultować BDO.",
+    h1: "BDO dla firm",
+    sections: [
+      {
+        heading: "Kogo dotyczy BDO",
+        body_markdown: "BDO warto sprawdzić na podstawie sytuacji firmy.",
+        evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+        claims_used: ["Ekologus pomaga firmom uporządkować obowiązki BDO."]
+      }
+    ],
+    faq: ["Czy każda firma musi mieć BDO?"],
+    cta: "Skontaktuj się z Ekologus, żeby omówić sytuację firmy.",
+    internal_links: ["https://ekologus.pl/kontakt/"],
+    source_facts_used: ["ev_gsc_bdo", "ev_wp_bdo"],
+    claims_needing_review: [],
+    forbidden_claims_avoided: ["Ta treść zwiększy liczbę leadów."],
+    human_review_checklist: ["Czy to brzmi jak Ekologus?"],
+    publish_ready: false as const
+  };
+}
+
+function structuredDraftPreview() {
+  const output = structuredDraftOutput();
+  return {
+    title: output.title,
+    meta_title: output.meta_title,
+    meta_description: output.meta_description,
+    h1: output.h1,
+    sections: output.sections,
+    faq: output.faq,
+    cta: output.cta,
+    internal_links: output.internal_links,
+    source_facts_used: output.source_facts_used,
+    forbidden_claims_avoided: output.forbidden_claims_avoided,
+    human_review_checklist: output.human_review_checklist,
+    publish_ready: false
   };
 }
 
