@@ -692,8 +692,10 @@ Current ready/in-progress Goal 002 slices are:
   `apps/api/wilq_api/context_cache.py`; second partial slice moved skill scope
   maps to `apps/api/wilq_api/context_scopes.py`; third partial slice moved
   skill-scoped knowledge-card and expert-rule selection to
-  `apps/api/wilq_api/context_knowledge.py`. Heavy builders and compaction
-  helpers still need extraction.
+  `apps/api/wilq_api/context_knowledge.py`; fourth partial slice moved
+  context-pack action selection and skill action scoping to
+  `apps/api/wilq_api/context_actions.py`. Heavy builders and compaction helpers
+  still need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read

@@ -402,6 +402,16 @@ API status later contradicts this state.
   content strategist scoping and raw-history compaction. `wilq-seo-462` remains
   open because the heavy context-pack builders and compaction helpers still need
   extraction.
+- `apps/api/wilq_api/context_actions.py` now owns full-context action selection,
+  skill action scoping and connector action filtering. `main.py` preserves the
+  previous ordering of action collection before diagnostics, then delegates
+  filtering to the runtime module. The custom-segment context-pack test now
+  asserts the current anti-slop contract: the diagnostic read contract can keep
+  technical safety fields, while compact skill action plans hide
+  `safety_contract` and expose marketer-readable status/check labels instead.
+  Focused Ads/custom-segment/Demand Gen/context-pack tests, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

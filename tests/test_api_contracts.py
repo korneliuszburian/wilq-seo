@@ -19090,7 +19090,7 @@ def test_codex_context_pack_scopes_custom_segments_payload(
     action_safety_review = data["active_action_objects"][0]["action_plan"]["preview_items"][0][
         "safety_review"
     ]
-    assert action_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
+    assert "safety_contract" not in action_safety_review
     assert action_safety_review["apply_status_label"] == "zablokowane do sprawdzenia"
     assert ads_context["custom_segments_read_contract"]["audience_forecast_read_contract"][
         "forecast_rows"
@@ -19114,8 +19114,9 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         if isinstance(rows, list):
             if action["id"] == "act_prepare_custom_segments_from_search_terms":
                 assert len(rows) == 1
-                assert rows[0]["safety_review"]["safety_contract"] == (
-                    "custom_segment_apply_safety_v1"
+                assert "safety_contract" not in rows[0]["safety_review"]
+                assert rows[0]["safety_review"]["apply_status_label"] == (
+                    "zablokowane do sprawdzenia"
                 )
                 assert action_plan["preview_items_included"] == 1
             else:

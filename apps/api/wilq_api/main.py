@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from apps.api.wilq_api import context_knowledge
+from apps.api.wilq_api import context_actions, context_knowledge
 from apps.api.wilq_api.context_cache import (
     clear_skill_context_cache,
     read_skill_context_cache,
@@ -64,7 +64,6 @@ from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_
 from wilq.actions.service import (
     _action_audit_event_label,
     demand_gen_readiness_preview_cards,
-    list_actions,
 )
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
@@ -78,7 +77,6 @@ from wilq.briefing.daily_runtime import (
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
-from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue, clear_tactical_queue_cache
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -205,7 +203,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     max_opportunities = request.max_opportunities if request else 5
     if request and skill and skill != "wilq-daily-command" and not request.full_context:
         return _skill_scoped_context_pack(request, connectors, opportunities)
-    active_actions = _full_context_actions_for_skill(skill)
+    active_actions = context_actions.full_context_actions_for_skill(skill)
     daily_runtime = build_daily_runtime()
     pack = {
         "current_product_rules": CONTEXT_PRODUCT_RULES,
@@ -238,13 +236,6 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "strict_instruction": CONTEXT_STRICT_INSTRUCTION,
     }
     return redact_mapping(pack)
-
-
-def _full_context_actions_for_skill(skill: str | None) -> list[ActionObject]:
-    actions = list_actions()
-    if skill == "wilq-daily-command":
-        return core_brief_actions(actions)
-    return actions
 
 
 def _daily_command_context_pack(
@@ -986,12 +977,11 @@ def _skill_scoped_context_pack(
         scoped_connectors = {connector.id for connector in connectors if connector.configured}
     max_opportunities = request.max_opportunities
 
-    actions = list_actions()
+    actions = context_actions.full_context_actions_for_skill(None)
     diagnostics = _diagnostics_for_skill(skill)
-    actions = _stateful_context_actions(skill, actions, diagnostics)
-    actions = _actions_for_skill_scope(skill, actions)
+    actions = context_actions.skill_context_actions_for_skill(skill, actions, diagnostics)
     evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
-    scoped_actions = _actions_for_scope(actions, scoped_connectors, evidence_ids)
+    scoped_actions = context_actions.actions_for_scope(actions, scoped_connectors)
     evidence_ids.update(
         evidence_id for action in scoped_actions for evidence_id in action.evidence_ids
     )
@@ -1100,28 +1090,6 @@ def clear_api_view_model_caches() -> None:
 app.include_router(create_actions_router(clear_api_view_model_caches))
 app.include_router(create_connectors_router(clear_api_view_model_caches))
 app.include_router(create_codex_router(context_pack))
-
-
-def _stateful_context_actions(
-    skill: str,
-    actions: list[ActionObject],
-    diagnostics: dict[str, Any],
-) -> list[ActionObject]:
-    ads_diagnostics = diagnostics.get("ads_diagnostics")
-    if (
-        skill in {"wilq-ads-doctor", "wilq-custom-segments", "wilq-campaign-builder"}
-        and isinstance(ads_diagnostics, dict)
-        and ads_diagnostics.get("live_data_available") is True
-    ):
-        return [action for action in actions if action.id != "act_configure_google_ads_env"]
-    return actions
-
-
-def _actions_for_skill_scope(skill: str, actions: list[ActionObject]) -> list[ActionObject]:
-    if skill not in SKILL_ACTION_ID_SCOPES:
-        return actions
-    allowed_action_ids = SKILL_ACTION_ID_SCOPES[skill]
-    return [action for action in actions if action.id in allowed_action_ids]
 
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
@@ -4294,15 +4262,6 @@ def _opportunities_for_skill_scope(
         for opportunity in scoped
         if opportunity.action_ids and set(opportunity.action_ids).issubset(allowed_action_ids)
     ][:max_opportunities]
-
-
-def _actions_for_scope(
-    actions: list[ActionObject],
-    scoped_connectors: set[str],
-    evidence_ids: set[str],
-) -> list[ActionObject]:
-    del evidence_ids
-    return [action for action in actions if action.connector in scoped_connectors]
 
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
