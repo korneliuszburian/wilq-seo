@@ -18,6 +18,7 @@ from apps.api.wilq_api.routers.expert import router as expert_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
 from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
+from apps.api.wilq_api.routers.system import router as system_router
 from apps.api.wilq_api.routers.workflows import router as workflows_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -78,10 +79,8 @@ from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue, clear_tactical_queue_cache
-from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.refresh import list_connector_refresh_runs, run_connector_refresh
 from wilq.connectors.registry import list_connector_statuses
-from wilq.credentials.runtime import credential_runtime_status
 from wilq.evidence.registry import (
     connector_evidence_id,
     list_evidence,
@@ -91,7 +90,6 @@ from wilq.expert.rules import (
     list_expert_capabilities,
     list_expert_rule_summaries,
 )
-from wilq.jobs.scheduler import scheduler_status
 from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
 )
@@ -105,7 +103,7 @@ from wilq.operator_labels import (
     source_connector_label,
     source_connector_labels,
 )
-from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
+from wilq.opportunities.engine import get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
@@ -125,7 +123,6 @@ from wilq.schemas import (
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorStatus,
-    ConnectorSummary,
     ContentDiagnosticsResponse,
     ContentPreflightResponse,
     DailyDecision,
@@ -142,7 +139,6 @@ from wilq.schemas import (
     Opportunity,
     TacticalQueueResponse,
     connector_status_label,
-    utc_now,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
@@ -179,6 +175,7 @@ app.include_router(expert_router)
 app.include_router(jobs_router)
 app.include_router(knowledge_router)
 app.include_router(metrics_router)
+app.include_router(system_router)
 app.include_router(workflows_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
@@ -236,16 +233,6 @@ def _request_skill(request: ContextPackRequest | None) -> str | None:
     if request is None:
         return None
     return request.skill or request.skill_id
-
-
-def connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
-    missing = sum(1 for connector in connectors if connector.missing_credentials)
-    configured = sum(1 for connector in connectors if connector.configured)
-    return ConnectorSummary(
-        total=len(connectors),
-        configured=configured,
-        missing_credentials=missing,
-    )
 
 
 def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
@@ -4569,41 +4556,6 @@ def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
 
 def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
     return bool(set(values).intersection(scoped_connectors))
-
-
-@app.get("/")
-def root() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "wilq-api",
-        "health": "/api/health",
-        "system_status": "/api/system/status",
-        "connectors": "/api/connectors",
-        "command_center": "/api/dashboard/command-center",
-        "docs": "/docs",
-    }
-
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "wilq-api"}
-
-
-@app.get("/api/system/status")
-def system_status() -> dict[str, Any]:
-    connectors = list_connector_statuses()
-    return redact_mapping(
-        {
-            "generated_at": utc_now().isoformat(),
-            "connector_summary": connector_summary(connectors).model_dump(),
-            "credential_runtime": credential_runtime_status(detailed=False),
-            "codex_runtime": codex_runtime_status(),
-            "job_scheduler": scheduler_status(),
-            "local_state": local_state_store().status(),
-            "metric_store": metric_store().status(),
-            "opportunity_types": list(OPPORTUNITY_TYPES),
-        }
-    )
 
 
 @app.post("/api/connectors/{connector}/refresh", response_model=ConnectorRefreshRun)

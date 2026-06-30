@@ -181,6 +181,12 @@ API status later contradicts this state.
   response shapes. Focused workflow API tests, route-shape smoke, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 system router extraction moved root, `/api/health` and
+  `/api/system/status` endpoints from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/system.py` without changing endpoint paths or
+  response shapes. Focused system API tests, route-shape smoke, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 
