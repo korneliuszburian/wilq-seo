@@ -897,3 +897,42 @@ def test_content_work_item_api_chain_keeps_all_content_production_gates() -> Non
     assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
         "measurement_window_not_ready"
     ]
+
+
+def test_content_work_item_control_snapshot_is_api_owned() -> None:
+    response = TestClient(app).get("/api/content/work-items/control-snapshot")
+    assert response.status_code == 200
+    data = response.json()
+
+    preflight = data["preflight"]
+    assert preflight["item"]["id"] == "content_work_item_bdo"
+    assert preflight["item"]["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
+    assert preflight["item"]["source_connectors"] == [
+        "google_search_console",
+        "wordpress_ekologus",
+    ]
+    assert preflight["preflight_verdict"]["status"] == "plan_allowed"
+
+    brief = data["sales_brief"]["sales_brief_result"]["brief"]
+    assert brief["id"] == "sales_brief_content_work_item_bdo"
+    assert brief["final_canonical_url"] == "https://ekologus.pl/bdo/"
+    assert brief["preview_url"] == "https://ekologus.dev.proudsite.pl/bdo/"
+
+    draft = data["draft_package"]["draft_package_result"]["draft_package"]
+    assert draft["publish_ready"] is False
+    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
+        "ev_gsc_bdo",
+        "ev_wp_bdo",
+    ]
+
+    handoff = data["wordpress_handoff"]["handoff_result"]["handoff"]
+    assert handoff["post_status"] == "draft"
+    assert handoff["publish_allowed"] is False
+    assert handoff["destructive_update_allowed"] is False
+
+    measurement = data["measurement_window"]
+    window = measurement["measurement_window_result"]["window"]
+    assert window["success_claim_allowed"] is False
+    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
+        "measurement_window_not_ready"
+    ]

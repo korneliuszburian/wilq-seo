@@ -16,6 +16,7 @@ import {
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentWorkItemWorkflowSnapshotResponseSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
@@ -51,6 +52,7 @@ import {
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
+  type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type DemandGenReadinessContract,
@@ -132,6 +134,13 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
 
 export function getContentPreflight(): Promise<ContentPreflightResponse> {
   return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
+}
+
+export function getContentWorkItemControlSnapshot(): Promise<ContentWorkItemWorkflowSnapshotResponse> {
+  return apiGet(
+    "/api/content/work-items/control-snapshot",
+    ContentWorkItemWorkflowSnapshotResponseSchema
+  );
 }
 
 export function postContentWorkItemPreflight(
@@ -302,6 +311,7 @@ export type {
   ContentWorkItemPreflightResponse,
   ContentWorkItemSalesBriefResponse,
   ContentWorkItemWordPressDraftHandoffResponse,
+  ContentWorkItemWorkflowSnapshotResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   DemandGenReadinessContract,

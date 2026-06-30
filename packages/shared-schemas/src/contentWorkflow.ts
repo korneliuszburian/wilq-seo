@@ -34,18 +34,33 @@ export const ContentWorkflowBlockerSchema = z.object({
   code: z.string(),
   label: z.string(),
   reason: z.string(),
-  next_step: z.string()
+  next_step: z.string(),
+  blocks_current_stage: z.boolean().optional()
+});
+
+export const ContentInventoryRecordSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  final_canonical_url: z.string().nullable().optional(),
+  intended_final_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  content_status: z.string(),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  title: z.string().nullable().optional(),
+  h1: z.string().nullable().optional(),
+  topic_tags: z.array(z.string()).default([])
 });
 
 export const ContentInventoryResolutionSchema = z.object({
   status: z.string(),
   recommended_mode: z.string(),
-  matched_url: z.string().nullable().optional(),
+  records: z.array(ContentInventoryRecordSchema).default([]),
   similar_existing_urls: z.array(z.string()).default([]),
-  duplicate_risk: z.string(),
   blockers: z.array(ContentWorkflowBlockerSchema).default([]),
   evidence_ids: z.array(z.string()).default([]),
-  source_connectors: z.array(z.string()).default([])
+  source_connectors: z.array(z.string()).default([]),
+  next_step: z.string()
 });
 
 export const ContentPreflightVerdictSchema = z.object({
@@ -73,6 +88,7 @@ export const ContentWorkItemPreflightResponseSchema = z.object({
 
 export const ContentClaimReferenceSchema = z.object({
   claim_id: z.string().optional(),
+  id: z.string().optional(),
   claim_text: z.string().optional(),
   claim_type: z.string().optional(),
   status: z.string().optional(),
@@ -80,33 +96,44 @@ export const ContentClaimReferenceSchema = z.object({
   reason: z.string().optional()
 });
 
+export const ContentSalesBriefSourceFactSchema = z.object({
+  evidence_id: z.string(),
+  source_connector: z.string(),
+  summary: z.string()
+});
+
 export const ContentSalesBriefSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
-  content_mode: z.string(),
-  source_public_url: z.string().nullable().optional(),
-  final_canonical_url: z.string(),
-  intended_final_url: z.string().nullable().optional(),
-  preview_url: z.string().nullable().optional(),
+  topic: z.string(),
   target_reader: z.string(),
   buyer_problem: z.string(),
   buyer_trigger: z.string(),
   search_intent: z.string(),
   service_fit: z.string(),
+  source_public_url: z.string().nullable().optional(),
+  final_canonical_url: z.string(),
+  intended_final_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
   existing_content_plan: z.string(),
-  outline: z.array(z.unknown()).default([]),
-  allowed_claims: z.array(ContentClaimReferenceSchema).default([]),
+  h1_direction: z.string(),
+  h2_direction: z.array(z.string()).default([]),
+  faq_direction: z.array(z.string()).default([]),
+  cta_direction: z.string(),
+  internal_link_direction: z.array(z.string()).default([]),
+  source_facts: z.array(ContentSalesBriefSourceFactSchema).default([]),
   forbidden_claims: z.array(ContentClaimReferenceSchema).default([]),
+  missing_evidence: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
   source_connectors: z.array(z.string()),
   measurement_plan: z.object({
     measurement_window_id: z.string(),
-    allowed_metrics: z.array(z.string()).default([]),
-    earliest_verdict_date: z.string().nullable().optional(),
-    success_claim_allowed: z.boolean().default(false)
+    metrics_to_watch: z.array(z.string()).default([]),
+    earliest_verdict_note: z.string(),
+    success_claim_rule: z.string()
   }),
-  draft_allowed: z.boolean(),
-  human_review_required: z.boolean()
+  human_review_required: z.boolean(),
+  draft_allowed: z.boolean()
 });
 
 export const ContentSalesBriefBuildResultSchema = z.object({
@@ -231,6 +258,15 @@ export const ContentWorkItemMeasurementWindowResponseSchema = z.object({
   outcome_blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
+  preflight: ContentWorkItemPreflightResponseSchema,
+  sales_brief: ContentWorkItemSalesBriefResponseSchema,
+  draft_package: ContentWorkItemDraftPackageResponseSchema,
+  human_review: ContentWorkItemHumanReviewResponseSchema,
+  wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
+  measurement_window: ContentWorkItemMeasurementWindowResponseSchema
+});
+
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
 export type ContentWorkItemPreflightResponse = z.infer<
   typeof ContentWorkItemPreflightResponseSchema
@@ -249,4 +285,7 @@ export type ContentWorkItemWordPressDraftHandoffResponse = z.infer<
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
+>;
+export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
+  typeof ContentWorkItemWorkflowSnapshotResponseSchema
 >;

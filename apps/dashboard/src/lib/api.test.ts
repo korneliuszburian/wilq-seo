@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentWorkItemControlSnapshot,
   postContentWorkItemDraftPackage,
   postContentWorkItemHumanReview,
   postContentWorkItemMeasurementWindow,
@@ -62,6 +63,27 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("gets the API-owned control snapshot for the content workflow route", async () => {
+    const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+      const path = new URL(String(url)).pathname;
+      return {
+        ok: true,
+        json: async () =>
+          path === "/api/content/work-items/control-snapshot"
+            ? workflowSnapshot()
+            : responseByPath[path]
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const snapshot = await getContentWorkItemControlSnapshot();
+
+    expect(snapshot.preflight.item.id).toBe("content_work_item_bdo");
+    expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      "/api/content/work-items/control-snapshot"
+    ]);
+  });
+
   it("posts every Goal 002 work item contract to the API-owned endpoint", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       const path = new URL(String(url)).pathname;
@@ -96,6 +118,17 @@ describe("content workflow API helpers", () => {
   });
 });
 
+function workflowSnapshot() {
+  return {
+    preflight: responseByPath["/api/content/work-items/preflight"],
+    sales_brief: responseByPath["/api/content/work-items/sales-brief"],
+    draft_package: responseByPath["/api/content/work-items/draft-package"],
+    human_review: responseByPath["/api/content/work-items/human-review"],
+    wordpress_handoff: responseByPath["/api/content/work-items/wordpress-draft-handoff"],
+    measurement_window: responseByPath["/api/content/work-items/measurement-window"]
+  };
+}
+
 function workItem(overrides: Record<string, unknown> = {}) {
   return {
     id: "content_work_item_bdo",
@@ -117,12 +150,26 @@ function inventoryResolution() {
   return {
     status: "resolved",
     recommended_mode: "preserve",
-    matched_url: "https://ekologus.pl/bdo/",
+    records: [
+      {
+        id: "inventory_bdo",
+        url: "https://ekologus.pl/bdo/",
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        intended_final_url: "https://ekologus.pl/bdo/",
+        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        content_status: "published",
+        source_connectors: ["wordpress_ekologus"],
+        evidence_ids: ["ev_wp_bdo"],
+        title: "BDO dla firm",
+        h1: "BDO dla firm",
+        topic_tags: ["bdo"]
+      }
+    ],
     similar_existing_urls: ["https://ekologus.pl/bdo/"],
-    duplicate_risk: "clear",
     blockers: [],
     evidence_ids: ["ev_wp_bdo"],
-    source_connectors: ["wordpress_ekologus"]
+    source_connectors: ["wordpress_ekologus"],
+    next_step: "Zacznij od preserve-first."
   };
 }
 
@@ -149,30 +196,41 @@ function salesBrief() {
   return {
     id: "sales_brief_content_work_item_bdo",
     work_item_id: "content_work_item_bdo",
-    content_mode: "preserve",
-    source_public_url: "https://ekologus.pl/bdo/",
-    final_canonical_url: "https://ekologus.pl/bdo/",
-    intended_final_url: "https://ekologus.pl/bdo/",
-    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+    topic: "BDO dla firm",
     target_reader: "właściciel firmy",
     buyer_problem: "nie wie, jak podejść do BDO",
     buyer_trigger: "zbliża się kontrola",
     search_intent: "informacyjno-usługowy",
     service_fit: "obsługa środowiskowa",
+    source_public_url: "https://ekologus.pl/bdo/",
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    intended_final_url: "https://ekologus.pl/bdo/",
+    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
     existing_content_plan: "Zacznij od istniejącej treści.",
-    outline: [],
-    allowed_claims: [],
+    h1_direction: "BDO dla firm",
+    h2_direction: ["Kogo dotyczy BDO"],
+    faq_direction: ["Czy każda firma musi mieć BDO?"],
+    cta_direction: "Skontaktuj się z Ekologus.",
+    internal_link_direction: ["https://ekologus.pl/kontakt/"],
+    source_facts: [
+      {
+        evidence_id: "ev_gsc_bdo",
+        source_connector: "google_search_console",
+        summary: "GSC pokazuje popyt na temat BDO."
+      }
+    ],
     forbidden_claims: [],
+    missing_evidence: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     measurement_plan: {
       measurement_window_id: "measurement_window_content_work_item_bdo",
-      allowed_metrics: ["gsc_clicks"],
-      earliest_verdict_date: "2026-08-01",
-      success_claim_allowed: false
+      metrics_to_watch: ["GSC clicks"],
+      earliest_verdict_note: "Nie oceniaj przed końcem okna.",
+      success_claim_rule: "Nie claimuj sukcesu bez danych."
     },
-    draft_allowed: false,
-    human_review_required: true
+    human_review_required: true,
+    draft_allowed: false
   };
 }
 

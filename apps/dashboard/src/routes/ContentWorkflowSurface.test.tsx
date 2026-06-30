@@ -1,15 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  postContentWorkItemDraftPackage,
-  postContentWorkItemHumanReview,
-  postContentWorkItemMeasurementWindow,
-  postContentWorkItemPreflight,
-  postContentWorkItemSalesBrief,
-  postContentWorkItemWordPressDraftHandoff,
-  type ContentWorkItemWordPressDraftHandoffResponse
-} from "../lib/api";
+import { getContentWorkItemControlSnapshot, type ContentWorkItemWorkflowSnapshotResponse } from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
@@ -17,62 +9,13 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    postContentWorkItemPreflight: vi.fn(),
-    postContentWorkItemSalesBrief: vi.fn(),
-    postContentWorkItemDraftPackage: vi.fn(),
-    postContentWorkItemHumanReview: vi.fn(),
-    postContentWorkItemWordPressDraftHandoff: vi.fn(),
-    postContentWorkItemMeasurementWindow: vi.fn()
+    getContentWorkItemControlSnapshot: vi.fn()
   };
 });
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
-    vi.mocked(postContentWorkItemPreflight).mockResolvedValue({
-      item: workItem(),
-      inventory_resolution: inventoryResolution(),
-      preflight_verdict: preflightVerdict("plan_allowed")
-    });
-    vi.mocked(postContentWorkItemSalesBrief).mockResolvedValue({
-      item: workItem(),
-      inventory_resolution: inventoryResolution(),
-      preflight_verdict: preflightVerdict("brief_allowed"),
-      sales_brief_result: { brief: salesBrief(), blockers: [] }
-    });
-    vi.mocked(postContentWorkItemDraftPackage).mockResolvedValue({
-      item: workItem(),
-      inventory_resolution: inventoryResolution(),
-      preflight_verdict: preflightVerdict("draft_allowed"),
-      sales_brief_result: { brief: salesBrief(), blockers: [] },
-      draft_package_result: { draft_package: draftPackage(), blockers: [] }
-    });
-    vi.mocked(postContentWorkItemHumanReview).mockResolvedValue({
-      item: workItem(),
-      reviewed_item: workItem({ human_review_status: "approved" }),
-      review: humanReview(),
-      blockers: [],
-      wordpress_handoff_allowed: true
-    });
-    vi.mocked(postContentWorkItemWordPressDraftHandoff).mockResolvedValue({
-      item: workItem(),
-      handoff_result: { handoff: wordpressHandoff(), blockers: [] }
-    });
-    vi.mocked(postContentWorkItemMeasurementWindow).mockResolvedValue({
-      item: workItem(),
-      updated_item: workItem({
-        measurement_window_status: "planned",
-        measurement_window_id: "measurement_window_content_work_item_bdo"
-      }),
-      measurement_window_result: { window: measurementWindow(), blockers: [] },
-      outcome_blockers: [
-        {
-          code: "measurement_window_not_ready",
-          label: "Nie wolno jeszcze oceniać efektu",
-          reason: "Okno obserwacji jeszcze trwa.",
-          next_step: "Wróć po earliest_verdict_date."
-        }
-      ]
-    });
+    vi.mocked(getContentWorkItemControlSnapshot).mockResolvedValue(workflowSnapshot());
   });
 
   afterEach(() => {
@@ -152,12 +95,26 @@ function inventoryResolution() {
   return {
     status: "resolved",
     recommended_mode: "preserve",
-    matched_url: "https://ekologus.pl/bdo/",
+    records: [
+      {
+        id: "inventory_bdo",
+        url: "https://ekologus.pl/bdo/",
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        intended_final_url: "https://ekologus.pl/bdo/",
+        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        content_status: "published",
+        source_connectors: ["wordpress_ekologus"],
+        evidence_ids: ["ev_wp_bdo"],
+        title: "BDO dla firm",
+        h1: "BDO dla firm",
+        topic_tags: ["bdo"]
+      }
+    ],
     similar_existing_urls: ["https://ekologus.pl/bdo/"],
-    duplicate_risk: "clear",
     blockers: [],
     evidence_ids: ["ev_wp_bdo"],
-    source_connectors: ["wordpress_ekologus"]
+    source_connectors: ["wordpress_ekologus"],
+    next_step: "Zacznij od preserve-first."
   };
 }
 
@@ -184,30 +141,41 @@ function salesBrief() {
   return {
     id: "sales_brief_content_work_item_bdo",
     work_item_id: "content_work_item_bdo",
-    content_mode: "preserve",
-    source_public_url: "https://ekologus.pl/bdo/",
-    final_canonical_url: "https://ekologus.pl/bdo/",
-    intended_final_url: "https://ekologus.pl/bdo/",
-    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+    topic: "BDO dla firm",
     target_reader: "właściciel firmy",
     buyer_problem: "nie wie, jak podejść do BDO",
     buyer_trigger: "zbliża się kontrola",
     search_intent: "informacyjno-usługowy",
     service_fit: "obsługa środowiskowa",
+    source_public_url: "https://ekologus.pl/bdo/",
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    intended_final_url: "https://ekologus.pl/bdo/",
+    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
     existing_content_plan: "Zacznij od istniejącej treści.",
-    outline: [],
-    allowed_claims: [],
+    h1_direction: "BDO dla firm",
+    h2_direction: ["Kogo dotyczy BDO"],
+    faq_direction: ["Czy każda firma musi mieć BDO?"],
+    cta_direction: "Skontaktuj się z Ekologus.",
+    internal_link_direction: ["https://ekologus.pl/kontakt/"],
+    source_facts: [
+      {
+        evidence_id: "ev_gsc_bdo",
+        source_connector: "google_search_console",
+        summary: "GSC pokazuje popyt na temat BDO."
+      }
+    ],
     forbidden_claims: [],
+    missing_evidence: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
     measurement_plan: {
       measurement_window_id: "measurement_window_content_work_item_bdo",
-      allowed_metrics: ["gsc_clicks"],
-      earliest_verdict_date: "2026-08-01",
-      success_claim_allowed: false
+      metrics_to_watch: ["GSC clicks"],
+      earliest_verdict_note: "Nie oceniaj przed końcem okna.",
+      success_claim_rule: "Nie claimuj sukcesu bez danych."
     },
-    draft_allowed: false,
-    human_review_required: true
+    human_review_required: true,
+    draft_allowed: false
   };
 }
 
@@ -243,7 +211,57 @@ function humanReview() {
   };
 }
 
-function wordpressHandoff(): ContentWorkItemWordPressDraftHandoffResponse["handoff_result"]["handoff"] {
+function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
+  return {
+    preflight: {
+      item: workItem(),
+      inventory_resolution: inventoryResolution(),
+      preflight_verdict: preflightVerdict("plan_allowed")
+    },
+    sales_brief: {
+      item: workItem(),
+      inventory_resolution: inventoryResolution(),
+      preflight_verdict: preflightVerdict("brief_allowed"),
+      sales_brief_result: { brief: salesBrief(), blockers: [] }
+    },
+    draft_package: {
+      item: workItem(),
+      inventory_resolution: inventoryResolution(),
+      preflight_verdict: preflightVerdict("draft_allowed"),
+      sales_brief_result: { brief: salesBrief(), blockers: [] },
+      draft_package_result: { draft_package: draftPackage(), blockers: [] }
+    },
+    human_review: {
+      item: workItem(),
+      reviewed_item: workItem({ human_review_status: "approved" }),
+      review: humanReview(),
+      blockers: [],
+      wordpress_handoff_allowed: true
+    },
+    wordpress_handoff: {
+      item: workItem(),
+      handoff_result: { handoff: wordpressHandoff(), blockers: [] }
+    },
+    measurement_window: {
+      item: workItem(),
+      updated_item: workItem({
+        measurement_window_status: "planned",
+        measurement_window_id: "measurement_window_content_work_item_bdo"
+      }),
+      measurement_window_result: { window: measurementWindow(), blockers: [] },
+      outcome_blockers: [
+        {
+          code: "measurement_window_not_ready",
+          label: "Nie wolno jeszcze oceniać efektu",
+          reason: "Okno obserwacji jeszcze trwa.",
+          next_step: "Wróć po earliest_verdict_date."
+        }
+      ]
+    }
+  };
+}
+
+function wordpressHandoff(): ContentWorkItemWorkflowSnapshotResponse["wordpress_handoff"]["handoff_result"]["handoff"] {
   return {
     id: "wordpress_draft_handoff_content_work_item_bdo",
     work_item_id: "content_work_item_bdo",

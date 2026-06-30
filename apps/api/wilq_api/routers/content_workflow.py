@@ -15,6 +15,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
+    ContentWorkItemWorkflowSnapshotResponse,
+    build_content_work_item_control_snapshot_response,
     build_content_work_item_draft_package_response,
     build_content_work_item_human_review_response,
     build_content_work_item_measurement_window_response,
@@ -24,6 +26,14 @@ from wilq.content.workflow.api import (
 )
 
 router = APIRouter()
+
+
+@router.get(
+    "/api/content/work-items/control-snapshot",
+    response_model=ContentWorkItemWorkflowSnapshotResponse,
+)
+def content_work_item_control_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
+    return build_content_work_item_control_snapshot_response()
 
 
 @router.post(
