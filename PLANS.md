@@ -665,8 +665,10 @@ Current ready/in-progress Goal 002 slices are:
   blocker, marketer preflight view, content API label, diagnostic section and
   content operator summary extraction slices.
 - `wilq-seo-wiz` - next product slice: add typed `ContentWorkItem` workflow
-  state and prove that preflight, sales brief, claim ledger, human review,
-  audit and measurement gates cannot be skipped.
+  state, closed. `wilq/content/workflow/models.py` now proves that preflight,
+  sales brief, claim ledger, human review, audit and measurement gates cannot
+  be skipped. Draft and WordPress handoff require a measurement plan up front;
+  outcome claims remain blocked until the measurement window is ready.
 - `wilq-seo-acy` - next product slice: build Content Inventory v1 records that
   can support preserve/refresh/merge/create/block decisions without treating
   dev preview URLs as canonical evidence.
@@ -700,6 +702,10 @@ behavior must land in focused content/domain modules with tests first.
   content work item must include a measurement plan before draft or handoff.
   Reason: WILQ can prepare better content now while reserving success/failure
   claims until the observation window has real data.
+- Decision: `ContentWorkItem` workflow state is a domain model first, not an API
+  endpoint or dashboard remapper.
+  Reason: later API, Codex and dashboard work must consume the same gate logic
+  instead of reimplementing it in prompts or React conditionals.
 
 ## Outcomes & Retrospective
 

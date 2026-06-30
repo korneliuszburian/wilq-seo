@@ -182,6 +182,15 @@ API status later contradicts this state.
   baseline is complete enough to move from cleanup into product workflow slices.
   Next ready Goal 002 feature work is `wilq-seo-wiz` for `ContentWorkItem`
   workflow state and `wilq-seo-acy` for Content Inventory v1.
+- Beads task `wilq-seo-wiz` is closed. `wilq/content/workflow/models.py` now
+  defines a typed `ContentWorkItem` and workflow blockers for evidence, source
+  connectors, inventory, public final canonical URL, duplicate gate, preflight,
+  preserve-first plan, sales brief, claim ledger, draft package, human review,
+  audit and measurement window. Draft and WordPress handoff require a
+  measurement plan up front, while outcome claims stay blocked until the
+  measurement window is ready. `tests/content` (46 tests), Ruff, mypy,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
