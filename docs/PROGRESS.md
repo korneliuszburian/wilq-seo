@@ -481,6 +481,14 @@ API status later contradicts this state.
   only after generated structured output exists, see the evidence-mapped title,
   sections and human review checklist, and still cannot write to WordPress or
   publish on `ekologus.pl`.
+- Beads task `wilq-seo-wfw` adds a focused end-to-end API proof for Goal 002.
+  The test starts from the diagnostics-derived `/api/content/work-items/snapshot`
+  item, verifies evidence/source connectors and public Ekologus canonical URL,
+  exercises structured draft runtime dry-run, structured draft preview, human
+  review, audit, WordPress draft execution dry-run and measurement blockers.
+  The proof asserts `post_status=draft`, `publish_allowed=false`,
+  `destructive_update_allowed=false`, `external_write_attempted=false` and
+  `success_claim_allowed=false`; nothing is published on `ekologus.pl`.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

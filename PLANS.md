@@ -1030,6 +1030,13 @@ Current outcome:
   evidence-mapped title, sections and human review checklist while WordPress
   remains a separate draft-only dry-run and no publication on `ekologus.pl` is
   attempted.
+- Goal 002 now has a focused end-to-end API proof for one diagnostics-derived
+  Ekologus content item. The proof goes through content snapshot, evidence/source
+  connectors, public final canonical URL, structured draft runtime dry-run,
+  structured draft preview, human review, audit, WordPress draft execution
+  dry-run and measurement blockers. It asserts draft-only WordPress status,
+  no destructive update, no external write and no success claim before the
+  measurement window is ready.
 
 Current risk:
 
