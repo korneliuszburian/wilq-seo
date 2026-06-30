@@ -1005,6 +1005,10 @@ Current outcome:
   blocks live mode by default and parses fake structured outputs in tests. It
   still does not call OpenAI from WILQ API, generate prose, write to WordPress
   or mark content publish-ready.
+- Shared dashboard schemas and `api.ts` now parse/post the structured draft
+  runtime endpoint. This gives the dashboard a typed boundary for runtime
+  dry-run/live-block responses without adding React product logic or surfacing
+  technical payloads to the marketer flow.
 
 Current risk:
 

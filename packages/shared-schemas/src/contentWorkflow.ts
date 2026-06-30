@@ -225,6 +225,70 @@ export const StructuredDraftGenerationResultSchema = z.object({
   blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const StructuredDraftOutputSectionSchema = z.object({
+  heading: z.string(),
+  body_markdown: z.string(),
+  evidence_ids: z.array(z.string()).default([]),
+  claims_used: z.array(z.string()).default([])
+});
+
+export const StructuredDraftOutputSchema = z.object({
+  draft_kind: z.enum(["section_draft", "full_draft"]),
+  language: z.literal("pl-PL"),
+  title: z.string(),
+  meta_title: z.string(),
+  meta_description: z.string(),
+  h1: z.string(),
+  sections: z.array(StructuredDraftOutputSectionSchema),
+  faq: z.array(z.string()).default([]),
+  cta: z.string(),
+  internal_links: z.array(z.string()).default([]),
+  source_facts_used: z.array(z.string()).default([]),
+  claims_needing_review: z.array(z.string()).default([]),
+  forbidden_claims_avoided: z.array(z.string()).default([]),
+  human_review_checklist: z.array(z.string()).default([]),
+  publish_ready: z.literal(false)
+});
+
+export const OpenAIInputMessageSchema = z.object({
+  role: z.enum(["system", "user"]),
+  content: z.string()
+});
+
+export const OpenAIJsonSchemaFormatSchema = z.object({
+  type: z.literal("json_schema"),
+  name: z.string(),
+  strict: z.literal(true),
+  schema: z.record(z.string(), z.unknown())
+});
+
+export const OpenAITextFormatSchema = z.object({
+  format: OpenAIJsonSchemaFormatSchema
+});
+
+export const OpenAIStructuredDraftRequestPayloadSchema = z.object({
+  model: z.string(),
+  input: z.array(OpenAIInputMessageSchema),
+  text: OpenAITextFormatSchema,
+  temperature: z.number(),
+  max_output_tokens: z.number()
+});
+
+export const OpenAIStructuredDraftRuntimeBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string()
+});
+
+export const OpenAIStructuredDraftRuntimeResultSchema = z.object({
+  status: z.enum(["dry_run_ready", "generated", "blocked"]),
+  request_payload: OpenAIStructuredDraftRequestPayloadSchema.nullable().optional(),
+  output: StructuredDraftOutputSchema.nullable().optional(),
+  external_call_attempted: z.boolean(),
+  blockers: z.array(OpenAIStructuredDraftRuntimeBlockerSchema).default([])
+});
+
 export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
   item: ContentWorkItemSchema,
   sales_brief: ContentSalesBriefSchema.nullable().optional(),
@@ -235,6 +299,16 @@ export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({
 export const ContentWorkItemStructuredDraftGenerationResponseSchema = z.object({
   item: ContentWorkItemSchema,
   structured_generation_result: StructuredDraftGenerationResultSchema
+});
+
+export const ContentWorkItemStructuredDraftRuntimeRequestSchema = z.object({
+  contract: StructuredDraftGenerationContractSchema.nullable().optional(),
+  model: z.string().nullable().optional(),
+  mode: z.enum(["dry_run", "live"]).default("dry_run")
+});
+
+export const ContentWorkItemStructuredDraftRuntimeResponseSchema = z.object({
+  runtime_result: OpenAIStructuredDraftRuntimeResultSchema
 });
 
 export const ContentHumanReviewSchema = z.object({
@@ -405,6 +479,12 @@ export type ContentWorkItemStructuredDraftGenerationRequest = z.infer<
 >;
 export type ContentWorkItemStructuredDraftGenerationResponse = z.infer<
   typeof ContentWorkItemStructuredDraftGenerationResponseSchema
+>;
+export type ContentWorkItemStructuredDraftRuntimeRequest = z.infer<
+  typeof ContentWorkItemStructuredDraftRuntimeRequestSchema
+>;
+export type ContentWorkItemStructuredDraftRuntimeResponse = z.infer<
+  typeof ContentWorkItemStructuredDraftRuntimeResponseSchema
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema

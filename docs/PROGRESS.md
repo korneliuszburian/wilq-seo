@@ -454,6 +454,10 @@ API status later contradicts this state.
   `POST /api/content/work-items/structured-draft-runtime` exposes only the
   dry-run/live-block contract; it still does not call OpenAI from the WILQ API,
   generate prose, write to WordPress or mark content publish-ready.
+- Beads task `wilq-seo-r2k` adds shared TypeScript schemas and a dashboard
+  `api.ts` helper for the structured draft runtime endpoint. The dashboard now
+  has a typed boundary for dry-run/live-block runtime responses without adding
+  UI product logic, label mappers, live OpenAI calls or WordPress writes.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

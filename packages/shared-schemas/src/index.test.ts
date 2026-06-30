@@ -9,6 +9,7 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
+  ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
@@ -455,6 +456,44 @@ describe("Content work item workflow schemas", () => {
             user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
             publish_ready: false
           },
+          blockers: []
+        }
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemStructuredDraftRuntimeResponseSchema.safeParse({
+        runtime_result: {
+          status: "dry_run_ready",
+          request_payload: {
+            model: "gpt-5",
+            input: [
+              {
+                role: "system",
+                content: "Pisz wyłącznie z przekazanych faktów."
+              },
+              {
+                role: "user",
+                content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
+              }
+            ],
+            text: {
+              format: {
+                type: "json_schema",
+                name: "wilq_content_structured_draft_v1",
+                strict: true,
+                schema: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: { sections: { type: "array" } }
+                }
+              }
+            },
+            temperature: 0.2,
+            max_output_tokens: 4000
+          },
+          output: null,
+          external_call_attempted: false,
           blockers: []
         }
       }).success

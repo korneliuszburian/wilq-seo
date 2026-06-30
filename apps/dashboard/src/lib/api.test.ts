@@ -8,9 +8,11 @@ import {
   postContentWorkItemPreflight,
   postContentWorkItemSalesBrief,
   postContentWorkItemStructuredDraftGeneration,
+  postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftHandoff,
   saveContentWorkItemSnapshotAudit,
-  saveContentWorkItemSnapshotHumanReview
+  saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemStructuredDraftRuntimeRequest
 } from "./api";
 
 const responseByPath: Record<string, unknown> = {
@@ -38,6 +40,9 @@ const responseByPath: Record<string, unknown> = {
       contract: structuredDraftGenerationContract(),
       blockers: []
     }
+  },
+  "/api/content/work-items/structured-draft-runtime": {
+    runtime_result: structuredDraftRuntimeResult()
   },
   "/api/content/work-items/human-review": {
     item: workItem(),
@@ -124,6 +129,11 @@ describe("content workflow API helpers", () => {
       claim_ledger: {},
       draft_package: draftPackage()
     });
+    await postContentWorkItemStructuredDraftRuntime({
+      contract: structuredDraftGenerationContract(),
+      model: "gpt-5",
+      mode: "dry_run"
+    });
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
     await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
     await saveContentWorkItemSnapshotAudit({
@@ -149,6 +159,7 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/sales-brief",
       "/api/content/work-items/draft-package",
       "/api/content/work-items/structured-draft-generation",
+      "/api/content/work-items/structured-draft-runtime",
       "/api/content/work-items/human-review",
       "/api/content/work-items/snapshot/human-review",
       "/api/content/work-items/snapshot/audit",
@@ -307,7 +318,9 @@ function draftPackage() {
   };
 }
 
-function structuredDraftGenerationContract() {
+function structuredDraftGenerationContract(): NonNullable<
+  ContentWorkItemStructuredDraftRuntimeRequest["contract"]
+> {
   return {
     schema_name: "wilq_content_structured_draft_v1",
     strict_schema: true,
@@ -352,6 +365,42 @@ function structuredDraftGenerationContract() {
     system_instruction: "Pisz wyłącznie z przekazanych faktów.",
     user_instruction: "Przygotuj ustrukturyzowany szkic treści dla WILQ.",
     publish_ready: false
+  };
+}
+
+function structuredDraftRuntimeResult() {
+  return {
+    status: "dry_run_ready",
+    request_payload: {
+      model: "gpt-5",
+      input: [
+        {
+          role: "system",
+          content: "Pisz wyłącznie z przekazanych faktów."
+        },
+        {
+          role: "user",
+          content: "Przygotuj ustrukturyzowany szkic treści dla WILQ."
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "wilq_content_structured_draft_v1",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: { sections: { type: "array" } }
+          }
+        }
+      },
+      temperature: 0.2,
+      max_output_tokens: 4000
+    },
+    output: null,
+    external_call_attempted: false,
+    blockers: []
   };
 }
 
