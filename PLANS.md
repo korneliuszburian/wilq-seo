@@ -989,6 +989,11 @@ Current outcome:
   small view model and focused rendering components instead of one large React
   function. This is a behavior-preserving cleanup slice for Fallow debt; it
   does not add content logic, copy translators or WordPress behavior.
+- Structured draft generation now has a first content-domain contract for the
+  future OpenAI SDK runtime. It prepares strict schema output, model input and
+  instructions only after the matching Sales Brief, Claim Ledger and Draft
+  Package gates pass. This slice intentionally does not call OpenAI, write to
+  WordPress or mark content publish-ready.
 
 Current risk:
 

@@ -434,6 +434,13 @@ API status later contradicts this state.
   content decision panel now uses a small view model plus focused rendering
   components instead of one large React function. Focused route tests,
   dashboard typecheck, dashboard lint and Fallow changed audit passed.
+- Beads task `wilq-seo-rob` adds the first structured draft generation
+  contract for the future OpenAI SDK runtime. The new content-domain contract
+  builds a strict schema, model input and instructions only after matching
+  Sales Brief, Claim Ledger and Draft Package gates. It does not call OpenAI,
+  write to WordPress or mark content publish-ready. Focused structured draft
+  tests, full `tests/content`, Ruff, mypy, complexity audit and
+  `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
