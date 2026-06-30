@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from wilq.content.review.human import ContentHumanReview
+from wilq.content.workflow.store import ContentWorkflowStore
+
+
+def test_content_workflow_store_persists_human_review(tmp_path: Path) -> None:
+    store = ContentWorkflowStore(tmp_path / "wilq.sqlite3")
+    review = ContentHumanReview(
+        id="human_review_bdo",
+        work_item_id="content_work_item_bdo",
+        stage="draft_package",
+        reviewed_by="wilku",
+        decision="approved",
+        checked_items=["claimy sprawdzone"],
+        evidence_ids=["ev_gsc_bdo"],
+        draft_package_id="draft_package_content_work_item_bdo",
+    )
+
+    saved = store.save_human_review(review)
+    loaded = store.latest_human_review("content_work_item_bdo")
+
+    assert saved == review
+    assert loaded == review
+    assert store.latest_human_review("content_work_item_other") is None

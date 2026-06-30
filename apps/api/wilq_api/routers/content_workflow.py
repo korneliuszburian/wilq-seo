@@ -14,6 +14,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemPreflightResponse,
     ContentWorkItemSalesBriefRequest,
     ContentWorkItemSalesBriefResponse,
+    ContentWorkItemSnapshotHumanReviewRequest,
     ContentWorkItemWordPressDraftHandoffRequest,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
@@ -23,8 +24,10 @@ from wilq.content.workflow.api import (
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
+    build_content_work_item_snapshot_human_review_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
+from wilq.content.workflow.store import content_workflow_store
 
 router = APIRouter()
 
@@ -34,7 +37,31 @@ router = APIRouter()
     response_model=ContentWorkItemWorkflowSnapshotResponse,
 )
 def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
-    return build_content_work_item_diagnostics_snapshot_response(build_content_diagnostics())
+    diagnostics = build_content_diagnostics()
+    snapshot = build_content_work_item_diagnostics_snapshot_response(diagnostics)
+    review = content_workflow_store().latest_human_review(snapshot.preflight.item.id)
+    if review is None:
+        return snapshot
+    return build_content_work_item_diagnostics_snapshot_response(
+        diagnostics,
+        human_review=review,
+    )
+
+
+@router.post(
+    "/api/content/work-items/snapshot/human-review",
+    response_model=ContentWorkItemHumanReviewResponse,
+)
+def content_work_item_snapshot_human_review(
+    request: ContentWorkItemSnapshotHumanReviewRequest,
+) -> ContentWorkItemHumanReviewResponse:
+    response = build_content_work_item_snapshot_human_review_response(
+        build_content_diagnostics(),
+        request,
+    )
+    if response.wordpress_handoff_allowed and response.review is not None:
+        content_workflow_store().save_human_review(response.review)
+    return response
 
 
 @router.post(

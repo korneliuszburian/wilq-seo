@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -957,3 +958,70 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
     assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
         "measurement_window_not_ready"
     ]
+
+
+def test_content_work_item_snapshot_persists_real_human_review(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    initial = client.get("/api/content/work-items/snapshot").json()
+    item = initial["preflight"]["item"]
+    draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    review = _human_review(
+        id=f"human_review_{item['id']}",
+        work_item_id=item["id"],
+        evidence_ids=item["evidence_ids"],
+        draft_package_id=draft["id"],
+        blocked_claims_handled=[],
+    )
+
+    response = client.post(
+        "/api/content/work-items/snapshot/human-review",
+        json={"review": review},
+    )
+    assert response.status_code == 200
+    assert response.json()["wordpress_handoff_allowed"] is True
+
+    persisted = client.get("/api/content/work-items/snapshot").json()
+    human_review = persisted["human_review"]
+    assert human_review["review"]["id"] == review["id"]
+    assert human_review["reviewed_item"]["human_review_status"] == "approved"
+    assert human_review["wordpress_handoff_allowed"] is True
+
+    handoff_result = persisted["wordpress_handoff"]["handoff_result"]
+    assert handoff_result["handoff"] is None
+    assert [blocker["code"] for blocker in handoff_result["blockers"]] == ["missing_audit"]
+
+
+def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
+    monkeypatch: Any,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wilq.sqlite3"))
+    client = TestClient(app)
+
+    initial = client.get("/api/content/work-items/snapshot").json()
+    item = initial["preflight"]["item"]
+    draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+
+    response = client.post(
+        "/api/content/work-items/snapshot/human-review",
+        json={
+            "review": _human_review(
+                id=f"human_review_{item['id']}",
+                work_item_id="content_work_item_wrong",
+                evidence_ids=item["evidence_ids"],
+                draft_package_id=draft["id"],
+            )
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["wordpress_handoff_allowed"] is False
+    assert "wrong_work_item" in [blocker["code"] for blocker in response.json()["blockers"]]
+
+    persisted = client.get("/api/content/work-items/snapshot").json()
+    assert persisted["human_review"]["review"] is None
+    assert persisted["human_review"]["reviewed_item"]["human_review_status"] == "missing"

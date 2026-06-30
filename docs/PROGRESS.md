@@ -385,6 +385,12 @@ API status later contradicts this state.
   WordPress cannot receive a draft until real review evidence exists. The
   previous public control-snapshot endpoint and backend `_control_*` payload
   helpers were removed.
+- Beads task `wilq-seo-s0u` adds the first persisted Human Review path for the
+  diagnostics-derived snapshot. `POST /api/content/work-items/snapshot/human-review`
+  stores only a valid review for the current work item in local SQLite state.
+  Later `GET /api/content/work-items/snapshot` applies that real review, while
+  WordPress handoff remains null/blocked until an audit envelope exists. Wrong
+  work-item review is rejected and not stored as approval.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

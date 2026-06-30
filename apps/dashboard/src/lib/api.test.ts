@@ -7,7 +7,8 @@ import {
   postContentWorkItemMeasurementWindow,
   postContentWorkItemPreflight,
   postContentWorkItemSalesBrief,
-  postContentWorkItemWordPressDraftHandoff
+  postContentWorkItemWordPressDraftHandoff,
+  saveContentWorkItemSnapshotHumanReview
 } from "./api";
 
 const responseByPath: Record<string, unknown> = {
@@ -30,6 +31,13 @@ const responseByPath: Record<string, unknown> = {
     draft_package_result: { draft_package: draftPackage(), blockers: [] }
   },
   "/api/content/work-items/human-review": {
+    item: workItem(),
+    reviewed_item: workItem({ human_review_status: "approved" }),
+    review: humanReview(),
+    blockers: [],
+    wordpress_handoff_allowed: true
+  },
+  "/api/content/work-items/snapshot/human-review": {
     item: workItem(),
     reviewed_item: workItem({ human_review_status: "approved" }),
     review: humanReview(),
@@ -98,6 +106,7 @@ describe("content workflow API helpers", () => {
     await postContentWorkItemSalesBrief({ item: workItem(), claim_ledger: {}, seed: {} });
     await postContentWorkItemDraftPackage({ item: workItem(), claim_ledger: {}, seed: {} });
     await postContentWorkItemHumanReview({ item: workItem(), review: humanReview() });
+    await saveContentWorkItemSnapshotHumanReview({ review: humanReview() });
     await postContentWorkItemWordPressDraftHandoff({ item: workItem() });
     await postContentWorkItemMeasurementWindow({
       item: workItem(),
@@ -112,6 +121,7 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/sales-brief",
       "/api/content/work-items/draft-package",
       "/api/content/work-items/human-review",
+      "/api/content/work-items/snapshot/human-review",
       "/api/content/work-items/wordpress-draft-handoff",
       "/api/content/work-items/measurement-window"
     ]);

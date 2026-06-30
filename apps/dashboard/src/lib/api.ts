@@ -15,6 +15,7 @@ import {
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ConnectorStatusSchema,
@@ -51,6 +52,7 @@ import {
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemSalesBriefResponse,
+  type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
@@ -180,6 +182,16 @@ export function postContentWorkItemHumanReview(
     "/api/content/work-items/human-review",
     ContentWorkItemHumanReviewResponseSchema,
     request
+  );
+}
+
+export function saveContentWorkItemSnapshotHumanReview(
+  request: ContentWorkItemSnapshotHumanReviewRequest
+): Promise<ContentWorkItemHumanReviewResponse> {
+  return apiPost(
+    "/api/content/work-items/snapshot/human-review",
+    ContentWorkItemHumanReviewResponseSchema,
+    ContentWorkItemSnapshotHumanReviewRequestSchema.parse(request)
   );
 }
 

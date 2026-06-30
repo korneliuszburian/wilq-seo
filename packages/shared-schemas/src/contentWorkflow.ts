@@ -197,6 +197,10 @@ export const ContentWorkItemHumanReviewResponseSchema = z.object({
   wordpress_handoff_allowed: z.boolean()
 });
 
+export const ContentWorkItemSnapshotHumanReviewRequestSchema = z.object({
+  review: ContentHumanReviewSchema
+});
+
 export const ContentWordPressDraftHandoffSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -279,6 +283,9 @@ export type ContentWorkItemDraftPackageResponse = z.infer<
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema
+>;
+export type ContentWorkItemSnapshotHumanReviewRequest = z.infer<
+  typeof ContentWorkItemSnapshotHumanReviewRequestSchema
 >;
 export type ContentWorkItemWordPressDraftHandoffResponse = z.infer<
   typeof ContentWorkItemWordPressDraftHandoffResponseSchema

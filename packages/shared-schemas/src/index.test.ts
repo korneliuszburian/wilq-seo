@@ -6,6 +6,7 @@ import {
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
+  ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
@@ -436,6 +437,23 @@ describe("Content work item workflow schemas", () => {
         },
         blockers: [],
         wordpress_handoff_allowed: true
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemSnapshotHumanReviewRequestSchema.safeParse({
+        review: {
+          id: "human_review_bdo",
+          work_item_id: "content_work_item_bdo",
+          stage: "draft_package",
+          reviewed_by: "wilku",
+          decision: "approved",
+          notes: "Może iść dalej.",
+          checked_items: ["claimy sprawdzone"],
+          evidence_ids: ["ev_gsc_bdo"],
+          blocked_claims_handled: [],
+          draft_package_id: "draft_package_content_work_item_bdo"
+        }
       }).success
     ).toBe(true);
 

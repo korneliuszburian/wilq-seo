@@ -947,6 +947,11 @@ Current outcome:
   snapshot may show Sales Brief, Draft Package and Measurement Window planning,
   but `review` stays `null`, WordPress handoff stays blocked/null and outcome
   claims remain blocked until real review, audit and measurement evidence exist.
+- The snapshot now has a minimal persisted Human Review path. A real submitted
+  review for the current diagnostics-derived work item is stored in local
+  SQLite state and later applied by `GET /api/content/work-items/snapshot`.
+  Invalid review for a different work item is not stored as approval. WordPress
+  handoff still remains null/blocked until an audit envelope exists.
 
 Current risk:
 

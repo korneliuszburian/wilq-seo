@@ -149,6 +149,10 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     measurement_window: ContentWorkItemMeasurementWindowResponse
 
 
+class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):
+    review: ContentHumanReview
+
+
 def build_content_work_item_preflight_response(
     request: ContentWorkItemPreflightRequest,
 ) -> ContentWorkItemPreflightResponse:
@@ -297,6 +301,7 @@ def build_content_work_item_measurement_window_response(
 
 def build_content_work_item_diagnostics_snapshot_response(
     diagnostics: ContentDiagnosticsResponse,
+    human_review: ContentHumanReview | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
     item = _work_item_from_decision(decision)
@@ -305,7 +310,18 @@ def build_content_work_item_diagnostics_snapshot_response(
         inventory_records=[_inventory_record_from_decision(decision)],
         claim_ledger=_claim_ledger_from_decision(item),
         seed=_sales_brief_seed_from_decision(decision),
+        human_review_record=human_review,
     )
+
+
+def build_content_work_item_snapshot_human_review_response(
+    diagnostics: ContentDiagnosticsResponse,
+    request: ContentWorkItemSnapshotHumanReviewRequest,
+) -> ContentWorkItemHumanReviewResponse:
+    return build_content_work_item_diagnostics_snapshot_response(
+        diagnostics,
+        human_review=request.review,
+    ).human_review
 
 
 def _build_content_work_item_snapshot_response(
@@ -314,6 +330,7 @@ def _build_content_work_item_snapshot_response(
     inventory_records: list[ContentInventoryRecord],
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    human_review_record: ContentHumanReview | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     measurement_window_id = f"measure_{item.id}"
 
@@ -378,7 +395,7 @@ def _build_content_work_item_snapshot_response(
                     "measurement_window_id": measurement_window_id,
                 }
             ),
-            review=None,
+            review=human_review_record,
             draft_package=draft,
             claim_ledger=claim_ledger,
         )
