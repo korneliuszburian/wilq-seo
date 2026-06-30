@@ -301,6 +301,17 @@ API status later contradicts this state.
   forbidden claims from Claim Ledger remain visible in the brief. Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 Draft Package API bridge started under `wilq-seo-1tc`.
+  `POST /api/content/work-items/draft-package` now computes inventory
+  resolution and ContentPreflight v2, builds or accepts Sales Brief v1, then
+  calls the typed Draft Package v1 builder from
+  `wilq/content/drafts/package.py`. It returns `draft_package_result` with an
+  outline-first, `publish_ready=false` package or typed blockers; it does not
+  create WordPress handoffs. Focused API tests prove valid draft package
+  creation, preflight-not-draft-allowed blocking, Claim Ledger blocking and
+  section-to-evidence mapping. Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

@@ -785,6 +785,11 @@ Current ready/in-progress Goal 002 slices are:
   WILQ API after computing inventory resolution and ContentPreflight v2. The
   endpoint returns typed blockers or a typed brief, but does not draft or hand
   off content.
+- `wilq-seo-1tc` - content draft package API bridge, closed.
+  `POST /api/content/work-items/draft-package` exposes Draft Package v1 through
+  WILQ API after inventory, preflight, Sales Brief and Claim Ledger gates. The
+  endpoint returns an outline-first package with `publish_ready=false` or typed
+  blockers, but does not create WordPress drafts or publish content.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

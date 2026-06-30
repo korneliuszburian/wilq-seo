@@ -72,6 +72,27 @@ def _claim_ledger(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _draft_claim_ledger(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": "claim_ledger_bdo",
+        "work_item_id": "content_work_item_bdo",
+        "reviewed_by": "wilku",
+        "entries": [
+            {
+                "id": "claim_general_bdo",
+                "claim_text": "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+                "claim_type": "service_claim",
+                "status": "allowed_with_evidence",
+                "evidence_ids": ["ev_wp_bdo"],
+                "reason": "Claim ma przypisany dowód źródłowy.",
+                "reviewer_id": "wilku",
+            }
+        ],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _sales_brief_seed(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "target_reader": "właściciel firmy, który musi uporządkować obowiązki BDO",
@@ -115,6 +136,20 @@ def _post_sales_brief(payload: dict[str, Any]) -> dict[str, Any]:
     assert response.status_code == 200
     data = response.json()
     assert sorted(data) == [
+        "inventory_resolution",
+        "item",
+        "preflight_verdict",
+        "sales_brief_result",
+    ]
+    return data
+
+
+def _post_draft_package(payload: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post("/api/content/work-items/draft-package", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert sorted(data) == [
+        "draft_package_result",
         "inventory_resolution",
         "item",
         "preflight_verdict",
@@ -234,3 +269,91 @@ def test_content_work_item_sales_brief_api_blocks_missing_source_facts() -> None
     result = data["sales_brief_result"]
     assert result["brief"] is None
     assert [blocker["code"] for blocker in result["blockers"]] == ["missing_source_fact"]
+
+
+def test_content_work_item_draft_package_api_returns_outline_only_package() -> None:
+    data = _post_draft_package(
+        {
+            "item": _item(
+                preflight_status="draft_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id="sales_brief_content_work_item_bdo",
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": _draft_claim_ledger(),
+            "seed": _sales_brief_seed(),
+        }
+    )
+
+    assert data["preflight_verdict"]["status"] == "draft_allowed"
+    assert data["sales_brief_result"]["brief"]["id"] == "sales_brief_content_work_item_bdo"
+    result = data["draft_package_result"]
+    assert result["blockers"] == []
+    draft = result["draft_package"]
+    assert draft["id"] == "draft_package_content_work_item_bdo"
+    assert draft["draft_kind"] == "outline"
+    assert draft["publish_ready"] is False
+    assert draft["brief_id"] == "sales_brief_content_work_item_bdo"
+    assert draft["claim_ledger_id"] == "claim_ledger_bdo"
+    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
+        "ev_gsc_bdo",
+        "ev_wp_bdo",
+    ]
+    assert draft["human_review_questions"]
+    assert "wordpress_handoff" not in data
+
+
+def test_content_work_item_draft_package_api_blocks_before_draft_allowed() -> None:
+    data = _post_draft_package(
+        {
+            "item": _item(
+                preserve_first_plan_status="approved",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": _draft_claim_ledger(),
+            "seed": _sales_brief_seed(),
+        }
+    )
+
+    assert data["preflight_verdict"]["status"] == "brief_allowed"
+    result = data["draft_package_result"]
+    assert result["draft_package"] is None
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "preflight_not_draft_allowed"
+    ]
+
+
+def test_content_work_item_draft_package_api_blocks_unresolved_claims() -> None:
+    data = _post_draft_package(
+        {
+            "item": _item(
+                preflight_status="draft_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id="sales_brief_content_work_item_bdo",
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": _claim_ledger(),
+            "seed": _sales_brief_seed(),
+        }
+    )
+
+    result = data["draft_package_result"]
+    assert result["draft_package"] is None
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "claim_ledger_blocks_draft"
+    ]
