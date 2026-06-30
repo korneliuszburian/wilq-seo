@@ -1,1156 +1,562 @@
-# PLANS.md - WILQ Long-Range ExecPlan
+# PLANS.md - Goal 002 Content Production Engine
 
-This is the long-range living ExecPlan for WILQ.
+This is the long-running ExecPlan for the next WILQ product layer.
 
-Current cleanup and `/goal` live in `PLAN.md`. This file describes the durable
-product path after the active cleanup is green.
+Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
+`docs/goals/001-goal.md` and Beads. This file describes the durable path for
+Goal 002 and must stay restartable without chat history.
 
 ## How To Use This File
 
-- Read `PLAN.md` first.
-- Use `bd prime` and `bd ready --json` for the active operational work graph.
-  Do not duplicate beads issues as markdown TODO lists.
-- Do not implement broad product layers until the current cleanup goal is
-  complete.
-- Keep this file self-contained and short enough to be useful after context
-  loss.
-- Update Progress, Surprises & Discoveries, Decision Log and Outcomes &
-  Retrospective after meaningful milestones.
-- Maintain the mandatory long-running-task sections:
-  `Progress`, `Surprises & Discoveries`, `Decision Log` and
-  `Outcomes & Retrospective`.
-- Prune obsolete assumptions instead of layering new plans over old plans.
-- Every milestone must end with focused verification or an explicit blocker.
-- Every milestone must be written as: goal, work, result, proof.
-- Every stopping point must update `Progress` with what is done, what remains
-  and the exact next action.
+- Read `AGENTS.md`, `PLAN.md`, `docs/CONTEXT.md` and `docs/PROGRESS.md` first.
+- Run `bd prime` and `bd ready --json` before choosing work.
+- Use Beads for operational task tracking. Do not copy the Beads issue list into
+  markdown TODOs.
+- Update this file only when the product plan, decisions, proof or blocker
+  changes.
+- Keep `Progress`, `Surprises & Discoveries`, `Decision Log` and
+  `Outcomes & Retrospective` current.
+- Every milestone is written as goal, work, result and proof.
+- Every implementation slice must end with focused verification or an explicit
+  blocker.
 
-## OpenAI Planning Standards
+## Active Goal
 
-This plan follows these official patterns:
+Goal 002: Content Production Engine bez slopu.
 
-- ExecPlans / `PLANS.md`:
-  `https://developers.openai.com/cookbook/articles/codex_exec_plans`
-- Goals:
-  `https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex`
-- Codex prompting:
-  `https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide`
+Outcome:
 
-Long-running task requirements:
+WILQ can take one real Ekologus content item from evidence to a safe WordPress
+draft handoff and measurement window without skipping preflight, preserve-first
+planning, sales brief, claim ledger or human review.
 
-- The task must be restartable from repo files, not chat memory.
-- The plan must show user-visible outcome, implementation scope,
-  verification surface and blocker policy before coding starts.
-- A milestone is not complete until its named proof passes.
-- A partially completed milestone must be split into completed and remaining
-  work in `Progress`.
-- Unexpected behavior, product corrections, wrong assumptions and test
-  discoveries go into `Surprises & Discoveries` with evidence.
-- Any route change, architecture pivot or scope decision goes into
-  `Decision Log` with the reason.
-- After a milestone, `Outcomes & Retrospective` records what changed, what proof
-  exists, what remains risky and what should improve the next slice.
+This goal does not build:
 
-Goal requirements:
+- multi-client SaaS,
+- automatic WordPress publishing,
+- prompt-only content generation,
+- broad RAG/vector memory,
+- Ads/Merchant/Localo write automation,
+- agency admin, billing or workspace switching.
 
-- A `/goal` must define:
-  - outcome,
-  - verification surface,
-  - constraints,
-  - boundaries,
-  - iteration policy,
-  - blocked stop condition.
-- A goal must be narrow enough to audit and broad enough to let Codex choose the
-  next valid action.
-- Completion cannot be based on belief, screenshots alone, shape-only smoke or
-  "looks done". It must match the verification surface.
+## Product Thesis
 
-Prompt requirements:
+WILQ is not an AI text generator. WILQ is an API-first marketing operating
+system that decides whether writing is allowed, what mode is safe, what claims
+are forbidden, what a human must approve and how the effect will be measured.
 
-- Say what to read first.
-- Say what to search.
-- Say which commands/tools to use.
-- Say what not to touch.
-- Say what counts as proof.
-- Say what to do if blocked.
-- Replace vague wording with observable behavior and checks before
-  implementation.
-- Require updates to recovery docs after each meaningful slice.
+Content production must follow this path:
 
-Milestone template:
-
-```txt
-Objective:
-What user-visible or system-visible state must become true.
-
-Inspect first:
-Files, endpoints, tests, docs and runtime surfaces to read before editing.
-
-Tasks:
-Concrete code/docs/test/browser work.
-
-Acceptance:
-The exact behavior that must be true.
-
-Verification:
-Commands, browser proof, evals or artifacts that prove acceptance.
-
-Blocked stop condition:
-Missing input/contract/credential/runtime state that stops the slice and the
-exact next input needed.
+```text
+evidence bundle
+-> content inventory
+-> canonical / duplicate / cannibalization check
+-> preflight verdict
+-> preserve-first decision
+-> sales brief
+-> claim ledger
+-> draft package
+-> human review
+-> WordPress draft handoff
+-> measurement window
 ```
 
-## Product Identity
+## Naming And URL Semantics
 
 - WILQ = system/product.
 - Wilku = human marketer/operator persona.
 - Ekologus = first depth-first workspace/client.
-- WILQ Core must become reusable through workspace/profile contracts.
-- Multi-client SaaS, agency admin, billing, tenant UI and workspace switcher are
-  out of scope until Ekologus works deeply.
+- `ekologus.pl` = final public canonical content home unless a real public
+  source proves otherwise.
+- `sklep.ekologus.pl` = public shop/product source where relevant.
+- `ekologus.dev.proudsite.pl` and any dev preview host = optional
+  design/staging context only, never historical SEO evidence and never final
+  canonical URL.
 
-## Product Thesis
+Required active URL fields:
 
-WILQ is not a chatbot, prompt pack, static report, SEO-slop generator, blind
-autopublisher or one-client hardcode.
+- `source_public_url`
+- `final_canonical_url`
+- `intended_final_url`
+- `preview_url`
 
-WILQ is an API-first Marketing Operating System:
+Do not preserve stale `target_site`, migration-map or dev-preview aliases when a
+direct migration is feasible.
 
-- WILQ API is the brain.
-- Dashboard is the marketer cockpit.
-- Codex skills are operator workflows over API contracts.
-- Connectors provide evidence, not product logic.
-- Actions are safe operating units with validation, preview, confirmation,
-  audit and blocked-claim handling.
-- Knowledge is condensed into cards/rules/validators/evals, not long prompt
-  dumps.
-- Measurement closes the loop before success/failure claims.
+## Non-Negotiable Rules
 
-## Permanent Invariants
+- No evidence ID -> no recommendation.
+- No source connector -> no recommendation.
+- No preflight verdict -> no writing.
+- No sales brief -> no draft.
+- No claim ledger -> no draft.
+- No human review -> no WordPress draft handoff.
+- No audit -> no write/apply.
+- No measurement window -> no success/failure claim.
+- Existing content is preserve-first.
+- React renders API-owned view models; React does not decide product logic.
+- Codex skills consume WILQ API; skills do not invent business logic.
+- Dashboard text for the marketer is Polish and action-oriented.
 
-- Brak dowodu w WILQ -> brak rekomendacji.
-- Brak źródła danych -> brak rekomendacji.
-- Brak sprawdzenia treści przed pisaniem -> brak pisania.
-- Brak briefu sprzedażowego -> brak szkicu.
-- Brak sprawdzenia ryzykownych obietnic -> brak języka gotowego do publikacji.
-- Brak sprawdzenia przez człowieka -> brak przekazania szkicu do WordPress.
-- Brak audytu -> brak zapisu zmian.
-- Brak okna pomiarowego -> brak twierdzeń o sukcesie albo porażce.
-- Istniejące treści są domyślnie zachowywane.
-- Adresy dev/staging/design są tylko opcjonalnym kontekstem, nigdy domyślnym
-  źródłem prawdy, finalnym adresem kanonicznym ani blokadą.
-- Skille korzystają z API; nie wymyślają logiki produktu.
-- Dashboard renderuje typowane view-modele; nie przepisuje znaczenia
-  biznesowego.
-- Brak translatorów tekstu w UI, helperów maskujących `replaceAll` i
-  hardcodowanych słowników sprzątających.
-- Brak przestarzałych aktywnych pól, aliasów zgodności i starych semantyk
-  target/dev/migration, gdy bezpośrednia migracja jest wykonalna.
-- Główny język marketera używa `Centrum pracy`, `Treści`, `Google Ads`,
-  `blokady` i dowodów opisanych przez WILQ zamiast nazw roboczych i surowych ID.
-- Reguły usług, obietnic, tonu i konwersji konkretnego klienta żyją w warstwach
-  workspace, nie w reusable core.
+## Frozen Growth Areas
 
-## Target Product Graph
+The following files are frozen for new feature growth. They may be touched only
+for extraction, thin routing, test parity or direct cleanup required by this
+plan:
 
-```txt
-ClientWorkspace
--> Connector Registry
--> Evidence / Metric Facts
--> Knowledge Cards / Expert Rules
--> Domain Diagnostics
--> Marketing Priority Engine
--> Condensed Dashboard Cockpit
--> Action Validation
--> Human Review
--> Safe Draft/Write Handoff
--> Measurement Outcome
--> Knowledge Feedback
+- `apps/api/wilq_api/main.py`
+- `wilq/schemas.py`
+- `wilq/actions/service.py`
+- `wilq/briefing/content_diagnostics.py`
+- `tests/test_api_contracts.py`
+- `apps/dashboard/src/routes/ContentDiagnosticSurface.tsx`
+
+If a new content feature needs one of these files, create a domain module first
+and move behavior out instead of adding another branch to the monolith.
+
+## Beads Operational Graph
+
+Goal 002 epic:
+
+- `wilq-seo-zu4` - Goal 002: Content Production Engine bez slopu.
+
+Current first ready slice:
+
+- `wilq-seo-0zb` - Goal 002 anti-slop baseline.
+
+The graph already contains child work for API router extraction, content domain
+extraction, ContentWorkItem, Content Inventory v1, ContentPreflight v2, Sales
+Brief v1, Claim Ledger v1, Draft Package v1, Human Review v1, WordPress Draft
+Handoff v1 and Content Measurement Window v1. Use `bd ready --json` for the
+authoritative operational queue.
+
+## Milestone A - Close Goal 001 Without False UAT Claims
+
+Goal:
+
+Record whether real marketer UAT happened or was explicitly deferred.
+
+Work:
+
+- Use `docs/handoffs/2026-06-29-marketer-uat-ready.md` for later real UAT.
+- Use an explicit owner defer when the owner decides to delay marketer UAT until
+  Goal 002 content production is useful.
+- Validate with `scripts/goal_001_completion_check.py`.
+- Update `docs/PROGRESS.md` and `docs/goals/001-goal.md`.
+
+Result:
+
+Goal 001 may be treated as no longer blocked by missing UAT input, but the
+product must not claim real marketer UAT.
+
+Proof:
+
+```bash
+rtk uv run python scripts/goal_001_completion_check.py --owner-defer docs/handoffs/2026-06-30-owner-defer-marketer-uat.json --format markdown
+rtk git diff --check
 ```
 
-## Milestone 1 - Finish Current Cleanup
+Blocked stop condition:
 
-Objective:
+If neither a real UAT result nor owner defer exists, do not start content
+production claims.
 
-Complete `PLAN.md`.
+## Milestone B - Anti-Slop Baseline
 
-Required outcome:
+Goal:
 
-- Active docs agree on corrected product model.
-- Active API/content/action/skill contracts are free of stale dev/migration
-  semantics.
-- Marketer-facing surfaces use clean Polish operating language.
-- UI translators, string patchers and compatibility aliases are removed where
-  direct migration is feasible.
-- Focused tests, skill smoke, browser proof and `git diff --check` pass.
+Measure current Python and TypeScript risk before adding content workflow
+behavior.
 
-Stop condition:
+Work:
 
-- If any stale active field remains, do not start new product layers.
+- Add or update an audit script for largest Python files, functions and classes.
+- Report frozen-file growth risk.
+- Run current TS Fallow summary.
+- Run existing Python quality commands and record known baseline failures
+  honestly.
+- Do not refactor the full repo in this milestone.
 
-## Milestone 2 - ClientWorkspace-Ready Core
+Result:
 
-Objective:
+The team knows which files are legacy hotspots and which files must not receive
+new product behavior.
 
-Make Ekologus depth-first while extracting reusable boundaries.
+Proof:
 
-Build typed contracts:
+```bash
+rtk uv run python scripts/audit_complexity.py --summary
+rtk uv run ruff check . --statistics
+rtk uv run mypy wilq apps/api/wilq_api
+rtk pnpm fallow:summary
+rtk git diff --check
+```
 
-- `ClientWorkspace`
-- `SiteProfile`
-- `BrandProfile`
-- `ServiceMap`
-- `ClaimPolicy`
-- `ConnectorProfile`
-- `MeasurementProfile`
-- `KnowledgeNamespace`
+Blocked stop condition:
 
-Tasks:
+If the tooling cannot run, record the exact command, failure and smallest
+follow-up issue. Do not silently ignore the gate.
 
-- Move Ekologus offer, service, claim, tone and CTA rules into workspace/profile
-  data.
-- Preserve current Ekologus behavior.
-- Add tests proving workspace data is loaded from one place.
-- Do not add multi-client UI.
+## Milestone C - Behavior-Preserving API Extraction
 
-Acceptance:
+Goal:
 
-- Core modules no longer depend on global Ekologus-only vocabulary.
-- A future workspace can be added as data/config plus connector setup, not by
-  copying prompt text.
+Move FastAPI route registration and route handlers out of
+`apps/api/wilq_api/main.py` without changing endpoint paths or response shapes.
 
-## Milestone 3 - ContentPreflight
+Work:
 
-Objective:
+- Create route modules under `apps/api/wilq_api/routers/`.
+- Keep `main.py` as app factory / thin entrypoint.
+- Preserve all current public endpoint behavior.
+- Add parity tests for moved endpoints.
 
-Before writing, WILQ must decide whether writing is allowed.
+Result:
 
-Result states:
+The API brain becomes editable without adding more logic to the entrypoint.
 
-- preserve
-- refresh
-- merge
-- create
-- block
+Proof:
 
-Inputs:
+Focused API contract tests for moved routes, live `/api/health`, live content
+diagnostics and `git diff --check`.
 
-- source public URL
-- final canonical URL
-- optional preview URL
-- WordPress inventory
-- GSC query/page facts
-- GA4 measurement blockers
-- Ahrefs review rows
-- service map
-- claim policy
+Blocked stop condition:
 
-Acceptance:
+If an endpoint shape changes, stop and restore parity before adding new
+features.
 
-- No content draft request can bypass preflight.
-- Existing content defaults to preserve unless evidence supports refresh or
-  merge.
-- Create is blocked when duplicate/canonical/cannibalization risk is unresolved.
+## Milestone D - Behavior-Preserving Content Domain Extraction
 
-## Milestone 4 - Content Inventory v2
+Goal:
 
-Objective:
+Move content decision logic out of `wilq/briefing/content_diagnostics.py` into
+domain services without changing `/api/content/diagnostics` behavior.
 
-WILQ must know what content actually exists.
+Work:
 
-Inventory record:
+- Create `wilq/content/inventory/`.
+- Create `wilq/content/preflight/`.
+- Create `wilq/content/canonical/`.
+- Create `wilq/content/planning/`.
+- Create `wilq/content/claims/`.
+- Create `wilq/content/drafting/`.
+- Create `wilq/content/handoff/`.
+- Create `wilq/content/measurement/`.
+- Keep `wilq/briefing/content_diagnostics.py` as composer during migration.
 
-- URL
-- canonical URL
-- post/page ID
-- content type
-- status
-- title
-- meta title and description
-- H1/H2
-- FAQ
-- CTA
-- internal links
-- schema types
-- modified date
-- extracted main content
-- source connector
-- evidence IDs
-- topic/service/funnel tags
+Result:
 
-Acceptance:
+Content product behavior has a real domain home before new features are added.
 
-- Preserve/refresh/merge/create decisions use structured inventory, not only URL
-  presence.
-- Missing inventory facts become blockers, not guesses.
+Proof:
 
-## Milestone 5 - Duplicate, Canonical And Cannibalization
+Focused content diagnostics tests pass before/after extraction and imports show
+domain modules do not depend on `wilq.briefing`.
 
-Objective:
+Blocked stop condition:
 
-Prevent unsafe content creation.
+If behavior parity cannot be proven, stop at extraction and do not implement new
+content capabilities.
 
-Start deterministic:
+## Milestone E - ContentWorkItem And State Gates
 
-- exact URL/path match
-- slug match
-- title/H1 similarity
-- query overlap
-- service/topic overlap
-- canonical conflict
-- same CTA/funnel/service overlap
+Goal:
 
-Acceptance:
+Represent one content item as a typed workflow state.
 
-- WILQ explains why a topic should be preserved/refreshed/merged instead of
-  created.
-- No draft bypasses duplicate/canonical checks.
+Work:
 
-## Milestone 6 - ContentSalesBrief
+- Add `ContentWorkItem`.
+- Track evidence, source connectors, URL semantics, inventory, canonical,
+  duplicate, preflight, sales brief, claim ledger, draft, human review,
+  WordPress handoff and measurement statuses.
+- Add state transition guards.
 
-Objective:
+Result:
 
-Turn content work into sales-aware, evidence-backed briefs.
+WILQ can reason about content progress as a workflow, not loose diagnostics.
 
-Brief must include:
+Proof:
 
-- content mode
-- reader and buyer problem
-- buyer trigger
-- service mapping
-- funnel stage
-- objections
-- proof required
-- H1/title/meta/H2/FAQ/CTA direction
-- internal link direction
-- source facts
-- missing evidence
-- forbidden claims
-- legal/factual review notes
-- publication blockers
+Tests prove preflight, sales brief, claim ledger, human review and audit gates
+cannot be skipped.
 
-Acceptance:
+## Milestone F - Content Inventory And Preserve-First Planning
 
-- Draft generation can only use a typed sales brief.
-- Brief explains why the content should exist commercially.
+Goal:
 
-## Milestone 7 - Claim Ledger
+Make existing content the default starting point.
 
-Objective:
+Work:
 
-Track every risky claim before draft or publication.
+- Extract WordPress/GSC-backed content inventory records.
+- Resolve `source_public_url`, `final_canonical_url`, `intended_final_url` and
+  optional `preview_url`.
+- Add preserve/refresh/merge/create/block planning.
+- Block create when existing relevant content or duplicate risk is unresolved.
 
-Claim statuses:
+Result:
 
-- approved
-- needs_source
-- needs_expert_review
-- forbidden
-- stale
+Existing Ekologus articles are preserved, refreshed or merged before WILQ
+suggests creating new content.
 
-Claim types:
+Proof:
 
-- service claim
-- legal requirement claim
-- risk claim
-- guarantee claim
-- performance claim
-- SEO claim
-- business outcome claim
+Tests for existing URL, missing inventory, dev preview URL, duplicate risk and
+safe create.
 
-Acceptance:
+## Milestone G - ContentPreflight v2
 
-- Unsupported ranking, lead, revenue, compliance or guarantee claims are
-  blocked.
-- Draft artifacts cannot contain untracked risky claims.
+Goal:
 
-## Milestone 8 - Human Review
+Turn "Czy można pisać?" into a first-class workflow verdict.
 
-Objective:
+Work:
 
-Human review is a required transition before draft handoff.
+- Add states: `blocked`, `plan_allowed`, `brief_allowed`, `draft_allowed`,
+  `handoff_allowed`.
+- Draft is allowed only after sales brief and claim ledger.
+- Handoff is allowed only after human review.
+- Dashboard renders API-owned labels and disabled reasons.
 
-Review fields:
+Result:
 
-- kto sprawdził
-- poprawność faktów
-- zgodność z głosem marki
-- wartość sprzedażowa
-- użyteczność dla odbiorcy
-- ryzyko duplikacji
-- bezpieczeństwo prawne
-- jakość CTA
-- jakość linkowania wewnętrznego
-- decyzja
-- notatki
+Every writing request has a typed gate before any draft is prepared.
 
-Acceptance:
+Proof:
 
-- Żaden szkic nie jest gotowy do publikacji bez zakończonego sprawdzenia przez człowieka.
-- Review feedback becomes reusable knowledge.
+Focused tests for no evidence, missing source, missing final canonical, dev URL
+as canonical, duplicate risk, missing brief and missing human review.
 
-## Milestone 9 - Structured Draft Generation
+## Milestone H - Sales Brief v1
 
-Objective:
+Goal:
 
-Generate typed drafts or typed refusals.
+Create a structured sales/content brief before drafting.
 
-Requirements:
+Work:
 
-- preflight passed
-- sales brief exists
-- claim ledger exists
-- sprawdzenie przez człowieka path exists
-- draft validates against schema
+- Build brief from evidence, inventory, preflight and Ekologus service context.
+- Include buyer problem, buyer trigger, target reader, search intent, service
+  fit, source facts, H1/H2/FAQ/CTA direction, internal links, forbidden claims,
+  missing evidence and measurement plan.
 
-Acceptance:
+Result:
 
-- No loose prose generation path is considered product behavior.
-- Messy user prompts cannot bypass gates.
+Draft quality is driven by API facts and commercial context, not prompt
+improvisation.
 
-## Milestone 10 - WordPress Draft Handoff
+Proof:
 
-Objective:
+Tests prove no brief without evidence and final URL semantics.
 
-Create safe draft-only WordPress handoff.
+## Milestone I - Claim Ledger v1
 
-Requirements:
+Goal:
 
-- validated preflight
-- approved sales brief
-- claim ledger
-- sprawdzenie przez człowieka
-- preview
-- confirmation
-- audit
-- `post_status=draft`
+Block unsupported legal, environmental, SEO, lead, revenue and performance
+claims before drafting.
 
-Acceptance:
+Work:
 
-- WILQ can prepare a WordPress draft safely.
-- WILQ never autopublishes by default.
+- Add claim statuses: `allowed_with_evidence`, `allowed_general`,
+  `needs_human_review`, `blocked`, `blocked_until_measurement`.
+- Add claim types for service capability, SEO performance, lead generation,
+  compliance, environmental/legal-adjacent and business outcome.
+- Require review for risky claims.
 
-## Milestone 11 - Measurement Loop
+Result:
 
-Objective:
+WILQ cannot present risky claims as publish-ready language without source and
+review.
 
-Measure results after publication windows.
+Proof:
 
-Measure:
+Tests prove blocked claims cannot appear as publish-ready draft language.
 
-- GSC impressions, clicks, CTR, position
-- GA4 engaged sessions and key events when mapped
-- source/medium quality
-- Ads/search-term landing overlap when relevant
+## Milestone J - Draft Package v1
 
-Acceptance:
+Goal:
 
-- No success/failure claim before measurement window.
-- Outcomes feed future decisions and knowledge cards.
+Generate only bounded, auditable draft packages.
 
-## Milestone 12 - Marketing Priority Engine
+Work:
 
-Objective:
+- Generate outline first.
+- Require preflight, sales brief and claim ledger.
+- Include section-to-evidence map, claims used, blocked claims removed and human
+  review questions.
+- Set `publish_ready=false`.
 
-Make Centrum pracy API-owned and decision-first.
+Result:
 
-Tasks:
+Draft output is useful for review, not direct publication.
 
-- Rank decisions by evidence strength, freshness, business priority,
-  blocker risk and actionability.
-- Move canonical decision copy and CTA into API view-models.
-- Keep connector readiness visible only when it blocks action.
+Proof:
 
-Acceptance:
+Tests prove draft generation is blocked without all gates.
 
-- Dashboard does not duplicate or invent decision copy.
-- Wilku starts from one clear daily queue.
+## Milestone K - Human Review v1
 
-## Milestone 13 - Knowledge Compiler v2
+Goal:
 
-Objective:
+Make human approval a required transition.
 
-Condense sources and decisions into durable knowledge.
+Work:
 
-Cards:
+- Record review for brief, claims, draft and handoff.
+- Store reviewer, decision, notes, checked items and evidence IDs.
+- Feed review status into the workflow state.
 
-- source card
-- service card
-- content card
-- query cluster card
-- claim card
-- review feedback card
-- outcome card
-- duplicate/canonical card
+Result:
 
-Acceptance:
+No content is treated as WordPress-ready without explicit human review.
 
-- Knowledge has lineage, freshness, confidence and owner.
-- Stale knowledge lowers confidence or blocks claims.
+Proof:
 
-## Milestone 14 - Dashboard For Marketer
+Tests prove WordPress draft handoff is blocked without approved human review.
 
-Objective:
+## Milestone L - WordPress Draft Handoff v1
 
-Make WILQ usable without developer narration.
+Goal:
 
-Every route first screen must show:
+Create or prepare WordPress drafts safely after review.
 
-- primary decision
-- why it matters
-- safe next step
-- blocker
-- evidence/source summary
-- later measurement
+Work:
 
-Acceptance:
+- Draft only.
+- No publish.
+- No destructive update of existing canonical content without a separate
+  approved action.
+- Require audit envelope.
 
-- Browser audit and marketer UAT show that Wilku knows what to do next.
-- Raw technical detail is available but not default.
+Result:
 
-## Milestone 15 - Safe Execution Expansion
+Approved content can enter WordPress as a draft with traceability.
 
-Objective:
+Proof:
 
-Enable writes only when contracts are mature.
+Tests prove no handoff without review, audit and final canonical URL.
 
-Requirements:
+## Milestone M - Measurement Window v1
 
-- typed payload
-- preview
-- confirmation
-- audit
-- failure handling
-- secret redaction
-- safety limits
+Goal:
 
-Acceptance:
+Prevent success/failure claims before data exists.
 
-- Every write is traceable and reversible or has an explicit failure story.
-- High-risk/destructive writes stay blocked until separately supported.
+Work:
 
-## Future Capability Watchlist - BDOS Benchmark And Google Updates
+- Add baseline period, observation period, earliest verdict date, allowed
+  metrics, source connectors and status.
+- Attach measurement window to draft handoff or publication event.
 
-These tracks are not part of the current cleanup goal. They become eligible
-only after the marketer cockpit, content loop and safe action contracts are
-green.
+Result:
 
-Source baseline:
+WILQ can track content outcomes without overclaiming.
 
-- Google Tag Manager API v2 supports Accounts, Containers, Workspaces,
-  Versions and publish flows. WILQ can later model GTM changes as reviewed
-  workspace changes, not direct live edits:
-  `https://developers.google.com/tag-platform/tag-manager/api/v2`
-- Google Tag Manager publishing/version docs describe review before publish,
-  version history and rollback-style recovery. WILQ must keep publish as a
-  separate explicit step:
-  `https://support.google.com/tagmanager/answer/6107163`
-- Google Ads API v24.2 release notes include multi-party approvals, AI
-  transparency fields, PMax reporting/experiments and related updates:
-  `https://developers.google.com/google-ads/api/docs/release-notes`
-- Google Ads developer blog announcement for v24.2 frames the update as
-  security, AI transparency, reporting and planning improvements:
-  `https://ads-developers.googleblog.com/2026/06/announcing-v242-of-google-ads-api.html`
-- Google Analytics update notes include Hostname filters in Admin Data
-  Filters:
-  `https://support.google.com/analytics/answer/9164320`
+Proof:
 
-Future tracks:
-
-1. GTM Measurement Safety
-   - Audit container state: tags without triggers, duplicate page views,
-     missing Conversion Linker, orphaned variables/triggers, unpublished
-     workspaces and stale versions.
-   - Prepare edits only in a fresh WILQ-owned workspace.
-   - Show exact tag/trigger/variable diff before creating a version.
-   - Publish is a separate high-risk action with live-warning copy,
-     confirmation, audit and rollback/recovery notes.
-   - Do not add GTM writes until read-only audit, preview and version checks
-     exist.
-   - Operator-facing copy must call this measurement safety/checking, not a
-     low-level tag registry. Technical tag, trigger, variable, workspace and
-     version IDs stay in details.
-
-2. Google Ads API v24.2 / PMax Intelligence
-   - Track support for PMax placement segmentation by network before claiming
-     channel-level PMax insight.
-   - Add future readiness checks for asset-only PMax service campaigns:
-     text, images, video, search themes, AI improvements off by default and
-     campaign paused by default.
-   - Add future review contracts for PMax image assets, image performance,
-     search themes, final URL expansion experiments, campaign mix experiments
-     and brand-channel YouTube links.
-   - Track AI transparency fields for generated creative assets. WILQ should
-     store attestation status and block unlabelled synthetic creative claims.
-   - Multi-party approvals must be represented as an account-safety blocker,
-     not as a missing credential.
-   - Treat Smart Bidding Exploration, Promotion mode, AI Max defaults and
-     DSA-to-AI-Max dates as freshness-bound knowledge cards. They can create
-     readiness checks and review tasks, not automatic campaign changes.
-
-3. Unified Safe Change Flow
-   - WILQ should have one operator path for every account change: explain,
-     validate, preview, require confirmation, apply only when supported, audit
-     and measure later.
-   - Domain-specific skills can prepare the context, but they must all hand
-     off to the same safe-change contract instead of inventing separate
-     mutation flows.
-   - Operator UI should say `zmiana do sprawdzenia`, `podgląd zmian`,
-     `zatwierdzenie` and `historia zmian`. Internal action IDs and mutation
-     model names stay in technical details.
-   - No hardcoded label replacement layer is allowed. Copy comes from typed
-     API/domain view-models, workspace profiles or structured knowledge.
-
-4. GA4 Source Hygiene And Local Intent
-   - Track GA4 Source Group availability before replacing source/medium
-     normalization rules.
-   - Add hostname-filter readiness: approved hostnames, excluded spam/copy
-     hosts and measurement-risk blockers.
-   - Track Google Business Profile integration metrics as future local-intent
-     evidence: calls, directions, website clicks, messages, reservations/menu
-     where available.
-   - Do not treat GA4/GBP integration as available until WILQ API has a typed
-     read contract and evidence IDs.
-   - Source grouping must improve decision quality for the marketer; it must
-     not become another raw dimension table on the first screen.
-
-5. Lead Quality Loop
-   - Track Google Ads lead management/API availability.
-   - Future WILQ should distinguish raw lead volume from qualified lead value,
-     follow-up speed and high-value conversion feedback.
-   - No bidding-quality recommendation is allowed until lead statuses,
-     conversion mapping and value feedback are read through typed contracts.
-   - If Google exposes lead stages through API, WILQ should connect them to
-     value-based bidding readiness, follow-up workflow and quality feedback,
-     not only lead-count reporting.
-
-6. Bidding And Campaign Change Watchlist
-   - Smart Bidding Exploration, Promotion mode, AI Max defaults and DSA to
-     AI Max timelines should become knowledge cards with freshness and source
-     lineage.
-   - WILQ must expose them as readiness/checklist items first, not as automatic
-     campaign changes.
-   - Any default-on Google automation must be shown as a risk/readiness check:
-     what is enabled, what evidence supports it, what the safe next step is,
-     and which claims are blocked until performance windows exist.
+Tests prove outcome claims are blocked before the measurement window is ready.
 
 ## Final Completion Definition
 
-WILQ is complete for this long-range goal when:
+Goal 002 is complete only when one real Ekologus content item passes:
 
-- Ekologus works deeply as a real marketer cockpit.
-- Core architecture is workspace-ready.
-- Sprawdzenie treści przed pisaniem, spis treści, brief sprzedażowy, rejestr
-  ryzykownych obietnic, sprawdzenie przez człowieka, przekazanie szkicu i
-  pomiar efektu są zaimplementowane.
-- Ads, Merchant, GA4, Localo and Social follow the same evidence/review/audit
-  pattern.
-- Skills, hooks and evals enforce the same contracts.
-- Dashboard is condensed and marketer-readable.
-- Real marketer UAT or explicit owner deferral is recorded.
-- Final verification passes or exact blockers are recorded.
+```text
+ContentWorkItem
+-> evidence IDs
+-> source connectors
+-> inventory/canonical resolution
+-> duplicate/cannibalization check
+-> preflight verdict
+-> preserve-first plan
+-> sales brief
+-> claim ledger
+-> draft package
+-> human review
+-> WordPress draft handoff
+-> measurement window
+```
+
+No skipped gates. No prompt-only product logic. No dev URL as canonical. No
+WordPress publish. No unsupported marketing claims. No new monolith growth. No
+dashboard logic fork.
 
 ## Progress
 
-- 2026-06-29: Compact Codex skill context active actions now omit raw payload
-  bodies, payload key lists, payload-preview field names and raw apply-blocker
-  keys. Skills receive typed preview cards, Polish blocker labels and the full
-  `/api/actions/{action_id}` drilldown instead.
-- 2026-06-29: Compact Codex skill context now removes raw Ahrefs
-  read-contract keys, raw Ahrefs metric-label dictionary keys, raw Merchant
-  preview-card IDs and raw Merchant issue-type values. Live context-pack scans
-  for daily, content, Merchant, Ads, GA4, Localo and Ahrefs returned zero hits
-  for the guarded technical terms.
-- 2026-06-29: Added `scripts/context_pack_language_guard.py` and wired it into
-  `scripts/verify.sh` and `scripts/pre_demo_gate.sh`, so the live compact
-  context-pack stale-language scan is now repeatable instead of living only as
-  an ad hoc proof command.
-- 2026-06-29: Daily context-pack connector statuses now carry API-owned Polish
-  status/freshness labels and operator-safe summaries. Skill context no longer
-  receives empty freshness labels or `status configured` summaries for
-  connector readiness.
-- 2026-06-29: Connector status freshness now uses the latest successful
-  `vendor_read` instead of only credential-presence state. Live GSC, GA4 and
-  Merchant refreshes completed with `vendor_data_collected=true`; `/api/connectors`
-  now shows fresh `last_success_at` for those sources.
-- 2026-06-29: Broad cleanup verification passed with `rtk scripts/verify.sh`
-  after the current context/action/dashboard cleanup slice. Live WILQ API
-  status confirms GSC, GA4 and Merchant are configured, fresh and not missing
-  credential names; optional LinkedIn/Facebook social credentials remain open.
-- 2026-06-29: Live UAT packet export was cleaned for marketer use: visible
-  snapshots now use Polish operator fields, and the result recorder accepts the
-  matching Polish filled-result format. Real marketer UAT remains open.
-- 2026-06-29: Added `scripts/goal_001_completion_check.py`, which blocks Goal
-  001 completion unless a filled real marketer UAT result or explicit owner
-  defer note is provided. This keeps technical cleanup proof separate from
-  human usefulness proof.
-- 2026-06-29: Extended live context-pack language guard and compacted content
-  action context so skills no longer receive raw URL review contract values
-  such as `source_public_url`, `final_canonical_url` or
-  `confirm_final_canonical_url` as string values.
-- 2026-06-25: Replaced old long-range plan with clean product path.
-- 2026-06-25: Current cleanup goal lives in `PLAN.md`.
-- 2026-06-27..2026-06-28: Active cleanup moved many marketer-facing labels from
-  React helpers into typed API/domain/shared-schema fields across Centrum
-  pracy, Ads, Merchant, GA4, Localo, Ahrefs, Knowledge, tactical queue, metric
-  chips and action previews. Detailed proof is in git commits and
-  `.local-lab/proof/`; `docs/PROGRESS.md` keeps only current state and latest
-  accepted proof.
-- 2026-06-29: Active raw label/vendor enum/fallback cleanup is closed in Beads
-  (`wilq-seo-6rw.4`). Current touched marketer surfaces describe missing or
-  unknown data as decision limits, and live Command Center/context-pack scans
-  are clean for the guarded stale language. Remaining cleanup is not a broad
-  label sweep; continue only from fresh Fallow/browser/API evidence, recovery-doc
-  pruning or real UAT findings.
-- 2026-06-28: Treści expandable plan/draft panel now renders
-  API-owned action preview cards instead of constructing marketer-facing cards
-  from content/WordPress payload arrays.
-- 2026-06-28: Treści selected-decision first screen now renders
-  API-owned `marketer_decision` fields instead of parsing content action
-  payload previews.
-- 2026-06-28: Treści loading/error action fallback now consumes the API-owned
-  `action_summary_label` instead of assembling action-count copy from action
-  IDs in `ActionPanels`.
-- 2026-06-28: Treści diagnostics and preflight now expose evidence/action
-  summary labels in API/shared schemas. The route consumes those labels instead
-  of route-local count formatting; live API proof and browser proof live in
-  `.local-lab/proof/`.
-- 2026-06-28: Google Ads diagnostics now expose response-level
-  evidence/action summary labels in API/shared schemas. The Ads route consumes
-  those labels in the first screen, condensed decision and action panels
-  instead of route-local count formatting; live API proof and browser proof
-  live in `.local-lab/proof/`.
-- 2026-06-28: Google Ads target interpretation, strategy readiness, campaign
-  triage contract/rows and change-impact readiness now expose action summary
-  labels in API/shared schemas. The Ads route no longer owns local action-count
-  formatting for these deep panels; live API proof and browser proof live in
-  `.local-lab/proof/`.
-- 2026-06-28: Google Ads optimizer-readiness and strategy review panels now
-  consume API/domain source-contract, policy and required-validation summary
-  labels instead of route-local count formatting. Live API proof and browser
-  proof live in `.local-lab/proof/`.
-- 2026-06-28: Action priority cards, action registry cards and connector
-  refresh run cards now consume API/domain `evidence_summary_label` instead of
-  route-local evidence count formatting. Live API proof confirmed
-  `/api/connectors/refresh-runs`; browser proof confirmed `/actions`.
-- 2026-06-28: Connector settings cards now consume API/domain credential
-  summary labels instead of route-local credential/source count formatting.
-  Live API proof confirmed `/api/connectors`; browser proof confirmed
-  `/settings`.
-- 2026-06-28: Merchant issue-cluster cards and decision summaries now consume
-  API/domain reported issue summary labels instead of route-local issue count
-  formatting or broken Polish count forms. Live API proof confirmed
-  `/api/merchant/diagnostics`; browser proof confirmed `/merchant`.
-- 2026-06-28: Knowledge cards now render confidence as a neutral Polish label
-  instead of using confidence text as a visual status state.
-- 2026-06-28: Knowledge first-screen decision and card summaries now use
-  API/domain source, action, evidence, knowledge and lineage labels instead of
-  route-local count assembly.
-- 2026-06-28: Knowledge playbook cards now use API/domain
-  `required_evidence_summary_label` and `mapped_action_type_summary_label`
-  instead of route-local Polish count formatting. Live API proof confirmed the
-  fields on `/api/knowledge/playbooks`; browser proof lives at
-  `.local-lab/proof/knowledge-playbook-labels-clean.txt`.
-- 2026-06-28: Knowledge operating map now exposes API/domain
-  blocked-decision, missing-data and blocked-claim summary labels. The Knowledge
-  route renders condensed count summaries on the first screen and keeps full
-  blocked-claim lists in details.
-- 2026-06-28: Szanse cards now render API/domain evidence, source, action and
-  knowledge summary labels instead of route-local count assembly.
-- 2026-06-28: Google Ads search-term, negative-keyword and change-history
-  surfaces now use API/schema display labels for campaign, ad group, change
-  event and changed resource context instead of visible raw IDs. Live API proof
-  confirmed label fields on `/api/ads/diagnostics?view=summary`; browser proof
-  lives at `.local-lab/proof/ads-display-labels-clean.txt`.
-- 2026-06-28: Google Ads campaign triage, search-term, n-gram, 90-day safety
-  and keyword context rows now use API/domain `evidence_summary_label` instead
-  of route-local evidence count formatting. Live API proof confirmed
-  `/api/ads/diagnostics?view=summary`; browser proof confirmed `/ads-doctor`.
-- 2026-06-28: Google Ads campaign, KPI, budget, impression-share and
-  change-history tables now use API/domain row summary labels for human review
-  gates, blocked claims and changed fields instead of route-local label joins.
-  Live API proof confirmed `/api/ads/diagnostics?view=summary`; browser proof
-  confirmed expanded `/ads-doctor` diagnostic tables.
-- 2026-06-28: Treści expanded decision and Ahrefs review cards now use API
-  labels or neutral Polish operator fallbacks instead of visible raw enum/status
-  keys. Dowód w przeglądarce:
-  `.local-lab/proof/content-enum-labels-clean.txt`.
-- 2026-06-28: Demand Gen now uses API/domain `action_summary_label` and
-  campaign-channel labels instead of route-local action count formatting or raw
-  channel fallbacks. Live API proof confirmed
-  `/api/demand-gen/diagnostics`; dowód w przeglądarce:
-  `.local-lab/proof/demand-gen-summary-labels-clean.txt`.
-- 2026-06-28: Demand Gen campaign, landing-quality and mode-review rows now use
-  API/domain `evidence_summary_label` instead of route-local evidence count
-  formatting. Ukierunkowane testy API/dashboard i dowód w przeglądarce przeszły.
-- 2026-06-28: Merchant response, operator summary, decisions and sections now
-  expose evidence/action summary labels in API/shared schemas. The Merchant
-  route consumes those labels instead of route-local count formatting; live API
-  proof and browser proof live in `.local-lab/proof/`.
-- 2026-06-28: Ahrefs decisions, sections, operator summary and gap contract now
-  expose evidence/action summary labels in API/shared schemas. The Ahrefs route
-  consumes those labels instead of route-local count formatting; live API proof
-  and browser proof live in `.local-lab/proof/`.
-- 2026-06-28: Custom Segments contract, candidates, forecast contract and
-  forecast rows now expose evidence/action summary labels in API/shared
-  schemas. The Custom Segments route consumes those labels instead of
-  route-local count formatting; live API proof and browser proof live in
-  `.local-lab/proof/`.
-- 2026-06-28: Workflow cards now use API/domain
-  `missing_contract_labels` for expanded missing-data details instead of raw
-  workflow contract keys.
-- 2026-06-28: Procesy expanded details now use API/domain
-  `missing_contract_detail_label` for missing-data detail and keep blocked
-  claims condensed through `blocked_claim_summary_label`; `WorkflowPanels` no
-  longer joins label arrays in React for visible process detail copy.
-- 2026-06-28: Workflow cards and run summaries now use API/domain source,
-  evidence, action, missing-data and blocked-claim summary labels. Fresh
-  `/workflows` loads no longer wait on hidden related-action data.
-- 2026-06-28: Recovery docs were condensed again. `docs/PROGRESS.md` and
-  `docs/goals/001-goal.md` now keep current state, active findings and latest
-  proof instead of append-only implementation history.
-- 2026-06-28: The old `Goal 002` draft moved to `docs/goals/archive/`; the
-  marketer language guard now enforces `docs/goals/001-goal.md` as the only
-  active first-level goal file.
-- 2026-06-28: Connector status labels now hydrate at the backend schema
-  boundary, and Treści renders API-owned live-data wording for GSC and WordPress
-  readiness.
+2026-06-30:
 
-## Discoveries
+- Goal 001 real marketer UAT was explicitly deferred by the owner in
+  `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`.
+- The defer was validated with
+  `scripts/goal_001_completion_check.py --owner-defer`.
+- Goal 002 Beads epic `wilq-seo-zu4` was created.
+- First ready Goal 002 slice is `wilq-seo-0zb`: anti-slop baseline.
+- Goal 002 operational child issues were created for router extraction, content
+  domain extraction, ContentWorkItem, Content Inventory v1, ContentPreflight v2,
+  Sales Brief v1, Claim Ledger v1, Draft Package v1, Human Review v1, WordPress
+  Draft Handoff v1 and Content Measurement Window v1.
+- Anti-slop baseline proof was recorded in
+  `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
+- `scripts/audit_complexity.py` now reports largest Python files, functions and
+  classes plus frozen-file growth risk.
+- Baseline result: frozen growth files are clean in the current diff, but full
+  Ruff, mypy and Fallow still report historical debt. Treat these as known
+  baseline failures, not as proof that future slices may add more debt.
 
-- Stale dev/staging assumptions can create large fake product work. Treat them
-  as cleanup blockers, not backlog.
-- Marketer-facing copy must be clean at source, not patched in React.
-- Generic labels such as "warunek techniczny do sprawdzenia" are not useful
-  enough for active action surfaces when the raw source key is known. Add a
-  source label and a guardrail instead of preserving the fallback.
-- Action result endpoints need the same label discipline as action detail
-  payloads. If a result returns raw blocker keys for audit, it must also return
-  marketer-facing labels for dashboard rendering.
-- Test fixtures can drift from real action payload keys. When browser/API proof
-  finds a real key that fixtures missed, align the fixture with the production
-  key instead of adding a React-side translation.
-- Knowledge/playbook text can reintroduce old operator language even when API
-  payloads are clean. Treat active knowledge sources as product sources and
-  clean them with the same guardrails.
-- Persisted local-state records can reintroduce old product semantics even
-  after current action payloads are clean. Treat API-visible history as part of
-  the active contract and normalize or migrate it at the service boundary.
-- Dead route-local dictionaries are still product risk even when unused. Remove
-  them when API-owned labels already exist, and turn stale raw-string fixtures
-  into guards instead of preserving them.
-- Request shape drift is product risk. The API must define supported request
-  fields explicitly and must not silently return full cross-system context when
-  a skill-scoped request is intended.
-- Skill context size is a product surface. A skill-default context must contain
-  condensed decisions and labels, not full payloads or raw vendor enums that
-  force Codex to parse implementation detail.
-- Source evidence for a skill can leak technical vendor values even when the
-  primary action cards look clean. Context-pack proof must scan nested
-  skill-specific brief and tactical queue surfaces, not only the direct action
-  payload.
-- Content decision labels are product semantics, not presentation cleanup.
-  Existing API-owned labels should be consumed directly by the route; active
-  route-local label helpers are debt. If an old action payload preview contract
-  still needs a route-local reader, record a dated blocker with the affected
-  action kind and removal condition instead of treating it as compatibility.
-- Content action preview labels are product semantics too. If a preview is
-  visible to the marketer, the backend/action contract must provide its label;
-  React must not translate source type, mode, operation, draft status or
-  publication readiness enums.
-- Centrum pracy labels are part of the canonical daily view-model. If the first
-  screen needs better wording, fix the command-center API/domain source and
-  schema, not React-side dictionaries.
-- Daily context-pack size is sensitive to live evidence count. The current
-  default caps embedded evidence summaries at 32 and keeps full evidence IDs in
-  decisions/briefs for drilldown; treat future size growth as a context
-  condensation task, not a reason to hide useful labels from the dashboard.
-- Completed connector refreshes are not blockers. If a successful read appears
-  under `what_blocks_us`, fix marketing-brief source logic instead of changing
-  dashboard copy.
-- Browser text proof catches marketer-visible jargon that unit tests can miss.
-- A response-time sanitizer for obsolete product semantics is still product
-  debt even if the current API output looks clean. Prefer one explicit storage
-  migration/drop policy plus a regression guard over keeping compatibility code
-  in the active runtime path.
-  Keep proof scans as part of every route cleanup slice and promote repeated
-  findings into API/domain labels or language guards.
-- Treści diagnostic labels follow the same rule as action preview
-  labels: connector status, refresh status, section blockers and metric names
-  are API/domain semantics. React may format numbers, but it must not own the
-  meaning of those fields.
-- Dowód w przeglądarce złapał problem polskiej odmiany w karcie podglądu
-  Merchant. Utrzymuj tekstowy dowód z przeglądarki w każdym slice sprzątania
-  ścieżek marketera, bo testy API/unit nie łapią wszystkich problemów
-  czytelności.
-- Showing "Metryka bez etykiety" in the dashboard is useful as a failure
-  signal. Do not hide missing API labels with React dictionaries; fix the
-  producing domain contract and add a test.
-- Dimension labels follow the same rule as metric labels. If a dimension key or
-  value is visible to a marketer, the API contract must carry the label; React
-  may only display it.
-- Merchant raw enums such as `SHOPPING_ADS`, `MERCHANT_ACTION` and
-  `NOT_IMPACTED` may remain internal/test input values, but marketer-facing
-  payloads must expose Polish label fields and route tests must guard against
-  rendering the raw enum.
-- Unknown enum fallback is a shared product surface. Even if a normal dataset
-  only emits known values, fallback paths must be neutral Polish copy because
-  vendor contracts drift and tests should prove the drift does not leak raw
-  keys to the marketer.
-- A dashboard panel that needs action preview semantics should render typed
-  action preview cards. Reading raw action payload arrays is temporary debt only
-  when a domain-specific selected-decision view-model does not yet exist.
-- A dashboard's selected-decision first screen should use a domain view-model
-  such as `marketer_decision`; action preview cards are for expandable action
-  details, not for reconstructing the primary decision.
-- Recovery docs can become product noise if they preserve every finished slice.
-  Keep detailed history in git commits and proof artifacts, and keep recovery
-  files short enough to restart from.
+Current next action:
+
+Continue with the next ready extraction slice from `bd ready --json`.
+Current ready Goal 002 slices are:
+
+- `wilq-seo-hdl` - behavior-preserving API router extraction.
+- `wilq-seo-x4u` - behavior-preserving content domain extraction.
+
+Do not add new content workflow behavior before behavior-preserving extraction
+begins.
+
+## Surprises & Discoveries
+
+- The previous `PLANS.md` content had become a prompt-like implementation
+  brief, not a restartable ExecPlan. It has been condensed into this structured
+  plan.
+- Goal 001 parent epic still has historical in-progress children in Beads, so
+  only the UAT/defer child was closed in this slice. Do not close the parent
+  epic without a separate completion audit.
 
 ## Decision Log
 
-- WILQ is the system; Wilku is the human operator persona.
-- Ekologus remains first depth-first workspace.
-- No compatibility strategy for stale dev/migration contracts.
-- No UI translators or hardcoded cleanup helpers.
-- Full condensation is product behavior, not a presentation layer only.
-- Historical audit data may keep storage lineage, but API-visible action output
-  must not expose obsolete dev-preview or review-language fields.
-- Route-local action gate translations are not a compatibility layer. The WILQ
-  API/domain contract must provide marketer-facing labels for active action
-  gates and blockers.
-- Default skill contexts are operator contracts. Full raw context stays behind
-  explicit `full_context: true`; default skill calls must remain condensed and
-  free of unnecessary raw vendor values.
-- Default skill context connector status must carry Polish status and freshness
-  labels from API/domain helpers. Do not expose raw status enums or empty
-  freshness labels in compact context-pack summaries.
-- Merchant labels belong in one domain label source. Tactical queue and
-  Merchant diagnostics must share those labels instead of carrying separate
-  local maps or exposing vendor enum strings.
-- `source_inputs` is the active social draft source-evidence contract. Do not
-  restore `candidate_inputs` or publish-permissions wording as compatibility
-  aliases.
-- Active Treści decision, gate, WordPress match, preflight and Ahrefs
-  candidate labels are API-owned. Do not reintroduce React dictionaries for
-  those labels; migrate remaining action-preview label helpers only through
-  typed API/action source fields.
-- Active Centrum pracy daily-decision labels are API-owned. Do not reintroduce
-  route-local dictionaries for decision copy, source labels, metric labels,
-  blocked promises, CTA labels or skill labels.
-- Action detail first-screen preview cards must come from typed action preview
-  cards. Raw action payload inspection is allowed only inside technical detail
-  or as a short-lived blocker for unmigrated action kinds; do not preserve old
-  payload fallbacks once a typed card exists.
-- Metric chip names must come from `MetricFact.metric_label`. Dimension
-  key/value labels must come from `MetricFact.dimension_labels` and
-  `MetricFact.dimension_value_labels`; do not add new dashboard dictionaries
-  for metric semantics.
-- Compact context-pack metric facts must use those same metric and dimension
-  labels. Do not feed Codex skills raw metric keys or raw vendor dimension
-  enums when a Polish operator label exists.
-- Marketer-useful metric dimension values such as queries, pages, landing
-  pages, campaigns, sources and country should remain meaningful in compact
-  context instead of becoming generic placeholder copy.
-- Merchant metric labels belong in `merchant_labels.py` and the Merchant API
-  view-model, not in `MerchantDiagnosticSurface`.
-- GA4 metric labels belong in the GA4 diagnostics API/domain view-model, not
-  in `Ga4DiagnosticSurface`.
-- GA4 action preview operation and missing-dimension labels belong in the GA4
-  action payload contract, not in `Ga4DiagnosticSurface`.
-- Merchant preview-contract labels belong in the Merchant action payload
-  contract, not in `MerchantDiagnosticSurface`.
-- Marketer-visible proof counts should describe "dowody źródłowe", not `ID`.
-  Technical identifiers stay in schemas/audit/drilldown, not in the primary
-  decision surface.
-- If a marketer route needs a semantic dictionary to explain a status, blocker,
-  metric, source or action, treat it as a missing API/schema/view-model field.
-  Do not add or preserve route-local translators as cleanup strategy.
-- Unknown vendor/domain values in API-owned labels must use neutral Polish
-  operator copy. Do not fall back to raw enum/source values in visible labels.
-- Treści plan/draft cards are action preview semantics. They must stay on typed
-  action preview cards; do not restore route-local content/WordPress payload
-  card renderers.
-- Treści selected-decision copy, metrics, source facts and H1/H2/FAQ/CTA
-  snapshot belong to `marketer_decision`; do not restore
-  `action.payload.content_brief_preview` parsing in the route.
-- Connector readiness copy must not stop at "credentials configured" when a
-  successful external read exists. `/api/connectors` must reuse the latest
-  successful vendor read for `last_success_at` and freshness so Settings,
-  context packs and diagnostics agree on access state.
+2026-06-30:
+
+- Decision: Defer marketer UAT instead of showing the current cockpit as a
+  content-production tool.
+  Reason: owner direction is to build real content-production value first.
+- Decision: Goal 002 starts with anti-slop baseline.
+  Reason: Python and TypeScript hotspots are already visible, and new content
+  workflow work must not be added to monoliths.
+- Decision: Beads tracks operational slices while this file keeps product
+  milestones.
+  Reason: avoids duplicate TODO systems and keeps recovery concise.
 
 ## Outcomes & Retrospective
 
-- Current outcome: the active cleanup has removed the known active
-  dev-preview/migration semantics and the known raw label/vendor enum fallback
-  leaks from touched marketer surfaces. Goal 001 is still not complete because
-  real marketer UAT, or explicit owner deferral, remains open.
-- Latest accepted proof: focused context-pack tests, marketer language guard,
-  `git diff --check` and live WILQ API context-pack scans passed after removing
-  raw active-action payloads, payload key lists, raw apply-blocker keys, raw
-  Ahrefs contract/metric keys and raw Merchant preview issue keys from compact
-  skill contexts.
-- Latest broad proof: `rtk scripts/verify.sh` passed on the active cleanup
-  worktree, covering backend tests, dashboard tests, API smoke, skill smokes,
-  Playwright route smoke and dashboard build. This proves the cleanup gate is
-  green for the touched product surfaces, while real marketer UAT remains the
-  usefulness proof.
-- Latest UAT-prep proof: focused UAT packet/result tests, marketer language
-  guard, packet stale-key scan and current browser reads passed after removing
-  raw UAT snapshot keys from the marketer packet. This reduces UAT friction but
-  still does not replace Wilku/marketer feedback.
-- Latest self-improving guardrail: `scripts/context_pack_language_guard.py`
-  checks the core skill context packs for stale route names, raw payload
-  wording, dev/migration terms and raw vendor/action values. `verify.sh` runs
-  it against the temporary skill API, and the pre-demo gate runs it against the
-  managed local API.
-- Latest accepted proof: Merchant, Treści and Ahrefs no longer show
-  targeted `ID` proof-count/product-ID wording in browser text/snapshot proof,
-  and the focused API/dashboard checks plus language guard passed.
-- Latest content cleanup proof: Treści diagnostics now expose
-  API-owned status, blocked-claim and metric labels; focused API/dashboard
-  tests, typecheck, language guard, live API proof and `agent-browser read` for
-  `/content-planner` passed.
-- Remaining risk: docs, dashboard routes and skill/context-pack fixtures can
-  drift back into append-only history or raw vendor terminology if future slices
-  skip focused guards. Use fresh evidence before reopening cleanup work.
-- Next improvement: keep `docs/PROGRESS.md` and `docs/goals/001-goal.md`
-  concise; move detailed history to git/proof artifacts, keep only active gaps,
-  and use `bd ready --json` for the next executable slice.
-- Latest fallback cleanup proof: focused API/dashboard tests, ruff I/F,
-  marketer/context/operator language guards, live Command Center scan,
-  context-pack guard and `git diff --check` passed. Beads issue
-  `wilq-seo-6rw.4` is closed.
-- Latest Treści proof: focused route test, dashboard typecheck,
-  marketer language guard and browser text proof passed after moving the
-  expandable plan/draft panel to API-owned preview cards.
-- Latest Treści proof: focused API test, route test, dashboard
-  typecheck, marketer language guard and browser text proof passed after moving
-  the selected-decision snapshot to API-owned `marketer_decision`.
-- Latest Knowledge proof: focused Knowledge/StatusBadge tests, dashboard
-  typecheck, marketer language guard and browser text proof passed after
-  separating confidence copy from status badge state.
-- Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard and browser proof passed after moving
-  missing-data details to API/domain labels.
-- Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
-  route test, dashboard typecheck, marketer language guard and browser proof
-  passed after moving process summaries to API/domain labels and fixing the
-  hidden-actions loading state.
-- Latest Workflow proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving expanded missing-data detail to API/domain labels and keeping
-  blocked-claim detail condensed through API summaries.
-- Latest blocked-claim fallback proof: focused API fallback tests, marketer
-  language guard and helper proof passed after central labels stopped exposing
-  unknown raw technical claim values.
-- Latest Knowledge proof: focused route test, dashboard typecheck, marketer
-  language guard and browser proof passed after Knowledge details stopped
-  showing raw connector IDs and fixed Polish count forms.
-- Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard and browser proof passed after moving
-  first-screen decision and card summaries to API/domain labels.
-- Latest Szanse proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard and browser proof passed after moving
-  evidence, source, action and knowledge summaries to API/domain labels.
-- Latest Knowledge proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving knowledge blocked-claim summaries to API/domain labels.
-- Latest Ads proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving Ads row-level human review gate, blocked-claim and changed-field
-  summaries to API/domain labels.
-- Latest Knowledge condensation proof: focused API/shared-schema/dashboard
-  tests, dashboard typecheck, marketer language guard, live API proof and
-  browser proof passed after moving Knowledge operating-map aggregate summaries
-  to API/domain labels and rendering first-screen blocked claims as count
-  summaries.
-- Latest GA4 proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving GA4 evidence/action summaries to API/domain labels.
-- Latest Ahrefs proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving Ahrefs evidence/action summaries to API/domain labels.
-- Latest Custom Segments proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving Custom Segments evidence/action summaries to
-  API/domain labels.
-- Latest Demand Gen proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving Demand Gen row evidence summaries to API/domain
-  labels.
-- Latest Merchant proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving Merchant evidence/action summaries to API/domain labels.
-- Latest Treści proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving Content diagnostics/preflight evidence and action summaries to
-  API/domain labels.
-- Latest Treści action-fallback proof: focused dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after removing local action-count copy from `ActionIdFocus`.
-- Latest Google Ads proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving Google Ads response evidence/action summaries to
-  API/domain labels.
-- Latest Google Ads deep-panel proof: focused API/shared-schema/dashboard
-  tests, dashboard typecheck, marketer language guard, live API proof and
-  browser proof passed after removing route-local action count formatting from
-  Ads start-here, business-context, strategy-readiness and campaign triage
-  panels.
-- Latest Google Ads contract-validation proof: focused API/shared-schema/
-  dashboard tests, dashboard typecheck, marketer language guard, live API proof
-  and browser proof passed after moving Ads source-contract, policy and
-  required-validation count labels to API/domain fields.
-- Latest Ahrefs gap-contract proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving Ahrefs missing-data and blocked-claim count labels
-  to API/domain fields.
-- Latest Localo proof: focused API/shared-schema/dashboard tests, dashboard
-  typecheck, marketer language guard, live API proof and browser proof passed
-  after moving Localo missing-data count labels to API/domain fields and
-  tightening Localo review-card wording.
-- Latest Custom Segments proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving Custom Segments missing-data and required-check
-  count labels to API/domain fields.
-- Latest Google Ads strategy proof: focused API/shared-schema/dashboard tests,
-  dashboard typecheck, marketer language guard, live API proof and browser
-  proof passed after moving strategy-readiness missing-data count labels to
-  API/domain fields.
-- Latest metric-label proof: focused API/schema tests, live contract smoke,
-  marketer language guard, live API metric-label scan and `git diff --check`
-  passed after moving metric fact labels to the shared backend schema boundary
-  and guarding against empty/raw metric labels.
-- Latest Ads enum-label proof: focused API/schema tests, live contract smoke,
-  marketer language guard, live API `*_label` scan and `git diff --check`
-  passed after hydrating campaign status/channel labels at the shared schema
-  boundary and guarding against empty/raw visible operator labels.
-- Latest Content source-label proof: focused API/schema/dashboard tests,
-  dashboard typecheck, live contract smoke, marketer language guard and
-  browser text proof passed after moving content refresh/source connector
-  labels to API contracts and removing Treści local connector-ID
-  mapping.
-- Latest Google Ads budget-copy proof: focused dashboard route tests, marketer
-  language guard, live context-pack guard, WILQ API connector/Ads diagnostics
-  proof, browser text scan and `git diff --check` passed after removing raw
-  budget identifier wording from the normal shared-budget panel.
-- Latest tactical queue label proof: focused API/dashboard tests, live
-  tactical-queue API scan, context-pack guard, browser text proof and
-  `git diff --check` passed after moving tactical domain labels to Polish
-  `Treści` wording and replacing the remaining English Ahrefs blocked claim.
-- Latest actions proof: focused dashboard tests, dashboard typecheck, language
-  guards and browser snapshot proof passed after removing first-screen
-  technical-detail wording from `/actions` priority cards and keeping raw
-  action data behind the technical toggle.
-- Latest evidence-language proof: focused API/dashboard/context-guard tests,
-  live API proof and browser proof passed after replacing `ID dowodu` with
-  Polish proof wording and moving connector-status evidence summaries away
-  from English credential phrasing.
-- Latest context-rule proof: focused API context-pack tests, daily skill smoke,
-  live context-pack guard and direct WILQ API proof passed after moving
-  context-pack product rules and strict instruction to Polish WILQ operating
-  language.
-- Latest active-plan language proof: active plan/recovery rules were moved to
-  Polish WILQ operating language, and `scripts/marketer_language_guard.py`
-  now blocks the old English rule formulas in active plan files.
+Current outcome:
+
+- Goal 001 is no longer blocked by missing UAT input because owner defer exists,
+  but WILQ still cannot claim real marketer UAT or full content-production
+  readiness.
+- Goal 002 now has a concrete product plan and operational Beads graph.
+- Anti-slop baseline is implemented and recorded as proof.
+
+Current risk:
+
+- Anti-slop baseline exists, but it is a reporting and guardrail baseline, not
+  a cleanup of the historical debt.
+- `main.py`, `wilq/schemas.py`, `actions/service.py`,
+  `content_diagnostics.py`, `test_api_contracts.py` and
+  `ContentDiagnosticSurface.tsx` remain legacy hotspots until the next slices
+  move behavior out.
+- Full `ruff check . --statistics` currently reports 68 issues.
+- `mypy wilq apps/api/wilq_api` currently reports 5 existing type errors.
+- `pnpm fallow:summary` currently fails on 21.0% duplication and 13 functions
+  above threshold.

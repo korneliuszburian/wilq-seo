@@ -9,7 +9,7 @@ Active goal: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -33,6 +33,11 @@ Date: 2026-06-29
   with React translators, string replacement helpers or stale label maps.
 - Do not preserve deprecated active fields, compatibility aliases or stale
   dev-preview/migration semantics when direct migration is feasible.
+- Real marketer UAT for Goal 001 is explicitly deferred by the owner in
+  `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`. This does not
+  claim that UAT happened. It means the current cockpit may be treated as a
+  verified review surface while WILQ moves to Goal 002 content-production work
+  before presenting it as a real content workflow to Wilku.
 
 ## Live Connector State
 
@@ -48,6 +53,32 @@ Live API check on 2026-06-29:
 
 Do not reopen old WSL credential recovery for GSC, GA4 or Merchant unless live
 API status later contradicts this state.
+
+## Current Goal Transition
+
+- Goal 001 cleanup is no longer blocked by missing UAT input because the owner
+  explicitly deferred real marketer UAT until WILQ has a stronger content
+  production workflow.
+- The safe next product goal is Goal 002: Content Production Engine bez slopu.
+- Goal 002 must start from anti-slop guardrails and content workflow contracts,
+  not from prompt-only drafting or more dashboard labels.
+- WILQ may be described as a review cockpit today. It must not be described as
+  a complete content production engine until preflight, preserve-first planning,
+  sales brief, claim ledger, draft package, human review, WordPress draft
+  handoff and measurement window are implemented and verified end-to-end for at
+  least one real Ekologus content item.
+- Goal 002 Beads epic is `wilq-seo-zu4`.
+- Goal 002 anti-slop baseline proof lives in
+  `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
+- `scripts/audit_complexity.py` now reports Python LOC, largest files,
+  functions, classes and frozen-file growth risk. Current baseline shows
+  147 Python files, 81,481 non-empty Python LOC and no changed frozen growth
+  files in this slice.
+- Historical quality debt is now explicit: full Ruff reports 68 issues, mypy
+  reports 5 existing type errors in `content_refresh.py`/`main.py`, and Fallow
+  reports 21.0% TypeScript duplication with 13 functions above threshold.
+  These are baseline risks for Goal 002, not permission to add new behavior to
+  the known monoliths.
 
 ## Latest Verified Product State
 

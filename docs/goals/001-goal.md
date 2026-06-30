@@ -1,6 +1,6 @@
 # Goal 001 - Clean Product Semantics And Marketer Cockpit
 
-Status: active
+Status: owner-deferred UAT recorded; ready for completion audit
 
 Date: 2026-06-28
 
@@ -107,8 +107,11 @@ action IDs and audit fields may stay in technical contracts or drawers.
   missing data as an explicit decision limit instead of bare `brak` /
   `brak danych`, and no React remapper or stale alias was added.
 - Durable UAT handoff lives at
-  `docs/handoffs/2026-06-29-marketer-uat-ready.md`. Goal 001 remains active
-  until real marketer UAT is recorded or the owner explicitly defers it.
+  `docs/handoffs/2026-06-29-marketer-uat-ready.md`.
+- Owner explicitly deferred real marketer UAT in
+  `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json` because WILQ should
+  first deliver Goal 002 content-production workflow before being presented as
+  a real content tool. This is not a claim that UAT happened.
 
 ## Active Findings
 
@@ -131,11 +134,12 @@ are resolved or explicitly deferred.
 5. Continue focused browser audits when touched routes change or a new visible
    copy risk is found. Any future long blocker/review list must be condensed at
    API/domain source, not trimmed in React.
-6. Real marketer UAT is still required for usefulness claims unless explicitly
-   deferred by the owner. Use
-   `docs/handoffs/2026-06-29-marketer-uat-ready.md` as the current handoff.
-   Guard command:
-   `rtk uv run python scripts/goal_001_completion_check.py --format markdown`.
+6. Real marketer UAT is explicitly deferred by the owner. Use
+   `docs/handoffs/2026-06-29-marketer-uat-ready.md` for the later real UAT
+   session and
+   `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json` as the current
+   Goal 001 defer proof. Guard command:
+   `rtk uv run python scripts/goal_001_completion_check.py --owner-defer docs/handoffs/2026-06-30-owner-defer-marketer-uat.json --format markdown`.
 
 ## Execution Policy
 
@@ -188,6 +192,7 @@ Goal 001 is complete when:
 - Pozostałe historyczne wzmianki są zarchiwizowane albo jawnie śledzone jako
   dług do usunięcia.
 - Realny UAT marketera jest zapisany albo jawnie odroczony przez ownera.
+  Current proof: `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`.
 
 Finalny WILQ Marketing Operating System pozostaje późniejszym celem. Nadal
 wymaga ContentPreflight, briefu sprzedażowego, rejestru ryzykownych obietnic,

@@ -1,0 +1,14 @@
+{
+  "odroczenie_realnego_uat": true,
+  "data": "2026-06-30",
+  "osoba": "owner",
+  "powód": "Owner zdecydował, że przed pokazaniem WILQ marketerowi jako narzędzia do tworzenia treści trzeba najpierw dowieźć Goal 002: Content Production Engine bez slopu. Obecny stan można traktować jako evidence-backed cockpit decyzji, ale nie jako pełny workflow produkcji treści.",
+  "co_można_pokazać": "Można pokazywać WILQ jako technicznie zweryfikowany kokpit decyzji, źródeł danych, blokad i bezpiecznych następnych kroków. Nie wolno pokazywać go jako gotowego generatora treści, autopublishera, narzędzia do publikacji w WordPress ani dowodu realnej użyteczności bez osobnego UAT.",
+  "zablokowane_obietnice": [
+    "realny UAT marketera został wykonany",
+    "WILQ jest gotowym narzędziem do tworzenia treści marketingowych",
+    "WILQ tworzy treści gotowe do publikacji bez człowieka",
+    "WILQ może przekazać szkic do WordPress bez human review",
+    "WILQ może twierdzić o wzroście pozycji, leadów, konwersji albo przychodu bez measurement loop"
+  ]
+}
