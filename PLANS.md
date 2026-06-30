@@ -687,7 +687,10 @@ Current ready/in-progress Goal 002 slices are:
   context-pack builder in `main.py` for a later runtime extraction.
 - `wilq-seo-462` - follow-up context-pack runtime extraction, open. This is a
   technical anti-slop task to move heavy Codex context-pack internals out of
-  `main.py` without changing `/api/codex/*` response shapes.
+  `main.py` without changing `/api/codex/*` response shapes. First partial
+  slice moved request-skill parsing and skill context-pack cache to
+  `apps/api/wilq_api/context_cache.py`; heavy builders and compaction helpers
+  still need extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
   canonical URL, preflight verdict, inventory gate, planning helper, GSC
   decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read

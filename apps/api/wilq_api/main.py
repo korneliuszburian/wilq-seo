@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import os
 from collections import Counter
-from dataclasses import dataclass
-from time import monotonic
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from apps.api.wilq_api.context_cache import (
+    clear_skill_context_cache,
+    read_skill_context_cache,
+    request_skill,
+    write_skill_context_cache,
+)
 from apps.api.wilq_api.context_models import ContextPackRequest
 from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.codex import create_codex_router
@@ -162,8 +166,6 @@ DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
 ADS_CONTEXT_DECISION_ROW_LIMIT = 2
 ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
-DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
-_cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 
 CONTEXT_PRODUCT_RULES = [
     "Brak dowodu w WILQ -> brak rekomendacji.",
@@ -176,12 +178,6 @@ CONTEXT_STRICT_INSTRUCTION = (
     "Codex nie może podawać metryk bez odczytu z WILQ API i dowodów źródłowych."
 )
 DAILY_CONTEXT_EVIDENCE_SUMMARY_LIMIT = 32
-
-
-@dataclass(frozen=True)
-class SkillContextCacheEntry:
-    created_at: float
-    payload: dict[str, Any]
 
 
 @app.middleware("http")
@@ -197,14 +193,8 @@ async def require_local_api_access(request: Request, call_next: Any) -> Any:
     return await call_next(request)
 
 
-def _request_skill(request: ContextPackRequest | None) -> str | None:
-    if request is None:
-        return None
-    return request.skill or request.skill_id
-
-
 def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
-    skill = _request_skill(request)
+    skill = request_skill(request)
     if request and skill == "wilq-daily-command" and not request.full_context:
         return _daily_command_context_pack(request, list_opportunities())
     connectors = list_connector_statuses()
@@ -649,7 +639,7 @@ def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict
     event_type_label = event.get("event_type_label") or _action_audit_event_label(str(event_type))
     summary = (
         f"Ślad bezpieczeństwa: {event_type_label}. "
-        "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+        "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
     )
     return {
         "id": event.get("id"),
@@ -676,7 +666,7 @@ def _compact_audit_event_for_skill_context(event: dict[str, Any] | None) -> dict
         "created_at": event.get("created_at"),
         "summary": (
             f"Ślad bezpieczeństwa: {event_type_label}. "
-            "Szczegóły techniczne są dostępne w szczegółach akcji WILQ."
+            "szczegóły techniczne są dostępne w szczegółach akcji WILQ."
         ),
     }
 
@@ -1108,10 +1098,10 @@ def _skill_scoped_context_pack(
     connectors: list[ConnectorStatus],
     opportunities: list[Opportunity],
 ) -> dict[str, Any]:
-    cached_pack = _read_skill_context_cache(request)
+    cached_pack = read_skill_context_cache(request)
     if cached_pack is not None:
         return cached_pack
-    skill = _request_skill(request) or "unknown"
+    skill = request_skill(request) or "unknown"
     scoped_connectors = SKILL_CONNECTOR_SCOPES.get(skill, set())
     if not scoped_connectors:
         scoped_connectors = {connector.id for connector in connectors if connector.configured}
@@ -1218,12 +1208,8 @@ def _skill_scoped_context_pack(
     }
     pack = _strip_raw_operator_context(pack)
     redacted_pack = redact_mapping(pack)
-    _write_skill_context_cache(request, redacted_pack)
+    write_skill_context_cache(request, redacted_pack)
     return redacted_pack
-
-
-def clear_skill_context_cache() -> None:
-    _cached_skill_context_packs.clear()
 
 
 def clear_api_view_model_caches() -> None:
@@ -1235,49 +1221,6 @@ def clear_api_view_model_caches() -> None:
 app.include_router(create_actions_router(clear_api_view_model_caches))
 app.include_router(create_connectors_router(clear_api_view_model_caches))
 app.include_router(create_codex_router(context_pack))
-
-
-def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
-    cache_seconds = _skill_context_cache_seconds()
-    if cache_seconds <= 0:
-        return None
-    cached = _cached_skill_context_packs.get(_skill_context_cache_key(request))
-    if cached is None:
-        return None
-    if monotonic() - cached.created_at > cache_seconds:
-        return None
-    return cached.payload
-
-
-def _write_skill_context_cache(request: ContextPackRequest, payload: dict[str, Any]) -> None:
-    if _skill_context_cache_seconds() <= 0:
-        return
-    _cached_skill_context_packs[_skill_context_cache_key(request)] = SkillContextCacheEntry(
-        created_at=monotonic(),
-        payload=payload,
-    )
-
-
-def _skill_context_cache_key(request: ContextPackRequest) -> str:
-    return "|".join(
-        [
-            _request_skill(request) or "",
-            request.focus or "",
-            str(request.max_opportunities),
-        ]
-    )
-
-
-def _skill_context_cache_seconds() -> float:
-    if os.getenv("PYTEST_CURRENT_TEST"):
-        return 0.0
-    configured = os.getenv("WILQ_SKILL_CONTEXT_CACHE_SECONDS")
-    if configured is None:
-        return DEFAULT_SKILL_CONTEXT_CACHE_SECONDS
-    try:
-        return max(0.0, float(configured))
-    except ValueError:
-        return DEFAULT_SKILL_CONTEXT_CACHE_SECONDS
 
 
 def _stateful_context_actions(

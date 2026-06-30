@@ -383,6 +383,13 @@ API status later contradicts this state.
 - Beads task `wilq-seo-hdl` is closed. Remaining heavy context-pack runtime
   extraction is tracked separately as `wilq-seo-462`, so router extraction is
   not conflated with context-pack internals.
+- Goal 002 context-pack runtime extraction started under `wilq-seo-462`.
+  `apps/api/wilq_api/context_cache.py` now owns request-skill parsing and the
+  skill context-pack cache. `main.py` still owns heavy context-pack builder and
+  compaction helpers, so `wilq-seo-462` remains open. Focused context-pack
+  tests passed for daily action preview audit, metric-invention instruction and
+  content strategist scoping. A lowercase audit-summary copy mismatch was fixed
+  while preserving response meaning.
 
 ## Latest Verified Product State
 
