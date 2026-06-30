@@ -123,6 +123,61 @@ def _sales_brief_seed(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _draft_package(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": "draft_package_content_work_item_bdo",
+        "work_item_id": "content_work_item_bdo",
+        "brief_id": "sales_brief_content_work_item_bdo",
+        "claim_ledger_id": "claim_ledger_bdo",
+        "draft_kind": "outline",
+        "title": "BDO dla firm: co trzeba sprawdzić przed działaniem",
+        "sections": [
+            {
+                "heading": "Kogo dotyczy BDO",
+                "purpose": "Sekcja outline-first do napisania po review briefu.",
+                "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+                "draft_notes": ["CTA bez obietnicy wyniku."],
+            }
+        ],
+        "section_to_evidence_map": [
+            {
+                "section_heading": "Kogo dotyczy BDO",
+                "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+            }
+        ],
+        "claims_used": ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+        "claims_removed_or_blocked": [],
+        "human_review_questions": [
+            "Czy szkic brzmi jak Ekologus?",
+            "Czy claimy mają dowody?",
+        ],
+        "publish_ready": False,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _human_review(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": "human_review_bdo",
+        "work_item_id": "content_work_item_bdo",
+        "stage": "draft_package",
+        "reviewed_by": "wilku",
+        "decision": "approved",
+        "notes": "Szkic może iść dalej jako WordPress draft.",
+        "checked_items": [
+            "brief zgodny z dowodami",
+            "claimy bez gwarancji efektu",
+            "CTA bez obietnicy wyniku",
+        ],
+        "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+        "blocked_claims_handled": [],
+        "draft_package_id": "draft_package_content_work_item_bdo",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     response = TestClient(app).post("/api/content/work-items/preflight", json=payload)
     assert response.status_code == 200
@@ -154,6 +209,20 @@ def _post_draft_package(payload: dict[str, Any]) -> dict[str, Any]:
         "item",
         "preflight_verdict",
         "sales_brief_result",
+    ]
+    return data
+
+
+def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post("/api/content/work-items/human-review", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert sorted(data) == [
+        "blockers",
+        "item",
+        "review",
+        "reviewed_item",
+        "wordpress_handoff_allowed",
     ]
     return data
 
@@ -356,4 +425,81 @@ def test_content_work_item_draft_package_api_blocks_unresolved_claims() -> None:
     assert result["draft_package"] is None
     assert [blocker["code"] for blocker in result["blockers"]] == [
         "claim_ledger_blocks_draft"
+    ]
+
+
+def test_content_work_item_human_review_api_updates_approved_review_state() -> None:
+    data = _post_human_review(
+        {
+            "item": _item(
+                preflight_status="handoff_allowed",
+                preserve_first_plan_status="approved",
+                sales_brief_status="approved",
+                sales_brief_id="sales_brief_content_work_item_bdo",
+                claim_ledger_status="approved",
+                claim_ledger_id="claim_ledger_bdo",
+                draft_package_status="ready",
+                draft_package_id="draft_package_content_work_item_bdo",
+                audit_status="recorded",
+                audit_id="audit_bdo",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "review": _human_review(),
+            "draft_package": _draft_package(),
+            "claim_ledger": _draft_claim_ledger(),
+        }
+    )
+
+    assert data["blockers"] == []
+    assert data["reviewed_item"]["human_review_status"] == "approved"
+    assert data["reviewed_item"]["human_review_id"] == "human_review_bdo"
+    assert data["wordpress_handoff_allowed"] is True
+    assert "wordpress_handoff" not in data
+
+
+def test_content_work_item_human_review_api_blocks_missing_review_evidence() -> None:
+    data = _post_human_review(
+        {
+            "item": _item(),
+            "review": _human_review(reviewed_by=" ", checked_items=[], evidence_ids=[]),
+            "draft_package": _draft_package(),
+        }
+    )
+
+    assert data["reviewed_item"]["human_review_status"] == "missing"
+    assert data["wordpress_handoff_allowed"] is False
+    assert {blocker["code"] for blocker in data["blockers"]} == {
+        "missing_reviewer",
+        "missing_checked_items",
+        "missing_evidence",
+    }
+
+
+def test_content_work_item_human_review_api_blocks_needs_changes() -> None:
+    data = _post_human_review(
+        {
+            "item": _item(),
+            "review": _human_review(decision="needs_changes"),
+            "draft_package": _draft_package(),
+        }
+    )
+
+    assert data["wordpress_handoff_allowed"] is False
+    assert "not_approved" in [blocker["code"] for blocker in data["blockers"]]
+
+
+def test_content_work_item_human_review_api_requires_blocked_claim_handling() -> None:
+    data = _post_human_review(
+        {
+            "item": _item(),
+            "review": _human_review(),
+            "draft_package": _draft_package(),
+            "claim_ledger": _claim_ledger(),
+        }
+    )
+
+    assert data["wordpress_handoff_allowed"] is False
+    assert [blocker["code"] for blocker in data["blockers"]] == [
+        "unhandled_blocked_claims"
     ]

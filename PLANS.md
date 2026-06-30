@@ -790,6 +790,10 @@ Current ready/in-progress Goal 002 slices are:
   WILQ API after inventory, preflight, Sales Brief and Claim Ledger gates. The
   endpoint returns an outline-first package with `publish_ready=false` or typed
   blockers, but does not create WordPress drafts or publish content.
+- `wilq-seo-5mr` - content human review API bridge, closed.
+  `POST /api/content/work-items/human-review` exposes Human Review v1 through
+  WILQ API, updates the work item only after blocker-free review, and reports
+  whether WordPress handoff is allowed without creating a handoff.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

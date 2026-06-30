@@ -5,11 +5,14 @@ from fastapi import APIRouter
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemHumanReviewResponse,
     ContentWorkItemPreflightRequest,
     ContentWorkItemPreflightResponse,
     ContentWorkItemSalesBriefRequest,
     ContentWorkItemSalesBriefResponse,
     build_content_work_item_draft_package_response,
+    build_content_work_item_human_review_response,
     build_content_work_item_preflight_response,
     build_content_work_item_sales_brief_response,
 )
@@ -45,3 +48,13 @@ def content_work_item_draft_package(
     request: ContentWorkItemDraftPackageRequest,
 ) -> ContentWorkItemDraftPackageResponse:
     return build_content_work_item_draft_package_response(request)
+
+
+@router.post(
+    "/api/content/work-items/human-review",
+    response_model=ContentWorkItemHumanReviewResponse,
+)
+def content_work_item_human_review(
+    request: ContentWorkItemHumanReviewRequest,
+) -> ContentWorkItemHumanReviewResponse:
+    return build_content_work_item_human_review_response(request)

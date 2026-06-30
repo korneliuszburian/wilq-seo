@@ -312,6 +312,16 @@ API status later contradicts this state.
   section-to-evidence mapping. Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 Human Review API bridge started under `wilq-seo-5mr`.
+  `POST /api/content/work-items/human-review` now calls the typed Human Review
+  v1 blockers and updates `ContentWorkItem` only after blocker-free review. The
+  response includes `reviewed_item`, blockers and `wordpress_handoff_allowed`,
+  but it does not create WordPress handoffs. Focused API tests prove approved
+  draft review updates workflow state, missing reviewer/checklist/evidence
+  blocks review, `needs_changes` blocks handoff and unhandled blocked claims
+  keep handoff disabled. Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

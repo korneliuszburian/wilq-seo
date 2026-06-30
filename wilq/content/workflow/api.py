@@ -10,6 +10,7 @@ from wilq.content.briefs.sales import (
 )
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.package import (
+    ContentDraftPackage,
     ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
@@ -22,6 +23,13 @@ from wilq.content.inventory.records import (
 from wilq.content.preflight.workflow import (
     ContentPreflightVerdict,
     build_content_preflight_verdict,
+)
+from wilq.content.review.human import (
+    ContentHumanReview,
+    ContentHumanReviewBlocker,
+    apply_content_human_review_to_work_item,
+    content_human_review_allows_wordpress_handoff,
+    content_human_review_blockers,
 )
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -68,6 +76,21 @@ class ContentWorkItemDraftPackageResponse(BaseModel):
     preflight_verdict: ContentPreflightVerdict
     sales_brief_result: ContentSalesBriefBuildResult
     draft_package_result: ContentDraftPackageBuildResult
+
+
+class ContentWorkItemHumanReviewRequest(BaseModel):
+    item: ContentWorkItem
+    review: ContentHumanReview
+    draft_package: ContentDraftPackage | None = None
+    claim_ledger: ContentClaimLedger | None = None
+
+
+class ContentWorkItemHumanReviewResponse(BaseModel):
+    item: ContentWorkItem
+    reviewed_item: ContentWorkItem
+    review: ContentHumanReview
+    blockers: list[ContentHumanReviewBlocker] = Field(default_factory=list)
+    wordpress_handoff_allowed: bool = False
 
 
 def build_content_work_item_preflight_response(
@@ -138,6 +161,34 @@ def build_content_work_item_draft_package_response(
             preflight=preflight_verdict,
             sales_brief=sales_brief_result.brief,
             claim_ledger=request.claim_ledger,
+        ),
+    )
+
+
+def build_content_work_item_human_review_response(
+    request: ContentWorkItemHumanReviewRequest,
+) -> ContentWorkItemHumanReviewResponse:
+    blockers = content_human_review_blockers(
+        item=request.item,
+        review=request.review,
+        draft_package=request.draft_package,
+        claim_ledger=request.claim_ledger,
+    )
+    reviewed_item = (
+        apply_content_human_review_to_work_item(request.item, request.review)
+        if not blockers
+        else request.item
+    )
+    return ContentWorkItemHumanReviewResponse(
+        item=request.item,
+        reviewed_item=reviewed_item,
+        review=request.review,
+        blockers=blockers,
+        wordpress_handoff_allowed=not blockers
+        and content_human_review_allows_wordpress_handoff(
+            item=request.item,
+            review=request.review,
+            draft_package=request.draft_package,
         ),
     )
 
