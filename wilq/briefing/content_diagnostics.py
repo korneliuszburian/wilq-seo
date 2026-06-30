@@ -18,6 +18,21 @@ from wilq.content.canonical.urls import (
     content_decision_url_semantics,
 )
 from wilq.content.inventory.gates import content_inventory_gate_status
+from wilq.content.planning.decisions import (
+    ContentDecisionType,
+    content_decision_metric_tiles,
+    content_decision_metrics,
+    content_decision_priority,
+    content_decision_sort_key,
+    content_decision_status,
+    content_decision_summary,
+    content_decision_title,
+    format_percent,
+    int_dimension,
+    polish_count_word,
+    slug,
+    wordpress_match_tile,
+)
 from wilq.content.preflight.verdicts import (
     content_preflight_mode,
     content_preflight_next_step,
@@ -86,14 +101,6 @@ AHREFS_CONTENT_EXPERT_RULE_IDS = (
 )
 GA4_TRACKING_KNOWLEDGE_CARD_IDS = ("card_ga4_behavior_diagnostics_playbook",)
 GA4_TRACKING_EXPERT_RULE_IDS = ("ga4_diagnostics_v1",)
-ContentDecisionType = Literal[
-    "block_until_vendor_read",
-    "refresh_or_merge",
-    "merge_create_after_inventory_check",
-    "inventory_check_before_create",
-    "block_as_tracking_not_content",
-    "review_ahrefs_gap_records",
-]
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_content_gap_count",
     "ahrefs_organic_keyword_gap_count",
@@ -274,15 +281,6 @@ POLISH_ASCII_TRANSLATION = str.maketrans(
         "Ź": "Z",
     }
 )
-
-
-@dataclass(frozen=True)
-class ContentDecisionMetrics:
-    primary_query: str | None
-    total_clicks: int | None
-    total_impressions: int | None
-    aggregate_ctr: float | None
-    best_average_position: float | None
 
 
 @dataclass(frozen=True)
@@ -699,7 +697,7 @@ def _content_marketer_metric_tiles(decision: ContentDecisionItem) -> dict[str, i
     if decision.total_impressions is not None:
         tiles["Wyświetlenia"] = decision.total_impressions
     if decision.aggregate_ctr is not None:
-        tiles["CTR"] = _format_percent(decision.aggregate_ctr)
+        tiles["CTR"] = format_percent(decision.aggregate_ctr)
     if decision.best_average_position is not None:
         tiles["Pozycja"] = round(decision.best_average_position, 2)
     if not tiles:
@@ -805,7 +803,7 @@ def _content_marketer_source_facts(decision: ContentDecisionItem) -> list[str]:
     if decision.wordpress_match_label:
         facts.append(f"Spis treści WordPress: {decision.wordpress_match_label}")
     elif decision.wordpress_match:
-        facts.append(f"Spis treści WordPress: {_wordpress_match_tile(decision.wordpress_match)}")
+        facts.append(f"Spis treści WordPress: {wordpress_match_tile(decision.wordpress_match)}")
     return facts[:5]
 
 
@@ -1300,7 +1298,7 @@ def _content_decision_queue(
     if decisions:
         return [
             _content_decision_with_api_labels(decision)
-            for decision in sorted(decisions, key=_content_decision_sort_key)[:5]
+            for decision in sorted(decisions, key=content_decision_sort_key)[:5]
         ]
     return [
         _content_decision_with_api_labels(
@@ -1377,7 +1375,7 @@ def _gsc_content_decisions(
     for page, page_items in page_groups.items():
         first = page_items[0]
         wordpress_match = first.dimensions.get("wordpress_match", "missing")
-        query_count = _int_dimension(first, "gsc_page_query_count", len(page_items))
+        query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
         queries = _unique(
             item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
         )
@@ -1385,12 +1383,12 @@ def _gsc_content_decisions(
             fact for item in page_items for fact in item.metric_facts
         )
         wordpress_content_url = first.dimensions.get("wordpress_content_url")
-        metrics = _content_decision_metrics(metric_facts, queries)
+        metrics = content_decision_metrics(metric_facts, queries)
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
-            title = _content_decision_title(decision_type, page, query_count, metrics)
-            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
+            title = content_decision_title(decision_type, page, query_count, metrics)
+            summary = content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
                 "Przygotuj plan odświeżenia albo scalenia: title, H1/H2, sekcje "
                 "brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
@@ -1401,8 +1399,8 @@ def _gsc_content_decisions(
             )
         elif query_count > 1:
             decision_type = "merge_create_after_inventory_check"
-            title = _content_decision_title(decision_type, page, query_count, metrics)
-            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
+            title = content_decision_title(decision_type, page, query_count, metrics)
+            summary = content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
                 "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
                 "wybierz scalenie, nową treść albo przywrócenie."
@@ -1413,8 +1411,8 @@ def _gsc_content_decisions(
             )
         else:
             decision_type = "inventory_check_before_create"
-            title = _content_decision_title(decision_type, page, query_count, metrics)
-            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
+            title = content_decision_title(decision_type, page, query_count, metrics)
+            summary = content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
                 "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
                 "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
@@ -1433,17 +1431,17 @@ def _gsc_content_decisions(
         )
         decisions.append(
             ContentDecisionItem(
-                id=f"content_decision_{_slug(page)}",
+                id=f"content_decision_{slug(page)}",
                 decision_type=decision_type,
-                status=_content_decision_status(decision_type),
+                status=content_decision_status(decision_type),
                 title=title,
                 summary=summary,
-                priority=_content_decision_priority(
+                priority=content_decision_priority(
                     decision_type,
                     metrics,
                     query_count,
                 ),
-                metric_tiles=_content_decision_metric_tiles(
+                metric_tiles=content_decision_metric_tiles(
                     decision_type,
                     metrics,
                     query_count,
@@ -1584,39 +1582,39 @@ def _ahrefs_gap_record_decisions(
         "wordpress_inventory_overlap",
     )
     decision_status: Literal["ready", "blocked"] = "ready" if candidate_scores else "blocked"
-    relevant_label = _polish_count_word(len(relevant_scores), "pasujący", "pasujące", "pasujących")
-    review_label = _polish_count_word(len(review_scores), "rekord", "rekordy", "rekordów")
-    off_topic_label = _polish_count_word(
+    relevant_label = polish_count_word(len(relevant_scores), "pasujący", "pasujące", "pasujących")
+    review_label = polish_count_word(len(review_scores), "rekord", "rekordy", "rekordów")
+    off_topic_label = polish_count_word(
         len(off_topic_scores),
         "rekord",
         "rekordy",
         "rekordów",
     )
-    ahrefs_gap_record_label = _polish_count_word(
+    ahrefs_gap_record_label = polish_count_word(
         len(gap_facts),
         "rekord luk",
         "rekordy luk",
         "rekordów luk",
     )
-    content_gap_label = _polish_count_word(
+    content_gap_label = polish_count_word(
         gap_counts["content_gap"],
         "luka treści",
         "luki treści",
         "luk treści",
     )
-    organic_keyword_gap_label = _polish_count_word(
+    organic_keyword_gap_label = polish_count_word(
         gap_counts["organic_keyword_gap"],
         "luka w słowach organicznych",
         "luki w słowach organicznych",
         "luk w słowach organicznych",
     )
-    top_page_gap_label = _polish_count_word(
+    top_page_gap_label = polish_count_word(
         gap_counts["top_page_gap"],
         "luka w najlepszych stronach konkurencji",
         "luki w najlepszych stronach konkurencji",
         "luk w najlepszych stronach konkurencji",
     )
-    backlink_gap_label = _polish_count_word(
+    backlink_gap_label = polish_count_word(
         gap_counts["backlink_gap"],
         "luka linków zwrotnych",
         "luki linków zwrotnych",
@@ -1698,7 +1696,7 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
     gsc_overlap = "gsc_overlap" in score.reasons
     wordpress_overlap = "wordpress_inventory_overlap" in score.reasons
     return ContentAhrefsCandidateRow(
-        id=f"ahrefs_candidate_{_slug(f'{topic}_{fact.name}_{fact.evidence_id}')}",
+        id=f"ahrefs_candidate_{slug(f'{topic}_{fact.name}_{fact.evidence_id}')}",
         topic=topic,
         gap_type=dimensions.get("gap_type") or fact.name,
         gap_type_label=_content_ahrefs_gap_type_label(dimensions.get("gap_type") or fact.name),
@@ -2038,263 +2036,3 @@ def _unique_metric_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
         )
         unique_facts.setdefault(key, fact)
     return list(unique_facts.values())
-
-
-def _content_decision_metrics(
-    metric_facts: list[MetricFact],
-    queries: list[str],
-) -> ContentDecisionMetrics:
-    click_values = [
-        numeric_value
-        for fact in metric_facts
-        if fact.source_connector == "google_search_console"
-        and fact.name == "clicks"
-        and (numeric_value := _numeric_metric_value(fact)) is not None
-    ]
-    impression_values = [
-        numeric_value
-        for fact in metric_facts
-        if fact.source_connector == "google_search_console"
-        and fact.name == "impressions"
-        and (numeric_value := _numeric_metric_value(fact)) is not None
-    ]
-    position_values = [
-        numeric_value
-        for fact in metric_facts
-        if fact.source_connector == "google_search_console"
-        and fact.name == "average_position"
-        and (numeric_value := _numeric_metric_value(fact)) is not None
-    ]
-    total_clicks = int(sum(click_values)) if click_values else None
-    total_impressions = int(sum(impression_values)) if impression_values else None
-    return ContentDecisionMetrics(
-        primary_query=_primary_query(metric_facts, queries),
-        total_clicks=total_clicks,
-        total_impressions=total_impressions,
-        aggregate_ctr=(
-            total_clicks / total_impressions
-            if total_clicks is not None and total_impressions
-            else None
-        ),
-        best_average_position=min(position_values) if position_values else None,
-    )
-
-
-def _primary_query(metric_facts: list[MetricFact], queries: list[str]) -> str | None:
-    query_scores: dict[str, tuple[float, float]] = {}
-    for fact in metric_facts:
-        if fact.source_connector != "google_search_console":
-            continue
-        query = fact.dimensions.get("query")
-        value = _numeric_metric_value(fact)
-        if not query or value is None:
-            continue
-        impressions, clicks = query_scores.get(query, (0.0, 0.0))
-        if fact.name == "impressions":
-            impressions += value
-        elif fact.name == "clicks":
-            clicks += value
-        query_scores[query] = (impressions, clicks)
-    if query_scores:
-        return max(query_scores.items(), key=lambda item: (item[1][0], item[1][1]))[0]
-    return queries[0] if queries else None
-
-
-def _content_decision_status(
-    decision_type: ContentDecisionType,
-) -> Literal["ready", "blocked"]:
-    if decision_type in {"inventory_check_before_create", "block_as_tracking_not_content"}:
-        return "blocked"
-    return "ready"
-
-
-def _content_decision_priority(
-    decision_type: ContentDecisionType,
-    metrics: ContentDecisionMetrics,
-    query_count: int,
-) -> int:
-    base_priority = {
-        "refresh_or_merge": 20,
-        "merge_create_after_inventory_check": 24,
-        "inventory_check_before_create": 28,
-        "block_as_tracking_not_content": 12,
-    }[decision_type]
-    impression_score = metrics.total_impressions or 0
-    if impression_score >= 1000:
-        evidence_bonus = 0
-    elif impression_score >= 500:
-        evidence_bonus = 2
-    elif impression_score >= 100:
-        evidence_bonus = 4
-    else:
-        evidence_bonus = 7
-    query_bonus = min(query_count, 5)
-    return max(1, base_priority + evidence_bonus - query_bonus)
-
-
-def _content_decision_metric_tiles(
-    decision_type: ContentDecisionType,
-    metrics: ContentDecisionMetrics,
-    query_count: int,
-    wordpress_match: str,
-) -> dict[str, int | float | str]:
-    tiles: dict[str, int | float | str] = {
-        "zapytania": query_count,
-        "WP": _wordpress_match_tile(wordpress_match),
-    }
-    if metrics.total_impressions is not None:
-        tiles["wyświetlenia"] = metrics.total_impressions
-    if metrics.total_clicks is not None:
-        tiles["kliknięcia"] = metrics.total_clicks
-    if metrics.aggregate_ctr is not None:
-        tiles["CTR"] = _format_percent(metrics.aggregate_ctr)
-    if metrics.best_average_position is not None:
-        tiles["pozycja"] = round(metrics.best_average_position, 2)
-    if decision_type != "refresh_or_merge":
-        tiles["tryb"] = _content_decision_mode_tile(decision_type)
-    return tiles
-
-
-def _wordpress_match_tile(wordpress_match: str) -> str:
-    if wordpress_match == "found":
-        return "znaleziono"
-    if wordpress_match == "missing":
-        return "niepotwierdzono w WordPress"
-    return "niepewne"
-
-
-def _content_decision_mode_tile(decision_type: ContentDecisionType) -> str:
-    if decision_type == "merge_create_after_inventory_check":
-        return "sprawdź scalenie albo nową treść"
-    if decision_type == "inventory_check_before_create":
-        return "blokada nowej treści"
-    if decision_type == "block_as_tracking_not_content":
-        return "GA4 tracking"
-    return "odświeżenie albo scalenie"
-
-
-def _numeric_metric_value(fact: MetricFact) -> float | None:
-    if isinstance(fact.value, int | float):
-        return float(fact.value)
-    return None
-
-
-def _content_decision_title(
-    decision_type: ContentDecisionType,
-    page: str,
-    query_count: int,
-    metrics: ContentDecisionMetrics,
-) -> str:
-    topic = _content_topic_label(page, metrics.primary_query)
-    query_label = _query_count_label(query_count)
-    if decision_type == "refresh_or_merge":
-        return f"SEO: odśwież lub scal {topic} ({query_label})"
-    if decision_type == "merge_create_after_inventory_check":
-        return f"SEO: sprawdź klaster {topic} przed tworzeniem ({query_label})"
-    return f"SEO: sprawdź spis treści dla {topic} ({query_label})"
-
-
-def _content_topic_label(page: str, primary_query: str | None) -> str:
-    if primary_query:
-        return f'"{primary_query}"'
-    if page.rstrip("/") == "https://www.ekologus.pl":
-        return "stronę główną"
-    return page.rstrip("/").rsplit("/", maxsplit=1)[-1].replace("-", " ")
-
-
-def _content_decision_summary(
-    decision_type: ContentDecisionType,
-    metrics: ContentDecisionMetrics,
-    wordpress_match: str,
-) -> str:
-    metric_sentence = _content_metric_sentence(metrics)
-    if decision_type == "refresh_or_merge":
-        return (
-            f"{metric_sentence} WordPress potwierdza istniejącą stronę, więc "
-            "to jest decyzja odświeżenia albo scalenia, nie nowy artykuł."
-        )
-    if decision_type == "merge_create_after_inventory_check":
-        return (
-            f"{metric_sentence} WordPress nie potwierdza strony dla tego klastra, "
-            "więc najpierw trzeba sprawdzić publiczny URL, spis treści i ryzyko duplikatu."
-        )
-    match_label = "nie potwierdza" if wordpress_match == "missing" else "nie daje pewności"
-    return (
-        f"{metric_sentence} WordPress {match_label} URL, więc WILQ blokuje "
-        "plan nowej treści do czasu kontroli spisu."
-    )
-
-
-def _content_metric_sentence(metrics: ContentDecisionMetrics) -> str:
-    parts: list[str] = []
-    if metrics.total_impressions is not None:
-        impression_word = _polish_count_word(
-            metrics.total_impressions,
-            "wyświetlenie",
-            "wyświetlenia",
-            "wyświetleń",
-        )
-        parts.append(f"{metrics.total_impressions} {impression_word}")
-    if metrics.total_clicks is not None:
-        click_word = _polish_count_word(
-            metrics.total_clicks,
-            "kliknięcie",
-            "kliknięcia",
-            "kliknięć",
-        )
-        parts.append(f"{metrics.total_clicks} {click_word}")
-    if metrics.aggregate_ctr is not None:
-        parts.append(f"CTR {_format_percent(metrics.aggregate_ctr)}")
-    if metrics.best_average_position is not None:
-        parts.append(f"najlepsza średnia pozycja {_format_decimal(metrics.best_average_position)}")
-    prefix = "GSC: " + ", ".join(parts) if parts else "GSC ma evidence dla tej strony."
-    if metrics.primary_query:
-        return f'{prefix}; główne zapytanie: "{metrics.primary_query}".'
-    return prefix
-
-
-def _content_decision_sort_key(decision: ContentDecisionItem) -> tuple[int, int, int, int, str]:
-    status_rank = 1 if decision.status == "blocked" else 0
-    return (
-        status_rank,
-        decision.priority,
-        -(decision.total_impressions or 0),
-        -decision.query_count,
-        decision.id,
-    )
-
-
-def _query_count_label(query_count: int) -> str:
-    if query_count == 1:
-        return "1 zapytanie"
-    return f"{query_count} zapytań"
-
-
-def _format_percent(value: float) -> str:
-    return f"{value * 100:.2f}%"
-
-
-def _format_decimal(value: float) -> str:
-    return f"{value:.2f}"
-
-
-def _polish_count_word(value: int, one: str, few: str, many: str) -> str:
-    absolute = abs(value)
-    if absolute == 1:
-        return one
-    if 2 <= absolute % 10 <= 4 and not 12 <= absolute % 100 <= 14:
-        return few
-    return many
-
-
-def _int_dimension(item: TacticalQueueItem, key: str, fallback: int) -> int:
-    try:
-        return int(item.dimensions.get(key, fallback))
-    except (TypeError, ValueError):
-        return fallback
-
-
-def _slug(value: str) -> str:
-    return "".join(character if character.isalnum() else "_" for character in value.lower()).strip(
-        "_"
-    )[:80]

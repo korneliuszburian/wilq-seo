@@ -100,6 +100,13 @@ API status later contradicts this state.
   smoke, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed. Unused private WordPress inventory detail helpers
   were deleted instead of moved to a new module.
+- Goal 002 content planning decision helpers moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/planning/decisions.py`. This is behavior-preserving extraction:
+  focused planning tests, inventory gate tests, preflight tests, canonical tests,
+  two content diagnostics contract tests, Ruff, mypy for the new module,
+  import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 
 ## Latest Verified Product State
 
@@ -537,6 +544,9 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_inventory_gates.py tests/content/test_preflight_verdicts.py tests/content/test_canonical_urls.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exists -q`
 - `rtk uv run ruff check wilq/content/inventory/gates.py wilq/briefing/content_diagnostics.py tests/content/test_inventory_gates.py`
 - `rtk uv run mypy wilq/content/inventory/gates.py`
+- `rtk uv run pytest tests/content/test_planning_decisions.py tests/content/test_inventory_gates.py tests/content/test_preflight_verdicts.py tests/content/test_canonical_urls.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exists -q`
+- `rtk uv run ruff check wilq/content/planning/decisions.py wilq/briefing/content_diagnostics.py tests/content/test_planning_decisions.py`
+- `rtk uv run mypy wilq/content/planning/decisions.py`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'workflow_label_fallbacks_do_not_expose_raw_values or workflow_missing_contract_detail_fallback_explains_complete_process or workflows_are_decision_backed_operator_contracts'`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`
