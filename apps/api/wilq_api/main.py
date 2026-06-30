@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from apps.api.wilq_api.routers.connectors import router as connectors_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
@@ -72,12 +73,8 @@ from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue, clear_tactical_queue_cache
 from wilq.codex.runtime_status import codex_runtime_status
-from wilq.connectors.refresh import (
-    get_connector_refresh_run,
-    list_connector_refresh_runs,
-    run_connector_refresh,
-)
-from wilq.connectors.registry import get_connector_status, list_connector_statuses
+from wilq.connectors.refresh import list_connector_refresh_runs, run_connector_refresh
+from wilq.connectors.registry import list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
 from wilq.evidence.registry import (
     connector_evidence_id,
@@ -190,6 +187,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(connectors_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 3
@@ -4614,39 +4612,6 @@ def system_status() -> dict[str, Any]:
             "opportunity_types": list(OPPORTUNITY_TYPES),
         }
     )
-
-
-@app.get("/api/connectors", response_model=list[ConnectorStatus])
-def connectors() -> list[ConnectorStatus]:
-    return list_connector_statuses()
-
-
-@app.get("/api/connectors/refresh-runs", response_model=list[ConnectorRefreshRun])
-def connector_refresh_runs() -> list[ConnectorRefreshRun]:
-    return list_connector_refresh_runs()
-
-
-@app.get("/api/connectors/refresh-runs/{run_id}", response_model=ConnectorRefreshRun)
-def connector_refresh_run_detail(run_id: str) -> ConnectorRefreshRun:
-    run = get_connector_refresh_run(run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail=f"Unknown connector refresh run: {run_id}")
-    return run
-
-
-@app.get("/api/connectors/{connector}/status", response_model=ConnectorStatus)
-def connector_status_endpoint(connector: str) -> ConnectorStatus:
-    status = get_connector_status(connector)
-    if status is None:
-        raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
-    return status
-
-
-@app.get("/api/connectors/{connector}/refresh-runs", response_model=list[ConnectorRefreshRun])
-def connector_refresh_runs_for_connector(connector: str) -> list[ConnectorRefreshRun]:
-    if get_connector_status(connector) is None:
-        raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
-    return list_connector_refresh_runs(connector_id=connector)
 
 
 @app.post("/api/connectors/{connector}/refresh", response_model=ConnectorRefreshRun)

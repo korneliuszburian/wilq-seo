@@ -147,6 +147,13 @@ API status later contradicts this state.
   claim labels. The same content diagnostics contract tests, Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
+  connector endpoints moved from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
+  response shapes. Connector refresh POST remains in `main.py` until cache
+  invalidation can be extracted safely. Focused connector API tests, route-shape
+  smoke, Ruff, mypy for the new router, `scripts/audit_complexity.py --changed
+  --allow-frozen` and `git diff --check` passed.
 
 ## Latest Verified Product State
 
