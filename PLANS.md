@@ -726,6 +726,12 @@ Current ready/in-progress Goal 002 slices are:
   items, evidence IDs and handled blocked claims for sales brief, claim ledger,
   draft package and WordPress handoff stages. Only approved review can update
   the content workflow state to unblock the WordPress handoff gate.
+- `wilq-seo-qsf` - WordPress Draft Handoff v1, closed.
+  `wilq/content/handoff/wordpress.py` now prepares draft-only WordPress
+  handoff contracts after public final canonical URL, matching Draft Package,
+  approved Human Review and audit envelope. It blocks dev preview canonical
+  targets, publish-ready draft packages and non-approved review. The handoff is
+  `prepared` until a real WordPress post ID exists; it never publishes.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -785,6 +791,11 @@ behavior must land in focused content/domain modules with tests first.
 - Decision: Human Review v1 is a domain contract, not a UI-only confirmation.
   Reason: WordPress handoff must depend on an auditable human decision with
   checked items, evidence IDs and handled blocked claims, not a dashboard toggle.
+- Decision: WordPress Handoff v1 is prepare-only until a connector write returns
+  a real post ID.
+  Reason: WILQ must not claim draft creation or publication from a local plan;
+  the safe contract can prepare `post_status=draft` while keeping publish and
+  destructive update paths blocked.
 
 ## Outcomes & Retrospective
 

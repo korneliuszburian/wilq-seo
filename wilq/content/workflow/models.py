@@ -26,7 +26,12 @@ ContentHumanReviewStatus = Literal[
     "deferred",
 ]
 ContentAuditStatus = Literal["missing", "recorded"]
-ContentWordPressHandoffStatus = Literal["missing", "blocked", "draft_created"]
+ContentWordPressHandoffStatus = Literal[
+    "missing",
+    "blocked",
+    "prepared",
+    "draft_created",
+]
 ContentMeasurementWindowStatus = Literal[
     "missing",
     "planned",

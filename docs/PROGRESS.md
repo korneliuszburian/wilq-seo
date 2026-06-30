@@ -258,6 +258,18 @@ API status later contradicts this state.
   `tests/content` (83 tests), Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Beads task `wilq-seo-qsf` is closed. `wilq/content/handoff/wordpress.py`
+  now defines WordPress Draft Handoff v1 as a prepare-only, draft-only handoff
+  contract. It requires a public final canonical URL, matching Draft Package,
+  approved Human Review and audit envelope with evidence IDs. It blocks dev
+  preview URLs as canonical, missing audit, non-approved review, mismatched
+  draft packages and any publish-ready draft package. The handoff emits
+  `post_status=draft`, `publish_allowed=false` and
+  `destructive_update_allowed=false`; workflow state becomes `prepared` until a
+  real WordPress post ID exists, then `draft_created`. `tests/content`
+  (88 tests), Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
