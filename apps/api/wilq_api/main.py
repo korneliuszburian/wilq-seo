@@ -13,7 +13,9 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.connectors import router as connectors_router
+from apps.api.wilq_api.routers.evidence import router as evidence_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
+from apps.api.wilq_api.routers.metrics import router as metrics_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
@@ -79,7 +81,6 @@ from wilq.connectors.registry import list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
 from wilq.evidence.registry import (
     connector_evidence_id,
-    get_evidence,
     list_evidence,
     list_evidence_by_ids,
 )
@@ -182,7 +183,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(connectors_router)
+app.include_router(evidence_router)
 app.include_router(jobs_router)
+app.include_router(metrics_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 3
@@ -4697,44 +4700,6 @@ def recompute_opportunities() -> list[Opportunity]:
 @app.get("/api/actions")
 def actions() -> list[dict[str, Any]]:
     return [action.model_dump(mode="json") for action in list_actions()]
-
-
-@app.get("/api/evidence", response_model=list[Evidence])
-def evidence_items() -> list[Evidence]:
-    return [_label_evidence_item(item) for item in list_evidence()]
-
-
-@app.get("/api/evidence/{evidence_id}", response_model=Evidence)
-def evidence_detail(evidence_id: str) -> Evidence:
-    evidence = get_evidence(evidence_id)
-    if evidence is None:
-        raise HTTPException(status_code=404, detail=f"Unknown evidence: {evidence_id}")
-    return _label_evidence_item(evidence)
-
-
-def _label_evidence_item(evidence: Evidence) -> Evidence:
-    source_label = source_connector_label(evidence.source_connector)
-    source_type_label = evidence_source_type_label(evidence.source_type)
-    freshness_label = freshness_state_label(evidence.freshness.state)
-    return evidence.model_copy(
-        update={
-            "title_label": f"Dowód z {source_label}",
-            "source_connector_label": source_label,
-            "source_type_label": source_type_label,
-            "freshness_label": freshness_label,
-            "trace_summary_label": f"{source_label}: {source_type_label}, {freshness_label}",
-        }
-    )
-
-
-@app.get("/api/metrics", response_model=list[MetricFact])
-def metric_facts(connector_id: str | None = None, limit: int = 100) -> list[MetricFact]:
-    return metric_store().list_metric_facts(connector_id=connector_id, limit=limit)
-
-
-@app.get("/api/metrics/status")
-def metric_store_status() -> dict[str, Any]:
-    return metric_store().status()
 
 
 @app.get("/api/actions/{action_id}")

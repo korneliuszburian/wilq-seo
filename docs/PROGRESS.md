@@ -160,6 +160,13 @@ API status later contradicts this state.
   response shapes. Focused scheduler tests, jobs route-shape smoke, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 evidence/metrics router extraction moved `/api/evidence*` and
+  `/api/metrics*` read endpoints from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/evidence.py` and
+  `apps/api/wilq_api/routers/metrics.py` without changing endpoint paths or
+  response shapes. Focused evidence/metrics API tests, route-shape smoke, Ruff,
+  mypy, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 
 ## Latest Verified Product State
 
