@@ -291,6 +291,16 @@ API status later contradicts this state.
   `GET /api/content/preflight` shape remains unchanged. Focused API tests,
   Ruff, mypy, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- Goal 002 Sales Brief API bridge started under `wilq-seo-asw`.
+  `POST /api/content/work-items/sales-brief` now computes inventory resolution
+  and ContentPreflight v2, then calls the typed Sales Brief v1 builder from
+  `wilq/content/briefs/sales.py`. It returns the preflight verdict and
+  `sales_brief_result` without creating draft packages or WordPress handoffs.
+  Focused API tests prove a valid preserve-first item produces a source-fact
+  and measurement-backed brief, missing source facts block the brief, and
+  forbidden claims from Claim Ledger remain visible in the brief. Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

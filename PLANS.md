@@ -780,6 +780,11 @@ Current ready/in-progress Goal 002 slices are:
   `POST /api/content/work-items/preflight` exposes the existing
   `ContentWorkItem`, Content Inventory v1 and ContentPreflight v2 domain
   contracts through WILQ API without moving logic to React or Codex skills.
+- `wilq-seo-asw` - content sales brief API bridge, closed.
+  `POST /api/content/work-items/sales-brief` exposes Sales Brief v1 through
+  WILQ API after computing inventory resolution and ContentPreflight v2. The
+  endpoint returns typed blockers or a typed brief, but does not draft or hand
+  off content.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

@@ -5,7 +5,10 @@ from fastapi import APIRouter
 from wilq.content.workflow.api import (
     ContentWorkItemPreflightRequest,
     ContentWorkItemPreflightResponse,
+    ContentWorkItemSalesBriefRequest,
+    ContentWorkItemSalesBriefResponse,
     build_content_work_item_preflight_response,
+    build_content_work_item_sales_brief_response,
 )
 
 router = APIRouter()
@@ -19,3 +22,13 @@ def content_work_item_preflight(
     request: ContentWorkItemPreflightRequest,
 ) -> ContentWorkItemPreflightResponse:
     return build_content_work_item_preflight_response(request)
+
+
+@router.post(
+    "/api/content/work-items/sales-brief",
+    response_model=ContentWorkItemSalesBriefResponse,
+)
+def content_work_item_sales_brief(
+    request: ContentWorkItemSalesBriefRequest,
+) -> ContentWorkItemSalesBriefResponse:
+    return build_content_work_item_sales_brief_response(request)
