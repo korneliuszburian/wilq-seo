@@ -191,6 +191,16 @@ API status later contradicts this state.
   measurement window is ready. `tests/content` (46 tests), Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Beads task `wilq-seo-acy` is closed. `wilq/content/inventory/records.py` now
+  defines Content Inventory v1 records and resolution: public URL/canonical,
+  optional preview URL, source connectors, evidence IDs, preserve-first mode,
+  duplicate-risk blockers and create-after-review only after a clear duplicate
+  check. Focused tests cover existing public URL, missing final canonical, dev
+  preview as invalid canonical, unresolved duplicate risk, clear duplicate
+  create candidate and canonical deduplication. `tests/content` (52 tests),
+  Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

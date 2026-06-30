@@ -671,7 +671,11 @@ Current ready/in-progress Goal 002 slices are:
   outcome claims remain blocked until the measurement window is ready.
 - `wilq-seo-acy` - next product slice: build Content Inventory v1 records that
   can support preserve/refresh/merge/create/block decisions without treating
-  dev preview URLs as canonical evidence.
+  dev preview URLs as canonical evidence, closed. `wilq/content/inventory/records.py`
+  now returns structured inventory records and preserve/create/block resolution.
+- `wilq-seo-jih` - next product slice: turn ContentPreflight into a first-class
+  workflow verdict over `ContentWorkItem` and Content Inventory v1. Preflight
+  must not draft or write; it only decides the safe next stage.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -706,6 +710,11 @@ behavior must land in focused content/domain modules with tests first.
   endpoint or dashboard remapper.
   Reason: later API, Codex and dashboard work must consume the same gate logic
   instead of reimplementing it in prompts or React conditionals.
+- Decision: Content Inventory v1 is a preserve-first resolution model before it
+  is a rich extractor.
+  Reason: WILQ needs safe content decisions now; richer extraction can build on
+  records that already block missing canonical, dev-preview canonical and
+  unresolved duplicate risk.
 
 ## Outcomes & Retrospective
 
