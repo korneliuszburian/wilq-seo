@@ -566,6 +566,10 @@ dashboard logic fork.
   `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/knowledge.py` and
   `apps/api/wilq_api/routers/expert.py`. Context-pack compaction helpers still
   stay in `main.py` until they receive a separate scoped extraction.
+- Fifth API router extraction moved workflow and workflow-run endpoints from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/workflows.py`.
+  Codex run endpoints remain in `main.py` for a later context-runtime router
+  slice.
 
 Current next action:
 
@@ -577,7 +581,8 @@ Current ready/in-progress Goal 002 slices are:
   remains in `main.py` until cache invalidation is extracted safely. Second
   slice moved jobs and job-run endpoints to a jobs router. Third slice moved
   evidence and metric read endpoints to dedicated routers. Fourth slice moved
-  knowledge and expert-rule endpoints to dedicated routers.
+  knowledge and expert-rule endpoints to dedicated routers. Fifth slice moved
+  workflow and workflow-run endpoints to a workflows router.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
@@ -623,6 +628,7 @@ Current outcome:
   until a safe cache extraction exists. Jobs and job-run endpoints also now
   have a router home. Evidence and metric read endpoints also now have router
   homes. Knowledge and expert-rule endpoints also now have router homes.
+  Workflow and workflow-run endpoints also now have a router home.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision

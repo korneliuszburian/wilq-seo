@@ -18,6 +18,7 @@ from apps.api.wilq_api.routers.expert import router as expert_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
 from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
+from apps.api.wilq_api.routers.workflows import router as workflows_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
@@ -146,8 +147,6 @@ from wilq.schemas import (
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
-from wilq.workflows.models import WorkflowRun, WorkflowRunCreateRequest
-from wilq.workflows.registry import list_workflows
 
 DEFAULT_CORS_ORIGINS = (
     "http://localhost:5173",
@@ -180,6 +179,7 @@ app.include_router(expert_router)
 app.include_router(jobs_router)
 app.include_router(knowledge_router)
 app.include_router(metrics_router)
+app.include_router(workflows_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 3
@@ -4855,34 +4855,3 @@ def create_codex_run(run: CodexRun) -> CodexRun:
 @app.get("/api/codex/runs", response_model=list[CodexRun])
 def codex_runs() -> list[CodexRun]:
     return local_state_store().list_codex_runs()
-
-
-@app.get("/api/workflows")
-def workflows() -> list[dict[str, Any]]:
-    return [workflow.model_dump(mode="json") for workflow in list_workflows()]
-
-
-@app.post("/api/workflows/{workflow_id}/runs", response_model=WorkflowRun)
-def create_workflow_run(workflow_id: str, request: WorkflowRunCreateRequest) -> WorkflowRun:
-    if workflow_id not in {workflow.id for workflow in list_workflows()}:
-        raise HTTPException(status_code=404, detail=f"Unknown workflow: {workflow_id}")
-    run = WorkflowRun(
-        id=request.id or f"run_{workflow_id}_{uuid4().hex[:10]}",
-        workflow_id=workflow_id,
-        status="queued",
-        input=request.input,
-    )
-    return local_state_store().save_workflow_run(run)
-
-
-@app.get("/api/workflow-runs", response_model=list[WorkflowRun])
-def workflow_runs() -> list[WorkflowRun]:
-    return local_state_store().list_workflow_runs()
-
-
-@app.get("/api/workflow-runs/{run_id}", response_model=WorkflowRun)
-def workflow_run_detail(run_id: str) -> WorkflowRun:
-    run = local_state_store().get_workflow_run(run_id)
-    if run is None:
-        raise HTTPException(status_code=404, detail=f"Unknown workflow run: {run_id}")
-    return run
