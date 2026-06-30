@@ -312,13 +312,21 @@ export const ContentWorkItemMeasurementWindowResponseSchema = z.object({
   outcome_blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentWorkflowOperatorStepSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status_label: z.string(),
+  summary: z.string()
+});
+
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
   draft_package: ContentWorkItemDraftPackageResponseSchema,
   human_review: ContentWorkItemHumanReviewResponseSchema,
   wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponseSchema,
-  measurement_window: ContentWorkItemMeasurementWindowResponseSchema
+  measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
+  operator_steps: z.array(ContentWorkflowOperatorStepSchema).default([])
 });
 
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
@@ -352,6 +360,7 @@ export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
 >;
+export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema
 >;

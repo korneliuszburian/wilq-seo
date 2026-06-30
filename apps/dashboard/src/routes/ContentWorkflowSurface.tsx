@@ -183,7 +183,7 @@ function WorkflowStepsList({ steps }: { steps: WorkflowStep[] }) {
             <div>
               <h2 className="text-sm font-semibold text-ink">{step.title}</h2>
               <div className="mt-1 text-xs font-medium uppercase tracking-normal text-slate-500">
-                {step.status}
+                {step.statusLabel}
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-600">{step.summary}</p>
             </div>

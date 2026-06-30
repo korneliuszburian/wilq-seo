@@ -155,6 +155,13 @@ class ContentWorkItemMeasurementWindowResponse(BaseModel):
     outcome_blockers: list[ContentMeasurementWindowBlocker] = Field(default_factory=list)
 
 
+class ContentWorkflowOperatorStep(BaseModel):
+    id: str
+    title: str
+    status_label: str
+    summary: str
+
+
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
@@ -162,6 +169,7 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     human_review: ContentWorkItemHumanReviewResponse
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
+    operator_steps: list[ContentWorkflowOperatorStep] = Field(default_factory=list)
 
 
 class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):
@@ -483,7 +491,7 @@ def _build_content_work_item_snapshot_response(
             source_connectors=["google_search_console", "google_analytics_4"],
         )
     )
-    return ContentWorkItemWorkflowSnapshotResponse(
+    snapshot = ContentWorkItemWorkflowSnapshotResponse(
         preflight=preflight,
         sales_brief=sales_brief,
         draft_package=draft_package,
@@ -491,6 +499,93 @@ def _build_content_work_item_snapshot_response(
         wordpress_handoff=wordpress_handoff,
         measurement_window=measurement_window,
     )
+    snapshot.operator_steps = _content_workflow_operator_steps(snapshot)
+    return snapshot
+
+
+def _content_workflow_operator_steps(
+    snapshot: ContentWorkItemWorkflowSnapshotResponse,
+) -> list[ContentWorkflowOperatorStep]:
+    brief = snapshot.sales_brief.sales_brief_result.brief
+    draft = snapshot.draft_package.draft_package_result.draft_package
+    review = snapshot.human_review.review
+    handoff = snapshot.wordpress_handoff.handoff_result.handoff
+    handoff_blocker = snapshot.wordpress_handoff.handoff_result.blockers[0:1]
+    measurement_window = snapshot.measurement_window.measurement_window_result.window
+    return [
+        ContentWorkflowOperatorStep(
+            id="content_preflight",
+            title="Sprawdzenie pisania",
+            status_label=_preflight_status_label(snapshot.preflight.preflight_verdict.status),
+            summary=snapshot.preflight.preflight_verdict.next_step,
+        ),
+        ContentWorkflowOperatorStep(
+            id="sales_brief",
+            title="Plan sprzedażowy",
+            status_label="gotowy do sprawdzenia" if brief else "zablokowany",
+            summary=brief.buyer_problem if brief else "Brakuje planu sprzedażowego.",
+        ),
+        ContentWorkflowOperatorStep(
+            id="draft_package",
+            title="Paczka szkicu",
+            status_label="konspekt do sprawdzenia" if draft else "zablokowany",
+            summary="WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację.",
+        ),
+        ContentWorkflowOperatorStep(
+            id="human_review",
+            title="Sprawdzenie człowieka",
+            status_label="zatwierdzone" if review else "wymaga decyzji",
+            summary=(
+                "Bez zatwierdzenia człowieka przekazanie szkicu do WordPress "
+                "pozostaje zablokowane."
+            ),
+        ),
+        ContentWorkflowOperatorStep(
+            id="wordpress_handoff",
+            title="Szkic w WordPress",
+            status_label="szkic" if handoff else "zablokowany",
+            summary=(
+                "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
+                if handoff
+                else (
+                    handoff_blocker[0].reason
+                    if handoff_blocker
+                    else "WordPress nie dostaje szkicu bez sprawdzenia człowieka i audytu."
+                )
+            ),
+        ),
+        ContentWorkflowOperatorStep(
+            id="measurement_window",
+            title="Okno pomiaru",
+            status_label=_measurement_window_status_label(
+                None if measurement_window is None else measurement_window.status
+            ),
+            summary="WILQ planuje pomiar teraz, ale ocena efektu czeka na koniec obserwacji.",
+        ),
+    ]
+
+
+def _preflight_status_label(status: str) -> str:
+    labels = {
+        "blocked": "zablokowane",
+        "plan_allowed": "można planować",
+        "brief_allowed": "można przygotować plan",
+        "draft_allowed": "można przygotować szkic",
+        "handoff_allowed": "można przekazać szkic",
+    }
+    return labels.get(status, "wymaga sprawdzenia")
+
+
+def _measurement_window_status_label(status: str | None) -> str:
+    if status is None:
+        return "brak"
+    labels = {
+        "planned": "zaplanowane",
+        "open": "pomiar trwa",
+        "ready_for_review": "gotowe do oceny",
+        "closed": "zamknięte",
+    }
+    return labels.get(status, "brak")
 
 
 def _select_content_work_item_decision(

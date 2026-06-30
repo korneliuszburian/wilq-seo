@@ -425,6 +425,10 @@ API status later contradicts this state.
   prepared handoff, the route can ask WILQ API for a dry-run preview, show that
   WordPress would receive only a draft, and keep publication/destructive update
   disabled.
+- Beads task `wilq-seo-bkr` moves the ordered Content Workflow step wording
+  into the WILQ API snapshot as `operator_steps`. The dashboard now renders
+  those API-owned marketer labels/statuses instead of building local workflow
+  step semantics in React.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

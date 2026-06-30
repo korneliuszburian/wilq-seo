@@ -676,7 +676,21 @@ describe("Content work item workflow schemas", () => {
           updated_item: item,
           measurement_window_result: { window: measurementWindow, blockers: [] },
           outcome_blockers: [blocker]
-        }
+        },
+        operator_steps: [
+          {
+            id: "content_preflight",
+            title: "Sprawdzenie pisania",
+            status_label: "można planować",
+            summary: "Zatwierdź preserve-first plan."
+          },
+          {
+            id: "sales_brief",
+            title: "Plan sprzedażowy",
+            status_label: "gotowy do sprawdzenia",
+            summary: "nie wie, jak podejść do BDO"
+          }
+        ]
       }).success
     ).toBe(true);
   });

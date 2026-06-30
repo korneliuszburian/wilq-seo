@@ -403,7 +403,8 @@ function workflowSnapshot({
           next_step: "Wróć po earliest_verdict_date."
         }
       ]
-    }
+    },
+    operator_steps: operatorSteps({ review: Boolean(review), handoff: Boolean(handoff) })
   };
 }
 
@@ -481,4 +482,47 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
       blockers: []
     }
   };
+}
+
+function operatorSteps({ review, handoff }: { review: boolean; handoff: boolean }) {
+  return [
+    {
+      id: "content_preflight",
+      title: "Sprawdzenie pisania",
+      status_label: "można planować",
+      summary: "Przejdź do kolejnego kroku."
+    },
+    {
+      id: "sales_brief",
+      title: "Plan sprzedażowy",
+      status_label: "gotowy do sprawdzenia",
+      summary: "nie wie, jak podejść do BDO"
+    },
+    {
+      id: "draft_package",
+      title: "Paczka szkicu",
+      status_label: "konspekt do sprawdzenia",
+      summary: "WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację."
+    },
+    {
+      id: "human_review",
+      title: "Sprawdzenie człowieka",
+      status_label: review ? "zatwierdzone" : "wymaga decyzji",
+      summary: "Bez zatwierdzenia człowieka przekazanie szkicu do WordPress pozostaje zablokowane."
+    },
+    {
+      id: "wordpress_handoff",
+      title: "Szkic w WordPress",
+      status_label: handoff ? "szkic" : "zablokowany",
+      summary: handoff
+        ? "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
+        : "WordPress handoff nie może ruszyć bez zatwierdzonego human review."
+    },
+    {
+      id: "measurement_window",
+      title: "Okno pomiaru",
+      status_label: "zaplanowane",
+      summary: "WILQ planuje pomiar teraz, ale ocena efektu czeka na koniec obserwacji."
+    }
+  ];
 }

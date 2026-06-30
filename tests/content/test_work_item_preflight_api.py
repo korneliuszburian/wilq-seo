@@ -959,6 +959,34 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
         "measurement_window_not_ready"
     ]
 
+    operator_steps = data["operator_steps"]
+    assert [step["id"] for step in operator_steps] == [
+        "content_preflight",
+        "sales_brief",
+        "draft_package",
+        "human_review",
+        "wordpress_handoff",
+        "measurement_window",
+    ]
+    assert [step["title"] for step in operator_steps] == [
+        "Sprawdzenie pisania",
+        "Plan sprzedażowy",
+        "Paczka szkicu",
+        "Sprawdzenie człowieka",
+        "Szkic w WordPress",
+        "Okno pomiaru",
+    ]
+    assert operator_steps[0]["status_label"] == "można planować"
+    assert operator_steps[3]["status_label"] == "wymaga decyzji"
+    assert operator_steps[4]["status_label"] == "zablokowany"
+    assert operator_steps[5]["status_label"] == "zaplanowane"
+    operator_text = " ".join(
+        f"{step['title']} {step['status_label']} {step['summary']}" for step in operator_steps
+    )
+    assert "/api/content" not in operator_text
+    assert "ContentWorkItem" not in operator_text
+    assert "workflow" not in operator_text.lower()
+
 
 def test_content_work_item_snapshot_persists_real_human_review(
     monkeypatch: Any,
@@ -1069,6 +1097,9 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     window = persisted["measurement_window"]["measurement_window_result"]["window"]
     assert window["handoff_id"] == handoff["id"]
     assert window["success_claim_allowed"] is False
+    operator_steps = {step["id"]: step for step in persisted["operator_steps"]}
+    assert operator_steps["human_review"]["status_label"] == "zatwierdzone"
+    assert operator_steps["wordpress_handoff"]["status_label"] == "szkic"
 
 
 def test_content_work_item_snapshot_does_not_persist_mismatched_audit(

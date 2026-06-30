@@ -982,6 +982,9 @@ Current outcome:
   marketer-facing step. After review and audit, the route can request the
   dry-run through the WILQ API, show the draft-only payload status and keep
   publication, destructive update and external write disabled.
+- Content workflow snapshot now includes API-owned `operator_steps`.
+  `/content-workflow` renders those marketer-facing step labels/statuses from
+  the WILQ API instead of rebuilding the workflow wording locally in React.
 
 Current risk:
 
