@@ -398,6 +398,11 @@ API status later contradicts this state.
   contract with `post_status=draft`, `publish_allowed=false` and
   `destructive_update_allowed=false`. Mismatched audit is not stored as handoff
   approval, and measurement success/failure claims remain blocked.
+- Beads task `wilq-seo-pr9` wires that review/audit path into the
+  `/content-workflow` dashboard. The route can now submit Human Review and a
+  matching audit through typed WILQ API helpers, then refetches the API-owned
+  snapshot. React still does not decide handoff readiness, write to WordPress,
+  publish or create destructive updates.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

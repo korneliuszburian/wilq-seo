@@ -1,8 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock3, FileText, ShieldCheck } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Clock3, FileText, ShieldCheck, Stamp } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { LoadingBand } from "../components/OperatorPrimitives";
+import {
+  saveContentWorkItemSnapshotAudit,
+  saveContentWorkItemSnapshotHumanReview
+} from "../lib/api";
 import {
   buildWorkflowSteps,
   loadContentWorkflowSnapshot,
@@ -18,9 +22,20 @@ type WorkflowSafetyPanelsProps = {
 };
 
 export function ContentWorkflowSurface() {
+  const queryClient = useQueryClient();
   const workflow = useQuery({
     queryKey: ["content-workflow", "diagnostics-snapshot"],
     queryFn: loadContentWorkflowSnapshot
+  });
+  const refreshWorkflow = () =>
+    queryClient.invalidateQueries({ queryKey: ["content-workflow", "diagnostics-snapshot"] });
+  const reviewMutation = useMutation({
+    mutationFn: saveContentWorkItemSnapshotHumanReview,
+    onSuccess: refreshWorkflow
+  });
+  const auditMutation = useMutation({
+    mutationFn: saveContentWorkItemSnapshotAudit,
+    onSuccess: refreshWorkflow
   });
 
   if (workflow.isLoading) return <LoadingBand />;
@@ -46,6 +61,47 @@ export function ContentWorkflowSurface() {
       <ContentWorkflowHeader topic={item.topic} />
       <WorkflowProofSummary data={data} />
       <WorkflowStepsList steps={steps} />
+      <WorkflowOperatorControls
+        data={data}
+        reviewPending={reviewMutation.isPending}
+        auditPending={auditMutation.isPending}
+        onReview={() => {
+          if (!draft) return;
+          reviewMutation.mutate({
+            review: {
+              id: `human_review_${item.id}`,
+              work_item_id: item.id,
+              stage: "draft_package",
+              reviewed_by: "wilku",
+              decision: "approved",
+              notes:
+                "Operator zatwierdził brief, ryzykowne twierdzenia i paczkę szkicu do przygotowania szkicu WordPress.",
+              checked_items: [
+                "Brief i paczka szkicu są zgodne z dowodami WILQ.",
+                "Ryzykowne twierdzenia zostały usunięte albo obsłużone.",
+                "Szkic pozostaje materiałem do sprawdzenia, nie publikacją."
+              ],
+              evidence_ids: unique(item.evidence_ids),
+              blocked_claims_handled: unique(draft.claims_removed_or_blocked),
+              draft_package_id: draft.id
+            }
+          });
+        }}
+        onAudit={() => {
+          const review = data.humanReview.review;
+          if (!review) return;
+          auditMutation.mutate({
+            audit: {
+              audit_id: `audit_${item.id}`,
+              actor: "wilku",
+              reason:
+                "Operator zatwierdził przekazanie wyłącznie w trybie szkicu. WordPress może dostać wyłącznie szkic.",
+              evidence_ids: unique(item.evidence_ids),
+              human_review_id: review.id
+            }
+          });
+        }}
+      />
       <WorkflowSafetyPanels data={data} draft={draft} handoff={handoff} window={window} />
     </main>
   );
@@ -116,6 +172,91 @@ function WorkflowStepsList({ steps }: { steps: WorkflowStep[] }) {
   );
 }
 
+function WorkflowOperatorControls({
+  data,
+  reviewPending,
+  auditPending,
+  onReview,
+  onAudit
+}: {
+  data: ContentWorkflowSnapshot;
+  reviewPending: boolean;
+  auditPending: boolean;
+  onReview: () => void;
+  onAudit: () => void;
+}) {
+  const item = data.preflight.item;
+  const draft = data.draftPackage.draft_package_result.draft_package;
+  const review = data.humanReview.review;
+  const handoff = data.wordpressHandoff.handoff_result.handoff;
+  const reviewDisabledReason = reviewControlDisabledReason(data, Boolean(draft), reviewPending);
+  const auditDisabledReason = auditControlDisabledReason(data, auditPending);
+  return (
+    <section className="mt-6 rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Stamp aria-hidden="true" size={18} className="text-action" />
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Decyzje operatora
+            </h2>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            Te przyciski zapisują sprawdzenie i audyt w WILQ. Nie publikują treści, nie nadpisują
+            strony i nie tworzą publicznego wpisu w WordPress.
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            Temat: <span className="font-medium text-ink">{item.topic}</span>
+          </p>
+        </div>
+        <div className="grid w-full gap-3 sm:w-auto sm:min-w-80">
+          <WorkflowControlButton
+            label={review ? "Sprawdzenie zapisane" : "Zatwierdź sprawdzenie"}
+            disabledReason={reviewDisabledReason}
+            pending={reviewPending}
+            onClick={onReview}
+          />
+          <WorkflowControlButton
+            label={handoff ? "Audyt zapisany" : "Zapisz audyt przekazania"}
+            disabledReason={auditDisabledReason}
+            pending={auditPending}
+            onClick={onAudit}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WorkflowControlButton({
+  label,
+  disabledReason,
+  pending,
+  onClick
+}: {
+  label: string;
+  disabledReason: string | null;
+  pending: boolean;
+  onClick: () => void;
+}) {
+  const disabled = Boolean(disabledReason) || pending;
+  return (
+    <div>
+      <button
+        type="button"
+        className="w-full rounded-md border border-action bg-action px-4 py-2 text-sm font-semibold text-white disabled:border-line disabled:bg-surface disabled:text-slate-500"
+        disabled={disabled}
+        onClick={onClick}
+      >
+        {pending ? "Zapisywanie..." : label}
+      </button>
+      {disabledReason ? (
+        <p className="mt-1 text-xs leading-5 text-slate-500">{disabledReason}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function WorkflowSafetyPanels({
   data,
   draft,
@@ -173,7 +314,7 @@ function draftSafetyText(publishReady?: boolean) {
 
 function handoffSafetyText(publishAllowed?: boolean) {
   if (publishAllowed === undefined) {
-    return "WordPress nie dostaje jeszcze szkicu. Najpierw człowiek musi zatwierdzić brief, claimy i paczkę szkicu, a WILQ musi zapisać audyt.";
+    return "WordPress nie dostaje jeszcze szkicu. Najpierw człowiek musi zatwierdzić brief, ryzykowne twierdzenia i paczkę szkicu, a WILQ musi zapisać audyt.";
   }
   if (publishAllowed) {
     return "Publikacja wymaga osobnej blokady, bo WILQ nie powinien publikować automatycznie.";
@@ -186,6 +327,35 @@ function measurementSafetyText(
 ) {
   if (!window) return "Brak okna pomiaru blokuje jakiekolwiek wnioski o efekcie treści.";
   return `Pierwsza ocena po ${window.earliest_verdict_date}. Do tego czasu WILQ zbiera dane, ale nie claimuje sukcesu ani porażki.`;
+}
+
+function reviewControlDisabledReason(
+  data: ContentWorkflowSnapshot,
+  hasDraft: boolean,
+  pending: boolean
+) {
+  if (pending) return "WILQ zapisuje sprawdzenie.";
+  if (data.humanReview.review) return "Sprawdzenie człowieka jest już zapisane dla tego tematu.";
+  if (!hasDraft) return "Najpierw WILQ musi przygotować paczkę szkicu do sprawdzenia.";
+  if (!data.preflight.item.evidence_ids.length) {
+    return "Sprawdzenie nie może ruszyć bez dowodów przypiętych do tematu.";
+  }
+  return null;
+}
+
+function auditControlDisabledReason(data: ContentWorkflowSnapshot, pending: boolean) {
+  if (pending) return "WILQ zapisuje audyt przekazania szkicu.";
+  if (data.wordpressHandoff.handoff_result.handoff) {
+    return "Audyt jest zapisany, a przekazanie do WordPress pozostaje przygotowane tylko jako szkic.";
+  }
+  if (!data.humanReview.review) return "Najpierw zapisz sprawdzenie człowieka.";
+  if (!data.humanReview.wordpress_handoff_allowed) {
+    return (
+      data.humanReview.blockers[0]?.reason ??
+      "WILQ nie odblokował przekazania do WordPress po sprawdzeniu."
+    );
+  }
+  return null;
 }
 
 function unique(values: string[]) {

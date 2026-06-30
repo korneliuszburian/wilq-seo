@@ -90,16 +90,16 @@ direct migration is feasible.
 
 ## Non-Negotiable Rules
 
-- No evidence ID -> no recommendation.
-- No source connector -> no recommendation.
-- No preflight verdict -> no writing.
-- No sales brief -> no draft.
-- No claim ledger -> no draft.
-- No human review -> no WordPress draft handoff.
-- No audit -> no write/apply.
-- No measurement window -> no success/failure claim.
-- No waiting for post-publication metrics before preparing content work; create
-  the measurement plan now and reserve outcome claims until the window closes.
+- Brak identyfikatora dowodu oznacza brak rekomendacji.
+- Brak potwierdzonego źródła danych oznacza brak rekomendacji.
+- Brak werdyktu sprawdzenia wstępnego oznacza brak pisania.
+- Brak planu sprzedażowego oznacza brak szkicu.
+- Brak rejestru ryzykownych twierdzeń oznacza brak szkicu.
+- Brak sprawdzenia przez człowieka oznacza brak przekazania szkicu do WordPress.
+- Brak audytu oznacza brak zapisu albo wykonania zmiany.
+- Brak okna pomiaru oznacza brak oceny sukcesu albo porażki.
+- Nie czekamy z przygotowaniem treści na metryki po publikacji; plan pomiaru
+  powstaje od razu, a wnioski o efekcie są zablokowane do końca okna obserwacji.
 - Existing content is preserve-first.
 - React renders API-owned view models; React does not decide product logic.
 - Codex skills consume WILQ API; skills do not invent business logic.
@@ -958,6 +958,11 @@ Current outcome:
   write to WordPress, does not publish, does not allow destructive updates and
   does not allow measurement success/failure claims before the observation
   window is ready.
+- `/content-workflow` now exposes marketer-facing review and audit controls for
+  that persisted snapshot path. The route submits only explicit operator
+  decisions through typed WILQ API helpers and then refetches the API-owned
+  snapshot; React does not decide handoff readiness, publish, write to
+  WordPress or create destructive updates.
 
 Current risk:
 

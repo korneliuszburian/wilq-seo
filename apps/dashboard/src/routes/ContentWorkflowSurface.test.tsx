@@ -1,7 +1,12 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getContentWorkItemSnapshot, type ContentWorkItemWorkflowSnapshotResponse } from "../lib/api";
+import {
+  getContentWorkItemSnapshot,
+  saveContentWorkItemSnapshotAudit,
+  saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemWorkflowSnapshotResponse
+} from "../lib/api";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
@@ -9,17 +14,26 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
-    getContentWorkItemSnapshot: vi.fn()
+    getContentWorkItemSnapshot: vi.fn(),
+    saveContentWorkItemSnapshotHumanReview: vi.fn(),
+    saveContentWorkItemSnapshotAudit: vi.fn()
   };
 });
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
+      workflowSnapshot({ review: humanReview() }).human_review
+    );
+    vi.mocked(saveContentWorkItemSnapshotAudit).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() }).wordpress_handoff
+    );
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    cleanup();
+    vi.clearAllMocks();
   });
 
   it("renders the ordered content production workflow without raw technical terms", async () => {
@@ -47,7 +61,7 @@ describe("ContentWorkflowSurface", () => {
       "Szkic w WordPress",
       "Okno pomiaru"
     ]);
-    expect(screen.getByText("BDO dla firm")).toBeInTheDocument();
+    expect(screen.getAllByText("BDO dla firm")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
@@ -58,6 +72,88 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.queryByText("/api/content")).not.toBeInTheDocument();
     expect(screen.queryByText("ContentWorkItem")).not.toBeInTheDocument();
     expect(screen.queryByText("wordpress_ekologus")).not.toBeInTheDocument();
+  });
+
+  it("submits a snapshot human review from the current API snapshot", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Zatwierdź sprawdzenie" });
+    fireEvent.click(screen.getByRole("button", { name: "Zatwierdź sprawdzenie" }));
+
+    await waitFor(() => {
+      expect(saveContentWorkItemSnapshotHumanReview).toHaveBeenCalled();
+    });
+    expect(vi.mocked(saveContentWorkItemSnapshotHumanReview).mock.calls[0]?.[0]).toEqual({
+        review: expect.objectContaining({
+          id: "human_review_content_work_item_bdo",
+          work_item_id: "content_work_item_bdo",
+          stage: "draft_package",
+          reviewed_by: "wilku",
+          decision: "approved",
+          draft_package_id: "draft_package_content_work_item_bdo",
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"]
+        })
+      });
+    expect(saveContentWorkItemSnapshotAudit).not.toHaveBeenCalled();
+  });
+
+  it("submits a matching audit only after WILQ exposes an approved human review", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot({ review: humanReview() }));
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Zapisz audyt przekazania" });
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz audyt przekazania" }));
+
+    await waitFor(() => {
+      expect(saveContentWorkItemSnapshotAudit).toHaveBeenCalled();
+    });
+    expect(vi.mocked(saveContentWorkItemSnapshotAudit).mock.calls[0]?.[0]).toEqual({
+        audit: {
+          audit_id: "audit_content_work_item_bdo",
+          actor: "wilku",
+          reason:
+            "Operator zatwierdził przekazanie wyłącznie w trybie szkicu. WordPress może dostać wyłącznie szkic.",
+          evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+          human_review_id: "human_review_content_work_item_bdo"
+        }
+      });
+    expect(saveContentWorkItemSnapshotHumanReview).not.toHaveBeenCalled();
+  });
+
+  it("keeps the handoff controls disabled when a draft-only handoff is already prepared", async () => {
+    vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
+      workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    expect(await screen.findByRole("button", { name: "Sprawdzenie zapisane" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Audyt zapisany" })).toBeDisabled();
+    expect(screen.getByText(/przekazanie do WordPress pozostaje przygotowane tylko jako szkic/))
+      .toBeInTheDocument();
   });
 });
 
@@ -199,7 +295,16 @@ function draftPackage() {
   };
 }
 
-function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
+function workflowSnapshot({
+  review = null,
+  handoff = null
+}: {
+  review?: ReturnType<typeof humanReview> | null;
+  handoff?: ReturnType<typeof wordpressHandoff> | null;
+} = {}): ContentWorkItemWorkflowSnapshotResponse {
+  const reviewedItem = review
+    ? workItem({ human_review_status: "approved", human_review_id: review.id })
+    : workItem({ human_review_status: "missing", human_review_id: null });
   return {
     preflight: {
       item: workItem(),
@@ -221,36 +326,40 @@ function workflowSnapshot(): ContentWorkItemWorkflowSnapshotResponse {
     },
     human_review: {
       item: workItem(),
-      reviewed_item: workItem({ human_review_status: "missing", human_review_id: null }),
-      review: null,
-      blockers: [
-        {
-          code: "missing_human_review",
-          label: "Brakuje decyzji człowieka",
-          reason: "Snapshot nie może udawać zatwierdzonego review.",
-          next_step: "Zatwierdź brief, claimy i paczkę szkicu."
-        }
-      ],
-      wordpress_handoff_allowed: false
+      reviewed_item: reviewedItem,
+      review,
+      blockers: review
+        ? []
+        : [
+            {
+              code: "missing_human_review",
+              label: "Brakuje decyzji człowieka",
+              reason: "Snapshot nie może udawać zatwierdzonego review.",
+              next_step: "Zatwierdź brief, claimy i paczkę szkicu."
+            }
+          ],
+      wordpress_handoff_allowed: Boolean(review)
     },
     wordpress_handoff: {
       item: workItem(),
       handoff_result: {
-        handoff: null,
-        blockers: [
-          {
-            code: "missing_human_review",
-            label: "Brakuje decyzji człowieka",
-            reason: "WordPress handoff nie może ruszyć bez zatwierdzonego human review.",
-            next_step: "Zatwierdź szkic i claimy przed handoffem."
-          },
-          {
-            code: "missing_audit",
-            label: "Brakuje audytu",
-            reason: "Każdy WordPress handoff musi mieć audit envelope.",
-            next_step: "Zapisz audit_id, actor, reason, evidence IDs i human_review_id."
-          }
-        ]
+        handoff,
+        blockers: handoff
+          ? []
+          : [
+              {
+                code: "missing_human_review",
+                label: "Brakuje decyzji człowieka",
+                reason: "WordPress handoff nie może ruszyć bez zatwierdzonego human review.",
+                next_step: "Zatwierdź szkic i claimy przed handoffem."
+              },
+              {
+                code: "missing_audit",
+                label: "Brakuje audytu",
+                reason: "Każdy WordPress handoff musi mieć audit envelope.",
+                next_step: "Zapisz audit_id, actor, reason, evidence IDs i human_review_id."
+              }
+            ]
       }
     },
     measurement_window: {
@@ -286,5 +395,41 @@ function measurementWindow() {
     status: "planned",
     handoff_id: "wordpress_draft_handoff_content_work_item_bdo",
     success_claim_allowed: false
+  };
+}
+
+function humanReview() {
+  return {
+    id: "human_review_content_work_item_bdo",
+    work_item_id: "content_work_item_bdo",
+    stage: "draft_package",
+    reviewed_by: "wilku",
+    decision: "approved",
+    notes: "Operator zatwierdził paczkę szkicu.",
+    checked_items: ["Brief i paczka szkicu są zgodne z dowodami WILQ."],
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    blocked_claims_handled: [],
+    draft_package_id: "draft_package_content_work_item_bdo"
+  };
+}
+
+function wordpressHandoff() {
+  return {
+    id: "wordpress_draft_handoff_content_work_item_bdo",
+    work_item_id: "content_work_item_bdo",
+    draft_package_id: "draft_package_content_work_item_bdo",
+    human_review_id: "human_review_content_work_item_bdo",
+    audit_id: "audit_content_work_item_bdo",
+    connector: "wordpress_ekologus" as const,
+    operation_type: "create_wordpress_draft" as const,
+    status: "prepared" as const,
+    post_status: "draft" as const,
+    title: "BDO dla firm",
+    final_canonical_url: "https://ekologus.pl/bdo/",
+    intended_final_url: "https://ekologus.pl/bdo/",
+    preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+    publish_allowed: false,
+    destructive_update_allowed: false
   };
 }
