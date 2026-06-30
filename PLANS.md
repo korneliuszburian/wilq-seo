@@ -680,7 +680,9 @@ Current ready/in-progress Goal 002 slices are:
   writing.
 - `wilq-seo-wxm` - next product slice: add Claim Ledger v1 so risky SEO,
   business, legal-adjacent and environmental claims are data with statuses, not
-  prompt instructions.
+  prompt instructions, closed. `wilq/content/claims/ledger.py` now blocks
+  guarantees, measurement-dependent outcome claims and unreviewed legal/risk/
+  environmental claims before draft readiness.
 - `wilq-seo-pnz` - next product slice after or alongside Claim Ledger: add
   Sales Brief v1 from a valid work item/preflight, evidence, final URL and
   measurement plan.
@@ -727,6 +729,10 @@ behavior must land in focused content/domain modules with tests first.
   Reason: preflight should decide allowed next stages and blockers while Sales
   Brief, Claim Ledger, Draft Package, Human Review and WordPress handoff stay
   separate audited steps.
+- Decision: Claim Ledger v1 treats risky marketing language as data, not prompt
+  advice.
+  Reason: unsupported guarantees, SEO/performance/business outcome claims and
+  legal-adjacent claims must block draft readiness deterministically.
 
 ## Outcomes & Retrospective
 

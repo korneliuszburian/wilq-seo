@@ -212,6 +212,15 @@ API status later contradicts this state.
   `tests/content` (61 tests), Ruff, mypy, import-boundary smoke,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Beads task `wilq-seo-wxm` is closed. `wilq/content/claims/ledger.py` now
+  defines Claim Ledger v1 with typed claim kinds, statuses, evidence IDs,
+  reasons and optional reviewer. Deterministic rules block guarantee claims,
+  block SEO/performance/business outcome claims until measurement is ready,
+  require human review for legal/risk/environmental claims and block
+  `allowed_with_evidence` entries without evidence. `tests/content` (67 tests),
+  Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
