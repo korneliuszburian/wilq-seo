@@ -21,6 +21,7 @@ from apps.api.wilq_api.context_models import ContextPackRequest
 from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.codex import create_codex_router
 from apps.api.wilq_api.routers.connectors import create_connectors_router
+from apps.api.wilq_api.routers.content_workflow import router as content_workflow_router
 from apps.api.wilq_api.routers.demand_gen import create_demand_gen_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
@@ -64,6 +65,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(diagnostics_router)
+app.include_router(content_workflow_router)
 app.include_router(evidence_router)
 app.include_router(expert_router)
 app.include_router(jobs_router)

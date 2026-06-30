@@ -776,6 +776,10 @@ Current ready/in-progress Goal 002 slices are:
   periods, earliest verdict date, allowed metrics, source connectors, evidence
   IDs and optional WordPress handoff link. Outcome claims stay blocked until the
   window reaches `ready_for_review` or `closed` after the earliest verdict date.
+- `wilq-seo-bl3` - content work item preflight API bridge, closed.
+  `POST /api/content/work-items/preflight` exposes the existing
+  `ContentWorkItem`, Content Inventory v1 and ContentPreflight v2 domain
+  contracts through WILQ API without moving logic to React or Codex skills.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.

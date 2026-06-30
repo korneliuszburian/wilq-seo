@@ -281,6 +281,16 @@ API status later contradicts this state.
   before `earliest_verdict_date`. `tests/content` (92 tests), Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Goal 002 content workflow API bridge started under `wilq-seo-bl3`.
+  `wilq/content/workflow/api.py` now exposes a typed request/response for
+  `ContentWorkItem` preflight over Content Inventory v1. New endpoint
+  `POST /api/content/work-items/preflight` lives in
+  `apps/api/wilq_api/routers/content_workflow.py`, calls the domain inventory
+  resolver and ContentPreflight v2 verdict builder, preserves evidence IDs and
+  source connectors, and blocks dev preview URLs as final canonical. Existing
+  `GET /api/content/preflight` shape remains unchanged. Focused API tests,
+  Ruff, mypy, `scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
