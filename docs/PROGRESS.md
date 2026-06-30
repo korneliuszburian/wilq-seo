@@ -79,6 +79,12 @@ API status later contradicts this state.
   reports 21.0% TypeScript duplication with 13 functions above threshold.
   These are baseline risks for Goal 002, not permission to add new behavior to
   the known monoliths.
+- Goal 002 content domain extraction has started under `wilq-seo-x4u`.
+  Canonical/public URL semantics moved from
+  `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.
+  This is behavior-preserving extraction: focused canonical tests, two content
+  diagnostics contract tests, Ruff, mypy for the new module, import-boundary
+  smoke and `git diff --check` passed.
 
 ## Latest Verified Product State
 

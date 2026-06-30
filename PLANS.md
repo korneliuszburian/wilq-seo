@@ -503,14 +503,19 @@ dashboard logic fork.
 - Baseline result: frozen growth files are clean in the current diff, but full
   Ruff, mypy and Fallow still report historical debt. Treat these as known
   baseline failures, not as proof that future slices may add more debt.
+- First content domain extraction moved canonical/public URL semantics from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/canonical/urls.py` without changing content diagnostics
+  behavior.
 
 Current next action:
 
 Continue with the next ready extraction slice from `bd ready --json`.
-Current ready Goal 002 slices are:
+Current ready/in-progress Goal 002 slices are:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
-- `wilq-seo-x4u` - behavior-preserving content domain extraction.
+- `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
+  in progress after the canonical URL extraction slice.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -547,6 +552,9 @@ Current outcome:
   readiness.
 - Goal 002 now has a concrete product plan and operational Beads graph.
 - Anti-slop baseline is implemented and recorded as proof.
+- Content canonical URL semantics have a domain home. This is only the first
+  part of `wilq-seo-x4u`; inventory, preflight, planning, claims, drafting,
+  handoff and measurement modules still need behavior extraction.
 
 Current risk:
 

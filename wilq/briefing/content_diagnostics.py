@@ -5,7 +5,6 @@ import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
-from urllib.parse import urlparse
 
 from wilq.actions.content_refresh import content_contract_label
 from wilq.actions.service import list_actions
@@ -13,6 +12,13 @@ from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
+from wilq.content.canonical.urls import (
+    content_decision_final_canonical_url,
+    content_decision_has_public_final_canonical,
+    content_decision_url_semantics,
+    content_normalized_path,
+    content_normalized_url,
+)
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import (
     action_count_label,
@@ -51,11 +57,6 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
-CONTENT_SOURCE_SITE_HOSTS = {
-    "www.ekologus.pl",
-    "ekologus.pl",
-    "sklep.ekologus.pl",
-}
 GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
     "card_gsc_seo_content_playbook",
     "card_wordpress_content_refresh_playbook",
@@ -422,7 +423,7 @@ def _operator_summary(
 ) -> ContentOperatorSummary:
     top_decisions = decisions[:4]
     current_site_match_count = sum(
-        1 for decision in decisions if _content_decision_has_public_final_canonical(decision)
+        1 for decision in decisions if content_decision_has_public_final_canonical(decision)
     )
     ahrefs_wordpress_overlap_count = _ahrefs_wordpress_overlap_count(decisions)
     return ContentOperatorSummary(
@@ -499,7 +500,7 @@ def _content_marketer_decision(
     source_public_url = decision.source_public_url or decision.page
     preview_url = decision.preview_url
     intended_final_url = decision.intended_final_url or source_public_url
-    final_canonical_url = _content_decision_final_canonical_url(decision)
+    final_canonical_url = content_decision_final_canonical_url(decision)
     missing_inputs = _content_marketer_missing_inputs(
         decision,
         final_canonical_url=final_canonical_url,
@@ -532,17 +533,11 @@ def _content_marketer_decision(
     )
 
 
-def _content_decision_final_canonical_url(decision: ContentDecisionItem) -> str | None:
-    if decision.final_canonical_url:
-        return decision.final_canonical_url
-    return decision.intended_final_url or decision.source_public_url or decision.page
-
-
 def _content_preflight_item(decision: ContentDecisionItem) -> ContentPreflightItem:
     recommended_mode = _content_preflight_mode(decision)
     status = _content_preflight_status(decision, recommended_mode)
     source_public_url = decision.source_public_url or decision.page
-    final_canonical_url = _content_decision_final_canonical_url(decision)
+    final_canonical_url = content_decision_final_canonical_url(decision)
     missing_inputs = _content_marketer_missing_inputs(
         decision,
         final_canonical_url=final_canonical_url,
@@ -616,7 +611,7 @@ def _content_preflight_status(
 def _content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
     urls = []
     if decision.wordpress_match == "found":
-        urls.append(_content_decision_final_canonical_url(decision) or decision.source_public_url)
+        urls.append(content_decision_final_canonical_url(decision) or decision.source_public_url)
     urls.extend(url for row in decision.ahrefs_candidate_rows for url in row.wordpress_overlap_urls)
     return _unique(url for url in urls if url)
 
@@ -640,25 +635,6 @@ def _content_preflight_next_step(
     if recommended_mode == "merge":
         return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
     return decision.next_step
-
-
-def _content_decision_url_semantics(
-    *,
-    source_url: str,
-    wordpress_content_url: str | None,
-) -> dict[str, str | None]:
-    source_public_url = source_url
-    intended_final_url = (
-        wordpress_content_url
-        if _content_url_host(wordpress_content_url) in CONTENT_SOURCE_SITE_HOSTS
-        else source_public_url
-    )
-    return {
-        "source_public_url": source_public_url,
-        "preview_url": None,
-        "intended_final_url": intended_final_url,
-        "final_canonical_url": intended_final_url,
-    }
 
 
 def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
@@ -942,12 +918,6 @@ def _content_marketer_measurement_plan(decision: ContentDecisionItem) -> str:
         f"Po publikacji lub odświeżeniu porównaj GSC i GA4 przed/po{url_part}. "
         "Bez okna pomiarowego WILQ nie może twierdzić, że zmiana poprawiła "
         "pozycje, leady albo konwersje."
-    )
-
-
-def _content_decision_has_public_final_canonical(decision: ContentDecisionItem) -> bool:
-    return _content_url_host(_content_decision_final_canonical_url(decision)) in (
-        CONTENT_SOURCE_SITE_HOSTS
     )
 
 
@@ -1497,7 +1467,7 @@ def _gsc_content_decisions(
                 "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
                 "więc WILQ blokuje automatyczne tworzenie nowej treści."
             )
-        url_semantics = _content_decision_url_semantics(
+        url_semantics = content_decision_url_semantics(
             source_url=page,
             wordpress_content_url=wordpress_content_url,
         )
@@ -1577,7 +1547,7 @@ def _wordpress_inventory_details_by_path(
         url = fact.dimensions.get("content_url")
         if not url:
             continue
-        path = _content_normalized_path(url)
+        path = content_normalized_path(url)
         if not path:
             continue
         candidate = {
@@ -1604,7 +1574,7 @@ def _wordpress_inventory_details_by_url(
         if fact.name != "content_object_seen":
             continue
         url = fact.dimensions.get("content_url")
-        normalized_url = _content_normalized_url(url)
+        normalized_url = content_normalized_url(url)
         if not normalized_url:
             continue
         candidate = {
@@ -1623,17 +1593,6 @@ def _wordpress_inventory_details_by_url(
 
 def _inventory_detail_score(details: dict[str, str]) -> int:
     return sum(1 for value in details.values() if value)
-
-
-def _content_normalized_url(value: str | None) -> str:
-    if not value:
-        return ""
-    parsed = urlparse(value)
-    host = parsed.netloc.lower()
-    path = _content_normalized_path(value)
-    if not host or not path:
-        return ""
-    return f"{parsed.scheme.lower() or 'https'}://{host}{path}"
 
 
 def _content_gate_status(
@@ -1683,20 +1642,6 @@ def _content_gate_status(
             "sprawdzenia przed użyciem w planie treści."
         ),
     }
-
-
-def _content_url_host(value: str | None) -> str | None:
-    if not value:
-        return None
-    return urlparse(value).netloc.lower() or None
-
-
-def _content_normalized_path(value: str | None) -> str:
-    if not value:
-        return ""
-    parsed = urlparse(value)
-    path = parsed.path.rstrip("/")
-    return path or "/"
 
 
 def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
