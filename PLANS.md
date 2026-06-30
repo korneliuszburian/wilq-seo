@@ -1037,6 +1037,12 @@ Current outcome:
   dry-run and measurement blockers. It asserts draft-only WordPress status,
   no destructive update, no external write and no success claim before the
   measurement window is ready.
+- That end-to-end proof now also asserts the exact completion chain from this
+  plan: inventory/canonical resolution, duplicate check, initial preflight
+  blockers, preserve-first plan, draft-allowed transition, sales brief facts,
+  approved claim gate, ready draft package, structured draft evidence mapping,
+  human review, audit, draft-only WordPress handoff/execution dry-run and the
+  measurement blocker. It still does not publish or write to `ekologus.pl`.
 
 Current risk:
 

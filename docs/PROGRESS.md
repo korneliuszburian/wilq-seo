@@ -62,11 +62,13 @@ API status later contradicts this state.
 - The safe next product goal is Goal 002: Content Production Engine bez slopu.
 - Goal 002 must start from anti-slop guardrails and content workflow contracts,
   not from prompt-only drafting or more dashboard labels.
-- WILQ may be described as a review cockpit today. It must not be described as
-  a complete content production engine until preflight, preserve-first planning,
-  sales brief, claim ledger, draft package, human review, WordPress draft
-  handoff and measurement window are implemented and verified end-to-end for at
-  least one real Ekologus content item.
+- WILQ may now be described as a safe content draft-preparation workflow for
+  one diagnostics-derived Ekologus item: evidence, inventory/canonical check,
+  duplicate gate, preflight, preserve-first plan, sales brief, claim gate,
+  draft package, human review, audit, WordPress draft-only handoff/execution
+  dry-run and measurement window are covered by a focused end-to-end proof. It
+  must still not be described as an autopublisher, live WordPress writer or
+  success-claiming content engine.
 - WILQ must not wait for post-publication metrics before preparing useful
   content work. Every content item should get a measurement plan up front, and
   later GSC/GA4/Ahrefs/Ads/Merchant/Localo signals should become interpretation
@@ -81,9 +83,9 @@ API status later contradicts this state.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
-  functions, classes and frozen-file growth risk. Current baseline shows
-  147 Python files, 81,481 non-empty Python LOC and no changed frozen growth
-  files in this slice.
+  functions, classes and frozen-file growth risk. Latest changed-code audit
+  reports 250 Python files, 90,920 non-empty Python LOC and no changed frozen
+  growth files in the current slice.
 - Historical quality debt is now explicit: full Ruff reports 68 issues, mypy
   reports 5 existing type errors in `content_refresh.py`/`main.py`, and Fallow
   reports 21.0% TypeScript duplication with 13 functions above threshold.
@@ -489,6 +491,13 @@ API status later contradicts this state.
   The proof asserts `post_status=draft`, `publish_allowed=false`,
   `destructive_update_allowed=false`, `external_write_attempted=false` and
   `success_claim_allowed=false`; nothing is published on `ekologus.pl`.
+- Beads task `wilq-seo-bw9` strengthens that proof against the exact PLANS.md
+  completion chain. The end-to-end test now asserts inventory/canonical
+  resolution, duplicate check, initial preflight blockers, preserve-first plan,
+  draft-allowed transition, sales brief facts, approved claim gate, ready draft
+  package, structured draft evidence mapping, human review, audit, draft-only
+  WordPress handoff/execution dry-run and the measurement blocker. No WordPress
+  write or publication is attempted.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or
