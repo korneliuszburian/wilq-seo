@@ -15,20 +15,12 @@ from wilq.connectors.registry import get_connector_status
 from wilq.content.canonical.urls import (
     content_decision_final_canonical_url,
     content_decision_has_public_final_canonical,
-    content_decision_url_semantics,
 )
-from wilq.content.inventory.gates import content_inventory_gate_status
 from wilq.content.planning.decisions import (
     ContentDecisionType,
-    content_decision_metric_tiles,
-    content_decision_metrics,
-    content_decision_priority,
     content_decision_sort_key,
-    content_decision_status,
-    content_decision_summary,
-    content_decision_title,
     format_percent,
-    int_dimension,
+    gsc_content_decisions,
     polish_count_word,
     slug,
     wordpress_match_tile,
@@ -1291,7 +1283,11 @@ def _content_decision_queue(
     latest_refreshes: list[ConnectorRefreshRun],
 ) -> list[ContentDecisionItem]:
     decisions = [
-        *_gsc_content_decisions(items, inventory_metric_facts=metric_facts),
+        *gsc_content_decisions(
+            items,
+            knowledge_card_ids=GSC_CONTENT_KNOWLEDGE_CARD_IDS,
+            expert_rule_ids=GSC_CONTENT_EXPERT_RULE_IDS,
+        ),
         *_ga4_tracking_gap_decisions(items),
         *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
@@ -1356,137 +1352,6 @@ def _content_vendor_read_blocker_decision(
         ),
         risk=ActionRisk.medium,
     )
-
-
-def _gsc_content_decisions(
-    items: list[TacticalQueueItem],
-    *,
-    inventory_metric_facts: list[MetricFact],
-) -> list[ContentDecisionItem]:
-    page_groups: dict[str, list[TacticalQueueItem]] = {}
-    for item in _unique_tactical_items(items):
-        if item.domain != OpportunityDomain.gsc_seo:
-            continue
-        page = item.dimensions.get("page")
-        if page:
-            page_groups.setdefault(page, []).append(item)
-
-    decisions: list[ContentDecisionItem] = []
-    for page, page_items in page_groups.items():
-        first = page_items[0]
-        wordpress_match = first.dimensions.get("wordpress_match", "missing")
-        query_count = int_dimension(first, "gsc_page_query_count", len(page_items))
-        queries = _unique(
-            item.dimensions.get("query") for item in page_items if item.dimensions.get("query")
-        )
-        metric_facts = _unique_metric_facts(
-            fact for item in page_items for fact in item.metric_facts
-        )
-        wordpress_content_url = first.dimensions.get("wordpress_content_url")
-        metrics = content_decision_metrics(metric_facts, queries)
-        decision_type: ContentDecisionType
-        if wordpress_match == "found":
-            decision_type = "refresh_or_merge"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
-            next_step = (
-                "Przygotuj plan odświeżenia albo scalenia: title, H1/H2, sekcje "
-                "brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
-            )
-            rationale = (
-                "Spis treści WordPress potwierdza istniejący URL, więc WILQ kieruje "
-                "to do odświeżenia albo scalenia zamiast tworzenia nowej treści."
-            )
-        elif query_count > 1:
-            decision_type = "merge_create_after_inventory_check"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
-            next_step = (
-                "Sprawdź publiczny URL, spis strony i duplikaty w WordPress. Dopiero potem "
-                "wybierz scalenie, nową treść albo przywrócenie."
-            )
-            rationale = (
-                "Wiele zapytań prowadzi do jednego URL, ale spis treści nie potwierdza "
-                "strony, więc nowy plan treści bez kontroli grozi duplikacją."
-            )
-        else:
-            decision_type = "inventory_check_before_create"
-            title = content_decision_title(decision_type, page, query_count, metrics)
-            summary = content_decision_summary(decision_type, metrics, wordpress_match)
-            next_step = (
-                "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
-                "Jeśli nie istnieje, przygotuj plan treści dopiero po kontroli duplikatów."
-            )
-            rationale = (
-                "GSC pokazuje popyt, ale spis treści WordPress nie potwierdza URL, "
-                "więc WILQ blokuje automatyczne tworzenie nowej treści."
-            )
-        url_semantics = content_decision_url_semantics(
-            source_url=page,
-            wordpress_content_url=wordpress_content_url,
-        )
-        gate_status = content_inventory_gate_status(
-            decision_type=decision_type,
-            wordpress_match=wordpress_match,
-        )
-        decisions.append(
-            ContentDecisionItem(
-                id=f"content_decision_{slug(page)}",
-                decision_type=decision_type,
-                status=content_decision_status(decision_type),
-                title=title,
-                summary=summary,
-                priority=content_decision_priority(
-                    decision_type,
-                    metrics,
-                    query_count,
-                ),
-                metric_tiles=content_decision_metric_tiles(
-                    decision_type,
-                    metrics,
-                    query_count,
-                    wordpress_match,
-                ),
-                page=page,
-                normalized_page_path=first.dimensions.get("wordpress_requested_path"),
-                queries=queries,
-                query_count=query_count,
-                primary_query=metrics.primary_query,
-                total_clicks=metrics.total_clicks,
-                total_impressions=metrics.total_impressions,
-                aggregate_ctr=metrics.aggregate_ctr,
-                best_average_position=metrics.best_average_position,
-                wordpress_match=wordpress_match,
-                wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
-                source_public_url=url_semantics["source_public_url"],
-                preview_url=url_semantics["preview_url"],
-                intended_final_url=url_semantics["intended_final_url"],
-                final_canonical_url=url_semantics["final_canonical_url"],
-                inventory_gate_status=gate_status["inventory_gate_status"],
-                canonical_gate_status=gate_status["canonical_gate_status"],
-                duplicate_gate_status=gate_status["duplicate_gate_status"],
-                content_gate_summary=gate_status["content_gate_summary"],
-                source_connectors=_unique(
-                    connector for item in page_items for connector in item.source_connectors
-                ),
-                evidence_ids=_unique(
-                    evidence_id for item in page_items for evidence_id in item.evidence_ids
-                ),
-                metric_facts=metric_facts[:8],
-                action_ids=_unique(
-                    action_id for item in page_items for action_id in item.action_ids
-                ),
-                knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
-                expert_rule_ids=list(GSC_CONTENT_EXPERT_RULE_IDS),
-                blocked_claims=_unique(
-                    claim for item in page_items for claim in item.blocked_claims
-                ),
-                rationale=rationale,
-                next_step=next_step,
-                risk=ActionRisk.medium if wordpress_match == "missing" else ActionRisk.low,
-            )
-        )
-    return decisions
 
 
 def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:

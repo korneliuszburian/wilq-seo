@@ -107,6 +107,14 @@ API status later contradicts this state.
   two content diagnostics contract tests, Ruff, mypy for the new module,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Goal 002 GSC content decision construction moved from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/planning/decisions.py`. This is behavior-preserving extraction:
+  focused planning tests now cover `gsc_content_decisions`, preserve-first
+  handling and dev-preview URL rejection as canonical; the same content
+  diagnostics contract tests, Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 
 ## Latest Verified Product State
 

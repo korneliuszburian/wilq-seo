@@ -521,6 +521,11 @@ dashboard logic fork.
   `wilq/briefing/content_diagnostics.py` to
   `wilq/content/planning/decisions.py` without changing content diagnostics
   behavior.
+- Fifth content domain extraction moved GSC content decision construction from
+  `wilq/briefing/content_diagnostics.py` to
+  `wilq/content/planning/decisions.py`. The briefing module now passes
+  knowledge/expert IDs into the domain function instead of owning the GSC
+  preserve/refresh/merge/create decision builder.
 
 Current next action:
 
@@ -530,7 +535,8 @@ Current ready/in-progress Goal 002 slices are:
 - `wilq-seo-hdl` - behavior-preserving API router extraction.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict and inventory gate
-  extraction slices plus the content planning decision helper extraction.
+  extraction slices plus the content planning helper and GSC decision builder
+  extraction.
 
 Do not add new content workflow behavior before behavior-preserving extraction
 begins.
@@ -570,9 +576,9 @@ Current outcome:
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision
-  planning helpers now have a domain home. Full inventory records, full
-  preflight contracts, claims, drafting, handoff and measurement modules still
-  need behavior extraction.
+  planning helpers plus GSC content decision construction now have a domain
+  home. Full inventory records, full preflight contracts, claims, drafting,
+  handoff and measurement modules still need behavior extraction.
 
 Current risk:
 

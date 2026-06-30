@@ -10,6 +10,7 @@ from wilq.content.planning.decisions import (
     content_decision_summary,
     content_decision_title,
     format_percent,
+    gsc_content_decisions,
     int_dimension,
     polish_count_word,
     slug,
@@ -150,3 +151,60 @@ def test_content_planning_format_helpers_keep_marketer_copy_stable() -> None:
     assert int_dimension(item, "count", 1) == 7
     assert int_dimension(item, "bad", 1) == 1
     assert slug("BDO: odpady / firma") == "bdo__odpady___firma"
+
+
+def test_gsc_content_decisions_preserve_existing_public_url_before_create() -> None:
+    item = TacticalQueueItem(
+        id="queue_content_bdo",
+        title="BDO",
+        domain=OpportunityDomain.gsc_seo,
+        intent="content_refresh",
+        priority=20,
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=["ev_content_bdo"],
+        metric_facts=[
+            _metric_fact(
+                "impressions",
+                500,
+                query="bdo odpady",
+                page="https://www.ekologus.pl/bdo/",
+            ),
+            _metric_fact(
+                "clicks",
+                20,
+                query="bdo odpady",
+                page="https://www.ekologus.pl/bdo/",
+            ),
+        ],
+        diagnosis="GSC pokazuje popyt, WordPress potwierdza stronę.",
+        next_step="Sprawdź plan.",
+        blocked_claims=["wzrost leadów"],
+        action_ids=["act_prepare_content_refresh_queue"],
+        dimensions={
+            "page": "https://www.ekologus.pl/bdo/",
+            "query": "bdo odpady",
+            "wordpress_match": "found",
+            "wordpress_match_confidence": "exact_url",
+            "wordpress_content_url": "https://ekologus.dev.proudsite.pl/bdo/",
+            "wordpress_requested_path": "/bdo",
+            "gsc_page_query_count": "1",
+        },
+    )
+
+    decisions = gsc_content_decisions(
+        [item],
+        knowledge_card_ids=("card_gsc_seo_content_playbook",),
+        expert_rule_ids=("seo_query_page_matrix_v1",),
+    )
+
+    assert len(decisions) == 1
+    decision = decisions[0]
+    assert decision.decision_type == "refresh_or_merge"
+    assert decision.status == "ready"
+    assert decision.source_public_url == "https://www.ekologus.pl/bdo/"
+    assert decision.final_canonical_url == "https://www.ekologus.pl/bdo/"
+    assert decision.preview_url is None
+    assert decision.inventory_gate_status == "confirmed_current_inventory"
+    assert decision.duplicate_gate_status == "existing_public_content_requires_refresh_or_merge"
+    assert decision.blocked_claims == ["wzrost leadów"]
+    assert decision.action_ids == ["act_prepare_content_refresh_queue"]
