@@ -5,13 +5,13 @@ from collections import Counter
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
-from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from apps.api.wilq_api.routers.actions import create_actions_router
 from apps.api.wilq_api.routers.connectors import router as connectors_router
 from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
@@ -54,15 +54,8 @@ from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTIO
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
     _action_audit_event_label,
-    apply_action,
-    confirm_action,
     demand_gen_readiness_preview_cards,
-    get_action,
-    impact_check_action,
     list_actions,
-    preview_action,
-    record_action_review,
-    validate_action,
 )
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
@@ -105,17 +98,8 @@ from wilq.operator_labels import (
 )
 from wilq.opportunities.engine import list_opportunities
 from wilq.schemas import (
-    ActionApplyRequest,
-    ActionConfirmRequest,
-    ActionImpactCheckRequest,
-    ActionMutationAuditRecord,
     ActionObject,
-    ActionPreviewRequest,
-    ActionReviewRequest,
     AdsCampaignMetricRow,
-    AdsStrategyReviewRecord,
-    AdsTargetGuardrailConfirmation,
-    AuditEvent,
     CodexRun,
     CommandCenterResponse,
     ConnectorRefreshRequest,
@@ -1257,6 +1241,9 @@ def clear_api_view_model_caches() -> None:
     clear_tactical_queue_cache()
     clear_daily_runtime_cache()
     clear_skill_context_cache()
+
+
+app.include_router(create_actions_router(clear_api_view_model_caches))
 
 
 def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
@@ -4568,152 +4555,6 @@ def connector_refresh(
 @app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)
 def demand_gen_diagnostics() -> DemandGenReadinessContract:
     return _build_demand_gen_readiness_contract()
-
-
-@app.get("/api/actions")
-def actions() -> list[dict[str, Any]]:
-    return [action.model_dump(mode="json") for action in list_actions()]
-
-
-@app.get("/api/actions/{action_id}")
-def action_detail(action_id: str) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    return action.model_dump(mode="json")
-
-
-@app.post("/api/actions/{action_id}/validate")
-def validate_action_endpoint(action_id: str) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = validate_action(action).model_dump(mode="json")
-    clear_api_view_model_caches()
-    return result
-
-
-@app.post("/api/actions/{action_id}/review")
-def review_action_endpoint(
-    action_id: str,
-    request: ActionReviewRequest,
-) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = record_action_review(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
-        local_state_store().save_ads_strategy_review(
-            AdsStrategyReviewRecord(
-                id=f"ads_strategy_review_{uuid4().hex[:12]}",
-                action_id=action.id,
-                outcome=request.outcome,
-                reviewed_by=request.reviewed_by,
-                notes=request.notes,
-                checked_items=request.checked_items,
-                blockers=request.blockers,
-                audit_event_id=result.audit_event.id,
-                evidence_ids=action.evidence_ids,
-            )
-        )
-    clear_api_view_model_caches()
-    return result.model_dump(mode="json")
-
-
-@app.post("/api/actions/{action_id}/preview")
-def preview_action_endpoint(
-    action_id: str,
-    request: ActionPreviewRequest | None = None,
-) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = preview_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    clear_api_view_model_caches()
-    return result.model_dump(mode="json", exclude_none=True)
-
-
-@app.post("/api/actions/{action_id}/confirm")
-def confirm_action_endpoint(
-    action_id: str,
-    request: ActionConfirmRequest,
-) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = confirm_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
-        local_state_store().save_ads_target_guardrail_confirmation(
-            AdsTargetGuardrailConfirmation(
-                id=f"ads_target_guardrail_{uuid4().hex[:12]}",
-                action_id=action.id,
-                target_roas=request.target_roas,
-                target_cpa_micros=request.target_cpa_micros,
-                confirmed_by=request.confirmed_by,
-                notes=request.notes,
-                audit_event_id=result.audit_event.id,
-                evidence_ids=action.evidence_ids,
-            )
-        )
-    clear_api_view_model_caches()
-    return result.model_dump(mode="json")
-
-
-@app.post("/api/actions/{action_id}/impact-check")
-def impact_check_action_endpoint(
-    action_id: str,
-    request: ActionImpactCheckRequest,
-) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = impact_check_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    clear_api_view_model_caches()
-    return result.model_dump(mode="json")
-
-
-@app.post("/api/actions/{action_id}/apply")
-def apply_action_endpoint(
-    action_id: str,
-    request: ActionApplyRequest | None = None,
-) -> dict[str, Any]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = apply_action(action, request)
-    local_state_store().save_audit_event(result.audit_event)
-    local_state_store().save_action_mutation_audit(result.mutation_audit)
-    clear_api_view_model_caches()
-    if not result.applied:
-        raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
-    return result.model_dump(mode="json")
-
-
-@app.get("/api/audit/events", response_model=list[AuditEvent])
-def audit_events(action_id: str | None = None) -> list[AuditEvent]:
-    return local_state_store().list_audit_events(action_id=action_id)
-
-
-@app.get("/api/action-mutation-audits", response_model=list[ActionMutationAuditRecord])
-def action_mutation_audits(
-    action_id: str | None = None,
-) -> list[ActionMutationAuditRecord]:
-    return local_state_store().list_action_mutation_audits(action_id=action_id)
-
-
-@app.get(
-    "/api/actions/{action_id}/mutation-audits",
-    response_model=list[ActionMutationAuditRecord],
-)
-def action_mutation_audits_for_action(action_id: str) -> list[ActionMutationAuditRecord]:
-    action = get_action(action_id)
-    if action is None:
-        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    return local_state_store().list_action_mutation_audits(action_id=action_id)
 
 
 @app.get("/api/codex/context")

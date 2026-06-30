@@ -206,6 +206,16 @@ API status later contradicts this state.
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed. The touched Localo contract fixture now expects the current
   `token obecny` label instead of the outdated shorter form.
+- Goal 002 actions/audit router extraction moved `/api/actions*`,
+  `/api/audit/events` and `/api/action-mutation-audits` from
+  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/actions.py`
+  without changing endpoint paths or response shapes. The router receives
+  `clear_api_view_model_caches` as an injected callback, so validation, review,
+  preview, confirm, impact-check and apply still clear dashboard/context caches
+  after mutating state. Focused action API tests, route-shape smoke, Ruff, mypy,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed. `main.py` now keeps only connector refresh, Demand Gen diagnostics
+  and Codex/context endpoints.
 
 ## Latest Verified Product State
 

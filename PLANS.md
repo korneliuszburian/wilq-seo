@@ -586,6 +586,13 @@ dashboard logic fork.
   `/api/localo/diagnostics` and `/api/ahrefs/diagnostics`. Demand Gen
   diagnostics remains in `main.py` until its context-heavy readiness builder is
   extracted safely.
+- Ninth API router extraction moved action, audit and mutation-audit endpoints
+  from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/actions.py`. Validation, review, preview,
+  confirmation, impact-check and apply paths still clear API view-model caches
+  through an injected callback instead of importing `main.py` from the router.
+  Remaining route groups in `main.py` are connector refresh, Demand Gen
+  diagnostics and Codex/context endpoints.
 
 Current next action:
 
@@ -603,7 +610,9 @@ Current ready/in-progress Goal 002 slices are:
   moved opportunity endpoints to an opportunities router. Eighth slice moved
   command center, marketing and read-only domain diagnostics endpoints to a
   diagnostics router; Demand Gen diagnostics remains in `main.py` until its
-  readiness builder is extracted safely.
+  readiness builder is extracted safely. Ninth slice moved action, audit and
+  mutation-audit endpoints to an actions router while preserving cache clearing
+  after mutating calls.
 - `wilq-seo-x4u` - behavior-preserving content domain extraction; currently
   in progress after the canonical URL, preflight verdict, inventory gate,
   planning helper, GSC decision builder, GA4 measurement-blocker and Ahrefs gap
@@ -653,7 +662,8 @@ Current outcome:
   and system-status endpoints also now have a router home. Opportunity
   endpoints also now have a router home. Command center, marketing and
   read-only domain diagnostics endpoints also now have a diagnostics router
-  home.
+  home. Action, audit and mutation-audit endpoints also now have an actions
+  router home.
 - Content canonical URL semantics have a domain home. This is only the first
   part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
   home, inventory gate rules now have a domain home, and content decision
