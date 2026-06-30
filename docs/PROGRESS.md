@@ -195,6 +195,17 @@ API status later contradicts this state.
   opportunities API tests, route-shape smoke, Ruff, mypy,
   `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
   passed.
+- Goal 002 diagnostics router extraction moved `/api/dashboard/command-center`,
+  `/api/marketing/*`, `/api/ads/diagnostics`, `/api/merchant/diagnostics`,
+  `/api/content/*`, `/api/ga4/diagnostics`, `/api/localo/diagnostics` and
+  `/api/ahrefs/diagnostics` from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/diagnostics.py` without changing endpoint paths
+  or response shapes. Demand Gen diagnostics remains in `main.py` until its
+  context-heavy readiness builder is extracted safely. Focused diagnostics API
+  tests, route-shape smoke, Ruff, mypy, dashboard tests,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed. The touched Localo contract fixture now expects the current
+  `token obecny` label instead of the outdated shorter form.
 
 ## Latest Verified Product State
 

@@ -5758,7 +5758,7 @@ const localoDiagnostics = {
     pkce_s256_supported_label: "tak",
     secure_readiness_label: "bezpieczne połączenie gotowe",
     access_token_present: true,
-    access_token_present_label: "obecny",
+    access_token_present_label: "token obecny",
     credential_readiness_label: "dostęp lokalny gotowy",
     evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
     evidence_summary_label: "1 dowód źródłowy",

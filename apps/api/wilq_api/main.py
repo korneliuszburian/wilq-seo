@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.connectors import router as connectors_router
+from apps.api.wilq_api.routers.diagnostics import router as diagnostics_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
 from apps.api.wilq_api.routers.expert import router as expert_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
@@ -70,8 +71,6 @@ from wilq.briefing.content_diagnostics import (
     build_content_preflight,
 )
 from wilq.briefing.daily_runtime import (
-    build_daily_command_center,
-    build_daily_marketing_brief,
     build_daily_runtime,
     clear_daily_runtime_cache,
 )
@@ -114,28 +113,21 @@ from wilq.schemas import (
     ActionPreviewRequest,
     ActionReviewRequest,
     AdsCampaignMetricRow,
-    AdsDiagnosticsResponse,
     AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
-    AhrefsDiagnosticsResponse,
     AuditEvent,
     CodexRun,
     CommandCenterResponse,
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorStatus,
-    ContentDiagnosticsResponse,
-    ContentPreflightResponse,
     DailyDecision,
     DemandGenReadinessContract,
     Evidence,
     ExpertCapability,
     ExpertRuleSummary,
-    Ga4DiagnosticsResponse,
     KnowledgeCard,
-    LocaloDiagnosticsResponse,
     MarketingBrief,
-    MerchantDiagnosticsResponse,
     MetricFact,
     Opportunity,
     TacticalQueueResponse,
@@ -171,6 +163,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(connectors_router)
+app.include_router(diagnostics_router)
 app.include_router(evidence_router)
 app.include_router(expert_router)
 app.include_router(jobs_router)
@@ -4570,56 +4563,6 @@ def connector_refresh(
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
     clear_api_view_model_caches()
     return run
-
-
-@app.get("/api/dashboard/command-center", response_model=CommandCenterResponse)
-def command_center() -> CommandCenterResponse:
-    return build_daily_command_center()
-
-
-@app.get("/api/marketing/brief", response_model=MarketingBrief)
-def marketing_brief() -> MarketingBrief:
-    return build_daily_marketing_brief()
-
-
-@app.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)
-def marketing_tactical_queue() -> TacticalQueueResponse:
-    return build_tactical_queue()
-
-
-@app.get("/api/ads/diagnostics", response_model=AdsDiagnosticsResponse)
-def ads_diagnostics(view: str | None = None) -> AdsDiagnosticsResponse:
-    return build_ads_diagnostics(view="summary" if view == "summary" else "full")
-
-
-@app.get("/api/merchant/diagnostics", response_model=MerchantDiagnosticsResponse)
-def merchant_diagnostics() -> MerchantDiagnosticsResponse:
-    return build_merchant_diagnostics()
-
-
-@app.get("/api/content/diagnostics", response_model=ContentDiagnosticsResponse)
-def content_diagnostics() -> ContentDiagnosticsResponse:
-    return build_content_diagnostics()
-
-
-@app.get("/api/content/preflight", response_model=ContentPreflightResponse)
-def content_preflight() -> ContentPreflightResponse:
-    return build_content_preflight()
-
-
-@app.get("/api/ga4/diagnostics", response_model=Ga4DiagnosticsResponse)
-def ga4_diagnostics() -> Ga4DiagnosticsResponse:
-    return build_ga4_diagnostics()
-
-
-@app.get("/api/localo/diagnostics", response_model=LocaloDiagnosticsResponse)
-def localo_diagnostics() -> LocaloDiagnosticsResponse:
-    return build_localo_diagnostics()
-
-
-@app.get("/api/ahrefs/diagnostics", response_model=AhrefsDiagnosticsResponse)
-def ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
-    return build_ahrefs_diagnostics()
 
 
 @app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)

@@ -7008,7 +7008,7 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert payload["access_probe"]["authorization_readiness_label"] == "gotowe do połączenia"
     assert payload["access_probe"]["pkce_s256_supported_label"] == "tak"
     assert payload["access_probe"]["secure_readiness_label"] == "bezpieczne połączenie gotowe"
-    assert payload["access_probe"]["access_token_present_label"] == "obecny"
+    assert payload["access_probe"]["access_token_present_label"] == "token obecny"
     assert payload["access_probe"]["credential_readiness_label"] == "dostęp lokalny gotowy"
     assert payload["access_probe"]["evidence_summary_label"] == "1 dowód źródłowy"
     assert payload["live_data_available"] is False
