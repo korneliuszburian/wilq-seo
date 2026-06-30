@@ -167,6 +167,14 @@ API status later contradicts this state.
   response shapes. Focused evidence/metrics API tests, route-shape smoke, Ruff,
   mypy, `scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check` passed.
+- Goal 002 knowledge/expert router extraction moved `/api/knowledge*` and
+  `/api/expert*` endpoints from `apps/api/wilq_api/main.py` to
+  `apps/api/wilq_api/routers/knowledge.py` and
+  `apps/api/wilq_api/routers/expert.py` without changing endpoint paths or
+  response shapes. Context-pack compaction helpers remain in `main.py` for a
+  later scoped extraction. Focused knowledge/expert API tests, route-shape
+  smoke, Ruff, mypy, `scripts/audit_complexity.py --changed --allow-frozen`
+  and `git diff --check` passed.
 
 ## Latest Verified Product State
 

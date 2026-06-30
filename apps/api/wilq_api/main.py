@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field
 
 from apps.api.wilq_api.routers.connectors import router as connectors_router
 from apps.api.wilq_api.routers.evidence import router as evidence_router
+from apps.api.wilq_api.routers.expert import router as expert_router
 from apps.api.wilq_api.routers.jobs import router as jobs_router
+from apps.api.wilq_api.routers.knowledge import router as knowledge_router
 from apps.api.wilq_api.routers.metrics import router as metrics_router
 from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
@@ -85,19 +87,13 @@ from wilq.evidence.registry import (
     list_evidence_by_ids,
 )
 from wilq.expert.rules import (
-    get_expert_rule,
     list_expert_capabilities,
     list_expert_rule_summaries,
-    list_expert_rules,
 )
 from wilq.jobs.scheduler import scheduler_status
 from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
-    condense_playbooks,
-    get_playbook,
-    list_playbooks,
 )
-from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.operator_labels import (
     connector_refresh_status_label,
     credential_field_count_label,
@@ -135,15 +131,11 @@ from wilq.schemas import (
     DemandGenReadinessContract,
     Evidence,
     ExpertCapability,
-    ExpertRule,
     ExpertRuleSummary,
     Ga4DiagnosticsResponse,
     KnowledgeCard,
-    KnowledgeCompilerResult,
-    KnowledgeOperatingMapResponse,
     LocaloDiagnosticsResponse,
     MarketingBrief,
-    MarketingPlaybook,
     MerchantDiagnosticsResponse,
     MetricFact,
     Opportunity,
@@ -184,7 +176,9 @@ app.add_middleware(
 )
 app.include_router(connectors_router)
 app.include_router(evidence_router)
+app.include_router(expert_router)
 app.include_router(jobs_router)
+app.include_router(knowledge_router)
 app.include_router(metrics_router)
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
@@ -4841,71 +4835,6 @@ def action_mutation_audits_for_action(action_id: str) -> list[ActionMutationAudi
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     return local_state_store().list_action_mutation_audits(action_id=action_id)
-
-
-@app.get("/api/knowledge/cards", response_model=list[KnowledgeCard])
-def knowledge_cards() -> list[KnowledgeCard]:
-    return compile_playbook_cards()
-
-
-@app.get("/api/knowledge/search")
-def knowledge_search(q: str = "") -> list[dict[str, Any]]:
-    query = q.lower()
-    cards = compile_playbook_cards()
-    if query:
-        cards = [
-            card for card in cards if query in card.title.lower() or query in card.summary.lower()
-        ]
-    return [card.model_dump(mode="json") for card in cards]
-
-
-@app.get("/api/knowledge/playbooks", response_model=list[MarketingPlaybook])
-def knowledge_playbooks() -> list[MarketingPlaybook]:
-    return list(list_playbooks())
-
-
-@app.get("/api/knowledge/playbooks/{playbook_id}", response_model=MarketingPlaybook)
-def knowledge_playbook_detail(playbook_id: str) -> MarketingPlaybook:
-    playbook = get_playbook(playbook_id)
-    if playbook is None:
-        raise HTTPException(status_code=404, detail=f"Unknown playbook: {playbook_id}")
-    return playbook
-
-
-@app.get("/api/knowledge/operating-map", response_model=KnowledgeOperatingMapResponse)
-def knowledge_operating_map() -> KnowledgeOperatingMapResponse:
-    return build_knowledge_operating_map()
-
-
-@app.post("/api/knowledge/condense", response_model=KnowledgeCompilerResult)
-def knowledge_condense() -> KnowledgeCompilerResult:
-    return condense_playbooks()
-
-
-@app.get("/api/expert/rules", response_model=list[ExpertRule])
-def expert_rules(domain: str | None = None) -> list[ExpertRule]:
-    rules = list(list_expert_rules())
-    if domain is not None:
-        rules = [rule for rule in rules if rule.domain == domain]
-    return rules
-
-
-@app.get("/api/expert/rules/{rule_id}", response_model=ExpertRule)
-def expert_rule_detail(rule_id: str) -> ExpertRule:
-    rule = get_expert_rule(rule_id)
-    if rule is None:
-        raise HTTPException(status_code=404, detail=f"Unknown expert rule: {rule_id}")
-    return rule
-
-
-@app.get("/api/expert/rule-summaries", response_model=list[ExpertRuleSummary])
-def expert_rule_summaries() -> list[ExpertRuleSummary]:
-    return list_expert_rule_summaries()
-
-
-@app.get("/api/expert/capabilities", response_model=list[ExpertCapability])
-def expert_capabilities() -> list[ExpertCapability]:
-    return list_expert_capabilities()
 
 
 @app.get("/api/codex/context")
