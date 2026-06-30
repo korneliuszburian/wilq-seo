@@ -721,6 +721,11 @@ Current ready/in-progress Goal 002 slices are:
   Packages include brief ID, claim ledger ID, section-to-evidence mapping,
   publish-ready claims, blocked claims removed, human review questions and
   `publish_ready=false`.
+- `wilq-seo-4b5` - Human Review v1, closed.
+  `wilq/content/review/human.py` now records reviewed-by, decision, checked
+  items, evidence IDs and handled blocked claims for sales brief, claim ledger,
+  draft package and WordPress handoff stages. Only approved review can update
+  the content workflow state to unblock the WordPress handoff gate.
 
 Do not add new content workflow behavior to frozen monolith files. New Goal 002
 behavior must land in focused content/domain modules with tests first.
@@ -777,6 +782,9 @@ behavior must land in focused content/domain modules with tests first.
   Reason: WILQ needs strict typed artifacts and stable runtime boundaries, while
   Codex is best used to test, inspect and operate those boundaries without
   becoming a second content brain.
+- Decision: Human Review v1 is a domain contract, not a UI-only confirmation.
+  Reason: WordPress handoff must depend on an auditable human decision with
+  checked items, evidence IDs and handled blocked claims, not a dashboard toggle.
 
 ## Outcomes & Retrospective
 

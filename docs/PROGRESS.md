@@ -246,6 +246,18 @@ API status later contradicts this state.
   `publish_ready=false`. `tests/content` (78 tests), Ruff, mypy,
   import-boundary smoke, `scripts/audit_complexity.py --changed --allow-frozen`
   and `git diff --check` passed.
+- Beads task `wilq-seo-4b5` is closed. `wilq/content/review/human.py` now
+  defines Human Review v1 as a typed review record for sales brief, claim
+  ledger, draft package and WordPress handoff stages. Review records require a
+  reviewer, decision, checked items, evidence IDs and handled blocked claims.
+  Only `approved` review can update a `ContentWorkItem` to
+  `human_review_status=approved`; `needs_changes`, `rejected` and `deferred`
+  keep WordPress handoff blocked. Focused tests prove review without reviewer,
+  checklist or evidence is blocked, blocked claims must be handled and approved
+  draft review updates workflow state for the WordPress handoff gate.
+  `tests/content` (83 tests), Ruff, mypy, import-boundary smoke,
+  `scripts/audit_complexity.py --changed --allow-frozen` and `git diff --check`
+  passed.
 - Goal 002 API router extraction has started under `wilq-seo-hdl`. Read-only
   connector endpoints moved from `apps/api/wilq_api/main.py` to
   `apps/api/wilq_api/routers/connectors.py` without changing endpoint paths or

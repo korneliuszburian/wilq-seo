@@ -18,7 +18,13 @@ ContentPreflightStatus = Literal[
     "handoff_allowed",
 ]
 ContentArtifactStatus = Literal["missing", "ready", "approved", "blocked"]
-ContentHumanReviewStatus = Literal["missing", "approved", "needs_changes", "rejected"]
+ContentHumanReviewStatus = Literal[
+    "missing",
+    "approved",
+    "needs_changes",
+    "rejected",
+    "deferred",
+]
 ContentAuditStatus = Literal["missing", "recorded"]
 ContentWordPressHandoffStatus = Literal["missing", "blocked", "draft_created"]
 ContentMeasurementWindowStatus = Literal[
