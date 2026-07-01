@@ -16,6 +16,7 @@ StructuredDraftPreviewBlockerCode = Literal[
     "missing_source_facts",
     "section_missing_evidence",
     "unknown_evidence_reference",
+    "unknown_claim_reference",
 ]
 
 
@@ -159,6 +160,19 @@ def structured_draft_preview_blockers(
                 "Usuń obce dowody ze szkicu: " + ", ".join(unknown_ids),
             )
         )
+
+    allowed_claims = set(contract.model_input.claims_allowed)
+    used_claims = _output_claims(output)
+    unknown_claims = sorted(used_claims.difference(allowed_claims))
+    if unknown_claims:
+        blockers.append(
+            _blocker(
+                "unknown_claim_reference",
+                "Szkic używa claimu spoza kontraktu",
+                "Podgląd może pokazać tylko twierdzenia dopuszczone przez kontrakt WILQ.",
+                "Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
+            )
+        )
     return blockers
 
 
@@ -173,6 +187,13 @@ def _output_evidence_ids(output: StructuredDraftOutput) -> set[str]:
     values = set(output.source_facts_used)
     for section in output.sections:
         values.update(section.evidence_ids)
+    return {value for value in values if value}
+
+
+def _output_claims(output: StructuredDraftOutput) -> set[str]:
+    values: set[str] = set()
+    for section in output.sections:
+        values.update(section.claims_used)
     return {value for value in values if value}
 
 

@@ -110,6 +110,28 @@ def test_structured_draft_preview_blocks_claims_that_still_need_review() -> None
     assert [blocker.code for blocker in result.blockers] == ["claims_need_review"]
 
 
+def test_structured_draft_preview_blocks_claims_outside_generation_contract() -> None:
+    result = build_structured_draft_preview(
+        output=_output(
+            sections=[
+                StructuredDraftOutputSection(
+                    heading="Kogo dotyczy BDO",
+                    body_markdown="BDO warto sprawdzić na podstawie sytuacji firmy.",
+                    evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+                    claims_used=[
+                        "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+                        "Ekologus gwarantuje pełną zgodność po kontakcie.",
+                    ],
+                )
+            ]
+        ),
+        contract=_contract(),
+    )
+
+    assert result.preview is None
+    assert [blocker.code for blocker in result.blockers] == ["unknown_claim_reference"]
+
+
 def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
     missing_evidence = build_structured_draft_preview(
         output=_output(

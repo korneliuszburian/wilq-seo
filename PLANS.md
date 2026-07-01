@@ -202,6 +202,10 @@ the Claim Ledger. This does not replace the larger per-work-item Claim Ledger
 roadmap, but it prevents invented output claims from reaching human review as
 ready.
 
+Structured draft preview now has the matching early gate under Beads task
+`wilq-seo-eva`: preview blocks `unknown_claim_reference` when runtime output
+uses a claim not present in `contract.model_input.claims_allowed`.
+
 ## In Scope
 
 Goal 005 includes:

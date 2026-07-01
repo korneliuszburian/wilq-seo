@@ -416,3 +416,33 @@ def test_structured_draft_preview_api_blocks_claims_needing_review() -> None:
     result = response.json()["preview_result"]
     assert result["preview"] is None
     assert [blocker["code"] for blocker in result["blockers"]] == ["claims_need_review"]
+
+
+def test_structured_draft_preview_api_blocks_claim_outside_contract() -> None:
+    generation = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": _item(),
+            "sales_brief": _sales_brief(),
+            "claim_ledger": _claim_ledger(),
+            "draft_package": _draft_package(),
+        },
+    )
+    assert generation.status_code == 200
+    contract = generation.json()["structured_generation_result"]["contract"]
+    output = _structured_output()
+    output["sections"][0]["claims_used"].append(
+        "Ekologus gwarantuje pełną zgodność po kontakcie."
+    )
+
+    response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-preview",
+        json={"contract": contract, "output": output},
+    )
+
+    assert response.status_code == 200
+    result = response.json()["preview_result"]
+    assert result["preview"] is None
+    assert [blocker["code"] for blocker in result["blockers"]] == [
+        "unknown_claim_reference"
+    ]

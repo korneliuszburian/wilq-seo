@@ -211,6 +211,10 @@ API status later contradicts this state.
   the Claim Ledger at all. This closes the gap between "blocked claim leaked"
   and "new unsupported claim invented by output"; both now stop human-review
   readiness.
+- Structured draft preview now blocks `unknown_claim_reference` before quality
+  review when runtime output uses a claim absent from
+  `contract.model_input.claims_allowed`. This catches invented output claims at
+  the preview boundary, before they can look like a reviewable draft.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or
