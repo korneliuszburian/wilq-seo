@@ -1,11 +1,11 @@
-# PLANS.md - Goal 003 Content Quality Workbench
+# PLANS.md - Goal 004 Content Operations Layer
 
 This is the long-running ExecPlan for the active WILQ product layer.
 
 Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
-`docs/goals/001-goal.md`, `docs/goals/archive/003-goal.md` and Beads. This
-file describes the durable path for Goal 003 and must stay restartable without
-chat history.
+`docs/goals/001-goal.md`, `docs/goals/archive/003-goal.md`,
+`docs/goals/004-goal.md` and Beads. This file describes the durable path for
+Goal 004 and must stay restartable without chat history.
 
 ## How To Use This File
 
@@ -23,16 +23,18 @@ chat history.
 
 ## Active Goal
 
-Goal 003: Content Quality Workbench.
+Goal 004: Content Operations Layer.
 
-Status: completed on 2026-07-01. Beads epic `wilq-seo-u6u`.
+Status: active from 2026-07-01. Beads epic `wilq-seo-2qq`.
 
 Outcome:
 
-Wilku can work with a small queue of real diagnostics-derived Ekologus content
-candidates, choose a candidate, generate a gated structured draft, run
-deterministic quality review, receive evidence-bound revision instructions and
-prepare draft-only WordPress output without live publication or SEO slop.
+Wilku can run a real Ekologus content work session through WILQ: pick a queue
+candidate, receive opportunity enrichment, use typed Ekologus knowledge cards,
+produce an operations-grade Sales Brief, generate claim-gated draft variants
+through Structured Outputs, apply bounded revisions, pass human review and audit, prepare
+WordPress draft-only handoff and open a measurement window for later conservative
+outcome interpretation.
 
 This goal does not build:
 
@@ -43,16 +45,23 @@ This goal does not build:
 - Ads/Merchant/Localo write automation,
 - agency admin, billing or workspace switching.
 
-Goal 002 baseline:
+Goal 004 is not an MVP or staged-version track. The target is the final-grade content
+operations architecture delivered in small verified slices. Temporary
+incompleteness is acceptable only when the slice makes the requested final
+state more true without weakening gates, preserving stale aliases or moving
+product logic out of WILQ API.
 
-Goal 002 is complete. WILQ already proves one diagnostics-derived Ekologus
-content item can pass evidence, source connectors, inventory/canonical
-resolution, duplicate check, preflight, preserve-first planning, sales brief,
-claim gate, draft package, human review, audit, WordPress draft-only
-handoff/execution dry-run and measurement window. Primary proof:
+Goal 003 baseline:
 
+Goal 003 is complete and full repo-level `rtk scripts/verify.sh` passes. WILQ
+already proves the safe content workbench: API-owned queue, per-item state,
+gated SDK Structured Outputs, deterministic quality review, evidence-bound
+revision plan, Polish `/content-workflow`, WordPress draft-only/dry-run boundary
+and adversarial gate tests. Primary proof:
+
+- `docs/goals/archive/003-goal.md`
 - `tests/content/test_content_workflow_end_to_end.py`
-- `docs/handoffs/2026-06-30-goal-002-completion-audit.md`
+- `tests/content/test_content_workflow_adversarial_gates.py`
 
 ## Product Thesis
 
@@ -65,26 +74,29 @@ Ahrefs, Ads, Merchant or Localo signals to interpret outcomes and improve the
 next content decision. Measurement is a planning requirement now and a success
 or failure verdict only after the observation window has usable data.
 
-Goal 003 content production must extend this path:
+Goal 004 content operations must extend this path:
 
 ```text
 content opportunity queue
 -> selected ContentWorkItem
 -> source connector/evidence validation
+-> opportunity enrichment
+-> typed Ekologus knowledge cards
 -> inventory/canonical/duplicate/cannibalization check
 -> ContentPreflight
 -> preserve-first mode
--> Sales Brief
+-> operations-grade Sales Brief
 -> Claim Ledger
--> Draft Package
+-> draft variants
 -> SDK Structured Outputs generation
 -> Structured Draft Preview
 -> Quality Review
--> Revision Plan
+-> bounded Revision Application
 -> Human Review
 -> Audit
 -> WordPress draft-only handoff/execution
 -> Measurement Window
+-> conservative Measurement Outcome
 ```
 
 ## Naming And URL Semantics
@@ -172,6 +184,32 @@ If a new content feature needs one of these files, create a domain module first
 and move behavior out instead of adding another branch to the monolith.
 
 ## Beads Operational Graph
+
+Active Goal 004 epic:
+
+- `wilq-seo-2qq` - Goal 004: Content Operations Layer.
+
+Active planning slice:
+
+- `wilq-seo-xlw` - Goal 004 recovery and plan alignment.
+
+Initial Goal 004 implementation slices:
+
+- `wilq-seo-6kd` - freeze content workflow contract.
+- `wilq-seo-a3t` - production content opportunity enrichment.
+- `wilq-seo-dtj` - Ekologus typed knowledge cards.
+- `wilq-seo-8xc` - operations-grade Sales Brief from enrichment and knowledge.
+- `wilq-seo-ao0` - draft variants through structured outputs.
+- `wilq-seo-a09` - bounded revision application.
+- `wilq-seo-03a` - WordPress draft-only adapter boundary.
+- `wilq-seo-prk` - measurement outcome interpreter.
+- `wilq-seo-wr4` - WILQ content operator skill and UAT harness.
+- `wilq-seo-akt` - anti-slop execution guard.
+
+Use `bd ready --json` for authoritative operational status. Do not duplicate
+this list as markdown task tracking; it is a recovery index only.
+
+Historical Goal 003 graph:
 
 Completed Goal 003 epic:
 
@@ -527,27 +565,34 @@ Tests prove outcome claims are blocked before the measurement window is ready.
 
 ## Final Completion Definition
 
-Goal 003 is complete only when WILQ proves the content workbench can handle a
-small real Ekologus queue and one gated draft-quality loop:
+Goal 004 is complete only when WILQ proves a repeatable Ekologus content
+operating loop, not just a safe workbench proof:
 
 ```text
-content queue with at least 3 candidates or typed blockers
+content queue with at least 5 candidates or typed blockers
 -> selected ContentWorkItem
--> per-item persisted state
--> gated SDK Structured Outputs generation
--> structured draft preview
+-> opportunity enrichment
+-> typed Ekologus knowledge cards
+-> operations-grade Sales Brief
+-> claim-gated draft variants
 -> deterministic quality review
--> evidence-bound revision plan
+-> bounded revision application with version/diff
 -> human review
 -> audit
 -> WordPress draft-only handoff/execution
 -> measurement window
+-> conservative measurement outcome interpretation
+-> WILQ content operator skill and UAT packet
 ```
 
 No skipped gates. No prompt-only product logic. No dev URL as canonical. No
 WordPress publish. No destructive update. No generated `publish_ready=true`. No
 unsupported marketing claims. No outcome claim before the measurement window is
-ready. No new feature growth in frozen monolith files. No dashboard logic fork.
+ready. No broad RAG/vector DB as product brain. No stale compatibility aliases
+when direct migration is feasible. No new feature growth in frozen monolith
+files. No dashboard logic fork. Full `rtk scripts/verify.sh` must pass.
+
+Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 ## Progress
 
@@ -695,7 +740,9 @@ ready. No new feature growth in frozen monolith files. No dashboard logic fork.
 
 Current next action:
 
-Goal 003 is complete and the full repo-level verification gate is restored.
+Goal 004 is active. Finish `wilq-seo-xlw` by committing the goal activation
+docs and Beads graph, then continue with `wilq-seo-6kd` to freeze the current
+content workflow contract before adding enrichment, variants or skill behavior.
 Continue from `bd ready --json`; remaining work should be tracked in Beads as
 focused product or anti-slop slices, not markdown TODO lists.
 

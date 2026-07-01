@@ -21,8 +21,9 @@ Date: 2026-07-01
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Beads (`bd`) is the operational task graph for current work. Run `bd prime`
-  and `bd ready --json` after recovery. Goal 003 epic `wilq-seo-u6u` is
-  completed. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
+  and `bd ready --json` after recovery. Goal 004 epic `wilq-seo-2qq` is active.
+  Goal 003 epic `wilq-seo-u6u` is completed. Historical Goal 001 cleanup epic:
+  `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -56,6 +57,20 @@ API status later contradicts this state.
 
 ## Current Goal Transition
 
+- Goal 004: Content Operations Layer is now active under Beads epic
+  `wilq-seo-2qq`. The target is a production-grade daily content operating
+  loop, not an MVP or staged-version path: queue candidate -> opportunity
+  enrichment -> typed Ekologus knowledge cards -> operations-grade Sales Brief
+  -> claim-gated draft variants -> deterministic quality review -> bounded
+  revision application -> human review -> audit -> WordPress draft-only handoff
+  -> measurement window -> conservative outcome interpretation.
+- Current Goal 004 planning slice `wilq-seo-xlw` is in progress. It activates
+  `docs/goals/004-goal.md`, updates `PLANS.md` and this ledger, and seeds the
+  Beads graph before product implementation. The next product slice after
+  planning is `wilq-seo-6kd`: freeze the existing content workflow contract.
+- Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
+  evaluate through a future `wilq-content-operator` skill, but must not become
+  the production writer, direct OpenAI caller or direct WordPress client.
 - Goal 001 cleanup is no longer blocked by missing UAT input because the owner
   explicitly deferred real marketer UAT until WILQ has a stronger content
   production workflow.
