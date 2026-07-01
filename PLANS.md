@@ -643,8 +643,19 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   content workflow contract-inventory pytest subset, fake SDK live runtime
   proof, Ruff, mypy, changed-file complexity audit and `git diff --check`
   passed.
-- Next product slice: `wilq-seo-a09`, bounded revision application with
-  versioned diffs and quality-review rerun.
+- Bounded revision application slice `wilq-seo-a09` added
+  `POST /api/content/work-items/revision-apply` and the selected
+  `POST /api/content/work-items/{work_item_id}/revision-apply` path. Revision
+  application only applies instructions from a WILQ revision plan, requires an
+  updated quality-review rerun, returns versioned diff entries, blocks
+  mismatched work items and keeps `publish_ready=false` plus
+  `wordpress_write_allowed=false`.
+- Focused proof for the bounded revision application slice: content quality
+  review/API and content workflow contract-inventory pytest subset, Ruff,
+  mypy, changed-file complexity audit and `git diff --check` passed.
+- Next product slice should come from `bd ready --json`; current likely
+  candidates are `wilq-seo-03a` WordPress draft-only adapter boundary or
+  `wilq-seo-prk` conservative measurement outcome interpretation.
 
 2026-06-30:
 
@@ -790,12 +801,12 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 Current next action:
 
-Goal 004 is active. `wilq-seo-xlw` is closed and `wilq-seo-6kd` freezes the
-current content workflow contract with API route inventory, per-item revision
-plan parity and dashboard helper coverage. Continue from `bd ready --json`; the
-next product slice is `wilq-seo-a3t`, production content opportunity enrichment
-per `work_item_id`, built on the frozen contract without broad RAG, fake scores
-or prompt-only keyword research.
+Goal 004 is active. `wilq-seo-xlw`, `wilq-seo-6kd`, `wilq-seo-a3t`,
+`wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0` and `wilq-seo-a09` are closed.
+Continue from `bd ready --json`; the next product slice is whichever ready
+Goal 004 task is highest priority, likely the WordPress draft-only adapter
+boundary (`wilq-seo-03a`) or conservative measurement outcome interpreter
+(`wilq-seo-prk`).
 
 Completed Goal 002 extraction context:
 

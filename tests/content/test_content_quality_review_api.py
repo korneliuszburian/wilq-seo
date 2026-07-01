@@ -164,6 +164,89 @@ def test_content_revision_plan_skips_when_no_changes_are_needed() -> None:
     assert plan["blockers"] == []
 
 
+def test_content_revision_application_versions_diff_and_requires_rerun() -> None:
+    payload = _quality_payload()
+    payload["structured_output"]["cta"] = "kliknij tutaj"
+    review = _quality_review(payload)
+    plan = _revision_plan(payload["item"], review)
+
+    blocked_response = TestClient(app).post(
+        "/api/content/work-items/revision-apply",
+        json={
+            "item": payload["item"],
+            "revision_plan": plan,
+            "draft_output": payload["structured_output"],
+        },
+    )
+    assert blocked_response.status_code == 200
+    blocked = blocked_response.json()["revision_application"]
+    assert blocked["status"] == "blocked"
+    assert [blocker["code"] for blocker in blocked["blockers"]] == [
+        "missing_updated_quality_review"
+    ]
+
+    fixed_payload = deepcopy(payload)
+    fixed_payload["structured_output"]["cta"] = (
+        "Skontaktuj się z Ekologus, żeby sprawdzić sytuację firmy bez obietnicy wyniku."
+    )
+    updated_review = _quality_review(fixed_payload)
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-apply",
+        json={
+            "item": payload["item"],
+            "revision_plan": plan,
+            "draft_output": fixed_payload["structured_output"],
+            "updated_quality_review": updated_review,
+        },
+    )
+
+    assert response.status_code == 200
+    application = response.json()["revision_application"]
+    assert application["status"] == "applied"
+    assert application["quality_review_rerun_required"] is False
+    assert application["publish_ready"] is False
+    assert application["wordpress_write_allowed"] is False
+    assert application["updated_quality_review_id"] == updated_review["review_id"]
+    assert application["diff"]
+    assert application["diff"][0]["instruction_id"] == plan["instructions"][0]["id"]
+    assert application["safe_next_step"].startswith("Poprawka została zastosowana")
+
+
+def test_content_revision_application_blocks_wrong_work_item() -> None:
+    payload = _quality_payload()
+    payload["structured_output"]["cta"] = "kliknij tutaj"
+    review = _quality_review(payload)
+    plan = _revision_plan(payload["item"], review)
+    wrong_item = deepcopy(payload["item"])
+    wrong_item["id"] = "content_work_item_wrong"
+
+    selected = TestClient(app).post(
+        f"/api/content/work-items/{payload['item']['id']}/revision-apply",
+        json={
+            "item": wrong_item,
+            "revision_plan": plan,
+            "draft_output": payload["structured_output"],
+            "updated_quality_review": review,
+        },
+    )
+    assert selected.status_code == 400
+
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-apply",
+        json={
+            "item": wrong_item,
+            "revision_plan": plan,
+            "draft_output": payload["structured_output"],
+            "updated_quality_review": review,
+        },
+    )
+    assert response.status_code == 200
+    application = response.json()["revision_application"]
+    assert "revision_plan_mismatch" in [
+        blocker["code"] for blocker in application["blockers"]
+    ]
+
+
 def _quality_payload() -> dict[str, Any]:
     snapshot = TestClient(app).get("/api/content/work-items/snapshot").json()
     item = deepcopy(snapshot["structured_generation"]["item"])
@@ -186,6 +269,16 @@ def _quality_review(payload: dict[str, Any]) -> dict[str, Any]:
     assert response.status_code == 200
     data = cast(dict[str, Any], response.json())
     return cast(dict[str, Any], data["quality_review"])
+
+
+def _revision_plan(item: dict[str, Any], review: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-plan",
+        json={"item": item, "quality_review": review},
+    )
+    assert response.status_code == 200
+    data = cast(dict[str, Any], response.json())
+    return cast(dict[str, Any], data["revision_plan"])
 
 
 def _claim_ledger(item: dict[str, Any]) -> dict[str, Any]:

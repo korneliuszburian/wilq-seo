@@ -64,6 +64,7 @@ from wilq.content.quality.review import (
 from wilq.content.quality.revision import (
     build_content_revision_plan,
 )
+from wilq.content.quality.revision_apply import apply_content_revision_plan
 from wilq.content.review.human import (
     ContentHumanReview,
     apply_content_human_review_to_work_item,
@@ -84,6 +85,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemQualityReviewResponse,
+    ContentWorkItemRevisionApplyRequest,
+    ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanRequest,
     ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSalesBriefRequest,
@@ -280,6 +283,20 @@ def build_content_work_item_revision_plan_response(
         revision_plan=build_content_revision_plan(
             item=request.item,
             quality_review=request.quality_review,
+        ),
+    )
+
+
+def build_content_work_item_revision_apply_response(
+    request: ContentWorkItemRevisionApplyRequest,
+) -> ContentWorkItemRevisionApplyResponse:
+    return ContentWorkItemRevisionApplyResponse(
+        item=request.item,
+        revision_application=apply_content_revision_plan(
+            item=request.item,
+            revision_plan=request.revision_plan,
+            draft_output=request.draft_output,
+            updated_quality_review=request.updated_quality_review,
         ),
     )
 

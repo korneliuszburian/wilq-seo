@@ -26,6 +26,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemQualityReviewResponse,
+    ContentWorkItemRevisionApplyRequest,
+    ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanRequest,
     ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSalesBriefRequest,
@@ -51,6 +53,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
     build_content_work_item_quality_review_response,
+    build_content_work_item_revision_apply_response,
     build_content_work_item_revision_plan_response,
     build_content_work_item_sales_brief_response,
     build_content_work_item_snapshot_audit_response,
@@ -327,6 +330,16 @@ def content_work_item_revision_plan(
 
 
 @router.post(
+    "/api/content/work-items/revision-apply",
+    response_model=ContentWorkItemRevisionApplyResponse,
+)
+def content_work_item_revision_apply(
+    request: ContentWorkItemRevisionApplyRequest,
+) -> ContentWorkItemRevisionApplyResponse:
+    return build_content_work_item_revision_apply_response(request)
+
+
+@router.post(
     "/api/content/work-items/{work_item_id}/revision-plan",
     response_model=ContentWorkItemRevisionPlanResponse,
 )
@@ -341,6 +354,23 @@ def content_work_item_revision_plan_for_selected_item(
             detail="Content revision plan item does not match the selected work item.",
         )
     return build_content_work_item_revision_plan_response(request)
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/revision-apply",
+    response_model=ContentWorkItemRevisionApplyResponse,
+)
+def content_work_item_revision_apply_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemRevisionApplyRequest,
+) -> ContentWorkItemRevisionApplyResponse:
+    _snapshot_for_work_item_or_404(work_item_id)
+    if request.item.id != work_item_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Content revision application item does not match the selected work item.",
+        )
+    return build_content_work_item_revision_apply_response(request)
 
 
 @router.post(

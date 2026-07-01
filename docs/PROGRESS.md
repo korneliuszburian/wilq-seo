@@ -98,8 +98,16 @@ API status later contradicts this state.
   Sales Brief, Claim Ledger and Draft Package gates, keeps `publish_ready=false`
   and exposes `wordpress_write_allowed=false`. Fake SDK runtime proof confirms
   the variant contract can generate structured output without bypassing WILQ.
-- The next Goal 004 product slice is `wilq-seo-a09`: bounded revision
-  application with versioned diffs and quality-review rerun.
+- Goal 004 bounded revision application slice `wilq-seo-a09` is implemented.
+  `POST /api/content/work-items/revision-apply` and the selected work-item
+  variant turn a bounded revision plan into a versioned diff only after an
+  updated quality review is supplied. Revision application is evidence-bound,
+  cannot free-regenerate, keeps `publish_ready=false` and
+  `wordpress_write_allowed=false`, and selected routes reject wrong-work-item
+  requests before any application result.
+- The next Goal 004 product slice should come from `bd ready --json`; current
+  likely candidates are `wilq-seo-03a` WordPress draft-only adapter boundary or
+  `wilq-seo-prk` conservative measurement outcome interpretation.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.

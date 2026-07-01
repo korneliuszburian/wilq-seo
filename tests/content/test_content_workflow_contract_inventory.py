@@ -12,6 +12,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewResponse,
+    ContentWorkItemRevisionApplyResponse,
     ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemStructuredDraftGenerationResponse,
@@ -79,8 +80,16 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("POST", "/api/content/work-items/revision-plan"): ContentWorkItemRevisionPlanResponse,
     (
         "POST",
+        "/api/content/work-items/revision-apply",
+    ): ContentWorkItemRevisionApplyResponse,
+    (
+        "POST",
         "/api/content/work-items/{work_item_id}/revision-plan",
     ): ContentWorkItemRevisionPlanResponse,
+    (
+        "POST",
+        "/api/content/work-items/{work_item_id}/revision-apply",
+    ): ContentWorkItemRevisionApplyResponse,
     ("POST", "/api/content/work-items/human-review"): ContentWorkItemHumanReviewResponse,
     (
         "POST",
@@ -115,6 +124,7 @@ def test_content_workflow_stateful_routes_have_selected_work_item_variants() -> 
         "structured-draft-preview",
         "quality-review",
         "revision-plan",
+        "revision-apply",
     ]:
         assert any(
             path == f"/api/content/work-items/{{work_item_id}}/{suffix}"

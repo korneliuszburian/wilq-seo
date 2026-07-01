@@ -45,6 +45,7 @@ from wilq.content.measurement.window import (
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.quality.review import ContentQualityReview
 from wilq.content.quality.revision import ContentRevisionPlan
+from wilq.content.quality.revision_apply import ContentRevisionApplication
 from wilq.content.review.human import ContentHumanReview, ContentHumanReviewBlocker
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.models import ContentWorkItem
@@ -163,6 +164,18 @@ class ContentWorkItemRevisionPlanRequest(BaseModel):
 class ContentWorkItemRevisionPlanResponse(BaseModel):
     item: ContentWorkItem
     revision_plan: ContentRevisionPlan
+
+
+class ContentWorkItemRevisionApplyRequest(BaseModel):
+    item: ContentWorkItem
+    revision_plan: ContentRevisionPlan | None = None
+    draft_output: StructuredDraftOutput | None = None
+    updated_quality_review: ContentQualityReview | None = None
+
+
+class ContentWorkItemRevisionApplyResponse(BaseModel):
+    item: ContentWorkItem
+    revision_application: ContentRevisionApplication
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
