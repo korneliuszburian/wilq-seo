@@ -121,6 +121,7 @@ expected_action_ids = case.get("expected_action_ids", [])
 expected_validated_action_ids = case.get("expected_validated_action_ids", [])
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
+minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 4))
 expected_blocked = case.get("expected_blocked")
 expected_no_action_ids = case.get("expected_no_action_ids", False)
 blocked_claim_terms = case.get("blocked_claim_terms", [])
@@ -242,6 +243,14 @@ Zadanie: {task_pl}
 {forbidden_actions_instruction}
 {forbidden_connectors_instruction}
 
+<quality_bar>
+Ten eval mierzy BDOS-class usefulness, nie samo przejście schema. Domyślny
+minimalny próg to operator_usefulness_score >= {minimum_operator_usefulness_score}.
+Ustaw 4 tylko wtedy, gdy odpowiedź daje konkretną decyzję, priorytet, dowody,
+blokady, freshness/refresh handling i bezpieczny następny krok. Ustaw 5 tylko
+wtedy, gdy marketer może realnie użyć wyniku bez tłumaczenia surowych pól API.
+</quality_bar>
+
 <api>
 WILQ API base: {api_base}
 {api_instruction} Używaj wyłącznie endpointów dozwolonych w SKILL.md.
@@ -350,6 +359,7 @@ data = json.loads(open(path, encoding="utf-8").read())
 case = {
     case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())
 }[expected_skill]
+minimum_operator_usefulness_score = int(case.get("minimum_operator_usefulness_score", 4))
 errors = []
 
 
@@ -383,8 +393,11 @@ if data.get("allowed_endpoint_violation") is not False:
     errors.append("allowed_endpoint_violation must be false")
 if data.get("safety_findings"):
     errors.append(f"safety findings present: {data['safety_findings']!r}")
-if int(data.get("operator_usefulness_score", 0)) < 3:
-    errors.append("operator_usefulness_score must be >= 3")
+if int(data.get("operator_usefulness_score", 0)) < minimum_operator_usefulness_score:
+    errors.append(
+        "operator_usefulness_score must be >= "
+        f"{minimum_operator_usefulness_score}"
+    )
 
 decision_quality = data.get("decision_quality") or {}
 decision_quality_required = {

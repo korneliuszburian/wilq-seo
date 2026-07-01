@@ -88,6 +88,29 @@ Create or update WILQ skills only after the API endpoints, context-pack contract
 
 Every WILQ skill must be testable through deterministic smoke scripts and non-interactive Codex evals. Use `scripts/codex_skill_eval.sh` for `codex exec` schema-output checks. Local API evals need network-enabled sandboxing, so the harness defaults to `workspace-write` with network access and a prompt-level no-edit rule. Use `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1` when global MCP/user config causes unrelated transport failures.
 
+Non-interactive Codex evals are not optional theater. Treat them as product
+proof for BDOS-class operator workflows: a realistic Polish marketer command
+must trigger the skill, fetch WILQ API evidence, return source connectors,
+evidence IDs and ActionObject IDs where applicable, block unsafe claims, and
+produce an answer that a marketer could act on without developer translation.
+If the output is generic, misses the API-owned decision queue, invents metrics,
+omits evidence/action IDs, mixes English into operator copy, or fails to explain
+the safe next step, fix the WILQ API/schema/view-model or skill contract and run
+the eval again. Prefer `scripts/codex_skill_eval.sh --skill <skill>
+--api-base http://127.0.0.1:8000` after the deterministic smoke for the touched
+skill whenever changing skill behavior, context-pack compaction, action
+validation, connector diagnostics, command-center output, or any BDOS-style
+workflow surface. Use the OpenAI-aligned eval contract in
+`docs/evals/openai-aligned-skill-evals.md`: production-like inputs, explicit
+testing criteria, deterministic graders and a failure loop. Run
+`uv run python scripts/audit_skill_eval_coverage.py --strict` when changing
+eval cases/schema/harness. The default minimum `operator_usefulness_score` is
+4; score 3 is a product gap, not a marketer-value pass. Stale connector
+snapshots must not be treated as enough for "działamy zajebiście": the skill
+must refresh, provide a concrete refresh/repair path, or block the conclusion
+before recommending action. Record useful findings in
+`docs/evals/skill-eval-ledger.md`.
+
 ## Skill creation rules
 
 Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, output contract, safety rules and smoke test.
@@ -143,6 +166,18 @@ scripts/verify.sh
   readiness, reports unmanaged port owners, and keeps the canonical local URLs:
   `http://127.0.0.1:8000/api/health` and
   `http://127.0.0.1:5173/command-center`.
+- If WILQ API or dashboard is unreachable and the user is asking for ongoing
+  WILQ work, do not treat it as a passive blocker. First run
+  `rtk scripts/local_stack.sh status`, then `rtk scripts/local_stack.sh start`
+  if no managed process owns the ports, or `rtk scripts/local_stack.sh restart`
+  if the managed process is stale. Verify with
+  `rtk curl -sS -m 10 http://127.0.0.1:8000/api/health`,
+  `rtk curl -sS -m 10 http://127.0.0.1:8000/api/metrics/status` and, when the
+  dashboard matters, `rtk curl -sS -m 10 http://127.0.0.1:5173/command-center`.
+  If start/restart fails, inspect `rtk scripts/local_stack.sh logs`, check for
+  unmanaged port owners from `status`, and keep debugging until the local cause
+  is fixed or the blocker is a specific external dependency. Record the exact
+  blocker; do not merely say "API unreachable".
 - If live API output contradicts current source/tests after a code slice, run
   `scripts/local_stack.sh restart` before debugging product logic. A stale
   managed API child can keep old response shapes even when the worktree is

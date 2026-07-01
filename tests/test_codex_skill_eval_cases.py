@@ -28,6 +28,17 @@ def test_skill_hygiene_blocks_recovery_artifacts_in_skill_prose() -> None:
         assert phrase in forbidden
 
 
+def test_skill_eval_coverage_audit_has_no_hard_gaps() -> None:
+    from scripts import audit_skill_eval_coverage
+
+    report = audit_skill_eval_coverage.build_report()
+
+    assert report["pass"] is True
+    assert report["summary"]["hard_gap_count"] == 0
+    assert "operator_usefulness_threshold" in report["summary"]["openai_alignment"]
+    assert "freshness_handling" in report["summary"]["openai_alignment"]
+
+
 def test_active_eval_prompts_do_not_reintroduce_ads_polglish() -> None:
     active_text = "\n".join(
         [

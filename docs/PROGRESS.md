@@ -172,6 +172,19 @@ API status later contradicts this state.
   separates two GA4 measurement blockers from two `google / cpc` traffic-quality
   review candidates without claiming ROAS, revenue, profitability or conversion
   outcomes.
+- AGENTS.md now makes WILQ API recovery an active operator duty: if local API or
+  dashboard is unreachable, run the local stack manager, inspect logs/port
+  owners, verify health/metrics/dashboard, and record a specific blocker instead
+  of leaving "API unreachable" as a vague stop. It also raises the BDOS-class
+  skill bar: deterministic smoke is not enough; realistic non-interactive Codex
+  evals must prove that skill outputs use WILQ API evidence/action IDs, block
+  unsafe claims and give a useful Polish next step.
+- The skill eval layer now has an OpenAI-aligned contract in
+  `docs/evals/openai-aligned-skill-evals.md`, a static coverage audit
+  (`uv run python scripts/audit_skill_eval_coverage.py --strict`) and default
+  non-interactive threshold `operator_usefulness_score >= 4`. Freshness handling
+  is part of the gate: stale connector snapshots require refresh, repair path or
+  blocker before recommendation.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

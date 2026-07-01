@@ -6,6 +6,13 @@ smoke.
 
 ## Eval Protocol
 
+This protocol follows the OpenAI eval pattern described in
+`docs/evals/openai-aligned-skill-evals.md`: production-like inputs, explicit
+testing criteria, deterministic graders, failure analysis and iteration. Schema
+validity is only the floor; the default marketer-value gate is
+`operator_usefulness_score >= 4`. Score 3 means guardrail-only quality and
+must create product follow-up before claiming BDOS-class usefulness.
+
 For each skill:
 
 1. Use a realistic Polish marketer prompt.
@@ -17,10 +24,12 @@ For each skill:
    - Czy daje decyzję lub kolejkę działań?
    - Czy blokuje unsupported claims?
    - Czy nie wymyśla metryk?
+   - Czy obsługuje freshness przez refresh, repair path albo blocker?
    - Czy wskazuje konkretny następny krok?
 6. Run deterministic smoke and, where possible, non-interactive Codex eval:
 
 ```bash
+uv run python scripts/audit_skill_eval_coverage.py --strict
 uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```

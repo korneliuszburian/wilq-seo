@@ -385,6 +385,15 @@ Stop and record a blocker if:
   `docs/handoffs/2026-07-01-ga4-traffic-quality-proof.md`. The skill separates
   measurement blockers from traffic-quality review candidates and blocks
   unsupported ROAS/revenue/conversion conclusions.
+- 2026-07-01: AGENTS.md hardened local recovery and skill-eval rules. Future
+  WILQ work must actively restore the local stack when API/dashboard is
+  unreachable and must use non-interactive Codex evals as BDOS-class workflow
+  proof for realistic marketer commands, not only deterministic smoke scripts.
+- 2026-07-01: Skill eval layer aligned with OpenAI eval guidance: production-like
+  Polish inputs, explicit testing criteria/graders, deterministic coverage
+  audit and default `operator_usefulness_score >= 4`. Stale snapshots are not
+  acceptable as final workflow value; skills must refresh, provide repair path
+  or block conclusions before action.
 
 ## Surprises & Discoveries
 
