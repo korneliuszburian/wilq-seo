@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { ShieldAlert } from "lucide-react";
 
 import { type ActionPreviewCardViewModel, getDemandGenDiagnostics } from "../lib/api";
+import {
+  DiagnosticSurfaceShell,
+  DiagnosticSurfaceUnavailable
+} from "../components/DiagnosticSurfaceShell";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
@@ -15,9 +19,7 @@ export function DemandGenDiagnosticSurface() {
   if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości zmiany trybu kampanii ani jakości kreacji bez WILQ." />
-      </main>
+      <DiagnosticSurfaceUnavailable message="Nie udało się odczytać danych Demand Gen. Ten widok nie może udawać gotowości zmiany trybu kampanii ani jakości kreacji bez WILQ." />
     );
   }
 
@@ -28,25 +30,19 @@ export function DemandGenDiagnosticSurface() {
   const campaignModeReviewRows = data.demand_gen_campaign_mode_review_rows;
   const metricTileEntries = Object.entries(data.metric_tiles);
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Demand Gen</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii
-            Ads i GA4 od prawdziwych danych Demand Gen: kreacji, jakości
-            stron wejścia według kampanii, kontroli trybu kampanii i akcji do sprawdzenia.
-          </p>
-        </div>
-        {metricTileEntries.length > 0 ? (
+    <DiagnosticSurfaceShell
+      title="Demand Gen"
+      description="Dedykowany widok Demand Gen z WILQ. Oddziela kontekst kampanii Ads i GA4 od prawdziwych danych Demand Gen: kreacji, jakości stron wejścia według kampanii, kontroli trybu kampanii i akcji do sprawdzenia."
+      metrics={
+        metricTileEntries.length > 0 ? (
           <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-6">
             {metricTileEntries.slice(0, 6).map(([label, value]) => (
               <MetricTile key={label} label={label} value={value} />
             ))}
           </div>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+    >
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -256,7 +252,7 @@ export function DemandGenDiagnosticSurface() {
         </div>
         <p className="mt-4 text-sm font-medium text-ink">{data.next_step}</p>
       </section>
-    </main>
+    </DiagnosticSurfaceShell>
   );
 }
 
