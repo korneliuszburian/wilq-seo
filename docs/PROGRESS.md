@@ -141,6 +141,13 @@ API status later contradicts this state.
   zgodności as a possible product wejściowy with draft angles, safe/unsafe
   wording and questions for Wilku, still without claiming legal/publication
   readiness.
+- Service Profile now exposes non-persistent review requests for the two
+  redacted `ekologus-ai` private proposals. Live API proof on 2026-07-01:
+  `private_review_action_count=2`, targets
+  `ekologus_service_eko_opieka` and `ekologus_service_audyt_zgodnosci`,
+  `approved_count=0`, `ready_for_daily_content=false`. These actions help
+  Wilku decide what to review next, but they do not promote private proposals
+  into source facts or knowledge cards.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation

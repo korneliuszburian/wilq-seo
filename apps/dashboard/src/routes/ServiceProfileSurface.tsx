@@ -14,6 +14,7 @@ import {
 
 type ServiceSection = ContentServiceProfileResponse["service_sections"][number];
 type CoverageGap = ContentServiceProfileResponse["coverage_gaps"][number];
+type ReviewAction = ContentServiceProfileResponse["review_actions"][number];
 
 export function ServiceProfileSurface() {
   const profile = useQuery({
@@ -97,6 +98,8 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
 
       <CoverageGaps gaps={data.coverage_gaps} />
 
+      <ReviewActions actions={data.review_actions} />
+
       <section className="mb-6 grid gap-4 lg:grid-cols-2">
         {data.service_sections.map((section) => (
           <ServiceCard key={section.card_id} section={section} />
@@ -177,6 +180,36 @@ function CoverageGaps({ gaps }: { gaps: CoverageGap[] }) {
             <h3 className="text-sm font-semibold text-wait">{gap.label}</h3>
             <p className="mt-1 text-sm leading-6 text-slate-700">{gap.reason}</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">{gap.safe_next_step}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ReviewActions({ actions }: { actions: ReviewAction[] }) {
+  if (actions.length === 0) return null;
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+        Akcje review
+      </h2>
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {actions.map((action) => (
+          <div key={action.action_id} className="rounded-md border border-line p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold">{action.label}</h3>
+              <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
+                {action.mode}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{action.reason}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {action.blocked_write_claim}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Rola: {action.required_human_role}
+            </p>
           </div>
         ))}
       </div>

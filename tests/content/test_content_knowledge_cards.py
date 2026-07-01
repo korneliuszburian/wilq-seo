@@ -323,6 +323,17 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
     ]
     assert response.review_actions
+    private_review_actions = [
+        action
+        for action in response.review_actions
+        if action.action_id.startswith("service_profile_review_private_proposal_")
+    ]
+    assert {action.target_card_id for action in private_review_actions} == {
+        "ekologus_service_eko_opieka",
+        "ekologus_service_audyt_zgodnosci",
+    }
+    assert all(action.mode == "review_request" for action in private_review_actions)
+    assert all("nie promuje" in action.blocked_write_claim for action in private_review_actions)
 
 
 def test_service_profile_exposes_water_permit_gap_without_fake_card() -> None:

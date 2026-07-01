@@ -213,7 +213,10 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             private_proposal_registry.proposals
         ),
         coverage_gaps=coverage_gaps,
-        review_actions=_review_actions(coverage_gaps),
+        review_actions=_review_actions(
+            coverage_gaps=coverage_gaps,
+            private_proposals=private_proposal_registry.proposals,
+        ),
         technical_trace=ContentServiceProfileTechnicalTrace(
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,
@@ -368,7 +371,9 @@ def _coverage_gaps(cards: list[ContentKnowledgeCard]) -> list[ContentServiceProf
 
 
 def _review_actions(
+    *,
     coverage_gaps: list[ContentServiceProfileCoverageGap],
+    private_proposals: list[PrivateSourceProposal],
 ) -> list[ContentServiceProfileReviewAction]:
     actions = [
         ContentServiceProfileReviewAction(
@@ -393,6 +398,25 @@ def _review_actions(
                 blocked_write_claim="To jest przygotowanie review, nie edycja knowledge base.",
                 required_human_role="Wilku albo owner wiedzy Ekologus",
                 gap_id=gap.gap_id,
+            )
+        )
+    for proposal in private_proposals:
+        if proposal.review_status != "review_required":
+            continue
+        actions.append(
+            ContentServiceProfileReviewAction(
+                action_id=f"service_profile_review_{proposal.proposal_id}",
+                mode="review_request",
+                label=f"Sprawdź prywatną propozycję: {proposal.target_card_title}",
+                reason=(
+                    f"{proposal.source_locator_label} jest redacted i review-required; "
+                    "może wspierać pytania UAT, ale nie production-depth."
+                ),
+                blocked_write_claim=(
+                    "To nie promuje private proposal do source fact ani knowledge card."
+                ),
+                required_human_role=proposal.owner_role,
+                target_card_id=proposal.target_card_id,
             )
         )
     return actions

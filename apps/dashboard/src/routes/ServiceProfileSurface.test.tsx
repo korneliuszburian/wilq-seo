@@ -48,6 +48,10 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("2 do review")).toBeInTheDocument();
     expect(screen.getByText("ekologus-ai reviewed handoff: Eko-Opieka")).toBeInTheDocument();
     expect(screen.getByText("ekologus-ai reviewed handoff: Audyt zgodności")).toBeInTheDocument();
+    expect(screen.getByText("Akcje review")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
+      .toBeInTheDocument();
+    expect(screen.getByText(/To nie promuje private proposal/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /promuj/i })).not.toBeInTheDocument();
   });
@@ -148,7 +152,18 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         example_work_item_ids: ["content_work_item_operat_wodnoprawny"]
       }
     ],
-    review_actions: [],
+    review_actions: [
+      {
+        action_id: "service_profile_review_private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+        mode: "review_request",
+        label: "Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz",
+        reason:
+          "ekologus-ai reviewed handoff: Eko-Opieka jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
+        blocked_write_claim: "To nie promuje private proposal do source fact ani knowledge card.",
+        required_human_role: "Wilku albo owner oferty Ekologus",
+        target_card_id: "ekologus_service_eko_opieka"
+      }
+    ],
     technical_trace: {
       knowledge_card_endpoint: "/api/content/knowledge-cards",
       source_fact_count: 5,

@@ -188,6 +188,14 @@ proposals (`Eko-Opieka` and `Audyt zgodności`) with `approved_count=0` and
 `redacted=true`; they do not compile into cards or unlock daily-content
 readiness.
 
+Non-persistent review actions for those private proposals are implemented
+under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
+review requests for `ekologus_service_eko_opieka` and
+`ekologus_service_audyt_zgodnosci`, while `blocked_write_claim` explicitly
+states that no private proposal is promoted into a source fact or knowledge
+card. Live API proof on 2026-07-01 returned `private_review_action_count=2`,
+`approved_count=0` and `ready_for_daily_content=false`.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

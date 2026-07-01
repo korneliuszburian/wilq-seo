@@ -1,7 +1,7 @@
 # WILQ Read-Only Service Profile Review Surface
 
 Date: 2026-07-01
-Status: implemented for read-only public cards and redacted private proposal summary
+Status: implemented for read-only public cards, redacted private proposal summary and non-persistent review actions
 Related Beads task: `wilq-seo-94k`
 Related protocol: `docs/architecture/private-source-proposal-protocol.md`
 
@@ -211,6 +211,9 @@ Allowed:
 - show why the request matters;
 - point to missing source/freshness/claim review;
 - let Codex produce ordinary handoff markdown for Wilku.
+- show review requests for redacted private proposals only as review-required
+  next steps, with a blocked write claim that explicitly says the request does
+  not promote the proposal into a source fact or knowledge card.
 
 Forbidden:
 
