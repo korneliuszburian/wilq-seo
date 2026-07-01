@@ -80,9 +80,47 @@ def main() -> int:
         "GET",
         "/api/connectors/google_search_console/refresh-runs",
     )
+    latest_gsc_refresh_summary = _latest_completed_vendor_refresh_summary(
+        gsc_refresh_runs
+    )
     latest_gsc_refresh_evidence_id = _latest_completed_vendor_refresh_evidence_id(
         gsc_refresh_runs
     )
+    if latest_gsc_refresh_summary:
+        required_gsc_summary_fields = {
+            "data_availability_checked",
+            "date_availability_status",
+            "availability_date_start",
+            "availability_date_end",
+            "date_start",
+            "date_end",
+            "query_page_row_limit",
+            "query_page_max_rows",
+            "query_page_rows_truncated",
+            "search_type",
+            "detail_dimensions",
+            "detail_data_completeness",
+        }
+        missing_gsc_summary_fields = sorted(
+            required_gsc_summary_fields - set(latest_gsc_refresh_summary)
+        )
+        if missing_gsc_summary_fields:
+            raise SystemExit(
+                "Latest GSC vendor_read metric_summary missing Search Analytics "
+                f"contract fields: {', '.join(missing_gsc_summary_fields)}"
+            )
+        if latest_gsc_refresh_summary.get("data_availability_checked") != "true":
+            raise SystemExit("Latest GSC vendor_read must check date availability")
+        if latest_gsc_refresh_summary.get("date_availability_status") != "available":
+            raise SystemExit("Latest GSC vendor_read must record available date status")
+        if latest_gsc_refresh_summary.get("search_type") != "web":
+            raise SystemExit("Latest GSC vendor_read must pin Search Analytics type=web")
+        if latest_gsc_refresh_summary.get("detail_dimensions") != "query,page":
+            raise SystemExit("Latest GSC vendor_read must record query,page detail dimensions")
+        if latest_gsc_refresh_summary.get("detail_data_completeness") != "partial_possible":
+            raise SystemExit(
+                "Latest GSC vendor_read must mark query/page data as partial_possible"
+            )
     gsc_refresh_evidence_ids = [
         str(evidence_id)
         for evidence_id in endpoint_evidence_ids
@@ -265,6 +303,62 @@ def main() -> int:
                     "context_pack_has_ahrefs_evidence": any(
                         "_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids
                     ),
+                    "gsc_search_analytics_contract": {
+                        "data_availability_checked": latest_gsc_refresh_summary.get(
+                            "data_availability_checked"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "date_availability_status": latest_gsc_refresh_summary.get(
+                            "date_availability_status"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "availability_date_start": latest_gsc_refresh_summary.get(
+                            "availability_date_start"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "availability_date_end": latest_gsc_refresh_summary.get(
+                            "availability_date_end"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "detail_date_start": latest_gsc_refresh_summary.get("date_start")
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "detail_date_end": latest_gsc_refresh_summary.get("date_end")
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "query_page_row_limit": latest_gsc_refresh_summary.get(
+                            "query_page_row_limit"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "query_page_max_rows": latest_gsc_refresh_summary.get(
+                            "query_page_max_rows"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "query_page_rows_truncated": latest_gsc_refresh_summary.get(
+                            "query_page_rows_truncated"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "search_type": latest_gsc_refresh_summary.get("search_type")
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "detail_dimensions": latest_gsc_refresh_summary.get(
+                            "detail_dimensions"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                        "detail_data_completeness": latest_gsc_refresh_summary.get(
+                            "detail_data_completeness"
+                        )
+                        if latest_gsc_refresh_summary
+                        else None,
+                    },
                     "gsc_query_page_metric_fact_count": gsc_query_page_fact_count,
                     "latest_gsc_refresh_evidence_id": latest_gsc_refresh_evidence_id,
                     "gsc_refresh_evidence_ids": gsc_refresh_evidence_ids,
@@ -327,6 +421,21 @@ def _decision_trace(decisions: Any) -> list[dict[str, Any]]:
         for item in decisions
         if isinstance(item, dict)
     ]
+
+
+def _latest_completed_vendor_refresh_summary(runs: Any) -> dict[str, Any]:
+    if not isinstance(runs, list):
+        return {}
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        if run.get("mode") != "vendor_read":
+            continue
+        if run.get("status") != "completed" or run.get("vendor_data_collected") is not True:
+            continue
+        metric_summary = run.get("metric_summary")
+        return metric_summary if isinstance(metric_summary, dict) else {}
+    return {}
 
 
 def _latest_completed_vendor_refresh_evidence_id(runs: Any) -> str | None:

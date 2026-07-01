@@ -239,6 +239,14 @@ persists `detail_data_completeness=partial_possible` for `query,page` reads, so
 later diagnostics and skills can use those rows as SEO decision signals without
 treating them as full traffic totals.
 
+The GSC skill eval now enforces that caveat under Beads task `wilq-seo-3pq`.
+`wilq-gsc-content-doctor` smoke exposes the latest GSC Search Analytics
+contract fields and fails if they are missing. The non-interactive proof at
+`.local-lab/evals/codex-skill/20260701T231227Z/summary.json` passed with
+`operator_usefulness_score=4`, six evidence IDs, one recommendation and a
+validated `act_prepare_content_refresh_queue`, while keeping query/page rows
+as `partial_possible` signals from the newest available day.
+
 Marketing brief action items now preserve the same refresh-first semantics as
 stale daily decisions. If a safe next action is attached to stale Merchant or
 content data, it becomes a blocker titled `Odśwież dane przed akcją` and points

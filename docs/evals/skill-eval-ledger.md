@@ -34,6 +34,42 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-01 - `wilq-gsc-content-doctor` Search Analytics completeness eval
+
+Purpose:
+
+- Make the GSC content skill prove the official Search Analytics caveats, not
+  only generic GSC/WordPress evidence.
+- Require operator output to mention available-date freshness, `type=web`,
+  `rowLimit`/`startRow` paging and `detail_data_completeness=partial_possible`
+  for `query,page` rows.
+- Prevent treating detailed GSC query/page rows as full traffic totals.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Live GSC `vendor_read` proof `refresh_google_search_console_916af598b0fd`
+  exposes `data_availability_checked=true`, `date_availability_status=available`,
+  detail date `2026-06-29`, `search_type=web`,
+  `detail_dimensions=query,page`, `detail_data_completeness=partial_possible`,
+  `query_page_row_limit=250`, `query_page_max_rows=1000` and
+  `query_page_rows_truncated=false`.
+- `wilq-gsc-content-doctor` smoke now fails if the latest GSC refresh summary
+  lacks those Search Analytics contract fields.
+- Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260701T231227Z/summary.json` with
+  `operator_usefulness_score=4`, `blocked=false`, six evidence IDs, one
+  recommendation and one validated `act_prepare_content_refresh_queue` action.
+  The output explicitly says the decision uses the newest available day and
+  partial query/page data, not a full traffic or ranking-success claim.
+
 ## 2026-07-01 - `wilq-content-operator` eval case and harness guard
 
 Purpose:

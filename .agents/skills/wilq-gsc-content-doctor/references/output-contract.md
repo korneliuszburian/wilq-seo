@@ -44,6 +44,27 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 
 Brak identyfikatora dowodu oznacza brak rekomendacji. Brak źródła danych oznacza brak rekomendacji. Brak akcji do sprawdzenia w WILQ oznacza brak zapisu zmian. Brak zdarzenia audytu oznacza brak zapisu zmian.
 
+## Reguły Search Analytics
+
+GSC Search Analytics nie jest traktowane jak pełny raport całego ruchu. Skill
+musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
+
+- `data_availability_checked=true` i `date_availability_status=available`
+  oznaczają, że WILQ najpierw sprawdził dostępne daty przez wymiar `date`;
+- `date_start`/`date_end` w metric summary oznaczają najnowszy dostępny dzień
+  szczegółów, a nie automatycznie dzisiejszą datę;
+- `search_type=web` ogranicza interpretację do web search;
+- `detail_dimensions=query,page` i
+  `detail_data_completeness=partial_possible` oznaczają, że wiersze
+  query/page są sygnałem do decyzji treściowej, ale nie pełną sumą ruchu;
+- `query_page_row_limit`, `query_page_max_rows` i
+  `query_page_rows_truncated` mówią, czy odczyt był stronicowany i czy wynik
+  mógł zostać ucięty.
+
+W odpowiedzi dla operatora powiedz po polsku, jeśli decyzja opiera się na
+najnowszym dostępnym dniu i częściowych danych query/page. Nie obiecuj pełnej
+diagnostyki ruchu, kanibalizacji ani wzrostu pozycji bez dodatkowych dowodów.
+
 ## Bezpieczeństwo treści
 
 `act_prepare_content_refresh_queue` jest przygotowanie bez zapisu. Może wspierać planowanie refresh/create/merge/block, podgląd zmian i sprawdzenie w WILQ. Nie może obiecywać edycji WordPress, automatycznej publikacji, wzrostu pozycji, wzrostu leadów ani gwarancji braku duplikacji bez przyszłego wsparcia zapisu zmian i audytu.
