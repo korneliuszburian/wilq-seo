@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentKnowledgeCards,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
@@ -22,6 +23,7 @@ import {
 } from "./api";
 
 const responseByPath: Record<string, unknown> = {
+  "/api/content/knowledge-cards": contentKnowledgeCardsResponse(),
   "/api/content/work-items/queue": contentQueueResponse(),
   "/api/content/work-items/content_work_item_bdo/enrichment": opportunityEnrichmentResponse(),
   "/api/content/work-items/preflight": {
@@ -174,6 +176,7 @@ describe("content workflow API helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await getContentWorkItemQueue();
+    await getContentKnowledgeCards();
     await getContentWorkItemSnapshot("content_work_item_bdo");
     await getContentWorkItemEnrichment("content_work_item_bdo");
     await postContentWorkItemPreflight({ item: workItem() });
@@ -257,6 +260,7 @@ describe("content workflow API helpers", () => {
 
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/content/work-items/queue",
+      "/api/content/knowledge-cards",
       "/api/content/work-items/content_work_item_bdo/snapshot",
       "/api/content/work-items/content_work_item_bdo/enrichment",
       "/api/content/work-items/preflight",
@@ -281,6 +285,43 @@ describe("content workflow API helpers", () => {
     ]);
   });
 });
+
+function contentKnowledgeCardsResponse() {
+  return {
+    cards: [
+      {
+        id: "ekologus_service_environmental_compliance",
+        card_type: "service",
+        title: "Obsługa środowiskowa i zgodność obowiązków",
+        summary: "Ekologus pomaga firmom porządkować obowiązki środowiskowe.",
+        service_fit_terms: ["bdo", "odpady", "środowisk"],
+        buyer_problem_terms: ["obowiązki", "kontrola"],
+        buyer_triggers: ["zbliżający się termin sprawozdawczy"],
+        cta_patterns: ["Zaproponuj konsultację obowiązków bez gwarancji wyniku."],
+        allowed_claims: ["Ekologus może pomóc firmie uporządkować obowiązki."],
+        claims_needing_review: [
+          {
+            id: "knowledge_claim_environmental_review",
+            claim_type: "environmental_claim",
+            status: "needs_human_review",
+            label: "Twierdzenie środowiskowe wymaga sprawdzenia",
+            reason: "Zakres obowiązków zależy od sytuacji firmy.",
+            required_evidence_types: ["service_card", "human_review"]
+          }
+        ],
+        forbidden_claims: [],
+        evidence_requirements: ["Dowód bieżący z connectora jest wymagany."],
+        measurement_sensitive_claims: [],
+        source_lineage: ["docs/goals/004-goal.md"],
+        confidence: 0.88,
+        freshness: "seeded_goal_004",
+        usage_notes: ["Karta wiedzy nie zastępuje live evidence."]
+      }
+    ],
+    card_count: 1,
+    source_lineage: ["docs/goals/004-goal.md"]
+  };
+}
 
 function workflowSnapshot() {
   return {
@@ -561,6 +602,11 @@ function salesBrief() {
         source_connector: "google_search_console",
         summary: "GSC pokazuje popyt na temat BDO."
       }
+    ],
+    knowledge_card_ids: [
+      "ekologus_service_environmental_compliance",
+      "ekologus_cta_consultation_without_guarantee",
+      "ekologus_evidence_live_connector_requirement"
     ],
     forbidden_claims: [],
     missing_evidence: [],

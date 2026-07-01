@@ -8,6 +8,10 @@ from wilq.content.enrichment.opportunity import (
     build_content_opportunity_enrichment_response,
 )
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardsResponse,
+    content_knowledge_cards_response,
+)
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageRequest,
@@ -61,6 +65,14 @@ from wilq.content.workflow.queue import (
 from wilq.content.workflow.store import content_workflow_store
 
 router = APIRouter()
+
+
+@router.get(
+    "/api/content/knowledge-cards",
+    response_model=ContentKnowledgeCardsResponse,
+)
+def content_knowledge_cards() -> ContentKnowledgeCardsResponse:
+    return content_knowledge_cards_response()
 
 
 @router.get(

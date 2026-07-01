@@ -161,6 +161,74 @@ export const ContentSalesBriefSourceFactSchema = z.object({
   summary: z.string()
 });
 
+export const ContentKnowledgeClaimRuleSchema = z.object({
+  id: z.string(),
+  claim_type: z.string(),
+  status: z.enum([
+    "allowed_with_evidence",
+    "needs_human_review",
+    "blocked",
+    "blocked_until_measurement"
+  ]),
+  label: z.string(),
+  reason: z.string(),
+  required_evidence_types: z.array(z.string()).default([])
+});
+
+export const ContentKnowledgeCardSchema = z.object({
+  id: z.string(),
+  card_type: z.enum([
+    "service",
+    "buyer_problem",
+    "buyer_trigger",
+    "cta_pattern",
+    "claim_policy",
+    "evidence_requirement",
+    "measurement_sensitive_claim"
+  ]),
+  title: z.string(),
+  summary: z.string(),
+  service_fit_terms: z.array(z.string()).default([]),
+  buyer_problem_terms: z.array(z.string()).default([]),
+  buyer_triggers: z.array(z.string()).default([]),
+  cta_patterns: z.array(z.string()).default([]),
+  allowed_claims: z.array(z.string()).default([]),
+  claims_needing_review: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  forbidden_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  evidence_requirements: z.array(z.string()).default([]),
+  measurement_sensitive_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  source_lineage: z.array(z.string()).default([]),
+  confidence: z.number(),
+  freshness: z.string(),
+  usage_notes: z.array(z.string()).default([])
+});
+
+export const ContentKnowledgeCardBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  work_item_id: z.string().nullable().optional(),
+  required_card_type: z
+    .enum([
+      "service",
+      "buyer_problem",
+      "buyer_trigger",
+      "cta_pattern",
+      "claim_policy",
+      "evidence_requirement",
+      "measurement_sensitive_claim"
+    ])
+    .nullable()
+    .optional()
+});
+
+export const ContentKnowledgeCardsResponseSchema = z.object({
+  cards: z.array(ContentKnowledgeCardSchema).default([]),
+  card_count: z.number(),
+  source_lineage: z.array(z.string()).default([])
+});
+
 export const ContentSalesBriefSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -181,6 +249,7 @@ export const ContentSalesBriefSchema = z.object({
   cta_direction: z.string(),
   internal_link_direction: z.array(z.string()).default([]),
   source_facts: z.array(ContentSalesBriefSourceFactSchema).default([]),
+  knowledge_card_ids: z.array(z.string()).default([]),
   forbidden_claims: z.array(ContentClaimReferenceSchema).default([]),
   missing_evidence: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
@@ -712,6 +781,10 @@ export type ContentWorkItemPreflightResponse = z.infer<
 >;
 export type ContentWorkItemSalesBriefResponse = z.infer<
   typeof ContentWorkItemSalesBriefResponseSchema
+>;
+export type ContentKnowledgeCard = z.infer<typeof ContentKnowledgeCardSchema>;
+export type ContentKnowledgeCardsResponse = z.infer<
+  typeof ContentKnowledgeCardsResponseSchema
 >;
 export type ContentWorkItemDraftPackageResponse = z.infer<
   typeof ContentWorkItemDraftPackageResponseSchema

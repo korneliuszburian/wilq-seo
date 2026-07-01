@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 from wilq.content.canonical.urls import CONTENT_SOURCE_SITE_HOSTS, content_url_host
 from wilq.content.claims.ledger import ContentClaimLedger, claim_ledger_blockers
 from wilq.content.inventory.records import ContentInventoryResolution
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardMatch,
+    content_knowledge_card_blockers,
+    required_content_knowledge_card_ids,
+)
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -21,6 +26,7 @@ ContentSalesBriefBlockerCode = Literal[
     "missing_final_canonical",
     "invalid_final_canonical",
     "missing_measurement_plan",
+    "missing_required_knowledge_card",
 ]
 
 
@@ -79,6 +85,7 @@ class ContentSalesBrief(BaseModel):
     cta_direction: str
     internal_link_direction: list[str] = Field(default_factory=list)
     source_facts: list[ContentSalesBriefSourceFact] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     forbidden_claims: list[ContentSalesBriefForbiddenClaim] = Field(default_factory=list)
@@ -107,11 +114,13 @@ def build_content_sales_brief(
     inventory: ContentInventoryResolution,
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    knowledge_match: ContentKnowledgeCardMatch | None = None,
 ) -> ContentSalesBriefBuildResult:
     blockers = content_sales_brief_blockers(
         item=item,
         preflight=preflight,
         seed=seed,
+        knowledge_match=knowledge_match,
     )
     if blockers:
         return ContentSalesBriefBuildResult(blockers=blockers)
@@ -138,6 +147,11 @@ def build_content_sales_brief(
             cta_direction=seed.cta_direction,
             internal_link_direction=seed.internal_link_direction,
             source_facts=seed.source_facts,
+            knowledge_card_ids=(
+                []
+                if knowledge_match is None
+                else required_content_knowledge_card_ids(knowledge_match)
+            ),
             evidence_ids=_unique([*item.evidence_ids, *preflight.evidence_ids]),
             source_connectors=_unique(
                 [*item.source_connectors, *preflight.source_connectors]
@@ -169,8 +183,28 @@ def content_sales_brief_blockers(
     item: ContentWorkItem,
     preflight: ContentPreflightVerdict,
     seed: ContentSalesBriefSeed,
+    knowledge_match: ContentKnowledgeCardMatch | None = None,
 ) -> list[ContentSalesBriefBlocker]:
     blockers: list[ContentSalesBriefBlocker] = []
+    if knowledge_match is None:
+        blockers.append(
+            _blocker(
+                "missing_required_knowledge_card",
+                "Brakuje kart wiedzy Ekologus",
+                "Sales Brief v2 wymaga typed knowledge cards dla usługi, CTA, claimów i dowodów.",
+                "Dopasuj karty wiedzy do work itemu przed briefem.",
+            )
+        )
+    else:
+        blockers.extend(
+            _blocker(
+                "missing_required_knowledge_card",
+                blocker.label,
+                blocker.reason,
+                blocker.next_step,
+            )
+            for blocker in content_knowledge_card_blockers(knowledge_match)
+        )
     if not preflight.sales_brief_allowed:
         blockers.append(
             _blocker(

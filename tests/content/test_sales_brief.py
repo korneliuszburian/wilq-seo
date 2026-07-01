@@ -1,18 +1,22 @@
 from __future__ import annotations
 
+from typing import Any
+
 from wilq.content.briefs.sales import (
+    ContentSalesBriefBuildResult,
     ContentSalesBriefSeed,
     ContentSalesBriefSourceFact,
     build_content_sales_brief,
 )
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
+from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.models import ContentWorkItem
 
 
 def _item(**overrides: object) -> ContentWorkItem:
-    payload: dict[str, object] = {
+    payload: dict[str, Any] = {
         "id": "content_work_item_bdo",
         "topic": "BDO dla firm",
         "source_public_url": "https://ekologus.pl/bdo/",
@@ -32,11 +36,11 @@ def _item(**overrides: object) -> ContentWorkItem:
         "measurement_window_id": "measure_bdo",
     }
     payload.update(overrides)
-    return ContentWorkItem(**payload)
+    return ContentWorkItem.model_validate(payload)
 
 
 def _inventory(**overrides: object) -> ContentInventoryRecord:
-    payload: dict[str, object] = {
+    payload: dict[str, Any] = {
         "id": "inventory_bdo",
         "url": "https://ekologus.pl/bdo/",
         "final_canonical_url": "https://ekologus.pl/bdo/",
@@ -47,7 +51,7 @@ def _inventory(**overrides: object) -> ContentInventoryRecord:
         "evidence_ids": ["ev_wp_bdo"],
     }
     payload.update(overrides)
-    return ContentInventoryRecord(**payload)
+    return ContentInventoryRecord.model_validate(payload)
 
 
 def _claim_ledger() -> ContentClaimLedger:
@@ -73,7 +77,7 @@ def _claim_ledger() -> ContentClaimLedger:
 
 
 def _seed(**overrides: object) -> ContentSalesBriefSeed:
-    payload: dict[str, object] = {
+    payload: dict[str, Any] = {
         "target_reader": "Właściciel lub osoba odpowiedzialna za środowisko w firmie",
         "buyer_problem": "Nie wie, czy obowiązki BDO dotyczą jego firmy i co sprawdzić.",
         "buyer_trigger": "Nowy obowiązek, kontrola, audyt albo porządkowanie dokumentów.",
@@ -106,7 +110,7 @@ def _seed(**overrides: object) -> ContentSalesBriefSeed:
         "missing_evidence": ["Dokładny zakres usługi wymaga potwierdzenia w ServiceMap."],
     }
     payload.update(overrides)
-    return ContentSalesBriefSeed(**payload)
+    return ContentSalesBriefSeed.model_validate(payload)
 
 
 def _brief_result(
@@ -114,7 +118,7 @@ def _brief_result(
     item: ContentWorkItem | None = None,
     inventory_record: ContentInventoryRecord | None = None,
     seed: ContentSalesBriefSeed | None = None,
-):
+) -> ContentSalesBriefBuildResult:
     work_item = item or _item()
     inventory = resolve_content_inventory(
         [inventory_record or _inventory()],
@@ -127,6 +131,7 @@ def _brief_result(
         inventory=inventory,
         claim_ledger=_claim_ledger(),
         seed=seed or _seed(),
+        knowledge_match=match_content_knowledge_cards(work_item),
     )
 
 
@@ -145,6 +150,9 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
         "Kiedy skonsultować sytuację z ekspertem",
     ]
     assert result.brief.measurement_plan.measurement_window_id == "measure_bdo"
+    assert "ekologus_service_environmental_compliance" in result.brief.knowledge_card_ids
+    assert "ekologus_cta_consultation_without_guarantee" in result.brief.knowledge_card_ids
+    assert "ekologus_evidence_live_connector_requirement" in result.brief.knowledge_card_ids
     assert result.brief.draft_allowed is False
     assert [claim.claim_id for claim in result.brief.forbidden_claims] == [
         "claim_more_leads"
@@ -216,3 +224,45 @@ def test_sales_brief_rejects_source_facts_without_known_evidence_or_connector() 
         "unknown_source_fact_evidence",
         "unknown_source_fact_connector",
     }
+
+
+def test_sales_brief_blocks_when_required_knowledge_cards_are_missing() -> None:
+    work_item = _item(
+        topic="Neutralny temat bez dopasowania",
+        source_public_url="https://ekologus.pl/neutralny-temat/",
+        final_canonical_url="https://ekologus.pl/neutralny-temat/",
+        intended_final_url="https://ekologus.pl/neutralny-temat/",
+        evidence_ids=["ev_neutral"],
+    )
+    inventory = resolve_content_inventory([_inventory()], duplicate_risk="clear")
+    preflight = build_content_preflight_verdict(work_item, inventory)
+
+    result = build_content_sales_brief(
+        item=work_item,
+        preflight=preflight,
+        inventory=inventory,
+        claim_ledger=_claim_ledger(),
+        seed=_seed(),
+        knowledge_match=match_content_knowledge_cards(work_item),
+    )
+
+    assert result.brief is None
+    assert "missing_required_knowledge_card" in [blocker.code for blocker in result.blockers]
+    assert any("karty usługi" in blocker.label.lower() for blocker in result.blockers)
+
+
+def test_sales_brief_blocks_when_knowledge_match_is_not_supplied() -> None:
+    work_item = _item()
+    inventory = resolve_content_inventory([_inventory()], duplicate_risk="clear")
+    preflight = build_content_preflight_verdict(work_item, inventory)
+
+    result = build_content_sales_brief(
+        item=work_item,
+        preflight=preflight,
+        inventory=inventory,
+        claim_ledger=_claim_ledger(),
+        seed=_seed(),
+    )
+
+    assert result.brief is None
+    assert [blocker.code for blocker in result.blockers] == ["missing_required_knowledge_card"]

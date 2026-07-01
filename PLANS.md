@@ -611,8 +611,18 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   pytest subset, dashboard API/route Vitest subset, dashboard typecheck, Ruff,
   mypy, changed-file complexity audit, Fallow audit and `git diff --check`
   passed.
-- Next product slice: `wilq-seo-dtj`, typed Ekologus knowledge cards consumed
-  by enrichment and Sales Brief v2.
+- Typed Ekologus knowledge cards slice `wilq-seo-dtj` added
+  `GET /api/content/knowledge-cards`, strict typed content knowledge-card
+  models, seeded service/CTA/evidence policy cards, Sales Brief knowledge-card
+  gating and shared dashboard schemas. The slice keeps knowledge as typed
+  cards/rules with lineage, confidence and freshness; it does not add broad
+  RAG or prompt-only business logic.
+- Focused proof for the knowledge-card slice: content knowledge-card, Sales
+  Brief, content workflow end-to-end and contract-inventory pytest subset,
+  dashboard API/route Vitest subset, dashboard typecheck, Ruff, mypy,
+  changed-file complexity audit, Fallow audit and `git diff --check` passed.
+- Next product slice: `wilq-seo-8xc`, operations-grade Sales Brief v2 from
+  opportunity enrichment and typed Ekologus knowledge.
 
 2026-06-30:
 

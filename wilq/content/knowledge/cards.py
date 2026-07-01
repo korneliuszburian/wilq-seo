@@ -1,0 +1,434 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from wilq.content.workflow.models import ContentWorkItem
+
+ContentKnowledgeCardType = Literal[
+    "service",
+    "buyer_problem",
+    "buyer_trigger",
+    "cta_pattern",
+    "claim_policy",
+    "evidence_requirement",
+    "measurement_sensitive_claim",
+]
+ContentKnowledgeClaimStatus = Literal[
+    "allowed_with_evidence",
+    "needs_human_review",
+    "blocked",
+    "blocked_until_measurement",
+]
+
+
+class ContentKnowledgeClaimRule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    claim_type: str
+    status: ContentKnowledgeClaimStatus
+    label: str
+    reason: str
+    required_evidence_types: list[str] = Field(default_factory=list)
+
+
+class ContentKnowledgeCard(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    card_type: ContentKnowledgeCardType
+    title: str
+    summary: str
+    service_fit_terms: list[str] = Field(default_factory=list)
+    buyer_problem_terms: list[str] = Field(default_factory=list)
+    buyer_triggers: list[str] = Field(default_factory=list)
+    cta_patterns: list[str] = Field(default_factory=list)
+    allowed_claims: list[str] = Field(default_factory=list)
+    claims_needing_review: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
+    forbidden_claims: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
+    evidence_requirements: list[str] = Field(default_factory=list)
+    measurement_sensitive_claims: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
+    source_lineage: list[str] = Field(default_factory=list)
+    confidence: float
+    freshness: str
+    usage_notes: list[str] = Field(default_factory=list)
+
+
+class ContentKnowledgeCardBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str
+    label: str
+    reason: str
+    next_step: str
+    work_item_id: str | None = None
+    required_card_type: ContentKnowledgeCardType | None = None
+
+
+class ContentKnowledgeCardMatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    work_item_id: str
+    service_card: ContentKnowledgeCard | None = None
+    buyer_problem_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    cta_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    claim_policy_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    evidence_requirement_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    measurement_sensitive_cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    blockers: list[ContentKnowledgeCardBlocker] = Field(default_factory=list)
+
+
+class ContentKnowledgeCardsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cards: list[ContentKnowledgeCard] = Field(default_factory=list)
+    card_count: int
+    source_lineage: list[str] = Field(default_factory=list)
+
+
+@lru_cache(maxsize=1)
+def ekologus_content_knowledge_cards() -> tuple[ContentKnowledgeCard, ...]:
+    return (
+        _environmental_compliance_service_card(),
+        _consultation_cta_card(),
+        _live_evidence_requirement_card(),
+    )
+
+
+def _environmental_compliance_service_card() -> ContentKnowledgeCard:
+    return ContentKnowledgeCard(
+        id="ekologus_service_environmental_compliance",
+        card_type="service",
+        title="Obsługa środowiskowa i zgodność obowiązków",
+        summary=(
+            "Ekologus pomaga firmom porządkować obowiązki środowiskowe, "
+            "w tym BDO, odpady i przygotowanie do konsultacji lub audytu."
+        ),
+        service_fit_terms=[
+            "bdo",
+            "odpady",
+            "środowisk",
+            "obowiązk",
+            "zgodność",
+            "zielony ład",
+            "sprawozd",
+        ],
+        buyer_problem_terms=["nie wie", "obowiązki", "kontrola", "termin", "dokument", "ryzyko"],
+        buyer_triggers=[
+            "zbliżający się termin sprawozdawczy",
+            "kontrola albo audyt środowiskowy",
+            "porządkowanie dokumentów przed decyzją biznesową",
+        ],
+        cta_patterns=[
+            "Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+            "Poproś o opis sytuacji firmy i dokumentów do sprawdzenia.",
+        ],
+        allowed_claims=[
+            "Ekologus może pomóc firmie uporządkować obowiązki środowiskowe.",
+            "Treść może edukacyjnie wskazywać, co warto sprawdzić przed konsultacją.",
+        ],
+        claims_needing_review=_environmental_review_claim_rules(),
+        forbidden_claims=[
+            _claim_rule(
+                "knowledge_claim_no_guarantee",
+                "guarantee_claim",
+                "blocked",
+                "Gwarancje efektu są zablokowane",
+                "Nie wolno obiecywać uniknięcia kar, zgodności ani wyników SEO.",
+                ["human_review"],
+            )
+        ],
+        evidence_requirements=[
+            "Dowód z GSC/WordPress/GA4/Ahrefs może uzasadnić kierunek treści.",
+            "Dowód bieżący z connectora jest wymagany do rekomendacji.",
+            "Karta wiedzy nie zastępuje live evidence ani source connectora.",
+        ],
+        measurement_sensitive_claims=[
+            _claim_rule(
+                "knowledge_claim_content_effect_waits_for_measurement",
+                "business_outcome_claim",
+                "blocked_until_measurement",
+                "Twierdzenie o efekcie czeka na pomiar",
+                "Nie wolno mówić o leadach, pozycjach ani konwersji przed oknem pomiaru.",
+                ["measurement_window", "gsc_or_ga4_evidence"],
+            )
+        ],
+        source_lineage=[
+            "docs/goals/004-goal.md",
+            "docs/PROGRESS.md",
+            "wilq/content/claims/ledger.py",
+        ],
+        confidence=0.88,
+        freshness="seeded_goal_004",
+        usage_notes=[
+            "Używaj jako reguły interpretacji, nie jako dowodu bieżących metryk.",
+            "Jeśli karta nie pasuje do tematu, zablokuj draft albo dodaj kartę po review.",
+        ],
+    )
+
+
+def _environmental_review_claim_rules() -> list[ContentKnowledgeClaimRule]:
+    return [
+        _claim_rule(
+            "knowledge_claim_environmental_review",
+            "environmental_claim",
+            "needs_human_review",
+            "Twierdzenie środowiskowe wymaga sprawdzenia",
+            "Zakres obowiązków środowiskowych zależy od sytuacji firmy.",
+            ["service_card", "human_review"],
+        ),
+        _claim_rule(
+            "knowledge_claim_legal_review",
+            "legal_requirement_claim",
+            "needs_human_review",
+            "Twierdzenie prawne wymaga sprawdzenia",
+            "WILQ nie może sam rozstrzygać obowiązku prawnego konkretnej firmy.",
+            ["service_card", "human_review"],
+        ),
+    ]
+
+
+def _consultation_cta_card() -> ContentKnowledgeCard:
+    return ContentKnowledgeCard(
+        id="ekologus_cta_consultation_without_guarantee",
+        card_type="cta_pattern",
+        title="CTA: konsultacja bez gwarancji wyniku",
+        summary=(
+            "CTA ma pomagać użytkownikowi przejść od problemu do rozmowy, "
+            "bez obietnicy uniknięcia kar, zgodności albo efektu SEO."
+        ),
+        service_fit_terms=["bdo", "odpady", "zielony ład", "środowisk"],
+        cta_patterns=[
+            "Skonsultuj obowiązki na podstawie sytuacji firmy.",
+            "Przygotuj dokumenty i zapytaj Ekologus, co wymaga sprawdzenia.",
+        ],
+        forbidden_claims=[
+            _claim_rule(
+                "knowledge_cta_no_absolute_outcome",
+                "guarantee_claim",
+                "blocked",
+                "CTA nie może obiecywać wyniku",
+                "CTA nie może brzmieć jak gwarancja zgodności, leadów albo pozycji.",
+                ["human_review"],
+            )
+        ],
+        evidence_requirements=[
+            "CTA musi wynikać z dopasowania usługi, intencji i claim policy.",
+        ],
+        source_lineage=["docs/goals/004-goal.md", "wilq/content/quality/review.py"],
+        confidence=0.84,
+        freshness="seeded_goal_004",
+        usage_notes=["CTA ma być konkretne, ale defensywne wobec claimów."],
+    )
+
+
+def _live_evidence_requirement_card() -> ContentKnowledgeCard:
+    return ContentKnowledgeCard(
+        id="ekologus_evidence_live_connector_requirement",
+        card_type="evidence_requirement",
+        title="Live evidence i source connector są wymagane",
+        summary=(
+            "Knowledge card może powiedzieć jak interpretować temat, ale rekomendacja "
+            "wymaga evidence IDs i source connectors z WILQ API."
+        ),
+        evidence_requirements=[
+            "Brak evidence ID oznacza brak rekomendacji.",
+            "Brak source connector oznacza brak rekomendacji.",
+            "Dev preview URL nie jest historycznym dowodem SEO ani finalnym canonicalem.",
+        ],
+        forbidden_claims=[
+            _claim_rule(
+                "knowledge_no_prompt_only_recommendation",
+                "performance_claim",
+                "blocked",
+                "Prompt-only rekomendacja jest zablokowana",
+                "Nie wolno rekomendować treści na podstawie samej karty wiedzy.",
+                ["evidence_id", "source_connector"],
+            )
+        ],
+        source_lineage=[
+            "AGENTS.md",
+            "docs/goals/004-goal.md",
+            "wilq/content/enrichment/opportunity.py",
+        ],
+        confidence=0.95,
+        freshness="seeded_goal_004",
+        usage_notes=[
+            "Ta karta jest twardą bramką anty-slop.",
+            "Karta wiedzy nie zastępuje live evidence ani source connectora.",
+        ],
+    )
+
+
+def content_knowledge_cards_response() -> ContentKnowledgeCardsResponse:
+    cards = list(ekologus_content_knowledge_cards())
+    return ContentKnowledgeCardsResponse(
+        cards=cards,
+        card_count=len(cards),
+        source_lineage=_unique(line for card in cards for line in card.source_lineage),
+    )
+
+
+def match_content_knowledge_cards(item: ContentWorkItem) -> ContentKnowledgeCardMatch:
+    cards = list(ekologus_content_knowledge_cards())
+    text = _search_text(
+        [
+            item.topic,
+            item.source_public_url,
+            item.final_canonical_url,
+            *item.evidence_ids,
+            *item.source_connectors,
+        ]
+    )
+    service_cards = _matching_cards(cards, text, "service")
+    cta_cards = _matching_cards(cards, text, "cta_pattern")
+    claim_policy_cards = [
+        card
+        for card in cards
+        if card.claims_needing_review
+        or card.forbidden_claims
+        or card.measurement_sensitive_claims
+    ]
+    evidence_requirement_cards = [
+        card for card in cards if card.card_type == "evidence_requirement"
+    ]
+    measurement_cards = [
+        card for card in cards if card.measurement_sensitive_claims
+    ]
+    match = ContentKnowledgeCardMatch(
+        work_item_id=item.id,
+        service_card=service_cards[0] if service_cards else None,
+        buyer_problem_cards=service_cards,
+        cta_cards=cta_cards,
+        claim_policy_cards=claim_policy_cards,
+        evidence_requirement_cards=evidence_requirement_cards,
+        measurement_sensitive_cards=measurement_cards,
+    )
+    return match.model_copy(update={"blockers": content_knowledge_card_blockers(match)})
+
+
+def content_knowledge_card_blockers(
+    match: ContentKnowledgeCardMatch,
+) -> list[ContentKnowledgeCardBlocker]:
+    blockers: list[ContentKnowledgeCardBlocker] = []
+    if match.service_card is None:
+        blockers.append(
+            _blocker(
+                "missing_service_card",
+                "Brakuje karty usługi",
+                "WILQ nie może przygotować briefu bez typed service card dla tematu.",
+                "Dodaj albo dopasuj kartę usługi Ekologus przed szkicem.",
+                match.work_item_id,
+                "service",
+            )
+        )
+    if not match.cta_cards:
+        blockers.append(
+            _blocker(
+                "missing_cta_card",
+                "Brakuje karty CTA",
+                "Brief musi wiedzieć, jaki typ wezwania do działania jest bezpieczny.",
+                "Dodaj CTA pattern card albo zablokuj szkic.",
+                match.work_item_id,
+                "cta_pattern",
+            )
+        )
+    if not match.claim_policy_cards:
+        blockers.append(
+            _blocker(
+                "missing_claim_policy_card",
+                "Brakuje polityki claimów",
+                "Claim gate musi wynikać z typed knowledge card, nie z promptu.",
+                "Dodaj claim policy card przed draftem.",
+                match.work_item_id,
+                "claim_policy",
+            )
+        )
+    if not match.evidence_requirement_cards:
+        blockers.append(
+            _blocker(
+                "missing_evidence_requirement_card",
+                "Brakuje wymagań dowodowych",
+                "WILQ musi wiedzieć, jakie dowody są wymagane i czego nie zastępuje karta.",
+                "Dodaj evidence requirement card.",
+                match.work_item_id,
+                "evidence_requirement",
+            )
+        )
+    return blockers
+
+
+def required_content_knowledge_card_ids(match: ContentKnowledgeCardMatch) -> list[str]:
+    ids: list[str] = []
+    if match.service_card is not None:
+        ids.append(match.service_card.id)
+    ids.extend(card.id for card in match.cta_cards[:1])
+    ids.extend(card.id for card in match.claim_policy_cards[:1])
+    ids.extend(card.id for card in match.evidence_requirement_cards[:1])
+    return _unique(ids)
+
+
+def _matching_cards(
+    cards: Iterable[ContentKnowledgeCard],
+    search_text: str,
+    card_type: ContentKnowledgeCardType,
+) -> list[ContentKnowledgeCard]:
+    return [
+        card
+        for card in cards
+        if card.card_type == card_type
+        and any(term.lower() in search_text for term in card.service_fit_terms)
+    ]
+
+
+def _claim_rule(
+    rule_id: str,
+    claim_type: str,
+    status: ContentKnowledgeClaimStatus,
+    label: str,
+    reason: str,
+    required_evidence_types: list[str],
+) -> ContentKnowledgeClaimRule:
+    return ContentKnowledgeClaimRule(
+        id=rule_id,
+        claim_type=claim_type,
+        status=status,
+        label=label,
+        reason=reason,
+        required_evidence_types=required_evidence_types,
+    )
+
+
+def _blocker(
+    code: str,
+    label: str,
+    reason: str,
+    next_step: str,
+    work_item_id: str | None,
+    required_card_type: ContentKnowledgeCardType,
+) -> ContentKnowledgeCardBlocker:
+    return ContentKnowledgeCardBlocker(
+        code=code,
+        label=label,
+        reason=reason,
+        next_step=next_step,
+        work_item_id=work_item_id,
+        required_card_type=required_card_type,
+    )
+
+
+def _search_text(values: Iterable[object]) -> str:
+    return " ".join(str(value).lower() for value in values if value)
+
+
+def _unique(values: Iterable[object]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        text = str(value)
+        if text and text not in result:
+            result.append(text)
+    return result

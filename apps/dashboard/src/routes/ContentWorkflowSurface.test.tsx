@@ -648,6 +648,11 @@ function salesBrief() {
         summary: "GSC pokazuje popyt na temat BDO."
       }
     ],
+    knowledge_card_ids: [
+      "ekologus_service_environmental_compliance",
+      "ekologus_cta_consultation_without_guarantee",
+      "ekologus_evidence_live_connector_requirement"
+    ],
     forbidden_claims: [],
     missing_evidence: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],

@@ -53,6 +53,10 @@ from wilq.content.inventory.records import (
     ContentInventoryResolution,
     resolve_content_inventory,
 )
+from wilq.content.knowledge.cards import (
+    ContentKnowledgeCardMatch,
+    match_content_knowledge_cards,
+)
 from wilq.content.measurement.window import (
     ContentDateRange,
     ContentMeasurementMetric,
@@ -81,6 +85,7 @@ from wilq.content.review.human import (
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
 )
+from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.decision_mapping import (
     content_claim_ledger_from_work_item,
     content_inventory_record_from_decision,
@@ -109,6 +114,7 @@ class ContentWorkItemSalesBriefRequest(BaseModel):
     duplicate_risk: ContentInventoryDuplicateRisk = "unknown"
     claim_ledger: ContentClaimLedger
     seed: ContentSalesBriefSeed
+    knowledge_match: ContentKnowledgeCardMatch | None = None
 
 
 class ContentWorkItemSalesBriefResponse(BaseModel):
@@ -124,6 +130,7 @@ class ContentWorkItemDraftPackageRequest(BaseModel):
     duplicate_risk: ContentInventoryDuplicateRisk = "unknown"
     claim_ledger: ContentClaimLedger
     seed: ContentSalesBriefSeed
+    knowledge_match: ContentKnowledgeCardMatch | None = None
     sales_brief: ContentSalesBrief | None = None
 
 
@@ -243,13 +250,6 @@ class ContentWorkItemMeasurementWindowResponse(BaseModel):
     outcome_blockers: list[ContentMeasurementWindowBlocker] = Field(default_factory=list)
 
 
-class ContentWorkflowOperatorStep(BaseModel):
-    id: str
-    title: str
-    status_label: str
-    summary: str
-
-
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
@@ -258,7 +258,9 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     human_review: ContentWorkItemHumanReviewResponse
     wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
     measurement_window: ContentWorkItemMeasurementWindowResponse
-    operator_steps: list[ContentWorkflowOperatorStep] = Field(default_factory=list)
+    operator_steps: list[workflow_steps.ContentWorkflowOperatorStep] = Field(
+        default_factory=list
+    )
 
 
 class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):
@@ -304,6 +306,8 @@ def build_content_work_item_sales_brief_response(
             inventory=inventory_resolution,
             claim_ledger=request.claim_ledger,
             seed=request.seed,
+            knowledge_match=request.knowledge_match
+            or match_content_knowledge_cards(request.item),
         ),
     )
 
@@ -325,6 +329,8 @@ def build_content_work_item_draft_package_response(
             inventory=inventory_resolution,
             claim_ledger=request.claim_ledger,
             seed=request.seed,
+            knowledge_match=request.knowledge_match
+            or match_content_knowledge_cards(request.item),
         )
     )
     return ContentWorkItemDraftPackageResponse(
@@ -593,15 +599,92 @@ def _build_content_work_item_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     measurement_window_id = f"measure_{item.id}"
+    preflight = _snapshot_preflight(item, inventory_records)
+    sales_brief = _snapshot_sales_brief(
+        item,
+        inventory_records,
+        claim_ledger,
+        seed,
+        measurement_window_id,
+    )
+    brief = sales_brief.sales_brief_result.brief
+    draft_package = _snapshot_draft_package(
+        item,
+        inventory_records,
+        claim_ledger,
+        seed,
+        measurement_window_id,
+        None if brief is None else brief.id,
+        brief,
+    )
+    draft = draft_package.draft_package_result.draft_package
+    structured_generation = _snapshot_structured_generation(
+        item,
+        claim_ledger,
+        measurement_window_id,
+        None if brief is None else brief.id,
+        brief,
+        draft,
+    )
+    human_review = _snapshot_human_review(
+        item,
+        claim_ledger,
+        measurement_window_id,
+        None if brief is None else brief.id,
+        draft,
+        human_review_record,
+    )
+    wordpress_handoff = build_content_work_item_wordpress_draft_handoff_response(
+        ContentWorkItemWordPressDraftHandoffRequest(
+            item=human_review.reviewed_item,
+            draft_package=draft,
+            human_review=human_review.review,
+            audit=audit,
+        )
+    )
+    measurement_window = _snapshot_measurement_window(
+        item,
+        claim_ledger,
+        wordpress_handoff,
+        measurement_window_id,
+        None if brief is None else brief.id,
+        draft,
+        human_review,
+    )
+    snapshot = ContentWorkItemWorkflowSnapshotResponse(
+        preflight=preflight,
+        sales_brief=sales_brief,
+        draft_package=draft_package,
+        structured_generation=structured_generation,
+        human_review=human_review,
+        wordpress_handoff=wordpress_handoff,
+        measurement_window=measurement_window,
+    )
+    snapshot.operator_steps = workflow_steps.content_workflow_operator_steps(snapshot)
+    return snapshot
 
-    preflight = build_content_work_item_preflight_response(
+
+def _snapshot_preflight(
+    item: ContentWorkItem,
+    inventory_records: list[ContentInventoryRecord],
+) -> ContentWorkItemPreflightResponse:
+    return build_content_work_item_preflight_response(
         ContentWorkItemPreflightRequest(
             item=item,
             inventory_records=inventory_records,
             duplicate_risk="clear",
         )
     )
-    sales_brief = build_content_work_item_sales_brief_response(
+
+
+def _snapshot_sales_brief(
+    item: ContentWorkItem,
+    inventory_records: list[ContentInventoryRecord],
+    claim_ledger: ContentClaimLedger,
+    seed: ContentSalesBriefSeed,
+    measurement_window_id: str,
+) -> ContentWorkItemSalesBriefResponse:
+    return build_content_work_item_sales_brief_response(
         ContentWorkItemSalesBriefRequest(
             item=item.model_copy(
                 update={
@@ -616,20 +699,24 @@ def _build_content_work_item_snapshot_response(
             seed=seed,
         )
     )
-    brief = sales_brief.sales_brief_result.brief
-    draft_package = build_content_work_item_draft_package_response(
+
+
+def _snapshot_draft_package(
+    item: ContentWorkItem,
+    inventory_records: list[ContentInventoryRecord],
+    claim_ledger: ContentClaimLedger,
+    seed: ContentSalesBriefSeed,
+    measurement_window_id: str,
+    brief_id: str | None,
+    brief: ContentSalesBrief | None,
+) -> ContentWorkItemDraftPackageResponse:
+    return build_content_work_item_draft_package_response(
         ContentWorkItemDraftPackageRequest(
-            item=item.model_copy(
-                update={
-                    "preflight_status": "draft_allowed",
-                    "preserve_first_plan_status": "approved",
-                    "sales_brief_status": "approved",
-                    "sales_brief_id": None if brief is None else brief.id,
-                    "claim_ledger_status": "approved",
-                    "claim_ledger_id": claim_ledger.id,
-                    "measurement_window_status": "planned",
-                    "measurement_window_id": measurement_window_id,
-                }
+            item=_snapshot_item_ready_for_draft(
+                item,
+                claim_ledger,
+                measurement_window_id,
+                brief_id,
             ),
             inventory_records=inventory_records,
             duplicate_risk="clear",
@@ -638,76 +725,74 @@ def _build_content_work_item_snapshot_response(
             sales_brief=brief,
         )
     )
-    draft = draft_package.draft_package_result.draft_package
-    structured_generation = build_content_work_item_structured_draft_generation_response(
+
+
+def _snapshot_structured_generation(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    measurement_window_id: str,
+    brief_id: str | None,
+    brief: ContentSalesBrief | None,
+    draft: ContentDraftPackage | None,
+) -> ContentWorkItemStructuredDraftGenerationResponse:
+    return build_content_work_item_structured_draft_generation_response(
         ContentWorkItemStructuredDraftGenerationRequest(
-            item=item.model_copy(
-                update={
-                    "preflight_status": "draft_allowed",
-                    "preserve_first_plan_status": "approved",
-                    "sales_brief_status": "approved",
-                    "sales_brief_id": None if brief is None else brief.id,
-                    "claim_ledger_status": "approved",
-                    "claim_ledger_id": claim_ledger.id,
-                    "draft_package_status": "ready",
-                    "draft_package_id": None if draft is None else draft.id,
-                    "measurement_window_status": "planned",
-                    "measurement_window_id": measurement_window_id,
-                }
+            item=_snapshot_item_ready_for_draft(
+                item,
+                claim_ledger,
+                measurement_window_id,
+                brief_id,
+                draft,
             ),
             sales_brief=brief,
             claim_ledger=claim_ledger,
             draft_package=draft,
         )
     )
-    human_review = build_content_work_item_human_review_response(
+
+
+def _snapshot_human_review(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    measurement_window_id: str,
+    brief_id: str | None,
+    draft: ContentDraftPackage | None,
+    human_review_record: ContentHumanReview | None,
+) -> ContentWorkItemHumanReviewResponse:
+    return build_content_work_item_human_review_response(
         ContentWorkItemHumanReviewRequest(
-            item=item.model_copy(
-                update={
-                    "preflight_status": "handoff_allowed",
-                    "preserve_first_plan_status": "approved",
-                    "sales_brief_status": "approved",
-                    "sales_brief_id": None if brief is None else brief.id,
-                    "claim_ledger_status": "approved",
-                    "claim_ledger_id": claim_ledger.id,
-                    "draft_package_status": "ready",
-                    "draft_package_id": None if draft is None else draft.id,
-                    "measurement_window_status": "planned",
-                    "measurement_window_id": measurement_window_id,
-                }
+            item=_snapshot_item_ready_for_handoff(
+                item,
+                claim_ledger,
+                measurement_window_id,
+                brief_id,
+                draft,
             ),
             review=human_review_record,
             draft_package=draft,
             claim_ledger=claim_ledger,
         )
     )
-    wordpress_handoff = build_content_work_item_wordpress_draft_handoff_response(
-        ContentWorkItemWordPressDraftHandoffRequest(
-            item=human_review.reviewed_item,
-            draft_package=draft,
-            human_review=human_review.review,
-            audit=audit,
-        )
-    )
-    measurement_window = build_content_work_item_measurement_window_response(
+
+
+def _snapshot_measurement_window(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse,
+    measurement_window_id: str,
+    brief_id: str | None,
+    draft: ContentDraftPackage | None,
+    human_review: ContentWorkItemHumanReviewResponse,
+) -> ContentWorkItemMeasurementWindowResponse:
+    return build_content_work_item_measurement_window_response(
         ContentWorkItemMeasurementWindowRequest(
-            item=item.model_copy(
-                update={
-                    "preflight_status": "handoff_allowed",
-                    "preserve_first_plan_status": "approved",
-                    "sales_brief_status": "approved",
-                    "sales_brief_id": None if brief is None else brief.id,
-                    "claim_ledger_status": "approved",
-                    "claim_ledger_id": claim_ledger.id,
-                    "draft_package_status": "ready",
-                    "draft_package_id": None if draft is None else draft.id,
-                    "human_review_status": human_review.reviewed_item.human_review_status,
-                    "human_review_id": human_review.reviewed_item.human_review_id,
-                    "audit_status": "missing",
-                    "audit_id": None,
-                    "measurement_window_status": "missing",
-                    "measurement_window_id": None,
-                }
+            item=_snapshot_item_ready_for_measurement(
+                item,
+                claim_ledger,
+                measurement_window_id,
+                brief_id,
+                draft,
+                human_review,
             ),
             handoff=wordpress_handoff.handoff_result.handoff,
             baseline_period=ContentDateRange(start=date(2026, 5, 1), end=date(2026, 5, 31)),
@@ -716,121 +801,70 @@ def _build_content_work_item_snapshot_response(
             source_connectors=["google_search_console", "google_analytics_4"],
         )
     )
-    snapshot = ContentWorkItemWorkflowSnapshotResponse(
-        preflight=preflight,
-        sales_brief=sales_brief,
-        draft_package=draft_package,
-        structured_generation=structured_generation,
-        human_review=human_review,
-        wordpress_handoff=wordpress_handoff,
-        measurement_window=measurement_window,
+
+
+def _snapshot_item_ready_for_draft(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    measurement_window_id: str,
+    brief_id: str | None,
+    draft: ContentDraftPackage | None = None,
+) -> ContentWorkItem:
+    update: dict[str, object] = {
+        "preflight_status": "draft_allowed",
+        "preserve_first_plan_status": "approved",
+        "sales_brief_status": "approved",
+        "sales_brief_id": brief_id,
+        "claim_ledger_status": "approved",
+        "claim_ledger_id": claim_ledger.id,
+        "measurement_window_status": "planned",
+        "measurement_window_id": measurement_window_id,
+    }
+    if draft is not None:
+        update.update({"draft_package_status": "ready", "draft_package_id": draft.id})
+    return item.model_copy(update=update)
+
+
+def _snapshot_item_ready_for_handoff(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    measurement_window_id: str,
+    brief_id: str | None,
+    draft: ContentDraftPackage | None,
+) -> ContentWorkItem:
+    return _snapshot_item_ready_for_draft(
+        item,
+        claim_ledger,
+        measurement_window_id,
+        brief_id,
+        draft,
+    ).model_copy(update={"preflight_status": "handoff_allowed"})
+
+
+def _snapshot_item_ready_for_measurement(
+    item: ContentWorkItem,
+    claim_ledger: ContentClaimLedger,
+    measurement_window_id: str,
+    brief_id: str | None,
+    draft: ContentDraftPackage | None,
+    human_review: ContentWorkItemHumanReviewResponse,
+) -> ContentWorkItem:
+    return _snapshot_item_ready_for_handoff(
+        item,
+        claim_ledger,
+        measurement_window_id,
+        brief_id,
+        draft,
+    ).model_copy(
+        update={
+            "human_review_status": human_review.reviewed_item.human_review_status,
+            "human_review_id": human_review.reviewed_item.human_review_id,
+            "audit_status": "missing",
+            "audit_id": None,
+            "measurement_window_status": "missing",
+            "measurement_window_id": None,
+        }
     )
-    snapshot.operator_steps = _content_workflow_operator_steps(snapshot)
-    return snapshot
-
-
-def _content_workflow_operator_steps(
-    snapshot: ContentWorkItemWorkflowSnapshotResponse,
-) -> list[ContentWorkflowOperatorStep]:
-    brief = snapshot.sales_brief.sales_brief_result.brief
-    draft = snapshot.draft_package.draft_package_result.draft_package
-    structured_contract = snapshot.structured_generation.structured_generation_result.contract
-    structured_blocker = snapshot.structured_generation.structured_generation_result.blockers[0:1]
-    review = snapshot.human_review.review
-    handoff = snapshot.wordpress_handoff.handoff_result.handoff
-    handoff_blocker = snapshot.wordpress_handoff.handoff_result.blockers[0:1]
-    measurement_window = snapshot.measurement_window.measurement_window_result.window
-    return [
-        ContentWorkflowOperatorStep(
-            id="content_preflight",
-            title="Sprawdzenie pisania",
-            status_label=_preflight_status_label(snapshot.preflight.preflight_verdict.status),
-            summary=snapshot.preflight.preflight_verdict.next_step,
-        ),
-        ContentWorkflowOperatorStep(
-            id="sales_brief",
-            title="Plan sprzedażowy",
-            status_label="gotowy do sprawdzenia" if brief else "zablokowany",
-            summary=brief.buyer_problem if brief else "Brakuje planu sprzedażowego.",
-        ),
-        ContentWorkflowOperatorStep(
-            id="draft_package",
-            title="Paczka szkicu",
-            status_label="konspekt do sprawdzenia" if draft else "zablokowany",
-            summary="WILQ przygotowuje materiał do sprawdzenia człowieka, nie gotową publikację.",
-        ),
-        ContentWorkflowOperatorStep(
-            id="structured_draft",
-            title="Szkic treści",
-            status_label="gotowy do próby" if structured_contract else "zablokowany",
-            summary=(
-                "WILQ może sprawdzić przygotowanie szkicu bez pisania na żywo."
-                if structured_contract
-                else (
-                    structured_blocker[0].reason
-                    if structured_blocker
-                    else (
-                        "Szkic pozostaje zablokowany, dopóki plan i twierdzenia "
-                        "nie przejdą bramek."
-                    )
-                )
-            ),
-        ),
-        ContentWorkflowOperatorStep(
-            id="human_review",
-            title="Sprawdzenie człowieka",
-            status_label="zatwierdzone" if review else "wymaga decyzji",
-            summary=(
-                "Bez zatwierdzenia człowieka przekazanie szkicu do WordPress "
-                "pozostaje zablokowane."
-            ),
-        ),
-        ContentWorkflowOperatorStep(
-            id="wordpress_handoff",
-            title="Szkic w WordPress",
-            status_label="szkic" if handoff else "zablokowany",
-            summary=(
-                "WordPress dostaje tylko szkic po audycie. Publikacja nie jest automatyczna."
-                if handoff
-                else (
-                    handoff_blocker[0].reason
-                    if handoff_blocker
-                    else "WordPress nie dostaje szkicu bez sprawdzenia człowieka i audytu."
-                )
-            ),
-        ),
-        ContentWorkflowOperatorStep(
-            id="measurement_window",
-            title="Okno pomiaru",
-            status_label=_measurement_window_status_label(
-                None if measurement_window is None else measurement_window.status
-            ),
-            summary="WILQ planuje pomiar teraz, ale ocena efektu czeka na koniec obserwacji.",
-        ),
-    ]
-
-
-def _preflight_status_label(status: str) -> str:
-    labels = {
-        "blocked": "zablokowane",
-        "plan_allowed": "można planować",
-        "brief_allowed": "można przygotować plan",
-        "draft_allowed": "można przygotować szkic",
-        "handoff_allowed": "można przekazać szkic",
-    }
-    return labels.get(status, "wymaga sprawdzenia")
-
-
-def _measurement_window_status_label(status: str | None) -> str:
-    if status is None:
-        return "brak"
-    labels = {
-        "planned": "zaplanowane",
-        "open": "pomiar trwa",
-        "ready_for_review": "gotowe do oceny",
-        "closed": "zamknięte",
-    }
-    return labels.get(status, "brak")
 
 
 def _select_content_work_item_decision(

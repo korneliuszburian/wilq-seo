@@ -9,6 +9,7 @@ import {
   AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
+  ContentKnowledgeCardsResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
   ContentWorkItemDraftPackageResponseSchema,
@@ -61,6 +62,7 @@ import {
   type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
+  type ContentKnowledgeCardsResponse,
   type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
@@ -168,6 +170,10 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
 
 export function getContentPreflight(): Promise<ContentPreflightResponse> {
   return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
+}
+
+export function getContentKnowledgeCards(): Promise<ContentKnowledgeCardsResponse> {
+  return apiGet("/api/content/knowledge-cards", ContentKnowledgeCardsResponseSchema);
 }
 
 export function getContentWorkItemQueue(): Promise<ContentWorkItemQueueResponse> {
@@ -462,6 +468,7 @@ export type {
   AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
+  ContentKnowledgeCardsResponse,
   ContentPreflightResponse,
   ContentOpportunityEnrichment,
   ContentWorkItemDraftPackageResponse,

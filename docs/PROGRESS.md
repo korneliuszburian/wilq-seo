@@ -79,9 +79,14 @@ API status later contradicts this state.
   broad RAG, fake scores and prompt-only keyword research; missing work items,
   missing evidence/source connectors, invalid dev canonical and missing service
   fit become blockers instead of recommendations.
-- The next Goal 004 product slice is `wilq-seo-dtj`: typed Ekologus knowledge
-  cards for services, buyer problems, claim constraints, CTA options and proof
-  requirements, consumed by enrichment and the operations-grade Sales Brief.
+- Goal 004 typed Ekologus knowledge cards slice `wilq-seo-dtj` is implemented.
+  `GET /api/content/knowledge-cards` exposes typed service, CTA and evidence
+  policy cards with source lineage, confidence, freshness and claim rules.
+  Sales Brief now requires a matching knowledge-card set before drafting: no
+  service/CTA/evidence policy match becomes a blocker instead of a prompt-only
+  workaround. This is still typed cards/rules, not broad RAG.
+- The next Goal 004 product slice is `wilq-seo-8xc`: operations-grade Sales
+  Brief v2 consuming opportunity enrichment and typed Ekologus knowledge cards.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.
