@@ -402,13 +402,9 @@ def _metric_dimension_value_label(key: str, value: str) -> str:
         return source_connector_label(value)
     if key == "wordpress_connector":
         return source_connector_label(value)
-    if (
-        key.endswith("_id")
-        or key
-        in {
-            "recommendation_resource_name",
-        }
-    ):
+    if key.endswith("_id") or key in {
+        "recommendation_resource_name",
+    }:
         return "dostępny w szczegółach technicznych"
     if text in labels:
         return labels[text]
@@ -4289,7 +4285,7 @@ class Ga4ConversionReadinessContract(BaseModel):
     risk: ActionRisk = ActionRisk.medium
 
     @model_validator(mode="after")
-    def hydrate_operator_labels(self) -> "Ga4ConversionReadinessContract":
+    def hydrate_operator_labels(self) -> Ga4ConversionReadinessContract:
         if not self.missing_read_contract_summary_label:
             self.missing_read_contract_summary_label = missing_contract_count_label(
                 self.missing_read_contracts

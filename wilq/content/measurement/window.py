@@ -87,7 +87,8 @@ def build_content_measurement_window(
     if blockers:
         return ContentMeasurementWindowBuildResult(blockers=blockers)
 
-    assert item.final_canonical_url is not None
+    if item.final_canonical_url is None:
+        raise RuntimeError("Final canonical URL passed measurement window blockers as None.")
     evidence_ids = _unique(
         [
             *item.evidence_ids,

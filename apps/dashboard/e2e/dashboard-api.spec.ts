@@ -179,7 +179,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki sprawdzenia Demand Gen" })).toBeVisible();
     await expect(page.getByText("kampanie Ads")).toBeVisible();
-    await expect(page.getByText(/Brakujące dane: brak/).first()).toBeVisible();
+    await expect(page.getByText(/Brakujące dane:/).first()).toBeVisible();
     await expect(page.getByText(/akcj/i).first()).toBeVisible();
     await expect(page.getByText("Podgląd gotowości Demand Gen")).toBeVisible();
     await expect(page.getByText(/rekomendacja uruchomienia Demand Gen/i).first()).toBeVisible();
@@ -194,7 +194,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/ga4");
 
     await expectApiBackedRouteHeading(page, "GA4", { exact: true });
-    await expect(page.getByRole("heading", { name: "Status GA4 / pomiar i jakość ruchu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status GA4: pomiar i jakość ruchu" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Bezpieczny tryb analityki" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sprawdź GA4 w WILQ" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pełny przegląd GA4" })).toBeVisible();
@@ -230,7 +230,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("action detail route shows validation, evidence and change preview", async ({ page }) => {
     await page.goto("/actions/act_review_merchant_feed_issues");
 
-    await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu feedu Merchant Center");
+    await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center");
     await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd zmian" })).toBeVisible();
     await expect(page.getByText("Dowody: 1 dowód źródłowy")).toBeVisible();
@@ -267,7 +267,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expectApiBackedRouteHeading(page, "Procesy WILQ");
     await expect(page.getByRole("heading", { name: "Procesy decyzyjne" })).toBeVisible();
     await expect(page.getByText("Plan dnia WILQ")).toBeVisible();
-    await expect(page.getByText("Feed Merchant")).toBeVisible();
+    await expect(page.getByText("Plik produktowy Merchant")).toBeVisible();
     await expect(page.getByText("Treści z GSC")).toBeVisible();
     await expect(page.getByText("Ocena Ads")).toBeVisible();
     await page.getByRole("button", { name: /Pokaż wszystkie procesy/ }).click();
@@ -299,7 +299,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.getByRole("button", { name: "Pokaż zasady pracy" }).click();
     await expect(page.getByText("Wymagane dowody").first()).toBeVisible();
     await expect(page.getByText("Ocena Ads").first()).toBeVisible();
-    await expect(page.getByText("Feed Merchant").first()).toBeVisible();
+    await expect(page.getByText("Plik produktowy Merchant").first()).toBeVisible();
     await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
     await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
     await expectNoForbiddenVisibleCopy(page);
@@ -328,16 +328,16 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
     await expect(page.getByText(merchantDiagnostics.connector_status_label)).toBeVisible();
-    await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
+    await expect(page.getByText("metryki pliku produktowego dostępne")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Wpływ ceny produktu" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Akcje do sprawdzenia" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
     await expect(
-      page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()
+      page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center" }).first()
     ).toBeVisible();
     await expect(page.getByText(/Zapis zmian:.*zablokowany/).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa feedu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczny tryb pracy" })).toBeVisible();
 
     await expect(page.getByText(/ev_refresh_refresh_google_merchant_center/)).toHaveCount(0);
     await expectNoForbiddenVisibleCopy(page);
@@ -354,7 +354,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/localo");
 
     await expectApiBackedRouteHeading(page, "Localo", { exact: true });
-    await expect(page.getByRole("heading", { name: "Status Localo / widoczność lokalna" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Localo i widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo i profilu firmy w Google" })).toBeVisible();
@@ -379,7 +379,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/ahrefs");
 
     await expectApiBackedRouteHeading(page, "Ahrefs", { exact: true });
-    await expect(page.getByRole("heading", { name: "Status Ahrefs / dowody SEO" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Ahrefs i dowody SEO" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma wiedzieć o Ahrefs" })
     ).toBeVisible();

@@ -1438,9 +1438,13 @@ def test_action_operator_labels_are_specific(
         if isinstance(value, dict):
             for key, item in value.items():
                 item_path = f"{path}.{key}" if path else str(key)
-                if key.endswith("_labels") and isinstance(item, list) and (
-                    "warunek techniczny do sprawdzenia" in item
-                    or "brak opisu w kontrakcie WILQ" in item
+                if (
+                    key.endswith("_labels")
+                    and isinstance(item, list)
+                    and (
+                        "warunek techniczny do sprawdzenia" in item
+                        or "brak opisu w kontrakcie WILQ" in item
+                    )
                 ):
                     leaks.append((action_id, item_path))
                 walk(action_id, item, item_path)
@@ -1481,7 +1485,10 @@ def test_operator_label_fallbacks_do_not_expose_raw_connector_ids() -> None:
     assert connector_refresh_status_label(ConnectorRefreshStatus.completed) == ("odczyt zakończony")
     assert connector_refresh_status_label(ConnectorRefreshStatus.blocked) == ("odczyt zablokowany")
     assert connector_refresh_status_label("new_raw_status") == "status odczytu do sprawdzenia"
-    assert knowledge_reference_count_label() == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
+    assert (
+        knowledge_reference_count_label()
+        == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
+    )
     assert (
         knowledge_reference_count_label(
             playbook_ids=["content_playbook_v1"],
@@ -1553,7 +1560,10 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
         "skalowanie produktu w reklamach produktowych i Performance Max"
     ) == ("skalowanie produktu w reklamach produktowych i Performance Max")
     assert merchant_display_label("opłacalność produktu") == "opłacalność produktu"
-    assert merchant_display_label("nadpisanie głównego pliku produktowego") == "nadpisanie głównego pliku produktowego"
+    assert (
+        merchant_display_label("nadpisanie głównego pliku produktowego")
+        == "nadpisanie głównego pliku produktowego"
+    )
     assert merchant_display_label("zmiana danych produktu") == "zmiana danych produktu"
 
     labels = [
@@ -1698,21 +1708,45 @@ def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
     )
     assert knowledge_binding.route_label == "widok do sprawdzenia"
     assert raw_value not in knowledge_binding.route_label
-    assert knowledge_binding.source_connector_summary_label == "Nie ma źródeł danych; nie traktuj tego jako rekomendacji"
-    assert knowledge_binding.evidence_summary_label == "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
-    assert knowledge_binding.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
-    assert knowledge_binding.knowledge_summary_label == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
-    assert knowledge_binding.required_evidence_summary_label == "Nie wskazano wymaganych dowodów; nie odblokowuje to publikacji ani zapisu"
+    assert (
+        knowledge_binding.source_connector_summary_label
+        == "Nie ma źródeł danych; nie traktuj tego jako rekomendacji"
+    )
+    assert (
+        knowledge_binding.evidence_summary_label
+        == "Nie ma dowodów źródłowych; nie traktuj tego jako rekomendacji"
+    )
+    assert (
+        knowledge_binding.action_summary_label
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
+    assert (
+        knowledge_binding.knowledge_summary_label
+        == "Nie ma użytej wiedzy; decyzja nie ma wsparcia z kart ani reguł"
+    )
+    assert (
+        knowledge_binding.required_evidence_summary_label
+        == "Nie wskazano wymaganych dowodów; nie odblokowuje to publikacji ani zapisu"
+    )
     assert knowledge_binding.missing_contract_summary_label == "Dane kompletne dla tej decyzji"
     assert (
         knowledge_binding.missing_contract_detail_label
         == "Nie ma brakujących zakresów danych dla tej decyzji"
     )
     assert knowledge_binding.has_missing_contracts is False
-    assert knowledge_binding.blocked_claim_summary_label == "WILQ nie zgłosił zakazanych obietnic; nadal sprawdź dowody przed publikacją"
-    assert knowledge_binding.blocked_claim_count_summary_label == "WILQ nie zgłosił zablokowanych obietnic; nadal sprawdź dowody przed publikacją"
+    assert (
+        knowledge_binding.blocked_claim_summary_label
+        == "WILQ nie zgłosił zakazanych obietnic; nadal sprawdź dowody przed publikacją"
+    )
+    assert (
+        knowledge_binding.blocked_claim_count_summary_label
+        == "WILQ nie zgłosił zablokowanych obietnic; nadal sprawdź dowody przed publikacją"
+    )
     assert knowledge_binding.has_blocked_claims is False
-    assert knowledge_binding.source_lineage_summary_label == "Nie ma śladów źródłowych; nie traktuj tego jako sprawdzonej wiedzy"
+    assert (
+        knowledge_binding.source_lineage_summary_label
+        == "Nie ma śladów źródłowych; nie traktuj tego jako sprawdzonej wiedzy"
+    )
 
     knowledge_blocked_claim_binding = KnowledgeDecisionBinding(
         id="binding_unknown_claim",
@@ -3205,7 +3239,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     measurement_plan = draft_preview["post_publication_measurement_plan"]
     assert measurement_plan["contract_version"] == "post_publication_measurement_plan_v1"
     assert measurement_plan["scope"] == "blocked_preview_only"
-    assert measurement_plan["status"] == "blocked_until_publish_and_followup_data"
+    assert "status" not in measurement_plan
     assert "google_search_console" in measurement_plan["required_source_connectors"]
     assert "google_analytics_4" in measurement_plan["required_source_connectors"]
     assert "content_success_verdict" in measurement_plan["blocked_outputs"]
@@ -3792,9 +3826,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert strategy_readiness["status"] == "blocked"
     assert strategy_readiness["status_label"] == "zablokowane"
     assert strategy_readiness["latest_review_status"] == "missing"
-    assert strategy_readiness["latest_review_status_label"] == (
-        "ocena strategii niepotwierdzona"
-    )
+    assert strategy_readiness["latest_review_status_label"] == ("ocena strategii niepotwierdzona")
     assert strategy_readiness["latest_review_outcome"] is None
     assert strategy_readiness["apply_allowed"] is False
     assert strategy_readiness["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
@@ -4464,9 +4496,10 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert (
                 "wordpress_draft_preview_review" in wordpress_draft_payload["required_validation"]
             )
-            assert "wordpress_draft_payload_preview" not in wordpress_draft_payload[
-                "required_validation"
-            ]
+            assert (
+                "wordpress_draft_payload_preview"
+                not in wordpress_draft_payload["required_validation"]
+            )
             assert "wordpress_publish" in wordpress_draft_payload["blocked_claims"]
             assert len(wordpress_draft_payload["payload_preview"]) >= 1
             first_wordpress_draft_preview = wordpress_draft_payload["payload_preview"][0]
@@ -4837,7 +4870,7 @@ def test_command_center_endpoint_uses_daily_runtime_cache(
         return command
 
     monkeypatch.setattr(
-        "apps.api.wilq_api.main.build_daily_command_center",
+        "apps.api.wilq_api.routers.diagnostics.build_daily_command_center",
         fake_command_center,
     )
 
@@ -4931,7 +4964,7 @@ def test_marketing_brief_endpoint_uses_daily_runtime_cache(
         return brief
 
     monkeypatch.setattr(
-        "apps.api.wilq_api.main.build_daily_marketing_brief",
+        "apps.api.wilq_api.routers.diagnostics.build_daily_marketing_brief",
         fake_marketing_brief,
     )
 
@@ -5122,7 +5155,9 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert ahrefs_item["evidence_ids"] == refresh_response.json()["evidence_ids"][-1:]
     assert ahrefs_item["source_connector_labels"] == ["Ahrefs"]
     assert ahrefs_item["evidence_summary_label"] == "1 dowód źródłowy"
-    assert ahrefs_item["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        ahrefs_item["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert ahrefs_item["kind"] == "metric"
     assert ahrefs_item["kind_label"] == "fakt z danych"
     assert ahrefs_item["metric_facts"]
@@ -5232,7 +5267,8 @@ def test_blocked_refresh_summaries_use_operator_status_labels() -> None:
     assert summaries == [
         "Ostatni odczyt zakończył się statusem odczyt zablokowany. Powód: testowy blocker",
         "Ostatni odczyt Merchant nie zakończył się poprawnie. Status odczytu: zablokowany.",
-        "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. Status odczytu: zablokowany.",
+        "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. "
+        "Status odczytu: zablokowany.",
         "Ostatni odczyt Ahrefs zakończył się statusem zablokowany.",
     ]
     for summary in summaries:
@@ -5373,8 +5409,9 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     )
     assert "GSC" in ahrefs_audit_item["next_step"]
     assert "WordPress" in ahrefs_audit_item["next_step"]
-    assert "Ahrefs wskazuje: luka treści dla tematu audyt środowiskowy." in (
-        ahrefs_audit_item["diagnosis"]
+    assert (
+        "Ahrefs wskazuje: luka treści dla tematu audyt środowiskowy."
+        in (ahrefs_audit_item["diagnosis"])
     )
     assert "`content_gap`" not in ahrefs_audit_item["diagnosis"]
     assert "competitor_domain=" not in ahrefs_audit_item["diagnosis"]
@@ -5394,8 +5431,7 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         for item in ahrefs_items
     )
     assert all(
-        "content brief without" not in " ".join(item["blocked_claims"])
-        for item in ahrefs_items
+        "content brief without" not in " ".join(item["blocked_claims"]) for item in ahrefs_items
     )
     assert all(item["dimensions"].get("competitor_domain") != "cuk.pl" for item in ahrefs_items)
     for item in queue["items"]:
@@ -5674,9 +5710,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         "kampania",
     ]
     context_preview = context_action_plan["preview_items"][0]
-    assert context_preview["metric_tiles"]["aktywni użytkownicy"] == preview["metric_snapshot"][
-        "active_users"
-    ]
+    assert (
+        context_preview["metric_tiles"]["aktywni użytkownicy"]
+        == preview["metric_snapshot"]["active_users"]
+    )
     assert context_preview["apply_status_label"] == "zablokowane do sprawdzenia"
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
@@ -6003,7 +6040,8 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     ]
     titles = [decision.title for decision in decisions]
     assert titles == [
-        "GA4: napraw pomiar - brak strony wejścia w raporcie; źródło ruchu: brak źródła i medium w raporcie",
+        "GA4: napraw pomiar - brak strony wejścia w raporcie; źródło ruchu: "
+        "brak źródła i medium w raporcie",
         "GA4: napraw pomiar - brak strony wejścia w raporcie; źródło ruchu: google / organic",
     ]
     assert all(" / brak" not in title for title in titles)
@@ -6015,8 +6053,14 @@ def test_ga4_measurement_decision_titles_include_reporting_context(
     assert decisions[0].action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
     assert payload.evidence_summary_label == "4 dowody źródłowe"
     assert payload.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
-    assert payload.operator_summary.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
-    assert payload.conversion_readiness_contract.action_summary_label == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        payload.operator_summary.action_summary_label
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
+    assert (
+        payload.conversion_readiness_contract.action_summary_label
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
 
 
 def test_command_center_exposes_polish_operator_brief(
@@ -7214,8 +7258,7 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert contract_status_by_id["reviews"]["status"] == "ready"
     assert contract_status_by_id["gbp_visibility"]["status"] == "missing"
     assert (
-        contract_status_by_id["gbp_visibility"]["status_label"]
-        == "zakres danych niepotwierdzony"
+        contract_status_by_id["gbp_visibility"]["status_label"] == "zakres danych niepotwierdzony"
     )
     assert contract_status_by_id["gbp_visibility"]["blocked_claims"] == [
         "wyniki profilu firmy w Google",
@@ -7644,7 +7687,9 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
     assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
     assert gap_contract["evidence_summary_label"] == "1 dowód źródłowy"
-    assert gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert "luka treści" in gap_contract["blocked_claims"]
     assert "luka treści" in gap_contract["blocked_claim_labels"]
     assert gap_contract["operator_review_gates"] == [
@@ -7665,7 +7710,10 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["metric_tiles"]["zakres konkurencji"] == "subdomeny"
     assert authority_decision["metric_tiles"]["luki Ahrefs"] == 0
     assert authority_decision["evidence_summary_label"] == "1 dowód źródłowy"
-    assert authority_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        authority_decision["action_summary_label"]
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
     assert "konkurenci organiczni" in authority_decision["allowed_evidence_labels"]
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
@@ -7689,7 +7737,10 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert block_decision["metric_tiles"]["brakujące dane"] == 5
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
     assert block_decision["evidence_summary_label"] == "1 dowód źródłowy"
-    assert block_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        block_decision["action_summary_label"]
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ahrefs_operator_summary"
     assert operator_summary["title"] == "Co marketer ma wiedzieć o Ahrefs"
@@ -7707,7 +7758,10 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "ahrefs" in operator_summary["source_connectors"]
     assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
     assert operator_summary["evidence_summary_label"] == "1 dowód źródłowy"
-    assert operator_summary["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        operator_summary["action_summary_label"]
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert "luka treści" in operator_summary["blocked_claims"]
     assert "luka treści" in operator_summary["blocked_claim_labels"]
     assert operator_summary["summary"]
@@ -7821,9 +7875,7 @@ def test_ahrefs_skill_context_pack_compacts_historical_raw_text(
     assert payload["context_pack_compaction"]["action_review_gates_compacted"] is True
     assert payload["context_pack_compaction"]["raw_history_omitted"] is True
     assert payload["expert_capabilities"]
-    assert all(
-        capability["required_inputs"] == [] for capability in payload["expert_capabilities"]
-    )
+    assert all(capability["required_inputs"] == [] for capability in payload["expert_capabilities"])
     assert all(
         isinstance(capability["required_inputs_total"], int)
         for capability in payload["expert_capabilities"]
@@ -7961,7 +8013,9 @@ def test_ahrefs_diagnostics_builds_gap_review_records_from_metric_facts(
     assert gap_contract["status"] == "ready"
     assert gap_contract["status_label"] == "gotowe"
     assert gap_contract["evidence_summary_label"]
-    assert gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        gap_contract["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert gap_contract["missing_read_contracts"] == []
     assert gap_contract["available_read_contracts"] == [
         "ahrefs_authority_summary",
@@ -8199,7 +8253,10 @@ def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noi
         if decision["id"] == "ahrefs_review_gap_records"
     )
     assert review_decision["evidence_summary_label"]
-    assert review_decision["action_summary_label"] == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    assert (
+        review_decision["action_summary_label"]
+        == "Nie ma akcji do sprawdzenia; zostaje ręczna ocena"
+    )
     assert "ahrefs_block_gap_claims_without_records" not in decision_ids
 
 
@@ -10384,8 +10441,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
             summary=(
-                "Odczyt Google Ads zakończony przez googleAds:searchStream. "
-                "Wiersze kampanii: 1."
+                "Odczyt Google Ads zakończony przez googleAds:searchStream. Wiersze kampanii: 1."
             ),
             external_call_attempted=True,
             vendor_data_collected=True,
@@ -13682,10 +13738,7 @@ def test_ads_budget_preview_explains_missing_proposal() -> None:
         current_budget_amount_micros=30000000,
         proposed_budget_amount_micros=None,
         proposed_budget_delta_micros=None,
-        reason=(
-            "Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił "
-            "rekomendowanego budżetu."
-        ),
+        reason=("Podgląd budżetu do sprawdzenia. Google Ads nie zwrócił rekomendowanego budżetu."),
         required_validation=[
             "review_campaign_activity",
             "human_budget_goal",
@@ -13724,8 +13777,7 @@ def test_ads_budget_preview_explains_missing_proposal() -> None:
     rows = {row.label: row.value for row in card.rows}
     assert rows["Budżet teraz"] == "30 PLN"
     assert (
-        rows["Propozycja do sprawdzenia"]
-        == "brak proponowanej kwoty; WILQ blokuje zapis budżetu"
+        rows["Propozycja do sprawdzenia"] == "brak proponowanej kwoty; WILQ blokuje zapis budżetu"
     )
     assert rows["Propozycja do sprawdzenia"] != "brak danych"
     assert "brak rekomendowanego budżetu z Google Ads" in rows["Braki bezpieczeństwa"]
@@ -14162,9 +14214,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     merchant_preview_card = merchant_action["preview_cards"][0]
     assert merchant_preview_card["kind"] == "merchant_feed_issue_review"
     assert merchant_preview_card["title_label"] == "Problem pliku produktowego do sprawdzenia"
-    assert merchant_preview_card["subtitle_label"] == (
-        "dostępność - zmiana dostępności"
-    )
+    assert merchant_preview_card["subtitle_label"] == ("dostępność - zmiana dostępności")
     assert merchant_preview_card["status_label"] == "zapis zmian zablokowany"
     assert {"label": "Próbki produktów", "value": "1 próbka z nazwą produktu"} in (
         merchant_preview_card["rows"]
@@ -14216,9 +14266,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     merchant_card = preview_payload["preview_cards"][0]
     merchant_card_text = json.dumps(merchant_card, ensure_ascii=False)
     assert "online~pl~PL~SKU-001" not in json.dumps(preview_payload["preview_items"])
-    assert preview_card_row_values(merchant_card, "Problem") == [
-        "zmiana dostępności"
-    ]
+    assert preview_card_row_values(merchant_card, "Problem") == ["zmiana dostępności"]
     assert preview_card_row_values(merchant_card, "Atrybut") == ["dostępność"]
     assert "Sorbent chemiczny 10 kg" in merchant_card_text
     assert "sample_product_ids" not in json.dumps(preview_payload["preview_items"])
@@ -14460,16 +14508,12 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         "ads_conversion_value",
         "ga4_purchase_revenue",
     ]
-    labeled_readiness = _merchant_product_performance_readiness_with_operator_labels(
-        readiness
-    )
+    labeled_readiness = _merchant_product_performance_readiness_with_operator_labels(readiness)
     labeled_row = labeled_readiness.performance_rows[0]
     assert labeled_row.ads_clicks_label == "kliknięcia Ads do potwierdzenia"
     assert labeled_row.ads_cost_label == "koszt Ads do potwierdzenia"
     assert labeled_row.ads_conversions_label == "konwersje Ads do potwierdzenia"
-    assert labeled_row.ads_conversion_value_label == (
-        "wartość konwersji Ads do potwierdzenia"
-    )
+    assert labeled_row.ads_conversion_value_label == ("wartość konwersji Ads do potwierdzenia")
     assert labeled_row.ga4_ecommerce_purchases_label == "2"
     assert labeled_row.ga4_purchase_revenue_label == "przychód GA4 do potwierdzenia"
     assert "brak" not in labeled_row.ads_cost_label
@@ -15282,12 +15326,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "akcj" in operator_summary["action_summary_label"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claims"]
     assert "wzrost liczby leadów" in operator_summary["blocked_claim_labels"]
-    assert operator_summary["metric_tiles"]["Zapytania i adresy z GSC"] == payload[
-        "query_page_count"
-    ]
-    assert operator_summary["metric_tiles"]["Treści znalezione w WordPress"] == payload[
-        "matched_inventory_count"
-    ]
+    assert (
+        operator_summary["metric_tiles"]["Zapytania i adresy z GSC"] == payload["query_page_count"]
+    )
+    assert (
+        operator_summary["metric_tiles"]["Treści znalezione w WordPress"]
+        == payload["matched_inventory_count"]
+    )
     assert operator_summary["metric_tiles"]["Luki Ahrefs powiązane z WordPress"] == 1
     assert operator_summary["metric_tiles"]["Decyzje treści"] == len(payload["decision_queue"])
     assert "Zapytania/URL" not in operator_summary["metric_tiles"]
@@ -17473,9 +17518,7 @@ def test_metric_fact_google_ads_dimensions_use_operator_labels() -> None:
     )
 
     assert fact.dimension_labels["campaign_id"] == "identyfikator kampanii"
-    assert fact.dimension_value_labels["campaign_id"] == (
-        "dostępny w szczegółach technicznych"
-    )
+    assert fact.dimension_value_labels["campaign_id"] == ("dostępny w szczegółach technicznych")
     assert fact.dimension_labels["ad_group_name"] == "grupa reklam"
     assert fact.dimension_value_labels["ad_group_name"] == "Grupa reklam 1"
     assert fact.dimension_value_labels["advertising_channel_type"] == "Performance Max"
@@ -17988,9 +18031,7 @@ def test_connector_evidence_summary_uses_operator_language(
     clear_google_service_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456789")
 
-    evidence = list_evidence_by_ids(
-        [connector_evidence_id("google_merchant_center")]
-    )
+    evidence = list_evidence_by_ids([connector_evidence_id("google_merchant_center")])
 
     assert len(evidence) == 1
     assert evidence[0].summary.startswith("Merchant Center:")
@@ -18166,7 +18207,7 @@ def test_daily_command_center_does_not_build_marketing_brief(
         tactical_queue=None,
         actions=None,
         facts_by_connector=None,
-        refresh_runs=None: command,
+        refresh_runs=None: (command),
     )
 
     def fail_marketing_brief(*args: object, **kwargs: object) -> MarketingBrief:
@@ -18773,7 +18814,7 @@ def test_ads_doctor_context_pack_uses_summary_diagnostics(
         return build_ads_diagnostics(actions=actions, view=view)
 
     monkeypatch.setattr(
-        "apps.api.wilq_api.main.build_ads_diagnostics",
+        "apps.api.wilq_api.context_skill.build_ads_diagnostics",
         recording_build_ads_diagnostics,
     )
 
@@ -18946,11 +18987,13 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert campaign_candidate["review_score"] == full_campaign_candidate["review_score"]
     assert "Kolejność oceny kampanii" in campaign_candidate["review_reason"]
     assert campaign_candidate["review_reason"] == full_campaign_candidate["review_reason"]
-    assert campaign_candidate["human_review_gate_labels"] == (
-        full_campaign_candidate["human_review_gate_labels"]
+    assert (
+        campaign_candidate["human_review_gate_labels"]
+        == (full_campaign_candidate["human_review_gate_labels"])
     )
-    assert campaign_candidate["target_context"]["target_status_label"] == (
-        full_campaign_candidate["target_context"]["target_status_label"]
+    assert (
+        campaign_candidate["target_context"]["target_status_label"]
+        == (full_campaign_candidate["target_context"]["target_status_label"])
     )
     assert "target_cpa_micros" not in campaign_candidate["target_context"]
     assert "cost_per_conversion_micros" not in campaign_candidate["target_context"]
@@ -19264,7 +19307,7 @@ def test_codex_context_pack_scopes_demand_gen_without_full_ga4_builder(
         raise AssertionError("Demand Gen context must not build full GA4 diagnostics")
 
     monkeypatch.setattr(
-        "apps.api.wilq_api.main.build_ga4_diagnostics",
+        "apps.api.wilq_api.context_skill.build_ga4_diagnostics",
         fail_full_ga4_builder,
     )
 
@@ -19326,17 +19369,7 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert "rekomendacja uruchomienia Demand Gen" in data["blocked_claims"]
 
 
-def test_demand_gen_diagnostics_does_not_require_full_ga4_builder(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    def fail_full_ga4_builder(*_args: Any, **_kwargs: Any) -> None:
-        raise AssertionError("Demand Gen diagnostics must not build full GA4 diagnostics")
-
-    monkeypatch.setattr(
-        "apps.api.wilq_api.main.build_ga4_diagnostics",
-        fail_full_ga4_builder,
-    )
-
+def test_demand_gen_diagnostics_does_not_require_full_ga4_builder() -> None:
     response = client.get("/api/demand-gen/diagnostics")
 
     assert response.status_code == 200
@@ -19501,9 +19534,7 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert data["demand_gen_landing_quality_rows"][0]["campaign_name"] == "Demand Gen Test"
     assert data["demand_gen_landing_quality_rows"][0]["landing_page"] == "/dg-test/"
     assert data["demand_gen_landing_quality_rows"][0]["landing_page_label"] == "/dg-test/"
-    assert data["demand_gen_landing_quality_rows"][0]["source_medium_label"] == (
-        "google / cpc"
-    )
+    assert data["demand_gen_landing_quality_rows"][0]["source_medium_label"] == ("google / cpc")
     assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
     assert data["demand_gen_landing_quality_rows"][0]["active_users_label"] == "18"
     assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24

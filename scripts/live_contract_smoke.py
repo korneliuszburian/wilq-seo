@@ -173,7 +173,9 @@ def _check_content_url_semantics(diagnostics: dict[str, Any], errors: list[str])
         "migration_map",
     ):
         if stale_fragment in serialized:
-            errors.append(f"content_diagnostics must not expose stale URL semantics: {stale_fragment}")
+            errors.append(
+                f"content_diagnostics must not expose stale URL semantics: {stale_fragment}"
+            )
     for index, decision in enumerate(_list(diagnostics.get("decision_queue"))):
         if not isinstance(decision, dict):
             continue

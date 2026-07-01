@@ -185,11 +185,15 @@ def main() -> int:
     active_action_ids = [action.get("id") for action in active_actions]
     if active_action_ids != [EXPECTED_ACTION_ID]:
         raise SystemExit("Demand Gen context must expose only its review action")
-    active_payload = active_actions[0].get("payload") or {}
-    if active_payload.get("preview_contract") != EXPECTED_PREVIEW_CONTRACT:
-        raise SystemExit("Demand Gen action change preview contract is wrong")
-    if active_payload.get("apply_allowed") is not False:
-        raise SystemExit("Demand Gen action must keep apply_allowed=false")
+    active_payload = active_actions[0].get("action_plan") or {}
+    preview_items = active_payload.get("preview_items") or []
+    if not isinstance(preview_items, list) or not preview_items:
+        raise SystemExit("Demand Gen action plan must expose preview_items")
+    preview = preview_items[0]
+    if preview.get("apply_status_label") != "zablokowane do sprawdzenia":
+        raise SystemExit("Demand Gen action plan must keep apply blocked")
+    if preview.get("write_status_label") != "bez zapisu automatycznego":
+        raise SystemExit("Demand Gen action plan must keep write disabled")
     ads_diagnostics = pack.get("ads_diagnostics") or {}
     if ads_diagnostics.get("action_ids"):
         raise SystemExit("Demand Gen Ads diagnostics must not expose scoped action IDs")

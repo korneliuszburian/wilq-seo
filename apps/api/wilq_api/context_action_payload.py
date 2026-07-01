@@ -284,47 +284,27 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
     if isinstance(required_breakdowns_total, int):
         value.setdefault("required_dimensions_total", required_breakdowns_total)
 
-    if "blocked_claim_labels" in value:
-        value.pop("blocked_claims", None)
-        value.pop("forbidden_claims", None)
-    if "missing_read_contract_labels" in value:
-        value.pop("missing_read_contracts", None)
-    if "allowed_contract_labels" in value:
-        value.pop("allowed_contracts", None)
-    if "available_read_contract_labels" in value:
-        value.pop("available_read_contracts", None)
-    if "operator_review_gate_labels" in value:
-        value.pop("operator_review_gates", None)
-    if "human_review_gate_labels" in value:
-        value.pop("human_review_gates", None)
-    if "campaign_status_label" in value:
-        value.pop("campaign_status", None)
-    if "advertising_channel_type_label" in value:
-        value.pop("advertising_channel_type", None)
-    if "member_type_label" in value:
-        value.pop("member_type", None)
-    if "status_label" in value:
-        value.pop("status", None)
-    if "draft_generation_status_label" in value:
-        value.pop("draft_generation_status", None)
-    if "target_status_label" in value:
-        value.pop("target_status", None)
-    if "missing_requirement_labels" in value:
-        value.pop("missing_requirements", None)
-    if "source_type_label" in value:
-        value.pop("source_type", None)
-    if "publication_readiness_status_label" in value:
-        value.pop("publication_readiness_status", None)
-    if "publication_blocker_labels" in value:
-        value.pop("publication_blockers", None)
-    if "inventory_gate_status_label" in value:
-        value.pop("inventory_gate_status", None)
-    if "canonical_gate_status_label" in value:
-        value.pop("canonical_gate_status", None)
-    if "duplicate_gate_status_label" in value:
-        value.pop("duplicate_gate_status", None)
-    if "wordpress_inventory_match_label" in value:
-        value.pop("wordpress_inventory_match", None)
+    _move_string_list_label(value, "blocked_claims", "blocked_claim_labels")
+    _move_string_list_label(value, "forbidden_claims", "blocked_claim_labels")
+    _move_string_list_label(value, "missing_read_contracts", "missing_read_contract_labels")
+    _move_string_list_label(value, "allowed_contracts", "allowed_contract_labels")
+    _move_string_list_label(value, "available_read_contracts", "available_read_contract_labels")
+    _move_string_list_label(value, "operator_review_gates", "operator_review_gate_labels")
+    _move_string_list_label(value, "human_review_gates", "human_review_gate_labels")
+    _move_string_list_label(value, "missing_requirements", "missing_requirement_labels")
+    value.pop("campaign_status", None)
+    value.pop("advertising_channel_type", None)
+    value.pop("member_type", None)
+    value.pop("status", None)
+    value.pop("draft_generation_status", None)
+    value.pop("target_status", None)
+    value.pop("source_type", None)
+    value.pop("publication_readiness_status", None)
+    value.pop("publication_blockers", None)
+    value.pop("inventory_gate_status", None)
+    value.pop("canonical_gate_status", None)
+    value.pop("duplicate_gate_status", None)
+    value.pop("wordpress_inventory_match", None)
     _label_action_plan_metric_snapshot(value)
 
     apply_allowed = value.pop("apply_allowed", None)
@@ -349,9 +329,18 @@ def _label_action_plan_status_fields(value: dict[str, Any]) -> None:
         )
 
 
+def _move_string_list_label(value: dict[str, Any], raw_key: str, label_key: str) -> None:
+    raw_value = value.pop(raw_key, None)
+    if label_key in value or not isinstance(raw_value, list):
+        return
+    labels = [str(item) for item in raw_value if isinstance(item, str) and item]
+    if labels:
+        value[label_key] = labels
+
+
 def _label_action_plan_metric_snapshot(value: dict[str, Any]) -> None:
-    metric_snapshot = value.get("metric_snapshot")
-    metric_snapshot_labels = value.get("metric_snapshot_labels")
+    metric_snapshot = value.pop("metric_snapshot", None)
+    metric_snapshot_labels = value.pop("metric_snapshot_labels", None)
     if not isinstance(metric_snapshot, dict) or not isinstance(metric_snapshot_labels, dict):
         return
 
@@ -362,8 +351,6 @@ def _label_action_plan_metric_snapshot(value: dict[str, Any]) -> None:
             metric_tiles[metric_label] = metric_value
     if metric_tiles:
         value["metric_tiles"] = metric_tiles
-        value.pop("metric_snapshot", None)
-        value.pop("metric_snapshot_labels", None)
 
 
 def compact_action_review_gate_for_context(action: dict[str, Any]) -> None:

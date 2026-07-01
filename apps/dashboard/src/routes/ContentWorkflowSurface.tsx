@@ -363,7 +363,7 @@ function ContentWorkflowEmptyQueue({ queue }: { queue: ContentWorkItemQueueRespo
       <ContentWorkflowHeader topic="Kolejka treści" />
       <section className="rounded-md border border-wait/30 bg-wait/10 p-4">
         <h2 className="text-sm font-semibold uppercase tracking-normal text-wait">
-          Brak kandydatów do pracy nad treścią
+          Brak propozycji do pracy nad treścią
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-700">{queue.operator_summary}</p>
       </section>
@@ -1063,7 +1063,10 @@ function qualityReviewSafetyText(
   review: ContentWorkItemQualityReviewResponse["quality_review"] | null
 ) {
   if (!review) {
-    return "Po podglądzie treści WILQ sprawdzi dowody, claimy, CTA, dopasowanie do usługi i gotowość pomiaru. To nie jest wynik SEO.";
+    return (
+      "Po podglądzie treści WILQ sprawdzi dowody, ryzykowne obietnice, CTA, " +
+      "dopasowanie do usługi i gotowość pomiaru. To nie jest wynik SEO."
+    );
   }
   if (review.blockers.length) {
     return review.blockers[0]?.reason ?? "WILQ blokuje szkic przed sprawdzeniem człowieka.";

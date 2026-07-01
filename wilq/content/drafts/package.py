@@ -80,8 +80,10 @@ def build_content_draft_package(
     if blockers:
         return ContentDraftPackageBuildResult(blockers=blockers)
 
-    assert sales_brief is not None
-    assert claim_ledger is not None
+    if sales_brief is None:
+        raise RuntimeError("Sales brief passed draft package blockers as None.")
+    if claim_ledger is None:
+        raise RuntimeError("Claim ledger passed draft package blockers as None.")
     sections = _sections_from_brief(sales_brief)
     evidence_map = [
         ContentDraftEvidenceMap(

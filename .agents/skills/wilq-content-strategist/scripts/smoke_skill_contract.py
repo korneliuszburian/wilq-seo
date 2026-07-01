@@ -378,9 +378,9 @@ def validate_content_action_preview(
     )
     if not isinstance(content_action, dict):
         raise SystemExit(f"Context pack missing active {CONTENT_ACTION_ID}")
-    payload = content_action.get("payload")
+    payload = content_action.get("action_plan")
     if not isinstance(payload, dict):
-        raise SystemExit("Content action payload must be an object")
+        raise SystemExit("Content action plan must be an object")
     url_contract = payload.get("content_url_review_contract")
     url_summary = payload.get("content_url_review_summary")
     if isinstance(url_contract, dict):
@@ -400,27 +400,27 @@ def validate_content_action_preview(
     else:
         raise SystemExit("Content action lacks URL review contract or summary")
     assert_current_content_url_keys(payload, "Content action payload")
-    previews = payload.get("content_brief_preview")
+    previews = payload.get("content_plan_items")
     if not require_preview and previews is None:
         return []
     if not isinstance(previews, list) or not previews:
-        raise SystemExit("Content action lacks content_brief_preview")
-    if int(payload.get("content_brief_preview_included") or 0) <= 0:
-        raise SystemExit("Content action context omits content_brief_preview")
+        raise SystemExit("Content action lacks content_plan_items")
+    if int(payload.get("content_plan_items_included") or 0) <= 0:
+        raise SystemExit("Content action context omits content_plan_items")
     first_preview = previews[0]
     if not isinstance(first_preview, dict):
         raise SystemExit("Content brief preview must be an object")
-    if first_preview.get("apply_allowed") is not False:
-        raise SystemExit("Content brief preview must keep apply_allowed=false")
-    if first_preview.get("api_mutation_ready") is not False:
-        raise SystemExit("Content brief preview must keep api_mutation_ready=false")
+    if first_preview.get("apply_status_label") != "zablokowane do sprawdzenia":
+        raise SystemExit("Content brief preview must keep apply blocked")
+    if first_preview.get("write_status_label") != "bez zapisu automatycznego":
+        raise SystemExit("Content brief preview must keep write blocked")
     for preview in previews:
         if not isinstance(preview, dict):
             continue
         assert_current_content_url_keys(preview, "Content context-pack preview")
     if not first_preview.get("evidence_ids"):
         raise SystemExit("Content brief preview lacks evidence IDs")
-    if "gwarancja pozycji" not in set(first_preview.get("blocked_claims") or []):
+    if "gwarancja pozycji" not in set(first_preview.get("blocked_claim_labels") or []):
         raise SystemExit("Content brief preview must block gwarancja pozycji claims")
     required_string_fields = [
         "intent",
@@ -431,10 +431,6 @@ def validate_content_action_preview(
         "meta_description_direction",
         "schema_direction",
         "cta_direction",
-        "publication_readiness_status",
-        "inventory_gate_status",
-        "canonical_gate_status",
-        "duplicate_gate_status",
         "content_gate_summary",
     ]
     for field in required_string_fields:
@@ -447,17 +443,23 @@ def validate_content_action_preview(
         "internal_link_direction",
         "source_facts",
         "missing_evidence",
-        "forbidden_claims",
+        "blocked_claim_labels",
         "legal_review_notes",
         "brand_voice_notes",
-        "publication_blockers",
+        "required_check_labels",
     ]
     for field in required_list_fields:
         value = first_preview.get(field)
         if not isinstance(value, list) or not value:
             raise SystemExit(f"Content brief preview lacks {field}")
-    if "gwarancja pozycji" not in set(first_preview.get("forbidden_claims") or []):
-        raise SystemExit("Content brief preview forbidden_claims must block gwarancja pozycji")
+    publication_blocker_labels = first_preview.get("publication_blocker_labels")
+    if (
+        (not isinstance(publication_blocker_labels, list) or not publication_blocker_labels)
+        and int(first_preview.get("publication_blockers_total") or 0) <= 0
+    ):
+        raise SystemExit("Content brief preview lacks publication blocker labels")
+    if "gwarancja pozycji" not in set(first_preview.get("blocked_claim_labels") or []):
+        raise SystemExit("Content brief preview blocked_claim_labels must block gwarancja pozycji")
     for field in (
         "source_public_url",
         "final_canonical_url",
@@ -467,13 +469,12 @@ def validate_content_action_preview(
             raise SystemExit(f"Content brief preview lacks {field}")
     if "ekologus.dev.proudsite.pl" in str(first_preview.get("final_canonical_url") or ""):
         raise SystemExit("Content brief preview final_canonical_url must not point to dev preview")
-    requirements = first_preview.get("required_validation")
+    requirements = first_preview.get("required_check_labels")
     if not isinstance(requirements, list) or not requirements:
-        raise SystemExit("Content brief preview lacks required_validation")
-    if "duplicate_or_cannibalization_check" not in set(requirements):
+        raise SystemExit("Content brief preview lacks required_check_labels")
+    if not any("duplikacji" in str(requirement) for requirement in requirements):
         raise SystemExit(
-            "Content brief preview required_validation must include "
-            "duplicate_or_cannibalization_check"
+            "Content brief preview required_check_labels must include duplicate review"
         )
     gsc_preview = next(
         (
@@ -518,7 +519,7 @@ def validate_content_action_preview(
             "publication_blockers": (preview.get("publication_blockers") or [])[:6],
             "source_facts": (preview.get("source_facts") or [])[:4],
             "missing_evidence": (preview.get("missing_evidence") or [])[:3],
-            "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
+            "blocked_claim_labels": (preview.get("blocked_claim_labels") or [])[:6],
             "source_public_url": preview.get("source_public_url"),
             "final_canonical_url": preview.get("final_canonical_url"),
             "intended_final_url": preview.get("intended_final_url"),

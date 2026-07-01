@@ -598,7 +598,10 @@ def _combined_decision_freshness(
     if not source_connectors:
         return FreshnessState(
             state="unknown",
-            notes="Nie ma źródeł danych dla tej decyzji; nie traktuj jej jako gotowej rekomendacji.",
+            notes=(
+                "Nie ma źródeł danych dla tej decyzji; nie traktuj jej jako "
+                "gotowej rekomendacji."
+            ),
         )
     states = [
         freshness_by_connector.get(
@@ -1200,12 +1203,14 @@ def _merchant_item_from_tactical(
         status="ready" if live_data_available else "blocked",
         priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
         summary=(
-            f"{summary} To jest kolejka do sprawdzenia, nie automatyczna naprawa pliku produktowego."
+            f"{summary} To jest kolejka do sprawdzenia, nie automatyczna naprawa "
+            "pliku produktowego."
             if live_data_available
             else summary
         ),
         next_step=(
-            "Otwórz widok Merchant i przejrzyj decyzje pliku produktowego przed sprawdzeniem propozycji w WILQ."
+            "Otwórz widok Merchant i przejrzyj decyzje pliku produktowego przed "
+            "sprawdzeniem propozycji w WILQ."
             if live_data_available
             else "Uruchom odczyt danych Merchant, potem wróć do widoku Merchant."
         ),
@@ -1371,7 +1376,9 @@ def _merchant_command_center_summary(
             "zgłoszenia problemów",
             "zgłoszeń problemów",
         ),
-        _count_phrase(decision_count, "decyzja do przejścia", "decyzje do przejścia", "decyzji do przejścia"),
+        _count_phrase(
+            decision_count, "decyzja do przejścia", "decyzje do przejścia", "decyzji do przejścia"
+        ),
     ]
     summary = "Merchant Center ma " + ", ".join(parts) + "."
     if top_title:
@@ -1530,11 +1537,29 @@ def _content_summary_with_ahrefs(
 ) -> str:
     if not ahrefs_metric_tiles:
         return tactical_summary
+    record_count = _count_phrase(
+        ahrefs_metric_tiles.get("rekordy Ahrefs", 0),
+        "rekord do sprawdzenia",
+        "rekordy do sprawdzenia",
+        "rekordów do sprawdzenia",
+    )
+    content_gap_count = _count_phrase(
+        ahrefs_metric_tiles.get("luki Ahrefs", 0),
+        "luka treści",
+        "luki treści",
+        "luk treści",
+    )
+    backlink_gap_count = _count_phrase(
+        ahrefs_metric_tiles.get("luki linków", 0),
+        "luka linków",
+        "luki linków",
+        "luk linków",
+    )
     ahrefs_summary = (
         "Ahrefs ma kolejkę sprawdzenia luk SEO: "
-        f"{_count_phrase(ahrefs_metric_tiles.get('rekordy Ahrefs', 0), 'rekord do sprawdzenia', 'rekordy do sprawdzenia', 'rekordów do sprawdzenia')}, "
-        f"{_count_phrase(ahrefs_metric_tiles.get('luki Ahrefs', 0), 'luka treści', 'luki treści', 'luk treści')} i "
-        f"{_count_phrase(ahrefs_metric_tiles.get('luki linków', 0), 'luka linków', 'luki linków', 'luk linków')}. "
+        f"{record_count}, "
+        f"{content_gap_count} i "
+        f"{backlink_gap_count}. "
         "To jest materiał do połączenia z GSC i WordPress, nie obietnica wzrostu."
     )
     return f"{ahrefs_summary} {tactical_summary}".strip()
@@ -1645,6 +1670,32 @@ def _ga4_item_from_tactical(
         connector=GA4_CONNECTOR_ID,
     )
     live_data_available = landing_group_count > 0
+    summary_parts = [
+        _count_phrase(
+            landing_group_count,
+            "grupę stron wejścia, źródeł ruchu i kampanii",
+            "grupy stron wejścia, źródeł ruchu i kampanii",
+            "grup stron wejścia, źródeł ruchu i kampanii",
+        ),
+        _count_phrase(
+            measurement_issue_count,
+            "problem pomiaru",
+            "problemy pomiaru",
+            "problemów pomiaru",
+        ),
+        _count_phrase(
+            traffic_quality_count,
+            "decyzję jakości ruchu",
+            "decyzje jakości ruchu",
+            "decyzji jakości ruchu",
+        ),
+        _count_phrase(
+            len(matched_items),
+            "dopasowanie WordPress",
+            "dopasowania WordPress",
+            "dopasowań WordPress",
+        ),
+    ]
     return CommandCenterBriefItem(
         id="daily_ga4_landing_quality",
         title=(
@@ -1656,10 +1707,8 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"GA4 ma {_count_phrase(landing_group_count, 'grupę stron wejścia, źródeł ruchu i kampanii', 'grupy stron wejścia, źródeł ruchu i kampanii', 'grup stron wejścia, źródeł ruchu i kampanii')}, "
-            f"{_count_phrase(measurement_issue_count, 'problem pomiaru', 'problemy pomiaru', 'problemów pomiaru')}, "
-            f"{_count_phrase(traffic_quality_count, 'decyzję jakości ruchu', 'decyzje jakości ruchu', 'decyzji jakości ruchu')} i "
-            f"{_count_phrase(len(matched_items), 'dopasowanie WordPress', 'dopasowania WordPress', 'dopasowań WordPress')}. "
+            f"GA4 ma {summary_parts[0]}, {summary_parts[1]}, {summary_parts[2]} i "
+            f"{summary_parts[3]}. "
             "Blokada oznacza, że nie ma potwierdzonych podstaw do wniosków o zwrocie "
             "z reklam, przychodzie, spadku konwersji i naprawionym pomiarze; "
             "to nie jest awaria źródła danych."
@@ -1996,7 +2045,9 @@ def _unique(values: Iterable[object]) -> list[str]:
 def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     for item in items:
         if item.id == "daily_merchant_feed" and item.status == "ready":
-            return "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego."
+            return (
+                "Najpierw otwórz widok Merchant i przejrzyj kolejkę problemów pliku produktowego."
+            )
     for item in items:
         if item.status == "ready":
             return item.next_step
@@ -2010,6 +2061,18 @@ def _action_plan_item(
     related_tactics = _related_tactical_items(item, tactical_items)
     if item.id == "daily_merchant_feed":
         issue_count = item.metric_tiles.get("zgłoszenia", item.metric_tiles.get("issues", 0))
+        product_count_label = _count_phrase(
+            item.metric_tiles.get("produkty", 0),
+            "produkt",
+            "produkty",
+            "produktów",
+        )
+        issue_count_label = _count_phrase(
+            issue_count,
+            "zgłoszenie problemu",
+            "zgłoszenia problemów",
+            "zgłoszeń problemów",
+        )
         return CommandCenterActionPlanItem(
             id="plan_review_merchant_feed_issues",
             title="Przejrzyj kolejkę problemów Merchant Center",
@@ -2018,8 +2081,8 @@ def _action_plan_item(
             priority=10,
             category="Merchant Center",
             why_it_matters=(
-                f"WILQ widzi {_count_phrase(item.metric_tiles.get('produkty', 0), 'produkt', 'produkty', 'produktów')} i "
-                f"{_count_phrase(issue_count, 'zgłoszenie problemu', 'zgłoszenia problemów', 'zgłoszeń problemów')} pliku produktowego. To może blokować "
+                f"WILQ widzi {product_count_label} i "
+                f"{issue_count_label} pliku produktowego. To może blokować "
                 "widoczność produktów, ale wymaga sprawdzenia przez człowieka przed zmianami."
             ),
             operator_action=(
@@ -2034,7 +2097,8 @@ def _action_plan_item(
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polskie podsumowanie przeglądu problemów pliku produktowego z dowodami źródłowymi, akcją "
+                "Polskie podsumowanie przeglądu problemów pliku produktowego "
+                "z dowodami źródłowymi, akcją "
                 "i listą twierdzeń, których nie wolno używać."
             ),
             source_connectors=item.source_connectors,
@@ -2076,6 +2140,30 @@ def _action_plan_item(
         decision_count = item.metric_tiles.get("decyzje", 0)
         measurement_count = item.metric_tiles.get("pomiar", 0)
         traffic_review_count = item.metric_tiles.get("jakość ruchu", 0)
+        landing_groups_label = _count_phrase(
+            landing_groups,
+            "grupę stron wejścia, źródeł ruchu i kampanii",
+            "grupy stron wejścia, źródeł ruchu i kampanii",
+            "grup stron wejścia, źródeł ruchu i kampanii",
+        )
+        decision_count_label = _count_phrase(
+            decision_count,
+            "decyzję GA4 do sprawdzenia",
+            "decyzje GA4 do sprawdzenia",
+            "decyzji GA4 do sprawdzenia",
+        )
+        measurement_count_label = _count_phrase(
+            measurement_count,
+            "problem pomiaru",
+            "problemy pomiaru",
+            "problemów pomiaru",
+        )
+        traffic_review_count_label = _count_phrase(
+            traffic_review_count,
+            "decyzję jakości ruchu",
+            "decyzje jakości ruchu",
+            "decyzji jakości ruchu",
+        )
         return CommandCenterActionPlanItem(
             id="plan_review_ga4_landing_quality",
             title=item.title,
@@ -2084,10 +2172,9 @@ def _action_plan_item(
             priority=14,
             category="GA4",
             why_it_matters=(
-                f"WILQ ma {_count_phrase(landing_groups, 'grupę stron wejścia, źródeł ruchu i kampanii', 'grupy stron wejścia, źródeł ruchu i kampanii', 'grup stron wejścia, źródeł ruchu i kampanii')} i "
-                f"{_count_phrase(decision_count, 'decyzję GA4 do sprawdzenia', 'decyzje GA4 do sprawdzenia', 'decyzji GA4 do sprawdzenia')}: "
-                f"{_count_phrase(measurement_count, 'problem pomiaru', 'problemy pomiaru', 'problemów pomiaru')} oraz "
-                f"{_count_phrase(traffic_review_count, 'decyzję jakości ruchu', 'decyzje jakości ruchu', 'decyzji jakości ruchu')}. To jest kolejka analityczna, "
+                f"WILQ ma {landing_groups_label} i {decision_count_label}: "
+                f"{measurement_count_label} oraz {traffic_review_count_label}. "
+                "To jest kolejka analityczna, "
                 "nie ocena skuteczności. Wnioski o zwrocie z reklam, przychodzie, "
                 "spadku konwersji i naprawionym pomiarze pozostają zablokowane bez osobnych danych."
             ),
@@ -2210,8 +2297,7 @@ def _action_plan_item(
                 "wyszukiwanych haseł bez świeżych dowodów Ads."
             ),
             operator_action=(
-                "Otwórz widok Google Ads i przejdź ścieżkę naprawy "
-                "przez sprawdzenie w WILQ."
+                "Otwórz widok Google Ads i przejdź ścieżkę naprawy przez sprawdzenie w WILQ."
             ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
@@ -2485,15 +2571,21 @@ def _metric_tile_phrase(label: str, value: float | int | str) -> str:
     if label == "typy problemów":
         return _count_phrase(value, "typ problemu", "typy problemów", "typów problemów")
     if label == "zgłoszenia":
-        return _count_phrase(value, "zgłoszenie problemu", "zgłoszenia problemów", "zgłoszeń problemów")
+        return _count_phrase(
+            value, "zgłoszenie problemu", "zgłoszenia problemów", "zgłoszeń problemów"
+        )
     if label == "decyzje":
         return _count_phrase(value, "decyzja", "decyzje", "decyzji")
     if label == "blokady":
         return _count_phrase(value, "blokada", "blokady", "blokad")
     if label == "zapytania i adresy z GSC":
-        return _count_phrase(value, "zapytanie i adres z GSC", "zapytania i adresy z GSC", "zapytań i adresów z GSC")
+        return _count_phrase(
+            value, "zapytanie i adres z GSC", "zapytania i adresy z GSC", "zapytań i adresów z GSC"
+        )
     if label == "dopasowania WordPress":
-        return _count_phrase(value, "dopasowanie WordPress", "dopasowania WordPress", "dopasowań WordPress")
+        return _count_phrase(
+            value, "dopasowanie WordPress", "dopasowania WordPress", "dopasowań WordPress"
+        )
     if label == "wyświetlenia":
         return _count_phrase(value, "wyświetlenie", "wyświetlenia", "wyświetleń")
     if label == "kliknięcia":
@@ -2517,7 +2609,9 @@ def _metric_tile_phrase(label: str, value: float | int | str) -> str:
     if label == "wartość konwersji":
         return f"wartość konwersji {value}"
     if label == "podgląd budżetu":
-        return _count_phrase(value, "budżet do sprawdzenia", "budżety do sprawdzenia", "budżetów do sprawdzenia")
+        return _count_phrase(
+            value, "budżet do sprawdzenia", "budżety do sprawdzenia", "budżetów do sprawdzenia"
+        )
     if label == "rekomendacje":
         return _count_phrase(value, "rekomendacja", "rekomendacje", "rekomendacji")
     if label == "wykluczenia":
@@ -2525,11 +2619,23 @@ def _metric_tile_phrase(label: str, value: float | int | str) -> str:
     if label == "segmenty":
         return _count_phrase(value, "segment", "segmenty", "segmentów")
     if label == "wskaźniki do sprawdzenia":
-        return _count_phrase(value, "wiersz wskaźników kampanii", "wiersze wskaźników kampanii", "wierszy wskaźników kampanii")
+        return _count_phrase(
+            value,
+            "wiersz wskaźników kampanii",
+            "wiersze wskaźników kampanii",
+            "wierszy wskaźników kampanii",
+        )
     if label == "wiersze kosztu pozyskania celu":
-        return _count_phrase(value, "wiersz kosztu pozyskania celu", "wiersze kosztu pozyskania celu", "wierszy kosztu pozyskania celu")
+        return _count_phrase(
+            value,
+            "wiersz kosztu pozyskania celu",
+            "wiersze kosztu pozyskania celu",
+            "wierszy kosztu pozyskania celu",
+        )
     if label == "wiersze zwrotu z reklam":
-        return _count_phrase(value, "wiersz zwrotu z reklam", "wiersze zwrotu z reklam", "wierszy zwrotu z reklam")
+        return _count_phrase(
+            value, "wiersz zwrotu z reklam", "wiersze zwrotu z reklam", "wierszy zwrotu z reklam"
+        )
     return f"{label}: {value}"
 
 

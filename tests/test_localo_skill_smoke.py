@@ -37,13 +37,12 @@ def localo_context_pack() -> dict[str, Any]:
         "active_action_objects": [
             {
                 "id": "act_review_localo_visibility_facts",
-                "payload": {
-                    "payload_preview": [
+                "action_plan": {
+                    "preview_items": [
                         {
-                            "preview_contract": "local_visibility_review_preview_v1",
-                            "apply_allowed": False,
-                            "api_mutation_ready": False,
-                            "metric_snapshot": {"localo_reviews_count": 798},
+                            "apply_status_label": "zablokowane do sprawdzenia",
+                            "write_status_label": "bez zapisu automatycznego",
+                            "metric_tiles": {"localo_reviews_count": 798},
                         }
                     ]
                 },

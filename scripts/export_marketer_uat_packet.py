@@ -33,10 +33,12 @@ UAT_ROUTE_ORDER = [
         "operator_task": "Wskaż jeden problem pliku produktowego albo blocker.",
         "pass_condition": (
             "Marketer rozumie, że zgłoszenia problemów nie są automatycznie "
-            "unikalnymi SKU i że zapis do pliku produktowego ani odzyskanie zatwierdzeń nie są obiecane."
+            "unikalnymi SKU i że zapis do pliku produktowego ani odzyskanie "
+            "zatwierdzeń nie są obiecane."
         ),
         "fail_condition": (
-            "Marketer oczekuje automatycznej naprawy pliku produktowego albo odzyskania zatwierdzeń."
+            "Marketer oczekuje automatycznej naprawy pliku produktowego albo "
+            "odzyskania zatwierdzeń."
         ),
     },
     {
@@ -386,9 +388,7 @@ def render_readable_list(value: list[Any], *, indent: int) -> list[str]:
             if title:
                 lines.append(f"{prefix}- {title}")
                 nested = {
-                    key: nested_value
-                    for key, nested_value in item.items()
-                    if key != "decyzja"
+                    key: nested_value for key, nested_value in item.items() if key != "decyzja"
                 }
                 lines.extend(render_readable_mapping(nested, indent=indent + 1))
             else:
@@ -400,18 +400,18 @@ def render_readable_list(value: list[Any], *, indent: int) -> list[str]:
 
 def _readable_packet_label(key: str) -> str | None:
     labels = {
-            "następny_krok": "następny krok",
-            "liczba_blokad": "liczba blokad",
-            "liczba_zadań": "liczba zadań",
-            "zgłoszenia_problemów": "zgłoszenia problemów",
-            "decyzje_do_sprawdzenia": "decyzje do sprawdzenia",
-            "unikalne_produkty": "unikalne produkty",
-            "produkty": "produkty",
-            "kampanie": "kampanie",
-            "problemy_pomiaru": "problemy pomiaru",
-            "gotowe_do_sprawdzenia": "gotowe do sprawdzenia",
-            "zablokowane_obietnice": "zablokowane obietnice",
-            "decyzje_dnia": "decyzje dnia",
+        "następny_krok": "następny krok",
+        "liczba_blokad": "liczba blokad",
+        "liczba_zadań": "liczba zadań",
+        "zgłoszenia_problemów": "zgłoszenia problemów",
+        "decyzje_do_sprawdzenia": "decyzje do sprawdzenia",
+        "unikalne_produkty": "unikalne produkty",
+        "produkty": "produkty",
+        "kampanie": "kampanie",
+        "problemy_pomiaru": "problemy pomiaru",
+        "gotowe_do_sprawdzenia": "gotowe do sprawdzenia",
+        "zablokowane_obietnice": "zablokowane obietnice",
+        "decyzje_dnia": "decyzje dnia",
         "widok": "widok",
         "adres_widoku": "adres widoku",
         "stan": "stan",

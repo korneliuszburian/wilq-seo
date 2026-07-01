@@ -12,7 +12,6 @@ from typing import Any
 SKILL_NAME = "wilq-localo-operator"
 REQUIRED_CONNECTORS = ["localo"]
 LOCALO_VISIBILITY_REVIEW_ACTION_ID = "act_review_localo_visibility_facts"
-LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT = "local_visibility_review_preview_v1"
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -156,10 +155,11 @@ def main() -> int:
         latest_localo_run_source = "clean_runtime_without_refresh"
         latest_localo_run_status = "missing"
     else:
-        latest_localo_run_status = latest_localo_run.get("status")
+        latest_localo_run_status = str(latest_localo_run.get("status") or "")
     if latest_localo_run_status not in {"blocked", "completed", "missing"}:
         raise SystemExit(f"Unexpected Localo refresh status: {latest_localo_run_status}")
-    metric_summary = latest_localo_run.get("metric_summary") if latest_localo_run else {}
+    raw_metric_summary = latest_localo_run.get("metric_summary") if latest_localo_run else {}
+    metric_summary = raw_metric_summary if isinstance(raw_metric_summary, dict) else {}
     if (
         metric_summary.get("api") != "localo_mcp_oauth_probe"
         and latest_localo_run_status != "missing"
@@ -217,23 +217,19 @@ def main() -> int:
             if not localo_actions:
                 raise SystemExit("Localo value review must expose review action")
             localo_action = localo_actions[0]
-            payload = localo_action.get("payload") or {}
-            payload_preview = payload.get("payload_preview") or []
+            payload = localo_action.get("action_plan") or {}
+            payload_preview = payload.get("preview_items") or []
             if not isinstance(payload_preview, list) or not payload_preview:
-                raise SystemExit("Localo review action must expose payload_preview")
+                raise SystemExit("Localo review action must expose preview_items")
             preview = payload_preview[0]
-            if preview.get("preview_contract") != LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT:
-                raise SystemExit(
-                    f"Localo review action must expose {LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}"
-                )
-            if preview.get("apply_allowed") is not False:
+            if preview.get("apply_status_label") != "zablokowane do sprawdzenia":
                 raise SystemExit("Localo review change preview must keep apply_allowed=false")
-            if preview.get("api_mutation_ready") is not False:
+            if preview.get("write_status_label") != "bez zapisu automatycznego":
                 raise SystemExit("Localo review change preview must keep api_mutation_ready=false")
-            metric_snapshot = preview.get("metric_snapshot") or {}
+            metric_snapshot = preview.get("metric_tiles") or {}
             if not isinstance(metric_snapshot, dict) or not metric_snapshot:
                 raise SystemExit("Localo review change preview must include metric_snapshot")
-            localo_action_preview_contract = str(preview.get("preview_contract"))
+            localo_action_preview_contract = "action_plan.preview_items"
             localo_preview_metric_names = sorted(str(name) for name in metric_snapshot)
             redacted_metric_names = [
                 fact.get("name") for fact in localo_metric_facts if fact.get("name") == "[REDACTED]"

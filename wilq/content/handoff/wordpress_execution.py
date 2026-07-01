@@ -71,8 +71,10 @@ def execute_content_wordpress_draft_handoff(
             blockers=blockers,
         )
 
-    assert handoff is not None
-    assert draft_package is not None
+    if handoff is None:
+        raise RuntimeError("WordPress handoff passed execution blockers as None.")
+    if draft_package is None:
+        raise RuntimeError("Draft package passed WordPress execution blockers as None.")
     payload = content_wordpress_draft_payload(handoff, draft_package)
     if mode == "dry_run":
         return ContentWordPressDraftExecutionResult(
@@ -82,7 +84,8 @@ def execute_content_wordpress_draft_handoff(
             external_write_attempted=False,
         )
 
-    assert create_draft is not None
+    if create_draft is None:
+        raise RuntimeError("Live WordPress draft creator passed execution blockers as None.")
     wordpress_post_id = create_draft(payload)
     return ContentWordPressDraftExecutionResult(
         status="created",

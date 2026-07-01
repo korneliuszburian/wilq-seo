@@ -35,7 +35,10 @@ def test_connector_status_hydrates_operator_status_label() -> None:
 
     assert connector.status_label == "dostęp skonfigurowany"
     assert connector.missing_credentials_summary_label == "Pola dostępu kompletne w tym sprawdzeniu"
-    assert connector.credential_source_summary_label == "Nie ma źródeł konfiguracji; nie traktuj integracji jako gotowej"
+    assert (
+        connector.credential_source_summary_label
+        == "Nie ma źródeł konfiguracji; nie traktuj integracji jako gotowej"
+    )
 
 
 def test_connector_status_unknown_fallback_is_neutral_polish_copy() -> None:

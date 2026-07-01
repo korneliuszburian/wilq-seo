@@ -148,9 +148,12 @@ def build_structured_draft_generation_contract(
     if blockers:
         return StructuredDraftGenerationResult(blockers=blockers)
 
-    assert sales_brief is not None
-    assert claim_ledger is not None
-    assert draft_package is not None
+    if sales_brief is None:
+        raise RuntimeError("Sales brief passed structured draft blockers as None.")
+    if claim_ledger is None:
+        raise RuntimeError("Claim ledger passed structured draft blockers as None.")
+    if draft_package is None:
+        raise RuntimeError("Draft package passed structured draft blockers as None.")
     final_canonical_url = item.final_canonical_url or item.intended_final_url
     if final_canonical_url is None:
         return StructuredDraftGenerationResult(

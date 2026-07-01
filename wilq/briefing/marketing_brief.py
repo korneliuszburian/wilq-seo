@@ -720,7 +720,10 @@ def _recommendation_items(
                     "To jest najbardziej operacyjny obszar do kolejki sprawdzenia bez "
                     "automatycznej zmiany danych produktu."
                 ),
-                next_step="Otwórz /merchant i przygotuj kolejkę problemów pliku produktowego z podglądem zmian.",
+                next_step=(
+                    "Otwórz /merchant i przygotuj kolejkę problemów pliku "
+                    "produktowego z podglądem zmian."
+                ),
                 risk=ActionRisk.medium,
             )
         )
@@ -762,9 +765,7 @@ def _recommendation_items(
                     "bez aktualnych dowodów Ads. "
                     "Obecny stan musi być pokazany jako blokada, nie rekomendacja."
                 ),
-                next_step=(
-                    "Użyj akcji do sprawdzenia, żeby przywrócić odczyt Google Ads."
-                ),
+                next_step=("Użyj akcji do sprawdzenia, żeby przywrócić odczyt Google Ads."),
                 risk=ActionRisk.medium,
                 blocker_reason=google_ads_blocker.blocker_reason,
             )
@@ -835,7 +836,10 @@ def _metric_summary_parts(facts: list[MetricFact]) -> list[str]:
 
 def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_merchant_center":
-        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę sprawdzenia pliku produktowego."
+        return (
+            "Rozbij problemy Merchant na produkty i przygotuj kolejkę "
+            "sprawdzenia pliku produktowego."
+        )
     if connector_id == "google_search_console":
         return (
             "Pobierz rozbicie zapytań i stron, a potem zbuduj kolejkę "

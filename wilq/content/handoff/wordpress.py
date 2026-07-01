@@ -85,10 +85,14 @@ def build_content_wordpress_draft_handoff(
     if blockers:
         return ContentWordPressDraftHandoffResult(blockers=blockers)
 
-    assert draft_package is not None
-    assert human_review is not None
-    assert audit is not None
-    assert item.final_canonical_url is not None
+    if draft_package is None:
+        raise RuntimeError("Draft package passed WordPress handoff blockers as None.")
+    if human_review is None:
+        raise RuntimeError("Human review passed WordPress handoff blockers as None.")
+    if audit is None:
+        raise RuntimeError("Audit envelope passed WordPress handoff blockers as None.")
+    if item.final_canonical_url is None:
+        raise RuntimeError("Final canonical URL passed WordPress handoff blockers as None.")
     return ContentWordPressDraftHandoffResult(
         handoff=ContentWordPressDraftHandoff(
             id=f"wordpress_draft_handoff_{item.id}",

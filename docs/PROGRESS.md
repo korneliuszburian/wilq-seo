@@ -84,7 +84,7 @@ API status later contradicts this state.
   adversarial operator checks and local orchestration; it must not become the
   production writer or a second product brain.
 - Goal 002 Beads epic `wilq-seo-zu4` is closed.
-- Goal 003 plan lives in `docs/goals/003-goal.md`.
+- Goal 003 plan lives in `docs/goals/archive/003-goal.md`.
 - Goal 003 recovery and plan alignment task `wilq-seo-ik5` is closed. First
   implementation slice `wilq-seo-d7c` added the API-owned multi-item content
   queue at `GET /api/content/work-items/queue`. The queue currently derives 5
@@ -135,11 +135,9 @@ API status later contradicts this state.
   functions, classes and frozen-file growth risk. Latest Goal 003 changed-code
   audit reports 253 Python files, 91,397 non-empty Python LOC, 6 changed files
   and no changed frozen growth files in the current slice.
-- Historical quality debt is now explicit: full Ruff reports 68 issues, mypy
-  reports 5 existing type errors in `content_refresh.py`/`main.py`, and Fallow
-  reports 21.0% TypeScript duplication with 13 functions above threshold.
-  These are baseline risks for Goal 002, not permission to add new behavior to
-  the known monoliths.
+- The historical full Ruff and mypy blockers that stopped repo-level verify
+  after Goal 003 closure have been cleared. Remaining anti-slop work should use
+  changed-file budgets and focused Beads tasks, not broad drive-by cleanup.
 - Latest Goal 003 dashboard proof:
   `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
   `pnpm --filter @wilq/dashboard lint`,
@@ -174,9 +172,11 @@ API status later contradicts this state.
   `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
   `uv run python scripts/audit_complexity.py --changed --limit 5` and
   `git diff --check`.
-- `scripts/verify.sh` was attempted during Goal 003 closure and failed on the
-  known legacy full-Ruff baseline before Goal-003-specific checks. Follow-up
-  Beads task `wilq-seo-8re` tracks restoring the full repo-level verify gate.
+- Full repo-level verification passed on 2026-07-01 with `rtk scripts/verify.sh`.
+  Proof covered full Python tests (`483 passed, 1 warning`), dashboard/unit
+  tests (`102 passed`), security/dependency checks, API smoke, skill structure
+  smoke, skill API smoke, Playwright dashboard proof (`14 passed`) and
+  dashboard production build. Beads task `wilq-seo-8re` can be closed.
 - Goal 002 content domain extraction has started under `wilq-seo-x4u`.
   Canonical/public URL semantics moved from
   `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.

@@ -117,8 +117,10 @@ def execute_openai_structured_draft_generation(
     if blockers:
         return OpenAIStructuredDraftRuntimeResult(status="blocked", blockers=blockers)
 
-    assert contract is not None
-    assert model is not None
+    if contract is None:
+        raise RuntimeError("Structured draft generation contract passed runtime blockers as None.")
+    if model is None:
+        raise RuntimeError("Structured draft generation model passed runtime blockers as None.")
     request_payload = build_openai_structured_draft_request(
         contract=contract,
         model=model,
@@ -129,7 +131,10 @@ def execute_openai_structured_draft_generation(
             request_payload=request_payload,
         )
 
-    assert client is not None
+    if client is None:
+        raise RuntimeError(
+            "Live structured draft generation client passed runtime blockers as None."
+        )
     try:
         response = client.responses.create(
             **request_payload.model_dump(by_alias=True, mode="json")

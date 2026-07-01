@@ -3,9 +3,9 @@
 This is the long-running ExecPlan for the active WILQ product layer.
 
 Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
-`docs/goals/001-goal.md`, `docs/goals/003-goal.md` and Beads. This file
-describes the durable path for Goal 003 and must stay restartable without chat
-history.
+`docs/goals/001-goal.md`, `docs/goals/archive/003-goal.md` and Beads. This
+file describes the durable path for Goal 003 and must stay restartable without
+chat history.
 
 ## How To Use This File
 
@@ -695,9 +695,9 @@ ready. No new feature growth in frozen monolith files. No dashboard logic fork.
 
 Current next action:
 
-Goal 003 is complete. Continue from `bd ready --json`; current open work is
-historical Goal 001 cleanup and the full `scripts/verify.sh` Ruff-baseline
-follow-up `wilq-seo-8re`.
+Goal 003 is complete and the full repo-level verification gate is restored.
+Continue from `bd ready --json`; remaining work should be tracked in Beads as
+focused product or anti-slop slices, not markdown TODO lists.
 
 Completed Goal 002 extraction context:
 
@@ -1171,9 +1171,11 @@ Current outcome:
   `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
   `uv run python scripts/audit_complexity.py --changed --limit 5` and
   `git diff --check`.
-- `scripts/verify.sh` was attempted during closure and failed on the known
-  legacy full-Ruff baseline before Goal-003-specific checks. Beads follow-up
-  `wilq-seo-8re` tracks restoring full repo-level verify.
+- Full repo-level verification passed on 2026-07-01 with `rtk scripts/verify.sh`.
+  Proof covered full Python tests (`483 passed, 1 warning`), dashboard/unit
+  tests (`102 passed`), security/dependency checks, API smoke, skill structure
+  smoke, skill API smoke, Playwright dashboard proof (`14 passed`) and
+  dashboard production build. Beads follow-up `wilq-seo-8re` can be closed.
 
 Current risk:
 
@@ -1183,7 +1185,6 @@ Current risk:
   `content_diagnostics.py`, `test_api_contracts.py` and
   `ContentDiagnosticSurface.tsx` remain legacy hotspots until the next slices
   move behavior out.
-- Full `ruff check . --statistics` currently reports 68 issues.
-- `mypy wilq apps/api/wilq_api` currently reports 5 existing type errors.
-- `pnpm fallow:summary` currently fails on 21.0% duplication and 13 functions
-  above threshold.
+- Full Ruff and mypy blockers are cleared as of the 2026-07-01
+  `scripts/verify.sh` proof. Remaining risk is architectural density and
+  hotspot drift, not a known failing repo-level verification gate.

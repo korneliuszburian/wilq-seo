@@ -62,7 +62,8 @@ def build_structured_draft_preview(
     if blockers:
         return StructuredDraftPreviewResult(blockers=blockers)
 
-    assert output is not None
+    if output is None:
+        raise RuntimeError("Structured draft output passed preview blockers as None.")
     return StructuredDraftPreviewResult(
         preview=StructuredDraftPreview(
             title=output.title,

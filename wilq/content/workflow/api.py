@@ -548,7 +548,8 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     item = content_work_item_from_decision(decision)
     inventory_record = content_inventory_record_from_decision(decision)
-    assert inventory_record is not None
+    if inventory_record is None:
+        raise RuntimeError("Content decision could not be converted to an inventory record.")
     return _build_content_work_item_snapshot_response(
         item=item,
         inventory_records=[inventory_record],

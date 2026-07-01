@@ -724,7 +724,10 @@ def _merchant_freshness_assessment(
             stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
             requires_refresh=True,
             summary="Brak zapisanego odczytu danych Merchant Center.",
-            next_step="Uruchom odczyt danych Merchant przed oceną aktualnego stanu pliku produktowego.",
+            next_step=(
+                "Uruchom odczyt danych Merchant przed oceną aktualnego stanu "
+                "pliku produktowego."
+            ),
         )
 
     completed_at = latest_refresh.completed_at or latest_refresh.started_at
@@ -848,7 +851,8 @@ def _merchant_unknowns(
                     "tych produktów."
                 ),
                 impact=(
-                    "Można prowadzić przegląd problemów pliku produktowego, ale nie wolno twierdzić, "
+                    "Można prowadzić przegląd problemów pliku produktowego, "
+                    "ale nie wolno twierdzić, "
                     "które produkty mają zwrot z reklam, przychód, koszt albo efekt naprawy."
                 ),
                 next_step=(
@@ -892,7 +896,10 @@ def _merchant_product_sample_readiness(
                 "Użyj próbek do sprawdzenia. Dla tytułów, SKU i statusów dodaj "
                 "dokładniejszy odczyt produktów z problemami."
             ),
-            blocked_claims=["zapis do pliku produktowego", "automatyczna zmiana pliku produktowego"],
+            blocked_claims=[
+                "zapis do pliku produktowego",
+                "automatyczna zmiana pliku produktowego",
+            ],
         )
 
     if issue_clusters or decisions:
@@ -1773,7 +1780,9 @@ def _feed_health_section(
                 "WILQ nie ma aktualnych metryk Merchant, więc nie może ocenić "
                 "liczby produktów, liczby zgłoszeń problemów ani stanu pliku produktowego."
             ),
-            next_step=("Uruchom odczyt danych Merchant i dopiero potem twórz kolejkę pliku produktowego."),
+            next_step=(
+                "Uruchom odczyt danych Merchant i dopiero potem twórz kolejkę pliku produktowego."
+            ),
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
@@ -1836,7 +1845,10 @@ def _issue_queue_section(
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
-            blocked_claims=["propozycja naprawy pliku produktowego", "naprawa pojedynczego produktu"],
+            blocked_claims=[
+                "propozycja naprawy pliku produktowego",
+                "naprawa pojedynczego produktu",
+            ],
             risk=ActionRisk.medium,
         )
 
@@ -2080,11 +2092,13 @@ def _operator_summary(
         summary=(
             "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka "
             "przeglądu: można przygotować decyzje i podgląd zmian, ale nie wolno "
-            "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać pliku produktowego."
+            "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać "
+            "pliku produktowego."
         ),
         next_step=(
             "Przejdź przez top decyzje lub klastry problemów, przygotuj przegląd "
-            "akcji i nie zapisuj zmian pliku produktowego bez sprawdzenia w WILQ oraz zgody operatora."
+            "akcji i nie zapisuj zmian pliku produktowego bez sprawdzenia w WILQ "
+            "oraz zgody operatora."
         ),
         top_decision_ids=[decision.id for decision in decisions[:4]],
         top_issue_cluster_ids=[cluster.id for cluster in issue_clusters[:4]],
@@ -2097,7 +2111,9 @@ def _operator_summary(
                     for cluster in issue_clusters
                 ),
                 *(
-                    _merchant_display_label(item.dimensions.get("issue_type") or "problem pliku produktowego")
+                    _merchant_display_label(
+                        item.dimensions.get("issue_type") or "problem pliku produktowego"
+                    )
                     for item in issue_items
                     if item.dimensions.get("issue_type")
                 ),
@@ -2154,7 +2170,8 @@ def _merchant_decision_queue(
                 ],
                 rationale=(
                     "WILQ nie ma aktualnych metryk Merchant, więc nie może "
-                    "uczciwie zbudować kolejki problemów pliku produktowego ani ocenić stanu produktów."
+                    "uczciwie zbudować kolejki problemów pliku produktowego ani "
+                    "ocenić stanu produktów."
                 ),
                 next_step="Uruchom odczyt danych Merchant, potem wróć do /merchant.",
                 risk=ActionRisk.medium,
@@ -2742,7 +2759,8 @@ def _merchant_decision_from_cluster(
         summary=(
             f"{cluster.reported_issue_summary_label}. "
             f"Status: {cluster.severity_label or _merchant_severity_label(cluster.severity)}. "
-            f"Zalecenie: {cluster.resolution_label or _merchant_resolution_label(cluster.resolution)}. "
+            "Zalecenie: "
+            f"{cluster.resolution_label or _merchant_resolution_label(cluster.resolution)}. "
             f"Zakres: {country_label}; kontekst: {context}."
         ),
         cluster_id=cluster.id,
@@ -3123,8 +3141,9 @@ def _product_action_safety_section(
             "zakresu zmian i audytu."
         ),
         diagnosis=(
-            "Zmiany pliku produktowego lub produktów mogą wpływać na widoczność i sprzedaż. WILQ "
-            "może przygotować kolejkę przeglądu, ale nie może zmieniać głównego pliku produktowego ani "
+            "Zmiany pliku produktowego lub produktów mogą wpływać na widoczność "
+            "i sprzedaż. WILQ może przygotować kolejkę przeglądu, ale nie może "
+            "zmieniać głównego pliku produktowego ani "
             "twierdzić, że naprawił produkty bez obsługi zapisu zmian."
         ),
         next_step=(

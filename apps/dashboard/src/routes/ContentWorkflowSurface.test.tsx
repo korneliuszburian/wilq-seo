@@ -77,9 +77,9 @@ describe("ContentWorkflowSurface", () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText("Workflow treści bez slopu")).toBeInTheDocument();
-    });
+    expect(
+      await screen.findByText("Workflow treści bez slopu", undefined, { timeout: 5000 })
+    ).toBeInTheDocument();
 
     expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
     expect(screen.getByText(/WILQ widzi 3 kandydatów/)).toBeInTheDocument();

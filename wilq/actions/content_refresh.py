@@ -301,7 +301,9 @@ def content_url_review_contract() -> dict[str, Any]:
     }
 
 
-def _content_contract_label(value: str) -> str:
+def _content_contract_label(value: str | None) -> str:
+    if not value:
+        return "warunek treści do sprawdzenia"
     return CONTENT_CONTRACT_LABELS.get(value, "warunek treści do sprawdzenia")
 
 

@@ -349,7 +349,11 @@ def _snapshot_for_work_item_or_404(
             human_review=review,
             audit=audit_record,
         )
-        assert snapshot is not None
+        if snapshot is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Content work item is not available after review lookup.",
+            )
     return snapshot
 
 

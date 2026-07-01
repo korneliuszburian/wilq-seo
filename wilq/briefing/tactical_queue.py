@@ -325,13 +325,12 @@ def _compact_tactical_title(item: TacticalQueueItem, group_size: int) -> str:
     if item.domain == OpportunityDomain.ga4:
         landing_label = item.dimensions.get("landing_page", "strona wejścia")
         source_label = item.dimensions.get("source_medium", "źródło ruchu")
-        return (
-            f"GA4: sprawdź {landing_label}; źródło ruchu: {source_label}"
-        )
+        return f"GA4: sprawdź {landing_label}; źródło ruchu: {source_label}"
     if item.domain == OpportunityDomain.merchant:
+        issue_type = item.dimensions.get("issue_type", "problem pliku produktowego")
         return (
             "Merchant: sprawdź "
-            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem pliku produktowego'))}; "
+            f"{_merchant_dimension_label(issue_type)}; "
             f"{_merchant_dimension_label(item.dimensions.get('affected_attribute', 'atrybut'))}"
         )
     return item.title
@@ -733,7 +732,10 @@ def _merchant_feed_items(
         items.append(
             TacticalQueueItem(
                 id=f"tq_merchant_status_{_stable_slug(country)}_{_stable_slug(reporting_context)}",
-                title=f"Merchant: status produktów w kraju {country}; kontekst: {reporting_context}",
+                title=(
+                    f"Merchant: status produktów w kraju {country}; "
+                    f"kontekst: {reporting_context}"
+                ),
                 domain=OpportunityDomain.merchant,
                 intent="merchant_feed_triage",
                 priority=45 + index,

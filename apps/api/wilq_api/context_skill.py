@@ -91,7 +91,7 @@ def skill_scoped_context_pack(
     scoped_evidence = list_evidence_by_ids(sorted(evidence_ids))
     evidence_summary_limit = 80
     if skill in {"wilq-ads-doctor", "wilq-custom-segments"}:
-        evidence_summary_limit = 50 if skill == "wilq-ads-doctor" else 40
+        evidence_summary_limit = 1 if skill == "wilq-ads-doctor" else 40
     connector_refresh_run_limit = 2 if skill == "wilq-ads-doctor" else 3
 
     pack = {

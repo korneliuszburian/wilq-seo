@@ -54,14 +54,14 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pierwszy problem Merchant do sprawdzenia" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż pełny przegląd Merchant" }).click();
-    await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z plikiem produktowym" })).toBeVisible();
     await expect(page.getByText("Dowody i warunki przeglądu Merchant")).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Zgłoszenia", { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/missing_potentially_required_attribute|availability_updated/)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await page.getByRole("button", { name: "Pokaż akcje do sprawdzenia" }).click();
-    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu pliku produktowego Merchant Center" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "dowód 1" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "02-merchant-feed-issues.png"),
@@ -112,7 +112,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/localo", "/api/localo/diagnostics");
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Status Localo / widoczność lokalna" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Localo i widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i warunki diagnozy Localo" })).toBeVisible();
     await expect(
