@@ -23,8 +23,10 @@ export type ContentWorkflowSnapshot = {
 
 export type WorkflowStep = { id: string; title: string; statusLabel: string; summary: string };
 
-export async function loadContentWorkflowSnapshot(): Promise<ContentWorkflowSnapshot> {
-  return workflowSnapshotFromApi(await getContentWorkItemSnapshot());
+export async function loadContentWorkflowSnapshot(
+  workItemId?: string
+): Promise<ContentWorkflowSnapshot> {
+  return workflowSnapshotFromApi(await getContentWorkItemSnapshot(workItemId));
 }
 
 function workflowSnapshotFromApi(

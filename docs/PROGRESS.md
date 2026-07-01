@@ -119,6 +119,14 @@ API status later contradicts this state.
   by default, live mode without SDK client is blocked, fake SDK strict output is
   parsed, `publish_ready=false` is preserved and no WordPress write/publication
   is attempted.
+- Goal 003 dashboard queue slice `wilq-seo-0xv` is closed. `/content-workflow`
+  now reads the API-owned content queue, lets Wilku select a candidate, shows
+  blocked candidates without creating fake snapshots, uses selected
+  `work_item_id` snapshot/review/audit paths, exposes structured draft preview,
+  deterministic quality review and bounded revision-plan panels in Polish
+  marketer language, and keeps WordPress dry-run/draft-only copy visible. React
+  renders queue/quality/revision contracts from WILQ API and does not reconstruct
+  claim logic or final canonical semantics.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
@@ -130,6 +138,16 @@ API status later contradicts this state.
   reports 21.0% TypeScript duplication with 13 functions above threshold.
   These are baseline risks for Goal 002, not permission to add new behavior to
   the known monoliths.
+- Latest Goal 003 dashboard proof:
+  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
+  `pnpm --filter @wilq/dashboard lint`,
+  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
+  `uv run python scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check` passed. An attempted `pnpm --filter @wilq/dashboard test
+  -- src/routes/ContentWorkflowSurface.test.tsx` ran the full dashboard suite
+  instead of the target file and hit unrelated existing failures in
+  `ActionDetailRoute.test.tsx` and `App.test.tsx`; the precise Vitest command
+  above is the valid proof for this slice.
 - Goal 002 content domain extraction has started under `wilq-seo-x4u`.
   Canonical/public URL semantics moved from
   `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.

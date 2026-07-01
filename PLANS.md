@@ -1125,6 +1125,18 @@ Current outcome:
   proof/typing slice. The existing runtime remains disabled by default for live
   calls, blocks missing SDK clients, parses fake SDK strict output and preserves
   `publish_ready=false` without WordPress write or publication.
+- Goal 003 dashboard queue slice `wilq-seo-0xv` is closed. `/content-workflow`
+  now consumes `GET /api/content/work-items/queue`, lets Wilku select a queue
+  candidate, shows blocked candidates from API blockers without fake snapshots,
+  fetches selected `work_item_id` snapshots, uses selected review/audit paths,
+  renders structured draft preview, deterministic quality review and bounded
+  revision plan panels, and keeps WordPress dry-run/draft-only boundaries visible
+  in Polish marketer language. Proof passed:
+  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
+  `pnpm --filter @wilq/dashboard lint`,
+  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
+  `uv run python scripts/audit_complexity.py --changed --allow-frozen` and
+  `git diff --check`.
 
 Current risk:
 

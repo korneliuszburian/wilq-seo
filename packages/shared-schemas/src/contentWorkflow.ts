@@ -30,12 +30,71 @@ export const ContentWorkItemSchema = z.object({
   audit_id: z.string().nullable().optional()
 });
 
-export const ContentWorkflowBlockerSchema = z.object({
+const ContentEvidenceTraceFields = {
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([])
+};
+
+const ContentSafeNextStepField = {
+  safe_next_step: z.string()
+};
+
+const ContentBlockerBaseSchema = z.object({
   code: z.string(),
   label: z.string(),
   reason: z.string(),
-  next_step: z.string(),
+  next_step: z.string()
+});
+
+export const ContentWorkflowBlockerSchema = ContentBlockerBaseSchema.extend({
   blocks_current_stage: z.boolean().optional()
+});
+
+export const ContentWorkItemQueueBlockerSchema = ContentBlockerBaseSchema.extend({
+  decision_id: z.string().nullable().optional(),
+  ...ContentEvidenceTraceFields
+});
+
+export const ContentWorkItemQueueMeasurementReadinessSchema = z.object({
+  status: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  source_connectors: ContentEvidenceTraceFields.source_connectors
+});
+
+export const ContentWorkItemQueueCandidateSchema = z.object({
+  work_item_id: z.string(),
+  decision_id: z.string(),
+  title: z.string(),
+  topic: z.string(),
+  priority: z.number(),
+  recommended_mode: z.enum(["preserve", "refresh", "merge", "create", "block"]),
+  recommended_mode_label: z.string(),
+  status_label: z.string(),
+  reason: z.string(),
+  ...ContentEvidenceTraceFields,
+  source_connector_labels: z.array(z.string()).default([]),
+  source_public_url: z.string().nullable().optional(),
+  final_canonical_url: z.string().nullable().optional(),
+  intended_final_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  preflight_status: z.string(),
+  preflight_status_label: z.string(),
+  duplicate_canonical_risk_summary: z.string(),
+  measurement_readiness: ContentWorkItemQueueMeasurementReadinessSchema,
+  safe_next_step: z.string(),
+  blockers: z.array(ContentWorkItemQueueBlockerSchema).default([])
+});
+
+export const ContentWorkItemQueueResponseSchema = z.object({
+  queue_status: z.string(),
+  candidate_count: z.number(),
+  actionable_candidate_count: z.number(),
+  minimum_actionable_candidate_count: z.number(),
+  operator_summary: z.string(),
+  candidates: z.array(ContentWorkItemQueueCandidateSchema).default([]),
+  blockers: z.array(ContentWorkItemQueueBlockerSchema).default([]),
+  ...ContentEvidenceTraceFields
 });
 
 export const ContentInventoryRecordSchema = z.object({
@@ -331,6 +390,94 @@ export const ContentWorkItemStructuredDraftPreviewResponseSchema = z.object({
   preview_result: StructuredDraftPreviewResultSchema
 });
 
+export const ContentQualityDimensionSchema = z.object({
+  status: z.enum(["pass", "needs_changes", "blocked"]),
+  label: z.string(),
+  reason: z.string()
+});
+
+export const ContentQualityFindingSchema = z.object({
+  code: z.string(),
+  severity: z.enum(["blocker", "needs_changes", "info"]),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  affected_section: z.string().nullable().optional(),
+  ...ContentEvidenceTraceFields
+});
+
+export const ContentRevisionInstructionSchema = z.object({
+  id: z.string(),
+  affected_section: z.string().nullable().optional(),
+  change: z.string(),
+  reason: z.string(),
+  required_evidence_ids: z.array(z.string()).default([]),
+  forbidden_claims_to_avoid: z.array(z.string()).default([]),
+  human_review_checklist_additions: z.array(z.string()).default([])
+});
+
+export const ContentQualityReviewSchema = z.object({
+  review_id: z.string(),
+  work_item_id: z.string(),
+  draft_package_id: z.string().nullable().optional(),
+  verdict: z.enum(["blocked", "needs_changes", "reviewable", "ready_for_human_review"]),
+  evidence_coverage: ContentQualityDimensionSchema,
+  claim_safety: ContentQualityDimensionSchema,
+  duplicate_risk: ContentQualityDimensionSchema,
+  usefulness: ContentQualityDimensionSchema,
+  service_fit: ContentQualityDimensionSchema,
+  search_intent_fit: ContentQualityDimensionSchema,
+  buyer_problem_fit: ContentQualityDimensionSchema,
+  cta_quality: ContentQualityDimensionSchema,
+  factual_precision: ContentQualityDimensionSchema,
+  polish_language_quality: ContentQualityDimensionSchema,
+  internal_link_fit: ContentQualityDimensionSchema,
+  measurement_readiness: ContentQualityDimensionSchema,
+  blockers: z.array(ContentQualityFindingSchema).default([]),
+  findings: z.array(ContentQualityFindingSchema).default([]),
+  revision_instructions: z.array(ContentRevisionInstructionSchema).default([]),
+  ...ContentEvidenceTraceFields,
+  ...ContentSafeNextStepField
+});
+
+export const ContentWorkItemQualityReviewRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  draft_package: ContentDraftPackageSchema.nullable().optional(),
+  structured_output: StructuredDraftOutputSchema.nullable().optional(),
+  claim_ledger: z.unknown().nullable().optional(),
+  sales_brief: ContentSalesBriefSchema.nullable().optional(),
+  duplicate_risk: z.string().default("clear")
+});
+
+export const ContentWorkItemQualityReviewResponseSchema = z.object({
+  item: ContentWorkItemSchema,
+  quality_review: ContentQualityReviewSchema
+});
+
+export const ContentRevisionPlanBlockerSchema = ContentBlockerBaseSchema;
+
+export const ContentRevisionPlanSchema = z.object({
+  id: z.string(),
+  work_item_id: z.string(),
+  quality_review_id: z.string().nullable().optional(),
+  status: z.enum(["blocked", "ready", "no_changes_needed"]),
+  draft_revision_allowed: z.boolean(),
+  instructions: z.array(ContentRevisionInstructionSchema).default([]),
+  blockers: z.array(ContentRevisionPlanBlockerSchema).default([]),
+  ...ContentEvidenceTraceFields,
+  ...ContentSafeNextStepField
+});
+
+export const ContentWorkItemRevisionPlanRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  quality_review: ContentQualityReviewSchema.nullable().optional()
+});
+
+export const ContentWorkItemRevisionPlanResponseSchema = z.object({
+  item: ContentWorkItemSchema,
+  revision_plan: ContentRevisionPlanSchema
+});
+
 export const ContentHumanReviewSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -486,6 +633,10 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
 });
 
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
+export type ContentWorkItemQueueCandidate = z.infer<
+  typeof ContentWorkItemQueueCandidateSchema
+>;
+export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueResponseSchema>;
 export type ContentWorkItemPreflightResponse = z.infer<
   typeof ContentWorkItemPreflightResponseSchema
 >;
@@ -512,6 +663,20 @@ export type ContentWorkItemStructuredDraftPreviewRequest = z.infer<
 >;
 export type ContentWorkItemStructuredDraftPreviewResponse = z.infer<
   typeof ContentWorkItemStructuredDraftPreviewResponseSchema
+>;
+export type ContentQualityReview = z.infer<typeof ContentQualityReviewSchema>;
+export type ContentRevisionPlan = z.infer<typeof ContentRevisionPlanSchema>;
+export type ContentWorkItemQualityReviewRequest = z.infer<
+  typeof ContentWorkItemQualityReviewRequestSchema
+>;
+export type ContentWorkItemQualityReviewResponse = z.infer<
+  typeof ContentWorkItemQualityReviewResponseSchema
+>;
+export type ContentWorkItemRevisionPlanRequest = z.infer<
+  typeof ContentWorkItemRevisionPlanRequestSchema
+>;
+export type ContentWorkItemRevisionPlanResponse = z.infer<
+  typeof ContentWorkItemRevisionPlanResponseSchema
 >;
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema

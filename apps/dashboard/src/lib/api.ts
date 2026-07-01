@@ -14,6 +14,11 @@ import {
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
+  ContentWorkItemQualityReviewRequestSchema,
+  ContentWorkItemQualityReviewResponseSchema,
+  ContentWorkItemQueueResponseSchema,
+  ContentWorkItemRevisionPlanRequestSchema,
+  ContentWorkItemRevisionPlanResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemStructuredDraftGenerationRequestSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
@@ -60,6 +65,12 @@ import {
   type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowResponse,
   type ContentWorkItemPreflightResponse,
+  type ContentWorkItemQualityReviewRequest,
+  type ContentWorkItemQualityReviewResponse,
+  type ContentWorkItemQueueCandidate,
+  type ContentWorkItemQueueResponse,
+  type ContentWorkItemRevisionPlanRequest,
+  type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemStructuredDraftGenerationRequest,
   type ContentWorkItemStructuredDraftGenerationResponse,
@@ -156,9 +167,19 @@ export function getContentPreflight(): Promise<ContentPreflightResponse> {
   return apiGet("/api/content/preflight", ContentPreflightResponseSchema);
 }
 
-export function getContentWorkItemSnapshot(): Promise<ContentWorkItemWorkflowSnapshotResponse> {
+export function getContentWorkItemQueue(): Promise<ContentWorkItemQueueResponse> {
+  return apiGet("/api/content/work-items/queue", ContentWorkItemQueueResponseSchema);
+}
+
+export function getContentWorkItemSnapshot(
+  workItemId?: string
+): Promise<ContentWorkItemWorkflowSnapshotResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/snapshot"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/snapshot`;
   return apiGet(
-    "/api/content/work-items/snapshot",
+    path,
     ContentWorkItemWorkflowSnapshotResponseSchema
   );
 }
@@ -223,6 +244,26 @@ export function postContentWorkItemStructuredDraftPreview(
   );
 }
 
+export function postContentWorkItemQualityReview(
+  request: ContentWorkItemQualityReviewRequest
+): Promise<ContentWorkItemQualityReviewResponse> {
+  return apiPost(
+    "/api/content/work-items/quality-review",
+    ContentWorkItemQualityReviewResponseSchema,
+    ContentWorkItemQualityReviewRequestSchema.parse(request)
+  );
+}
+
+export function postContentWorkItemRevisionPlan(
+  request: ContentWorkItemRevisionPlanRequest
+): Promise<ContentWorkItemRevisionPlanResponse> {
+  return apiPost(
+    "/api/content/work-items/revision-plan",
+    ContentWorkItemRevisionPlanResponseSchema,
+    ContentWorkItemRevisionPlanRequestSchema.parse(request)
+  );
+}
+
 export function postContentWorkItemHumanReview(
   request: unknown
 ): Promise<ContentWorkItemHumanReviewResponse> {
@@ -234,20 +275,30 @@ export function postContentWorkItemHumanReview(
 }
 
 export function saveContentWorkItemSnapshotHumanReview(
-  request: ContentWorkItemSnapshotHumanReviewRequest
+  request: ContentWorkItemSnapshotHumanReviewRequest,
+  workItemId?: string
 ): Promise<ContentWorkItemHumanReviewResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/snapshot/human-review"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/human-review`;
   return apiPost(
-    "/api/content/work-items/snapshot/human-review",
+    path,
     ContentWorkItemHumanReviewResponseSchema,
     ContentWorkItemSnapshotHumanReviewRequestSchema.parse(request)
   );
 }
 
 export function saveContentWorkItemSnapshotAudit(
-  request: ContentWorkItemSnapshotAuditRequest
+  request: ContentWorkItemSnapshotAuditRequest,
+  workItemId?: string
 ): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/snapshot/audit"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/audit`;
   return apiPost(
-    "/api/content/work-items/snapshot/audit",
+    path,
     ContentWorkItemWordPressDraftHandoffResponseSchema,
     ContentWorkItemSnapshotAuditRequestSchema.parse(request)
   );
@@ -389,6 +440,12 @@ export type {
   ContentWorkItemHumanReviewResponse,
   ContentWorkItemMeasurementWindowResponse,
   ContentWorkItemPreflightResponse,
+  ContentWorkItemQualityReviewRequest,
+  ContentWorkItemQualityReviewResponse,
+  ContentWorkItemQueueCandidate,
+  ContentWorkItemQueueResponse,
+  ContentWorkItemRevisionPlanRequest,
+  ContentWorkItemRevisionPlanResponse,
   ContentWorkItemSalesBriefResponse,
   ContentWorkItemSnapshotAuditRequest,
   ContentWorkItemSnapshotHumanReviewRequest,

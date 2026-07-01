@@ -2,12 +2,18 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentWorkItemQueue,
   getContentWorkItemSnapshot,
+  postContentWorkItemQualityReview,
+  postContentWorkItemRevisionPlan,
   postContentWorkItemStructuredDraftPreview,
   postContentWorkItemStructuredDraftRuntime,
   postContentWorkItemWordPressDraftExecution,
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
+  type ContentWorkItemQualityReviewResponse,
+  type ContentWorkItemQueueResponse,
+  type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemStructuredDraftPreviewResponse,
   type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemWordPressDraftExecutionResponse,
@@ -20,7 +26,10 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
+    getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
+    postContentWorkItemQualityReview: vi.fn(),
+    postContentWorkItemRevisionPlan: vi.fn(),
     postContentWorkItemStructuredDraftPreview: vi.fn(),
     postContentWorkItemStructuredDraftRuntime: vi.fn(),
     postContentWorkItemWordPressDraftExecution: vi.fn(),
@@ -31,7 +40,10 @@ vi.mock("../lib/api", async (importOriginal) => {
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
+    vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
+    vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
+    vi.mocked(postContentWorkItemRevisionPlan).mockResolvedValue(revisionPlanResponse());
     vi.mocked(saveContentWorkItemSnapshotHumanReview).mockResolvedValue(
       workflowSnapshot({ review: humanReview() }).human_review
     );
@@ -69,6 +81,12 @@ describe("ContentWorkflowSurface", () => {
       expect(screen.getByText("Workflow treści bez slopu")).toBeInTheDocument();
     });
 
+    expect(await screen.findByText("Kolejka tematów")).toBeInTheDocument();
+    expect(screen.getByText(/WILQ widzi 3 kandydatów/)).toBeInTheDocument();
+    expect(screen.getByText("Zielony Ład dla firm")).toBeInTheDocument();
+    expect(screen.getByText("Luka Ahrefs bez finalnego adresu")).toBeInTheDocument();
+    expect(screen.getByText("odśwież istniejącą treść · gotowe do planu")).toBeInTheDocument();
+    expect(screen.getAllByText(/pomiar do zaplanowania/)[0]).toBeInTheDocument();
     const workflow = screen.getByLabelText("Kroki workflow treści");
     const steps = within(workflow).getAllByRole("listitem");
     expect(steps.map((step) => within(step).getByRole("heading").textContent)).toEqual([
@@ -85,12 +103,16 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
     expect(screen.getByText("Podgląd treści")).toBeInTheDocument();
+    expect(screen.getByText("Ocena jakości szkicu")).toBeInTheDocument();
+    expect(screen.getByText("Plan poprawki")).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wywołuje modelu/)).toBeInTheDocument();
     expect(screen.getByText(/Po wygenerowaniu szkicu WILQ pokaże treść/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress nie dostaje jeszcze szkicu/)).toBeInTheDocument();
     expect(screen.getByText(/Ten krok nie wykonuje zewnętrznego zapisu/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Pokaż podgląd treści" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Sprawdź jakość szkicu" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Pokaż plan poprawki" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Sprawdź podgląd szkicu" })).toBeDisabled();
     expect(screen.getByText("wymaga decyzji")).toBeInTheDocument();
     expect(screen.getByText("zablokowany")).toBeInTheDocument();
@@ -244,6 +266,76 @@ describe("ContentWorkflowSurface", () => {
     expect(postContentWorkItemWordPressDraftExecution).not.toHaveBeenCalled();
   });
 
+  it("shows API-owned blockers when a queue candidate cannot enter the gated workflow", async () => {
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByText("Luka Ahrefs bez finalnego adresu");
+    fireEvent.click(screen.getByRole("button", { name: /Luka Ahrefs bez finalnego adresu/ }));
+
+    expect(await screen.findByText("WILQ blokuje pisanie tego tematu")).toBeInTheDocument();
+    expect(screen.getAllByText(/Nie można przygotować workflow bez finalnego adresu/)[0])
+      .toBeInTheDocument();
+    expect(screen.getByText(/Uzupełnij publiczny adres docelowy/)).toBeInTheDocument();
+    expect(screen.getByText("zablokuj pisanie")).toBeInTheDocument();
+    expect(screen.getByText("pomiar zablokowany")).toBeInTheDocument();
+  });
+
+  it("runs quality review and a bounded revision plan after generated content exists", async () => {
+    vi.mocked(postContentWorkItemStructuredDraftRuntime).mockResolvedValue(
+      structuredDraftRuntimeResponse({ output: structuredDraftOutput(), status: "generated" })
+    );
+    const client = createWilqQueryClient({
+      defaultOptions: { queries: { retry: false } }
+    });
+    render(
+      <App
+        appRouter={createWilqRouter({ initialPath: "/content-workflow", defaultPendingMinMs: 0 })}
+        client={client}
+      />
+    );
+
+    await screen.findByRole("button", { name: "Sprawdź gotowość szkicu" });
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź gotowość szkicu" }));
+    expect(await screen.findByRole("button", { name: "Sprawdź jakość szkicu" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź jakość szkicu" }));
+
+    await waitFor(() => {
+      expect(postContentWorkItemQualityReview).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemQualityReview).mock.calls[0]?.[0]).toEqual({
+      item: workItem(),
+      draft_package: draftPackage(),
+      structured_output: structuredDraftOutput(),
+      claim_ledger: null,
+      sales_brief: salesBrief(),
+      duplicate_risk: "clear"
+    });
+    expect(await screen.findByRole("button", { name: "Ocena jakości gotowa" })).toBeDisabled();
+    expect(screen.getByText("Wzmocnij CTA")).toBeInTheDocument();
+    expect(screen.getByText(/Szkic mówi, co zrobić dalej/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Pokaż plan poprawki" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż plan poprawki" }));
+    await waitFor(() => {
+      expect(postContentWorkItemRevisionPlan).toHaveBeenCalled();
+    });
+    expect(vi.mocked(postContentWorkItemRevisionPlan).mock.calls[0]?.[0]).toEqual({
+      item: workItem(),
+      quality_review: qualityReviewResponse().quality_review
+    });
+    expect(await screen.findByRole("button", { name: "Plan poprawki gotowy" })).toBeDisabled();
+    expect(screen.getByText("Dopisz konkretny następny krok dla klienta")).toBeInTheDocument();
+    expect(screen.getByText(/Połącz CTA z usługą Ekologus/)).toBeInTheDocument();
+  });
+
   it("prepares a draft-only WordPress dry-run after handoff", async () => {
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(
       workflowSnapshot({ review: humanReview(), handoff: wordpressHandoff() })
@@ -310,6 +402,120 @@ function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
     audit_status: "missing",
     audit_id: null,
     ...overrides
+  };
+}
+
+function contentQueueResponse(): ContentWorkItemQueueResponse {
+  return {
+    queue_status: "ready",
+    candidate_count: 3,
+    actionable_candidate_count: 2,
+    minimum_actionable_candidate_count: 3,
+    operator_summary:
+      "WILQ widzi 3 kandydatów i 2 mogą przejść do planu bez omijania dowodów.",
+    candidates: [
+      {
+        work_item_id: "content_work_item_bdo",
+        decision_id: "decision_bdo",
+        title: "BDO dla firm",
+        topic: "BDO dla firm",
+        priority: 1,
+        recommended_mode: "refresh",
+        recommended_mode_label: "odśwież istniejącą treść",
+        status_label: "gotowe do planu",
+        reason: "Istniejący adres ma popyt z GSC i powinien zostać odświeżony.",
+        evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+        source_connectors: ["google_search_console", "wordpress_ekologus"],
+        source_connector_labels: ["Google Search Console", "WordPress Ekologus"],
+        source_public_url: "https://ekologus.pl/bdo/",
+        final_canonical_url: "https://ekologus.pl/bdo/",
+        intended_final_url: "https://ekologus.pl/bdo/",
+        preview_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        preflight_status: "plan_allowed",
+        preflight_status_label: "można planować",
+        duplicate_canonical_risk_summary: "Brama adresu i duplikacji jest sprawdzona.",
+        measurement_readiness: {
+          status: "ready_to_plan",
+          label: "pomiar do zaplanowania",
+          reason: "WILQ może przygotować okno pomiaru po szkicu.",
+          source_connectors: ["google_search_console"]
+        },
+        safe_next_step: "Przejdź do workflow wybranego tematu.",
+        blockers: []
+      },
+      {
+        work_item_id: "content_work_item_green_deal",
+        decision_id: "decision_green_deal",
+        title: "Zielony Ład dla firm",
+        topic: "Zielony Ład dla firm",
+        priority: 2,
+        recommended_mode: "merge",
+        recommended_mode_label: "scal z istniejącą treścią",
+        status_label: "gotowe do planu",
+        reason: "Temat ma powiązany stary URL i wymaga scalania zamiast duplikacji.",
+        evidence_ids: ["ev_gsc_green_deal", "ev_wp_green_deal"],
+        source_connectors: ["google_search_console", "wordpress_ekologus"],
+        source_connector_labels: ["Google Search Console", "WordPress Ekologus"],
+        source_public_url: "https://ekologus.pl/zielony-lad/",
+        final_canonical_url: "https://ekologus.pl/zielony-lad/",
+        intended_final_url: "https://ekologus.pl/zielony-lad/",
+        preview_url: "https://ekologus.dev.proudsite.pl/zielony-lad/",
+        preflight_status: "plan_allowed",
+        preflight_status_label: "można planować",
+        duplicate_canonical_risk_summary: "Sprawdź podobną istniejącą treść przed szkicem.",
+        measurement_readiness: {
+          status: "ready_to_plan",
+          label: "pomiar do zaplanowania",
+          reason: "WILQ może przygotować okno pomiaru po szkicu.",
+          source_connectors: ["google_search_console"]
+        },
+        safe_next_step: "Przejdź do workflow wybranego tematu.",
+        blockers: []
+      },
+      {
+        work_item_id: "content_work_item_ahrefs_gap",
+        decision_id: "decision_ahrefs_gap",
+        title: "Luka Ahrefs bez finalnego adresu",
+        topic: "Luka Ahrefs bez finalnego adresu",
+        priority: 3,
+        recommended_mode: "block",
+        recommended_mode_label: "zablokuj pisanie",
+        status_label: "wymaga sprawdzenia przed pisaniem",
+        reason: "Nie można przygotować workflow bez finalnego adresu kanonicznego.",
+        evidence_ids: ["ev_ahrefs_gap"],
+        source_connectors: ["ahrefs"],
+        source_connector_labels: ["Ahrefs"],
+        source_public_url: null,
+        final_canonical_url: null,
+        intended_final_url: null,
+        preview_url: "https://ekologus.dev.proudsite.pl/luka/",
+        preflight_status: "blocked",
+        preflight_status_label: "zablokowane",
+        duplicate_canonical_risk_summary:
+          "Brak publicznego adresu blokuje ocenę duplikacji i canonical.",
+        measurement_readiness: {
+          status: "blocked",
+          label: "pomiar zablokowany",
+          reason: "Brak publicznego finalnego adresu kanonicznego.",
+          source_connectors: []
+        },
+        safe_next_step: "Uzupełnij publiczny adres docelowy albo zostaw temat w review.",
+        blockers: [
+          {
+            code: "missing_final_canonical",
+            label: "Brakuje finalnego adresu",
+            reason: "Nie można przygotować workflow bez finalnego adresu kanonicznego.",
+            next_step: "Uzupełnij publiczny adres docelowy albo zostaw temat w review.",
+            decision_id: "decision_ahrefs_gap",
+            evidence_ids: ["ev_ahrefs_gap"],
+            source_connectors: ["ahrefs"]
+          }
+        ]
+      }
+    ],
+    blockers: [],
+    evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo", "ev_gsc_green_deal", "ev_wp_green_deal"],
+    source_connectors: ["google_search_console", "wordpress_ekologus", "ahrefs"]
   };
 }
 
@@ -707,6 +913,123 @@ function structuredDraftPreviewResponse(): ContentWorkItemStructuredDraftPreview
         publish_ready: false
       },
       blockers: []
+    }
+  };
+}
+
+function qualityReviewResponse(): ContentWorkItemQualityReviewResponse {
+  return {
+    item: workItem(),
+    quality_review: {
+      review_id: "quality_review_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      draft_package_id: "draft_package_content_work_item_bdo",
+      verdict: "needs_changes",
+      evidence_coverage: {
+        status: "pass",
+        label: "Pokrycie dowodami",
+        reason: "Sekcje wskazują dowody WILQ."
+      },
+      claim_safety: {
+        status: "pass",
+        label: "Bezpieczeństwo twierdzeń",
+        reason: "Szkic nie używa zablokowanych claimów."
+      },
+      duplicate_risk: {
+        status: "pass",
+        label: "Ryzyko duplikacji",
+        reason: "Wybrany temat odświeża istniejący adres."
+      },
+      usefulness: {
+        status: "needs_changes",
+        label: "Użyteczność dla czytelnika",
+        reason: "Szkic mówi, co zrobić dalej, ale CTA wymaga doprecyzowania."
+      },
+      service_fit: {
+        status: "pass",
+        label: "Dopasowanie do usługi",
+        reason: "Treść prowadzi do obsługi środowiskowej Ekologus."
+      },
+      search_intent_fit: {
+        status: "pass",
+        label: "Dopasowanie do intencji",
+        reason: "Szkic odpowiada na pytanie informacyjno-usługowe."
+      },
+      buyer_problem_fit: {
+        status: "pass",
+        label: "Problem kupującego",
+        reason: "Szkic odnosi się do niepewności firmy wokół BDO."
+      },
+      cta_quality: {
+        status: "needs_changes",
+        label: "Jakość CTA",
+        reason: "CTA jest zbyt ogólne i powinno wskazać konkretny następny krok."
+      },
+      factual_precision: {
+        status: "pass",
+        label: "Precyzja faktów",
+        reason: "Szkic używa tylko przekazanych dowodów."
+      },
+      polish_language_quality: {
+        status: "pass",
+        label: "Język polski",
+        reason: "Tekst jest po polsku i czytelny."
+      },
+      internal_link_fit: {
+        status: "pass",
+        label: "Linkowanie wewnętrzne",
+        reason: "Szkic ma link do kontaktu."
+      },
+      measurement_readiness: {
+        status: "pass",
+        label: "Gotowość pomiaru",
+        reason: "Okno pomiaru jest zaplanowane."
+      },
+      blockers: [],
+      findings: [
+        {
+          code: "weak_cta",
+          severity: "needs_changes",
+          label: "Wzmocnij CTA",
+          reason: "Szkic mówi, co zrobić dalej, ale wezwanie do kontaktu jest za ogólne.",
+          next_step: "Dopisz konkretny następny krok dla klienta.",
+          affected_section: "CTA",
+          evidence_ids: ["ev_gsc_bdo"],
+          source_connectors: ["google_search_console"]
+        }
+      ],
+      revision_instructions: [
+        {
+          id: "revision_instruction_cta",
+          affected_section: "CTA",
+          change: "Dopisz konkretny następny krok dla klienta",
+          reason: "Połącz CTA z usługą Ekologus i problemem BDO.",
+          required_evidence_ids: ["ev_gsc_bdo"],
+          forbidden_claims_to_avoid: ["gwarancja pełnej zgodności z przepisami"],
+          human_review_checklist_additions: ["Sprawdź, czy CTA pasuje do sprzedaży Ekologus."]
+        }
+      ],
+      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      safe_next_step: "Popraw tylko wskazane CTA i uruchom ocenę jakości ponownie."
+    }
+  };
+}
+
+function revisionPlanResponse(): ContentWorkItemRevisionPlanResponse {
+  return {
+    item: workItem(),
+    revision_plan: {
+      id: "revision_plan_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      quality_review_id: "quality_review_content_work_item_bdo",
+      status: "ready",
+      draft_revision_allowed: true,
+      instructions: qualityReviewResponse().quality_review.revision_instructions,
+      blockers: [],
+      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      safe_next_step: "Wykonaj tylko wskazane poprawki i uruchom ocenę jakości ponownie."
     }
   };
 }
