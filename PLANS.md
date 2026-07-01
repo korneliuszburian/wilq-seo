@@ -248,6 +248,14 @@ API claim gates. Targeted non-interactive proof passed at
 `operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs, 2 recommendations
 and 6 action candidates.
 
+Marketing Brief freshness handling is hardened under Beads task `wilq-seo-u0m`.
+Ready daily decisions that depend on stale connector evidence are now
+refresh-first in `/api/marketing/brief`: the item is surfaced as a blocker,
+risk is at least medium, and the safe next step says to refresh stale sources
+before treating the decision as operational. Live proof after stack restart on
+2026-07-01 showed the content refresh queue naming only stale Ahrefs and
+WordPress sklep.ekologus.pl, not fresh GSC or WordPress ekologus.pl.
+
 The first Wilku-ready handoff for Goal 005 UAT is prepared at
 `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` under Beads task
 `wilq-seo-w8o`. It is a normal review artifact generated from live UAT packet

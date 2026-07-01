@@ -295,14 +295,15 @@ def _decision_metric_items(decisions: list[DailyDecision]) -> list[MarketingBrie
         MarketingBriefItem(
             id=f"brief_decision_{decision.id}",
             title=decision.title,
-            kind="metric",
+            kind="blocker" if _decision_requires_refresh(decision) else "metric",
             priority=min(20 + index, 39),
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=_decision_observation_summary(decision),
-            next_step=decision.bezpieczny_next_step,
-            risk=decision.risk,
+            summary=_decision_observation_summary_for_brief(decision),
+            next_step=_decision_next_step_for_brief(decision),
+            risk=_decision_risk_for_brief(decision),
+            blocker_reason=_decision_refresh_blocker_reason(decision),
         )
         for index, decision in enumerate(
             sorted(decisions, key=lambda item: item.priority),
@@ -330,14 +331,18 @@ def _decision_blocker_items(decisions: list[DailyDecision]) -> list[MarketingBri
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=_decision_observation_summary(decision),
-            next_step=decision.bezpieczny_next_step,
-            risk=decision.risk,
-            blocker_reason=", ".join(decision.blocked_claims[:4]) or "brak kontraktu",
+            summary=_decision_observation_summary_for_brief(decision),
+            next_step=_decision_next_step_for_brief(decision),
+            risk=_decision_risk_for_brief(decision),
+            blocker_reason=_decision_blocker_reason(decision),
         )
         for index, decision in enumerate(
             sorted(
-                (decision for decision in decisions if decision.status == "blocked"),
+                (
+                    decision
+                    for decision in decisions
+                    if decision.status == "blocked" or _decision_requires_refresh(decision)
+                ),
                 key=lambda item: item.priority,
             ),
             start=1,
@@ -384,15 +389,16 @@ def _decision_recommendation_items(
     return [
         MarketingBriefItem(
             id=f"brief_focus_{decision.id}",
-            title=decision.title,
+            title=_decision_recommendation_title(decision),
             kind="recommendation",
             priority=min(60 + index, 79),
             source_connectors=decision.source_connectors,
             evidence_ids=decision.evidence_ids,
             action_ids=decision.action_ids,
-            summary=_decision_reason_summary(decision),
-            next_step=decision.bezpieczny_next_step,
-            risk=decision.risk,
+            summary=_decision_reason_summary_for_brief(decision),
+            next_step=_decision_next_step_for_brief(decision),
+            risk=_decision_risk_for_brief(decision),
+            blocker_reason=_decision_refresh_blocker_reason(decision),
         )
         for index, decision in enumerate(
             sorted(
@@ -412,6 +418,12 @@ def _decision_observation_summary(decision: DailyDecision) -> str:
     return _first_brief_statement(decision.co_widzimy)
 
 
+def _decision_observation_summary_for_brief(decision: DailyDecision) -> str:
+    if not _decision_requires_refresh(decision):
+        return _decision_observation_summary(decision)
+    return _refresh_first_summary(decision, _decision_observation_summary(decision))
+
+
 def _decision_action_summary(decision: DailyDecision) -> str:
     return (
         f"Ta akcja dotyczy decyzji: {decision.title}. Sprawdź podgląd zmian, "
@@ -428,6 +440,83 @@ def _decision_reason_summary(decision: DailyDecision) -> str:
             "zostają zablokowane do sprawdzenia w WILQ."
         )
     return _first_brief_statement(decision.dlaczego_to_ma_znaczenie)
+
+
+def _decision_reason_summary_for_brief(decision: DailyDecision) -> str:
+    if not _decision_requires_refresh(decision):
+        return _decision_reason_summary(decision)
+    return _refresh_first_summary(decision, _decision_reason_summary(decision))
+
+
+def _decision_next_step_for_brief(decision: DailyDecision) -> str:
+    if not _decision_requires_refresh(decision):
+        return decision.bezpieczny_next_step
+    return (
+        f"Najpierw odśwież dane źródłowe: {_decision_refresh_connector_label(decision)}. "
+        f"Dopiero po świeżym odczycie wróć do kroku: {decision.bezpieczny_next_step}"
+    )
+
+
+def _decision_recommendation_title(decision: DailyDecision) -> str:
+    if not _decision_requires_refresh(decision):
+        return decision.title
+    return f"Odśwież dane przed decyzją: {decision.title}"
+
+
+def _decision_risk_for_brief(decision: DailyDecision) -> ActionRisk:
+    if not _decision_requires_refresh(decision):
+        return decision.risk
+    return max(decision.risk, ActionRisk.medium, key=_risk_rank)
+
+
+def _decision_blocker_reason(decision: DailyDecision) -> str:
+    return (
+        _decision_refresh_blocker_reason(decision)
+        or ", ".join(decision.blocked_claims[:4])
+        or "brak kontraktu"
+    )
+
+
+def _decision_refresh_blocker_reason(decision: DailyDecision) -> str | None:
+    if not _decision_requires_refresh(decision):
+        return None
+    return "dane wymagają odświeżenia przed rekomendacją"
+
+
+def _decision_requires_refresh(decision: DailyDecision) -> bool:
+    return decision.decision_state == "stale" or decision.freshness.state == "stale"
+
+
+def _refresh_first_summary(decision: DailyDecision, original_summary: str) -> str:
+    return (
+        f"Dane dla tej decyzji wymagają odświeżenia "
+        f"({_decision_refresh_connector_label(decision)}). "
+        f"To jest krok refresh-first, nie aktualna rekomendacja operacyjna. "
+        f"Poprzedni sygnał: {original_summary}"
+    )
+
+
+def _decision_refresh_connector_label(decision: DailyDecision) -> str:
+    stale_labels = _stale_connector_labels_from_notes(decision.freshness.notes)
+    if stale_labels:
+        return ", ".join(stale_labels)
+    labels = decision.source_connector_labels or [
+        source_connector_label(connector_id) for connector_id in decision.source_connectors
+    ]
+    return ", ".join(labels) if labels else "źródła danych WILQ"
+
+
+def _stale_connector_labels_from_notes(notes: str | None) -> list[str]:
+    if not notes or ":" not in notes:
+        return []
+    _, _, raw_details = notes.partition(": ")
+    labels: list[str] = []
+    for part in raw_details.split(", "):
+        label, separator, state_label = part.partition(": ")
+        normalized_state = state_label.rstrip(".")
+        if separator and normalized_state == "dane wymagają odświeżenia" and label:
+            labels.append(label)
+    return labels
 
 
 def _first_brief_statement(value: str) -> str:

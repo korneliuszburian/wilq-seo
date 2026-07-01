@@ -253,6 +253,13 @@ API status later contradicts this state.
   `.local-lab/evals/codex-skill/20260701T221439Z/summary.json` with
   `operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs,
   2 recommendations and 6 action candidates.
+- `/api/marketing/brief` is now refresh-first for stale daily decisions. If a
+  ready decision depends on stale connector evidence, the brief surfaces it as a
+  blocker, raises risk to medium and says to refresh stale sources before
+  treating the item as an operational recommendation. Live proof after stack
+  restart on 2026-07-01: the content refresh queue named only stale Ahrefs and
+  WordPress sklep.ekologus.pl, while fresh GSC and WordPress ekologus.pl stayed
+  out of the refresh-first source list.
 - The Codex skill eval harness now supports `required_decision_terms_pl`; these
   markers must appear in actionable output, not only in `notes`. The hardened
   `wilq-content-operator` eval passed at

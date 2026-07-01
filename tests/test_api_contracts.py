@@ -5231,6 +5231,146 @@ def test_marketing_brief_does_not_turn_successful_reads_into_blockers() -> None:
     assert brief.blocker_count == 0
 
 
+def test_marketing_brief_makes_stale_daily_decisions_refresh_first() -> None:
+    stale_decision = DailyDecision(
+        id="decision_review_merchant_feed_issues",
+        title="Przejrzyj kolejkę problemów Merchant Center",
+        domain="merchant",
+        freshness=FreshnessState(
+            state="stale",
+            notes="Świeżość źródeł decyzji: Merchant Center: dane wymagają odświeżenia.",
+        ),
+        freshness_label="dane wymagają odświeżenia",
+        decision_state="stale",
+        decision_state_label="do odświeżenia",
+        route="/merchant",
+        status="ready",
+        priority=10,
+        metric_tiles={"zgłoszenia": 1289},
+        co_widzimy="Merchant Center ma zgłoszenia problemów pliku produktowego.",
+        dlaczego_to_ma_znaczenie="WILQ widzi kolejkę problemów do sprawdzenia.",
+        bezpieczny_next_step="Otwórz widok Merchant i sprawdź kolejkę problemów.",
+        why_it_matters="WILQ widzi kolejkę problemów do sprawdzenia.",
+        operator_action="Otwórz widok Merchant i sprawdź kolejkę problemów.",
+        source_connectors=["google_merchant_center"],
+        source_connector_labels=["Merchant Center"],
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_stale"],
+        action_ids=["act_review_merchant_feed_issues"],
+        blocked_claims=["ponowne zatwierdzenie produktu"],
+        risk=ActionRisk.low,
+    )
+    command_center = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki i dowody.",
+        primary_next_step="Najpierw odśwież Merchant.",
+        daily_decisions=[stale_decision],
+        connector_summary=ConnectorSummary(total=1, configured=1, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+
+    brief = build_marketing_brief(
+        connectors=[],
+        refresh_runs=[],
+        actions=[],
+        command_center=command_center,
+    )
+    sections = {section.id: section for section in brief.sections}
+    metric_item = sections["what_we_know"].items[0]
+    blocker_item = sections["what_blocks_us"].items[0]
+    recommendation_item = sections["recommended_focus"].items[0]
+
+    assert metric_item.kind == "blocker"
+    assert metric_item.risk == ActionRisk.medium
+    assert metric_item.blocker_reason == "dane wymagają odświeżenia przed rekomendacją"
+    assert "refresh-first" in metric_item.summary
+    assert "nie aktualna rekomendacja operacyjna" in metric_item.summary
+    assert metric_item.next_step.startswith("Najpierw odśwież dane źródłowe: Merchant Center")
+    assert "Dopiero po świeżym odczycie" in metric_item.next_step
+
+    assert blocker_item.id == "brief_blocker_decision_review_merchant_feed_issues"
+    assert blocker_item.blocker_reason == "dane wymagają odświeżenia przed rekomendacją"
+    assert "refresh-first" in blocker_item.summary
+    assert blocker_item.action_ids == ["act_review_merchant_feed_issues"]
+
+    assert recommendation_item.title.startswith("Odśwież dane przed decyzją:")
+    assert recommendation_item.blocker_reason == (
+        "dane wymagają odświeżenia przed rekomendacją"
+    )
+    assert "refresh-first" in recommendation_item.summary
+    assert "Najpierw odśwież dane źródłowe" in recommendation_item.next_step
+    assert brief.blocker_count == 1
+
+
+def test_marketing_brief_names_only_stale_sources_in_refresh_first_copy() -> None:
+    stale_decision = DailyDecision(
+        id="decision_prepare_content_refresh_queue",
+        title="Przejrzyj kolejkę SEO z GSC i WordPress",
+        domain="content",
+        freshness=FreshnessState(
+            state="stale",
+            notes=(
+                "Świeżość źródeł decyzji: Ahrefs: dane wymagają odświeżenia, "
+                "Google Search Console: świeże dane, WordPress ekologus.pl: świeże dane, "
+                "WordPress sklep.ekologus.pl: dane wymagają odświeżenia."
+            ),
+        ),
+        freshness_label="dane wymagają odświeżenia",
+        decision_state="stale",
+        decision_state_label="do odświeżenia",
+        route="/content-planner",
+        status="ready",
+        priority=11,
+        co_widzimy="GSC i WordPress tworzą kolejkę SEO.",
+        dlaczego_to_ma_znaczenie="Ahrefs ma kolejkę sprawdzenia luk SEO.",
+        bezpieczny_next_step="Sprawdź overlap intencji.",
+        why_it_matters="Ahrefs ma kolejkę sprawdzenia luk SEO.",
+        operator_action="Sprawdź overlap intencji.",
+        source_connectors=[
+            "ahrefs",
+            "google_search_console",
+            "wordpress_ekologus",
+            "wordpress_sklep",
+        ],
+        source_connector_labels=[
+            "Ahrefs",
+            "Google Search Console",
+            "WordPress ekologus.pl",
+            "WordPress sklep.ekologus.pl",
+        ],
+        evidence_ids=["ev_refresh_refresh_google_search_console_fresh"],
+        action_ids=["act_prepare_content_refresh_queue"],
+    )
+    command_center = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki i dowody.",
+        primary_next_step="Najpierw odśwież stale źródła.",
+        daily_decisions=[stale_decision],
+        connector_summary=ConnectorSummary(total=4, configured=4, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+
+    brief = build_marketing_brief(
+        connectors=[],
+        refresh_runs=[],
+        actions=[],
+        command_center=command_center,
+    )
+    metric_item = next(section for section in brief.sections if section.id == "what_we_know").items[
+        0
+    ]
+
+    assert "Ahrefs, WordPress sklep.ekologus.pl" in metric_item.summary
+    assert "Google Search Console" not in metric_item.summary
+    assert "WordPress ekologus.pl" not in metric_item.summary
+    assert metric_item.next_step.startswith(
+        "Najpierw odśwież dane źródłowe: Ahrefs, WordPress sklep.ekologus.pl."
+    )
+
+
 def test_blocked_refresh_summaries_use_operator_status_labels() -> None:
     blocked_run = ConnectorRefreshRun(
         id="refresh_blocked_operator_status",
