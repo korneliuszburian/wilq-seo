@@ -3,6 +3,10 @@ import { ClipboardCheck } from "lucide-react";
 
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
 import {
+  DiagnosticSurfaceShell,
+  DiagnosticSurfaceUnavailable
+} from "../components/DiagnosticSurfaceShell";
+import {
   BlockerNotice,
   LabelChipRow,
   LoadingBand,
@@ -24,9 +28,7 @@ export function AhrefsDiagnosticSurface() {
   if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Ahrefs. Ten widok nie może udawać luk treści, linków zwrotnych ani przewagi konkurencji bez WILQ." />
-      </main>
+      <DiagnosticSurfaceUnavailable message="Nie udało się odczytać danych Ahrefs. Ten widok nie może udawać luk treści, linków zwrotnych ani przewagi konkurencji bez WILQ." />
     );
   }
 
@@ -34,22 +36,17 @@ export function AhrefsDiagnosticSurface() {
   const latestRefresh = data.latest_refresh;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Ahrefs</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od
-            konkretnych luk treści, linków zwrotnych i konkurencji, żeby marketer nie
-            dostał generycznej rekomendacji SEO z samej oceny domeny.
-          </p>
-        </div>
+    <DiagnosticSurfaceShell
+      title="Ahrefs"
+      description="Dedykowany widok Ahrefs z WILQ. Oddziela kontekst autorytetu od konkretnych luk treści, linków zwrotnych i konkurencji, żeby marketer nie dostał generycznej rekomendacji SEO z samej oceny domeny."
+      metrics={
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Autorytet" value={data.authority_fact_count} />
           <MetricTile label="Luki SEO" value={data.gap_fact_count} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
-      </div>
+      }
+    >
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -77,7 +74,7 @@ export function AhrefsDiagnosticSurface() {
       <AhrefsOperatorSummary data={data} />
       <AhrefsGapContractPanel data={data} />
       <AhrefsDiagnosticProof data={data} />
-    </main>
+    </DiagnosticSurfaceShell>
   );
 }
 

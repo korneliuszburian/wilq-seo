@@ -143,8 +143,10 @@ API status later contradicts this state.
   shared custom segment panels into `components/AdsCustomSegmentPanels.tsx`.
   Third green sub-slice introduces `components/DiagnosticSurfaceShell.tsx` and
   migrates Demand Gen onto it as the first diagnostic shell pilot without
-  moving product logic into React. Broader Ads extraction and zombie/copy
-  cleanup remain in this Beads task.
+  moving product logic into React. Fourth green sub-slice migrates Ahrefs onto
+  the same shell, shrinking duplicated route chrome while keeping Ahrefs
+  decisions, evidence and blocked-claim handling in the route/API data.
+  Broader Ads extraction and zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
