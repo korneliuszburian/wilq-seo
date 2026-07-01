@@ -14,6 +14,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
     ContentWorkItemPreflightResponse,
+    ContentWorkItemQualityReviewRequest,
+    ContentWorkItemQualityReviewResponse,
     ContentWorkItemSalesBriefRequest,
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
@@ -35,6 +37,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_human_review_response,
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
+    build_content_work_item_quality_review_response,
     build_content_work_item_sales_brief_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
@@ -219,6 +222,16 @@ def content_work_item_structured_draft_preview(
     request: ContentWorkItemStructuredDraftPreviewRequest,
 ) -> ContentWorkItemStructuredDraftPreviewResponse:
     return build_content_work_item_structured_draft_preview_response(request)
+
+
+@router.post(
+    "/api/content/work-items/quality-review",
+    response_model=ContentWorkItemQualityReviewResponse,
+)
+def content_work_item_quality_review(
+    request: ContentWorkItemQualityReviewRequest,
+) -> ContentWorkItemQualityReviewResponse:
+    return build_content_work_item_quality_review_response(request)
 
 
 @router.post(

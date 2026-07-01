@@ -66,6 +66,10 @@ from wilq.content.preflight.workflow import (
     ContentPreflightVerdict,
     build_content_preflight_verdict,
 )
+from wilq.content.quality.review import (
+    ContentQualityReview,
+    build_content_quality_review,
+)
 from wilq.content.review.human import (
     ContentHumanReview,
     ContentHumanReviewBlocker,
@@ -156,6 +160,20 @@ class ContentWorkItemStructuredDraftPreviewRequest(BaseModel):
 
 class ContentWorkItemStructuredDraftPreviewResponse(BaseModel):
     preview_result: StructuredDraftPreviewResult
+
+
+class ContentWorkItemQualityReviewRequest(BaseModel):
+    item: ContentWorkItem
+    draft_package: ContentDraftPackage | None = None
+    structured_output: StructuredDraftOutput | None = None
+    claim_ledger: ContentClaimLedger | None = None
+    sales_brief: ContentSalesBrief | None = None
+    duplicate_risk: ContentInventoryDuplicateRisk = "clear"
+
+
+class ContentWorkItemQualityReviewResponse(BaseModel):
+    item: ContentWorkItem
+    quality_review: ContentQualityReview
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
@@ -358,6 +376,22 @@ def build_content_work_item_structured_draft_preview_response(
             contract=request.contract,
             output=request.output,
         )
+    )
+
+
+def build_content_work_item_quality_review_response(
+    request: ContentWorkItemQualityReviewRequest,
+) -> ContentWorkItemQualityReviewResponse:
+    return ContentWorkItemQualityReviewResponse(
+        item=request.item,
+        quality_review=build_content_quality_review(
+            item=request.item,
+            draft_package=request.draft_package,
+            structured_output=request.structured_output,
+            claim_ledger=request.claim_ledger,
+            sales_brief=request.sales_brief,
+            duplicate_risk=request.duplicate_risk,
+        ),
     )
 
 

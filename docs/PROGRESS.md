@@ -100,6 +100,14 @@ API status later contradicts this state.
   for item A do not unlock item B, and blocked queue items do not receive fake
   workflow snapshots. Persisted generated output and quality-review state remain
   in scope for later `wilq-seo-cdy` sub-slices after those domains exist.
+- Goal 003 deterministic quality review slice `wilq-seo-b5x` is closed.
+  `POST /api/content/work-items/quality-review` returns `ContentQualityReview`
+  with verdict, blockers, dimension statuses, revision instructions, evidence
+  IDs and source connectors. It blocks missing section evidence, forbidden
+  claims, `publish_ready` draft packages, unresolved duplicate risk and missing
+  measurement windows; weak CTA returns revision instructions instead of a fake
+  SEO score. The first version is schema/rule-based and does not use an LLM
+  judge.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
@@ -1158,6 +1166,8 @@ API status later contradicts this state.
 
 - `rtk uv run pytest tests/content/test_content_work_item_queue_api.py -q`
 - `rtk uv run pytest tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run pytest tests/content/test_content_quality_review_api.py -q`
+- `rtk uv run pytest tests/content/test_content_quality_review_api.py tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
 - `rtk uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`
 - `rtk uv run ruff check wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py wilq/content/workflow/api.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_queue_api.py`
 - `rtk uv run mypy wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py tests/content/test_content_work_item_queue_api.py`

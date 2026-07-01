@@ -1110,6 +1110,12 @@ Current outcome:
   do not unlock another item and blocked queue items do not get fake workflow
   snapshots. The Beads issue remains open because persisted generated output
   and quality-review state will be added when those domains land.
+- Goal 003 deterministic quality review slice `wilq-seo-b5x` is closed.
+  `wilq/content/quality/review.py` adds schema/rule-based `ContentQualityReview`
+  and the API exposes it at `POST /api/content/work-items/quality-review`.
+  The review blocks missing evidence mapping, forbidden claims, publish-ready
+  draft packages, unresolved duplicate risk and missing measurement windows.
+  Weak CTA produces typed revision instructions, not an SEO score or LLM judge.
 
 Current risk:
 
