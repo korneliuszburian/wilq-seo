@@ -400,6 +400,12 @@ Stop and record a blocker if:
   3-5 review decisions instead of dumping every API field. Keyword Planner
   remains blocked by Google Ads developer token permissible-use/access state,
   not by WILQ credentials.
+- 2026-07-01: Sales Brief v2 signal audit completed for the current content
+  queue. BDO is the strongest UAT candidate; Zielony Lad is reviewable but
+  service-fit thin; operat wodnoprawny and magazynowanie odpadów need reviewed
+  knowledge cards before brief depth; Ahrefs blocked candidate needs a typed
+  blocked snapshot surface. Enrichment source facts now preserve connector
+  evidence lineage.
 
 ## Surprises & Discoveries
 

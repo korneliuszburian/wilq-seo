@@ -78,6 +78,13 @@ First Goal 005 source-pack proof:
   post-output validation, Guardian rules, strategy evidence hydration and
   marketer usefulness rubric. These should feed WILQ API/schema work, not a
   second product brain.
+- `docs/audits/005-2026-07-01-sales-brief-signal-quality.md` records the Sales
+  Brief v2 signal-quality audit. It identifies `bdo co to` as the safest first
+  Wilku UAT candidate, `zielony ład co to` as a service-fit review question,
+  `operat wodnoprawny` and `magazynowanie odpadów` as blocked by missing
+  knowledge cards, and the Ahrefs `beczki` candidate as correctly blocked but
+  needing a typed snapshot blocker instead of HTTP 404. The audit also fixed
+  source-fact connector/evidence lineage for enrichment facts.
 
 ## Non-Negotiable Rules
 

@@ -192,6 +192,15 @@ API status later contradicts this state.
   smoke proves default context-pack has 5 compacted decisions while full context
   has all 14 diagnostics decisions; non-interactive eval passed with
   `operator_usefulness_score=4`.
+- Goal 005 Sales Brief v2 signal-quality audit is recorded in
+  `docs/audits/005-2026-07-01-sales-brief-signal-quality.md`. Result: connector
+  freshness is not the main blocker; `bdo co to` is the safest first UAT
+  candidate, `zielony ład co to` is reviewable but has generic service mapping,
+  `operat wodnoprawny` and `magazynowanie odpadów` are correctly blocked by
+  missing knowledge cards, and the Ahrefs `beczki` candidate is correctly
+  blocked but snapshot currently returns 404 instead of a typed blocked surface.
+  A source-fact lineage bug was fixed so GSC source facts no longer inherit
+  WordPress evidence IDs.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

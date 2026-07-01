@@ -37,6 +37,38 @@ def test_content_work_item_enrichment_exposes_evidence_bound_operating_context()
     assert "ekologus.dev.proudsite.pl" not in str(enrichment.get("final_canonical_url"))
 
 
+def test_content_opportunity_enrichment_keeps_source_fact_lineage_per_connector() -> None:
+    enrichment = build_content_opportunity_enrichment(
+        ContentDecisionItem(
+            id="content_decision_bdo",
+            decision_type="refresh_or_merge",
+            status="ready",
+            title="BDO",
+            primary_query="bdo co to",
+            queries=["bdo co to"],
+            total_impressions=120,
+            total_clicks=3,
+            wordpress_match="found",
+            wordpress_match_label="spis potwierdzony",
+            final_canonical_url="https://ekologus.pl/bdo/",
+            source_public_url="https://ekologus.pl/bdo/",
+            source_connectors=["google_search_console", "wordpress_ekologus"],
+            evidence_ids=[
+                "ev_refresh_refresh_google_search_console_abc",
+                "ev_refresh_refresh_wordpress_ekologus_def",
+            ],
+            rationale="Test lineage.",
+            next_step="Odśwież.",
+        )
+    )
+
+    for fact in enrichment.source_facts:
+        if fact.source_connectors == ["google_search_console"]:
+            assert fact.evidence_ids == ["ev_refresh_refresh_google_search_console_abc"]
+        if fact.source_connectors == ["wordpress_ekologus"]:
+            assert fact.evidence_ids == ["ev_refresh_refresh_wordpress_ekologus_def"]
+
+
 def test_content_work_item_enrichment_returns_typed_blocker_for_unknown_item() -> None:
     response = TestClient(app).get("/api/content/work-items/content_work_item_missing/enrichment")
 

@@ -259,6 +259,8 @@ def _enrichment_blockers(
 
 def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourceFact]:
     facts: list[ContentOpportunitySourceFact] = []
+    gsc_evidence_ids = _evidence_ids_for_connector(decision, "google_search_console")
+    wordpress_evidence_ids = _evidence_ids_for_connector(decision, "wordpress_ekologus")
     if decision.queries:
         facts.append(
             ContentOpportunitySourceFact(
@@ -266,7 +268,7 @@ def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourc
                 signal_kind="gsc_query",
                 label="Zapytania GSC",
                 summary="; ".join(decision.queries[:4]),
-                evidence_ids=decision.evidence_ids,
+                evidence_ids=gsc_evidence_ids,
                 source_connectors=_connectors(decision, "google_search_console"),
             )
         )
@@ -277,7 +279,7 @@ def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourc
                 signal_kind="gsc_page",
                 label="Wyświetlenia GSC",
                 summary=f"GSC pokazuje {decision.total_impressions} wyświetleń dla klastra.",
-                evidence_ids=decision.evidence_ids,
+                evidence_ids=gsc_evidence_ids,
                 source_connectors=_connectors(decision, "google_search_console"),
                 metric_value=decision.total_impressions,
                 source_url=decision.source_public_url or decision.page,
@@ -290,7 +292,7 @@ def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourc
                 signal_kind="gsc_page",
                 label="Kliknięcia GSC",
                 summary=f"GSC pokazuje {decision.total_clicks} kliknięć dla klastra.",
-                evidence_ids=decision.evidence_ids,
+                evidence_ids=gsc_evidence_ids,
                 source_connectors=_connectors(decision, "google_search_console"),
                 metric_value=decision.total_clicks,
                 source_url=decision.source_public_url or decision.page,
@@ -304,7 +306,7 @@ def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourc
                 label="Spis WordPress",
                 summary=decision.wordpress_match_label
                 or "WordPress inventory wskazuje istniejącą treść do preserve-first.",
-                evidence_ids=decision.evidence_ids,
+                evidence_ids=wordpress_evidence_ids,
                 source_connectors=_connectors(decision, "wordpress_ekologus"),
                 source_url=decision.source_public_url or decision.page,
             )
@@ -323,6 +325,18 @@ def _source_facts(decision: ContentDecisionItem) -> list[ContentOpportunitySourc
             )
         )
     return facts
+
+
+def _evidence_ids_for_connector(
+    decision: ContentDecisionItem,
+    connector_id: str,
+) -> list[str]:
+    matched = [
+        evidence_id
+        for evidence_id in decision.evidence_ids
+        if f"_{connector_id}_" in evidence_id or evidence_id.endswith(f"_{connector_id}")
+    ]
+    return matched or decision.evidence_ids
 
 
 def _ahrefs_source_facts(
