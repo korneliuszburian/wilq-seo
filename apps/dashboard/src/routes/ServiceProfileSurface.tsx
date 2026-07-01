@@ -15,6 +15,7 @@ import {
 type ServiceSection = ContentServiceProfileResponse["service_sections"][number];
 type CoverageGap = ContentServiceProfileResponse["coverage_gaps"][number];
 type ReviewAction = ContentServiceProfileResponse["review_actions"][number];
+type PrivateProposal = ContentServiceProfileResponse["private_source_proposals"][number];
 
 export function ServiceProfileSurface() {
   const profile = useQuery({
@@ -165,6 +166,7 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
             ))}
           </ul>
         ) : null}
+        <PrivateProposalCards proposals={data.private_source_proposals} />
         <details className="mt-4 text-xs text-slate-500">
           <summary className="cursor-pointer font-semibold text-slate-600">Szczegóły techniczne</summary>
           <div className="mt-2 space-y-1">
@@ -175,6 +177,47 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
         </details>
       </section>
     </main>
+  );
+}
+
+function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
+  if (proposals.length === 0) return null;
+  return (
+    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      {proposals.map((proposal) => (
+        <article key={proposal.proposal_id} className="rounded-md border border-line p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold">{proposal.target_card_title}</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {proposal.source_locator_label}
+              </p>
+            </div>
+            <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
+              {proposal.review_status}
+            </span>
+          </div>
+          <PlainChipRow
+            className="mt-3"
+            values={[
+              proposal.source_class_label,
+              `support: ${proposal.support_level}`,
+              `risk: ${proposal.risk_tier}`,
+              proposal.confidence_label,
+              proposal.promotion_allowed ? "promocja dozwolona" : "bez promocji"
+            ]}
+          />
+          <p className="mt-2 text-sm leading-6 text-slate-600">{proposal.safe_next_step}</p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            {proposal.blocked_write_claim}
+          </p>
+          <List label="Claimy zablokowane" values={proposal.blocked_claims} />
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Rola review: {proposal.owner_role}
+          </p>
+        </article>
+      ))}
+    </div>
   );
 }
 

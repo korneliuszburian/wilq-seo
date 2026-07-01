@@ -148,6 +148,12 @@ API status later contradicts this state.
   `approved_count=0`, `ready_for_daily_content=false`. These actions help
   Wilku decide what to review next, but they do not promote private proposals
   into source facts or knowledge cards.
+- Service Profile now also exposes redacted per-proposal details for private
+  source proposals: target card, source class, review status, support level,
+  risk tier, confidence label, blocked claims and safe next step. Live proof on
+  2026-07-02 returned `proposal_count=2`, first target `Eko-Opieka / Eko
+  Kalendarz`, `review_status=review_required`, `support_level=partial`,
+  `risk_tier=medium`, `promotion_allowed=false`, `redacted=true`.
 - Private proposal review now includes an API-owned promotion checklist in the
   Service Profile. Live proof after stack restart on 2026-07-01:
   `promotion_ready=false`, `promotion_checklist` has 5 items,

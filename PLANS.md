@@ -196,6 +196,13 @@ states that no private proposal is promoted into a source fact or knowledge
 card. Live API proof on 2026-07-01 returned `private_review_action_count=2`,
 `approved_count=0` and `ready_for_daily_content=false`.
 
+Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
+Service Profile now shows target card, source class, review status, support
+level, risk tier, confidence label, blocked claims and safe next step for each
+private proposal. Live API proof on 2026-07-02 returned two proposals; the first
+is `Eko-Opieka / Eko Kalendarz`, `review_required`, `partial`, `medium`,
+`promotion_allowed=false`, `redacted=true`.
+
 Private proposal review now includes a promotion checklist under Beads task
 `wilq-seo-n1o`. The checklist is API-owned and rendered in Service Profile:
 owner confirmation, redacted/source-safe condensation, claim policy, reviewer/

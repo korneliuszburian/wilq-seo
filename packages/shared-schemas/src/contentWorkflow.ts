@@ -375,6 +375,24 @@ export const ContentServiceProfilePrivateSourceProposalSummarySchema = z.object(
   safe_next_step: z.string()
 });
 
+export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
+  proposal_id: z.string(),
+  target_card_id: z.string(),
+  target_card_title: z.string(),
+  source_class_label: z.string(),
+  source_locator_label: z.string(),
+  review_status: z.string(),
+  support_level: z.string(),
+  risk_tier: z.string(),
+  confidence_label: z.string(),
+  owner_role: z.string(),
+  redacted: z.boolean(),
+  blocked_claims: z.array(z.string()).default([]),
+  safe_next_step: z.string(),
+  promotion_allowed: z.boolean(),
+  blocked_write_claim: z.string()
+});
+
 export const ContentServiceProfileCoverageGapSchema = z.object({
   gap_id: z.string(),
   area: z.string(),
@@ -417,6 +435,7 @@ export const ContentServiceProfileResponseSchema = z.object({
   claim_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   evidence_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
   private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummarySchema,
+  private_source_proposals: z.array(ContentServiceProfilePrivateSourceProposalSectionSchema).default([]),
   coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
   review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),
   technical_trace: ContentServiceProfileTechnicalTraceSchema

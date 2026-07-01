@@ -107,6 +107,26 @@ class ContentServiceProfilePrivateSourceProposalSummary(BaseModel):
     safe_next_step: str
 
 
+class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposal_id: str
+    target_card_id: str
+    target_card_title: str
+    source_class_label: str
+    source_locator_label: str
+    review_status: str
+    support_level: str
+    risk_tier: str
+    confidence_label: str
+    owner_role: str
+    redacted: bool
+    blocked_claims: list[str] = Field(default_factory=list)
+    safe_next_step: str
+    promotion_allowed: bool
+    blocked_write_claim: str
+
+
 class ContentServiceProfileCoverageGap(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -157,6 +177,9 @@ class ContentServiceProfileResponse(BaseModel):
     claim_policy_sections: list[ContentServiceProfilePolicySection] = Field(default_factory=list)
     evidence_policy_sections: list[ContentServiceProfilePolicySection] = Field(default_factory=list)
     private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummary
+    private_source_proposals: list[ContentServiceProfilePrivateSourceProposalSection] = Field(
+        default_factory=list
+    )
     coverage_gaps: list[ContentServiceProfileCoverageGap] = Field(default_factory=list)
     review_actions: list[ContentServiceProfileReviewAction] = Field(default_factory=list)
     technical_trace: ContentServiceProfileTechnicalTrace
@@ -215,6 +238,9 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         private_source_proposal_summary=_private_source_proposal_summary(
             private_proposal_registry.proposals
         ),
+        private_source_proposals=_private_source_proposal_sections(
+            private_proposal_registry.proposals
+        ),
         coverage_gaps=coverage_gaps,
         review_actions=_review_actions(
             coverage_gaps=coverage_gaps,
@@ -230,6 +256,34 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             private_source_protocol_doc="docs/architecture/private-source-proposal-protocol.md",
         ),
     )
+
+
+def _private_source_proposal_sections(
+    proposals: list[PrivateSourceProposal],
+) -> list[ContentServiceProfilePrivateSourceProposalSection]:
+    return [
+        ContentServiceProfilePrivateSourceProposalSection(
+            proposal_id=proposal.proposal_id,
+            target_card_id=proposal.target_card_id,
+            target_card_title=proposal.target_card_title,
+            source_class_label=proposal.source_class_label,
+            source_locator_label=proposal.source_locator_label,
+            review_status=proposal.review_status,
+            support_level=proposal.support_level,
+            risk_tier=proposal.risk_tier,
+            confidence_label=_confidence_label(proposal.confidence),
+            owner_role=proposal.owner_role,
+            redacted=True,
+            blocked_claims=proposal.blocked_claims,
+            safe_next_step=proposal.safe_next_step,
+            promotion_allowed=False,
+            blocked_write_claim=(
+                "To jest redacted proposal do review; nie promuje source fact ani "
+                "knowledge card."
+            ),
+        )
+        for proposal in proposals
+    ]
 
 
 def _private_source_proposal_summary(

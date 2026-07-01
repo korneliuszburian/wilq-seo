@@ -49,8 +49,15 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
     expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
     expect(screen.getByText(/Brak zatwierdzenia człowieka/)).toBeInTheDocument();
-    expect(screen.getByText("ekologus-ai reviewed handoff: Eko-Opieka")).toBeInTheDocument();
+    expect(screen.getAllByText("ekologus-ai reviewed handoff: Eko-Opieka").length)
+      .toBeGreaterThanOrEqual(1);
     expect(screen.getByText("ekologus-ai reviewed handoff: Audyt zgodności")).toBeInTheDocument();
+    expect(screen.getByText("Eko-Opieka / Eko Kalendarz")).toBeInTheDocument();
+    expect(screen.getByText("support: partial")).toBeInTheDocument();
+    expect(screen.getByText("risk: medium")).toBeInTheDocument();
+    expect(screen.getByText("bez promocji")).toBeInTheDocument();
+    expect(screen.getByText("Claimy zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("obietnica stałej zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz"))
       .toBeInTheDocument();
@@ -150,6 +157,26 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       safe_next_step:
         "Użyj protokołu private source proposals dopiero po metadata-only intake i decyzji ownera."
     },
+    private_source_proposals: [
+      {
+        proposal_id: "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+        target_card_id: "ekologus_service_eko_opieka",
+        target_card_title: "Eko-Opieka / Eko Kalendarz",
+        source_class_label: "review-required internal service context",
+        source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+        review_status: "review_required",
+        support_level: "partial",
+        risk_tier: "medium",
+        confidence_label: "średnia",
+        owner_role: "Wilku albo owner oferty Ekologus",
+        redacted: true,
+        blocked_claims: ["obietnica stałej zgodności"],
+        safe_next_step: "Pokazać Wilkowi zwykły handoff i zdecydować o review.",
+        promotion_allowed: false,
+        blocked_write_claim:
+          "To jest redacted proposal do review; nie promuje source fact ani knowledge card."
+      }
+    ],
     coverage_gaps: [
       {
         gap_id: "gap_service_operat_wodnoprawny",

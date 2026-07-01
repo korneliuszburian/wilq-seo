@@ -322,6 +322,18 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         response.private_source_proposal_summary.promotion_blocked_reason
     )
     assert response.private_source_proposal_summary.redacted is True
+    assert len(response.private_source_proposals) == 2
+    assert {proposal.target_card_id for proposal in response.private_source_proposals} == {
+        "ekologus_service_eko_opieka",
+        "ekologus_service_audyt_zgodnosci",
+    }
+    assert all(proposal.redacted for proposal in response.private_source_proposals)
+    assert all(not proposal.promotion_allowed for proposal in response.private_source_proposals)
+    assert all(proposal.blocked_claims for proposal in response.private_source_proposals)
+    assert all(
+        "nie promuje" in proposal.blocked_write_claim
+        for proposal in response.private_source_proposals
+    )
     assert response.coverage_summary.private_candidate_count == 2
     assert response.technical_trace.private_source_proposal_ids == [
         "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
@@ -368,6 +380,8 @@ def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None
     assert payload["review_policy"]["can_promote_facts"] is False
     assert payload["coverage_summary"]["ready_for_daily_content"] is False
     assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
+    assert payload["private_source_proposals"]
+    assert payload["private_source_proposals"][0]["promotion_allowed"] is False
     assert {gap["gap_id"] for gap in payload["coverage_gaps"]} >= {
         "gap_service_operat_wodnoprawny",
         "gap_no_approved_current_cards",

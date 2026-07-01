@@ -103,6 +103,25 @@ describe("ContentServiceProfileResponseSchema", () => {
         redacted: true,
         safe_next_step: "Use private proposal protocol."
       },
+      private_source_proposals: [
+        {
+          proposal_id: "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+          target_card_id: "ekologus_service_eko_opieka",
+          target_card_title: "Eko-Opieka / Eko Kalendarz",
+          source_class_label: "review-required internal service context",
+          source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+          review_status: "review_required",
+          support_level: "partial",
+          risk_tier: "medium",
+          confidence_label: "średnia",
+          owner_role: "Wilku albo owner oferty Ekologus",
+          redacted: true,
+          blocked_claims: ["obietnica stałej zgodności"],
+          safe_next_step: "Pokazać Wilkowi zwykły handoff.",
+          promotion_allowed: false,
+          blocked_write_claim: "To jest redacted proposal do review."
+        }
+      ],
       coverage_gaps: [
         {
           gap_id: "gap_service_operat_wodnoprawny",
@@ -139,6 +158,7 @@ describe("ContentServiceProfileResponseSchema", () => {
     expect(parsed.read_only).toBe(true);
     expect(parsed.review_policy.can_edit_cards).toBe(false);
     expect(parsed.coverage_gaps[0]?.gap_id).toBe("gap_service_operat_wodnoprawny");
+    expect(parsed.private_source_proposals[0]?.promotion_allowed).toBe(false);
   });
 });
 
