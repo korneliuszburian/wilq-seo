@@ -207,6 +207,9 @@ Initial slices:
 - `wilq-seo-n8r` - audit Sales Brief v2 signal quality.
 - `wilq-seo-87i` - define evidence-based draft variant selection guard.
 - `wilq-seo-708` - harden measurement outcome provenance for content decisions.
+- `wilq-seo-ciz` - collect source-backed Ekologus service and claim source pack.
+- `wilq-seo-lt1` - expand typed Ekologus knowledge cards from reviewed sources.
+- `wilq-seo-t13` - add knowledge-card production-depth guard tests.
 
 This section is a recovery index only. Operational status lives in Beads.
 
@@ -310,6 +313,12 @@ Stop and record a blocker if:
   schemas. A real remaining measurement risk was filed as `wilq-seo-708`:
   outcome interpretation needs explicit metric_store/JobRun/evidence
   provenance before WILQ can claim hard measurement usefulness.
+- 2026-07-01: Knowledge-card depth audit completed in
+  `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Current cards are
+  typed Goal 004 seeds and guardrails, not production-depth Ekologus knowledge.
+  Follow-up tasks created for source pack (`wilq-seo-ciz`), source-backed card
+  expansion (`wilq-seo-lt1`) and production-depth guard tests (`wilq-seo-t13`).
+  Focused proof passed: `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
 
 ## Surprises & Discoveries
 
@@ -330,6 +339,8 @@ Stop and record a blocker if:
 - Measurement outcome hardening is a Goal 005 support slice, not a replacement
   for knowledge depth and UAT. The request-typing part of that second opinion is
   stale; provenance remains valid.
+- Do not expand cards from memory. Production-depth cards require reviewed
+  Ekologus source lineage or an explicit source blocker.
 
 ## Outcomes & Retrospective
 

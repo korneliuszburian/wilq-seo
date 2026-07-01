@@ -87,6 +87,14 @@ API status later contradicts this state.
   interpretation is tied to metric_store facts, connector refresh/JobRun
   lineage, evidence IDs and the original content decision before any broader
   usefulness claim.
+- Knowledge-card depth audit is recorded in
+  `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
+  three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they
+  are too broad and internally sourced to prove production-depth Ekologus
+  knowledge. Follow-ups: collect source-backed service/claim source pack
+  `wilq-seo-ciz`, expand reviewed typed cards `wilq-seo-lt1`, and add
+  production-depth guard tests `wilq-seo-t13`. Focused proof passed:
+  `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity
