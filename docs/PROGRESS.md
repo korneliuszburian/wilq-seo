@@ -229,6 +229,10 @@ API status later contradicts this state.
   reviewer ID from the Claim Ledger. `claims_allowed` stays for backward
   compatibility, but future gates can reason from typed source-claim-marker
   metadata instead of text-only claims.
+- Structured draft preview now consumes `claim_markers`: if a section uses a
+  claim whose marker requires evidence, that section must reference the marker
+  evidence IDs or preview blocks with `claim_missing_required_evidence`. Text-only
+  legacy contracts without `claim_markers` remain backward-compatible.
 - WordPress draft handoff audit lineage is hardened: audit evidence must overlap
   with the approved human review evidence and draft package evidence map, or
   handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
@@ -1722,6 +1726,9 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_structured_generation_api.py tests/content/test_structured_draft_generation.py tests/content/test_structured_draft_preview.py -q`
 - `rtk uv run ruff check wilq/content/drafts/structured_generation.py tests/content/test_structured_generation_api.py tests/content/test_structured_draft_generation.py`
 - `rtk uv run mypy wilq/content/drafts/structured_generation.py`
+- `rtk uv run pytest tests/content/test_structured_draft_preview.py tests/content/test_structured_generation_api.py -q`
+- `rtk uv run ruff check wilq/content/drafts/preview.py tests/content/test_structured_draft_preview.py`
+- `rtk uv run mypy wilq/content/drafts/preview.py`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk pnpm --dir packages/shared-schemas typecheck`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`

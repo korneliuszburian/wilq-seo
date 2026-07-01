@@ -17,6 +17,7 @@ StructuredDraftPreviewBlockerCode = Literal[
     "section_missing_evidence",
     "unknown_evidence_reference",
     "unknown_claim_reference",
+    "claim_missing_required_evidence",
 ]
 
 
@@ -173,6 +174,7 @@ def structured_draft_preview_blockers(
                 "Usuń obce twierdzenia ze szkicu: " + "; ".join(unknown_claims),
             )
         )
+    blockers.extend(_claim_marker_evidence_blockers(output, contract))
     return blockers
 
 
@@ -195,6 +197,42 @@ def _output_claims(output: StructuredDraftOutput) -> set[str]:
     for section in output.sections:
         values.update(section.claims_used)
     return {value for value in values if value}
+
+
+def _claim_marker_evidence_blockers(
+    output: StructuredDraftOutput,
+    contract: StructuredDraftGenerationContract,
+) -> list[StructuredDraftPreviewBlocker]:
+    marker_by_claim = {
+        marker.claim_text: marker
+        for marker in contract.model_input.claim_markers
+        if marker.claim_text and marker.evidence_ids
+    }
+    if not marker_by_claim:
+        return []
+
+    blockers: list[StructuredDraftPreviewBlocker] = []
+    for section in output.sections:
+        section_evidence_ids = set(section.evidence_ids)
+        for claim_text in section.claims_used:
+            marker = marker_by_claim.get(claim_text)
+            if marker is None:
+                continue
+            missing = sorted(set(marker.evidence_ids).difference(section_evidence_ids))
+            if not missing:
+                continue
+            blockers.append(
+                _blocker(
+                    "claim_missing_required_evidence",
+                    "Claim nie ma wymaganego dowodu w sekcji",
+                    (
+                        "Szkic używa claimu z Claim Ledger, ale sekcja nie wskazuje "
+                        "dowodu przypisanego do tego claimu."
+                    ),
+                    (f'Uzupełnij dowody dla claimu "{claim_text}": ' + ", ".join(missing)),
+                )
+            )
+    return blockers
 
 
 def _blocker(

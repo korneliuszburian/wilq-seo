@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from wilq.content.drafts.preview import build_structured_draft_preview
 from wilq.content.drafts.structured_generation import (
+    StructuredDraftClaimMarker,
     StructuredDraftGenerationContract,
     StructuredDraftGenerationInput,
     StructuredDraftOutput,
@@ -12,7 +13,7 @@ from wilq.content.drafts.structured_generation import (
 )
 
 
-def _contract() -> StructuredDraftGenerationContract:
+def _contract(*, include_claim_markers: bool = True) -> StructuredDraftGenerationContract:
     return StructuredDraftGenerationContract(
         model_input=StructuredDraftGenerationInput(
             work_item_id="content_work_item_bdo",
@@ -40,6 +41,20 @@ def _contract() -> StructuredDraftGenerationContract:
                     summary="GSC potwierdza popyt na temat.",
                 )
             ],
+            claim_markers=(
+                [
+                    StructuredDraftClaimMarker(
+                        claim_id="claim_general_bdo",
+                        claim_text="Ekologus pomaga firmom uporządkować obowiązki BDO.",
+                        claim_type="service_claim",
+                        status="allowed_with_evidence",
+                        evidence_ids=["ev_wp_bdo"],
+                        reviewer_id="wilku",
+                    )
+                ]
+                if include_claim_markers
+                else []
+            ),
             claims_allowed=["Ekologus pomaga firmom uporządkować obowiązki BDO."],
             human_review_questions=["Czy to brzmi jak Ekologus?"],
         ),
@@ -132,6 +147,45 @@ def test_structured_draft_preview_blocks_claims_outside_generation_contract() ->
     assert [blocker.code for blocker in result.blockers] == ["unknown_claim_reference"]
 
 
+def test_structured_draft_preview_blocks_claim_marker_without_section_evidence() -> None:
+    result = build_structured_draft_preview(
+        output=_output(
+            sections=[
+                StructuredDraftOutputSection(
+                    heading="Kogo dotyczy BDO",
+                    body_markdown="BDO warto sprawdzić na podstawie sytuacji firmy.",
+                    evidence_ids=["ev_gsc_bdo"],
+                    claims_used=["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+                )
+            ]
+        ),
+        contract=_contract(),
+    )
+
+    assert result.preview is None
+    assert [blocker.code for blocker in result.blockers] == ["claim_missing_required_evidence"]
+    assert "ev_wp_bdo" in result.blockers[0].next_step
+
+
+def test_structured_draft_preview_keeps_text_only_claim_contract_compatible() -> None:
+    result = build_structured_draft_preview(
+        output=_output(
+            sections=[
+                StructuredDraftOutputSection(
+                    heading="Kogo dotyczy BDO",
+                    body_markdown="BDO warto sprawdzić na podstawie sytuacji firmy.",
+                    evidence_ids=["ev_gsc_bdo"],
+                    claims_used=["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+                )
+            ]
+        ),
+        contract=_contract(include_claim_markers=False),
+    )
+
+    assert result.blockers == []
+    assert result.preview is not None
+
+
 def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
     missing_evidence = build_structured_draft_preview(
         output=_output(
@@ -151,9 +205,5 @@ def test_structured_draft_preview_blocks_missing_or_unknown_evidence() -> None:
         contract=_contract(),
     )
 
-    assert [blocker.code for blocker in missing_evidence.blockers] == [
-        "section_missing_evidence"
-    ]
-    assert [blocker.code for blocker in unknown_evidence.blockers] == [
-        "unknown_evidence_reference"
-    ]
+    assert [blocker.code for blocker in missing_evidence.blockers] == ["section_missing_evidence"]
+    assert [blocker.code for blocker in unknown_evidence.blockers] == ["unknown_evidence_reference"]
