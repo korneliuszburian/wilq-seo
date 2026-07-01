@@ -21,9 +21,9 @@ Date: 2026-07-01
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Beads (`bd`) is the operational task graph for current work. Run `bd prime`
-  and `bd ready --json` after recovery. Goal 004 epic `wilq-seo-2qq` is active.
-  Goal 003 epic `wilq-seo-u6u` is completed. Historical Goal 001 cleanup epic:
-  `wilq-seo-6rw`.
+  and `bd ready --json` after recovery. Goal 004 epic `wilq-seo-2qq` is
+  completed. Goal 003 epic `wilq-seo-u6u` is completed. Historical Goal 001
+  cleanup epic: `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -57,8 +57,8 @@ API status later contradicts this state.
 
 ## Current Goal Transition
 
-- Goal 004: Content Operations Layer is now active under Beads epic
-  `wilq-seo-2qq`. The target is a production-grade daily content operating
+- Goal 004: Content Operations Layer is completed under Beads epic
+  `wilq-seo-2qq`. It delivered a production-grade daily content operating
   loop, not an MVP or staged-version path: queue candidate -> opportunity
   enrichment -> typed Ekologus knowledge cards -> operations-grade Sales Brief
   -> claim-gated draft variants -> deterministic quality review -> bounded
@@ -201,8 +201,10 @@ API status later contradicts this state.
   context-packs so skill contexts do not receive raw technical note copy. This
   keeps frozen schema files clean. Final broad gate passed with
   `rtk scripts/verify.sh`.
-- The next Goal 004 product work should continue from `bd ready --json`; current
-  active task is `wilq-seo-4wi`.
+- Goal 004 broad proof passed with `rtk scripts/verify.sh` after the UI/API
+  hardening and connector-scope cleanup. Next work should come from
+  `bd ready --json`; do not reopen Goal 004 without an explicit new Beads task
+  or regression.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through `wilq-content-operator`, but must not become the production
   writer, direct OpenAI caller or direct WordPress client.

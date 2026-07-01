@@ -21,11 +21,11 @@ Goal 004 and must stay restartable without chat history.
 - Every implementation slice must end with focused verification or an explicit
   blocker.
 
-## Active Goal
+## Latest Completed Goal
 
 Goal 004: Content Operations Layer.
 
-Status: active from 2026-07-01. Beads epic `wilq-seo-2qq`.
+Status: completed on 2026-07-01. Beads epic `wilq-seo-2qq`.
 
 Outcome:
 
@@ -598,8 +598,10 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 2026-07-01:
 
-- Goal 004 epic `wilq-seo-2qq` is active. Planning slice `wilq-seo-xlw` and
-  contract-freeze slice `wilq-seo-6kd` are closed.
+- Goal 004 epic `wilq-seo-2qq` is complete. Planning slice `wilq-seo-xlw`,
+  contract-freeze slice `wilq-seo-6kd`, all content-operations slices, the
+  content operator skill/UAT harness, UI/API hardening slice `wilq-seo-4wi` and
+  anti-slop guard `wilq-seo-akt` are closed.
 - Content opportunity enrichment slice `wilq-seo-a3t` added
   `GET /api/content/work-items/{work_item_id}/enrichment`, typed
   `ContentOpportunityEnrichment` contracts and a Polish `/content-workflow`
@@ -687,8 +689,10 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   hygiene, dedicated skill contract pytest, content enrichment API pytest,
   live skill smoke, live Wilku UAT packet for 5 candidates, Ruff, mypy,
   Fallow audit, changed-file complexity audit and `git diff --check` passed.
-- Next product slice should come from `bd ready --json`; current likely
-  candidate is `wilq-seo-akt` anti-slop execution guard.
+- Final Goal 004 proof: `rtk scripts/verify.sh` passed after the UI/API
+  hardening and connector-scope cleanup.
+- Next product slice should come from `bd ready --json`; Goal 004 itself should
+  not be reopened unless a regression or new scope is explicitly created.
 
 2026-06-30:
 
@@ -834,11 +838,8 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 Current next action:
 
-Goal 004 is active. `wilq-seo-xlw`, `wilq-seo-6kd`, `wilq-seo-a3t`,
-`wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0`, `wilq-seo-a09` and
-`wilq-seo-03a`, `wilq-seo-prk` and `wilq-seo-wr4` are closed. Continue from
-`bd ready --json`; the next product slice is the anti-slop execution guard
-(`wilq-seo-akt`) unless the ready graph changes.
+Goal 004 is complete. Continue from `bd ready --json`; do not infer a new goal
+from chat history without creating/updating Beads and the durable docs first.
 
 Completed Goal 002 extraction context:
 
