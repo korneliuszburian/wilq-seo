@@ -383,6 +383,10 @@ Shared schemas now also type structured preview blocker codes under Beads task
 `wilq-seo-y5x`, using a preview-specific enum instead of the generic workflow
 blocker schema.
 
+Shared `ContentWorkItemSchema` now mirrors Python workflow status literals under
+Beads task `wilq-seo-kwl`, so unknown workflow states cannot silently drive the
+dashboard.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate

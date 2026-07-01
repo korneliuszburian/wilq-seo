@@ -15,6 +15,7 @@ import {
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentQualityFindingSchema,
+  ContentWorkItemSchema,
   StructuredDraftPreviewBlockerSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
@@ -187,6 +188,37 @@ describe("ContentQualityFindingSchema", () => {
         next_step: "Dodaj kod do kontraktu przed użyciem.",
         evidence_ids: [],
         source_connectors: []
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentWorkItemSchema", () => {
+  it("rejects unknown workflow status values", () => {
+    const workItem = {
+      id: "content_work_item_bdo",
+      topic: "BDO",
+      evidence_ids: ["ev_gsc_bdo"],
+      source_connectors: ["google_search_console"],
+      inventory_status: "resolved",
+      canonical_status: "resolved",
+      duplicate_status: "checked",
+      preflight_status: "draft_allowed",
+      preserve_first_plan_status: "approved",
+      sales_brief_status: "approved",
+      claim_ledger_status: "approved",
+      draft_package_status: "ready",
+      human_review_status: "missing",
+      wordpress_handoff_status: "missing",
+      measurement_window_status: "planned",
+      audit_status: "missing"
+    };
+
+    expect(ContentWorkItemSchema.safeParse(workItem).success).toBe(true);
+    expect(
+      ContentWorkItemSchema.safeParse({
+        ...workItem,
+        preflight_status: "secret_unreviewed_state"
       }).success
     ).toBe(false);
   });

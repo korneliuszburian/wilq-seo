@@ -365,6 +365,10 @@ API status later contradicts this state.
 - Shared schemas also type structured draft preview blocker codes with a
   preview-specific enum, so unknown preview gate codes are rejected before the
   dashboard treats them as valid workflow blockers.
+- Shared `ContentWorkItemSchema` now mirrors Python workflow status literals for
+  inventory, canonical, duplicate, preflight, artifact, human review, audit,
+  WordPress handoff and measurement window states. Unknown workflow states are
+  rejected before they can drive dashboard gates.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and

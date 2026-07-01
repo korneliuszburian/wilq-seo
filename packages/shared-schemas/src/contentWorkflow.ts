@@ -1,5 +1,49 @@
 import { z } from "zod";
 
+export const ContentInventoryStatusSchema = z.enum(["missing", "resolved", "blocked"]);
+export const ContentCanonicalStatusSchema = z.enum(["missing", "resolved", "blocked"]);
+export const ContentDuplicateStatusSchema = z.enum([
+  "missing",
+  "checked",
+  "risk_found",
+  "blocked"
+]);
+export const ContentPreflightStatusSchema = z.enum([
+  "missing",
+  "blocked",
+  "plan_allowed",
+  "brief_allowed",
+  "draft_allowed",
+  "handoff_allowed"
+]);
+export const ContentArtifactStatusSchema = z.enum([
+  "missing",
+  "ready",
+  "approved",
+  "blocked"
+]);
+export const ContentHumanReviewStatusSchema = z.enum([
+  "missing",
+  "approved",
+  "needs_changes",
+  "rejected",
+  "deferred"
+]);
+export const ContentAuditStatusSchema = z.enum(["missing", "recorded"]);
+export const ContentWordPressHandoffStatusSchema = z.enum([
+  "missing",
+  "blocked",
+  "prepared",
+  "draft_created"
+]);
+export const ContentMeasurementWindowStatusSchema = z.enum([
+  "missing",
+  "planned",
+  "open",
+  "ready_for_review",
+  "closed"
+]);
+
 export const ContentWorkItemSchema = z.object({
   id: z.string(),
   topic: z.string(),
@@ -9,24 +53,24 @@ export const ContentWorkItemSchema = z.object({
   preview_url: z.string().nullable().optional(),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
-  inventory_status: z.string(),
-  canonical_status: z.string(),
-  duplicate_status: z.string(),
-  preflight_status: z.string().default("missing"),
-  preserve_first_plan_status: z.string().default("missing"),
-  sales_brief_status: z.string().default("missing"),
+  inventory_status: ContentInventoryStatusSchema,
+  canonical_status: ContentCanonicalStatusSchema,
+  duplicate_status: ContentDuplicateStatusSchema,
+  preflight_status: ContentPreflightStatusSchema.default("missing"),
+  preserve_first_plan_status: ContentArtifactStatusSchema.default("missing"),
+  sales_brief_status: ContentArtifactStatusSchema.default("missing"),
   sales_brief_id: z.string().nullable().optional(),
-  claim_ledger_status: z.string().default("missing"),
+  claim_ledger_status: ContentArtifactStatusSchema.default("missing"),
   claim_ledger_id: z.string().nullable().optional(),
-  draft_package_status: z.string().default("missing"),
+  draft_package_status: ContentArtifactStatusSchema.default("missing"),
   draft_package_id: z.string().nullable().optional(),
-  human_review_status: z.string().default("missing"),
+  human_review_status: ContentHumanReviewStatusSchema.default("missing"),
   human_review_id: z.string().nullable().optional(),
-  wordpress_handoff_status: z.string().default("missing"),
+  wordpress_handoff_status: ContentWordPressHandoffStatusSchema.default("missing"),
   wordpress_post_id: z.string().nullable().optional(),
-  measurement_window_status: z.string().default("missing"),
+  measurement_window_status: ContentMeasurementWindowStatusSchema.default("missing"),
   measurement_window_id: z.string().nullable().optional(),
-  audit_status: z.string().default("missing"),
+  audit_status: ContentAuditStatusSchema.default("missing"),
   audit_id: z.string().nullable().optional()
 });
 
