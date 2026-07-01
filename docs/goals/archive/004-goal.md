@@ -1,6 +1,6 @@
 # Goal 004 - Content Operations Layer
 
-Status: active.
+Status: completed on 2026-07-01.
 
 Beads epic: `wilq-seo-2qq`.
 

@@ -10,10 +10,12 @@ After context loss, read:
 
 1. `docs/CONTEXT.md` - durable index of current runtime, skill eval harness and key docs.
 2. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
-3. `docs/goals/001-goal.md` - only active goal and next queue.
-4. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
-5. `bd prime` - Beads recovery context, persistent task memories and session rules.
-6. `bd ready --json` - current unblocked development work graph.
+3. `docs/goals/005-goal.md` - active goal and current execution boundaries.
+4. `PLANS.md` - active long-running ExecPlan and latest decision log.
+5. `docs/goals/001-goal.md` - historical cleanup contract and owner-deferred UAT context.
+6. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
+7. `bd prime` - Beads recovery context, persistent task memories and session rules.
+8. `bd ready --json` - current unblocked development work graph.
 
 Keep progress and skill eval findings in those docs instead of bloating AGENTS.md.
 Keep all recovery docs aggressively pruned: remove or archive outdated/done

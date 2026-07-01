@@ -1,25 +1,23 @@
-# PLANS.md - Goal 004 Content Operations Layer
+# PLANS.md - Goal 005 Knowledge Depth And UAT Closure
 
-This is the long-running ExecPlan for the active WILQ product layer.
+This is the active long-running ExecPlan for the current WILQ product layer.
+It must stay restartable without chat history.
 
-Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
-`docs/goals/001-goal.md`, `docs/goals/archive/003-goal.md`,
-`docs/goals/archive/004-goal.md` and Beads. This file describes the durable path for
-Goal 004 and must stay restartable without chat history.
+Current cleanup truth remains in `PLAN.md`, `docs/CONTEXT.md`,
+`docs/PROGRESS.md`, `docs/goals/001-goal.md`,
+`docs/goals/archive/004-goal.md`, `docs/goals/005-goal.md` and Beads.
 
 ## How To Use This File
 
-- Read `AGENTS.md`, `PLAN.md`, `docs/CONTEXT.md` and `docs/PROGRESS.md` first.
+- Read `AGENTS.md`, `PLAN.md`, `docs/CONTEXT.md`,
+  `docs/PROGRESS.md` and `docs/goals/005-goal.md` first.
 - Run `bd prime` and `bd ready --json` before choosing work.
-- Use Beads for operational task tracking. Do not copy the Beads issue list into
-  markdown TODOs.
-- Update this file only when the product plan, decisions, proof or blocker
-  changes.
+- Use Beads for operational task tracking. Do not copy the Beads issue list
+  into markdown TODOs.
+- Update this file only when the active product plan, proof, decision or
+  blocker changes.
 - Keep `Progress`, `Surprises & Discoveries`, `Decision Log` and
   `Outcomes & Retrospective` current.
-- Every milestone is written as goal, work, result and proof.
-- Every implementation slice must end with focused verification or an explicit
-  blocker.
 
 ## Latest Completed Goal
 
@@ -27,1306 +25,303 @@ Goal 004: Content Operations Layer.
 
 Status: completed on 2026-07-01. Beads epic `wilq-seo-2qq`.
 
-Outcome:
-
-Wilku can run a real Ekologus content work session through WILQ: pick a queue
-candidate, receive opportunity enrichment, use typed Ekologus knowledge cards,
-produce an operations-grade Sales Brief, generate claim-gated draft variants
-through Structured Outputs, apply bounded revisions, pass human review and audit, prepare
-WordPress draft-only handoff and open a measurement window for later conservative
-outcome interpretation.
-
-This goal does not build:
-
-- multi-client SaaS,
-- automatic WordPress publishing,
-- prompt-only content generation,
-- broad RAG/vector memory,
-- Ads/Merchant/Localo write automation,
-- agency admin, billing or workspace switching.
-
-Goal 004 is not an MVP or staged-version track. The target is the final-grade content
-operations architecture delivered in small verified slices. Temporary
-incompleteness is acceptable only when the slice makes the requested final
-state more true without weakening gates, preserving stale aliases or moving
-product logic out of WILQ API.
-
-Goal 003 baseline:
-
-Goal 003 is complete and full repo-level `rtk scripts/verify.sh` passes. WILQ
-already proves the safe content workbench: API-owned queue, per-item state,
-gated SDK Structured Outputs, deterministic quality review, evidence-bound
-revision plan, Polish `/content-workflow`, WordPress draft-only/dry-run boundary
-and adversarial gate tests. Primary proof:
-
-- `docs/goals/archive/003-goal.md`
-- `tests/content/test_content_workflow_end_to_end.py`
-- `tests/content/test_content_workflow_adversarial_gates.py`
-
-## Product Thesis
-
-WILQ is not an AI text generator. WILQ is an API-first marketing operating
-system that decides whether writing is allowed, what mode is safe, what claims
-are forbidden, what a human must approve and how the effect will be measured.
-WILQ must not wait for post-publication metrics before preparing useful content
-work. It must prepare the measurement plan up front, then use later GSC, GA4,
-Ahrefs, Ads, Merchant or Localo signals to interpret outcomes and improve the
-next content decision. Measurement is a planning requirement now and a success
-or failure verdict only after the observation window has usable data.
-
-Goal 004 content operations must extend this path:
+Goal 004 proved the safe mechanics of content operations:
 
 ```text
-content opportunity queue
--> selected ContentWorkItem
--> source connector/evidence validation
--> opportunity enrichment
--> typed Ekologus knowledge cards
--> inventory/canonical/duplicate/cannibalization check
--> ContentPreflight
--> preserve-first mode
--> operations-grade Sales Brief
--> Claim Ledger
--> draft variants
--> SDK Structured Outputs generation
--> Structured Draft Preview
--> Quality Review
--> bounded Revision Application
--> Human Review
--> Audit
--> WordPress draft-only handoff/execution
--> Measurement Window
--> conservative Measurement Outcome
-```
-
-## Naming And URL Semantics
-
-- WILQ = system/product.
-- Wilku = human marketer/operator persona.
-- Ekologus = first depth-first workspace/client.
-- `ekologus.pl` = final public canonical content home unless a real public
-  source proves otherwise.
-- `sklep.ekologus.pl` = public shop/product source where relevant.
-- `ekologus.dev.proudsite.pl` and any dev preview host = optional
-  design/staging context only, never historical SEO evidence and never final
-  canonical URL.
-
-Required active URL fields:
-
-- `source_public_url`
-- `final_canonical_url`
-- `intended_final_url`
-- `preview_url`
-
-Do not preserve stale `target_site`, migration-map or dev-preview aliases when a
-direct migration is feasible.
-
-## Non-Negotiable Rules
-
-- Brak identyfikatora dowodu oznacza brak rekomendacji.
-- Brak potwierdzonego źródła danych oznacza brak rekomendacji.
-- Brak werdyktu sprawdzenia wstępnego oznacza brak pisania.
-- Brak planu sprzedażowego oznacza brak szkicu.
-- Brak rejestru ryzykownych twierdzeń oznacza brak szkicu.
-- Brak sprawdzenia przez człowieka oznacza brak przekazania szkicu do WordPress.
-- Brak audytu oznacza brak zapisu albo wykonania zmiany.
-- Brak okna pomiaru oznacza brak oceny sukcesu albo porażki.
-- Nie czekamy z przygotowaniem treści na metryki po publikacji; plan pomiaru
-  powstaje od razu, a wnioski o efekcie są zablokowane do końca okna obserwacji.
-- Existing content is preserve-first.
-- React renders API-owned view models; React does not decide product logic.
-- Codex skills consume WILQ API; skills do not invent business logic.
-- Dashboard text for the marketer is Polish and action-oriented.
-
-## Generation Runtime Boundary
-
-Production content artifacts must be generated by WILQ runtime code through the
-OpenAI API SDK with Structured Outputs and strict schemas. The runtime path is:
-
-```text
-WILQ API/domain contracts
--> approved ContentWorkItem / Preflight / Sales Brief / Claim Ledger
--> SDK Structured Output generation
--> Draft Package
--> Human Review
--> WordPress Draft Handoff
--> Measurement Window
-```
-
-Codex Desktop/CLI and `codex exec` are not the production writer. They are
-allowed for:
-
-- repository implementation work,
-- deterministic skill smoke tests and non-interactive evals,
-- adversarial operator checks,
-- local development orchestration,
-- reviewing whether skills respect WILQ API gates.
-
-Codex skills may help an operator use WILQ, but they must consume WILQ API
-contracts and must not create a parallel content-generation brain. If a draft
-artifact needs schema guarantees, it belongs in the SDK Structured Outputs path,
-not in `codex exec` output.
-
-## Frozen Growth Areas
-
-The following files are frozen for new feature growth. They may be touched only
-for extraction, thin routing, test parity or direct cleanup required by this
-plan:
-
-- `apps/api/wilq_api/main.py`
-- `wilq/schemas.py`
-- `wilq/actions/service.py`
-- `wilq/briefing/content_diagnostics.py`
-- `tests/test_api_contracts.py`
-- `apps/dashboard/src/routes/ContentDiagnosticSurface.tsx`
-
-If a new content feature needs one of these files, create a domain module first
-and move behavior out instead of adding another branch to the monolith.
-
-## Beads Operational Graph
-
-Active Goal 004 epic:
-
-- `wilq-seo-2qq` - Goal 004: Content Operations Layer.
-
-Active planning slice:
-
-- `wilq-seo-xlw` - Goal 004 recovery and plan alignment.
-
-Initial Goal 004 implementation slices:
-
-- `wilq-seo-6kd` - freeze content workflow contract.
-- `wilq-seo-a3t` - production content opportunity enrichment.
-- `wilq-seo-dtj` - Ekologus typed knowledge cards.
-- `wilq-seo-8xc` - operations-grade Sales Brief from enrichment and knowledge.
-- `wilq-seo-ao0` - draft variants through structured outputs.
-- `wilq-seo-a09` - bounded revision application.
-- `wilq-seo-03a` - WordPress draft-only adapter boundary.
-- `wilq-seo-prk` - measurement outcome interpreter.
-- `wilq-seo-wr4` - WILQ content operator skill and UAT harness.
-- `wilq-seo-akt` - anti-slop execution guard.
-
-Use `bd ready --json` for authoritative operational status. Do not duplicate
-this list as markdown task tracking; it is a recovery index only.
-
-Historical Goal 003 graph:
-
-Completed Goal 003 epic:
-
-- `wilq-seo-u6u` - Goal 003: Content Quality Workbench.
-
-Completed planning slice:
-
-- `wilq-seo-ik5` - Goal 003 recovery and plan alignment.
-
-First implementation slice:
-
-- `wilq-seo-d7c` - Goal 003 content queue API.
-- Result: `GET /api/content/work-items/queue` now returns an API-owned
-  diagnostics-derived queue. Current runtime evidence exposes 5 candidates:
-  4 actionable refresh candidates with evidence/source connectors/public final
-  canonical URLs and 1 Ahrefs review candidate blocked before writing because
-  it has no final canonical URL. Dev/preview URLs remain rejected as final
-  canonical targets.
-
-The graph already contains child work for the content queue API, per-item
-workflow state, deterministic quality review, gated live Structured Outputs,
-revision planning, `/content-workflow` queue UI, adversarial content evals and
-changed-code anti-slop budgets. Use `bd ready --json` for the authoritative
-operational queue.
-
-## Milestone A - Close Goal 001 Without False UAT Claims
-
-Goal:
-
-Record whether real marketer UAT happened or was explicitly deferred.
-
-Work:
-
-- Use `docs/handoffs/2026-06-29-marketer-uat-ready.md` for later real UAT.
-- Use an explicit owner defer when the owner decides to delay marketer UAT until
-  Goal 002 content production is useful.
-- Validate with `scripts/goal_001_completion_check.py`.
-- Update `docs/PROGRESS.md` and `docs/goals/001-goal.md`.
-
-Result:
-
-Goal 001 may be treated as no longer blocked by missing UAT input, but the
-product must not claim real marketer UAT.
-
-Proof:
-
-```bash
-rtk uv run python scripts/goal_001_completion_check.py --owner-defer docs/handoffs/2026-06-30-owner-defer-marketer-uat.json --format markdown
-rtk git diff --check
-```
-
-Blocked stop condition:
-
-If neither a real UAT result nor owner defer exists, do not start content
-production claims.
-
-## Milestone B - Anti-Slop Baseline
-
-Goal:
-
-Measure current Python and TypeScript risk before adding content workflow
-behavior.
-
-Work:
-
-- Add or update an audit script for largest Python files, functions and classes.
-- Report frozen-file growth risk.
-- Run current TS Fallow summary.
-- Run existing Python quality commands and record known baseline failures
-  honestly.
-- Do not refactor the full repo in this milestone.
-
-Result:
-
-The team knows which files are legacy hotspots and which files must not receive
-new product behavior.
-
-Proof:
-
-```bash
-rtk uv run python scripts/audit_complexity.py --summary
-rtk uv run ruff check . --statistics
-rtk uv run mypy wilq apps/api/wilq_api
-rtk pnpm fallow:summary
-rtk git diff --check
-```
-
-Blocked stop condition:
-
-If the tooling cannot run, record the exact command, failure and smallest
-follow-up issue. Do not silently ignore the gate.
-
-## Milestone C - Behavior-Preserving API Extraction
-
-Goal:
-
-Move FastAPI route registration and route handlers out of
-`apps/api/wilq_api/main.py` without changing endpoint paths or response shapes.
-
-Work:
-
-- Create route modules under `apps/api/wilq_api/routers/`.
-- Keep `main.py` as app factory / thin entrypoint.
-- Preserve all current public endpoint behavior.
-- Add parity tests for moved endpoints.
-
-Result:
-
-The API brain becomes editable without adding more logic to the entrypoint.
-
-Proof:
-
-Focused API contract tests for moved routes, live `/api/health`, live content
-diagnostics and `git diff --check`.
-
-Blocked stop condition:
-
-If an endpoint shape changes, stop and restore parity before adding new
-features.
-
-## Milestone D - Behavior-Preserving Content Domain Extraction
-
-Goal:
-
-Move content decision logic out of `wilq/briefing/content_diagnostics.py` into
-domain services without changing `/api/content/diagnostics` behavior.
-
-Work:
-
-- Create `wilq/content/inventory/`.
-- Create `wilq/content/preflight/`.
-- Create `wilq/content/canonical/`.
-- Create `wilq/content/planning/`.
-- Create `wilq/content/claims/`.
-- Create `wilq/content/drafting/`.
-- Create `wilq/content/handoff/`.
-- Create `wilq/content/measurement/`.
-- Keep `wilq/briefing/content_diagnostics.py` as composer during migration.
-
-Result:
-
-Content product behavior has a real domain home before new features are added.
-
-Proof:
-
-Focused content diagnostics tests pass before/after extraction and imports show
-domain modules do not depend on `wilq.briefing`.
-
-Blocked stop condition:
-
-If behavior parity cannot be proven, stop at extraction and do not implement new
-content capabilities.
-
-## Milestone E - ContentWorkItem And State Gates
-
-Goal:
-
-Represent one content item as a typed workflow state.
-
-Work:
-
-- Add `ContentWorkItem`.
-- Track evidence, source connectors, URL semantics, inventory, canonical,
-  duplicate, preflight, sales brief, rejestr twierdzeń, draft, human review,
-  WordPress handoff and measurement statuses.
-- Add state transition guards.
-
-Result:
-
-WILQ can reason about content progress as a workflow, not loose diagnostics.
-
-Proof:
-
-Tests prove preflight, sales brief, rejestr twierdzeń, human review and audit gates
-cannot be skipped.
-
-## Milestone F - Content Inventory And Preserve-First Planning
-
-Goal:
-
-Make existing content the default starting point.
-
-Work:
-
-- Extract WordPress/GSC-backed content inventory records.
-- Resolve `source_public_url`, `final_canonical_url`, `intended_final_url` and
-  optional `preview_url`.
-- Add preserve/refresh/merge/create/block planning.
-- Block create when existing relevant content or duplicate risk is unresolved.
-
-Result:
-
-Existing Ekologus articles are preserved, refreshed or merged before WILQ
-suggests creating new content.
-
-Proof:
-
-Tests for existing URL, missing inventory, dev preview URL, duplicate risk and
-safe create.
-
-## Milestone G - ContentPreflight v2
-
-Goal:
-
-Turn "Czy można pisać?" into a first-class workflow verdict.
-
-Work:
-
-- Add states: `blocked`, `plan_allowed`, `brief_allowed`, `draft_allowed`,
-  `handoff_allowed`.
-- Draft is allowed only after sales brief and rejestr twierdzeń.
-- Handoff is allowed only after human review.
-- Dashboard renders API-owned labels and disabled reasons.
-
-Result:
-
-Every writing request has a typed gate before any draft is prepared.
-
-Proof:
-
-Focused tests for no evidence, missing source, missing final canonical, dev URL
-as canonical, duplicate risk, missing brief and missing human review.
-
-## Milestone H - Sales Brief v1
-
-Goal:
-
-Create a structured sales/content brief before drafting.
-
-Work:
-
-- Build brief from evidence, inventory, preflight and Ekologus service context.
-- Include buyer problem, buyer trigger, target reader, search intent, service
-  fit, source facts, H1/H2/FAQ/CTA direction, internal links, forbidden claims,
-  missing evidence and measurement plan.
-
-Result:
-
-Draft quality is driven by API facts and commercial context, not prompt
-improvisation.
-
-Proof:
-
-Tests prove no brief without evidence and final URL semantics.
-
-## Milestone I - Claim Ledger v1
-
-Goal:
-
-Block unsupported legal, environmental, SEO, lead, revenue and performance
-claims before drafting.
-
-Work:
-
-- Add claim statuses: `allowed_with_evidence`, `allowed_general`,
-  `needs_human_review`, `blocked`, `blocked_until_measurement`.
-- Add claim types for service capability, SEO performance, lead generation,
-  compliance, environmental/legal-adjacent and business outcome.
-- Require review for risky claims.
-
-Result:
-
-WILQ cannot present risky claims as publish-ready language without source and
-review.
-
-Proof:
-
-Tests prove blocked claims cannot appear as publish-ready draft language.
-
-## Milestone J - Draft Package v1
-
-Goal:
-
-Generate only bounded, auditable draft packages.
-
-Work:
-
-- Generate outline first.
-- Require preflight, sales brief and rejestr twierdzeń.
-- Include section-to-evidence map, claims used, blocked claims removed and human
-  review questions.
-- Set `publish_ready=false`.
-
-Result:
-
-Draft output is useful for review, not direct publication.
-
-Proof:
-
-Tests prove draft generation is blocked without all gates.
-
-## Milestone K - Human Review v1
-
-Goal:
-
-Make human approval a required transition.
-
-Work:
-
-- Record review for brief, claims, draft and handoff.
-- Store reviewer, decision, notes, checked items and evidence IDs.
-- Feed review status into the workflow state.
-
-Result:
-
-No content is treated as WordPress-ready without explicit human review.
-
-Proof:
-
-Tests prove WordPress draft handoff is blocked without approved human review.
-
-## Milestone L - WordPress Draft Handoff v1
-
-Goal:
-
-Create or prepare WordPress drafts safely after review.
-
-Work:
-
-- Draft only.
-- No publish.
-- No destructive update of existing canonical content without a separate
-  approved action.
-- Require audit envelope.
-
-Result:
-
-Approved content can enter WordPress as a draft with traceability.
-
-Proof:
-
-Tests prove no handoff without review, audit and final canonical URL.
-
-## Milestone M - Measurement Window v1
-
-Goal:
-
-Prevent success/failure claims before data exists.
-
-Work:
-
-- Add baseline period, observation period, earliest verdict date, allowed
-  metrics, source connectors and status.
-- Attach measurement window to draft handoff or publication event.
-
-Result:
-
-WILQ can track content outcomes without overclaiming.
-
-Proof:
-
-Tests prove outcome claims are blocked before the measurement window is ready.
-
-## Final Completion Definition
-
-Goal 004 is complete only when WILQ proves a repeatable Ekologus content
-operating loop, not just a safe workbench proof:
-
-```text
-content queue with at least 5 candidates or typed blockers
--> selected ContentWorkItem
+queue candidate
 -> opportunity enrichment
 -> typed Ekologus knowledge cards
 -> operations-grade Sales Brief
 -> claim-gated draft variants
 -> deterministic quality review
--> bounded revision application with version/diff
+-> bounded revision application
 -> human review
 -> audit
--> WordPress draft-only handoff/execution
+-> WordPress draft-only handoff
 -> measurement window
--> conservative measurement outcome interpretation
--> WILQ content operator skill and UAT packet
+-> conservative outcome interpretation
 ```
 
-No skipped gates. No prompt-only product logic. No dev URL as canonical. No
-WordPress publish. No destructive update. No generated `publish_ready=true`. No
-unsupported marketing claims. No outcome claim before the measurement window is
-ready. No broad RAG/vector DB as product brain. No stale compatibility aliases
-when direct migration is feasible. No new feature growth in frozen monolith
-files. No dashboard logic fork. Full `rtk scripts/verify.sh` must pass.
+Broad proof passed with `rtk scripts/verify.sh`: 509 Python tests, 107
+dashboard/shared tests and 14 Playwright E2E/demo checks.
 
-Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
+Important limitation: Goal 004 closed the architecture and test proof, not
+daily usefulness for Wilku. The UAT harness exists, but the first real content
+operations session with Wilku is still not a product proof unless completed or
+explicitly owner-deferred with residual risk.
+
+## Active Goal
+
+Goal 005: Ekologus Knowledge Depth & UAT Closure.
+
+Status: active. Beads epic `wilq-seo-1oa`.
+
+Objective:
+
+Validate that WILQ's safe content operations loop is useful with real Ekologus
+knowledge, not only mechanically complete. Goal 005 must deepen typed knowledge
+cards, expose a read-only Service Profile/review path, run or explicitly defer
+the first real Wilku UAT, and audit Sales Brief v2 signal quality.
+
+This is not a new writing-flow goal. Do not add autopublishing, social
+publishing, broad RAG/vector DB, multi-client SaaS, workspace admin, outcome
+claims before measurement, or direct Codex/OpenAI/WordPress bypasses.
+
+## Product Thesis
+
+WILQ's hardest anti-slop problem after Goal 004 is no longer "can the system
+block unsafe writing?". It can. The harder question is whether the typed
+knowledge and evidence signals are deep enough that Wilku gets a useful
+Ekologus-specific brief instead of formally correct generic SEO copy.
+
+The next product step is therefore:
+
+```text
+knowledge-card depth audit
+-> Service Profile read/review surface
+-> Sales Brief signal-quality audit
+-> first real Wilku UAT
+-> precise follow-up blockers or implementation slices
+```
+
+## Non-Negotiable Rules
+
+- WILQ API owns product logic.
+- Dashboard renders API-owned view models.
+- Codex skills consume WILQ API; they do not invent product behavior.
+- No evidence ID means no recommendation.
+- No source connector means no recommendation.
+- Weak, stale or thin evidence must become an explicit low-confidence/blocker
+  state, not a polished generic brief.
+- Typed knowledge cards do not replace live evidence.
+- Knowledge-card updates must be reviewed/gated. Initial Service Profile work
+  is read-only plus flag/review request, not ungated self-service writes.
+- No broad RAG/vector DB before typed cards, source lineage, freshness,
+  validators and evals are strong.
+- No fake SEO score or magic content score.
+- No publish-ready draft claim.
+- WordPress remains draft-only/review-gated. No automatic publish.
+- Measurement outcome remains conservative and cannot claim success before the
+  observation window has usable data.
+
+## Current Discovery
+
+Current `wilq/content/knowledge/cards.py` contains three seeded cards:
+
+- `ekologus_service_environmental_compliance`
+- `ekologus_cta_consultation_without_guarantee`
+- `ekologus_evidence_live_connector_requirement`
+
+That is enough for Goal 004 contract proof. It is not yet enough to claim deep
+Ekologus knowledge coverage across real services, buyer problems, triggers,
+CTA patterns, claim policies and evidence requirements.
+
+## In Scope
+
+Goal 005 includes:
+
+1. Knowledge-card depth audit against real Ekologus services, buyer problems,
+   buyer triggers, CTA patterns, claim constraints and evidence requirements.
+2. Read-only Ekologus Service Profile/review design so Wilku can inspect card
+   status, source lineage, freshness and missing coverage without editing code.
+3. First real Wilku content UAT, or explicit owner defer with residual risk.
+4. Sales Brief v2 signal-quality audit across current queue candidates,
+   connector freshness/density and enrichment usefulness.
+5. Evidence-based draft variant selection guard design: no fake score, no new
+   generation flow, just API-owned comparison by evidence coverage, service
+   fit, buyer problem, CTA fit, duplicate risk and quality findings.
+6. Focused blockers/tests for missing required knowledge or weak signals.
+
+## Out Of Scope
+
+Goal 005 must not build:
+
+- automatic WordPress publishing,
+- destructive updates of existing `ekologus.pl` content,
+- mass article generation,
+- direct Codex-authored production content,
+- direct Codex/OpenAI calls bypassing WILQ API,
+- direct WordPress client calls from skills,
+- broad RAG/vector memory,
+- multi-client SaaS or agency admin,
+- Ads/Merchant/Localo write automation,
+- social publishing,
+- public success/failure claims before measurement readiness.
+
+## Completion Definition
+
+Goal 005 is complete only when repo evidence proves all of this:
+
+1. Knowledge-card coverage is audited against real Ekologus services, buyer
+   problems, triggers, CTA patterns, claim constraints and evidence
+   requirements.
+2. The audit states whether current cards are production-depth, thin, stale or
+   placeholder-like, with exact gaps and source lineage.
+3. Missing required card states are represented as typed blockers and covered by
+   focused tests or a documented blocker.
+4. A read-only Service Profile/review design or implementation exists for
+   Wilku-facing inspection of cards, freshness, source lineage and gaps.
+5. Knowledge-card write/update behavior remains blocked unless a future
+   human-review/audit path is explicitly implemented.
+6. Sales Brief v2 signal quality is assessed for current queue candidates:
+   sufficient, thin, stale or blocked, with connector/domain cause stated.
+7. Draft variant selection has an evidence-based comparison plan or
+   implementation and does not introduce a fake SEO/content score.
+8. One real Wilku UAT session is completed in 45 minutes or less, or the owner
+   explicitly defers it with residual risk and exact next UAT input required.
+9. UAT proof captures confusion points, off-brand/generic SEO findings,
+   source-trace questions, selected work item and exact follow-ups.
+10. `docs/PROGRESS.md`, `PLANS.md`, `docs/goals/005-goal.md` and Beads agree.
+11. Focused verification passes for changed areas, and full
+    `rtk scripts/verify.sh` passes before completion claims.
+
+## Verification Surface
+
+Use focused verification after every slice and full verification before
+completion.
+
+Minimum proof surface:
+
+- Knowledge-card domain tests under `tests/content`.
+- API contract tests for Service Profile/review endpoints if implemented.
+- Dashboard route/component tests if a Service Profile surface is implemented.
+- `wilq-content-operator` smoke/eval if the skill consumes new Service Profile
+  or UAT fields.
+- `rtk git diff --check` for docs-only slices.
+- `rtk uv run pytest tests/content -q` for content domain changes.
+- Relevant dashboard tests/typecheck for UI changes.
+- `rtk scripts/verify.sh` before completion.
+
+## Beads Operational Graph
+
+Use Beads as the authoritative development task graph. Active Goal 005 epic:
+
+- `wilq-seo-1oa` - Goal 005: Ekologus Knowledge Depth & UAT Closure.
+
+Initial slices:
+
+- `wilq-seo-9do` - Goal 005 recovery and plan alignment.
+- `wilq-seo-3lk` - audit Ekologus knowledge-card depth.
+- `wilq-seo-94k` - design read-only Ekologus Service Profile review surface.
+- `wilq-seo-jst` - run first real Wilku content UAT or record explicit defer.
+- `wilq-seo-n8r` - audit Sales Brief v2 signal quality.
+- `wilq-seo-87i` - define evidence-based draft variant selection guard.
+
+This section is a recovery index only. Operational status lives in Beads.
+
+## Execution Order
+
+### 1. Recovery and plan alignment
+
+Inspect first: `AGENTS.md`, `PLAN.md`, `PLANS.md`, `docs/CONTEXT.md`,
+`docs/PROGRESS.md`, `docs/goals/archive/004-goal.md`, current knowledge-card
+code and Beads.
+
+Build: this active plan, `docs/goals/005-goal.md`, progress/context alignment
+and Beads graph.
+
+Do not build: product behavior.
+
+Proof: `bd ready --json`, `git diff --check`, commit and push.
+
+### 2. Knowledge-card depth audit
+
+Inspect first:
+
+- `wilq/content/knowledge/cards.py`
+- `wilq/content/briefs/sales.py`
+- `wilq/content/enrichment/opportunity.py`
+- `tests/content/test_content_knowledge_cards.py`
+- current Ekologus source docs and live queue/enrichment when API is reachable.
+
+Build: a coverage audit and exact implementation blockers for missing or thin
+cards.
+
+Do not build: broad RAG or prompt-only knowledge.
+
+Proof: focused tests or explicit blocker if production-depth cards cannot be
+created without owner/source input.
+
+### 3. Service Profile review path
+
+Inspect first: content knowledge cards, knowledge API router, dashboard knowledge
+surfaces and shared schemas.
+
+Build: read-only Service Profile/review design or implementation. It should let
+Wilku inspect current service knowledge, source lineage, freshness, claim
+constraints and missing coverage. Flagging/review requests are allowed only if
+they are explicitly gated.
+
+Do not build: direct knowledge-card editing.
+
+Proof: API/dashboard tests if implemented; otherwise a concrete design with
+blocked write-path rules.
+
+### 4. Sales Brief v2 signal-quality audit
+
+Inspect first: queue candidates, enrichment source facts, GSC/GA4/Ahrefs/
+WordPress connector freshness and Sales Brief v2 output.
+
+Build: an audit that classifies signals as sufficient, thin, stale or blocked
+and names connector/domain causes.
+
+Do not build: fake opportunity scores.
+
+Proof: domain/API tests or a documented blocker for weak source data.
+
+### 5. Wilku UAT
+
+Inspect first: UAT harness, `/content-workflow`, current content queue and
+operator skill output.
+
+Build: a real UAT packet and session proof, or explicit owner defer with
+residual risk.
+
+Do not build: a prettier demo that hides missing depth.
+
+Proof: participant/date/scope, selected work item, completion time, confusion
+points, off-brand/generic SEO findings, source-trace questions and follow-ups.
+
+## Stop Conditions
+
+Stop and record a blocker if:
+
+- current knowledge cards are mostly seed/placeholder coverage and no trusted
+  Ekologus source exists to deepen them,
+- Wilku cannot complete one content session within 45 minutes without developer
+  intervention,
+- draft variants sound like generic SEO despite passing formal gates,
+- WordPress draft-only handoff requires debugging during normal UAT,
+- Wilku asks "skąd to wzięło?" and the UI cannot show a concrete source fact,
+- a proposed endpoint lets Wilku update knowledge cards without human
+  review/audit,
+- live Structured Outputs is enabled without a separate adapter-boundary audit.
 
 ## Progress
 
-2026-07-01:
-
-- Goal 004 epic `wilq-seo-2qq` is complete. Planning slice `wilq-seo-xlw`,
-  contract-freeze slice `wilq-seo-6kd`, all content-operations slices, the
-  content operator skill/UAT harness, UI/API hardening slice `wilq-seo-4wi` and
-  anti-slop guard `wilq-seo-akt` are closed.
-- Content opportunity enrichment slice `wilq-seo-a3t` added
-  `GET /api/content/work-items/{work_item_id}/enrichment`, typed
-  `ContentOpportunityEnrichment` contracts and a Polish `/content-workflow`
-  panel that shows buyer problem, trigger, service fit, CTA hypothesis, source
-  facts and measurement baseline. The slice is API-owned, deterministic and
-  blocks missing work item, missing evidence/source connectors, dev canonical
-  misuse and missing service fit instead of inventing recommendations.
-- Focused proof for the enrichment slice: content enrichment/API contract
-  pytest subset, dashboard API/route Vitest subset, dashboard typecheck, Ruff,
-  mypy, changed-file complexity audit, Fallow audit and `git diff --check`
-  passed.
-- Typed Ekologus knowledge cards slice `wilq-seo-dtj` added
-  `GET /api/content/knowledge-cards`, strict typed content knowledge-card
-  models, seeded service/CTA/evidence policy cards, Sales Brief knowledge-card
-  gating and shared dashboard schemas. The slice keeps knowledge as typed
-  cards/rules with lineage, confidence and freshness; it does not add broad
-  RAG or prompt-only business logic.
-- Focused proof for the knowledge-card slice: content knowledge-card, Sales
-  Brief, content workflow end-to-end and contract-inventory pytest subset,
-  dashboard API/route Vitest subset, dashboard typecheck, Ruff, mypy,
-  changed-file complexity audit, Fallow audit and `git diff --check` passed.
-- Operations-grade Sales Brief slice `wilq-seo-8xc` upgraded Sales Brief v2 so
-  it requires opportunity enrichment, consumes enrichment-owned buyer problem,
-  buyer trigger, service fit, CTA hypothesis, source facts and measurement
-  baseline, exposes operations context, knowledge constraints and measurement
-  boundary fields through shared schemas, and blocks missing or blocked
-  enrichment. Workflow API request/response contracts were extracted to
-  `wilq/content/workflow/contracts.py` to keep anti-slop budgets green.
-- Focused proof for the Sales Brief v2 slice: Sales Brief, content workflow
-  end-to-end and contract-inventory pytest subset, dashboard API/route Vitest
-  subset, dashboard typecheck, Ruff, mypy, changed-file complexity audit,
-  Fallow audit and `git diff --check` passed.
-- Draft variants slice `wilq-seo-ao0` added
-  `POST /api/content/work-items/draft-variants` and typed variants for
-  preserve-first refresh, problem-led, service-led and FAQ/supporting paths.
-  Variants are wrappers over the existing Structured Outputs generation
-  contract after Sales Brief, Claim Ledger and Draft Package gates; they keep
-  `publish_ready=false`, expose `wordpress_write_allowed=false`, and do not
-  call WordPress or create a second writer path.
-- Focused proof for the draft variants slice: draft variants/domain/API and
-  content workflow contract-inventory pytest subset, fake SDK live runtime
-  proof, Ruff, mypy, changed-file complexity audit and `git diff --check`
-  passed.
-- Bounded revision application slice `wilq-seo-a09` added
-  `POST /api/content/work-items/revision-apply` and the selected
-  `POST /api/content/work-items/{work_item_id}/revision-apply` path. Revision
-  application only applies instructions from a WILQ revision plan, requires an
-  updated quality-review rerun, returns versioned diff entries, blocks
-  mismatched work items and keeps `publish_ready=false` plus
-  `wordpress_write_allowed=false`.
-- Focused proof for the bounded revision application slice: content quality
-  review/API and content workflow contract-inventory pytest subset, Ruff,
-  mypy, changed-file complexity audit and `git diff --check` passed.
-- WordPress draft-only adapter boundary slice `wilq-seo-03a` made the execution
-  contract explicit. Every execution result now carries a typed boundary with
-  the only allowed operation (`create_wordpress_draft`), dry-run default state,
-  live-write/adapter readiness and structural `publish_allowed=false` plus
-  `destructive_update_allowed=false`. The API still blocks live write by
-  default, while the domain proof for an explicitly supplied adapter can create
-  only a draft payload.
-- Focused proof for the WordPress boundary slice: WordPress execution/handoff,
-  content workflow end-to-end and adversarial pytest subset, shared-schema
-  Vitest, dashboard API/route Vitest, dashboard typecheck, Ruff, source mypy,
-  Fallow audit, changed-file complexity audit and `git diff --check` passed.
-- Conservative measurement outcome interpreter slice `wilq-seo-prk` added
-  `POST /api/content/work-items/measurement-outcome` and a deterministic
-  `ContentMeasurementOutcomeInterpretation`. It returns `not_ready`,
-  `insufficient_data`, `noisy_inconclusive`, `directional_improvement`,
-  `likely_underperformance` or `measured_success`, refuses outcome claims before
-  `earliest_verdict_date`, requires observed metric values with evidence IDs
-  and preserves limitations instead of claiming causality theater.
-- Focused proof for the measurement outcome slice: measurement outcome/window
-  and content workflow contract-inventory pytest subset, shared-schema Vitest,
-  Ruff, source mypy, Fallow audit, changed-file complexity audit and
-  `git diff --check` passed.
-- WILQ content operator skill/UAT harness slice `wilq-seo-wr4` added
-  `.agents/skills/wilq-content-operator` as an API-orchestrator skill, not a
-  production writer. The skill contract consumes queue, selected snapshot,
-  enrichment, knowledge cards, structured runtime, quality review, bounded
-  revision, human review, audit, WordPress draft-only execution and measurement
-  outcome endpoints. It forbids direct OpenAI calls, direct WordPress calls,
-  publication, destructive updates, dev canonical usage and success claims
-  before measurement readiness.
-- Focused proof for the content operator slice: skill-creator validation, skill
-  hygiene, dedicated skill contract pytest, content enrichment API pytest,
-  live skill smoke, live Wilku UAT packet for 5 candidates, Ruff, mypy,
-  Fallow audit, changed-file complexity audit and `git diff --check` passed.
-- Final Goal 004 proof: `rtk scripts/verify.sh` passed after the UI/API
-  hardening and connector-scope cleanup.
-- Next product slice should come from `bd ready --json`; Goal 004 itself should
-  not be reopened unless a regression or new scope is explicitly created.
-
-2026-06-30:
-
-- Goal 001 real marketer UAT was explicitly deferred by the owner in
-  `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`.
-- The defer was validated with
-  `scripts/goal_001_completion_check.py --owner-defer`.
-- Goal 002 Beads epic `wilq-seo-zu4` was created.
-- First ready Goal 002 slice is `wilq-seo-0zb`: anti-slop baseline.
-- Goal 002 operational child issues were created for router extraction, content
-  domain extraction, ContentWorkItem, Content Inventory v1, ContentPreflight v2,
-  Sales Brief v1, Claim Ledger v1, Draft Package v1, Human Review v1, WordPress
-  Draft Handoff v1 and Content Measurement Window v1.
-- Anti-slop baseline proof was recorded in
-  `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
-- `scripts/audit_complexity.py` now reports largest Python files, functions and
-  classes plus frozen-file growth risk.
-- Baseline result: frozen growth files are clean in the current diff, but full
-  Ruff, mypy and Fallow still report historical debt. Treat these as known
-  baseline failures, not as proof that future slices may add more debt.
-- First content domain extraction moved canonical/public URL semantics from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/canonical/urls.py` without changing content diagnostics
-  behavior.
-- Second content domain extraction moved preflight verdict helpers from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/preflight/verdicts.py` without changing content diagnostics
-  behavior.
-- Third content domain extraction moved inventory/canonical/duplicate gate
-  status rules from `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/inventory/gates.py` without changing content diagnostics
-  behavior, and removed unused private WordPress inventory detail helpers rather
-  than preserving dead code in a new module.
-- Fourth content domain extraction moved content decision metrics, priority,
-  title/summary, sorting and small formatting helpers from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/planning/decisions.py` without changing content diagnostics
-  behavior.
-- Fifth content domain extraction moved GSC content decision construction from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/planning/decisions.py`. The briefing module now passes
-  knowledge/expert IDs into the domain function instead of owning the GSC
-  preserve/refresh/merge/create decision builder.
-- Sixth content domain extraction moved GA4 tracking-gap content blocking from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/measurement/decisions.py`. GA4 `(not set)` and tracking gaps
-  remain measurement blockers, not content rewrite recommendations, and focused
-  measurement tests now cover that behavior directly.
-- Seventh content domain extraction moved Ahrefs gap review decision
-  construction from `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/planning/ahrefs.py`. The briefing module now passes
-  knowledge/expert IDs into the Ahrefs planner, while relevance scoring,
-  candidate rows and off-topic filtering are tested directly in the content
-  planning domain.
-- Eighth content domain extraction moved the GSC/WordPress vendor-read blocker
-  decision and refresh evidence helpers from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/preflight/vendor_read.py`. Missing read evidence remains a
-  content preflight blocker, not a prompt-side fallback.
-- Ninth content domain extraction moved marketer-facing content preflight and
-  decision view construction from `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/preflight/marketer_view.py`. The briefing module now composes
-  the response while preserve-first copy, blocked-claim labels, missing inputs,
-  concrete gate labels and preflight item view-models are tested directly in
-  the content preflight domain.
-- Tenth content domain extraction moved content API view-model label helpers
-  from `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/view_models/labels.py`. Content connector status labels,
-  refresh labels, metric labels, live-data status copy and section label
-  hydration now live in the content domain instead of the briefing composer.
-- Eleventh content domain extraction moved the GSC query/page section,
-  WordPress inventory match section and content action safety section from
-  `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/view_models/sections.py`. The briefing module now composes
-  these sections instead of owning their marketer-facing view logic.
-- Twelfth content domain extraction moved the content operator summary,
-  query/page count, matched inventory count and Ahrefs/WordPress overlap count
-  from `wilq/briefing/content_diagnostics.py` to
-  `wilq/content/view_models/summary.py`. The briefing module now composes the
-  summary instead of owning this marketer-facing aggregation.
-- First API router extraction moved read-only connector endpoints from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
-  This preserves endpoint paths and response shapes for connector list, status
-  and refresh-run reads. Connector refresh POST remains in `main.py` for a
-  later cache-aware router slice.
-- Second API router extraction moved jobs and job-run endpoints from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/jobs.py`. Scheduler
-  domain behavior stays in `wilq.jobs`; `main.py` still uses scheduler status
-  only for the system-status aggregate.
-- Third API router extraction moved evidence and metric read endpoints from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/evidence.py` and
-  `apps/api/wilq_api/routers/metrics.py`. Context-pack internals still use the
-  evidence and metric stores directly where they build compact operator
-  context.
-- Fourth API router extraction moved knowledge and expert-rule endpoints from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/knowledge.py` and
-  `apps/api/wilq_api/routers/expert.py`. Context-pack compaction helpers still
-  stay in `main.py` until they receive a separate scoped extraction.
-- Fifth API router extraction moved workflow and workflow-run endpoints from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/workflows.py`.
-  Codex run endpoints remain in `main.py` for a later context-runtime router
-  slice.
-- Sixth API router extraction moved root, health and system-status endpoints
-  from `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/system.py`.
-  Context-pack construction still reads connector/opportunity state in `main.py`
-  until the context runtime is extracted.
-- Seventh API router extraction moved opportunity list, detail and recompute
-  endpoints from `apps/api/wilq_api/main.py` to
-  `apps/api/wilq_api/routers/opportunities.py`. Context-pack construction still
-  calls `list_opportunities()` directly until context runtime extraction.
-- Eighth API router extraction moved read-only command center, marketing and
-  domain diagnostics endpoints from `apps/api/wilq_api/main.py` to
-  `apps/api/wilq_api/routers/diagnostics.py`. This includes
-  `/api/dashboard/command-center`, `/api/marketing/*`, `/api/ads/diagnostics`,
-  `/api/merchant/diagnostics`, `/api/content/*`, `/api/ga4/diagnostics`,
-  `/api/localo/diagnostics` and `/api/ahrefs/diagnostics`. At that slice,
-  Demand Gen diagnostics stayed in `main.py` until its context-heavy readiness
-  builder could be wrapped safely.
-- Ninth API router extraction moved action, audit and mutation-audit endpoints
-  from `apps/api/wilq_api/main.py` to
-  `apps/api/wilq_api/routers/actions.py`. Validation, review, preview,
-  confirmation, impact-check and apply paths still clear API view-model caches
-  through an injected callback instead of importing `main.py` from the router.
-  Remaining route groups in `main.py` are connector refresh, Demand Gen
-  diagnostics and Codex/context endpoints.
-- Tenth API router extraction moved connector refresh POST from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/connectors.py`.
-  Refresh still clears API view-model caches through an injected callback.
-  Remaining route groups in `main.py` are Demand Gen diagnostics and
-  Codex/context endpoints.
-- Eleventh API router extraction moved Demand Gen diagnostics from
-  `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/demand_gen.py`
-  without moving the context-heavy readiness builder yet. The router receives
-  the current builder as an injected callback. Remaining route groups in
-  `main.py` are Codex/context endpoints.
-- Twelfth API router extraction moved Codex context and Codex run endpoints
-  from `apps/api/wilq_api/main.py` to `apps/api/wilq_api/routers/codex.py`.
-  `ContextPackRequest` now lives in `apps/api/wilq_api/context_models.py`.
-  The router receives the existing `context_pack` callable as an injected
-  builder; the heavy context-pack construction still remains in `main.py` for
-  a later runtime extraction. `main.py` no longer declares direct
-  `@app.get`/`@app.post` route handlers.
-
-Current next action:
-
-Goal 004 is complete. Continue from `bd ready --json`; do not infer a new goal
-from chat history without creating/updating Beads and the durable docs first.
-
-Completed Goal 002 extraction context:
-
-- `wilq-seo-hdl` - behavior-preserving API router extraction, closed after the
-  Codex router slice.
-  First slice moved read-only connector endpoints to a router. Second slice
-  moved jobs and job-run endpoints to a jobs router. Third slice moved
-  evidence and metric read endpoints to dedicated routers. Fourth slice moved
-  knowledge and expert-rule endpoints to dedicated routers. Fifth slice moved
-  workflow and workflow-run endpoints to a workflows router. Sixth slice moved
-  root, health and system-status endpoints to a system router. Seventh slice
-  moved opportunity endpoints to an opportunities router. Eighth slice moved
-  command center, marketing and read-only domain diagnostics endpoints to a
-  diagnostics router. Ninth slice moved action, audit and
-  mutation-audit endpoints to an actions router while preserving cache clearing
-  after mutating calls. Tenth slice moved connector refresh POST to the
-  connectors router while preserving cache clearing after refresh. Eleventh
-  slice moved Demand Gen diagnostics to a router while leaving the readiness
-  builder in `main.py` for a later context extraction. Twelfth slice moved
-  Codex context and Codex run endpoints to a Codex router while leaving the
-  context-pack builder in `main.py` for a later runtime extraction.
-- `wilq-seo-462` - follow-up context-pack runtime extraction, open. This is a
-  technical anti-slop task to move heavy Codex context-pack internals out of
-  `main.py` without changing `/api/codex/*` response shapes. First partial
-  slice moved request-skill parsing and skill context-pack cache to
-  `apps/api/wilq_api/context_cache.py`; second partial slice moved skill scope
-  maps to `apps/api/wilq_api/context_scopes.py`; third partial slice moved
-  skill-scoped knowledge-card and expert-rule selection to
-  `apps/api/wilq_api/context_knowledge.py`; fourth partial slice moved
-  context-pack action selection and skill action scoping to
-  `apps/api/wilq_api/context_actions.py`; fifth partial slice moved shared
-  compaction helpers to `apps/api/wilq_api/context_compaction.py`; sixth partial
-  slice moved neutral context utility helpers into the same module; seventh
-  partial slice moved context traceability helpers to
-  `apps/api/wilq_api/context_trace.py`; eighth partial slice moved Merchant
-  skill context compaction to `apps/api/wilq_api/context_merchant.py` and the
-  shared priority-list helper to `apps/api/wilq_api/context_compaction.py`;
-  ninth partial slice moved GA4 skill context compaction to
-  `apps/api/wilq_api/context_ga4.py`; tenth partial slice moved Ahrefs skill
-  context compaction to `apps/api/wilq_api/context_ahrefs.py` and neutral
-  connector/contract compaction helpers to `apps/api/wilq_api/context_compaction.py`.
-  Eleventh partial slice moved marketing brief, tactical queue and social draft
-  context compaction to `apps/api/wilq_api/context_marketing.py`. Twelfth
-  partial slice moved Content Planner, GSC content doctor and campaign-builder
-  landing context compaction to `apps/api/wilq_api/context_content.py`.
-  Thirteenth partial slice moved Ads Doctor, Ads lite, custom segments and
-  campaign-candidate context compaction to `apps/api/wilq_api/context_ads.py`.
-  Fourteenth partial slice moved Demand Gen context-pack diagnostics and
-  readiness-contract construction to `apps/api/wilq_api/context_demand_gen.py`.
-  Fifteenth partial slice moved compact action payload and preview-card shaping
-  to `apps/api/wilq_api/context_action_payload.py` and
-  `apps/api/wilq_api/context_action_previews.py`. `main.py` still owns
-  top-level context-pack orchestration and generic daily/skill summary helpers.
-  Sixteenth partial slice moved daily-command context construction and shared
-  opportunity/evidence/knowledge/expert operator summaries to
-  `apps/api/wilq_api/context_daily.py`.
-  Seventeenth partial slice moved skill-scoped context-pack orchestration,
-  diagnostics dispatch and skill opportunity filtering to
-  `apps/api/wilq_api/context_skill.py`.
-  Eighteenth partial slice moved full-context context-pack assembly to
-  `apps/api/wilq_api/context_full.py`; `main.py` now delegates daily,
-  skill-scoped and full-context context-pack construction to focused runtime
-  modules.
-- `wilq-seo-x4u` - behavior-preserving content domain extraction, closed after
-  canonical URL, preflight verdict, inventory gate, planning helper, GSC
-  decision builder, GA4 measurement-blocker, Ahrefs gap review, vendor-read
-  blocker, marketer preflight view, content API label, diagnostic section and
-  content operator summary extraction slices.
-- `wilq-seo-wiz` - next product slice: add typed `ContentWorkItem` workflow
-  state, closed. `wilq/content/workflow/models.py` now proves that preflight,
-  sales brief, rejestr twierdzeń, human review, audit and measurement gates cannot
-  be skipped. Draft and WordPress handoff require a measurement plan up front;
-  outcome claims remain blocked until the measurement window is ready.
-- `wilq-seo-acy` - next product slice: build Content Inventory v1 records that
-  can support preserve/refresh/merge/create/block decisions without treating
-  dev preview URLs as canonical evidence, closed. `wilq/content/inventory/records.py`
-  now returns structured inventory records and preserve/create/block resolution.
-- `wilq-seo-jih` - next product slice: turn ContentPreflight into a first-class
-  workflow verdict over `ContentWorkItem` and Content Inventory v1, closed.
-  `wilq/content/preflight/workflow.py` now exposes blocked, plan_allowed,
-  brief_allowed, draft_allowed and handoff_allowed states without drafting or
-  writing.
-- `wilq-seo-wxm` - next product slice: add Claim Ledger v1 so risky SEO,
-  business, legal-adjacent and environmental claims are data with statuses, not
-  prompt instructions, closed. `wilq/content/claims/ledger.py` now blocks
-  guarantees, measurement-dependent outcome claims and unreviewed legal/risk/
-  environmental claims before draft readiness.
-- `wilq-seo-pnz` - Sales Brief v1, closed. `wilq/content/briefs/sales.py`
-  now builds a typed brief only from valid work item, preflight, inventory,
-  rejestr twierdzeń, source facts, final canonical URL and measurement plan inputs.
-- `wilq-seo-dhf` - Draft Package v1, closed. `wilq/content/drafts/package.py`
-  now builds outline-first packages only after `draft_allowed` preflight,
-  matching Sales Brief, matching Claim Ledger and source-fact evidence mapping.
-  Packages include brief ID, rejestr twierdzeń ID, section-to-evidence mapping,
-  publish-ready claims, blocked claims removed, human review questions and
-  `publish_ready=false`.
-- `wilq-seo-4b5` - Human Review v1, closed.
-  `wilq/content/review/human.py` now records reviewed-by, decision, checked
-  items, evidence IDs and handled blocked claims for sales brief, rejestr twierdzeń,
-  draft package and WordPress handoff stages. Only approved review can update
-  the content workflow state to unblock the WordPress handoff gate.
-- `wilq-seo-qsf` - WordPress Draft Handoff v1, closed.
-  `wilq/content/handoff/wordpress.py` now prepares draft-only WordPress
-  handoff contracts after public final canonical URL, matching Draft Package,
-  approved Human Review and audit envelope. It blocks dev preview canonical
-  targets, publish-ready draft packages and non-approved review. The handoff is
-  `prepared` until a real WordPress post ID exists; it never publishes.
-- `wilq-seo-w18` - Content Measurement Window v1, closed.
-  `wilq/content/measurement/window.py` now records baseline and observation
-  periods, earliest verdict date, allowed metrics, source connectors, evidence
-  IDs and optional WordPress handoff link. Outcome claims stay blocked until the
-  window reaches `ready_for_review` or `closed` after the earliest verdict date.
-- `wilq-seo-bl3` - content work item preflight API bridge, closed.
-  `POST /api/content/work-items/preflight` exposes the existing
-  `ContentWorkItem`, Content Inventory v1 and ContentPreflight v2 domain
-  contracts through WILQ API without moving logic to React or Codex skills.
-- `wilq-seo-asw` - content sales brief API bridge, closed.
-  `POST /api/content/work-items/sales-brief` exposes Sales Brief v1 through
-  WILQ API after computing inventory resolution and ContentPreflight v2. The
-  endpoint returns typed blockers or a typed brief, but does not draft or hand
-  off content.
-- `wilq-seo-1tc` - content draft package API bridge, closed.
-  `POST /api/content/work-items/draft-package` exposes Draft Package v1 through
-  WILQ API after inventory, preflight, Sales Brief and Claim Ledger gates. The
-  endpoint returns an outline-first package with `publish_ready=false` or typed
-  blockers, but does not create WordPress drafts or publish content.
-- `wilq-seo-5mr` - content human review API bridge, closed.
-  `POST /api/content/work-items/human-review` exposes Human Review v1 through
-  WILQ API, updates the work item only after blocker-free review, and reports
-  whether WordPress handoff is allowed without creating a handoff.
-- `wilq-seo-24b` - content WordPress draft handoff API bridge, closed.
-  `POST /api/content/work-items/wordpress-draft-handoff` exposes WordPress
-  Draft Handoff v1 as a typed prepare-only, draft-only contract. It returns
-  handoff blockers or a prepared handoff, but does not call WordPress, create a
-  post, publish content or allow destructive updates.
-- `wilq-seo-44e` - content measurement window API bridge, closed.
-  `POST /api/content/work-items/measurement-window` exposes Content Measurement
-  Window v1 as a typed contract after WordPress draft handoff. It returns a
-  planned observation window, applies `measurement_window_status/id` to the
-  returned work item, keeps `success_claim_allowed=false` while planned and
-  exposes outcome blockers before `earliest_verdict_date`.
-- `wilq-seo-8tu` - content workflow API chain smoke, closed.
-  Focused API tests now prove one fixture-backed Ekologus content work item can
-  pass through preflight, Sales Brief, Draft Package, Human Review, WordPress
-  draft handoff and Measurement Window endpoints while preserving evidence IDs,
-  draft-only WordPress safety and blocked early outcome claims.
-- `wilq-seo-qso` - content workflow dashboard API contracts, closed.
-  Shared Zod schemas and dashboard API helpers now expose the Goal 002
-  `POST /api/content/work-items/*` contracts to frontend code. The new shared
-  schemas live in `packages/shared-schemas/src/contentWorkflow.ts` and
-  `apps/dashboard/src/lib/api.ts` stays a thin API client without React product
-  logic or label remapping.
-
-Do not add new content workflow behavior to frozen monolith files. New Goal 002
-behavior must land in focused content/domain modules with tests first.
+- 2026-07-01: Goal 005 Beads epic `wilq-seo-1oa` created. Initial recovery,
+  knowledge audit, Service Profile, UAT, Sales Brief signal-quality and variant
+  selection slices created.
+- 2026-07-01: Current knowledge implementation inspected. It has three seeded
+  cards, so Goal 005 starts from "contract proof exists, depth unverified".
 
 ## Surprises & Discoveries
 
-- The previous `PLANS.md` content had become a prompt-like implementation
-  brief, not a restartable ExecPlan. It has been condensed into this structured
-  plan.
-- Goal 001 parent epic still has historical in-progress children in Beads, so
-  only the UAT/defer child was closed in this slice. Do not close the parent
-  epic without a separate completion audit.
+- The current cards are useful as guardrails but too broad for deep Ekologus
+  operations: one service card covers BDO/odpady/Zielony Lad together.
+- UAT harness proof is not the same as Wilku UAT. Treat it as preparation, not
+  validation.
 
 ## Decision Log
 
-2026-06-30:
-
-- Decision: Defer marketer UAT instead of showing the current cockpit as a
-  content-production tool.
-  Reason: owner direction is to build real content-production value first.
-- Decision: Goal 002 starts with anti-slop baseline.
-  Reason: Python and TypeScript hotspots are already visible, and new content
-  workflow work must not be added to monoliths.
-- Decision: Beads tracks operational slices while this file keeps product
-  milestones.
-  Reason: avoids duplicate TODO systems and keeps recovery concise.
-- Decision: Content work should not wait for post-publication metrics, but every
-  content work item must include a measurement plan before draft or handoff.
-  Reason: WILQ can prepare better content now while reserving success/failure
-  claims until the observation window has real data.
-- Decision: `ContentWorkItem` workflow state is a domain model first, not an API
-  endpoint or dashboard remapper.
-  Reason: later API, Codex and dashboard work must consume the same gate logic
-  instead of reimplementing it in prompts or React conditionals.
-- Decision: Content Inventory v1 is a preserve-first resolution model before it
-  is a rich extractor.
-  Reason: WILQ needs safe content decisions now; richer extraction can build on
-  records that already block missing canonical, dev-preview canonical and
-  unresolved duplicate risk.
-- Decision: ContentPreflight v2 is a workflow verdict, not a writer.
-  Reason: preflight should decide allowed next stages and blockers while Sales
-  Brief, Claim Ledger, Draft Package, Human Review and WordPress handoff stay
-  separate audited steps.
-- Decision: Claim Ledger v1 treats risky marketing language as data, not prompt
-  advice.
-  Reason: unsupported guarantees, SEO/performance/business outcome claims and
-  legal-adjacent claims must block draft readiness deterministically.
-- Decision: Sales Brief v1 is a typed contract, not a prompt draft.
-  Reason: later SDK/Codex draft generation must consume buyer problem, source
-  facts, final URL, forbidden claims and measurement plan instead of inventing
-  them inside a prompt.
-- Decision: Production draft generation uses OpenAI API SDK Structured Outputs;
-  `codex exec` remains an eval/development/operator automation surface.
-  Reason: WILQ needs strict typed artifacts and stable runtime boundaries, while
-  Codex is best used to test, inspect and operate those boundaries without
-  becoming a second content brain.
-- Decision: Human Review v1 is a domain contract, not a UI-only confirmation.
-  Reason: WordPress handoff must depend on an auditable human decision with
-  checked items, evidence IDs and handled blocked claims, not a dashboard toggle.
-- Decision: WordPress Handoff v1 is prepare-only until a connector write returns
-  a real post ID.
-  Reason: WILQ must not claim draft creation or publication from a local plan;
-  the safe contract can prepare `post_status=draft` while keeping publish and
-  destructive update paths blocked.
-- Decision: Measurement Window v1 is created before outcome evidence exists.
-  Reason: WILQ can plan the metrics now and still block success/failure language
-  until the observation window reaches the earliest verdict date with usable
-  source data.
+- Goal 005 focuses on usefulness validation and knowledge depth, not another
+  writing pipeline.
+- Service Profile starts read-only plus review/flag semantics. Direct
+  self-service knowledge writes are out of scope until a review/audit path
+  exists.
+- Variant selection must be evidence-based dimensions/blockers, not a fake
+  score.
 
 ## Outcomes & Retrospective
 
-Current outcome:
-
-- Goal 001 is no longer blocked by missing UAT input because owner defer exists,
-  but WILQ still cannot claim real marketer UAT.
-- Goal 002 completion definition is satisfied for one diagnostics-derived
-  Ekologus content item. WILQ now has a safe draft-preparation workflow with
-  evidence, inventory/canonical resolution, duplicate check, preflight,
-  preserve-first plan, sales brief, rejestr twierdzeń, draft package, human review,
-  audit, WordPress draft-only handoff/execution dry-run and measurement window.
-  It still cannot be described as a live WordPress publisher or as a system that
-  claims content success before the measurement window has usable data.
-- Anti-slop baseline is implemented and recorded as proof.
-- API router extraction has started. Connector read and refresh endpoints now
-  have a router home. Jobs and job-run endpoints also now have a router home.
-  Evidence and metric read endpoints also now have router homes. Knowledge and
-  expert-rule endpoints also now have router homes. Workflow and workflow-run
-  endpoints also now have a router home. Root, health and system-status
-  endpoints also now have a router home. Opportunity endpoints also now have a
-  router home. Command center, marketing and read-only domain diagnostics
-  endpoints also now have a diagnostics router home. Action, audit and
-  mutation-audit endpoints also now have an actions router home. Demand Gen
-  diagnostics also now has a router home. Codex context and Codex run endpoints
-  also now have a router home. `main.py` no longer declares direct route
-  handlers, but still owns heavy context-pack builder internals.
-- Context-pack runtime extraction is reducing `main.py` without changing
-  `/api/codex/*` response shapes. Merchant skill context compaction now lives in
-  `apps/api/wilq_api/context_merchant.py`; shared compaction, trace, scope,
-  knowledge, GA4, Ahrefs, marketing/social, content/GSC, Ads and action helpers
-  also have focused runtime modules. Demand Gen context diagnostics also now
-  have a focused runtime module. Action payload and preview compaction now also
-  have focused runtime modules. Daily-command context construction and shared
-  operator summaries now also have a focused runtime module. Skill-scoped
-  context-pack orchestration and diagnostics dispatch now also have a focused
-  runtime module. Full-context assembly now also has a focused runtime module.
-  `main.py` now owns app wiring and context-pack dispatch only.
-- Content canonical URL semantics have a domain home. This is only the first
-  part of `wilq-seo-x4u`; preflight verdict helpers now also have a domain
-  home, inventory gate rules now have a domain home, and content decision
-  planning helpers plus GSC content decision construction now have a domain
-  home. GA4 tracking-gap content blockers now also have a measurement-domain
-  home. Ahrefs gap review decision construction now also has a planning-domain
-  home. The fallback GSC/WordPress vendor-read blocker now has a preflight-domain
-  home. The marketer-facing content preflight/decision view now also has a
-  preflight-domain home. Full inventory records, full preflight contracts,
-  claims, drafting, handoff and broader measurement modules still need behavior
-  extraction.
-- Goal 002 now has a first marketer-facing `/content-workflow` dashboard route.
-  It renders the existing API-owned content workflow contracts in order:
-  preflight, Sales Brief, Draft Package, Human Review, WordPress draft handoff
-  and Measurement Window. The route keeps WordPress draft-only, blocks outcome
-  claims until the measurement window, hides raw endpoint/schema names and does
-  not add behavior to the frozen `ContentDiagnosticSurface`.
-- `/content-workflow` now consumes a diagnostics-derived API snapshot from
-  `GET /api/content/work-items/snapshot` instead of constructing the BDO work
-  item and workflow payloads in React. The snapshot selects a ready content
-  decision with public final canonical URL, evidence IDs and source connectors
-  from `build_content_diagnostics().decision_queue`, preserves draft-only
-  WordPress safety and keeps early outcome claims blocked. The previous public
-  `control-snapshot` endpoint and backend `_control_*` payload helpers were
-  removed instead of kept as compatibility aliases.
-- The diagnostics-derived workflow snapshot is now stage-aware: it no longer
-  fabricates an approved Human Review, WordPress draft handoff or audit. The
-  snapshot may show Sales Brief, Draft Package and Measurement Window planning,
-  but `review` stays `null`, WordPress handoff stays blocked/null and outcome
-  claims remain blocked until real review, audit and measurement evidence exist.
-- The snapshot now has a minimal persisted Human Review path. A real submitted
-  review for the current diagnostics-derived work item is stored in local
-  SQLite state and later applied by `GET /api/content/work-items/snapshot`.
-  Invalid review for a different work item is not stored as approval. WordPress
-  handoff still remains null/blocked until an audit envelope exists.
-- The snapshot now also has a persisted audit-envelope path. After a valid
-  stored Human Review, a matching audit can be stored and later snapshot reads
-  can produce a prepare-only WordPress handoff contract. This still does not
-  write to WordPress, does not publish, does not allow destructive updates and
-  does not allow measurement success/failure claims before the observation
-  window is ready.
-- `/content-workflow` now exposes marketer-facing review and audit controls for
-  that persisted snapshot path. The route submits only explicit operator
-  decisions through typed WILQ API helpers and then refetches the API-owned
-  snapshot; React does not decide handoff readiness, publish, write to
-  WordPress or create destructive updates.
-- API-owned blocker messages for the sprawdzenie człowieka and WordPress draft
-  handoff domains now use Polish marketer language for labels, reasons and next
-  steps. Focused tests block workflow jargon from returning to those
-  operator-facing blocker fields.
-- Remaining content workflow blocker messages now use Polish marketer language
-  across workflow state, preflight, inventory, draft package and rejestr twierdzeń
-  domains. Focused tests prevent Sales Brief, Claim Ledger, Draft Package,
-  human review, handoff, publish-ready, work item, evidence ID and final
-  canonical URL from leaking into operator-facing blocker text.
-- WordPress draft execution now has a separate Goal 002 dry-run contract.
-  `POST /api/content/work-items/wordpress-draft-execution` returns a sanitized
-  draft-only payload after valid review, audit, handoff and matching draft
-  package. It does not write to WordPress in dry-run mode, keeps publish and
-  destructive update disabled, and blocks live write until a future adapter is
-  explicitly enabled.
-- `/content-workflow` now exposes that WordPress dry-run contract as a typed
-  marketer-facing step. After review and audit, the route can request the
-  dry-run through the WILQ API, show the draft-only payload status and keep
-  publication, destructive update and external write disabled.
-- Content workflow snapshot now includes API-owned `operator_steps`.
-  `/content-workflow` renders those marketer-facing step labels/statuses from
-  the WILQ API instead of rebuilding the workflow wording locally in React.
-- The selected decision panel inside `ContentDiagnosticSurface.tsx` now uses a
-  small view model and focused rendering components instead of one large React
-  function. This is a behavior-preserving cleanup slice for Fallow debt; it
-  does not add content logic, copy translators or WordPress behavior.
-- Structured draft generation now has a first content-domain contract for the
-  future OpenAI SDK runtime. It prepares strict schema output, model input and
-  instructions only after the matching Sales Brief, Claim Ledger and Draft
-  Package gates pass. This slice intentionally does not call OpenAI, write to
-  WordPress or mark content publish-ready.
-- WILQ API now exposes that structured generation contract at
-  `POST /api/content/work-items/structured-draft-generation`, and shared
-  dashboard schemas parse the response. The endpoint returns a strict-schema
-  contract or typed blockers only; live OpenAI calls and prose generation remain
-  a later explicit adapter slice.
-- Structured generation now also has a safe OpenAI Structured Outputs runtime
-  dry-run at `POST /api/content/work-items/structured-draft-runtime`. It builds
-  the strict `json_schema` payload that a future OpenAI SDK adapter will send,
-  blocks live mode by default and parses fake structured outputs in tests. It
-  still does not call OpenAI from WILQ API, generate prose, write to WordPress
-  or mark content publish-ready.
-- Shared dashboard schemas and `api.ts` now parse/post the structured draft
-  runtime endpoint. This gives the dashboard a typed boundary for runtime
-  dry-run/live-block responses without adding React product logic or surfacing
-  technical payloads to the marketer flow.
-- `/content-workflow` now exposes the structured draft runtime dry-run as a
-  marketer-facing step. The route uses the API-owned snapshot contract, lets the
-  operator check draft readiness without live model generation, hides raw
-  OpenAI payload details and still performs no WordPress write or publication.
-- Structured draft runtime now has a gated OpenAI SDK client boundary. Live
-  generation requires `WILQ_OPENAI_STRUCTURED_DRAFT_LIVE_ENABLED=true` and a
-  configured SDK/API key; otherwise the API returns typed blockers. Tests prove
-  the runtime can parse strict structured output through an injected SDK client
-  while keeping `publish_ready=false`. This still does not create a WordPress
-  draft, write to WordPress or publish on `ekologus.pl`.
-- Structured draft output now has a preview contract before WordPress handoff.
-  `POST /api/content/work-items/structured-draft-preview` returns marketer
-  preview fields only when the structured output keeps evidence mapping, has no
-  unresolved claim review and remains `publish_ready=false`. This keeps generated
-  text reviewable without automatically creating a WordPress draft or publishing
-  on `ekologus.pl`.
-- `/content-workflow` now renders that structured draft preview as "Podgląd
-  treści" only after generated structured output exists. The dashboard shows the
-  evidence-mapped title, sections and human review checklist while WordPress
-  remains a separate draft-only dry-run and no publication on `ekologus.pl` is
-  attempted.
-- Goal 002 now has a focused end-to-end API proof for one diagnostics-derived
-  Ekologus content item. The proof goes through content snapshot, evidence/source
-  connectors, public final canonical URL, structured draft runtime dry-run,
-  structured draft preview, human review, audit, WordPress draft execution
-  dry-run and measurement blockers. It asserts draft-only WordPress status,
-  no destructive update, no external write and no success claim before the
-  measurement window is ready.
-- That end-to-end proof now also asserts the exact completion chain from this
-  plan: inventory/canonical resolution, duplicate check, initial preflight
-  blockers, preserve-first plan, draft-allowed transition, sales brief facts,
-  approved rejestr twierdzeń, ready draft package, structured draft evidence mapping,
-  human review, audit, draft-only WordPress handoff/execution dry-run and the
-  measurement blocker. It still does not publish or write to `ekologus.pl`.
-
-2026-07-01:
-
-- Goal 003 content queue API slice `wilq-seo-d7c` added
-  `GET /api/content/work-items/queue`. The endpoint derives candidates from the
-  existing content diagnostics `decision_queue` and returns Polish API-owned
-  view models with work item ID, recommended mode, evidence IDs, source
-  connectors, URL semantics, preflight state, duplicate/canonical summary,
-  measurement readiness, safe next step and blockers.
-- The queue currently returns 5 diagnostics-derived candidates: 4 actionable
-  refresh candidates and 1 blocked Ahrefs review candidate. The blocked
-  candidate stays visible as source signal but cannot proceed to writing without
-  a public final canonical URL.
-- `ContentDecisionItem -> ContentWorkItem` mapping moved into
-  `wilq/content/workflow/decision_mapping.py` so the snapshot and queue share
-  one conversion path instead of duplicating behavior.
-- Focused proof passed:
-  `uv run pytest tests/content/test_content_work_item_queue_api.py -q`,
-  `uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`,
-  focused Ruff, focused mypy, changed-file complexity audit and
-  `git diff --check`.
-- Goal 003 per-item state slice `wilq-seo-cdy` is closed. It added
-  selected-work-item snapshot, human-review and audit endpoints for concrete
-  queue item IDs. Focused tests prove review/audit for one queue item do not
-  unlock another item and blocked queue items do not get fake workflow
-  snapshots. Final sub-slice added item-scoped structured draft preview and
-  quality-review endpoints plus store persistence for `StructuredDraftOutput`
-  and `ContentQualityReview`; focused tests prove output/quality state for item
-  A does not appear on item B and mismatched `work_item_id` requests are
-  rejected.
-- Goal 003 deterministic quality review slice `wilq-seo-b5x` is closed.
-  `wilq/content/quality/review.py` adds schema/rule-based `ContentQualityReview`
-  and the API exposes it at `POST /api/content/work-items/quality-review`.
-  The review blocks missing evidence mapping, forbidden claims, publish-ready
-  draft packages, unresolved duplicate risk and missing measurement windows.
-  Weak CTA produces typed revision instructions, not an SEO score or LLM judge.
-- Goal 003 revision plan slice `wilq-seo-56w` is closed.
-  `wilq/content/quality/revision.py` adds a bounded `ContentRevisionPlan`, and
-  the API exposes it at `POST /api/content/work-items/revision-plan`. It allows
-  only explicit fixes from `needs_changes`, returns `no_changes_needed` for a
-  clean quality review and refuses to bypass hard blockers from quality review.
-- Goal 003 gated live Structured Outputs slice `wilq-seo-8qd` is closed as a
-  proof/typing slice. The existing runtime remains disabled by default for live
-  calls, blocks missing SDK clients, parses fake SDK strict output and preserves
-  `publish_ready=false` without WordPress write or publication.
-- Goal 003 dashboard queue slice `wilq-seo-0xv` is closed. `/content-workflow`
-  now consumes `GET /api/content/work-items/queue`, lets Wilku select a queue
-  candidate, shows blocked candidates from API blockers without fake snapshots,
-  fetches selected `work_item_id` snapshots, uses selected review/audit paths,
-  renders structured draft preview, deterministic quality review and bounded
-  revision plan panels, and keeps WordPress dry-run/draft-only boundaries visible
-  in Polish marketer language. Proof passed:
-  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
-  `pnpm --filter @wilq/dashboard lint`,
-  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
-  `uv run python scripts/audit_complexity.py --changed --allow-frozen` and
-  `git diff --check`.
-- Goal 003 adversarial content eval slice `wilq-seo-0t7` is closed and pushed.
-  A focused API-level adversarial suite now attempts to
-  bypass the workflow with dev canonical URLs, missing evidence/source
-  connectors, missing preflight, forged claim-gate payloads, missing measurement
-  windows, `publish_ready=true`, forbidden guarantee claims, WordPress publish
-  attempts, live write attempts, premature outcome claims and wrong-work-item
-  human review. The slice found a real gap and closed it in
-  `wilq/content/drafts/structured_generation.py`: structured draft generation
-  now checks WILQ workflow blockers before trusting supplied sales brief, claim
-  ledger or draft package payloads. Proof passed:
-  `uv run pytest tests/content/test_content_workflow_adversarial_gates.py -q`,
-  the focused queue/generation/quality/state pytest set, Ruff for changed Python
-  files, mypy for `structured_generation.py` and
-  `scripts/audit_complexity.py --changed --allow-frozen`.
-- Goal 003 anti-slop budget slice `wilq-seo-9l1` is closed and pushed.
-  `scripts/audit_complexity.py --changed` now enforces per-slice
-  changed Python budgets: file <= 800 LOC, function <= 100 lines, function <=
-  25 branches and class <= 300 lines. Frozen growth files remain a separate
-  blocker. `tests/test_audit_complexity.py` proves budget detection, unchanged
-  legacy hotspot exclusion and clean budget reporting. Proof passed:
-  `uv run pytest tests/test_audit_complexity.py -q`,
-  `uv run ruff check scripts/audit_complexity.py tests/test_audit_complexity.py`,
-  `uv run mypy scripts/audit_complexity.py` and
-  `uv run python scripts/audit_complexity.py --changed`.
-- Goal 003 final focused proof passed on 2026-07-01:
-  `uv run pytest tests/content -q`,
-  `uv run pytest tests/test_audit_complexity.py -q`,
-  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
-  `pnpm --filter @wilq/dashboard lint`,
-  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
-  `uv run python scripts/audit_complexity.py --changed --limit 5` and
-  `git diff --check`.
-- Full repo-level verification passed on 2026-07-01 with `rtk scripts/verify.sh`.
-  Proof covered full Python tests (`483 passed, 1 warning`), dashboard/unit
-  tests (`102 passed`), security/dependency checks, API smoke, skill structure
-  smoke, skill API smoke, Playwright dashboard proof (`14 passed`) and
-  dashboard production build. Beads follow-up `wilq-seo-8re` can be closed.
-
-Current risk:
-
-- Anti-slop baseline exists, but it is a reporting and guardrail baseline, not
-  a cleanup of the historical debt.
-- `main.py`, `wilq/schemas.py`, `actions/service.py`,
-  `content_diagnostics.py`, `test_api_contracts.py` and
-  `ContentDiagnosticSurface.tsx` remain legacy hotspots until the next slices
-  move behavior out.
-- Full Ruff and mypy blockers are cleared as of the 2026-07-01
-  `scripts/verify.sh` proof. Remaining risk is architectural density and
-  hotspot drift, not a known failing repo-level verification gate.
+Not completed. Goal 005 is active.

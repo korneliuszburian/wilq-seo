@@ -21,9 +21,10 @@ Date: 2026-07-01
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Beads (`bd`) is the operational task graph for current work. Run `bd prime`
-  and `bd ready --json` after recovery. Goal 004 epic `wilq-seo-2qq` is
-  completed. Goal 003 epic `wilq-seo-u6u` is completed. Historical Goal 001
-  cleanup epic: `wilq-seo-6rw`.
+  and `bd ready --json` after recovery. Active Goal 005 epic:
+  `wilq-seo-1oa`. Goal 004 epic `wilq-seo-2qq` is completed. Goal 003 epic
+  `wilq-seo-u6u` is completed. Historical Goal 001 cleanup epic:
+  `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -57,9 +58,30 @@ API status later contradicts this state.
 
 ## Current Goal Transition
 
+- Goal 005: Ekologus Knowledge Depth & UAT Closure is active under Beads epic
+  `wilq-seo-1oa`. The goal is not another writing pipeline. It validates
+  whether the Goal 004 safe content operations loop is useful for Wilku with
+  real Ekologus knowledge. Initial Beads slices are: recovery/plan alignment
+  `wilq-seo-9do`, knowledge-card depth audit `wilq-seo-3lk`, read-only Service
+  Profile review design `wilq-seo-94k`, first real Wilku UAT or explicit defer
+  `wilq-seo-jst`, Sales Brief v2 signal-quality audit `wilq-seo-n8r`, and
+  evidence-based draft variant selection guard `wilq-seo-87i`.
+- Goal 005 starts from an important discovery: current
+  `wilq/content/knowledge/cards.py` has three seeded cards
+  (`ekologus_service_environmental_compliance`,
+  `ekologus_cta_consultation_without_guarantee` and
+  `ekologus_evidence_live_connector_requirement`). They prove the Goal 004
+  typed-card contract, but they do not yet prove deep coverage of real Ekologus
+  services, buyer triggers, CTA patterns, claim policies and evidence
+  requirements.
+- Goal 005 stop line: do not claim daily content usefulness until knowledge
+  coverage, Sales Brief signal quality and a real Wilku UAT session are proven
+  or explicitly owner-deferred with residual risk. Initial Service Profile work
+  is read-only plus review/flag semantics; ungated knowledge-card writes remain
+  out of scope.
 - Goal 004: Content Operations Layer is completed under Beads epic
-  `wilq-seo-2qq`. It delivered a production-grade daily content operating
-  loop, not an MVP or staged-version path: queue candidate -> opportunity
+  `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
+  architecture, not a proven daily-use content product: queue candidate -> opportunity
   enrichment -> typed Ekologus knowledge cards -> operations-grade Sales Brief
   -> claim-gated draft variants -> deterministic quality review -> bounded
   revision application -> human review -> audit -> WordPress draft-only handoff

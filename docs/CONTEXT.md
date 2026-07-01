@@ -9,7 +9,7 @@ changelogiem ani kopią goalu. Jeżeli potrzebujesz historii, użyj git log,
 Przeczytaj w tej kolejności:
 
 1. `AGENTS.md` - stałe reguły pracy, sekrety, lokalne ścieżki i gotchas.
-2. `docs/goals/001-goal.md` - jedyny aktywny goal i kolejka następnych zadań.
+2. `docs/goals/005-goal.md` - aktywny goal i granice aktualnego etapu.
 3. `docs/PROGRESS.md` - krótki aktualny stan, aktywne luki i następny ruch.
 4. `bd prime` and `bd ready --json` - operational issue graph for the current
    cleanup queue.
@@ -33,7 +33,9 @@ surowe payloady trafiają tylko do technicznego szczegółu albo audytu.
 
 ## Current Recovery State
 
-- Aktywny goal: `docs/goals/001-goal.md`.
+- Aktywny goal: `docs/goals/005-goal.md`.
+- Completed baseline: `docs/goals/archive/004-goal.md`.
+- Historical cleanup contract: `docs/goals/001-goal.md`.
 - Aktualny ledger: `docs/PROGRESS.md`.
 - Historyczne wpisy przeniesione lub pozostawione w git history i
   `docs/progress/archive/`.
@@ -58,10 +60,12 @@ Python/API commands must use `uv run ...`.
 
 ## Current High-Level Status
 
-The active cleanup goal is still in progress. Do not infer full product
-readiness from route/API availability.
+Goal 004 completed the safe content operations mechanics. Goal 005 is active
+because mechanics are not the same as Wilku usefulness. Do not infer daily
+content-operations readiness from route/API availability, test count or the
+UAT harness alone.
 
-Available evidence surfaces for current cleanup proof include:
+Available evidence surfaces for current proof include:
 
 - Google Ads OAuth/customer selection and live campaign/search-term reads.
 - GA4 landing/behavior plus key-event/ecommerce/revenue metric reads.
@@ -74,10 +78,11 @@ Available evidence surfaces for current cleanup proof include:
 
 Active gaps live in:
 
-- `docs/goals/001-goal.md` - current goal contract and next cleanup queue.
+- `docs/goals/005-goal.md` - current goal contract and next execution
+  boundaries.
 - `docs/PROGRESS.md` - short current readout, latest proof and active gaps.
-- `PLAN.md` - canonical cleanup plan.
-- `PLANS.md` - deferred long-range product path.
+- `PLAN.md` - canonical cleanup/product-semantics plan.
+- `PLANS.md` - active long-running Goal 005 ExecPlan.
 - `bd ready --json` - current operational work graph. Do not duplicate this as
   markdown TODOs.
 
@@ -101,9 +106,9 @@ Po zapisaniu/commitnięciu aktualnego stanu możesz rozpocząć świeżą sesję
 
 ```text
 Kontynuuj aktywny goal z repo:
-docs/goals/001-goal.md
+docs/goals/005-goal.md
 
-Najpierw przeczytaj AGENTS.md, docs/goals/001-goal.md, docs/PROGRESS.md i docs/CONTEXT.md.
+Najpierw przeczytaj AGENTS.md, docs/goals/005-goal.md, PLANS.md, docs/PROGRESS.md i docs/CONTEXT.md.
 Użyj aktualnego worktree i live WILQ API jako źródła prawdy.
 Nie rozbudowuj recovery docs; usuwaj outdated rzeczy zamiast dopisywać log.
 Kontynuuj następny najlepszy slice z goalu i używaj focused verification.

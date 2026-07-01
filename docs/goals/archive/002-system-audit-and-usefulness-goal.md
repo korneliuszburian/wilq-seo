@@ -4,8 +4,9 @@ Last updated: 2026-06-18.
 Archived: 2026-06-28.
 
 This is a historical draft. It is not an active goal and must not be used as a
-current recovery source. The only active goal is `docs/goals/001-goal.md`;
-current execution and visible-language requirements live in `PLAN.md`.
+current recovery source. At archive time, Goal 001 was the active goal. Current
+execution and visible-language requirements live in `PLAN.md`, `PLANS.md` and
+`docs/PROGRESS.md`.
 
 ## Purpose
 
