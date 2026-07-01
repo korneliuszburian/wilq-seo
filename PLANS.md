@@ -211,6 +211,12 @@ WordPress draft handoff audit lineage is hardened under Beads task
 evidence and the draft package evidence map, otherwise handoff blocks with
 `audit_evidence_mismatch`.
 
+Claim Ledger consistency is hardened under Beads task `wilq-seo-d6h`: forged
+or manually assembled entries cannot use safe-looking statuses for guarantee
+claims, human-review claim types without a reviewer, or measurement-dependent
+claim types without measurement. The existing draft, quality review and
+publish-ready paths inherit this gate through `claim_ledger_blockers`.
+
 ## In Scope
 
 Goal 005 includes:

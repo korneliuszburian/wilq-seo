@@ -219,6 +219,11 @@ API status later contradicts this state.
   with the approved human review evidence and draft package evidence map, or
   handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
   allowed WordPress path.
+- Claim Ledger status/type consistency is hardened: forged entries can no
+  longer mark guarantee claims, legal/risk/environmental claims without a
+  reviewer, or SEO/performance/business-outcome claims without measurement as
+  generally allowed. The shared ledger gate now blocks these before draft,
+  quality-review or publish-ready helpers can treat them as safe.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or

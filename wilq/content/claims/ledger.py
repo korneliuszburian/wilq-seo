@@ -121,7 +121,7 @@ def content_claim_entry(
         claim_text=claim_text,
         claim_type=claim_type,
         status="allowed_general",
-            reason="Twierdzenie jest ogólną informacją bez obietnicy efektu.",
+        reason="Twierdzenie jest ogólną informacją bez obietnicy efektu.",
         reviewer_id=reviewer_id if human_reviewed else None,
     )
 
@@ -129,6 +129,9 @@ def content_claim_entry(
 def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedgerBlocker]:
     blockers: list[ContentClaimLedgerBlocker] = []
     for entry in ledger.entries:
+        if consistency_blocker := _entry_consistency_blocker(entry):
+            blockers.append(consistency_blocker)
+            continue
         if entry.status == "allowed_with_evidence" and not entry.evidence_ids:
             blockers.append(
                 _blocker(
@@ -171,6 +174,45 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                 )
             )
     return blockers
+
+
+def _entry_consistency_blocker(
+    entry: ContentClaimLedgerEntry,
+) -> ContentClaimLedgerBlocker | None:
+    if entry.claim_type == "guarantee_claim" and entry.status != "blocked":
+        return _blocker(
+            "blocked_claim",
+            entry,
+            "Twierdzenie gwarancyjne jest niedozwolone",
+            "Obietnice efektu nie mogą być oznaczone jako gotowe do użycia.",
+            "Usuń gwarancję albo przepisz ją na bezpieczną informację bez obietnicy.",
+        )
+    if (
+        entry.claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES
+        and entry.status in {"allowed_with_evidence", "allowed_general"}
+        and entry.reviewer_id is None
+    ):
+        return _blocker(
+            "needs_human_review",
+            entry,
+            "Twierdzenie wymaga decyzji człowieka",
+            "Twierdzenie prawne, ryzyka albo środowiskowe nie może być ogólnie "
+            "dopuszczone bez zapisanej decyzji człowieka.",
+            "Przekaż twierdzenie do review i zapisz osobę zatwierdzającą.",
+        )
+    if (
+        entry.claim_type in MEASUREMENT_REQUIRED_CLAIM_TYPES
+        and entry.status == "allowed_general"
+    ):
+        return _blocker(
+            "blocked_until_measurement",
+            entry,
+            "Twierdzenie czeka na pomiar",
+            "Twierdzenie o SEO, skuteczności albo wyniku biznesowym wymaga "
+            "dowodu z zakończonego okna pomiaru.",
+            "Zostaw twierdzenie poza szkicem do czasu dostępnego pomiaru.",
+        )
+    return None
 
 
 def claim_ledger_allows_draft(ledger: ContentClaimLedger) -> bool:

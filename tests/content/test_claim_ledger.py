@@ -135,3 +135,57 @@ def test_allowed_with_evidence_status_without_evidence_blocks_draft() -> None:
         for text in (blocker.label, blocker.reason, blocker.next_step)
     )
     assert not claim_ledger_allows_draft(ledger)
+
+
+def test_forged_guarantee_claim_cannot_be_marked_allowed() -> None:
+    entry = ContentClaimLedgerEntry(
+        id="claim_forged_guarantee",
+        claim_text="Gwarantujemy pierwsze miejsce w Google.",
+        claim_type="guarantee_claim",
+        status="allowed_general",
+        evidence_ids=[],
+        reason="Błędny ręczny wpis.",
+    )
+    ledger = _ledger(entry)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "blocked_claim"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
+def test_forged_legal_claim_allowed_without_reviewer_blocks_draft() -> None:
+    entry = ContentClaimLedgerEntry(
+        id="claim_forged_legal",
+        claim_text="Ekologus zapewnia pełną zgodność z aktualnym prawem.",
+        claim_type="legal_requirement_claim",
+        status="allowed_with_evidence",
+        evidence_ids=["ev_public_source"],
+        reason="Błędny ręczny wpis.",
+    )
+    ledger = _ledger(entry)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "needs_human_review"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
+def test_forged_measurement_claim_allowed_general_waits_for_measurement() -> None:
+    entry = ContentClaimLedgerEntry(
+        id="claim_forged_seo_result",
+        claim_text="Ten szkic poprawi widoczność SEO.",
+        claim_type="seo_claim",
+        status="allowed_general",
+        evidence_ids=[],
+        reason="Błędny ręczny wpis.",
+    )
+    ledger = _ledger(entry)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "blocked_until_measurement"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
