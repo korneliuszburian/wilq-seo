@@ -196,11 +196,28 @@ API status later contradicts this state.
   `docs/audits/005-2026-07-01-sales-brief-signal-quality.md`. Result: connector
   freshness is not the main blocker; `bdo co to` is the safest first UAT
   candidate, `zielony ład co to` is reviewable but has generic service mapping,
-  `operat wodnoprawny` and `magazynowanie odpadów` are correctly blocked by
-  missing knowledge cards, and the Ahrefs `beczki` candidate is correctly
+  `magazynowanie odpadów` now has source-backed review-required waste/packaging
+  knowledge for brief review, `operat wodnoprawny` remains blocked by missing
+  direct service knowledge, and the Ahrefs `beczki` candidate is correctly
   blocked but snapshot currently returns 404 instead of a typed blocked surface.
   A source-fact lineage bug was fixed so GSC source facts no longer inherit
   WordPress evidence IDs.
+- Goal 005 waste-storage knowledge slice `wilq-seo-nlz` added
+  `ekologus_public_waste_packaging_obligations_2026_07_01` as a commit-safe
+  source fact compiled into `ekologus_service_waste_packaging_obligations`
+  (`source_backed_review_required`). Live proof after stack restart:
+  `magazynowanie odpadów` builds a Sales Brief with no blockers and
+  `draft_allowed=false`; `operat wodnoprawny` still blocks with
+  `missing_required_knowledge_card` until a direct public/reviewed source
+  exists.
+- Official Google Ads developer-toolkit sources are now tracked as WILQ Ads
+  implementation patterns: MCP read-only account discovery/search/resource
+  metadata, API Explorer live HTTP/JSON prototyping, Query Builder field
+  discovery, Query Validator GAQL compatibility checks and Developer Assistant
+  mission-control/skills architecture. They are patterns for WILQ API
+  adapters/evals, not substitutes for WILQ evidence, ActionObjects or Google
+  developer-token approval. Search Console API overview is tracked as the wider
+  GSC source beyond Search Analytics.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

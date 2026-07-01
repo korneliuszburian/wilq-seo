@@ -20,6 +20,29 @@ review contracts:
 - keep write/apply blocked until WILQ has preview, confirmation, audit and
   measurement coverage.
 
+## GAQL and read-adapter guardrails
+
+WILQ should copy the official Google Ads developer-toolkit pattern instead of
+letting skills invent GAQL in prose:
+
+- Query Builder pattern: every repeated Ads workflow should have an explicit
+  query contract with resource, selected fields, segments, filters, ordering and
+  limits.
+- Query Validator pattern: generated or edited GAQL must pass compatibility
+  checks before a live read. The check should catch syntax, missing SELECT
+  fields required by WHERE/ORDER BY, incompatible metrics/segments and wrong
+  resource models.
+- API Explorer pattern: new read contracts may be prototyped against live
+  Google Ads response shape, but only sanitized aggregates, evidence IDs,
+  source connectors and blocked-state labels are persisted by WILQ.
+- MCP server pattern: account discovery, GAQL search and resource metadata can
+  be adapter tools, but MCP output is not a recommendation until WILQ stores it
+  as redacted refresh/evidence state.
+
+Keyword Planner remains a separate readiness contract. If Google returns
+`DEVELOPER_TOKEN_NOT_APPROVED`, WILQ must expose developer-token approval as
+the blocker rather than falling back to invented volume, CPC or forecast data.
+
 Initial capability definitions:
 
 - `wilq/expert/ads/capabilities.yaml`

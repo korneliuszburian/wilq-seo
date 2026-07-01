@@ -32,7 +32,7 @@ Relevant fresh evidence from the current local API:
 | `bdo co to` | brief built | usable for review | GSC + WordPress evidence, existing URL, ready enrichment, measurement ready to plan, Sales Brief has 3 source facts and 15 knowledge constraints. |
 | `zielony ład co to` | brief built | thin but reviewable | GSC + WordPress evidence and existing URL are present, but service fit is still generic: `sprawdzenie dopasowania do oferty Ekologus przed szkicem`. Needs Wilku/source review before strong service framing. |
 | `operat wodnoprawny` | brief blocked | blocked by knowledge | GSC + WordPress evidence and enrichment are ready, but Sales Brief blocks with `missing_required_knowledge_card`. |
-| `magazynowanie odpadów` | brief blocked | blocked by knowledge | GSC + WordPress evidence and enrichment are ready, but Sales Brief blocks with `missing_required_knowledge_card`. |
+| `magazynowanie odpadów` | brief built for review | usable for review | GSC + WordPress evidence and enrichment are ready. A source-backed review-required waste/packaging service card now supports the brief, while draft remains not publish-ready. |
 
 ## Findings
 
@@ -40,10 +40,12 @@ Relevant fresh evidence from the current local API:
    The current queue has live GSC and WordPress evidence for four actionable
    refresh candidates.
 
-2. Sales Brief v2 correctly blocks thin knowledge for `operat wodnoprawny` and
-   `magazynowanie odpadów`. This is desired behavior: WILQ should not turn GSC
-   demand plus an existing page into a service-depth brief without a matching
-   reviewed knowledge card.
+2. Sales Brief v2 correctly blocks thin knowledge for `operat wodnoprawny`.
+   `magazynowanie odpadów` now has a source-backed review-required card, so it
+   can support brief review/UAT without becoming production-depth knowledge.
+   This is desired behavior: WILQ should not turn GSC demand plus an existing
+   page into a service-depth brief without a matching reviewed or
+   review-required knowledge card.
 
 3. `bdo co to` is the strongest UAT candidate. It has compliance-risk intent,
    GSC demand, WordPress inventory, existing canonical URL, measurement plan and
@@ -66,8 +68,9 @@ Relevant fresh evidence from the current local API:
 
 ## Exact Follow-Ups
 
-- `wilq-seo-nlz`: add reviewed/source-backed cards for `operat wodnoprawny` and
-  `magazynowanie odpadów`, or document a precise source blocker.
+- `wilq-seo-nlz`: added a source-backed review-required card for
+  `magazynowanie odpadów`; `operat wodnoprawny` remains blocked until a direct
+  public/reviewed service source exists.
 - `wilq-seo-ad8`: return a typed snapshot blocker for blocked Ahrefs content
   candidates, or explicitly document that blocked candidates stop before
   snapshot.
@@ -91,4 +94,7 @@ Live proof after API restart:
 google_search_console ev_refresh_refresh_google_search_console_c79da8c88e09 Zapytania GSC: bdo co to
 google_search_console ev_refresh_refresh_google_search_console_615c887b0dac Zapytania GSC: bdo co to
 wordpress_ekologus ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6 Spis WordPress: potwierdzony
+knowledge_card ekologus_service_waste_packaging_obligations source_backed_review_required
+snapshot magazynowanie odpadów brief_built=True blockers=[]
+snapshot operat wodnoprawny brief_built=False blockers=[missing_required_knowledge_card]
 ```

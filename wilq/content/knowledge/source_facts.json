@@ -117,6 +117,68 @@
       ]
     },
     {
+      "source_id": "ekologus_public_waste_packaging_obligations_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "Publiczna oferta Ekologus potwierdza wsparcie w obszarach odpadów, opakowań, BDO oraz dokumentacji środowiskowej; może to wspierać review-required analizę tematów o ewidencji i magazynowaniu odpadów bez rozstrzygania konkretnych obowiązków firmy.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.72,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja poprawności ewidencji odpadów",
+        "rozstrzygnięcie kodu odpadu bez review",
+        "twierdzenie że konkretna firma nie ma ryzyka kary",
+        "techniczne zalecenie magazynowania odpadów bez human review"
+      ],
+      "target_card_id": "ekologus_service_waste_packaging_obligations",
+      "target_card_type": "service",
+      "target_card_title": "Odpady, opakowania i ewidencja środowiskowa",
+      "service_fit_terms": [
+        "magazynowanie odpadów",
+        "magazynowanie odpadow",
+        "ewidencja odpadów",
+        "ewidencja odpadow",
+        "odpady",
+        "opakowani",
+        "karty przekazania odpadów",
+        "kpo"
+      ],
+      "buyer_problem_terms": [
+        "nie wiem jak prowadzić ewidencję odpadów",
+        "nie wiem jak magazynować odpady",
+        "nie wiem jakie dokumenty przygotować",
+        "ryzyko błędu w odpadach"
+      ],
+      "buyer_triggers": [
+        "firma chce uporządkować dokumentację odpadową",
+        "pojawia się pytanie o ewidencję lub magazynowanie odpadów",
+        "trzeba sprawdzić obowiązki BDO, odpadowe lub opakowaniowe"
+      ],
+      "cta_patterns": [
+        "Poproś o opis rodzaju odpadów i dokumentów do sprawdzenia przez Ekologus.",
+        "Zaproponuj konsultację odpadową bez obietnicy zgodności albo uniknięcia kar."
+      ],
+      "allowed_claims": [
+        "Ekologus opisuje odpady, opakowania, BDO i dokumentację środowiskową jako obszary wsparcia.",
+        "Treść może edukacyjnie wskazać, jakie informacje przygotować przed konsultacją."
+      ],
+      "evidence_requirements": [
+        "GSC/WordPress evidence is required before recommending a waste-storage or waste-records content update.",
+        "Waste-code, storage-method, penalty and company-specific obligation claims require human review."
+      ],
+      "usage_notes": [
+        "Używaj jako source-backed review-required service fact dla analizy i UAT.",
+        "Nie traktuj tej karty jako technicznej instrukcji magazynowania odpadów ani zatwierdzonej porady prawnej."
+      ]
+    },
+    {
       "source_id": "ekologus_public_training_offer_2026_07_01",
       "source_type": "public_site",
       "privacy_class": "commit_safe",

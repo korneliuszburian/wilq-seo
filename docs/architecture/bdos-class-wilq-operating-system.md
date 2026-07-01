@@ -18,6 +18,7 @@ GA4, GSC, Ahrefs, Localo, WordPress and social.
 | Source | Principle for WILQ |
 | --- | --- |
 | BDOS.ai public product model | Treat Ads work as command workflows with diagnostics, safe mutations, reporting, account context and expert rules. WILQ copies the operating-system standard, not BDOS internals. |
+| Google Ads API Developer Assistant | Treat Ads engineering as a mission-control workflow: intent-level operator request, API/version/schema inspection, GAQL/code validation, read-only execution and diagnostic output before business action. |
 | Google Ads API GAQL docs | Ads data must be read through explicit query contracts over resources, attributes, segments and metrics. GAQL is not free text in prompts. |
 | Google Ads Query Validator and GAQL rules | WILQ needs a GAQL validation/autofix layer before any Ads read workflow is considered mature. |
 | Google Ads mutate docs | Mutations must be modeled as typed operations. WILQ never jumps from recommendation to external write. |
@@ -29,6 +30,8 @@ GA4, GSC, Ahrefs, Localo, WordPress and social.
 Sources:
 
 - BDOS.ai: https://bdos.ai/
+- Google Ads API Developer Assistant: https://developers.google.com/google-ads/api/docs/developer-toolkit/what-is-developer-assistant
+- Google Ads API Developer Assistant install/use: https://developers.google.com/google-ads/api/docs/developer-toolkit/ai-assistant
 - Google Ads Query Language: https://developers.google.com/google-ads/api/docs/query/overview
 - Google Ads partial failures: https://developers.google.com/google-ads/api/docs/best-practices/partial-failures
 - Google Ads REST mutate: https://developers.google.com/google-ads/api/rest/common/mutate

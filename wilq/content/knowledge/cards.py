@@ -241,7 +241,14 @@ def _consultation_cta_card() -> ContentKnowledgeCard:
             "CTA ma pomagać użytkownikowi przejść od problemu do rozmowy, "
             "bez obietnicy uniknięcia kar, zgodności albo efektu SEO."
         ),
-        service_fit_terms=["bdo", "odpady", "zielony ład", "środowisk"],
+        service_fit_terms=[
+            "bdo",
+            "odpady",
+            "magazynowanie odpadów",
+            "magazynowanie odpadow",
+            "zielony ład",
+            "środowisk",
+        ],
         cta_patterns=[
             "Skonsultuj obowiązki na podstawie sytuacji firmy.",
             "Przygotuj dokumenty i zapytaj Ekologus, co wymaga sprawdzenia.",

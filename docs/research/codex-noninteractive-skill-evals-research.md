@@ -250,6 +250,39 @@ WILQ nie powinien przejmować:
 
 Każdy MCP result musi przejść do WILQ jako sanitized evidence/refresh-run state zanim skill może go użyć w rekomendacji.
 
+### Google Ads API Developer Assistant
+
+Google Ads API Developer Assistant jest oficjalnie dokumentowanym, lokalnym
+narzędziem open source dla pracy z Google Ads API przez język naturalny. Wersja
+v3.0.0 przenosi asystenta na Google Antigravity i skills-based architecture.
+Narzędzie generuje GAQL oraz kod, uruchamia odczyty API w izolowanym środowisku,
+waliduje wygenerowany kod i zapisuje wyniki/diagnostykę do plików.
+
+Źródła:
+
+- https://developers.google.com/google-ads/api/docs/developer-toolkit/ai-assistant
+- https://ads-developers.googleblog.com/2026/06/introducing-google-ads-api-developer.html
+
+WILQ powinien przejąć z niego:
+
+- natural-language operator UX nad API,
+- osobne skille/procedury dla typowych zadań Ads,
+- GAQL/code validation przed execution,
+- read-only execution jako domyślny tryb diagnostyczny,
+- eksportowalne wyniki i diagnostykę do dalszego audytu,
+- non-interactive testowanie rzeczywistego outputu.
+
+WILQ nie powinien przejmować:
+
+- traktowania wygenerowanego kodu jako product brain,
+- obchodzenia WILQ evidence IDs, source connectors i ActionObjects,
+- wykonywania mutacji bez `dry_run -> preview -> confirm -> audit`,
+- ukrywania blokad typu `DEVELOPER_TOKEN_NOT_APPROVED`.
+
+To źródło wzmacnia kierunek WILQ: skille muszą być mierzalnymi workflowami nad
+API, a nie promptami. Jest to inspiracja do eval harnessu Ads Doctor i GAQL
+guardów, nie obejście Google Ads API approval.
+
 ### Google Ads API best practices
 
 Oficjalne docs Google Ads API wzmacniają trzy obszary:

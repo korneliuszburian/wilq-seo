@@ -44,10 +44,16 @@ Required WILQ output:
 
 | Source | URL | WILQ use |
 | --- | --- | --- |
+| Google Ads API docs root | https://developers.google.com/google-ads/api/docs/ | Primary entry point for current Google Ads API docs; feature work must still link the exact subpage that defines the contract. |
 | Google Ads API Recommendations | https://developers.google.com/google-ads/api/docs/recommendations | Fetch recommendation types and optimization score, then filter through WILQ rules before action. |
 | Google Ads API Custom Audiences | https://developers.google.com/google-ads/api/docs/remarketing/audience-segments/custom-audiences | Build review-only custom segment payload previews from evidence-backed terms; never apply targeting without validation, forecast/audience context and audit. |
 | Google Ads negative keywords | https://support.google.com/google-ads/answer/2453972 | Search-term waste workflow and negative keyword candidate safety checks. |
 | Google Ads Query Language | https://developers.google.com/google-ads/api/docs/query/overview | GAQL contracts; no arbitrary model-written GAQL in apply paths. |
+| Google Ads Query Builder | https://developers.google.com/google-ads/api/fields/ | Interactive field/resource discovery pattern for explicit query contracts. |
+| Google Ads Query Validator | https://developers.google.com/google-ads/api/docs/query/validator | GAQL syntax and compatibility validation pattern before live reads. |
+| Google Ads API Explorer | https://developers.google.com/google-ads/api/docs/developer-toolkit/api-explorer | Live HTTP/JSON prototyping pattern; WILQ persists only sanitized evidence and blocker labels. |
+| Google Ads MCP server | https://developers.google.com/google-ads/api/docs/developer-toolkit/mcp-server | Read-only account discovery, GAQL search and resource metadata adapter pattern; MCP output is not a recommendation until WILQ stores evidence. |
+| Google Ads API Developer Assistant | https://developers.google.com/google-ads/api/docs/developer-toolkit/what-is-developer-assistant | Mission-control pattern for Ads engineering: intent-level request, schema/version inspection, validation, read-only execution and diagnostics. |
 | Google Ads partial failures | https://developers.google.com/google-ads/api/docs/best-practices/partial-failures | Bulk preview/apply must expose per-operation failures. |
 | Google Ads REST mutate | https://developers.google.com/google-ads/api/rest/common/mutate | ActionObjects must model typed operations, validation and audit. |
 | Performance Max asset groups | https://developers.google.com/google-ads/api/performance-max/asset-groups | PMax creative/assets diagnostics and campaign builder constraints. |
@@ -73,6 +79,7 @@ WILQ must produce:
 | --- | --- | --- |
 | Google SEO Starter Guide | https://developers.google.com/search/docs/fundamentals/seo-starter-guide | Content quality, crawl/index understanding and practical page improvements. |
 | Google Search Central docs | https://developers.google.com/search/docs | Technical SEO and Search feature constraints. |
+| Google Search Console API overview | https://developers.google.com/webmaster-tools | REST access to Search Console properties, sitemaps, Search Analytics and URL testing; WILQ should expose only permission-backed, evidence-tagged reads. |
 | Google Search Console Search Analytics API | https://developers.google.com/webmaster-tools/v1/searchanalytics/query | Query/page evidence contract for clicks, impressions, CTR and position. |
 | Ahrefs content gap analysis | https://ahrefs.com/blog/content-gap-analysis/ | Gap workflow: competitor terms only after inventory/cannibalization check. |
 | Ahrefs keyword research | https://ahrefs.com/seo/keyword-research | Traffic potential and intent grouping as context, not unsupported forecasts. |

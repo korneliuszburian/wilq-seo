@@ -90,6 +90,48 @@ def test_source_facts_compile_to_review_required_cards() -> None:
     assert "ekologus_service_eko_opieka_calendar" not in {card.id for card in cards}
 
 
+def test_source_backed_waste_storage_card_matches_review_required_topic() -> None:
+    match = match_content_knowledge_cards(
+        _item(
+            id="content_work_item_magazynowanie_odpadow",
+            topic="Magazynowanie odpadów",
+            source_public_url="https://ekologus.pl/magazynowanie-odpadow/",
+            final_canonical_url="https://ekologus.pl/magazynowanie-odpadow/",
+            intended_final_url="https://ekologus.pl/magazynowanie-odpadow/",
+            evidence_ids=["ev_gsc_magazynowanie_odpadow", "ev_wp_magazynowanie_odpadow"],
+        )
+    )
+
+    assert match.blockers == []
+    assert match.service_card is not None
+    assert match.service_card.id == "ekologus_service_waste_packaging_obligations"
+    assert match.service_card.lifecycle_status == "source_backed_review_required"
+    assert "ekologus_public_waste_packaging_obligations_2026_07_01" in (
+        match.service_card.source_fact_ids
+    )
+    assert any(
+        "techniczne zalecenie magazynowania odpadów" in rule.reason
+        for rule in match.service_card.forbidden_claims
+    )
+
+
+def test_water_permit_topic_stays_blocked_without_direct_service_source_card() -> None:
+    match = match_content_knowledge_cards(
+        _item(
+            id="content_work_item_operat_wodnoprawny",
+            topic="Operat wodnoprawny",
+            source_public_url="https://ekologus.pl/operat-wodnoprawny/",
+            final_canonical_url="https://ekologus.pl/operat-wodnoprawny/",
+            intended_final_url="https://ekologus.pl/operat-wodnoprawny/",
+            evidence_ids=["ev_gsc_operat_wodnoprawny", "ev_wp_operat_wodnoprawny"],
+        )
+    )
+
+    blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(match)}
+    assert match.service_card is None
+    assert "missing_service_card" in blocker_codes
+
+
 def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -> None:
     response = content_knowledge_cards_response()
 

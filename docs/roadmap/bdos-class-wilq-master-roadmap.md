@@ -166,6 +166,10 @@ the existing WILQ content workflow.
 ### Goal 008 Candidate: BDOS-Grade Ads Loop
 
 - Harden Ads diagnostics into action-ready workflows.
+- Add Google Ads Developer Assistant style guardrails: API version awareness,
+  schema/resource inspection, GAQL validation, linted generated helper code,
+  read-only execution proof and diagnostic artifacts before operator-facing
+  Ads recommendations.
 - Add negative keyword/search-term waste review, preview and safe confirmation.
 - Add change-history/audit reporting.
 
