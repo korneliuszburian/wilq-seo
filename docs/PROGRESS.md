@@ -188,6 +188,15 @@ API status later contradicts this state.
   content refresh and WordPress draft handoff actions rendered as `kind=blocker`
   with `Odśwież dane przed akcją`, `refresh-first` summaries and concrete stale
   source labels before any review step.
+- Goal 005 live refresh-first proof: WILQ API vendor reads refreshed the stale
+  brief sources on 2026-07-01. Completed runs:
+  `refresh_google_merchant_center_a04a45a6e6fd`,
+  `refresh_ahrefs_5eee21244cff` and
+  `refresh_wordpress_sklep_c1db9b8fa677`. After refresh,
+  `/api/marketing/brief` dropped from 3 blockers to 1; Merchant and content
+  refresh decisions became current metric/recommendation/action items instead
+  of refresh-first blockers. Remaining blocker is GA4 claim safety, not stale
+  source freshness.
 - Goal 005 content UAT result proof now has a deterministic checker:
   `scripts/record_goal_005_content_uat_result.py`. It validates the filled
   session result fields for selected work item, blocker understanding, Service

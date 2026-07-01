@@ -238,6 +238,14 @@ stale daily decisions. If a safe next action is attached to stale Merchant or
 content data, it becomes a blocker titled `Odśwież dane przed akcją` and points
 to the stale source labels before any review, queue or draft handoff step.
 
+Live refresh-first recovery proof on 2026-07-01 refreshed the stale brief
+sources through WILQ API `vendor_read`: Merchant
+`refresh_google_merchant_center_a04a45a6e6fd`, Ahrefs
+`refresh_ahrefs_5eee21244cff` and WordPress sklep
+`refresh_wordpress_sklep_c1db9b8fa677`. The marketing brief then dropped stale
+source blockers for Merchant/content from refresh-first to current review
+items; the remaining blocker is GA4 claim safety.
+
 The UAT packet now also exposes the Service Profile private proposal promotion
 checklist under Beads task `wilq-seo-0pk`: `promotion_ready=false`, blocked
 reason and five required conditions before reviewed source facts. This keeps
