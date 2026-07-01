@@ -197,6 +197,12 @@ API status later contradicts this state.
   refresh decisions became current metric/recommendation/action items instead
   of refresh-first blockers. Remaining blocker is GA4 claim safety, not stale
   source freshness.
+- The Wilku-ready content UAT handoff
+  `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` is refreshed against
+  the post-refresh live content-operator packet. It now uses the latest Ahrefs
+  evidence `ev_refresh_refresh_ahrefs_5eee21244cff` and states that full UAT
+  remains blocked by Service Profile/private-proposal review, not by stale
+  Merchant/content sources.
 - Goal 005 content UAT result proof now has a deterministic checker:
   `scripts/record_goal_005_content_uat_result.py`. It validates the filled
   session result fields for selected work item, blocker understanding, Service

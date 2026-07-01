@@ -5,6 +5,12 @@ Data przygotowania: 2026-07-01
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
 
+Aktualizacja po live refreshu: 2026-07-01 22:39 UTC. WILQ odświeżył stale
+źródła Merchant/Ahrefs/WordPress sklep, więc ten handoff nie zakłada już, że
+content/merchant są zablokowane przez nieświeże dane. Pełny UAT nadal jest
+zablokowany przez brak production-depth Service Profile i review prywatnych
+propozycji.
+
 Źródło live:
 
 ```bash
@@ -33,6 +39,10 @@ UAT readiness:
   propozycje wymagają review Wilka/ownera, kolejka content workflow ma status
   `blocked`;
 - liczba gotowych kandydatów w kolejce: 1.
+- świeże proof IDs po odświeżeniu źródeł:
+  `refresh_google_merchant_center_a04a45a6e6fd`,
+  `refresh_ahrefs_5eee21244cff`,
+  `refresh_wordpress_sklep_c1db9b8fa677`.
 
 Service Profile:
 
@@ -80,7 +90,7 @@ Redacted proposal details do sprawdzenia:
 
 ## Kandydaci z kolejki
 
-### GA4 tracking gap
+### Zablokuj braki w pomiarze GA4 jako zadania contentowe
 
 - work item: `content_work_item_content_decision_ga4_tracking_gap_block`;
 - tryb: `block`;
@@ -92,18 +102,18 @@ Redacted proposal details do sprawdzenia:
 - pytanie do Wilka: czy to jest zrozumiałe jako problem pomiaru, a nie temat
   do pisania?
 
-### Ahrefs gap
+### Ahrefs: zweryfikuj luki SEO przed planem treści
 
 - work item: `content_work_item_content_decision_ahrefs_gap_records_review`;
 - tryb: `block`;
 - dowody:
-  `ev_refresh_refresh_ahrefs_3155c5fa77cf`,
-  `ev_refresh_refresh_ahrefs_13a8fb4bd86b`;
+  `ev_refresh_refresh_ahrefs_5eee21244cff`,
+  `ev_refresh_refresh_ahrefs_3155c5fa77cf`;
 - source connector: `ahrefs`;
 - final canonical: brak;
 - pytanie do Wilka: czy blocker duplikacji/canonical jasno zatrzymuje pisanie?
 
-### Strona główna Ekologus
+### SEO: odśwież lub scal "ekologus" (25 zapytań)
 
 - work item: `content_work_item_content_decision_https___www_ekologus_pl`;
 - tryb: `refresh`;
