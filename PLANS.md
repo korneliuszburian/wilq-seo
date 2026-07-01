@@ -540,6 +540,11 @@ Stop and record a blocker if:
   live diagnostics snapshot. The live snapshot may legitimately block Sales
   Brief/draft when the top freshness-ranked decision lacks production-depth
   service or CTA knowledge cards.
+- A diagnostic-derived snapshot is not proof of draft readiness. If the selected
+  live decision lacks service/CTA knowledge cards, the correct product state is
+  `missing_required_knowledge_card` and no structured draft contract. Ready
+  workflow proofs must use a deterministic ready chain or a genuinely
+  production-depth live work item.
 
 ## Outcomes & Retrospective
 

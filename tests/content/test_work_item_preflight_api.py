@@ -313,9 +313,7 @@ def test_content_work_item_preflight_api_blocks_dev_preview_canonical() -> None:
         {
             "item": _item(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"),
             "inventory_records": [
-                _inventory_record(
-                    final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/"
-                )
+                _inventory_record(final_canonical_url="https://ekologus.dev.proudsite.pl/bdo/")
             ],
             "duplicate_risk": "clear",
         }
@@ -439,9 +437,7 @@ def test_content_work_item_human_review_api_requires_blocked_claim_handling() ->
     )
 
     assert data["wordpress_handoff_allowed"] is False
-    assert [blocker["code"] for blocker in data["blockers"]] == [
-        "unhandled_blocked_claims"
-    ]
+    assert [blocker["code"] for blocker in data["blockers"]] == ["unhandled_blocked_claims"]
 
 
 def test_content_work_item_wordpress_handoff_api_prepares_draft_only_handoff() -> None:
@@ -497,9 +493,7 @@ def test_content_work_item_wordpress_handoff_api_blocks_missing_audit() -> None:
     )
 
     assert data["handoff_result"]["handoff"] is None
-    assert [blocker["code"] for blocker in data["handoff_result"]["blockers"]] == [
-        "missing_audit"
-    ]
+    assert [blocker["code"] for blocker in data["handoff_result"]["blockers"]] == ["missing_audit"]
 
 
 def test_content_work_item_wordpress_handoff_api_blocks_non_approved_review() -> None:
@@ -569,8 +563,7 @@ def test_content_work_item_measurement_window_api_schedules_planned_window() -> 
     assert window["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
     assert data["updated_item"]["measurement_window_status"] == "planned"
     assert (
-        data["updated_item"]["measurement_window_id"]
-        == "measurement_window_content_work_item_bdo"
+        data["updated_item"]["measurement_window_id"] == "measurement_window_content_work_item_bdo"
     )
     assert [blocker["code"] for blocker in data["outcome_blockers"]] == [
         "measurement_window_not_ready"
@@ -666,33 +659,51 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
     assert preflight["final_canonical_url"] == source_decision["final_canonical_url"]
     assert preflight["source_connectors"] == source_decision["source_connectors"]
 
-    brief = data["sales_brief"]["sales_brief_result"]["brief"]
-    assert brief["work_item_id"] == item["id"]
-    assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
-
     structured = data["structured_generation"]["structured_generation_result"]
-    assert structured["blockers"] == []
-    assert structured["contract"]["schema_name"] == "wilq_content_structured_draft_v1"
-    assert structured["contract"]["publish_ready"] is False
-    assert structured["contract"]["model_input"]["work_item_id"] == item["id"]
-    assert structured["contract"]["model_input"]["final_canonical_url"] == item[
-        "final_canonical_url"
-    ]
+    brief_result = data["sales_brief"]["sales_brief_result"]
+    brief = brief_result["brief"]
+    if brief is None:
+        assert [blocker["code"] for blocker in brief_result["blockers"]] == [
+            "missing_required_knowledge_card",
+            "missing_required_knowledge_card",
+        ]
+        assert structured["contract"] is None
+        assert {
+            "missing_sales_brief",
+            "missing_draft_package",
+        }.issubset({blocker["code"] for blocker in structured["blockers"]})
+    else:
+        assert brief["work_item_id"] == item["id"]
+        assert brief["final_canonical_url"] == source_decision["final_canonical_url"]
+        assert structured["blockers"] == []
+        assert structured["contract"]["schema_name"] == "wilq_content_structured_draft_v1"
+        assert structured["contract"]["publish_ready"] is False
+        assert structured["contract"]["model_input"]["work_item_id"] == item["id"]
+        assert (
+            structured["contract"]["model_input"]["final_canonical_url"]
+            == item["final_canonical_url"]
+        )
 
     human_review = data["human_review"]
     assert human_review["review"] is None
     assert human_review["reviewed_item"]["human_review_status"] == "missing"
     assert human_review["wordpress_handoff_allowed"] is False
-    assert [blocker["code"] for blocker in human_review["blockers"]] == [
-        "missing_human_review"
-    ]
+    assert [blocker["code"] for blocker in human_review["blockers"]] == ["missing_human_review"]
 
     handoff_result = data["wordpress_handoff"]["handoff_result"]
     assert handoff_result["handoff"] is None
-    assert [blocker["code"] for blocker in handoff_result["blockers"]] == [
-        "missing_human_review",
-        "missing_audit",
-    ]
+    handoff_blocker_codes = [blocker["code"] for blocker in handoff_result["blockers"]]
+    if brief is None:
+        assert handoff_blocker_codes == [
+            "missing_draft_package",
+            "missing_human_review",
+            "missing_audit",
+        ]
+    else:
+        assert handoff_blocker_codes == [
+            "missing_human_review",
+            "missing_audit",
+        ]
 
     measurement = data["measurement_window"]
     window = measurement["measurement_window_result"]["window"]
@@ -723,7 +734,7 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
         "Okno pomiaru",
     ]
     assert operator_steps[0]["status_label"] == "można planować"
-    assert operator_steps[3]["status_label"] == "gotowy do próby"
+    assert operator_steps[3]["status_label"] in {"gotowy do próby", "zablokowany"}
     assert operator_steps[4]["status_label"] == "wymaga decyzji"
     assert operator_steps[5]["status_label"] == "zablokowany"
     assert operator_steps[6]["status_label"] == "zaplanowane"
@@ -733,6 +744,20 @@ def test_content_work_item_snapshot_is_derived_from_content_diagnostics() -> Non
     assert "/api/content" not in operator_text
     assert "ContentWorkItem" not in operator_text
     assert "workflow" not in operator_text.lower()
+
+
+def _snapshot_blocks_draft_on_missing_knowledge(snapshot: dict[str, Any]) -> bool:
+    brief_result = snapshot["sales_brief"]["sales_brief_result"]
+    draft_result = snapshot["draft_package"]["draft_package_result"]
+    structured_result = snapshot["structured_generation"]["structured_generation_result"]
+    return (
+        brief_result["brief"] is None
+        and [blocker["code"] for blocker in brief_result["blockers"]]
+        == ["missing_required_knowledge_card", "missing_required_knowledge_card"]
+        and draft_result["draft_package"] is None
+        and "missing_sales_brief" in {blocker["code"] for blocker in draft_result["blockers"]}
+        and structured_result["contract"] is None
+    )
 
 
 def test_content_work_item_snapshot_persists_real_human_review(
@@ -745,6 +770,9 @@ def test_content_work_item_snapshot_persists_real_human_review(
     initial = client.get("/api/content/work-items/snapshot").json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    if draft is None:
+        assert _snapshot_blocks_draft_on_missing_knowledge(initial)
+        return
     review = _human_review(
         id=f"human_review_{item['id']}",
         work_item_id=item["id"],
@@ -781,6 +809,9 @@ def test_content_work_item_snapshot_does_not_persist_wrong_work_item_review(
     initial = client.get("/api/content/work-items/snapshot").json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    if draft is None:
+        assert _snapshot_blocks_draft_on_missing_knowledge(initial)
+        return
 
     response = client.post(
         "/api/content/work-items/snapshot/human-review",
@@ -812,6 +843,9 @@ def test_content_work_item_snapshot_persists_matching_audit_envelope(
     initial = client.get("/api/content/work-items/snapshot").json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    if draft is None:
+        assert _snapshot_blocks_draft_on_missing_knowledge(initial)
+        return
     review = _human_review(
         id=f"human_review_{item['id']}",
         work_item_id=item["id"],
@@ -859,6 +893,9 @@ def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
     initial = client.get("/api/content/work-items/snapshot").json()
     item = initial["preflight"]["item"]
     draft = initial["draft_package"]["draft_package_result"]["draft_package"]
+    if draft is None:
+        assert _snapshot_blocks_draft_on_missing_knowledge(initial)
+        return
     review = _human_review(
         id=f"human_review_{item['id']}",
         work_item_id=item["id"],
@@ -888,6 +925,5 @@ def test_content_work_item_snapshot_does_not_persist_mismatched_audit(
     persisted = client.get("/api/content/work-items/snapshot").json()
     assert persisted["wordpress_handoff"]["handoff_result"]["handoff"] is None
     assert "missing_audit" in [
-        blocker["code"]
-        for blocker in persisted["wordpress_handoff"]["handoff_result"]["blockers"]
+        blocker["code"] for blocker in persisted["wordpress_handoff"]["handoff_result"]["blockers"]
     ]

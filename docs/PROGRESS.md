@@ -240,6 +240,11 @@ API status later contradicts this state.
   semantics still need a separate follow-up because the freshness-ranked
   homepage decision can correctly block Sales Brief on missing service/CTA
   knowledge cards.
+- Live content snapshot tests now distinguish diagnostic-derived snapshots from
+  deterministic ready-chain fixtures. If the current freshness-ranked decision
+  lacks service/CTA knowledge depth, the snapshot test expects
+  `missing_required_knowledge_card`, no draft package and no structured
+  contract instead of forcing a fake draft-ready state.
 - WordPress draft handoff audit lineage is hardened: audit evidence must overlap
   with the approved human review evidence and draft package evidence map, or
   handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
@@ -1740,6 +1745,9 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_content_work_item_brief_draft_api.py tests/content/test_structured_generation_api.py -q`
 - `rtk uv run ruff check tests/content/test_content_quality_review_api.py wilq/content/workflow/api.py`
 - `rtk uv run mypy wilq/content/workflow/api.py`
+- `rtk uv run pytest tests/content/test_work_item_preflight_api.py -q`
+- `rtk uv run pytest tests/content/test_work_item_preflight_api.py tests/content/test_content_quality_review_api.py tests/content/test_structured_draft_preview.py tests/content/test_structured_generation_api.py -q`
+- `rtk uv run ruff check tests/content/test_work_item_preflight_api.py tests/content/test_content_quality_review_api.py wilq/content/workflow/api.py`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk pnpm --dir packages/shared-schemas typecheck`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
