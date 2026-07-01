@@ -29,6 +29,11 @@ FROZEN_GROWTH_FILES = {
     Path("apps/dashboard/src/routes/ContentDiagnosticSurface.tsx"),
 }
 
+CHANGED_FILE_LOC_LIMIT = 800
+CHANGED_FUNCTION_LINE_LIMIT = 100
+CHANGED_FUNCTION_BRANCH_LIMIT = 25
+CHANGED_CLASS_LINE_LIMIT = 300
+
 BRANCH_NODES = (
     ast.If,
     ast.For,
@@ -55,6 +60,17 @@ class CodeBlockMetric:
     line: int
     lines: int
     branch_count: int
+
+
+@dataclass(frozen=True)
+class ChangedBudgetViolation:
+    path: Path
+    kind: str
+    name: str
+    line: int | None
+    metric: str
+    value: int
+    limit: int
 
 
 class ComplexityVisitor(ast.NodeVisitor):
@@ -129,19 +145,44 @@ def main() -> int:
         action="store_true",
         help="Do not fail --changed when frozen growth files changed.",
     )
+    parser.add_argument(
+        "--allow-budget-violations",
+        action="store_true",
+        help="Do not fail --changed when changed Python files exceed budget limits.",
+    )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
     files, functions, classes = collect_metrics(root)
     changed = changed_files(root)
     frozen_changed = sorted(path for path in changed if path in FROZEN_GROWTH_FILES)
+    budget_violations = changed_budget_violations(files, functions, classes, changed)
 
-    print(render_summary(root, files, functions, classes, changed, frozen_changed, args.limit))
+    print(
+        render_summary(
+            root,
+            files,
+            functions,
+            classes,
+            changed,
+            frozen_changed,
+            budget_violations,
+            args.limit,
+        )
+    )
 
     if args.changed and frozen_changed and not args.allow_frozen:
         print(
             "\nFrozen growth files changed. Move new behavior into domain modules "
             "or rerun with --allow-frozen for a documented extraction slice.",
+            file=sys.stderr,
+        )
+        return 1
+    if args.changed and budget_violations and not args.allow_budget_violations:
+        print(
+            "\nChanged Python files exceed anti-slop budgets. Split the change, "
+            "extract smaller functions/classes or rerun with "
+            "--allow-budget-violations only for a documented cleanup slice.",
             file=sys.stderr,
         )
         return 1
@@ -219,6 +260,73 @@ def run_git_paths(root: Path, args: list[str]) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def changed_budget_violations(
+    files: list[FileMetric],
+    functions: list[CodeBlockMetric],
+    classes: list[CodeBlockMetric],
+    changed: set[Path],
+) -> list[ChangedBudgetViolation]:
+    changed_python = {path for path in changed if path.suffix == ".py"}
+    violations: list[ChangedBudgetViolation] = []
+    for file in files:
+        if file.path in changed_python and file.loc > CHANGED_FILE_LOC_LIMIT:
+            violations.append(
+                ChangedBudgetViolation(
+                    path=file.path,
+                    kind="file",
+                    name=file.path.name,
+                    line=None,
+                    metric="LOC",
+                    value=file.loc,
+                    limit=CHANGED_FILE_LOC_LIMIT,
+                )
+            )
+    for function in functions:
+        if function.path not in changed_python:
+            continue
+        if function.lines > CHANGED_FUNCTION_LINE_LIMIT:
+            violations.append(
+                ChangedBudgetViolation(
+                    path=function.path,
+                    kind="function",
+                    name=function.name,
+                    line=function.line,
+                    metric="lines",
+                    value=function.lines,
+                    limit=CHANGED_FUNCTION_LINE_LIMIT,
+                )
+            )
+        if function.branch_count > CHANGED_FUNCTION_BRANCH_LIMIT:
+            violations.append(
+                ChangedBudgetViolation(
+                    path=function.path,
+                    kind="function",
+                    name=function.name,
+                    line=function.line,
+                    metric="branches",
+                    value=function.branch_count,
+                    limit=CHANGED_FUNCTION_BRANCH_LIMIT,
+                )
+            )
+    for class_block in classes:
+        if class_block.path in changed_python and class_block.lines > CHANGED_CLASS_LINE_LIMIT:
+            violations.append(
+                ChangedBudgetViolation(
+                    path=class_block.path,
+                    kind="class",
+                    name=class_block.name,
+                    line=class_block.line,
+                    metric="lines",
+                    value=class_block.lines,
+                    limit=CHANGED_CLASS_LINE_LIMIT,
+                )
+            )
+    return sorted(
+        violations,
+        key=lambda item: (item.path.as_posix(), item.line or 0, item.kind, item.metric),
+    )
+
+
 def render_summary(
     root: Path,
     files: list[FileMetric],
@@ -226,6 +334,7 @@ def render_summary(
     classes: list[CodeBlockMetric],
     changed: set[Path],
     frozen_changed: list[Path],
+    budget_violations: list[ChangedBudgetViolation],
     limit: int,
 ) -> str:
     python_loc = sum(file.loc for file in files)
@@ -237,6 +346,7 @@ def render_summary(
         f"- Python non-empty LOC: `{python_loc}`",
         f"- Changed files: `{len(changed)}`",
         f"- Frozen growth files changed: `{len(frozen_changed)}`",
+        f"- Changed-code budget violations: `{len(budget_violations)}`",
         "",
         "## Frozen Growth Files",
     ]
@@ -247,6 +357,9 @@ def render_summary(
     if frozen_changed:
         lines.extend(["", "## Frozen Growth Risk"])
         lines.extend(f"- `{path.as_posix()}`" for path in frozen_changed)
+
+    lines.extend(["", "## Changed-Code Budgets"])
+    lines.extend(render_budget_rows(budget_violations, limit))
 
     lines.extend(["", "## Largest Python Files"])
     lines.extend(render_file_rows(sorted(files, key=lambda item: item.loc, reverse=True), limit))
@@ -290,6 +403,25 @@ def render_block_rows(rows: list[CodeBlockMetric], limit: int) -> list[str]:
         (
             f"- `{row.path.as_posix()}:{row.line}` `{row.name}`: "
             f"{row.lines} lines, {row.branch_count} branches"
+        )
+        for row in rows[:limit]
+    ]
+
+
+def render_budget_rows(rows: list[ChangedBudgetViolation], limit: int) -> list[str]:
+    if not rows:
+        return [
+            "- Changed Python files are within budgets: "
+            f"file <= {CHANGED_FILE_LOC_LIMIT} LOC, "
+            f"function <= {CHANGED_FUNCTION_LINE_LIMIT} lines, "
+            f"function <= {CHANGED_FUNCTION_BRANCH_LIMIT} branches, "
+            f"class <= {CHANGED_CLASS_LINE_LIMIT} lines."
+        ]
+    return [
+        (
+            f"- `{row.path.as_posix()}`"
+            f"{':' + str(row.line) if row.line is not None else ''} "
+            f"{row.kind} `{row.name}`: {row.metric} {row.value} > {row.limit}"
         )
         for row in rows[:limit]
     ]

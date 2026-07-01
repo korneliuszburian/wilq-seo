@@ -1154,6 +1154,16 @@ Current outcome:
   the focused queue/generation/quality/state pytest set, Ruff for changed Python
   files, mypy for `structured_generation.py` and
   `scripts/audit_complexity.py --changed --allow-frozen`.
+- Goal 003 anti-slop budget slice `wilq-seo-9l1` is complete pending final
+  commit/push. `scripts/audit_complexity.py --changed` now enforces per-slice
+  changed Python budgets: file <= 800 LOC, function <= 100 lines, function <=
+  25 branches and class <= 300 lines. Frozen growth files remain a separate
+  blocker. `tests/test_audit_complexity.py` proves budget detection, unchanged
+  legacy hotspot exclusion and clean budget reporting. Proof passed:
+  `uv run pytest tests/test_audit_complexity.py -q`,
+  `uv run ruff check scripts/audit_complexity.py tests/test_audit_complexity.py`,
+  `uv run mypy scripts/audit_complexity.py` and
+  `uv run python scripts/audit_complexity.py --changed`.
 
 Current risk:
 

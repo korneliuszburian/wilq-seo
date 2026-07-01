@@ -160,6 +160,12 @@ API status later contradicts this state.
   `content_workflow_blockers(item, "prepare_draft")` before trusting supplied
   brief/claim/draft payloads, so forged payloads cannot bypass missing workflow
   state.
+- Goal 003 anti-slop budget slice `wilq-seo-9l1` is complete pending final
+  commit/push. `scripts/audit_complexity.py --changed` now fails changed Python
+  files that exceed the current per-slice budgets: file > 800 LOC, function >
+  100 lines, function > 25 branches or class > 300 lines. Frozen growth files
+  remain a separate blocker. `tests/test_audit_complexity.py` covers budget
+  detection, unchanged legacy hotspot exclusion and clean budget reporting.
 - Goal 002 content domain extraction has started under `wilq-seo-x4u`.
   Canonical/public URL semantics moved from
   `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.
@@ -1215,6 +1221,10 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_content_work_item_state_api.py tests/content/test_workflow_store.py -q`
 - `rtk uv run ruff check wilq/content/workflow/store.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_state_api.py`
 - `rtk uv run mypy wilq/content/workflow/store.py apps/api/wilq_api/routers/content_workflow.py`
+- `rtk uv run pytest tests/test_audit_complexity.py -q`
+- `rtk uv run ruff check scripts/audit_complexity.py tests/test_audit_complexity.py`
+- `rtk uv run mypy scripts/audit_complexity.py`
+- `rtk uv run python scripts/audit_complexity.py --changed`
 - `rtk uv run ruff check wilq/content/drafts/structured_generation.py tests/content/test_content_workflow_adversarial_gates.py`
 - `rtk uv run mypy wilq/content/drafts/structured_generation.py`
 - `rtk uv run python scripts/audit_complexity.py --changed --allow-frozen`
