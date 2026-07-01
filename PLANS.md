@@ -196,6 +196,14 @@ states that no private proposal is promoted into a source fact or knowledge
 card. Live API proof on 2026-07-01 returned `private_review_action_count=2`,
 `approved_count=0` and `ready_for_daily_content=false`.
 
+The `wilq-content-operator` UAT packet now consumes
+`GET /api/content/service-profile` under Beads task `wilq-seo-0bv`. It reports
+Service Profile gaps, production-depth readiness and private proposal review
+actions inside the existing UAT harness. Live proof on 2026-07-01 returned
+`uat_readiness.status=blocked_for_full_uat`, one actionable queue item, two
+Service Profile gaps and two private review actions. This is UAT preparation,
+not proof that Wilku completed the session.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

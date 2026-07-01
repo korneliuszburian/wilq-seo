@@ -111,6 +111,10 @@ First Goal 005 source-pack proof:
   It is read-only, renders source-backed review-required service coverage,
   exposes `operat wodnoprawny` as a blocker gap, and blocks card edits/fact
   promotion in the API-owned review policy.
+- The `wilq-content-operator` UAT packet now reads the Service Profile during
+  UAT preparation. It surfaces production-depth readiness, Service Profile gaps
+  and redacted private proposal review actions, and can explicitly label a full
+  content UAT as blocked while still allowing a review/traceability session.
 - Draft variant selection now has an API-owned evidence guard. The draft
   variants response exposes `recommended_variant_id`, comparison dimensions,
   `magic_score_used=false`, blocked claim policy and a safe next step. It

@@ -148,6 +148,13 @@ API status later contradicts this state.
   `approved_count=0`, `ready_for_daily_content=false`. These actions help
   Wilku decide what to review next, but they do not promote private proposals
   into source facts or knowledge cards.
+- The `wilq-content-operator` UAT packet now includes live Service Profile
+  evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
+  `uat_readiness.status=blocked_for_full_uat`,
+  `recommended_scope=review/blokady i traceability`, gaps
+  `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`,
+  `private_review_action_count=2`. This prepares Goal 005 UAT without claiming
+  that Wilku completed the session.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation

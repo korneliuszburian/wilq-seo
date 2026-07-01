@@ -59,6 +59,66 @@ def safe_enrichment(api_base: str, work_item_id: str) -> dict[str, Any]:
         }
 
 
+def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
+    profile = require_dict(
+        request_json(api_base, "GET", "/api/content/service-profile"),
+        "service profile response",
+    )
+    coverage_summary = require_dict(
+        profile.get("coverage_summary") or {},
+        "service profile coverage summary",
+    )
+    private_summary = require_dict(
+        profile.get("private_source_proposal_summary") or {},
+        "private source proposal summary",
+    )
+    coverage_gaps = [
+        {
+            "gap_id": gap.get("gap_id"),
+            "severity": gap.get("severity"),
+            "label": gap.get("label"),
+            "safe_next_step": gap.get("safe_next_step"),
+        }
+        for gap in as_list(profile.get("coverage_gaps"))
+        if isinstance(gap, dict)
+    ]
+    private_review_actions = [
+        {
+            "action_id": action.get("action_id"),
+            "label": action.get("label"),
+            "reason": action.get("reason"),
+            "blocked_write_claim": action.get("blocked_write_claim"),
+            "required_human_role": action.get("required_human_role"),
+            "target_card_id": action.get("target_card_id"),
+        }
+        for action in as_list(profile.get("review_actions"))
+        if isinstance(action, dict)
+        and str(action.get("action_id") or "").startswith(
+            "service_profile_review_private_proposal_"
+        )
+    ]
+    return {
+        "endpoint": "/api/content/service-profile",
+        "read_only": profile.get("read_only"),
+        "production_depth_ready": coverage_summary.get("ready_for_daily_content"),
+        "status_label": coverage_summary.get("status_label"),
+        "safe_next_step": coverage_summary.get("safe_next_step"),
+        "service_card_count": coverage_summary.get("service_card_count"),
+        "approved_current_count": coverage_summary.get("approved_current_count"),
+        "source_backed_review_required_count": coverage_summary.get(
+            "source_backed_review_required_count"
+        ),
+        "coverage_gaps": coverage_gaps,
+        "private_source_proposals": {
+            "candidate_count": private_summary.get("candidate_count"),
+            "review_required_count": private_summary.get("review_required_count"),
+            "approved_count": private_summary.get("approved_count"),
+            "redacted": private_summary.get("redacted"),
+        },
+        "private_review_actions": private_review_actions,
+    }
+
+
 def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     work_item_id = str(candidate.get("work_item_id") or "")
     enrichment_response: dict[str, Any] = (
@@ -114,6 +174,42 @@ def packet_item(api_base: str, candidate: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def uat_readiness(
+    *,
+    queue: dict[str, Any],
+    service_profile: dict[str, Any],
+    items: list[dict[str, Any]],
+) -> dict[str, Any]:
+    blockers: list[str] = []
+    actionable_items = [
+        item
+        for item in items
+        if item.get("recommended_mode") != "block" and not item.get("blockers")
+    ]
+    actionable_candidate_count = queue.get("actionable_candidate_count")
+    if not isinstance(actionable_candidate_count, int):
+        actionable_candidate_count = len(actionable_items)
+    if actionable_candidate_count == 0:
+        blockers.append("brak gotowego itemu contentowego bez blockerów")
+    if service_profile.get("production_depth_ready") is not True:
+        blockers.append("Service Profile nie jest production-depth")
+    if service_profile.get("private_review_actions"):
+        blockers.append("prywatne propozycje wymagają review Wilka/ownera")
+    if queue.get("queue_status") == "blocked":
+        blockers.append("kolejka content workflow ma status blocked")
+    return {
+        "status": "blocked_for_full_uat" if blockers else "ready_for_uat",
+        "blockers": blockers,
+        "recommended_scope": (
+            "review/blokady i traceability"
+            if blockers
+            else "pełna sesja contentowa z briefem i wariantem szkicu"
+        ),
+        "actionable_candidate_count": actionable_candidate_count,
+        "shown_actionable_item_ids": [item["work_item_id"] for item in actionable_items],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Build {SKILL_NAME} Wilku UAT packet")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
@@ -139,6 +235,9 @@ def main() -> int:
         for candidate in as_list(queue.get("candidates"))
         if isinstance(candidate, dict)
     ]
+    service_profile = service_profile_uat_summary(args.api_base)
+    items = [packet_item(args.api_base, candidate) for candidate in candidates[: args.limit]]
+    readiness = uat_readiness(queue=queue, service_profile=service_profile, items=items)
     packet = {
         "skill": SKILL_NAME,
         "purpose": "UAT sesji pracy contentowej Wilka przez WILQ API dla 3-5 itemów",
@@ -146,17 +245,29 @@ def main() -> int:
         "operator_summary": queue.get("operator_summary"),
         "candidate_count": queue.get("candidate_count"),
         "actionable_candidate_count": queue.get("actionable_candidate_count"),
-        "items": [packet_item(args.api_base, candidate) for candidate in candidates[: args.limit]],
+        "service_profile": service_profile,
+        "uat_readiness": readiness,
+        "items": items,
         "uat_tasks": [
+            (
+                "Sprawdź Service Profile: powiedz, które luki i private review "
+                "actions blokują production-depth."
+            ),
             "Wybierz jeden item, który da się odświeżyć albo scalić bez tworzenia duplikatu.",
             "Wskaż blocker, który jasno mówi, dlaczego nie wolno jeszcze pisać.",
             "Sprawdź, czy final canonical nie jest adresem dev/staging.",
             "Powiedz, czy safe_next_step mówi dokładnie, co zrobić dalej.",
             "Potwierdź, czy measurement readiness blokuje zbyt wczesny claim sukcesu.",
+            (
+                "Zadaj pytanie 'skąd to wzięło?' i sprawdź, czy WILQ pokazuje "
+                "evidence IDs oraz source connectors."
+            ),
         ],
         "hard_rules": [
             "Brak evidence ID oznacza brak rekomendacji.",
             "Brak source connector oznacza brak rekomendacji.",
+            "Review-required wiedza może wspierać UAT, ale nie odblokowuje production-depth.",
+            "Private proposal review action nie promuje faktu ani karty wiedzy.",
             "Dev URL nie jest canonical ani SEO evidence.",
             "WordPress pozostaje draft-only albo podgląd zmian.",
             "Sukces lub porażka treści wymagają gotowego measurement outcome.",
@@ -171,6 +282,45 @@ def main() -> int:
     print()
     print(f"Status kolejki: {packet['queue_status']}")
     print(f"Podsumowanie: {packet['operator_summary']}")
+    print()
+    service_profile_raw = packet.get("service_profile")
+    if not isinstance(service_profile_raw, dict):
+        raise SystemExit("Service Profile UAT summary must be an object")
+    service_profile_md = cast(dict[str, Any], service_profile_raw)
+    readiness_raw = packet.get("uat_readiness")
+    if not isinstance(readiness_raw, dict):
+        raise SystemExit("UAT readiness must be an object")
+    readiness_md = cast(dict[str, Any], readiness_raw)
+    print("## Gotowość UAT")
+    print(f"- status: {readiness_md['status']}")
+    print(f"- zakres: {readiness_md['recommended_scope']}")
+    readiness_blockers = [str(value) for value in readiness_md.get("blockers") or []]
+    print(f"- blokady: {', '.join(readiness_blockers) or 'brak'}")
+    print()
+    print("## Service Profile")
+    print(f"- endpoint: `{service_profile_md['endpoint']}`")
+    print(f"- read-only: {service_profile_md['read_only']}")
+    print(f"- production-depth: {service_profile_md['production_depth_ready']}")
+    print(f"- status: {service_profile_md['status_label']}")
+    print(f"- następny krok: {service_profile_md['safe_next_step']}")
+    gaps = service_profile_md.get("coverage_gaps")
+    if isinstance(gaps, list) and gaps:
+        print("- luki:")
+        for raw_gap in gaps:
+            if isinstance(raw_gap, dict):
+                print(
+                    f"  - `{raw_gap.get('gap_id')}`: {raw_gap.get('label')} "
+                    f"({raw_gap.get('severity')})"
+                )
+    actions = service_profile_md.get("private_review_actions")
+    if isinstance(actions, list) and actions:
+        print("- private review actions:")
+        for raw_action in actions:
+            if isinstance(raw_action, dict):
+                print(
+                    f"  - `{raw_action.get('action_id')}`: "
+                    f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
+                )
     print()
     packet_items = packet.get("items")
     if not isinstance(packet_items, list):

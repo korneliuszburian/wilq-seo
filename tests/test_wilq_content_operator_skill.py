@@ -62,6 +62,11 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
     for marker in (
         "uat_tasks",
         "3-5",
+        "/api/content/service-profile",
+        "Service Profile",
+        "private_review_actions",
+        "Service Profile nie jest production-depth",
+        "Private proposal review action nie promuje faktu ani karty wiedzy.",
         "Dev URL nie jest canonical",
         "WordPress pozostaje draft-only",
         "/api/content/work-items/queue",
