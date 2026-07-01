@@ -5,7 +5,9 @@ import sqlite3
 from pathlib import Path
 from typing import cast
 
+from wilq.content.drafts.structured_generation import StructuredDraftOutput
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
+from wilq.content.quality.review import ContentQualityReview
 from wilq.content.review.human import ContentHumanReview
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import state_db_path
@@ -97,6 +99,79 @@ class ContentWorkflowStore:
             json.loads(cast(str, row["payload_json"]))
         )
 
+    def save_structured_output(
+        self,
+        work_item_id: str,
+        output: StructuredDraftOutput,
+    ) -> StructuredDraftOutput:
+        redacted = StructuredDraftOutput.model_validate(
+            redact_mapping(output.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_structured_outputs (work_item_id, payload_json)
+                VALUES (?, ?)
+                ON CONFLICT(work_item_id) DO UPDATE SET
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    work_item_id,
+                    _model_json(redacted),
+                ),
+            )
+        return redacted
+
+    def latest_structured_output(self, work_item_id: str) -> StructuredDraftOutput | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_structured_outputs
+                WHERE work_item_id = ?
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return StructuredDraftOutput.model_validate(json.loads(cast(str, row["payload_json"])))
+
+    def save_quality_review(self, review: ContentQualityReview) -> ContentQualityReview:
+        redacted = ContentQualityReview.model_validate(
+            redact_mapping(review.model_dump(mode="json"))
+        )
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO content_quality_reviews (review_id, work_item_id, payload_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(review_id) DO UPDATE SET
+                  work_item_id = excluded.work_item_id,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.review_id,
+                    redacted.work_item_id,
+                    _model_json(redacted),
+                ),
+            )
+        return redacted
+
+    def latest_quality_review(self, work_item_id: str) -> ContentQualityReview | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM content_quality_reviews
+                WHERE work_item_id = ?
+                ORDER BY review_id DESC
+                LIMIT 1
+                """,
+                (work_item_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return ContentQualityReview.model_validate(json.loads(cast(str, row["payload_json"])))
+
     def _connect(self) -> sqlite3.Connection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
@@ -123,7 +198,31 @@ class ContentWorkflowStore:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_structured_outputs (
+              work_item_id TEXT PRIMARY KEY,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS content_quality_reviews (
+              review_id TEXT PRIMARY KEY,
+              work_item_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            )
+            """
+        )
 
 
-def _model_json(model: ContentHumanReview | ContentWordPressDraftAuditEnvelope) -> str:
+def _model_json(
+    model: (
+        ContentHumanReview
+        | ContentWordPressDraftAuditEnvelope
+        | StructuredDraftOutput
+        | ContentQualityReview
+    ),
+) -> str:
     return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))

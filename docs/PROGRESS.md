@@ -92,14 +92,16 @@ API status later contradicts this state.
   public final canonical URLs and one Ahrefs review candidate blocked because
   it has no final canonical URL. Dev/preview URLs are rejected as final
   canonical targets.
-- Goal 003 per-item state slice `wilq-seo-cdy` is in progress. Current
-  sub-slice added selected-work-item snapshot, human review and audit endpoints:
+- Goal 003 per-item state slice `wilq-seo-cdy` is closed. It added
+  selected-work-item snapshot, human review and audit endpoints:
   `GET /api/content/work-items/{work_item_id}/snapshot`,
   `POST /api/content/work-items/{work_item_id}/human-review` and
   `POST /api/content/work-items/{work_item_id}/audit`. Tests prove review/audit
   for item A do not unlock item B, and blocked queue items do not receive fake
-  workflow snapshots. Persisted generated output and quality-review state remain
-  in scope for later `wilq-seo-cdy` sub-slices after those domains exist.
+  workflow snapshots. Final sub-slice added item-scoped structured draft preview
+  and quality-review endpoints plus store persistence for `StructuredDraftOutput`
+  and `ContentQualityReview`; tests prove output/quality state for item A does
+  not appear on item B and mismatched `work_item_id` requests are rejected.
 - Goal 003 deterministic quality review slice `wilq-seo-b5x` is closed.
   `POST /api/content/work-items/quality-review` returns `ContentQualityReview`
   with verdict, blockers, dimension statuses, revision instructions, evidence
@@ -1210,6 +1212,9 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_structured_generation_api.py -q`
 - `rtk uv run pytest tests/content/test_content_workflow_adversarial_gates.py -q`
 - `rtk uv run pytest tests/content/test_structured_generation_api.py tests/content/test_content_quality_review_api.py tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run pytest tests/content/test_content_work_item_state_api.py tests/content/test_workflow_store.py -q`
+- `rtk uv run ruff check wilq/content/workflow/store.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_state_api.py`
+- `rtk uv run mypy wilq/content/workflow/store.py apps/api/wilq_api/routers/content_workflow.py`
 - `rtk uv run ruff check wilq/content/drafts/structured_generation.py tests/content/test_content_workflow_adversarial_gates.py`
 - `rtk uv run mypy wilq/content/drafts/structured_generation.py`
 - `rtk uv run python scripts/audit_complexity.py --changed --allow-frozen`

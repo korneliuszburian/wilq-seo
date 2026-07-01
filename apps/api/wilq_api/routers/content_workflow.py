@@ -228,6 +228,22 @@ def content_work_item_structured_draft_preview(
 
 
 @router.post(
+    "/api/content/work-items/{work_item_id}/structured-draft-preview",
+    response_model=ContentWorkItemStructuredDraftPreviewResponse,
+)
+def content_work_item_structured_draft_preview_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemStructuredDraftPreviewRequest,
+) -> ContentWorkItemStructuredDraftPreviewResponse:
+    _snapshot_for_work_item_or_404(work_item_id)
+    _ensure_contract_matches_work_item(work_item_id, request)
+    response = build_content_work_item_structured_draft_preview_response(request)
+    if response.preview_result.preview is not None and request.output is not None:
+        content_workflow_store().save_structured_output(work_item_id, request.output)
+    return response
+
+
+@router.post(
     "/api/content/work-items/quality-review",
     response_model=ContentWorkItemQualityReviewResponse,
 )
@@ -235,6 +251,25 @@ def content_work_item_quality_review(
     request: ContentWorkItemQualityReviewRequest,
 ) -> ContentWorkItemQualityReviewResponse:
     return build_content_work_item_quality_review_response(request)
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/quality-review",
+    response_model=ContentWorkItemQualityReviewResponse,
+)
+def content_work_item_quality_review_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemQualityReviewRequest,
+) -> ContentWorkItemQualityReviewResponse:
+    _snapshot_for_work_item_or_404(work_item_id)
+    if request.item.id != work_item_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Content quality review item does not match the selected work item.",
+        )
+    response = build_content_work_item_quality_review_response(request)
+    content_workflow_store().save_quality_review(response.quality_review)
+    return response
 
 
 @router.post(
@@ -316,3 +351,17 @@ def _snapshot_for_work_item_or_404(
         )
         assert snapshot is not None
     return snapshot
+
+
+def _ensure_contract_matches_work_item(
+    work_item_id: str,
+    request: ContentWorkItemStructuredDraftPreviewRequest,
+) -> None:
+    if request.contract is None:
+        return
+    if request.contract.model_input.work_item_id == work_item_id:
+        return
+    raise HTTPException(
+        status_code=400,
+        detail="Structured draft contract does not match the selected work item.",
+    )
