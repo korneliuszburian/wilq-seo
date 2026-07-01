@@ -5,3 +5,5 @@ export const adsMissingCampaignStatusLabel = "status kampanii niepotwierdzony";
 export const adsMissingRecommendedBudgetLabel = "nie ma propozycji budżetu; nie zmieniaj budżetu";
 export const adsMissingPreviewLabel = "nie ma podglądu zmian; nie zapisuj zmiany";
 export const adsMissingDateLabel = "data niepotwierdzona";
+export const adsMissingChangeIdLabel = "identyfikator zmiany niepotwierdzony";
+export const adsMissingCampaignMetricsLabel = "metryki kampanii niepotwierdzone; nie oceniaj wpływu";

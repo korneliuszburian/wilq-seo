@@ -7752,6 +7752,10 @@ describe("WILQ dashboard", () => {
       "src/components/AdsBudgetRecommendationPanels.tsx",
       "utf8"
     );
+    const businessReadinessPanelsSource = readFileSync(
+      "src/components/AdsBusinessReadinessPanels.tsx",
+      "utf8"
+    );
     const negativeKeywordPanelSource = readFileSync(
       "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
       "utf8"
@@ -7773,18 +7777,22 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("contract.mode_label");
     expect(routeSource).toContain("item.missing_read_contract_summary_label");
     expect(routeSource).toContain("item.source_contract_summary_label");
-    expect(routeSource).toContain("interpretation.allowed_use_labels");
-    expect(routeSource).toContain("interpretation.blocked_use_labels");
-    expect(routeSource).toContain("interpretation.missing_requirement_labels");
-    expect(routeSource).toContain("interpretation.status_label");
-    expect(routeSource).toContain("interpretation.policy_summary_label");
-    expect(routeSource).toContain("interpretation.action_summary_label");
-    expect(routeSource).toContain("strategyReadiness.status_label");
-    expect(routeSource).toContain("strategyReadiness.latest_review_status_label");
-    expect(routeSource).toContain("strategyReadiness.required_validation_summary_label");
-    expect(routeSource).toContain("strategyReadiness.missing_read_contract_summary_label");
-    expect(routeSource).toContain("strategyReadiness.blocked_claim_summary_label");
-    expect(routeSource).toContain("strategyReadiness.action_summary_label");
+    expect(businessReadinessPanelsSource).toContain("interpretation.allowed_use_labels");
+    expect(businessReadinessPanelsSource).toContain("interpretation.blocked_use_labels");
+    expect(businessReadinessPanelsSource).toContain("interpretation.missing_requirement_labels");
+    expect(businessReadinessPanelsSource).toContain("interpretation.status_label");
+    expect(businessReadinessPanelsSource).toContain("interpretation.policy_summary_label");
+    expect(businessReadinessPanelsSource).toContain("interpretation.action_summary_label");
+    expect(businessReadinessPanelsSource).toContain("strategyReadiness.status_label");
+    expect(businessReadinessPanelsSource).toContain("strategyReadiness.latest_review_status_label");
+    expect(businessReadinessPanelsSource).toContain(
+      "strategyReadiness.required_validation_summary_label"
+    );
+    expect(businessReadinessPanelsSource).toContain(
+      "strategyReadiness.missing_read_contract_summary_label"
+    );
+    expect(businessReadinessPanelsSource).toContain("strategyReadiness.blocked_claim_summary_label");
+    expect(businessReadinessPanelsSource).toContain("strategyReadiness.action_summary_label");
     expect(routeSource).toContain("decision.start_here_summary");
     expect(routeSource).toContain("decision.action_summary_label");
     expect(routeSource).toContain("decision.blocked_claim_summary_label");
@@ -7803,7 +7811,7 @@ describe("WILQ dashboard", () => {
     expect(budgetRecommendationPanelsSource).toContain("row.changed_field_summary_label");
     expect(routeSource).not.toContain("{decision.decision_type_label} / {decision.status_label}");
     expect(routeSource).not.toContain("{item.status_label} / {item.risk_label}");
-    expect(routeSource).not.toContain(
+    expect(businessReadinessPanelsSource).not.toContain(
       "{strategyReadiness.status_label} / {strategyReadiness.latest_review_status_label}"
     );
     expect(routeSource).not.toContain("{row.review_priority} / {row.review_score}");
@@ -7836,7 +7844,7 @@ describe("WILQ dashboard", () => {
     expect(negativeKeywordPanelSource).not.toContain("candidate.payload_preview");
     expect(searchTermPanelsSource).toContain("contract.operator_review_gate_summary_label");
     expect(searchTermPanelsSource).toContain("contract.blocked_claim_summary_label");
-    expect(routeSource).toContain("row.missing_read_contract_summary_label");
+    expect(businessReadinessPanelsSource).toContain("row.missing_read_contract_summary_label");
     expect(budgetRecommendationPanelsSource).toContain("row.human_review_gate_summary_label");
     expect(routeSource).not.toContain("adsCampaignTriageNextStep");
     expect(routeSource).not.toContain("row.missing_read_contract_labels");
@@ -7858,18 +7866,18 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("adsDecisionStatusLabel");
     expect(routeSource).not.toContain("adsRiskLabel");
     expect(routeSource).not.toContain("connectorLabelsFromStatuses");
-    expect(routeSource).not.toContain("interpretation.interpretation_contract");
-    expect(routeSource).not.toContain("interpretation.status}");
+    expect(businessReadinessPanelsSource).not.toContain("interpretation.interpretation_contract");
+    expect(businessReadinessPanelsSource).not.toContain("interpretation.status}");
     expect(routeSource).not.toContain(
       "summary.missing_read_contracts.map(adsMissingReadContractLabel)"
     );
-    expect(routeSource).not.toContain(
+    expect(businessReadinessPanelsSource).not.toContain(
       "interpretation.missing_requirements.map(adsMissingReadContractLabel)"
     );
-    expect(routeSource).not.toContain(
+    expect(businessReadinessPanelsSource).not.toContain(
       "strategyReadiness.missing_read_contracts.map(adsMissingReadContractLabel)"
     );
-    expect(routeSource).not.toContain(
+    expect(businessReadinessPanelsSource).not.toContain(
       "strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)"
     );
     expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
@@ -7878,17 +7886,23 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("formatActionObjectCount");
     expect(routeSource).not.toContain("summary.action_ids.length");
     expect(routeSource).not.toContain("decision.action_ids.length");
-    expect(routeSource).not.toContain("interpretation.action_ids.length");
-    expect(routeSource).not.toContain("strategyReadiness.action_ids.length");
+    expect(businessReadinessPanelsSource).not.toContain("interpretation.action_ids.length");
+    expect(businessReadinessPanelsSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
-    expect(routeSource).toContain("strategyReadiness.missing_read_contract_summary_label");
+    expect(businessReadinessPanelsSource).toContain(
+      "strategyReadiness.missing_read_contract_summary_label"
+    );
     expect(routeSource).not.toContain("formatAdsEvidenceCount");
     expect(routeSource).not.toContain("formatTraceIdCount");
     expect(routeSource).not.toContain("formatAdsContractCount");
     expect(routeSource).not.toContain("item.source_contract_ids.length");
-    expect(routeSource).not.toContain("interpretation.policy_ids.length");
-    expect(routeSource).not.toContain("strategyReadiness.required_validation.length");
-    expect(routeSource).not.toContain("strategyReadiness.missing_read_contracts.length");
+    expect(businessReadinessPanelsSource).not.toContain("interpretation.policy_ids.length");
+    expect(businessReadinessPanelsSource).not.toContain(
+      "strategyReadiness.required_validation.length"
+    );
+    expect(businessReadinessPanelsSource).not.toContain(
+      "strategyReadiness.missing_read_contracts.length"
+    );
     expect(readFileSync("src/routes/OperatingRouteSurfaces.tsx", "utf8")).not.toContain(
       "formatEvidenceCount(action.evidence_ids.length)"
     );

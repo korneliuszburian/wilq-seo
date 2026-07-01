@@ -7,6 +7,7 @@ describe("AdsDoctorSurface copy", () => {
     const source = [
       readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8"),
       readFileSync("src/components/AdsBudgetRecommendationPanels.tsx", "utf8"),
+      readFileSync("src/components/AdsBusinessReadinessPanels.tsx", "utf8"),
       readFileSync("src/lib/adsLabels.ts", "utf8")
     ].join("\n");
     expect(source).not.toContain('empty="brak');
