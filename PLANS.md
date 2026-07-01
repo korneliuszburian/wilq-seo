@@ -203,6 +203,12 @@ private proposal. Live API proof on 2026-07-02 returned two proposals; the first
 is `Eko-Opieka / Eko Kalendarz`, `review_required`, `partial`, `medium`,
 `promotion_allowed=false`, `redacted=true`.
 
+Shared schema hardening for private proposal details is implemented under
+Beads task `wilq-seo-g1k`. The Service Profile frontend contract now rejects
+unknown `review_status`, `support_level` and `risk_tier` values instead of
+accepting arbitrary strings, keeping private-source review states explicit
+before Wilku sees them in UI or skill output.
+
 Private proposal review now includes a promotion checklist under Beads task
 `wilq-seo-n1o`. The checklist is API-owned and rendered in Service Profile:
 owner confirmation, redacted/source-safe condensation, claim policy, reviewer/

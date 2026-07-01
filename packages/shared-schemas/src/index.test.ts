@@ -16,6 +16,7 @@ import {
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
+  ContentServiceProfilePrivateSourceProposalSectionSchema,
   StructuredDraftPreviewBlockerSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
@@ -188,6 +189,53 @@ describe("ContentQualityFindingSchema", () => {
         next_step: "Dodaj kod do kontraktu przed użyciem.",
         evidence_ids: [],
         source_connectors: []
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
+  const proposal = {
+    proposal_id: "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+    target_card_id: "ekologus_service_eko_opieka",
+    target_card_title: "Eko-Opieka / Eko Kalendarz",
+    source_class_label: "review-required internal service context",
+    source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",
+    review_status: "review_required",
+    support_level: "partial",
+    risk_tier: "medium",
+    confidence_label: "średnia",
+    owner_role: "Wilku albo owner oferty Ekologus",
+    redacted: true,
+    blocked_claims: ["obietnica stałej zgodności"],
+    safe_next_step: "Pokazać Wilkowi zwykły handoff.",
+    promotion_allowed: false,
+    blocked_write_claim: "To jest redacted proposal do review."
+  };
+
+  it("rejects unknown private proposal states", () => {
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse(proposal).success
+    ).toBe(true);
+
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        review_status: "maybe_ready"
+      }).success
+    ).toBe(false);
+
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        support_level: "looks_good"
+      }).success
+    ).toBe(false);
+
+    expect(
+      ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
+        ...proposal,
+        risk_tier: "comfortable"
       }).success
     ).toBe(false);
   });

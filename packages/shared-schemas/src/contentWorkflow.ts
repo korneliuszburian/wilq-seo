@@ -419,15 +419,36 @@ export const ContentServiceProfilePrivateSourceProposalSummarySchema = z.object(
   safe_next_step: z.string()
 });
 
+export const ContentServiceProfilePrivateSourceProposalReviewStatusSchema = z.enum([
+  "review_required",
+  "approved",
+  "rejected",
+  "stale"
+]);
+
+export const ContentServiceProfilePrivateSourceProposalSupportLevelSchema = z.enum([
+  "direct",
+  "partial",
+  "background",
+  "conflicting"
+]);
+
+export const ContentServiceProfilePrivateSourceProposalRiskTierSchema = z.enum([
+  "low",
+  "medium",
+  "high",
+  "unknown"
+]);
+
 export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
   proposal_id: z.string(),
   target_card_id: z.string(),
   target_card_title: z.string(),
   source_class_label: z.string(),
   source_locator_label: z.string(),
-  review_status: z.string(),
-  support_level: z.string(),
-  risk_tier: z.string(),
+  review_status: ContentServiceProfilePrivateSourceProposalReviewStatusSchema,
+  support_level: ContentServiceProfilePrivateSourceProposalSupportLevelSchema,
+  risk_tier: ContentServiceProfilePrivateSourceProposalRiskTierSchema,
   confidence_label: z.string(),
   owner_role: z.string(),
   redacted: z.boolean(),

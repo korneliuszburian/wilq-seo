@@ -154,6 +154,10 @@ API status later contradicts this state.
   2026-07-02 returned `proposal_count=2`, first target `Eko-Opieka / Eko
   Kalendarz`, `review_status=review_required`, `support_level=partial`,
   `risk_tier=medium`, `promotion_allowed=false`, `redacted=true`.
+- Shared schemas now enforce the private proposal review/status contract:
+  `review_status`, `support_level` and `risk_tier` are typed enums matching the
+  Python `PrivateSourceProposal` literals, so dashboard and skill consumers
+  reject invented private-proposal states before they reach operator output.
 - Private proposal review now includes an API-owned promotion checklist in the
   Service Profile. Live proof after stack restart on 2026-07-01:
   `promotion_ready=false`, `promotion_checklist` has 5 items,
