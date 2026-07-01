@@ -83,7 +83,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("gsc_content_opportunity",),
         "Search Analytics API query limits apply.",
         "No direct API cost expected; quota-limited.",
-        "Read-only SEO diagnostics.",
+        "Tylko odczyt do diagnostyki SEO i contentu; nie służy do publikacji ani zapisu zmian.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
@@ -96,7 +96,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("ga4_landing_page_issue", "ga4_tracking_gap"),
         "GA4 Data API quotas apply.",
         "No direct API cost expected; quota-limited.",
-        "Measurement gaps must not be misreported as marketing failures.",
+        "Braki pomiaru nie mogą być raportowane jako porażka kampanii, strony ani SEO.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
@@ -109,7 +109,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("merchant_feed_issue", "product_feed_edit_candidate"),
         "Merchant API quotas apply.",
         "No direct API cost expected; quota-limited.",
-        "Feed writes can affect product visibility and must preserve factual attributes.",
+        "Zmiany feedu mogą wpływać na widoczność produktów i wymagają zachowania faktów.",
         "credential_presence",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
@@ -123,8 +123,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "Sheets API quotas apply.",
         "No direct API cost expected; quota-limited.",
         (
-            "Optional collaboration/export surface, not source of truth. Disabled for "
-            "current Ekologus operator scope unless review-sheet workflows return."
+            "Opcjonalny eksport/współpraca, nie źródło prawdy. Wyłączone w aktualnym "
+            "zakresie Ekologus, dopóki nie wrócą workflowy arkuszy do review."
         ),
         "disabled_optional",
         (GOOGLE_CREDENTIAL_ENV_NAMES,),
@@ -139,7 +139,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("content_gap", "backlink_gap", "competitor_gap"),
         "Ahrefs API plan and endpoint limits apply.",
         "May consume paid Ahrefs API credits.",
-        "Read-only competitive intelligence.",
+        "Tylko odczyt kontekstu konkurencji; Ahrefs nie zastępuje GSC, WordPress ani claim gate.",
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -153,7 +153,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "Depends on Localo subscription.",
         (
             "Localo jest źródłem gotowości i lokalnego kontekstu; sam dostęp nie "
-            "potwierdza rankingów, GBP write ani poprawy widoczności."
+            "potwierdza rankingów, zapisu GBP ani poprawy widoczności."
         ),
         "credential_presence",
     ),
@@ -175,9 +175,9 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
         (
-            "WordPress ekologus.pl służy do inventory i draft-only handoff; "
-            "publish i destructive update pozostają zablokowane poza osobnym "
-            "review/audit action model."
+            "WordPress ekologus.pl służy do inventory i przekazania szkicu; "
+            "publikacja i destrukcyjne aktualizacje pozostają zablokowane poza "
+            "osobnym modelem review/audit."
         ),
         "credential_presence",
     ),
@@ -195,8 +195,8 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
         (
-            "WordPress sklepu służy do inventory i draft-only pracy produktowej; "
-            "publish i nadpisywanie wymagają osobnego review/audit action model."
+            "WordPress sklepu służy do inventory i pracy na szkicach produktowych; "
+            "publikacja i nadpisywanie wymagają osobnego modelu review/audit."
         ),
         "credential_presence",
     ),

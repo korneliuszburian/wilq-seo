@@ -53,12 +53,14 @@ def test_connector_status_exposes_operator_scope_in_risk_notes() -> None:
     assert sheets is not None
     assert sheets.status == ConnectorStatusValue.disabled
     assert sheets.risk_notes is not None
-    assert "Disabled for current Ekologus operator scope" in sheets.risk_notes
+    assert "Wyłączone w aktualnym zakresie Ekologus" in sheets.risk_notes
 
     assert wordpress is not None
     assert wordpress.risk_notes is not None
-    assert "draft-only handoff" in wordpress.risk_notes
-    assert "publish i destructive update pozostają zablokowane" in wordpress.risk_notes
+    assert "przekazania szkicu" in wordpress.risk_notes
+    assert "publikacja i destrukcyjne aktualizacje pozostają zablokowane" in (
+        wordpress.risk_notes
+    )
 
     assert localo is not None
     assert localo.risk_notes is not None

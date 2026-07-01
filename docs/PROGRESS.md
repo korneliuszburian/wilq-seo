@@ -133,7 +133,7 @@ API status later contradicts this state.
   blocked by default, and measurement outcome `not_ready`. The UAT harness
   prints a live 3-5 item Wilku packet from API queue/enrichment instead of a
   static report.
-- Goal 004 UI/API hardening slice `wilq-seo-4wi` is in progress. First green
+- Goal 004 UI/API hardening slice `wilq-seo-4wi` is implemented. First green
   sub-slice tightens the dashboard API boundary: content workflow POST helpers
   now validate shared Zod request schemas instead of accepting `unknown`, API
   errors include HTTP status/detail with a timeout boundary, and shared schemas
@@ -197,7 +197,10 @@ API status later contradicts this state.
   inventory/draft-only handoff with publish/destructive updates blocked, Localo
   says access is not ranking/GBP-write proof, social publishing remains outside
   the current content workflow, and the Registry renders these notes without
-  React inventing connector readiness. This keeps frozen schema files clean.
+  React inventing connector readiness. `risk_notes` stay out of compact Codex
+  context-packs so skill contexts do not receive raw technical note copy. This
+  keeps frozen schema files clean. Final broad gate passed with
+  `rtk scripts/verify.sh`.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
