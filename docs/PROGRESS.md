@@ -192,6 +192,15 @@ API status later contradicts this state.
   `validation_state="validated"`. `scripts/codex_skill_eval.sh` now states that
   rule explicitly. A re-run is pending because Codex returned a usage-limit
   blocker until 22:23.
+- Content diagnostics decision ranking is now freshness-aware for secondary
+  gap sources. If Ahrefs is stale while GSC and WordPress have fresh ready
+  content evidence, `/api/content/diagnostics` promotes the GSC/WordPress
+  `refresh_or_merge` decision above Ahrefs gap review. Live proof after stack
+  restart on 2026-07-01: `google_search_console=fresh`,
+  `wordpress_ekologus=fresh`, `ahrefs=stale`; top decision is
+  `content_decision_https___www_ekologus_pl` with evidence
+  `ev_refresh_refresh_google_search_console_b545c32e13f1` and
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`.
 - Draft variant selection guard is implemented in
   `wilq/content/drafts/variants.py`: variant results now expose
   `recommended_variant_id`, explicit comparison dimensions, `magic_score_used=false`
@@ -1701,6 +1710,10 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_planning_decisions.py tests/content/test_inventory_gates.py tests/content/test_preflight_verdicts.py tests/content/test_canonical_urls.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_ignores_dev_site_alternatives_when_public_url_exists -q`
 - `rtk uv run ruff check wilq/content/planning/decisions.py wilq/briefing/content_diagnostics.py tests/content/test_planning_decisions.py`
 - `rtk uv run mypy wilq/content/planning/decisions.py`
+- `rtk uv run pytest tests/test_content_diagnostics.py tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue tests/test_api_contracts.py::test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs -q`
+- `rtk uv run ruff check wilq/briefing/content_diagnostics.py tests/test_content_diagnostics.py`
+- `rtk uv run mypy wilq/briefing/content_diagnostics.py`
+- `rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'workflow_label_fallbacks_do_not_expose_raw_values or workflow_missing_contract_detail_fallback_explains_complete_process or workflows_are_decision_backed_operator_contracts'`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`

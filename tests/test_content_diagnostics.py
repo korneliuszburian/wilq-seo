@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from wilq.briefing.content_diagnostics import build_content_diagnostics
-from wilq.schemas import MetricFact
+from wilq.briefing.content_diagnostics import (
+    _rank_content_decisions_for_diagnostics,
+    build_content_diagnostics,
+)
+from wilq.schemas import ContentDecisionItem, MetricFact
 
 
 def test_content_diagnostics_uses_latest_metric_evidence_by_identity() -> None:
@@ -35,6 +38,90 @@ def test_content_diagnostics_uses_latest_metric_evidence_by_identity() -> None:
     assert "ev_new_wp" in all_section_evidence
     assert "ev_old_gsc" not in all_section_evidence
     assert "ev_old_wp" not in all_section_evidence
+
+
+def test_content_diagnostics_ranking_prefers_fresh_primary_over_stale_ahrefs() -> None:
+    gsc_decision = ContentDecisionItem(
+        id="content_decision_gsc_refresh",
+        title="GSC refresh",
+        decision_type="refresh_or_merge",
+        status="ready",
+        priority=23,
+        total_impressions=700,
+        query_count=2,
+        reason="GSC i WordPress mają świeży sygnał.",
+        rationale="Primary content evidence is current.",
+        next_step="Przygotuj plan odświeżenia.",
+        evidence_ids=["ev_refresh_gsc"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+    )
+    ahrefs_decision = ContentDecisionItem(
+        id="content_decision_ahrefs_gap_records_review",
+        title="Ahrefs gaps",
+        decision_type="review_ahrefs_gap_records",
+        status="ready",
+        priority=18,
+        total_impressions=None,
+        query_count=4,
+        reason="Ahrefs ma luki do sprawdzenia.",
+        rationale="Secondary gap evidence needs review.",
+        next_step="Zweryfikuj luki z GSC i WordPress.",
+        evidence_ids=["ev_refresh_ahrefs"],
+        source_connectors=["ahrefs"],
+    )
+
+    ranked = _rank_content_decisions_for_diagnostics(
+        [ahrefs_decision, gsc_decision],
+        {
+            "google_search_console": "fresh",
+            "wordpress_ekologus": "fresh",
+            "ahrefs": "stale",
+        },
+    )
+
+    assert ranked == [gsc_decision, ahrefs_decision]
+
+
+def test_content_diagnostics_ranking_keeps_fresh_ahrefs_priority() -> None:
+    gsc_decision = ContentDecisionItem(
+        id="content_decision_gsc_refresh",
+        title="GSC refresh",
+        decision_type="refresh_or_merge",
+        status="ready",
+        priority=23,
+        total_impressions=700,
+        query_count=2,
+        reason="GSC i WordPress mają świeży sygnał.",
+        rationale="Primary content evidence is current.",
+        next_step="Przygotuj plan odświeżenia.",
+        evidence_ids=["ev_refresh_gsc"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+    )
+    ahrefs_decision = ContentDecisionItem(
+        id="content_decision_ahrefs_gap_records_review",
+        title="Ahrefs gaps",
+        decision_type="review_ahrefs_gap_records",
+        status="ready",
+        priority=18,
+        total_impressions=None,
+        query_count=4,
+        reason="Ahrefs ma luki do sprawdzenia.",
+        rationale="Secondary gap evidence needs review.",
+        next_step="Zweryfikuj luki z GSC i WordPress.",
+        evidence_ids=["ev_refresh_ahrefs"],
+        source_connectors=["ahrefs"],
+    )
+
+    ranked = _rank_content_decisions_for_diagnostics(
+        [gsc_decision, ahrefs_decision],
+        {
+            "google_search_console": "fresh",
+            "wordpress_ekologus": "fresh",
+            "ahrefs": "fresh",
+        },
+    )
+
+    assert ranked == [ahrefs_decision, gsc_decision]
 
 
 def _gsc_fact(

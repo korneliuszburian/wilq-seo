@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -105,6 +105,7 @@ def build_content_diagnostics(
         for connector_id in CONTENT_CONNECTOR_IDS
         if (connector := get_connector_status(connector_id)) is not None
     ]
+    connector_freshness = {connector.id: connector.freshness.state for connector in connectors}
     latest_refreshes = _latest_refreshes(CONTENT_CONNECTOR_IDS)
     metric_facts = (
         metric_facts if metric_facts is not None else _content_metric_facts(CONTENT_CONNECTOR_IDS)
@@ -128,6 +129,7 @@ def build_content_diagnostics(
         trusted_facts,
         action_ids,
         latest_refreshes,
+        connector_freshness,
     )
     sections = [
         query_page_section(
@@ -314,6 +316,7 @@ def _content_decision_queue(
     metric_facts: list[MetricFact],
     action_ids: list[str],
     latest_refreshes: list[ConnectorRefreshRun],
+    connector_freshness: Mapping[str, str] | None = None,
 ) -> list[ContentDecisionItem]:
     decisions = [
         *gsc_content_decisions(
@@ -336,7 +339,10 @@ def _content_decision_queue(
     if decisions:
         return [
             _content_decision_with_api_labels(decision)
-            for decision in sorted(decisions, key=content_decision_sort_key)[:5]
+            for decision in _rank_content_decisions_for_diagnostics(
+                decisions,
+                connector_freshness or {},
+            )[:5]
         ]
     return [
         _content_decision_with_api_labels(
@@ -348,3 +354,55 @@ def _content_decision_queue(
             )
         )
     ]
+
+
+def _rank_content_decisions_for_diagnostics(
+    decisions: list[ContentDecisionItem],
+    connector_freshness: Mapping[str, str],
+) -> list[ContentDecisionItem]:
+    has_fresh_primary_ready = any(
+        _decision_has_fresh_primary_content(decision, connector_freshness) for decision in decisions
+    )
+
+    def sort_key(decision: ContentDecisionItem) -> tuple[int, int, int, int, int, str]:
+        base = content_decision_sort_key(decision)
+        stale_secondary_penalty = (
+            1
+            if has_fresh_primary_ready
+            and decision.decision_type == "review_ahrefs_gap_records"
+            and _decision_has_stale_secondary_source(decision, connector_freshness)
+            else 0
+        )
+        return (
+            base[0],
+            stale_secondary_penalty,
+            base[1],
+            base[2],
+            base[3],
+            base[4],
+        )
+
+    return sorted(decisions, key=sort_key)
+
+
+def _decision_has_fresh_primary_content(
+    decision: ContentDecisionItem,
+    connector_freshness: Mapping[str, str],
+) -> bool:
+    if decision.status != "ready":
+        return False
+    return any(
+        connector in PRIMARY_CONTENT_CONNECTORS and connector_freshness.get(connector) == "fresh"
+        for connector in decision.source_connectors
+    )
+
+
+def _decision_has_stale_secondary_source(
+    decision: ContentDecisionItem,
+    connector_freshness: Mapping[str, str],
+) -> bool:
+    return any(
+        connector not in PRIMARY_CONTENT_CONNECTORS
+        and connector_freshness.get(connector) == "stale"
+        for connector in decision.source_connectors
+    )

@@ -523,6 +523,10 @@ Stop and record a blocker if:
 - Private Ekologus Brain/customer-document material is not commit-safe lineage.
   Any future use needs a sanitized review path and explicit promotion in a
   later slice.
+- Content diagnostics ranking is allowed to penalize stale secondary connector
+  decisions when fresh primary content evidence exists. Ahrefs remains useful
+  as a review/gap source, but stale Ahrefs must not outrank a fresh
+  GSC/WordPress `refresh_or_merge` next step in the general marketer queue.
 
 ## Outcomes & Retrospective
 
