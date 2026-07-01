@@ -382,6 +382,10 @@ API status later contradicts this state.
   selects the latest available day, then reads `query,page` facts through
   bounded `rowLimit`/`startRow` paging. The adapter records availability and
   paging metadata instead of pretending a stale or missing day is complete data.
+  The request now pins `type=web`, and persisted metric summaries mark
+  `detail_dimensions=query,page` with `detail_data_completeness=partial_possible`
+  so downstream skills do not treat detailed query/page rows as full traffic
+  totals.
   Live proof `refresh_google_search_console_b545c32e13f1` completed on
   2026-07-01 with available range 2026-06-21..2026-06-30, detail date
   2026-06-29, 703 rows and `query_page_rows_truncated=false`.

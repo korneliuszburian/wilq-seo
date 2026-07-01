@@ -16,6 +16,8 @@ GSC_API_BASE = "https://searchconsole.googleapis.com/webmasters/v3"
 GSC_AVAILABILITY_LOOKBACK_DAYS = 10
 GSC_QUERY_PAGE_ROW_LIMIT = 250
 GSC_QUERY_PAGE_MAX_ROWS = 1000
+GSC_SEARCH_TYPE = "web"
+GSC_QUERY_PAGE_DETAIL_COMPLETENESS = "partial_possible"
 
 
 def refresh_search_console_site_summary(
@@ -83,6 +85,7 @@ def _fetch_site_summary(
             "startDate": availability_start,
             "endDate": availability_end,
             "dimensions": ["date"],
+            "type": GSC_SEARCH_TYPE,
             "rowLimit": GSC_AVAILABILITY_LOOKBACK_DAYS,
         },
     )
@@ -106,6 +109,9 @@ def _fetch_site_summary(
                 "query_page_row_limit": GSC_QUERY_PAGE_ROW_LIMIT,
                 "query_page_max_rows": GSC_QUERY_PAGE_MAX_ROWS,
                 "query_page_rows_truncated": "false",
+                "search_type": GSC_SEARCH_TYPE,
+                "detail_dimensions": "query,page",
+                "detail_data_completeness": GSC_QUERY_PAGE_DETAIL_COMPLETENESS,
             },
             [],
         )
@@ -119,6 +125,7 @@ def _fetch_site_summary(
                 "startDate": available_date,
                 "endDate": available_date,
                 "dimensions": ["query", "page"],
+                "type": GSC_SEARCH_TYPE,
                 "rowLimit": GSC_QUERY_PAGE_ROW_LIMIT,
                 "startRow": start_row,
             },
@@ -198,6 +205,9 @@ def _summarize_search_analytics_response(
             "query_page_row_limit": GSC_QUERY_PAGE_ROW_LIMIT,
             "query_page_max_rows": GSC_QUERY_PAGE_MAX_ROWS,
             "query_page_rows_truncated": str(rows_truncated).lower(),
+            "search_type": GSC_SEARCH_TYPE,
+            "detail_dimensions": "query,page",
+            "detail_data_completeness": GSC_QUERY_PAGE_DETAIL_COMPLETENESS,
         },
         metric_facts,
     )

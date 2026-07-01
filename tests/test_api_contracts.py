@@ -15942,6 +15942,7 @@ def test_gsc_vendor_read_uses_search_analytics(
         body = json.loads(request.content.decode())
         assert "startDate" in body
         assert "endDate" in body
+        assert body["type"] == "web"
         seen_requests.append(body)
         if body["dimensions"] == ["date"]:
             assert body["rowLimit"] == 10
@@ -16027,6 +16028,9 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.metric_summary["query_page_row_limit"] == 250
     assert result.metric_summary["query_page_max_rows"] == 1000
     assert result.metric_summary["query_page_rows_truncated"] == "false"
+    assert result.metric_summary["search_type"] == "web"
+    assert result.metric_summary["detail_dimensions"] == "query,page"
+    assert result.metric_summary["detail_data_completeness"] == "partial_possible"
     assert [request["dimensions"] for request in seen_requests] == [
         ["date"],
         ["query", "page"],

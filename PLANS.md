@@ -227,6 +227,12 @@ text that tells Wilku to refresh source data before draft/review work. The
 eval harness no longer seeds the technical term `ActionObject` into
 operator-facing output.
 
+Google Search Console vendor reads now carry the official Search Analytics
+partial-detail caveat in the API contract. The adapter pins `type=web` and
+persists `detail_data_completeness=partial_possible` for `query,page` reads, so
+later diagnostics and skills can use those rows as SEO decision signals without
+treating them as full traffic totals.
+
 The UAT packet now also exposes the Service Profile private proposal promotion
 checklist under Beads task `wilq-seo-0pk`: `promotion_ready=false`, blocked
 reason and five required conditions before reviewed source facts. This keeps
