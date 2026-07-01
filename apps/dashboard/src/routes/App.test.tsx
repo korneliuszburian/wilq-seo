@@ -7756,6 +7756,10 @@ describe("WILQ dashboard", () => {
       "src/components/AdsMetricEvidencePanel.tsx",
       "utf8"
     );
+    const overviewPanelsSource = readFileSync(
+      "src/components/AdsOverviewPanels.tsx",
+      "utf8"
+    );
     const budgetRecommendationPanelsSource = readFileSync(
       "src/components/AdsBudgetRecommendationPanels.tsx",
       "utf8"
@@ -7778,9 +7782,9 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("data.evidence_summary_label");
     expect(routeSource).toContain("data.action_summary_label");
     expect(routeSource).toContain("summary.action_summary_label");
-    expect(routeSource).toContain("primaryDecision?.action_summary_label");
-    expect(routeSource).toContain("summary.missing_read_contract_summary_label");
-    expect(routeSource).toContain("summary.blocked_claim_summary_label");
+    expect(overviewPanelsSource).toContain("primaryDecision?.action_summary_label");
+    expect(overviewPanelsSource).toContain("summary.missing_read_contract_summary_label");
+    expect(overviewPanelsSource).toContain("summary.blocked_claim_summary_label");
     expect(operatorSummaryPanelsSource).toContain("optimizer_readiness_contract");
     expect(operatorSummaryPanelsSource).toContain("contract.mode_label");
     expect(operatorSummaryPanelsSource).toContain("item.missing_read_contract_summary_label");
@@ -7804,12 +7808,12 @@ describe("WILQ dashboard", () => {
     expect(operatorSummaryPanelsSource).toContain("decision.start_here_summary");
     expect(operatorSummaryPanelsSource).toContain("decision.action_summary_label");
     expect(operatorSummaryPanelsSource).toContain("decision.blocked_claim_summary_label");
-    expect(routeSource).toContain("primaryDecision?.measurement_plan");
-    expect(routeSource).toContain("summary.missing_read_contract_summary_label");
+    expect(overviewPanelsSource).toContain("primaryDecision?.measurement_plan");
+    expect(overviewPanelsSource).toContain("summary.missing_read_contract_summary_label");
     expect(metricEvidencePanelSource).toContain("summary.operator_review_gate_summary_label");
-    expect(routeSource).toContain("summary.blocked_claim_summary_label");
-    expect(routeSource).toContain("primaryDecision.blocked_claim_summary_label");
-    expect(routeSource).toContain("primaryDecision.missing_read_contract_summary_label");
+    expect(overviewPanelsSource).toContain("summary.blocked_claim_summary_label");
+    expect(overviewPanelsSource).toContain("primaryDecision.blocked_claim_summary_label");
+    expect(overviewPanelsSource).toContain("primaryDecision.missing_read_contract_summary_label");
     expect(metricEvidencePanelSource).toContain("business_context_read_contract.status_label");
     expect(campaignPanelsSource).toContain("row.advertising_channel_type_label");
     expect(campaignPanelsSource).toContain("row.campaign_status_label");
@@ -7847,7 +7851,7 @@ describe("WILQ dashboard", () => {
     expect(operatorSummaryPanelsSource).not.toContain(
       "decision.blocked_claim_labels.slice(0, 3)"
     );
-    expect(routeSource).not.toContain("primaryDecision.blocked_claim_labels");
+    expect(overviewPanelsSource).not.toContain("primaryDecision.blocked_claim_labels");
     expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
     expect(budgetRecommendationPanelsSource).toContain("row.recommendation_type_label");
     expect(budgetRecommendationPanelsSource).toContain("row.preview_card");

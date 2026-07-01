@@ -6,6 +6,7 @@ describe("AdsDoctorSurface copy", () => {
   it("explains empty states as Ads decision limits", () => {
     const source = [
       readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8"),
+      readFileSync("src/components/AdsOverviewPanels.tsx", "utf8"),
       readFileSync("src/components/AdsMetricEvidencePanel.tsx", "utf8"),
       readFileSync("src/components/AdsOperatorSummaryPanels.tsx", "utf8"),
       readFileSync("src/components/AdsBudgetRecommendationPanels.tsx", "utf8"),
