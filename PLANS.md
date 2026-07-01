@@ -152,6 +152,15 @@ not as a revived product. The strongest candidates for WILQ are evidence pack,
 source claim markers, generation gate, quarantine/post-output validation,
 Guardian rules, strategy evidence hydration and marketer usefulness rubric.
 
+Private `krn-ekologus-brain` audit is recorded in
+`docs/audits/005-2026-07-01-ekologus-brain-source-catalog-audit.md` and Beads
+task `wilq-seo-409`. Reuse it as a governed source-catalog pattern:
+metadata-only intake, owner/audience/risk decisions, schema-gated condensation,
+owner review, import proof and eval. Do not auto-connect private folders,
+commit raw internal materials or let private review-required facts unlock
+production-depth cards. The next useful WILQ slices are read-only Service
+Profile review and/or a private source-proposal schema.
+
 ## In Scope
 
 Goal 005 includes:

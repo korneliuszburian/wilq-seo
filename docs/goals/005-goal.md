@@ -86,6 +86,14 @@ First Goal 005 source-pack proof:
   direct service knowledge, and the Ahrefs `beczki` candidate as correctly
   blocked with a typed `blocked_snapshot` instead of HTTP 404. The audit also
   fixed source-fact connector/evidence lineage for enrichment facts.
+- `docs/audits/005-2026-07-01-ekologus-brain-source-catalog-audit.md` records
+  the private `krn-ekologus-brain` source-catalog audit. The useful part is not
+  an automatic bridge or raw material import; it is a governed private-source
+  protocol: metadata-only intake, owner/audience/risk, schema-gated
+  condensation, owner review, import proof and eval. Any future facts from this
+  catalog start as local-only/redacted `review_required` proposals and do not
+  unlock `approved_current` cards or production-depth readiness without WILQ
+  review.
 
 ## Non-Negotiable Rules
 

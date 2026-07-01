@@ -231,6 +231,13 @@ API status later contradicts this state.
   only. It is not an active WILQ SEO integration and must not pull private
   client documents, attachments, emails or phone details into committed
   `wilq-seo` docs/cards. Follow-up: `wilq-seo-409`.
+- Private `krn-ekologus-brain` source-catalog audit is recorded in
+  `docs/audits/005-2026-07-01-ekologus-brain-source-catalog-audit.md` under
+  Beads task `wilq-seo-409`. The reusable pattern is governed source intake:
+  metadata-only catalog -> owner/audience/risk -> schema-gated condensation ->
+  owner review -> import proof/eval. It should feed future local-only or
+  redacted source proposals and read-only Service Profile review, not automatic
+  RAG, raw private source facts, special packets or production-depth cards.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity
