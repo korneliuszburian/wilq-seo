@@ -7748,6 +7748,10 @@ describe("WILQ dashboard", () => {
       "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
       "utf8"
     );
+    const searchTermPanelsSource = readFileSync(
+      "src/components/AdsSearchTermPanels.tsx",
+      "utf8"
+    );
     const traceLineSource = readFileSync("src/components/TraceLine.tsx", "utf8");
     expect(routeSource).not.toContain('empty="brak"');
     expect(traceLineSource).not.toContain('empty = "brak"');
@@ -7806,6 +7810,7 @@ describe("WILQ dashboard", () => {
       "{candidate.review_priority} / {candidate.review_score}"
     );
     expect(routeSource).not.toContain("{row.keyword_text} / {row.match_type_label}");
+    expect(searchTermPanelsSource).not.toContain("{row.keyword_text} / {row.match_type_label}");
     expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.changed_field_labels.slice(0, 4).join");
@@ -7820,6 +7825,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("ID budżetu:");
     expect(negativeKeywordPanelSource).toContain("candidate.preview_card");
     expect(negativeKeywordPanelSource).not.toContain("candidate.payload_preview");
+    expect(searchTermPanelsSource).toContain("contract.operator_review_gate_summary_label");
+    expect(searchTermPanelsSource).toContain("contract.blocked_claim_summary_label");
     expect(routeSource).toContain("row.missing_read_contract_summary_label");
     expect(routeSource).toContain("row.human_review_gate_summary_label");
     expect(routeSource).not.toContain("adsCampaignTriageNextStep");
