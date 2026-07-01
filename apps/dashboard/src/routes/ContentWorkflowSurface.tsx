@@ -252,10 +252,17 @@ function useContentWorkflowMutations(selectedWorkItemId: string) {
     mutationFn: postContentWorkItemStructuredDraftRuntime
   });
   const structuredPreviewMutation = useMutation({
-    mutationFn: postContentWorkItemStructuredDraftPreview
+    mutationFn: (request: ContentWorkItemStructuredDraftPreviewRequest) =>
+      postContentWorkItemStructuredDraftPreview(request, selectedWorkItemId)
   });
-  const qualityReviewMutation = useMutation({ mutationFn: postContentWorkItemQualityReview });
-  const revisionPlanMutation = useMutation({ mutationFn: postContentWorkItemRevisionPlan });
+  const qualityReviewMutation = useMutation({
+    mutationFn: (request: ContentWorkItemQualityReviewRequest) =>
+      postContentWorkItemQualityReview(request, selectedWorkItemId)
+  });
+  const revisionPlanMutation = useMutation({
+    mutationFn: (request: ContentWorkItemRevisionPlanRequest) =>
+      postContentWorkItemRevisionPlan(request, selectedWorkItemId)
+  });
   const executionMutation = useMutation({ mutationFn: postContentWorkItemWordPressDraftExecution });
   return {
     reviewMutation,

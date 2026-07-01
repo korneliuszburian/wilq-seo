@@ -235,30 +235,45 @@ export function postContentWorkItemStructuredDraftRuntime(
 }
 
 export function postContentWorkItemStructuredDraftPreview(
-  request: ContentWorkItemStructuredDraftPreviewRequest
+  request: ContentWorkItemStructuredDraftPreviewRequest,
+  workItemId?: string
 ): Promise<ContentWorkItemStructuredDraftPreviewResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/structured-draft-preview"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/structured-draft-preview`;
   return apiPost(
-    "/api/content/work-items/structured-draft-preview",
+    path,
     ContentWorkItemStructuredDraftPreviewResponseSchema,
     ContentWorkItemStructuredDraftPreviewRequestSchema.parse(request)
   );
 }
 
 export function postContentWorkItemQualityReview(
-  request: ContentWorkItemQualityReviewRequest
+  request: ContentWorkItemQualityReviewRequest,
+  workItemId?: string
 ): Promise<ContentWorkItemQualityReviewResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/quality-review"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/quality-review`;
   return apiPost(
-    "/api/content/work-items/quality-review",
+    path,
     ContentWorkItemQualityReviewResponseSchema,
     ContentWorkItemQualityReviewRequestSchema.parse(request)
   );
 }
 
 export function postContentWorkItemRevisionPlan(
-  request: ContentWorkItemRevisionPlanRequest
+  request: ContentWorkItemRevisionPlanRequest,
+  workItemId?: string
 ): Promise<ContentWorkItemRevisionPlanResponse> {
+  const path =
+    workItemId === undefined
+      ? "/api/content/work-items/revision-plan"
+      : `/api/content/work-items/${encodeURIComponent(workItemId)}/revision-plan`;
   return apiPost(
-    "/api/content/work-items/revision-plan",
+    path,
     ContentWorkItemRevisionPlanResponseSchema,
     ContentWorkItemRevisionPlanRequestSchema.parse(request)
   );

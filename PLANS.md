@@ -740,11 +740,12 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 Current next action:
 
-Goal 004 is active. Finish `wilq-seo-xlw` by committing the goal activation
-docs and Beads graph, then continue with `wilq-seo-6kd` to freeze the current
-content workflow contract before adding enrichment, variants or skill behavior.
-Continue from `bd ready --json`; remaining work should be tracked in Beads as
-focused product or anti-slop slices, not markdown TODO lists.
+Goal 004 is active. `wilq-seo-xlw` is closed and `wilq-seo-6kd` freezes the
+current content workflow contract with API route inventory, per-item revision
+plan parity and dashboard helper coverage. Continue from `bd ready --json`; the
+next product slice is `wilq-seo-a3t`, production content opportunity enrichment
+per `work_item_id`, built on the frozen contract without broad RAG, fake scores
+or prompt-only keyword research.
 
 Completed Goal 002 extraction context:
 

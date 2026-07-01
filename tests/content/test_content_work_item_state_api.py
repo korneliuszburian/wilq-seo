@@ -135,6 +135,25 @@ def test_selected_content_work_item_output_and_quality_state_is_isolated(
     assert content_workflow_store().latest_quality_review(first["work_item_id"]) is not None
     assert content_workflow_store().latest_quality_review(second["work_item_id"]) is None
 
+    revision_response = client.post(
+        f"/api/content/work-items/{first['work_item_id']}/revision-plan",
+        json={
+            "item": item,
+            "quality_review": quality_response.json()["quality_review"],
+        },
+    )
+    assert revision_response.status_code == 200
+    assert revision_response.json()["revision_plan"]["work_item_id"] == first["work_item_id"]
+
+    wrong_revision_response = client.post(
+        f"/api/content/work-items/{second['work_item_id']}/revision-plan",
+        json={
+            "item": item,
+            "quality_review": quality_response.json()["quality_review"],
+        },
+    )
+    assert wrong_revision_response.status_code == 400
+
     wrong_quality_response = client.post(
         f"/api/content/work-items/{second['work_item_id']}/quality-review",
         json={

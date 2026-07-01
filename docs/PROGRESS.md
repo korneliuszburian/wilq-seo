@@ -64,10 +64,15 @@ API status later contradicts this state.
   -> claim-gated draft variants -> deterministic quality review -> bounded
   revision application -> human review -> audit -> WordPress draft-only handoff
   -> measurement window -> conservative outcome interpretation.
-- Current Goal 004 planning slice `wilq-seo-xlw` is in progress. It activates
-  `docs/goals/004-goal.md`, updates `PLANS.md` and this ledger, and seeds the
-  Beads graph before product implementation. The next product slice after
-  planning is `wilq-seo-6kd`: freeze the existing content workflow contract.
+- Goal 004 planning slice `wilq-seo-xlw` is closed. Product slice
+  `wilq-seo-6kd` froze the existing content workflow contract with a FastAPI
+  route/response-model inventory test, a per-item `revision-plan` endpoint,
+  dashboard API helper coverage for queue/snapshot/generation/quality/revision/
+  review/audit/WordPress/measurement paths, and selected-work-item mutations for
+  preview, quality review and revision plan.
+- The next Goal 004 product slice is `wilq-seo-a3t`: production content
+  opportunity enrichment per `work_item_id`, built on the frozen contract and
+  without broad RAG, fake scores or prompt-only keyword research.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.

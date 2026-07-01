@@ -283,6 +283,23 @@ def content_work_item_revision_plan(
 
 
 @router.post(
+    "/api/content/work-items/{work_item_id}/revision-plan",
+    response_model=ContentWorkItemRevisionPlanResponse,
+)
+def content_work_item_revision_plan_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemRevisionPlanRequest,
+) -> ContentWorkItemRevisionPlanResponse:
+    _snapshot_for_work_item_or_404(work_item_id)
+    if request.item.id != work_item_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Content revision plan item does not match the selected work item.",
+        )
+    return build_content_work_item_revision_plan_response(request)
+
+
+@router.post(
     "/api/content/work-items/human-review",
     response_model=ContentWorkItemHumanReviewResponse,
 )
