@@ -35,11 +35,13 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 3. Uruchom `uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5` przy przygotowaniu krótkiego UAT packetu dla Wilka.
 4. Wywołaj `GET /api/health`, a przy awarii zwróć blokadę zamiast planu.
 5. Wywołaj `GET /api/content/work-items/queue` i użyj kolejki jako kanonicznego wejścia. Nie buduj własnej listy tematów z promptu.
-6. Wybierz `work_item_id` z kolejki albo wyjaśnij, że praca jest zablokowana. Nie odblokowuj propozycji, jeśli API zwraca blocker.
-7. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
-8. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation contract, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
-9. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
-10. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
+6. Pobierz `GET /api/content/service-profile`, gdy sesja dotyczy UAT, source trace, knowledge-depth albo prywatnych propozycji.
+7. Wybierz `work_item_id` z kolejki albo wyjaśnij, że praca jest zablokowana. Nie odblokowuj propozycji, jeśli API zwraca blocker.
+8. Pobierz `GET /api/content/work-items/{work_item_id}/snapshot`, `GET /api/content/work-items/{work_item_id}/enrichment` i `GET /api/content/knowledge-cards`, jeśli workflow dotyczy pisania, rewizji albo handoffu.
+9. Pobierz `GET /api/marketing/brief` jako skondensowany marketingowy kontekst route/workflow, nie jako zamiennik queue/snapshot.
+10. Dla generowania szkicu używaj tylko ścieżki WILQ API: brief sprzedażowy, rejestr twierdzeń, draft package, structured generation contract, runtime, preview, quality review, revision plan, revision apply i human review. Nie wywołuj OpenAI bezpośrednio.
+11. WordPress obsługuj tylko przez WILQ API i tylko jako draft-only albo podgląd zmian. Nie wywołuj WordPress bezpośrednio i nie próbuj publikować.
+12. Measurement outcome interpretuj wyłącznie przez WILQ API. Jeśli okno pomiarowe nie jest gotowe, powiedz, że sukces albo porażka są zablokowane.
 
 </workflow>
 
@@ -50,6 +52,8 @@ Używaj tego skilla jako operatora procesu WILQ Content Operations, nie jako aut
 - `GET /api/health`
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
+- `GET /api/marketing/brief`
+- `GET /api/content/service-profile`
 - `GET /api/content/work-items/queue`
 - `GET /api/content/work-items/snapshot`
 - `GET /api/content/work-items/{work_item_id}/snapshot`

@@ -154,6 +154,31 @@ def validate_knowledge_cards(api_base: str) -> dict[str, Any]:
     return cards
 
 
+def compact_brief_items(brief: dict[str, Any], *, limit: int = 5) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    sections = brief.get("sections")
+    if not isinstance(sections, list):
+        return items
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        for raw_item in section.get("items") or []:
+            if not isinstance(raw_item, dict):
+                continue
+            items.append(
+                {
+                    "id": raw_item.get("id"),
+                    "title": raw_item.get("title"),
+                    "kind": raw_item.get("kind"),
+                    "source_connectors": raw_item.get("source_connectors") or [],
+                    "evidence_ids": raw_item.get("evidence_ids") or [],
+                }
+            )
+            if len(items) >= limit:
+                return items
+    return items
+
+
 def validate_wordpress_boundary(api_base: str, snapshot: dict[str, Any]) -> dict[str, Any]:
     handoff = (
         snapshot.get("wordpress_handoff", {})
@@ -221,6 +246,10 @@ def main() -> int:
     if health.get("status") != "ok":
         raise SystemExit(f"WILQ API health is not ok: {health}")
 
+    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
+    brief = require_dict(brief, "marketing brief response")
+    brief_items = compact_brief_items(brief)
+
     queue = require_dict(
         request_json(args.api_base, "GET", "/api/content/work-items/queue"),
         "content queue response",
@@ -249,6 +278,7 @@ def main() -> int:
             "evidence_ids": queue.get("evidence_ids") or [],
             "source_connectors": queue.get("source_connectors") or [],
             "safe_next_step": selected.get("safe_next_step"),
+            "brief_items": brief_items,
         }
         print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
@@ -282,6 +312,7 @@ def main() -> int:
         "publish_blocked": True,
         "destructive_update_blocked": True,
         "success_claim_blocked_until_measurement": True,
+        "brief_items": brief_items,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
     return 0

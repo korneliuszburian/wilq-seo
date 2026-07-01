@@ -223,6 +223,12 @@ API status later contradicts this state.
   recommendations and six action candidates. The output preserved workflow
   gate states without fake ActionObject validation and blocked publish/final
   article/SEO success/lead/revenue/destructive-update claims.
+- The `wilq-content-operator` eval case now requires Service Profile and
+  private proposal promotion markers (`/api/content/service-profile`,
+  `promotion_ready=false`, `promotion_checklist`, `reviewed source fact`).
+  Its smoke script now fetches `GET /api/marketing/brief` and returns
+  `brief_items` even when the live queue is blocked, keeping route context
+  available for Codex evals.
 - The Codex skill eval harness now supports `required_decision_terms_pl`; these
   markers must appear in actionable output, not only in `notes`. The hardened
   `wilq-content-operator` eval passed at

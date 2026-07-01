@@ -218,6 +218,13 @@ reason and five required conditions before reviewed source facts. This keeps
 Wilku's UAT packet aligned with the Service Profile view model after the
 promotion-checklist slice.
 
+The `wilq-content-operator` non-interactive eval oracle is tightened under
+Beads task `wilq-seo-6ah`: output must include Service Profile and private
+proposal promotion markers (`/api/content/service-profile`,
+`promotion_ready=false`, `promotion_checklist`, `reviewed source fact`). The
+skill smoke now also fetches `GET /api/marketing/brief` and exposes
+`brief_items`, so blocked queue runs still carry route-level marketing context.
+
 The first Wilku-ready handoff for Goal 005 UAT is prepared at
 `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` under Beads task
 `wilq-seo-w8o`. It is a normal review artifact generated from live UAT packet

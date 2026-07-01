@@ -325,6 +325,8 @@
       "Content Operations",
       "content_workflow",
       "/content-workflow",
+      "/api/content/service-profile",
+      "Service Profile",
       "queue_status",
       "ready",
       "selected_work_item_id",
@@ -349,6 +351,9 @@
       "success_claim_blocked_until_measurement",
       "destructive_update_blocked",
       "measurement window",
+      "promotion_ready=false",
+      "promotion_checklist",
+      "reviewed source fact",
       "nie publikuj",
       "nie pisz finalnego artykułu"
     ],
@@ -365,6 +370,9 @@
       "WordPress",
       "draft-only",
       "measurement window",
+      "Service Profile",
+      "promotion_ready=false",
+      "promotion_checklist",
       "nie publikuj",
       "nie pisz finalnego artykułu"
     ],
