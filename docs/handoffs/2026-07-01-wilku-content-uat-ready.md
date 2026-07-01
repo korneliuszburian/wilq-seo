@@ -150,6 +150,37 @@ Uzupełnić po rozmowie:
 - czy można przejść do pełnego content UAT:
 - follow-up Beads:
 
+Walidowany format wyniku:
+
+```json
+{
+  "data_sesji": "YYYY-MM-DD",
+  "osoba": "Wilku",
+  "czas_do_zrozumienia_statusu": "np. 8 minut",
+  "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
+  "pytania_skad_to_wzielo": "co było jasne albo niejasne w evidence IDs/source connectors",
+  "miejsca_generyczne_off_brand": "co brzmiało generycznie albo nie jak Ekologus",
+  "najwiekszy_brak_produktu": "najważniejszy brak w produkcie/WILQ po sesji",
+  "wilku_rozumie_blokady_pelnego_uat": "tak",
+  "service_profile_czytelny": "tak",
+  "private_review_actions_czytelne": "nie",
+  "mozna_przejsc_do_pelnego_content_uat": "nie",
+  "follow_up_beads": [
+    "wilq-seo-xyz: doprecyzować private review actions przed pełnym UAT"
+  ]
+}
+```
+
+Sprawdzenie wyniku po sesji:
+
+```bash
+rtk uv run python scripts/record_goal_005_content_uat_result.py .local-lab/proof/goal-005-content-uat-result-YYYYMMDD.json --format markdown
+```
+
+Ten walidator sprawdza kompletność realnego wyniku sesji i renderuje raport
+review. Nie promuje private proposals do source facts, nie zatwierdza knowledge
+cards, nie odblokowuje publikacji ani nie zamyka Goal 005 automatycznie.
+
 ## Kryterium przejścia dalej
 
 Pełny Goal 005 UAT można uznać za wykonany dopiero, gdy Wilku realnie przejdzie

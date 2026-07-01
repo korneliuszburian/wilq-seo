@@ -176,6 +176,13 @@ API status later contradicts this state.
   UAT packet into questions, current blockers, source trace IDs and result
   fields to fill during the actual session. It is preparation only, not UAT
   proof.
+- Goal 005 content UAT result proof now has a deterministic checker:
+  `scripts/record_goal_005_content_uat_result.py`. It validates the filled
+  session result fields for selected work item, blocker understanding, Service
+  Profile readability, private review actions, source-trace questions,
+  generic/off-brand findings, largest product gap and follow-up Beads when
+  full UAT remains blocked. It renders a review report only; it does not
+  promote private proposals, approve cards, unlock publishing or close Goal 005.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation

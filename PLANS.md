@@ -245,6 +245,16 @@ state: current blockers, Service Profile gaps, private review actions, source
 trace IDs and exact result fields. It must be filled after the real Wilku
 session before `wilq-seo-jst` can close.
 
+Goal 005 content UAT proof now has a deterministic result validator under
+Beads task `wilq-seo-b6u`:
+`scripts/record_goal_005_content_uat_result.py`. It validates the completed
+Wilku session JSON for selected work item, blocker understanding, Service
+Profile/private review feedback, source-trace questions, generic/off-brand
+findings, largest product gap and follow-up Beads when full UAT is blocked. It
+renders a safety-bounded report only; it does not run UAT, promote private
+proposals, approve knowledge cards, unlock WordPress/publishing or close
+Goal 005 by itself.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first
