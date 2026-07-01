@@ -374,6 +374,17 @@ Stop and record a blocker if:
   WILQ should port selected content-safety contracts into the existing API
   workflow, especially Claim Ledger and Generation Gate candidates, instead of
   adding another Wilku packet/product layer.
+- 2026-07-01: Local WILQ API blocker cleared. `scripts/local_stack.sh start`
+  restored API/dashboard reachability. Live Goal 005 refreshes completed for
+  GSC (`refresh_google_search_console_27ca850b1fa4`), GA4
+  (`refresh_google_analytics_4_5ebc4ba1c966`) and WordPress Ekologus
+  (`refresh_wordpress_ekologus_691cbe6ab27d`). The WordPress HTTP client call
+  timed out at 120 seconds, but the backend refresh run completed and persisted
+  evidence.
+- 2026-07-01: `wilq-ga4-analyst` API-backed proof recorded in
+  `docs/handoffs/2026-07-01-ga4-traffic-quality-proof.md`. The skill separates
+  measurement blockers from traffic-quality review candidates and blocks
+  unsupported ROAS/revenue/conversion conclusions.
 
 ## Surprises & Discoveries
 

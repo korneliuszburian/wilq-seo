@@ -154,6 +154,24 @@ API status later contradicts this state.
   generation gate -> quarantine -> post-output validation -> operator review ->
   marketer usefulness report. Port selected contracts into WILQ API; do not run
   `ekologus-ai` as a second product brain.
+- API blocker cleared on 2026-07-01 in the local stack:
+  `scripts/local_stack.sh start` restored `http://127.0.0.1:8000/api/health`
+  and `http://127.0.0.1:5173/command-center`. `GET /api/metrics/status`
+  reported DuckDB metrics enabled with `62339` metric facts and `4089` refresh
+  runs before the fresh Goal 005 refreshes.
+- Goal 005 live refresh proof: `POST /api/connectors/google_search_console/refresh`
+  with `mode=vendor_read` completed as
+  `refresh_google_search_console_27ca850b1fa4`; GA4 completed as
+  `refresh_google_analytics_4_5ebc4ba1c966`; WordPress Ekologus completed in
+  the backend as `refresh_wordpress_ekologus_691cbe6ab27d` after the local
+  client timed out at 120 seconds. GA4 is now fresh and WordPress inventory has
+  16 objects.
+- `wilq-ga4-analyst` proof is recorded in
+  `docs/handoffs/2026-07-01-ga4-traffic-quality-proof.md`. The skill smoke
+  passed, `act_review_ga4_tracking_quality` validates, and the output correctly
+  separates two GA4 measurement blockers from two `google / cpc` traffic-quality
+  review candidates without claiming ROAS, revenue, profitability or conversion
+  outcomes.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private
