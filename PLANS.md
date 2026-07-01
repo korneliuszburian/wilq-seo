@@ -372,6 +372,10 @@ Beads task `wilq-seo-dfu`: every `claims_removed_or_blocked` item from the
 generation contract must appear in `forbidden_claims_avoided`, otherwise
 preview blocks with `missing_forbidden_claim_acknowledgement`.
 
+Quality Review mirrors that gate under Beads task `wilq-seo-ygb`, so direct
+quality-review calls cannot bypass preview's blocked-claim acknowledgement
+requirement.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate

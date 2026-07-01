@@ -355,6 +355,9 @@ API status later contradicts this state.
   `claims_removed_or_blocked` from the generation contract in
   `forbidden_claims_avoided`. This prevents the runtime from silently ignoring
   forbidden/removed claims while still passing preview.
+- Quality Review now mirrors that same forbidden-claim acknowledgement gate, so
+  direct quality-review calls cannot bypass preview by omitting
+  `forbidden_claims_avoided` for claims removed or blocked by the draft package.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and

@@ -35,6 +35,7 @@ ContentQualityFindingCode = Literal[
     "unsupported_claim_used",
     "forbidden_claim_used",
     "claim_missing_required_evidence",
+    "missing_forbidden_claim_acknowledgement",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
     "weak_cta",
@@ -170,6 +171,7 @@ def build_content_quality_review(
                 "unsupported_claim_used",
                 "forbidden_claim_used",
                 "claim_missing_required_evidence",
+                "missing_forbidden_claim_acknowledgement",
             },
         ),
         duplicate_risk=_dimension(
@@ -359,6 +361,26 @@ def _structured_output_findings(
                 source_connectors=item.source_connectors,
             )
         )
+    if draft_package is not None:
+        missing_forbidden_claims = sorted(
+            set(draft_package.claims_removed_or_blocked).difference(
+                structured_output.forbidden_claims_avoided
+            )
+        )
+        if missing_forbidden_claims:
+            findings.append(
+                _finding(
+                    "missing_forbidden_claim_acknowledgement",
+                    "blocker",
+                    "Szkic nie potwierdza uniknięcia zakazanych claimów",
+                    "Ocena jakości wymaga jawnego potwierdzenia, że claimy usunięte "
+                    "z kontraktu nie trafiły do szkicu.",
+                    "Uzupełnij listę unikniętych claimów: "
+                    + "; ".join(missing_forbidden_claims),
+                    evidence_ids=item.evidence_ids,
+                    source_connectors=item.source_connectors,
+                )
+            )
     if _weak_cta(structured_output.cta):
         findings.append(
             _finding(
