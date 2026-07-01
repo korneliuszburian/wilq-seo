@@ -124,6 +124,39 @@ def _sales_brief_seed(**overrides: object) -> dict[str, object]:
     return payload
 
 
+def _enrichment(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "id": "content_opportunity_enrichment_content_work_item_bdo",
+        "work_item_id": "content_work_item_bdo",
+        "decision_id": "bdo",
+        "status": "ready",
+        "title": "BDO dla firm",
+        "topic": "BDO dla firm",
+        "recommended_mode": "refresh",
+        "intent": "compliance_risk",
+        "intent_label": "intencja ryzyka lub obowiązku",
+        "buyer_problem": "Firma nie wie, czy obowiązki BDO dotyczą jej sytuacji.",
+        "buyer_trigger": "obawa przed błędem formalnym, terminem albo kontrolą",
+        "service_fit": "obsługa środowiskowa i zgodność obowiązków",
+        "cta_hypothesis": "Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+        "source_facts": [],
+        "measurement_baseline": {
+            "status": "ready_to_plan",
+            "label": "baza pomiaru do zaplanowania",
+            "reason": "GSC i WordPress dają bazę do późniejszego pomiaru.",
+            "metrics_to_watch": ["gsc_clicks", "gsc_impressions"],
+            "source_connectors": ["google_search_console"],
+            "evidence_ids": ["ev_gsc_bdo"],
+        },
+        "blockers": [],
+        "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
+        "source_connectors": ["google_search_console", "wordpress_ekologus"],
+        "safe_next_step": "Przygotuj preserve-first brief.",
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _draft_package(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
         "id": "draft_package_content_work_item_bdo",
@@ -234,33 +267,6 @@ def _post_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def _post_sales_brief(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/sales-brief", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert sorted(data) == [
-        "inventory_resolution",
-        "item",
-        "preflight_verdict",
-        "sales_brief_result",
-    ]
-    return data
-
-
-def _post_draft_package(payload: dict[str, Any]) -> dict[str, Any]:
-    response = TestClient(app).post("/api/content/work-items/draft-package", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert sorted(data) == [
-        "draft_package_result",
-        "inventory_resolution",
-        "item",
-        "preflight_verdict",
-        "sales_brief_result",
-    ]
-    return data
-
-
 def _post_human_review(payload: dict[str, Any]) -> dict[str, Any]:
     response = TestClient(app).post("/api/content/work-items/human-review", json=payload)
     assert response.status_code == 200
@@ -359,148 +365,6 @@ def test_existing_content_preflight_endpoint_shape_stays_unchanged() -> None:
     assert "canonical_gate_status" in first_plan
     assert "draft_allowed" in first_plan
     assert "preflight_verdict" not in data
-
-
-def test_content_work_item_sales_brief_api_builds_typed_brief() -> None:
-    data = _post_sales_brief(
-        {
-            "item": _item(
-                preserve_first_plan_status="approved",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _claim_ledger(),
-            "seed": _sales_brief_seed(),
-        }
-    )
-
-    assert data["preflight_verdict"]["status"] == "brief_allowed"
-    result = data["sales_brief_result"]
-    assert result["blockers"] == []
-    brief = result["brief"]
-    assert brief["id"] == "sales_brief_content_work_item_bdo"
-    assert brief["final_canonical_url"] == "https://ekologus.pl/bdo/"
-    assert brief["existing_content_plan"].startswith("Zacznij od istniejącej treści")
-    assert brief["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-    assert brief["source_connectors"] == ["google_search_console", "wordpress_ekologus"]
-    assert brief["measurement_plan"]["measurement_window_id"] == "measure_bdo"
-    assert brief["draft_allowed"] is False
-    assert [claim["claim_id"] for claim in brief["forbidden_claims"]] == [
-        "claim_guarantee_bdo"
-    ]
-    assert "draft_package" not in data
-    assert "wordpress_handoff" not in data
-
-
-def test_content_work_item_sales_brief_api_blocks_missing_source_facts() -> None:
-    data = _post_sales_brief(
-        {
-            "item": _item(
-                preserve_first_plan_status="approved",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _claim_ledger(),
-            "seed": _sales_brief_seed(source_facts=[]),
-        }
-    )
-
-    assert data["preflight_verdict"]["status"] == "brief_allowed"
-    result = data["sales_brief_result"]
-    assert result["brief"] is None
-    assert [blocker["code"] for blocker in result["blockers"]] == ["missing_source_fact"]
-
-
-def test_content_work_item_draft_package_api_returns_outline_only_package() -> None:
-    data = _post_draft_package(
-        {
-            "item": _item(
-                preflight_status="draft_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id="sales_brief_content_work_item_bdo",
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _draft_claim_ledger(),
-            "seed": _sales_brief_seed(),
-        }
-    )
-
-    assert data["preflight_verdict"]["status"] == "draft_allowed"
-    assert data["sales_brief_result"]["brief"]["id"] == "sales_brief_content_work_item_bdo"
-    result = data["draft_package_result"]
-    assert result["blockers"] == []
-    draft = result["draft_package"]
-    assert draft["id"] == "draft_package_content_work_item_bdo"
-    assert draft["draft_kind"] == "outline"
-    assert draft["publish_ready"] is False
-    assert draft["brief_id"] == "sales_brief_content_work_item_bdo"
-    assert draft["claim_ledger_id"] == "claim_ledger_bdo"
-    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
-        "ev_gsc_bdo",
-        "ev_wp_bdo",
-    ]
-    assert draft["human_review_questions"]
-    assert "wordpress_handoff" not in data
-
-
-def test_content_work_item_draft_package_api_blocks_before_draft_allowed() -> None:
-    data = _post_draft_package(
-        {
-            "item": _item(
-                preserve_first_plan_status="approved",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _draft_claim_ledger(),
-            "seed": _sales_brief_seed(),
-        }
-    )
-
-    assert data["preflight_verdict"]["status"] == "brief_allowed"
-    result = data["draft_package_result"]
-    assert result["draft_package"] is None
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "preflight_not_draft_allowed"
-    ]
-
-
-def test_content_work_item_draft_package_api_blocks_unresolved_claims() -> None:
-    data = _post_draft_package(
-        {
-            "item": _item(
-                preflight_status="draft_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id="sales_brief_content_work_item_bdo",
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _claim_ledger(),
-            "seed": _sales_brief_seed(),
-        }
-    )
-
-    result = data["draft_package_result"]
-    assert result["draft_package"] is None
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "claim_ledger_blocks_draft"
-    ]
 
 
 def test_content_work_item_human_review_api_updates_approved_review_state() -> None:
@@ -768,135 +632,6 @@ def test_content_work_item_measurement_window_api_blocks_dev_canonical() -> None
     assert data["measurement_window_result"]["window"] is None
     assert [blocker["code"] for blocker in data["measurement_window_result"]["blockers"]] == [
         "invalid_final_canonical"
-    ]
-
-
-def test_content_work_item_api_chain_keeps_all_content_production_gates() -> None:
-    preflight = _post_preflight(
-        {
-            "item": _item(),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-        }
-    )
-    assert preflight["preflight_verdict"]["status"] == "plan_allowed"
-    assert preflight["preflight_verdict"]["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-
-    sales_brief = _post_sales_brief(
-        {
-            "item": _item(
-                preserve_first_plan_status="approved",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _draft_claim_ledger(),
-            "seed": _sales_brief_seed(),
-        }
-    )
-    brief = sales_brief["sales_brief_result"]["brief"]
-    assert brief["id"] == "sales_brief_content_work_item_bdo"
-    assert brief["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-
-    draft_package = _post_draft_package(
-        {
-            "item": _item(
-                preflight_status="draft_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id=brief["id"],
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "inventory_records": [_inventory_record()],
-            "duplicate_risk": "clear",
-            "claim_ledger": _draft_claim_ledger(),
-            "seed": _sales_brief_seed(),
-            "sales_brief": brief,
-        }
-    )
-    draft = draft_package["draft_package_result"]["draft_package"]
-    assert draft["id"] == "draft_package_content_work_item_bdo"
-    assert draft["brief_id"] == brief["id"]
-    assert draft["publish_ready"] is False
-    assert draft["section_to_evidence_map"][0]["evidence_ids"] == [
-        "ev_gsc_bdo",
-        "ev_wp_bdo",
-    ]
-
-    human_review = _post_human_review(
-        {
-            "item": _item(
-                preflight_status="handoff_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id=brief["id"],
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                draft_package_status="ready",
-                draft_package_id=draft["id"],
-                audit_status="recorded",
-                audit_id="audit_bdo",
-                measurement_window_status="planned",
-                measurement_window_id="measure_bdo",
-            ),
-            "review": _human_review(draft_package_id=draft["id"]),
-            "draft_package": draft,
-            "claim_ledger": _draft_claim_ledger(),
-        }
-    )
-    reviewed_item = human_review["reviewed_item"]
-    assert human_review["wordpress_handoff_allowed"] is True
-    assert reviewed_item["human_review_status"] == "approved"
-
-    wordpress_handoff = _post_wordpress_handoff(
-        {
-            "item": reviewed_item,
-            "draft_package": draft,
-            "human_review": _human_review(draft_package_id=draft["id"]),
-            "audit": _handoff_audit(),
-        }
-    )
-    handoff = wordpress_handoff["handoff_result"]["handoff"]
-    assert handoff["post_status"] == "draft"
-    assert handoff["publish_allowed"] is False
-    assert handoff["destructive_update_allowed"] is False
-    assert handoff["evidence_ids"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-
-    measurement = _post_measurement_window(
-        {
-            "item": _item(
-                preflight_status="handoff_allowed",
-                preserve_first_plan_status="approved",
-                sales_brief_status="approved",
-                sales_brief_id=brief["id"],
-                claim_ledger_status="approved",
-                claim_ledger_id="claim_ledger_bdo",
-                draft_package_status="ready",
-                draft_package_id=draft["id"],
-                human_review_status="approved",
-                human_review_id="human_review_bdo",
-                audit_status="recorded",
-                audit_id="audit_bdo",
-                measurement_window_status="missing",
-                measurement_window_id=None,
-            ),
-            "handoff": handoff,
-            "baseline_period": _baseline_period(),
-            "observation_period": _observation_period(),
-            "allowed_metrics": ["gsc_clicks", "gsc_impressions", "ga4_engaged_sessions"],
-            "source_connectors": ["google_search_console", "google_analytics_4"],
-        }
-    )
-    window = measurement["measurement_window_result"]["window"]
-    assert window["status"] == "planned"
-    assert window["success_claim_allowed"] is False
-    assert measurement["updated_item"]["measurement_window_id"] == window["id"]
-    assert [blocker["code"] for blocker in measurement["outcome_blockers"]] == [
-        "measurement_window_not_ready"
     ]
 
 

@@ -6552,3 +6552,36 @@ Result:
 - Live proof measured `177573` bytes, `32` evidence summaries, `4` daily
   decisions and `14` active action objects.
 - Focused API tests for daily context-pack behavior passed.
+
+## 2026-07-01 - wilq-content-operator API orchestrator and UAT harness
+
+Purpose:
+
+- Add a Goal 004 content operator skill that helps Wilku run the WILQ content
+  operations workflow without becoming a direct writer, direct OpenAI caller or
+  direct WordPress client.
+- Prove the skill consumes WILQ API queue, selected snapshot, enrichment,
+  knowledge cards, WordPress draft-only execution and measurement outcome gates.
+- Produce a live UAT packet from API data for 3-5 content candidates.
+
+Focused proof:
+
+```bash
+uv run python /home/krn/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/wilq-content-operator
+uv run python scripts/skill_hygiene_check.py
+uv run pytest tests/test_wilq_content_operator_skill.py tests/content/test_content_opportunity_enrichment_api.py -q
+uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5
+```
+
+Result:
+
+- Skill validation and hygiene passed.
+- Focused pytest passed: 5 tests, including the dedicated content-operator
+  contract test and enrichment endpoint coverage.
+- Live smoke passed with 5 queue candidates, selected BDO refresh item,
+  GSC/WordPress evidence IDs, 3 typed content knowledge cards, WordPress
+  execution status `blocked`, `publish_blocked=true`,
+  `destructive_update_blocked=true` and measurement outcome `not_ready`.
+- UAT harness produced a live 5-item Wilku packet with one blocked Ahrefs
+  candidate and four refresh candidates backed by GSC and WordPress evidence.

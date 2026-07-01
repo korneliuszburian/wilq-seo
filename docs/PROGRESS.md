@@ -121,9 +121,20 @@ API status later contradicts this state.
   `earliest_verdict_date`, requires observed values plus evidence IDs, keeps
   directional signals separate from public success claims, and records
   limitations so WILQ does not pretend full causality.
+- Goal 004 WILQ content operator skill/UAT harness slice `wilq-seo-wr4` is
+  implemented. `.agents/skills/wilq-content-operator` is an operator workflow
+  over WILQ API, not a writer skill: it uses content queue, selected snapshot,
+  enrichment, knowledge cards, structured runtime, quality review, revision
+  application, human review, WordPress draft-only execution and measurement
+  outcome endpoints while forbidding direct OpenAI calls, direct WordPress
+  calls, `publish_ready=true`, dev canonical usage and early success claims.
+  Its smoke proves 5 live content candidates, 4 actionable refresh candidates,
+  BDO as the selected refresh item, GSC/WordPress evidence, WordPress execution
+  blocked by default, and measurement outcome `not_ready`. The UAT harness
+  prints a live 3-5 item Wilku packet from API queue/enrichment instead of a
+  static report.
 - The next Goal 004 product slice should come from `bd ready --json`; current
-  likely candidates are `wilq-seo-wr4` content operator skill/UAT harness or
-  `wilq-seo-akt` anti-slop execution guard.
+  likely candidate is `wilq-seo-akt` anti-slop execution guard.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.
@@ -139,7 +150,7 @@ API status later contradicts this state.
   WordPress boundary.
 - WILQ may now be described as a safe content draft-preparation workflow for
   one diagnostics-derived Ekologus item: evidence, inventory/canonical check,
-  duplicate gate, preflight, preserve-first plan, sales brief, claim gate,
+  duplicate gate, preflight, preserve-first plan, sales brief, rejestr twierdzeń,
   draft package, human review, audit, WordPress draft-only handoff/execution
   dry-run and measurement window are covered by a focused end-to-end proof. It
   must still not be described as an autopublisher, live WordPress writer or
@@ -222,7 +233,7 @@ API status later contradicts this state.
 - Goal 003 adversarial content eval slice `wilq-seo-0t7` is closed and pushed.
   `tests/content/test_content_workflow_adversarial_gates.py`
   now attacks dev URL as canonical, missing evidence/source connector, missing
-  preflight, missing claim gate, missing measurement window, `publish_ready=true`,
+  preflight, missing rejestr twierdzeń, missing measurement window, `publish_ready=true`,
   forbidden guarantee claims, WordPress publish/live write, premature measurement
   outcome claims and wrong-work-item human review. The slice found and fixed a
   real generation gap: Structured Outputs generation now checks
@@ -350,7 +361,7 @@ API status later contradicts this state.
 - Beads task `wilq-seo-wiz` is closed. `wilq/content/workflow/models.py` now
   defines a typed `ContentWorkItem` and workflow blockers for evidence, source
   connectors, inventory, public final canonical URL, duplicate gate, preflight,
-  preserve-first plan, sales brief, claim ledger, draft package, human review,
+  preserve-first plan, sales brief, rejestr twierdzeń, draft package, human review,
   audit and measurement window. Draft and WordPress handoff require a
   measurement plan up front, while outcome claims stay blocked until the
   measurement window is ready. `tests/content` (46 tests), Ruff, mypy,
@@ -652,7 +663,7 @@ API status later contradicts this state.
 - Beads task `wilq-seo-bw9` strengthens that proof against the exact PLANS.md
   completion chain. The end-to-end test now asserts inventory/canonical
   resolution, duplicate check, initial preflight blockers, preserve-first plan,
-  draft-allowed transition, sales brief facts, approved claim gate, ready draft
+  draft-allowed transition, sales brief facts, approved rejestr twierdzeń, ready draft
   package, structured draft evidence mapping, human review, audit, draft-only
   WordPress handoff/execution dry-run and the measurement blocker. No WordPress
   write or publication is attempted.

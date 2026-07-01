@@ -55,7 +55,7 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
     response = content_knowledge_cards_response()
 
     assert response.card_count == len(response.cards)
-    assert "docs/goals/004-goal.md" in response.source_lineage
+    assert "docs/goals/archive/004-goal.md" in response.source_lineage
     evidence_card = next(
         card for card in response.cards if card.id == "ekologus_evidence_live_connector_requirement"
     )
@@ -111,4 +111,4 @@ def test_content_knowledge_cards_endpoint_exposes_typed_cards() -> None:
         "ekologus_cta_consultation_without_guarantee",
         "ekologus_evidence_live_connector_requirement",
     }
-    assert "docs/goals/004-goal.md" in payload["source_lineage"]
+    assert "docs/goals/archive/004-goal.md" in payload["source_lineage"]

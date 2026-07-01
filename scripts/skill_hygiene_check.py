@@ -10,6 +10,7 @@ EXPECTED_SKILLS = {
     "wilq-gsc-content-doctor",
     "wilq-ahrefs-gap-finder",
     "wilq-localo-operator",
+    "wilq-content-operator",
     "wilq-content-strategist",
     "wilq-social-publisher",
     "wilq-campaign-builder",

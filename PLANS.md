@@ -4,7 +4,7 @@ This is the long-running ExecPlan for the active WILQ product layer.
 
 Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
 `docs/goals/001-goal.md`, `docs/goals/archive/003-goal.md`,
-`docs/goals/004-goal.md` and Beads. This file describes the durable path for
+`docs/goals/archive/004-goal.md` and Beads. This file describes the durable path for
 Goal 004 and must stay restartable without chat history.
 
 ## How To Use This File
@@ -373,7 +373,7 @@ Work:
 
 - Add `ContentWorkItem`.
 - Track evidence, source connectors, URL semantics, inventory, canonical,
-  duplicate, preflight, sales brief, claim ledger, draft, human review,
+  duplicate, preflight, sales brief, rejestr twierdzeń, draft, human review,
   WordPress handoff and measurement statuses.
 - Add state transition guards.
 
@@ -383,7 +383,7 @@ WILQ can reason about content progress as a workflow, not loose diagnostics.
 
 Proof:
 
-Tests prove preflight, sales brief, claim ledger, human review and audit gates
+Tests prove preflight, sales brief, rejestr twierdzeń, human review and audit gates
 cannot be skipped.
 
 ## Milestone F - Content Inventory And Preserve-First Planning
@@ -420,7 +420,7 @@ Work:
 
 - Add states: `blocked`, `plan_allowed`, `brief_allowed`, `draft_allowed`,
   `handoff_allowed`.
-- Draft is allowed only after sales brief and claim ledger.
+- Draft is allowed only after sales brief and rejestr twierdzeń.
 - Handoff is allowed only after human review.
 - Dashboard renders API-owned labels and disabled reasons.
 
@@ -488,7 +488,7 @@ Generate only bounded, auditable draft packages.
 Work:
 
 - Generate outline first.
-- Require preflight, sales brief and claim ledger.
+- Require preflight, sales brief and rejestr twierdzeń.
 - Include section-to-evidence map, claims used, blocked claims removed and human
   review questions.
 - Set `publish_ready=false`.
@@ -675,9 +675,20 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   and content workflow contract-inventory pytest subset, shared-schema Vitest,
   Ruff, source mypy, Fallow audit, changed-file complexity audit and
   `git diff --check` passed.
+- WILQ content operator skill/UAT harness slice `wilq-seo-wr4` added
+  `.agents/skills/wilq-content-operator` as an API-orchestrator skill, not a
+  production writer. The skill contract consumes queue, selected snapshot,
+  enrichment, knowledge cards, structured runtime, quality review, bounded
+  revision, human review, audit, WordPress draft-only execution and measurement
+  outcome endpoints. It forbids direct OpenAI calls, direct WordPress calls,
+  publication, destructive updates, dev canonical usage and success claims
+  before measurement readiness.
+- Focused proof for the content operator slice: skill-creator validation, skill
+  hygiene, dedicated skill contract pytest, content enrichment API pytest,
+  live skill smoke, live Wilku UAT packet for 5 candidates, Ruff, mypy,
+  Fallow audit, changed-file complexity audit and `git diff --check` passed.
 - Next product slice should come from `bd ready --json`; current likely
-  candidates are `wilq-seo-wr4` content operator skill/UAT harness or
-  `wilq-seo-akt` anti-slop execution guard.
+  candidate is `wilq-seo-akt` anti-slop execution guard.
 
 2026-06-30:
 
@@ -825,10 +836,9 @@ Current next action:
 
 Goal 004 is active. `wilq-seo-xlw`, `wilq-seo-6kd`, `wilq-seo-a3t`,
 `wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0`, `wilq-seo-a09` and
-`wilq-seo-03a` and `wilq-seo-prk` are closed. Continue from `bd ready --json`;
-the next product slice is whichever ready Goal 004 task is highest priority,
-likely the content operator skill/UAT harness (`wilq-seo-wr4`) or anti-slop
-execution guard (`wilq-seo-akt`).
+`wilq-seo-03a`, `wilq-seo-prk` and `wilq-seo-wr4` are closed. Continue from
+`bd ready --json`; the next product slice is the anti-slop execution guard
+(`wilq-seo-akt`) unless the ready graph changes.
 
 Completed Goal 002 extraction context:
 
@@ -899,7 +909,7 @@ Completed Goal 002 extraction context:
   content operator summary extraction slices.
 - `wilq-seo-wiz` - next product slice: add typed `ContentWorkItem` workflow
   state, closed. `wilq/content/workflow/models.py` now proves that preflight,
-  sales brief, claim ledger, human review, audit and measurement gates cannot
+  sales brief, rejestr twierdzeń, human review, audit and measurement gates cannot
   be skipped. Draft and WordPress handoff require a measurement plan up front;
   outcome claims remain blocked until the measurement window is ready.
 - `wilq-seo-acy` - next product slice: build Content Inventory v1 records that
@@ -918,16 +928,16 @@ Completed Goal 002 extraction context:
   environmental claims before draft readiness.
 - `wilq-seo-pnz` - Sales Brief v1, closed. `wilq/content/briefs/sales.py`
   now builds a typed brief only from valid work item, preflight, inventory,
-  claim ledger, source facts, final canonical URL and measurement plan inputs.
+  rejestr twierdzeń, source facts, final canonical URL and measurement plan inputs.
 - `wilq-seo-dhf` - Draft Package v1, closed. `wilq/content/drafts/package.py`
   now builds outline-first packages only after `draft_allowed` preflight,
   matching Sales Brief, matching Claim Ledger and source-fact evidence mapping.
-  Packages include brief ID, claim ledger ID, section-to-evidence mapping,
+  Packages include brief ID, rejestr twierdzeń ID, section-to-evidence mapping,
   publish-ready claims, blocked claims removed, human review questions and
   `publish_ready=false`.
 - `wilq-seo-4b5` - Human Review v1, closed.
   `wilq/content/review/human.py` now records reviewed-by, decision, checked
-  items, evidence IDs and handled blocked claims for sales brief, claim ledger,
+  items, evidence IDs and handled blocked claims for sales brief, rejestr twierdzeń,
   draft package and WordPress handoff stages. Only approved review can update
   the content workflow state to unblock the WordPress handoff gate.
 - `wilq-seo-qsf` - WordPress Draft Handoff v1, closed.
@@ -1059,7 +1069,7 @@ Current outcome:
 - Goal 002 completion definition is satisfied for one diagnostics-derived
   Ekologus content item. WILQ now has a safe draft-preparation workflow with
   evidence, inventory/canonical resolution, duplicate check, preflight,
-  preserve-first plan, sales brief, claim gate, draft package, human review,
+  preserve-first plan, sales brief, rejestr twierdzeń, draft package, human review,
   audit, WordPress draft-only handoff/execution dry-run and measurement window.
   It still cannot be described as a live WordPress publisher or as a system that
   claims content success before the measurement window has usable data.
@@ -1138,7 +1148,7 @@ Current outcome:
   steps. Focused tests block workflow jargon from returning to those
   operator-facing blocker fields.
 - Remaining content workflow blocker messages now use Polish marketer language
-  across workflow state, preflight, inventory, draft package and claim ledger
+  across workflow state, preflight, inventory, draft package and rejestr twierdzeń
   domains. Focused tests prevent Sales Brief, Claim Ledger, Draft Package,
   human review, handoff, publish-ready, work item, evidence ID and final
   canonical URL from leaking into operator-facing blocker text.
@@ -1210,7 +1220,7 @@ Current outcome:
 - That end-to-end proof now also asserts the exact completion chain from this
   plan: inventory/canonical resolution, duplicate check, initial preflight
   blockers, preserve-first plan, draft-allowed transition, sales brief facts,
-  approved claim gate, ready draft package, structured draft evidence mapping,
+  approved rejestr twierdzeń, ready draft package, structured draft evidence mapping,
   human review, audit, draft-only WordPress handoff/execution dry-run and the
   measurement blocker. It still does not publish or write to `ekologus.pl`.
 

@@ -10,7 +10,12 @@ from wilq.content.briefs.sales import (
 )
 from wilq.content.claims.ledger import ContentClaimLedger, content_claim_entry
 from wilq.content.drafts.package import build_content_draft_package
+from wilq.content.enrichment.opportunity import (
+    ContentOpportunityEnrichment,
+    ContentOpportunityMeasurementBaseline,
+)
 from wilq.content.inventory.records import ContentInventoryRecord, resolve_content_inventory
+from wilq.content.knowledge.cards import match_content_knowledge_cards
 from wilq.content.preflight.workflow import build_content_preflight_verdict
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -105,6 +110,35 @@ def _seed() -> ContentSalesBriefSeed:
     )
 
 
+def _enrichment() -> ContentOpportunityEnrichment:
+    return ContentOpportunityEnrichment(
+        id="content_opportunity_enrichment_content_work_item_bdo",
+        work_item_id="content_work_item_bdo",
+        decision_id="bdo",
+        status="ready",
+        title="BDO dla firm",
+        topic="BDO dla firm",
+        recommended_mode="refresh",
+        intent="compliance_risk",
+        intent_label="intencja ryzyka lub obowiązku",
+        buyer_problem="Firma nie wie, czy obowiązki BDO dotyczą jej sytuacji.",
+        buyer_trigger="obawa przed błędem formalnym, terminem albo kontrolą",
+        service_fit="obsługa środowiskowa i zgodność obowiązków",
+        cta_hypothesis="Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+        measurement_baseline=ContentOpportunityMeasurementBaseline(
+            status="ready_to_plan",
+            label="baza pomiaru do zaplanowania",
+            reason="GSC i WordPress dają bazę do późniejszego pomiaru.",
+            metrics_to_watch=["gsc_clicks", "gsc_impressions"],
+            source_connectors=["google_search_console"],
+            evidence_ids=["ev_gsc_bdo"],
+        ),
+        evidence_ids=["ev_gsc_bdo", "ev_wp_bdo"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        safe_next_step="Przygotuj preserve-first brief.",
+    )
+
+
 def _preflight(item: ContentWorkItem):
     inventory = resolve_content_inventory([_inventory()], duplicate_risk="clear")
     return build_content_preflight_verdict(item, inventory)
@@ -119,6 +153,8 @@ def _sales_brief(item: ContentWorkItem, ledger: ContentClaimLedger) -> ContentSa
         inventory=inventory,
         claim_ledger=ledger,
         seed=_seed(),
+        enrichment=_enrichment(),
+        knowledge_match=match_content_knowledge_cards(item),
     )
     assert result.brief is not None
     return result.brief

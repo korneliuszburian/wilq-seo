@@ -158,7 +158,7 @@ def _environmental_compliance_service_card() -> ContentKnowledgeCard:
             )
         ],
         source_lineage=[
-            "docs/goals/004-goal.md",
+            "docs/goals/archive/004-goal.md",
             "docs/PROGRESS.md",
             "wilq/content/claims/ledger.py",
         ],
@@ -219,7 +219,7 @@ def _consultation_cta_card() -> ContentKnowledgeCard:
         evidence_requirements=[
             "CTA musi wynikać z dopasowania usługi, intencji i claim policy.",
         ],
-        source_lineage=["docs/goals/004-goal.md", "wilq/content/quality/review.py"],
+        source_lineage=["docs/goals/archive/004-goal.md", "wilq/content/quality/review.py"],
         confidence=0.84,
         freshness="seeded_goal_004",
         usage_notes=["CTA ma być konkretne, ale defensywne wobec claimów."],
@@ -252,7 +252,7 @@ def _live_evidence_requirement_card() -> ContentKnowledgeCard:
         ],
         source_lineage=[
             "AGENTS.md",
-            "docs/goals/004-goal.md",
+            "docs/goals/archive/004-goal.md",
             "wilq/content/enrichment/opportunity.py",
         ],
         confidence=0.95,

@@ -312,14 +312,14 @@ function contentKnowledgeCardsResponse() {
         forbidden_claims: [],
         evidence_requirements: ["Dowód bieżący z connectora jest wymagany."],
         measurement_sensitive_claims: [],
-        source_lineage: ["docs/goals/004-goal.md"],
+        source_lineage: ["docs/goals/archive/004-goal.md"],
         confidence: 0.88,
         freshness: "seeded_goal_004",
         usage_notes: ["Karta wiedzy nie zastępuje live evidence."]
       }
     ],
     card_count: 1,
-    source_lineage: ["docs/goals/004-goal.md"]
+    source_lineage: ["docs/goals/archive/004-goal.md"]
   };
 }
 
