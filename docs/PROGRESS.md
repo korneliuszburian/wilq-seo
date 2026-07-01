@@ -85,8 +85,14 @@ API status later contradicts this state.
   Sales Brief now requires a matching knowledge-card set before drafting: no
   service/CTA/evidence policy match becomes a blocker instead of a prompt-only
   workaround. This is still typed cards/rules, not broad RAG.
-- The next Goal 004 product slice is `wilq-seo-8xc`: operations-grade Sales
-  Brief v2 consuming opportunity enrichment and typed Ekologus knowledge cards.
+- Goal 004 operations-grade Sales Brief slice `wilq-seo-8xc` is implemented.
+  Sales Brief v2 now requires opportunity enrichment, consumes enrichment-owned
+  buyer problem, buyer trigger, service fit, CTA hypothesis, source facts and
+  measurement baseline, and exposes operations context, knowledge constraints
+  and measurement boundary fields through shared schemas. Missing or blocked
+  enrichment blocks the brief instead of falling back to seed-only prose.
+- The next Goal 004 product slice is `wilq-seo-ao0`: claim-gated draft variants
+  through WILQ API + OpenAI SDK Structured Outputs.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.

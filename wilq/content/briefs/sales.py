@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, Field
 
@@ -16,8 +16,13 @@ from wilq.content.knowledge.cards import (
 from wilq.content.preflight.workflow import ContentPreflightVerdict
 from wilq.content.workflow.models import ContentWorkItem
 
+if TYPE_CHECKING:
+    from wilq.content.enrichment.opportunity import ContentOpportunityEnrichment
+
 ContentSalesBriefBlockerCode = Literal[
     "preflight_not_ready",
+    "missing_enrichment",
+    "enrichment_not_ready",
     "missing_evidence",
     "missing_source_connector",
     "missing_source_fact",
@@ -30,10 +35,25 @@ ContentSalesBriefBlockerCode = Literal[
 ]
 
 
+class ContentSalesBriefOperationsContext(BaseModel):
+    enrichment_id: str
+    intent_label: str
+    recommended_mode: str
+    safe_next_step: str
+    source_fact_ids: list[str] = Field(default_factory=list)
+
+
 class ContentSalesBriefSourceFact(BaseModel):
     evidence_id: str
     source_connector: str
     summary: str
+
+
+class ContentSalesBriefKnowledgeConstraint(BaseModel):
+    card_id: str
+    constraint_type: str
+    label: str
+    reason: str
 
 
 class ContentSalesBriefSeed(BaseModel):
@@ -54,6 +74,10 @@ class ContentSalesBriefSeed(BaseModel):
 class ContentSalesBriefMeasurementPlan(BaseModel):
     measurement_window_id: str
     metrics_to_watch: list[str]
+    baseline_source_connectors: list[str] = Field(default_factory=list)
+    baseline_evidence_ids: list[str] = Field(default_factory=list)
+    measurement_readiness_label: str
+    measurement_readiness_reason: str
     earliest_verdict_note: str
     success_claim_rule: str
 
@@ -69,6 +93,7 @@ class ContentSalesBrief(BaseModel):
     id: str
     work_item_id: str
     topic: str
+    operations_context: ContentSalesBriefOperationsContext
     target_reader: str
     buyer_problem: str
     buyer_trigger: str
@@ -86,6 +111,7 @@ class ContentSalesBrief(BaseModel):
     internal_link_direction: list[str] = Field(default_factory=list)
     source_facts: list[ContentSalesBriefSourceFact] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
+    knowledge_constraints: list[ContentSalesBriefKnowledgeConstraint] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     forbidden_claims: list[ContentSalesBriefForbiddenClaim] = Field(default_factory=list)
@@ -114,12 +140,15 @@ def build_content_sales_brief(
     inventory: ContentInventoryResolution,
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment | None = None,
     knowledge_match: ContentKnowledgeCardMatch | None = None,
 ) -> ContentSalesBriefBuildResult:
+    seed = _seed_with_enrichment(seed, enrichment)
     blockers = content_sales_brief_blockers(
         item=item,
         preflight=preflight,
         seed=seed,
+        enrichment=enrichment,
         knowledge_match=knowledge_match,
     )
     if blockers:
@@ -131,6 +160,7 @@ def build_content_sales_brief(
             id=f"sales_brief_{item.id}",
             work_item_id=item.id,
             topic=item.topic,
+            operations_context=_operations_context(enrichment),
             target_reader=seed.target_reader,
             buyer_problem=seed.buyer_problem,
             buyer_trigger=seed.buyer_trigger,
@@ -152,6 +182,9 @@ def build_content_sales_brief(
                 if knowledge_match is None
                 else required_content_knowledge_card_ids(knowledge_match)
             ),
+            knowledge_constraints=(
+                [] if knowledge_match is None else _knowledge_constraints(knowledge_match)
+            ),
             evidence_ids=_unique([*item.evidence_ids, *preflight.evidence_ids]),
             source_connectors=_unique(
                 [*item.source_connectors, *preflight.source_connectors]
@@ -160,11 +193,25 @@ def build_content_sales_brief(
             missing_evidence=seed.missing_evidence,
             measurement_plan=ContentSalesBriefMeasurementPlan(
                 measurement_window_id=str(item.measurement_window_id),
-                metrics_to_watch=[
-                    "GSC: zapytania, adres, kliknięcia, wyświetlenia, CTR i pozycja",
-                    "GA4: jakość ruchu, zaangażowanie i braki pomiaru",
-                    "Ahrefs/Ads/Merchant/Localo: sygnały pomocnicze tylko gdy mają dowody",
-                ],
+                metrics_to_watch=_metrics_to_watch(enrichment),
+                baseline_source_connectors=(
+                    []
+                    if enrichment is None
+                    else enrichment.measurement_baseline.source_connectors
+                ),
+                baseline_evidence_ids=(
+                    [] if enrichment is None else enrichment.measurement_baseline.evidence_ids
+                ),
+                measurement_readiness_label=(
+                    "brak enrichment"
+                    if enrichment is None
+                    else enrichment.measurement_baseline.label
+                ),
+                measurement_readiness_reason=(
+                    "Sales Brief wymaga opportunity enrichment przed planem pomiaru."
+                    if enrichment is None
+                    else enrichment.measurement_baseline.reason
+                ),
                 earliest_verdict_note=(
                     "Nie oceniaj sukcesu ani porażki przed końcem okna pomiaru."
                 ),
@@ -183,28 +230,72 @@ def content_sales_brief_blockers(
     item: ContentWorkItem,
     preflight: ContentPreflightVerdict,
     seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment | None = None,
     knowledge_match: ContentKnowledgeCardMatch | None = None,
 ) -> list[ContentSalesBriefBlocker]:
-    blockers: list[ContentSalesBriefBlocker] = []
+    blockers = [
+        *_enrichment_blockers(enrichment),
+        *_knowledge_match_blockers(knowledge_match),
+    ]
+    blockers.extend(_preflight_and_evidence_blockers(item, preflight, seed))
+    blockers.extend(_source_fact_reference_blockers(item, preflight, seed.source_facts))
+    blockers.extend(_canonical_and_measurement_blockers(item))
+    return blockers
+
+
+def _enrichment_blockers(
+    enrichment: ContentOpportunityEnrichment | None,
+) -> list[ContentSalesBriefBlocker]:
+    if enrichment is None:
+        return [
+            _blocker(
+                "missing_enrichment",
+                "Brakuje wzbogacenia tematu",
+                "Sales Brief v2 musi bazować na opportunity enrichment z WILQ API.",
+                "Uruchom enrichment dla work itemu przed briefem.",
+            )
+        ]
+    if enrichment.status != "ready":
+        return [
+            _blocker(
+                "enrichment_not_ready",
+                "Wzbogacenie tematu jest zablokowane",
+                "Brief nie może pominąć blockerów enrichmentu.",
+                enrichment.safe_next_step,
+            )
+        ]
+    return []
+
+
+def _knowledge_match_blockers(
+    knowledge_match: ContentKnowledgeCardMatch | None,
+) -> list[ContentSalesBriefBlocker]:
     if knowledge_match is None:
-        blockers.append(
+        return [
             _blocker(
                 "missing_required_knowledge_card",
                 "Brakuje kart wiedzy Ekologus",
                 "Sales Brief v2 wymaga typed knowledge cards dla usługi, CTA, claimów i dowodów.",
                 "Dopasuj karty wiedzy do work itemu przed briefem.",
             )
+        ]
+    return [
+        _blocker(
+            "missing_required_knowledge_card",
+            blocker.label,
+            blocker.reason,
+            blocker.next_step,
         )
-    else:
-        blockers.extend(
-            _blocker(
-                "missing_required_knowledge_card",
-                blocker.label,
-                blocker.reason,
-                blocker.next_step,
-            )
-            for blocker in content_knowledge_card_blockers(knowledge_match)
-        )
+        for blocker in content_knowledge_card_blockers(knowledge_match)
+    ]
+
+
+def _preflight_and_evidence_blockers(
+    item: ContentWorkItem,
+    preflight: ContentPreflightVerdict,
+    seed: ContentSalesBriefSeed,
+) -> list[ContentSalesBriefBlocker]:
+    blockers: list[ContentSalesBriefBlocker] = []
     if not preflight.sales_brief_allowed:
         blockers.append(
             _blocker(
@@ -241,7 +332,13 @@ def content_sales_brief_blockers(
                 "Dodaj source_facts z evidence ID i connector ID.",
             )
         )
-    blockers.extend(_source_fact_reference_blockers(item, preflight, seed.source_facts))
+    return blockers
+
+
+def _canonical_and_measurement_blockers(
+    item: ContentWorkItem,
+) -> list[ContentSalesBriefBlocker]:
+    blockers: list[ContentSalesBriefBlocker] = []
     if not item.final_canonical_url:
         blockers.append(
             _blocker(
@@ -270,6 +367,121 @@ def content_sales_brief_blockers(
             )
         )
     return blockers
+
+
+def _seed_with_enrichment(
+    seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment | None,
+) -> ContentSalesBriefSeed:
+    if enrichment is None:
+        return seed
+    source_facts = _brief_source_facts_from_enrichment(enrichment)
+    return seed.model_copy(
+        update={
+            "buyer_problem": enrichment.buyer_problem,
+            "buyer_trigger": enrichment.buyer_trigger,
+            "search_intent": enrichment.intent_label,
+            "service_fit": enrichment.service_fit,
+            "cta_direction": enrichment.cta_hypothesis,
+            "source_facts": source_facts if source_facts else seed.source_facts,
+        }
+    )
+
+
+def _brief_source_facts_from_enrichment(
+    enrichment: ContentOpportunityEnrichment,
+) -> list[ContentSalesBriefSourceFact]:
+    facts: list[ContentSalesBriefSourceFact] = []
+    for fact in enrichment.source_facts:
+        source_connector = fact.source_connectors[0] if fact.source_connectors else None
+        if not fact.evidence_ids or source_connector is None:
+            continue
+        for evidence_id in fact.evidence_ids:
+            facts.append(
+                ContentSalesBriefSourceFact(
+                    evidence_id=evidence_id,
+                    source_connector=source_connector,
+                    summary=f"{fact.label}: {fact.summary}",
+                )
+            )
+    return _deduplicate_source_facts(facts)
+
+
+def _deduplicate_source_facts(
+    source_facts: list[ContentSalesBriefSourceFact],
+) -> list[ContentSalesBriefSourceFact]:
+    deduplicated: dict[tuple[str, str], ContentSalesBriefSourceFact] = {}
+    for fact in source_facts:
+        deduplicated.setdefault((fact.evidence_id, fact.source_connector), fact)
+    return list(deduplicated.values())
+
+
+def _operations_context(
+    enrichment: ContentOpportunityEnrichment | None,
+) -> ContentSalesBriefOperationsContext:
+    if enrichment is None:
+        return ContentSalesBriefOperationsContext(
+            enrichment_id="missing",
+            intent_label="brak enrichment",
+            recommended_mode="block",
+            safe_next_step="Uruchom enrichment przed Sales Brief.",
+            source_fact_ids=[],
+        )
+    return ContentSalesBriefOperationsContext(
+        enrichment_id=enrichment.id,
+        intent_label=enrichment.intent_label,
+        recommended_mode=enrichment.recommended_mode,
+        safe_next_step=enrichment.safe_next_step,
+        source_fact_ids=[fact.id for fact in enrichment.source_facts],
+    )
+
+
+def _knowledge_constraints(
+    match: ContentKnowledgeCardMatch,
+) -> list[ContentSalesBriefKnowledgeConstraint]:
+    constraints: list[ContentSalesBriefKnowledgeConstraint] = []
+    for card in [match.service_card, *match.cta_cards, *match.evidence_requirement_cards]:
+        if card is None:
+            continue
+        for requirement in card.evidence_requirements[:2]:
+            constraints.append(
+                ContentSalesBriefKnowledgeConstraint(
+                    card_id=card.id,
+                    constraint_type="evidence_requirement",
+                    label=card.title,
+                    reason=requirement,
+                )
+            )
+        for claim in [*card.forbidden_claims, *card.measurement_sensitive_claims]:
+            constraints.append(
+                ContentSalesBriefKnowledgeConstraint(
+                    card_id=card.id,
+                    constraint_type=claim.status,
+                    label=claim.label,
+                    reason=claim.reason,
+                )
+            )
+    return constraints
+
+
+def _metrics_to_watch(
+    enrichment: ContentOpportunityEnrichment | None,
+) -> list[str]:
+    if enrichment is None or not enrichment.measurement_baseline.metrics_to_watch:
+        return [
+            "GSC: zapytania, adres, kliknięcia, wyświetlenia, CTR i pozycja",
+            "GA4: jakość ruchu, zaangażowanie i braki pomiaru",
+            "Ahrefs/Ads/Merchant/Localo: sygnały pomocnicze tylko gdy mają dowody",
+        ]
+    metric_labels = {
+        "gsc_clicks": "GSC: kliknięcia dla strony i klastra zapytań",
+        "gsc_impressions": "GSC: wyświetlenia, CTR i pozycja dla klastra",
+        "ga4_engaged_sessions": "GA4: zaangażowane sesje i jakość ruchu",
+    }
+    return [
+        metric_labels.get(metric, metric)
+        for metric in enrichment.measurement_baseline.metrics_to_watch
+    ]
 
 
 def _source_fact_reference_blockers(

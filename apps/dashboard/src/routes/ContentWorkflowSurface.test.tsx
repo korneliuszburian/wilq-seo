@@ -626,6 +626,13 @@ function salesBrief() {
     id: "sales_brief_content_work_item_bdo",
     work_item_id: "content_work_item_bdo",
     topic: "BDO dla firm",
+    operations_context: {
+      enrichment_id: "content_opportunity_enrichment_content_work_item_bdo",
+      intent_label: "intencja ryzyka lub obowiązku",
+      recommended_mode: "refresh",
+      safe_next_step: "Przygotuj preserve-first brief.",
+      source_fact_ids: ["source_fact_queries_bdo"]
+    },
     target_reader: "właściciel firmy",
     buyer_problem: "nie wie, jak podejść do BDO",
     buyer_trigger: "zbliża się kontrola",
@@ -653,6 +660,14 @@ function salesBrief() {
       "ekologus_cta_consultation_without_guarantee",
       "ekologus_evidence_live_connector_requirement"
     ],
+    knowledge_constraints: [
+      {
+        card_id: "ekologus_evidence_live_connector_requirement",
+        constraint_type: "evidence_requirement",
+        label: "Live evidence i source connector są wymagane",
+        reason: "Brak evidence ID oznacza brak rekomendacji."
+      }
+    ],
     forbidden_claims: [],
     missing_evidence: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
@@ -660,6 +675,10 @@ function salesBrief() {
     measurement_plan: {
       measurement_window_id: "measurement_window_content_work_item_bdo",
       metrics_to_watch: ["GSC clicks"],
+      baseline_source_connectors: ["google_search_console"],
+      baseline_evidence_ids: ["ev_gsc_bdo"],
+      measurement_readiness_label: "baza pomiaru do zaplanowania",
+      measurement_readiness_reason: "WILQ ma bazę planu pomiaru.",
       earliest_verdict_note: "Nie oceniaj przed końcem okna.",
       success_claim_rule: "Nie claimuj sukcesu bez danych."
     },

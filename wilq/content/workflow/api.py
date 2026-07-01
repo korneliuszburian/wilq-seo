@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from datetime import date
 
-from pydantic import BaseModel, Field
-
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
@@ -13,8 +11,6 @@ from wilq.content.briefs.sales import (
 from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.openai_runtime import (
     OpenAIClientProtocol,
-    OpenAIStructuredDraftRuntimeMode,
-    OpenAIStructuredDraftRuntimeResult,
     execute_openai_structured_draft_generation,
 )
 from wilq.content.drafts.openai_sdk import (
@@ -23,28 +19,23 @@ from wilq.content.drafts.openai_sdk import (
 )
 from wilq.content.drafts.package import (
     ContentDraftPackage,
-    ContentDraftPackageBuildResult,
     build_content_draft_package,
 )
 from wilq.content.drafts.preview import (
-    StructuredDraftPreviewResult,
     build_structured_draft_preview,
 )
 from wilq.content.drafts.structured_generation import (
-    StructuredDraftGenerationContract,
-    StructuredDraftGenerationResult,
-    StructuredDraftOutput,
     build_structured_draft_generation_contract,
+)
+from wilq.content.enrichment.opportunity import (
+    ContentOpportunityEnrichment,
+    build_content_opportunity_enrichment,
 )
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
-    ContentWordPressDraftHandoff,
-    ContentWordPressDraftHandoffResult,
     build_content_wordpress_draft_handoff,
 )
 from wilq.content.handoff.wordpress_execution import (
-    ContentWordPressDraftExecutionMode,
-    ContentWordPressDraftExecutionResult,
     execute_content_wordpress_draft_handoff,
 )
 from wilq.content.inventory.records import (
@@ -54,14 +45,10 @@ from wilq.content.inventory.records import (
     resolve_content_inventory,
 )
 from wilq.content.knowledge.cards import (
-    ContentKnowledgeCardMatch,
     match_content_knowledge_cards,
 )
 from wilq.content.measurement.window import (
     ContentDateRange,
-    ContentMeasurementMetric,
-    ContentMeasurementWindowBlocker,
-    ContentMeasurementWindowBuildResult,
     apply_content_measurement_window_to_work_item,
     build_content_measurement_window,
     content_measurement_window_outcome_blockers,
@@ -71,21 +58,47 @@ from wilq.content.preflight.workflow import (
     build_content_preflight_verdict,
 )
 from wilq.content.quality.review import (
-    ContentQualityReview,
     build_content_quality_review,
 )
 from wilq.content.quality.revision import (
-    ContentRevisionPlan,
     build_content_revision_plan,
 )
 from wilq.content.review.human import (
     ContentHumanReview,
-    ContentHumanReviewBlocker,
     apply_content_human_review_to_work_item,
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
 )
 from wilq.content.workflow import operator_steps as workflow_steps
+from wilq.content.workflow.contracts import (
+    ContentWorkItemDraftPackageRequest,
+    ContentWorkItemDraftPackageResponse,
+    ContentWorkItemHumanReviewRequest,
+    ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementWindowRequest,
+    ContentWorkItemMeasurementWindowResponse,
+    ContentWorkItemPreflightRequest,
+    ContentWorkItemPreflightResponse,
+    ContentWorkItemQualityReviewRequest,
+    ContentWorkItemQualityReviewResponse,
+    ContentWorkItemRevisionPlanRequest,
+    ContentWorkItemRevisionPlanResponse,
+    ContentWorkItemSalesBriefRequest,
+    ContentWorkItemSalesBriefResponse,
+    ContentWorkItemSnapshotAuditRequest,
+    ContentWorkItemSnapshotHumanReviewRequest,
+    ContentWorkItemStructuredDraftGenerationRequest,
+    ContentWorkItemStructuredDraftGenerationResponse,
+    ContentWorkItemStructuredDraftPreviewRequest,
+    ContentWorkItemStructuredDraftPreviewResponse,
+    ContentWorkItemStructuredDraftRuntimeRequest,
+    ContentWorkItemStructuredDraftRuntimeResponse,
+    ContentWorkItemWordPressDraftExecutionRequest,
+    ContentWorkItemWordPressDraftExecutionResponse,
+    ContentWorkItemWordPressDraftHandoffRequest,
+    ContentWorkItemWordPressDraftHandoffResponse,
+    ContentWorkItemWorkflowSnapshotResponse,
+)
 from wilq.content.workflow.decision_mapping import (
     content_claim_ledger_from_work_item,
     content_inventory_record_from_decision,
@@ -94,181 +107,6 @@ from wilq.content.workflow.decision_mapping import (
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
-
-
-class ContentWorkItemPreflightRequest(BaseModel):
-    item: ContentWorkItem
-    inventory_records: list[ContentInventoryRecord] = Field(default_factory=list)
-    duplicate_risk: ContentInventoryDuplicateRisk = "unknown"
-
-
-class ContentWorkItemPreflightResponse(BaseModel):
-    item: ContentWorkItem
-    inventory_resolution: ContentInventoryResolution
-    preflight_verdict: ContentPreflightVerdict
-
-
-class ContentWorkItemSalesBriefRequest(BaseModel):
-    item: ContentWorkItem
-    inventory_records: list[ContentInventoryRecord] = Field(default_factory=list)
-    duplicate_risk: ContentInventoryDuplicateRisk = "unknown"
-    claim_ledger: ContentClaimLedger
-    seed: ContentSalesBriefSeed
-    knowledge_match: ContentKnowledgeCardMatch | None = None
-
-
-class ContentWorkItemSalesBriefResponse(BaseModel):
-    item: ContentWorkItem
-    inventory_resolution: ContentInventoryResolution
-    preflight_verdict: ContentPreflightVerdict
-    sales_brief_result: ContentSalesBriefBuildResult
-
-
-class ContentWorkItemDraftPackageRequest(BaseModel):
-    item: ContentWorkItem
-    inventory_records: list[ContentInventoryRecord] = Field(default_factory=list)
-    duplicate_risk: ContentInventoryDuplicateRisk = "unknown"
-    claim_ledger: ContentClaimLedger
-    seed: ContentSalesBriefSeed
-    knowledge_match: ContentKnowledgeCardMatch | None = None
-    sales_brief: ContentSalesBrief | None = None
-
-
-class ContentWorkItemDraftPackageResponse(BaseModel):
-    item: ContentWorkItem
-    inventory_resolution: ContentInventoryResolution
-    preflight_verdict: ContentPreflightVerdict
-    sales_brief_result: ContentSalesBriefBuildResult
-    draft_package_result: ContentDraftPackageBuildResult
-
-
-class ContentWorkItemStructuredDraftGenerationRequest(BaseModel):
-    item: ContentWorkItem
-    sales_brief: ContentSalesBrief | None = None
-    claim_ledger: ContentClaimLedger | None = None
-    draft_package: ContentDraftPackage | None = None
-
-
-class ContentWorkItemStructuredDraftGenerationResponse(BaseModel):
-    item: ContentWorkItem
-    structured_generation_result: StructuredDraftGenerationResult
-
-
-class ContentWorkItemStructuredDraftRuntimeRequest(BaseModel):
-    contract: StructuredDraftGenerationContract | None = None
-    model: str | None = None
-    mode: OpenAIStructuredDraftRuntimeMode = "dry_run"
-
-
-class ContentWorkItemStructuredDraftRuntimeResponse(BaseModel):
-    runtime_result: OpenAIStructuredDraftRuntimeResult
-
-
-class ContentWorkItemStructuredDraftPreviewRequest(BaseModel):
-    contract: StructuredDraftGenerationContract | None = None
-    output: StructuredDraftOutput | None = None
-
-
-class ContentWorkItemStructuredDraftPreviewResponse(BaseModel):
-    preview_result: StructuredDraftPreviewResult
-
-
-class ContentWorkItemQualityReviewRequest(BaseModel):
-    item: ContentWorkItem
-    draft_package: ContentDraftPackage | None = None
-    structured_output: StructuredDraftOutput | None = None
-    claim_ledger: ContentClaimLedger | None = None
-    sales_brief: ContentSalesBrief | None = None
-    duplicate_risk: ContentInventoryDuplicateRisk = "clear"
-
-
-class ContentWorkItemQualityReviewResponse(BaseModel):
-    item: ContentWorkItem
-    quality_review: ContentQualityReview
-
-
-class ContentWorkItemRevisionPlanRequest(BaseModel):
-    item: ContentWorkItem
-    quality_review: ContentQualityReview | None = None
-
-
-class ContentWorkItemRevisionPlanResponse(BaseModel):
-    item: ContentWorkItem
-    revision_plan: ContentRevisionPlan
-
-
-class ContentWorkItemHumanReviewRequest(BaseModel):
-    item: ContentWorkItem
-    review: ContentHumanReview | None = None
-    draft_package: ContentDraftPackage | None = None
-    claim_ledger: ContentClaimLedger | None = None
-
-
-class ContentWorkItemHumanReviewResponse(BaseModel):
-    item: ContentWorkItem
-    reviewed_item: ContentWorkItem
-    review: ContentHumanReview | None = None
-    blockers: list[ContentHumanReviewBlocker] = Field(default_factory=list)
-    wordpress_handoff_allowed: bool = False
-
-
-class ContentWorkItemWordPressDraftHandoffRequest(BaseModel):
-    item: ContentWorkItem
-    draft_package: ContentDraftPackage | None = None
-    human_review: ContentHumanReview | None = None
-    audit: ContentWordPressDraftAuditEnvelope | None = None
-
-
-class ContentWorkItemWordPressDraftHandoffResponse(BaseModel):
-    item: ContentWorkItem
-    handoff_result: ContentWordPressDraftHandoffResult
-
-
-class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
-    handoff: ContentWordPressDraftHandoff | None = None
-    draft_package: ContentDraftPackage | None = None
-    mode: ContentWordPressDraftExecutionMode = "dry_run"
-
-
-class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
-    execution_result: ContentWordPressDraftExecutionResult
-
-
-class ContentWorkItemMeasurementWindowRequest(BaseModel):
-    item: ContentWorkItem
-    handoff: ContentWordPressDraftHandoff | None = None
-    baseline_period: ContentDateRange
-    observation_period: ContentDateRange
-    allowed_metrics: list[ContentMeasurementMetric] = Field(default_factory=list)
-    source_connectors: list[str] = Field(default_factory=list)
-
-
-class ContentWorkItemMeasurementWindowResponse(BaseModel):
-    item: ContentWorkItem
-    updated_item: ContentWorkItem
-    measurement_window_result: ContentMeasurementWindowBuildResult
-    outcome_blockers: list[ContentMeasurementWindowBlocker] = Field(default_factory=list)
-
-
-class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
-    preflight: ContentWorkItemPreflightResponse
-    sales_brief: ContentWorkItemSalesBriefResponse
-    draft_package: ContentWorkItemDraftPackageResponse
-    structured_generation: ContentWorkItemStructuredDraftGenerationResponse
-    human_review: ContentWorkItemHumanReviewResponse
-    wordpress_handoff: ContentWorkItemWordPressDraftHandoffResponse
-    measurement_window: ContentWorkItemMeasurementWindowResponse
-    operator_steps: list[workflow_steps.ContentWorkflowOperatorStep] = Field(
-        default_factory=list
-    )
-
-
-class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):
-    review: ContentHumanReview
-
-
-class ContentWorkItemSnapshotAuditRequest(BaseModel):
-    audit: ContentWordPressDraftAuditEnvelope
 
 
 def build_content_work_item_preflight_response(
@@ -306,6 +144,7 @@ def build_content_work_item_sales_brief_response(
             inventory=inventory_resolution,
             claim_ledger=request.claim_ledger,
             seed=request.seed,
+            enrichment=request.enrichment,
             knowledge_match=request.knowledge_match
             or match_content_knowledge_cards(request.item),
         ),
@@ -329,6 +168,7 @@ def build_content_work_item_draft_package_response(
             inventory=inventory_resolution,
             claim_ledger=request.claim_ledger,
             seed=request.seed,
+            enrichment=request.enrichment,
             knowledge_match=request.knowledge_match
             or match_content_knowledge_cards(request.item),
         )
@@ -561,6 +401,7 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         inventory_records=[inventory_record],
         claim_ledger=content_claim_ledger_from_work_item(item),
         seed=content_sales_brief_seed_from_decision(decision),
+        enrichment=build_content_opportunity_enrichment(decision),
         human_review_record=human_review,
         audit=audit,
     )
@@ -595,6 +436,7 @@ def _build_content_work_item_snapshot_response(
     inventory_records: list[ContentInventoryRecord],
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment,
     human_review_record: ContentHumanReview | None = None,
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
@@ -605,6 +447,7 @@ def _build_content_work_item_snapshot_response(
         inventory_records,
         claim_ledger,
         seed,
+        enrichment,
         measurement_window_id,
     )
     brief = sales_brief.sales_brief_result.brief
@@ -613,6 +456,7 @@ def _build_content_work_item_snapshot_response(
         inventory_records,
         claim_ledger,
         seed,
+        enrichment,
         measurement_window_id,
         None if brief is None else brief.id,
         brief,
@@ -682,6 +526,7 @@ def _snapshot_sales_brief(
     inventory_records: list[ContentInventoryRecord],
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment,
     measurement_window_id: str,
 ) -> ContentWorkItemSalesBriefResponse:
     return build_content_work_item_sales_brief_response(
@@ -697,6 +542,7 @@ def _snapshot_sales_brief(
             duplicate_risk="clear",
             claim_ledger=claim_ledger,
             seed=seed,
+            enrichment=enrichment,
         )
     )
 
@@ -706,6 +552,7 @@ def _snapshot_draft_package(
     inventory_records: list[ContentInventoryRecord],
     claim_ledger: ContentClaimLedger,
     seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment,
     measurement_window_id: str,
     brief_id: str | None,
     brief: ContentSalesBrief | None,
@@ -722,6 +569,7 @@ def _snapshot_draft_package(
             duplicate_risk="clear",
             claim_ledger=claim_ledger,
             seed=seed,
+            enrichment=enrichment,
             sales_brief=brief,
         )
     )

@@ -621,8 +621,19 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   Brief, content workflow end-to-end and contract-inventory pytest subset,
   dashboard API/route Vitest subset, dashboard typecheck, Ruff, mypy,
   changed-file complexity audit, Fallow audit and `git diff --check` passed.
-- Next product slice: `wilq-seo-8xc`, operations-grade Sales Brief v2 from
-  opportunity enrichment and typed Ekologus knowledge.
+- Operations-grade Sales Brief slice `wilq-seo-8xc` upgraded Sales Brief v2 so
+  it requires opportunity enrichment, consumes enrichment-owned buyer problem,
+  buyer trigger, service fit, CTA hypothesis, source facts and measurement
+  baseline, exposes operations context, knowledge constraints and measurement
+  boundary fields through shared schemas, and blocks missing or blocked
+  enrichment. Workflow API request/response contracts were extracted to
+  `wilq/content/workflow/contracts.py` to keep anti-slop budgets green.
+- Focused proof for the Sales Brief v2 slice: Sales Brief, content workflow
+  end-to-end and contract-inventory pytest subset, dashboard API/route Vitest
+  subset, dashboard typecheck, Ruff, mypy, changed-file complexity audit,
+  Fallow audit and `git diff --check` passed.
+- Next product slice: `wilq-seo-ao0`, claim-gated draft variants through WILQ
+  API + OpenAI SDK Structured Outputs.
 
 2026-06-30:
 

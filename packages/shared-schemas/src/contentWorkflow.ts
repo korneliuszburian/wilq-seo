@@ -161,6 +161,21 @@ export const ContentSalesBriefSourceFactSchema = z.object({
   summary: z.string()
 });
 
+export const ContentSalesBriefOperationsContextSchema = z.object({
+  enrichment_id: z.string(),
+  intent_label: z.string(),
+  recommended_mode: z.string(),
+  safe_next_step: z.string(),
+  source_fact_ids: z.array(z.string()).default([])
+});
+
+export const ContentSalesBriefKnowledgeConstraintSchema = z.object({
+  card_id: z.string(),
+  constraint_type: z.string(),
+  label: z.string(),
+  reason: z.string()
+});
+
 export const ContentKnowledgeClaimRuleSchema = z.object({
   id: z.string(),
   claim_type: z.string(),
@@ -233,6 +248,7 @@ export const ContentSalesBriefSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
   topic: z.string(),
+  operations_context: ContentSalesBriefOperationsContextSchema,
   target_reader: z.string(),
   buyer_problem: z.string(),
   buyer_trigger: z.string(),
@@ -250,6 +266,7 @@ export const ContentSalesBriefSchema = z.object({
   internal_link_direction: z.array(z.string()).default([]),
   source_facts: z.array(ContentSalesBriefSourceFactSchema).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
+  knowledge_constraints: z.array(ContentSalesBriefKnowledgeConstraintSchema).default([]),
   forbidden_claims: z.array(ContentClaimReferenceSchema).default([]),
   missing_evidence: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),
@@ -257,6 +274,10 @@ export const ContentSalesBriefSchema = z.object({
   measurement_plan: z.object({
     measurement_window_id: z.string(),
     metrics_to_watch: z.array(z.string()).default([]),
+    baseline_source_connectors: z.array(z.string()).default([]),
+    baseline_evidence_ids: z.array(z.string()).default([]),
+    measurement_readiness_label: z.string(),
+    measurement_readiness_reason: z.string(),
     earliest_verdict_note: z.string(),
     success_claim_rule: z.string()
   }),
