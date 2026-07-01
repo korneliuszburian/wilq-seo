@@ -56,6 +56,7 @@ def _claim_ledger(**overrides: object) -> dict[str, object]:
                 "claim_type": "service_claim",
                 "status": "allowed_with_evidence",
                 "evidence_ids": ["ev_wp_bdo"],
+                "source_connectors": ["wordpress_ekologus"],
                 "reason": "Claim ma przypisany dowód źródłowy.",
                 "reviewer_id": "wilku",
             },
@@ -85,6 +86,7 @@ def _draft_claim_ledger(**overrides: object) -> dict[str, object]:
                 "claim_type": "service_claim",
                 "status": "allowed_with_evidence",
                 "evidence_ids": ["ev_wp_bdo"],
+                "source_connectors": ["wordpress_ekologus"],
                 "reason": "Claim ma przypisany dowód źródłowy.",
                 "reviewer_id": "wilku",
             }

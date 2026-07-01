@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from _marketer_language import assert_marketer_text_has_no_workflow_jargon
 
+from wilq.content.workflow.decision_mapping import content_claim_ledger_from_work_item
 from wilq.content.workflow.models import (
     ContentWorkItem,
     content_workflow_action_allowed,
@@ -64,6 +65,18 @@ def test_prepare_draft_is_allowed_after_brief_claims_and_measurement_plan() -> N
 
     assert content_workflow_blockers(item, "prepare_draft") == []
     assert content_workflow_action_allowed(item, "prepare_draft")
+
+
+def test_work_item_claim_ledger_preserves_source_connectors() -> None:
+    item = _base_item()
+
+    ledger = content_claim_ledger_from_work_item(item)
+
+    assert ledger.entries[0].evidence_ids == ["ev_gsc_bdo"]
+    assert ledger.entries[0].source_connectors == [
+        "google_search_console",
+        "wordpress_ekologus",
+    ]
 
 
 def test_dev_preview_url_cannot_be_final_canonical() -> None:

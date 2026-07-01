@@ -359,6 +359,7 @@ def _claim_ledger(item: dict[str, Any]) -> dict[str, Any]:
                 "claim_type": "service_claim",
                 "status": "allowed_with_evidence",
                 "evidence_ids": [item["evidence_ids"][0]],
+                "source_connectors": item["source_connectors"],
                 "reason": "Twierdzenie ma przypisany dowód źródłowy.",
                 "reviewer_id": "wilku",
             }

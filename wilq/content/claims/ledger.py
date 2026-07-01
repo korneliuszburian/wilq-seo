@@ -24,6 +24,7 @@ ContentClaimStatus = Literal[
 ]
 ContentClaimLedgerBlockerCode = Literal[
     "missing_evidence",
+    "missing_source_connector",
     "needs_human_review",
     "blocked_claim",
     "blocked_until_measurement",
@@ -47,6 +48,7 @@ class ContentClaimLedgerEntry(BaseModel):
     claim_type: ContentClaimType
     status: ContentClaimStatus
     evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
     reason: str
     reviewer_id: str | None = None
 
@@ -72,11 +74,13 @@ def content_claim_entry(
     claim_text: str,
     claim_type: ContentClaimType,
     evidence_ids: list[str] | None = None,
+    source_connectors: list[str] | None = None,
     measurement_window_ready: bool = False,
     human_reviewed: bool = False,
     reviewer_id: str | None = None,
 ) -> ContentClaimLedgerEntry:
     evidence = evidence_ids or []
+    connectors = source_connectors or []
     if claim_type == "guarantee_claim":
         return ContentClaimLedgerEntry(
             id=claim_id,
@@ -84,6 +88,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="blocked",
             evidence_ids=evidence,
+            source_connectors=connectors,
             reason="Gwarancje efektu nie mogą trafić do gotowego języka szkicu.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
@@ -94,6 +99,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="blocked_until_measurement",
             evidence_ids=evidence,
+            source_connectors=connectors,
             reason="Twierdzenie o skuteczności wymaga zakończonego okna pomiaru.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
@@ -104,6 +110,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="needs_human_review",
             evidence_ids=evidence,
+            source_connectors=connectors,
             reason="Twierdzenie prawne, ryzyka albo środowiskowe wymaga decyzji człowieka.",
         )
     if evidence:
@@ -113,6 +120,7 @@ def content_claim_entry(
             claim_type=claim_type,
             status="allowed_with_evidence",
             evidence_ids=evidence,
+            source_connectors=connectors,
             reason="Twierdzenie ma przypisane dowody źródłowe.",
             reviewer_id=reviewer_id if human_reviewed else None,
         )
@@ -121,6 +129,7 @@ def content_claim_entry(
         claim_text=claim_text,
         claim_type=claim_type,
         status="allowed_general",
+        source_connectors=connectors,
         reason="Twierdzenie jest ogólną informacją bez obietnicy efektu.",
         reviewer_id=reviewer_id if human_reviewed else None,
     )
@@ -140,6 +149,16 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                     "Brakuje dowodu dla twierdzenia",
                     "Twierdzenie oznaczone jako oparte na dowodzie musi mieć podpięty dowód.",
                     "Podłącz dowód albo obniż status twierdzenia.",
+                )
+            )
+        elif entry.status == "allowed_with_evidence" and not entry.source_connectors:
+            blockers.append(
+                _blocker(
+                    "missing_source_connector",
+                    entry,
+                    "Brakuje źródła danych dla twierdzenia",
+                    "Twierdzenie oparte na dowodzie musi wskazywać źródło danych.",
+                    "Podłącz źródło danych dla dowodu albo obniż status twierdzenia.",
                 )
             )
         elif entry.status == "needs_human_review":

@@ -49,6 +49,7 @@ def _contract(*, include_claim_markers: bool = True) -> StructuredDraftGeneratio
                         claim_type="service_claim",
                         status="allowed_with_evidence",
                         evidence_ids=["ev_wp_bdo"],
+                        source_connectors=["wordpress_ekologus"],
                         reviewer_id="wilku",
                     )
                 ]

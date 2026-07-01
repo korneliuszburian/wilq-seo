@@ -62,6 +62,7 @@ class StructuredDraftClaimMarker(BaseModel):
     claim_type: ContentClaimType
     status: ContentClaimStatus
     evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
     reviewer_id: str | None = None
 
 
@@ -217,6 +218,7 @@ def build_structured_draft_generation_contract(
                 claim_type=entry.claim_type,
                 status=entry.status,
                 evidence_ids=entry.evidence_ids,
+                source_connectors=entry.source_connectors,
                 reviewer_id=entry.reviewer_id,
             )
             for entry in publish_ready_claims(claim_ledger)

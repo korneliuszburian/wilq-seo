@@ -114,6 +114,7 @@ def _claim_ledger(**overrides: object) -> dict[str, object]:
                 "claim_type": "service_claim",
                 "status": "allowed_with_evidence",
                 "evidence_ids": ["ev_wp_bdo"],
+                "source_connectors": ["wordpress_ekologus"],
                 "reason": "Claim ma przypisany dowód źródłowy.",
                 "reviewer_id": "wilku",
             }
@@ -234,6 +235,7 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
             "claim_type": "service_claim",
             "status": "allowed_with_evidence",
             "evidence_ids": ["ev_wp_bdo"],
+            "source_connectors": ["wordpress_ekologus"],
             "reviewer_id": "wilku",
         }
     ]

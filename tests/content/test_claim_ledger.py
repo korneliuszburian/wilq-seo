@@ -89,10 +89,12 @@ def test_allowed_with_evidence_claim_can_be_used_in_draft() -> None:
         claim_text="Ekologus pomaga firmom w obowiązkach związanych z BDO.",
         claim_type="service_claim",
         evidence_ids=["ev_service_map_bdo"],
+        source_connectors=["google_search_console", "wordpress_ekologus"],
     )
     ledger = _ledger(entry)
 
     assert entry.status == "allowed_with_evidence"
+    assert entry.source_connectors == ["google_search_console", "wordpress_ekologus"]
     assert claim_ledger_blockers(ledger) == []
     assert claim_ledger_allows_draft(ledger)
     assert publish_ready_claims(ledger) == [entry]
@@ -105,6 +107,7 @@ def test_human_review_allows_legal_claim_only_when_supported() -> None:
         claim_text="Tekst opisuje ogólne ryzyka środowiskowe bez gwarancji zgodności.",
         claim_type="environmental_claim",
         evidence_ids=["ev_expert_note"],
+        source_connectors=["reviewed_internal"],
         human_reviewed=True,
         reviewer_id="wilku",
     )
@@ -113,6 +116,30 @@ def test_human_review_allows_legal_claim_only_when_supported() -> None:
     assert entry.status == "allowed_with_evidence"
     assert entry.reviewer_id == "wilku"
     assert claim_ledger_blockers(ledger) == []
+
+
+def test_allowed_with_evidence_status_without_source_connector_blocks_draft() -> None:
+    entry = ContentClaimLedgerEntry(
+        id="claim_missing_connector",
+        claim_text="Ekologus ma potwierdzony fakt bez źródła danych.",
+        claim_type="service_claim",
+        status="allowed_with_evidence",
+        evidence_ids=["ev_public_source"],
+        source_connectors=[],
+        reason="Błędny status testowy.",
+    )
+    ledger = _ledger(entry)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "missing_source_connector"
+    ]
+    assert_marketer_text_has_no_workflow_jargon(
+        text
+        for blocker in claim_ledger_blockers(ledger)
+        for text in (blocker.label, blocker.reason, blocker.next_step)
+    )
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
 
 
 def test_allowed_with_evidence_status_without_evidence_blocks_draft() -> None:

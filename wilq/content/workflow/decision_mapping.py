@@ -64,6 +64,7 @@ def content_claim_ledger_from_work_item(item: ContentWorkItem) -> ContentClaimLe
                 claim_type="service_claim",
                 status="allowed_with_evidence",
                 evidence_ids=[evidence_id],
+                source_connectors=item.source_connectors,
                 reason="Claim jest ogólną deklaracją usługi i ma przypisany dowód źródłowy.",
                 reviewer_id="wilku",
             )

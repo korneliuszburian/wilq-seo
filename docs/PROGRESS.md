@@ -336,6 +336,12 @@ API status later contradicts this state.
   boundary: a structured draft section that uses an `allowed_with_evidence`
   Claim Ledger entry must carry that claim's required evidence IDs, or review
   blocks with `claim_missing_required_evidence`.
+- Claim Ledger source lineage is hardened: `allowed_with_evidence` entries now
+  carry `source_connectors`, and any evidence-backed entry without a source
+  connector blocks draft readiness with `missing_source_connector`. Work-item
+  generated ledgers and structured draft claim markers preserve the connector
+  lineage so later preview/review gates can show not just the evidence ID, but
+  the data source behind it.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured

@@ -574,6 +574,7 @@ export const StructuredDraftClaimMarkerSchema = z.object({
     "blocked_until_measurement"
   ]),
   evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
   reviewer_id: z.string().nullable().optional()
 });
 

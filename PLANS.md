@@ -356,6 +356,11 @@ gate under Beads task `wilq-seo-odx`: if a section uses an
 `allowed_with_evidence` Claim Ledger entry but omits that claim's required
 evidence IDs, the review blocks with `claim_missing_required_evidence`.
 
+Claim Ledger source lineage is hardened under Beads task `wilq-seo-bg4`:
+evidence-backed entries now carry `source_connectors`, missing connector
+lineage blocks with `missing_source_connector`, and structured generation claim
+markers preserve connector lineage beside evidence IDs.
+
 `wilq-content-operator` now has a completed non-interactive Codex eval pass
 after the ActionObject validation prompt fix. Proof:
 `.local-lab/evals/codex-skill/20260701T212839Z/summary.json`; result

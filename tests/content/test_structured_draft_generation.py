@@ -71,6 +71,7 @@ def _claim_ledger(*, blocked: bool = False) -> ContentClaimLedger:
             claim_text="Ta treść zwiększy liczbę leadów.",
             claim_type="business_outcome_claim",
             evidence_ids=["ev_gsc_bdo"],
+            source_connectors=["google_search_console"],
             measurement_window_ready=False,
         )
         if blocked
@@ -79,6 +80,7 @@ def _claim_ledger(*, blocked: bool = False) -> ContentClaimLedger:
             claim_text="Ekologus pomaga firmom w obowiązkach związanych z BDO.",
             claim_type="service_claim",
             evidence_ids=["ev_wp_bdo"],
+            source_connectors=["wordpress_ekologus"],
         )
     )
     return ContentClaimLedger(
@@ -278,6 +280,7 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert marker.claim_type == "service_claim"
     assert marker.status == "allowed_with_evidence"
     assert marker.evidence_ids == ["ev_wp_bdo"]
+    assert marker.source_connectors == ["wordpress_ekologus"]
     assert marker.reviewer_id is None
     assert contract.model_input.human_review_questions
     assert "gotowej do publikacji" in contract.system_instruction
