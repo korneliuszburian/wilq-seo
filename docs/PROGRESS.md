@@ -145,7 +145,10 @@ API status later contradicts this state.
   migrates Demand Gen onto it as the first diagnostic shell pilot without
   moving product logic into React. Fourth green sub-slice migrates Ahrefs onto
   the same shell, shrinking duplicated route chrome while keeping Ahrefs
-  decisions, evidence and blocked-claim handling in the route/API data.
+  decisions, evidence and blocked-claim handling in the route/API data. Fifth
+  green sub-slice migrates Localo onto the same shell, so the shared diagnostic
+  chrome now covers Demand Gen, Ahrefs and Localo while Localo safety/evidence
+  decisions remain API-data driven in the route.
   Broader Ads extraction and zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.

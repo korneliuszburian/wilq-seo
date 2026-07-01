@@ -3,6 +3,10 @@ import { useState } from "react";
 import { ClipboardCheck, ShieldAlert } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
+import {
+  DiagnosticSurfaceShell,
+  DiagnosticSurfaceUnavailable
+} from "../components/DiagnosticSurfaceShell";
 import { MetricFactChips } from "../components/MetricFactChips";
 import {
   BlockerNotice,
@@ -24,9 +28,7 @@ export function LocaloDiagnosticSurface() {
   if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać danych Localo. Ten widok nie może udawać rankingów, danych profilu firmy w Google ani lokalnej widoczności bez WILQ." />
-      </main>
+      <DiagnosticSurfaceUnavailable message="Nie udało się odczytać danych Localo. Ten widok nie może udawać rankingów, danych profilu firmy w Google ani lokalnej widoczności bez WILQ." />
     );
   }
 
@@ -34,22 +36,17 @@ export function LocaloDiagnosticSurface() {
   const latestRefresh = data.latest_refresh;
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Localo</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Localo z WILQ. Oddziela sam dostęp do danych od
-            lokalnych rankingów, profilu firmy w Google, konkurencji i opinii,
-            żeby marketer nie dostał fałszywej rekomendacji lokalnego SEO.
-          </p>
-        </div>
+    <DiagnosticSurfaceShell
+      title="Localo"
+      description="Dedykowany widok Localo z WILQ. Oddziela sam dostęp do danych od lokalnych rankingów, profilu firmy w Google, konkurencji i opinii, żeby marketer nie dostał fałszywej rekomendacji lokalnego SEO."
+      metrics={
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Dane lokalne" value={data.visibility_fact_count} />
           <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contract_summary_label} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
-      </div>
+      }
+    >
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -121,7 +118,7 @@ export function LocaloDiagnosticSurface() {
           />
         </div>
       </section>
-    </main>
+    </DiagnosticSurfaceShell>
   );
 }
 
