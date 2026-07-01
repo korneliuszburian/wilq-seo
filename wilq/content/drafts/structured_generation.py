@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,9 +10,19 @@ from wilq.content.claims.ledger import (
     claim_ledger_allows_draft,
 )
 from wilq.content.drafts.package import ContentDraftPackage
-from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.models import ContentWorkItem, content_workflow_blockers
 
 StructuredDraftGenerationBlockerCode = Literal[
+    "missing_evidence",
+    "missing_source_connector",
+    "missing_final_canonical",
+    "invalid_final_canonical",
+    "missing_inventory_resolution",
+    "duplicate_gate_not_checked",
+    "duplicate_or_canonical_risk",
+    "missing_preflight",
+    "blocked_preflight",
+    "missing_preserve_first_plan",
     "missing_draft_package",
     "draft_package_mismatch",
     "draft_package_marked_publish_ready",
@@ -20,7 +30,7 @@ StructuredDraftGenerationBlockerCode = Literal[
     "sales_brief_mismatch",
     "missing_claim_ledger",
     "claim_ledger_blocks_generation",
-    "missing_final_canonical_url",
+    "missing_measurement_window",
     "missing_evidence_mapping",
     "missing_human_review_questions",
 ]
@@ -146,7 +156,7 @@ def build_structured_draft_generation_contract(
         return StructuredDraftGenerationResult(
             blockers=[
                 _blocker(
-                    "missing_final_canonical_url",
+                    "missing_final_canonical",
                     "Brakuje adresu docelowego",
                     "Generowanie wymaga publicznego adresu docelowego dla treści.",
                     "Uzupełnij publiczny adres docelowy przed generowaniem.",
@@ -205,7 +215,32 @@ def structured_draft_generation_blockers(
     claim_ledger: ContentClaimLedger | None,
     draft_package: ContentDraftPackage | None,
 ) -> list[StructuredDraftGenerationBlocker]:
-    blockers: list[StructuredDraftGenerationBlocker] = []
+    blockers: list[StructuredDraftGenerationBlocker] = [
+        _blocker(
+            cast(StructuredDraftGenerationBlockerCode, blocker.code),
+            blocker.label,
+            blocker.reason,
+            blocker.next_step,
+        )
+        for blocker in content_workflow_blockers(item, "prepare_draft")
+        if blocker.code
+        in {
+            "missing_evidence",
+            "missing_source_connector",
+            "missing_final_canonical",
+            "invalid_final_canonical",
+            "missing_inventory_resolution",
+            "duplicate_gate_not_checked",
+            "duplicate_or_canonical_risk",
+            "missing_preflight",
+            "blocked_preflight",
+            "missing_preserve_first_plan",
+            "missing_sales_brief",
+            "missing_claim_ledger",
+            "missing_draft_package",
+            "missing_measurement_window",
+        }
+    ]
     if draft_package is None:
         blockers.append(
             _blocker(

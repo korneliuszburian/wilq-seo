@@ -148,6 +148,16 @@ API status later contradicts this state.
   instead of the target file and hit unrelated existing failures in
   `ActionDetailRoute.test.tsx` and `App.test.tsx`; the precise Vitest command
   above is the valid proof for this slice.
+- Goal 003 adversarial content eval slice `wilq-seo-0t7` is complete pending
+  final commit/push. `tests/content/test_content_workflow_adversarial_gates.py`
+  now attacks dev URL as canonical, missing evidence/source connector, missing
+  preflight, missing claim gate, missing measurement window, `publish_ready=true`,
+  forbidden guarantee claims, WordPress publish/live write, premature measurement
+  outcome claims and wrong-work-item human review. The slice found and fixed a
+  real generation gap: Structured Outputs generation now checks
+  `content_workflow_blockers(item, "prepare_draft")` before trusting supplied
+  brief/claim/draft payloads, so forged payloads cannot bypass missing workflow
+  state.
 - Goal 002 content domain extraction has started under `wilq-seo-x4u`.
   Canonical/public URL semantics moved from
   `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.
@@ -1198,6 +1208,11 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_content_quality_review_api.py -q`
 - `rtk uv run pytest tests/content/test_content_quality_review_api.py tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
 - `rtk uv run pytest tests/content/test_structured_generation_api.py -q`
+- `rtk uv run pytest tests/content/test_content_workflow_adversarial_gates.py -q`
+- `rtk uv run pytest tests/content/test_structured_generation_api.py tests/content/test_content_quality_review_api.py tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run ruff check wilq/content/drafts/structured_generation.py tests/content/test_content_workflow_adversarial_gates.py`
+- `rtk uv run mypy wilq/content/drafts/structured_generation.py`
+- `rtk uv run python scripts/audit_complexity.py --changed --allow-frozen`
 - `rtk uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`
 - `rtk uv run ruff check wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py wilq/content/workflow/api.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_queue_api.py`
 - `rtk uv run mypy wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py tests/content/test_content_work_item_queue_api.py`

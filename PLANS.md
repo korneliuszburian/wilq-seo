@@ -1137,6 +1137,20 @@ Current outcome:
   `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
   `uv run python scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check`.
+- Goal 003 adversarial content eval slice `wilq-seo-0t7` is complete pending
+  final commit/push. A focused API-level adversarial suite now attempts to
+  bypass the workflow with dev canonical URLs, missing evidence/source
+  connectors, missing preflight, forged claim-gate payloads, missing measurement
+  windows, `publish_ready=true`, forbidden guarantee claims, WordPress publish
+  attempts, live write attempts, premature outcome claims and wrong-work-item
+  human review. The slice found a real gap and closed it in
+  `wilq/content/drafts/structured_generation.py`: structured draft generation
+  now checks WILQ workflow blockers before trusting supplied sales brief, claim
+  ledger or draft package payloads. Proof passed:
+  `uv run pytest tests/content/test_content_workflow_adversarial_gates.py -q`,
+  the focused queue/generation/quality/state pytest set, Ruff for changed Python
+  files, mypy for `structured_generation.py` and
+  `scripts/audit_complexity.py --changed --allow-frozen`.
 
 Current risk:
 
