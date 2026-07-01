@@ -178,8 +178,11 @@ API status later contradicts this state.
   `components/AdsBusinessReadinessPanels.tsx`, moves change-id/campaign-metric
   fallback labels into `lib/adsLabels.ts`, and reduces Fallow changed-scope
   duplication from 15 to 7 clone groups while keeping the same static source
-  guards. Broader Ads extraction and zombie/copy cleanup remain in this Beads
-  task.
+  guards. Fourteenth green sub-slice extracts Ads operator summary, start-here
+  decisions, optimizer readiness and decision cards into
+  `components/AdsOperatorSummaryPanels.tsx`, keeping source guards on the
+  extracted module and reducing `AdsDoctorSurface.tsx` to 628 lines. Broader Ads
+  extraction and zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and

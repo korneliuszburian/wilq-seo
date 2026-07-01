@@ -7748,6 +7748,10 @@ describe("WILQ dashboard", () => {
       "src/components/AdsCampaignPanels.tsx",
       "utf8"
     );
+    const operatorSummaryPanelsSource = readFileSync(
+      "src/components/AdsOperatorSummaryPanels.tsx",
+      "utf8"
+    );
     const budgetRecommendationPanelsSource = readFileSync(
       "src/components/AdsBudgetRecommendationPanels.tsx",
       "utf8"
@@ -7773,10 +7777,10 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("primaryDecision?.action_summary_label");
     expect(routeSource).toContain("summary.missing_read_contract_summary_label");
     expect(routeSource).toContain("summary.blocked_claim_summary_label");
-    expect(routeSource).toContain("optimizer_readiness_contract");
-    expect(routeSource).toContain("contract.mode_label");
-    expect(routeSource).toContain("item.missing_read_contract_summary_label");
-    expect(routeSource).toContain("item.source_contract_summary_label");
+    expect(operatorSummaryPanelsSource).toContain("optimizer_readiness_contract");
+    expect(operatorSummaryPanelsSource).toContain("contract.mode_label");
+    expect(operatorSummaryPanelsSource).toContain("item.missing_read_contract_summary_label");
+    expect(operatorSummaryPanelsSource).toContain("item.source_contract_summary_label");
     expect(businessReadinessPanelsSource).toContain("interpretation.allowed_use_labels");
     expect(businessReadinessPanelsSource).toContain("interpretation.blocked_use_labels");
     expect(businessReadinessPanelsSource).toContain("interpretation.missing_requirement_labels");
@@ -7793,9 +7797,9 @@ describe("WILQ dashboard", () => {
     );
     expect(businessReadinessPanelsSource).toContain("strategyReadiness.blocked_claim_summary_label");
     expect(businessReadinessPanelsSource).toContain("strategyReadiness.action_summary_label");
-    expect(routeSource).toContain("decision.start_here_summary");
-    expect(routeSource).toContain("decision.action_summary_label");
-    expect(routeSource).toContain("decision.blocked_claim_summary_label");
+    expect(operatorSummaryPanelsSource).toContain("decision.start_here_summary");
+    expect(operatorSummaryPanelsSource).toContain("decision.action_summary_label");
+    expect(operatorSummaryPanelsSource).toContain("decision.blocked_claim_summary_label");
     expect(routeSource).toContain("primaryDecision?.measurement_plan");
     expect(routeSource).toContain("summary.missing_read_contract_summary_label");
     expect(routeSource).toContain("summary.operator_review_gate_summary_label");
@@ -7809,8 +7813,10 @@ describe("WILQ dashboard", () => {
     expect(budgetRecommendationPanelsSource).toContain("row.blocked_claim_summary_label");
     expect(budgetRecommendationPanelsSource).toContain("row.human_review_gate_summary_label");
     expect(budgetRecommendationPanelsSource).toContain("row.changed_field_summary_label");
-    expect(routeSource).not.toContain("{decision.decision_type_label} / {decision.status_label}");
-    expect(routeSource).not.toContain("{item.status_label} / {item.risk_label}");
+    expect(operatorSummaryPanelsSource).not.toContain(
+      "{decision.decision_type_label} / {decision.status_label}"
+    );
+    expect(operatorSummaryPanelsSource).not.toContain("{item.status_label} / {item.risk_label}");
     expect(businessReadinessPanelsSource).not.toContain(
       "{strategyReadiness.status_label} / {strategyReadiness.latest_review_status_label}"
     );
@@ -7831,8 +7837,12 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.changed_field_labels.slice(0, 4).join");
-    expect(routeSource).not.toContain("summary.blocked_claim_labels.slice(0, 8)");
-    expect(routeSource).not.toContain("decision.blocked_claim_labels.slice(0, 3)");
+    expect(operatorSummaryPanelsSource).not.toContain(
+      "summary.blocked_claim_labels.slice(0, 8)"
+    );
+    expect(operatorSummaryPanelsSource).not.toContain(
+      "decision.blocked_claim_labels.slice(0, 3)"
+    );
     expect(routeSource).not.toContain("primaryDecision.blocked_claim_labels");
     expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
     expect(budgetRecommendationPanelsSource).toContain("row.recommendation_type_label");
@@ -7850,21 +7860,21 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("row.blocked_claim_labels");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 3)");
-    expect(routeSource).not.toContain("adsOptimizerReadinessTitle");
-    expect(routeSource).not.toContain("adsOptimizerReadinessSummary");
-    expect(routeSource).not.toContain("adsOptimizerReadinessNextStep");
-    expect(routeSource).not.toContain("adsOptimizerReadinessItemLabel");
-    expect(routeSource).not.toContain("adsOptimizerModeLabel");
+    expect(operatorSummaryPanelsSource).not.toContain("adsOptimizerReadinessTitle");
+    expect(operatorSummaryPanelsSource).not.toContain("adsOptimizerReadinessSummary");
+    expect(operatorSummaryPanelsSource).not.toContain("adsOptimizerReadinessNextStep");
+    expect(operatorSummaryPanelsSource).not.toContain("adsOptimizerReadinessItemLabel");
+    expect(operatorSummaryPanelsSource).not.toContain("adsOptimizerModeLabel");
     expect(routeSource).not.toContain("adsBusinessUseLabel");
     expect(routeSource).not.toContain("adsStrategyReviewStatusLabel");
-    expect(routeSource).not.toContain("adsStartHereSummary");
+    expect(operatorSummaryPanelsSource).not.toContain("adsStartHereSummary");
     expect(routeSource).not.toContain("adsCondensedMeasurementPlan");
     expect(routeSource).not.toContain("adsBusinessContextStatusValue");
     expect(routeSource).not.toContain("adsCampaignReviewReason");
     expect(routeSource).not.toContain("adsCampaignTriageReason");
     expect(routeSource).not.toContain("adsRecommendationReviewReason");
-    expect(routeSource).not.toContain("adsDecisionStatusLabel");
-    expect(routeSource).not.toContain("adsRiskLabel");
+    expect(operatorSummaryPanelsSource).not.toContain("adsDecisionStatusLabel");
+    expect(operatorSummaryPanelsSource).not.toContain("adsRiskLabel");
     expect(routeSource).not.toContain("connectorLabelsFromStatuses");
     expect(businessReadinessPanelsSource).not.toContain("interpretation.interpretation_contract");
     expect(businessReadinessPanelsSource).not.toContain("interpretation.status}");
@@ -7880,12 +7890,14 @@ describe("WILQ dashboard", () => {
     expect(businessReadinessPanelsSource).not.toContain(
       "strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)"
     );
-    expect(routeSource).not.toContain("summary.blocked_claims.map(adsBlockedClaimLabel)");
+    expect(operatorSummaryPanelsSource).not.toContain(
+      "summary.blocked_claims.map(adsBlockedClaimLabel)"
+    );
     expect(routeSource).not.toContain("data.evidence_ids.length");
     expect(routeSource).not.toContain("formatActionObjectCount(actions.length)");
     expect(routeSource).not.toContain("formatActionObjectCount");
-    expect(routeSource).not.toContain("summary.action_ids.length");
-    expect(routeSource).not.toContain("decision.action_ids.length");
+    expect(operatorSummaryPanelsSource).not.toContain("summary.action_ids.length");
+    expect(operatorSummaryPanelsSource).not.toContain("decision.action_ids.length");
     expect(businessReadinessPanelsSource).not.toContain("interpretation.action_ids.length");
     expect(businessReadinessPanelsSource).not.toContain("strategyReadiness.action_ids.length");
     expect(routeSource).not.toContain("row.action_ids.length");
@@ -7895,7 +7907,7 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("formatAdsEvidenceCount");
     expect(routeSource).not.toContain("formatTraceIdCount");
     expect(routeSource).not.toContain("formatAdsContractCount");
-    expect(routeSource).not.toContain("item.source_contract_ids.length");
+    expect(operatorSummaryPanelsSource).not.toContain("item.source_contract_ids.length");
     expect(businessReadinessPanelsSource).not.toContain("interpretation.policy_ids.length");
     expect(businessReadinessPanelsSource).not.toContain(
       "strategyReadiness.required_validation.length"
