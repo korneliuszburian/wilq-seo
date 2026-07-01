@@ -188,8 +188,12 @@ API status later contradicts this state.
   Fallow changed-scope duplication drops to 6 clone groups. Sixteenth green
   sub-slice extracts the first-screen Ads overview/condensed-decision panels
   into `components/AdsOverviewPanels.tsx`, keeps source guards on the extracted
-  module, and reduces `AdsDoctorSurface.tsx` to 275 lines. Broader Ads
-  extraction and zombie/copy cleanup remain in this Beads task.
+  module, and reduces `AdsDoctorSurface.tsx` to 275 lines. Seventeenth green
+  sub-slice consolidates scattered static copy/source/status tests into
+  `routes/operatorSafetyGuards.test.ts`, preserving the operator-safety
+  assertions while removing misleading `*Copy`, `*Source` and badge-usage test
+  names from the route tree. Connector scope clarity remains in this Beads
+  task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
