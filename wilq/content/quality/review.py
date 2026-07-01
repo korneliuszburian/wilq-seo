@@ -32,6 +32,7 @@ ContentQualityFindingCode = Literal[
     "unknown_evidence_reference",
     "missing_claim_ledger",
     "claim_ledger_blocks_quality",
+    "unsupported_claim_used",
     "forbidden_claim_used",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
@@ -165,6 +166,7 @@ def build_content_quality_review(
             blocked_codes={
                 "missing_claim_ledger",
                 "claim_ledger_blocks_quality",
+                "unsupported_claim_used",
                 "forbidden_claim_used",
             },
         ),
@@ -429,7 +431,22 @@ def _claim_findings(
         claim
         for section in structured_output.sections
         for claim in section.claims_used
+        if claim
     }
+    ledger_claim_texts = {entry.claim_text for entry in claim_ledger.entries}
+    unsupported_claims = sorted(used_claims.difference(ledger_claim_texts))
+    if unsupported_claims:
+        findings.append(
+            _finding(
+                "unsupported_claim_used",
+                "blocker",
+                "Szkic używa twierdzenia spoza rejestru",
+                "Każde twierdzenie użyte przez model musi istnieć w Claim Ledger.",
+                "Usuń albo dodaj do Claim Ledger po review: "
+                + "; ".join(unsupported_claims),
+                source_connectors=item.source_connectors,
+            )
+        )
     leaked_claims = sorted(used_claims.intersection(blocked_claim_texts))
     if leaked_claims:
         findings.append(

@@ -195,6 +195,13 @@ content URL, allowed metric and allowed connector. Missing lineage returns
 `insufficient_data`; it cannot produce `directional_improvement` or
 `measured_success`.
 
+Goal 006 claim-gate work has started with a small compatible slice under
+Beads task `wilq-seo-sby`: quality review now blocks
+`unsupported_claim_used` when a structured draft includes a claim absent from
+the Claim Ledger. This does not replace the larger per-work-item Claim Ledger
+roadmap, but it prevents invented output claims from reaching human review as
+ready.
+
 ## In Scope
 
 Goal 005 includes:

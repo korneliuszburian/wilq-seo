@@ -206,6 +206,11 @@ API status later contradicts this state.
   source connectors from the measurement window before WILQ can return
   directional or success states. Missing lineage fails closed as
   `insufficient_data`.
+- Goal 006 candidate first gate slice is implemented: quality review now blocks
+  `unsupported_claim_used` when a structured draft uses a claim that is not in
+  the Claim Ledger at all. This closes the gap between "blocked claim leaked"
+  and "new unsupported claim invented by output"; both now stop human-review
+  readiness.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or

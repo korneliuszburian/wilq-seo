@@ -101,6 +101,21 @@ def test_adversarial_quality_review_blocks_forbidden_guarantee_claim() -> None:
     assert {"claim_ledger_blocks_quality", "forbidden_claim_used"} <= _blocker_codes(review)
 
 
+def test_adversarial_quality_review_blocks_claim_outside_ledger() -> None:
+    payload = _quality_payload()
+    payload["structured_output"]["sections"][0]["claims_used"].append(
+        "Ekologus przejmie pełną odpowiedzialność za wszystkie obowiązki BDO."
+    )
+
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+
+    assert response.status_code == 200
+    review = response.json()["quality_review"]
+    assert review["verdict"] == "blocked"
+    assert review["claim_safety"]["status"] == "blocked"
+    assert "unsupported_claim_used" in _blocker_codes(review)
+
+
 def test_adversarial_wordpress_publish_request_is_rejected_and_live_write_is_blocked() -> None:
     publish_response = TestClient(app).post(
         "/api/content/work-items/wordpress-draft-execution",
