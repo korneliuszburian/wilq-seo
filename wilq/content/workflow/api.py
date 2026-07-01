@@ -27,6 +27,7 @@ from wilq.content.drafts.preview import (
 from wilq.content.drafts.structured_generation import (
     build_structured_draft_generation_contract,
 )
+from wilq.content.drafts.variants import build_content_draft_variants
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichment,
     build_content_opportunity_enrichment,
@@ -73,6 +74,8 @@ from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
+    ContentWorkItemDraftVariantsRequest,
+    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementWindowRequest,
@@ -193,6 +196,20 @@ def build_content_work_item_structured_draft_generation_response(
     return ContentWorkItemStructuredDraftGenerationResponse(
         item=request.item,
         structured_generation_result=build_structured_draft_generation_contract(
+            item=request.item,
+            sales_brief=request.sales_brief,
+            claim_ledger=request.claim_ledger,
+            draft_package=request.draft_package,
+        ),
+    )
+
+
+def build_content_work_item_draft_variants_response(
+    request: ContentWorkItemDraftVariantsRequest,
+) -> ContentWorkItemDraftVariantsResponse:
+    return ContentWorkItemDraftVariantsResponse(
+        item=request.item,
+        draft_variants_result=build_content_draft_variants(
             item=request.item,
             sales_brief=request.sales_brief,
             claim_ledger=request.claim_ledger,

@@ -7,6 +7,7 @@ from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResp
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageResponse,
+    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightResponse,
@@ -57,6 +58,7 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/structured-draft-generation",
     ): ContentWorkItemStructuredDraftGenerationResponse,
+    ("POST", "/api/content/work-items/draft-variants"): ContentWorkItemDraftVariantsResponse,
     (
         "POST",
         "/api/content/work-items/structured-draft-runtime",

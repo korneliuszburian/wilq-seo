@@ -91,8 +91,15 @@ API status later contradicts this state.
   measurement baseline, and exposes operations context, knowledge constraints
   and measurement boundary fields through shared schemas. Missing or blocked
   enrichment blocks the brief instead of falling back to seed-only prose.
-- The next Goal 004 product slice is `wilq-seo-ao0`: claim-gated draft variants
-  through WILQ API + OpenAI SDK Structured Outputs.
+- Goal 004 draft variants slice `wilq-seo-ao0` is implemented.
+  `POST /api/content/work-items/draft-variants` returns typed variants for
+  preserve-first refresh, problem-led, service-led and FAQ/supporting paths.
+  Each variant wraps the existing Structured Outputs generation contract after
+  Sales Brief, Claim Ledger and Draft Package gates, keeps `publish_ready=false`
+  and exposes `wordpress_write_allowed=false`. Fake SDK runtime proof confirms
+  the variant contract can generate structured output without bypassing WILQ.
+- The next Goal 004 product slice is `wilq-seo-a09`: bounded revision
+  application with versioned diffs and quality-review rerun.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.

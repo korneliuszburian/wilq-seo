@@ -632,8 +632,19 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   end-to-end and contract-inventory pytest subset, dashboard API/route Vitest
   subset, dashboard typecheck, Ruff, mypy, changed-file complexity audit,
   Fallow audit and `git diff --check` passed.
-- Next product slice: `wilq-seo-ao0`, claim-gated draft variants through WILQ
-  API + OpenAI SDK Structured Outputs.
+- Draft variants slice `wilq-seo-ao0` added
+  `POST /api/content/work-items/draft-variants` and typed variants for
+  preserve-first refresh, problem-led, service-led and FAQ/supporting paths.
+  Variants are wrappers over the existing Structured Outputs generation
+  contract after Sales Brief, Claim Ledger and Draft Package gates; they keep
+  `publish_ready=false`, expose `wordpress_write_allowed=false`, and do not
+  call WordPress or create a second writer path.
+- Focused proof for the draft variants slice: draft variants/domain/API and
+  content workflow contract-inventory pytest subset, fake SDK live runtime
+  proof, Ruff, mypy, changed-file complexity audit and `git diff --check`
+  passed.
+- Next product slice: `wilq-seo-a09`, bounded revision application with
+  versioned diffs and quality-review rerun.
 
 2026-06-30:
 

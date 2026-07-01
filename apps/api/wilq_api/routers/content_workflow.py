@@ -16,6 +16,8 @@ from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
+    ContentWorkItemDraftVariantsRequest,
+    ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
     ContentWorkItemMeasurementWindowRequest,
@@ -44,6 +46,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
     build_content_work_item_draft_package_response,
+    build_content_work_item_draft_variants_response,
     build_content_work_item_human_review_response,
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
@@ -236,6 +239,16 @@ def content_work_item_structured_draft_generation(
     request: ContentWorkItemStructuredDraftGenerationRequest,
 ) -> ContentWorkItemStructuredDraftGenerationResponse:
     return build_content_work_item_structured_draft_generation_response(request)
+
+
+@router.post(
+    "/api/content/work-items/draft-variants",
+    response_model=ContentWorkItemDraftVariantsResponse,
+)
+def content_work_item_draft_variants(
+    request: ContentWorkItemDraftVariantsRequest,
+) -> ContentWorkItemDraftVariantsResponse:
+    return build_content_work_item_draft_variants_response(request)
 
 
 @router.post(
