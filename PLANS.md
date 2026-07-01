@@ -204,6 +204,13 @@ actions inside the existing UAT harness. Live proof on 2026-07-01 returned
 Service Profile gaps and two private review actions. This is UAT preparation,
 not proof that Wilku completed the session.
 
+The first Wilku-ready handoff for Goal 005 UAT is prepared at
+`docs/handoffs/2026-07-01-wilku-content-uat-ready.md` under Beads task
+`wilq-seo-w8o`. It is a normal review artifact generated from live UAT packet
+state: current blockers, Service Profile gaps, private review actions, source
+trace IDs and exact result fields. It must be filled after the real Wilku
+session before `wilq-seo-jst` can close.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

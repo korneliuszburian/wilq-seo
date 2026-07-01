@@ -155,6 +155,11 @@ API status later contradicts this state.
   `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`,
   `private_review_action_count=2`. This prepares Goal 005 UAT without claiming
   that Wilku completed the session.
+- A normal Wilku-ready UAT handoff now lives at
+  `docs/handoffs/2026-07-01-wilku-content-uat-ready.md`. It condenses the live
+  UAT packet into questions, current blockers, source trace IDs and result
+  fields to fill during the actual session. It is preparation only, not UAT
+  proof.
 - Master roadmap for "better BDOS.ai" direction now lives at
   `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
   maturity is estimated at `35-45%`: the API/safety/content workflow foundation
