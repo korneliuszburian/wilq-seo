@@ -237,12 +237,8 @@ def test_structured_generation_blocks_mismatched_or_unsafe_inputs() -> None:
     )
 
     assert "draft_package_mismatch" in [blocker.code for blocker in mismatched.blockers]
-    assert "draft_package_marked_publish_ready" in [
-        blocker.code for blocker in unsafe.blockers
-    ]
-    assert "claim_ledger_blocks_generation" in [
-        blocker.code for blocker in blocked.blockers
-    ]
+    assert "draft_package_marked_publish_ready" in [blocker.code for blocker in unsafe.blockers]
+    assert "claim_ledger_blocks_generation" in [blocker.code for blocker in blocked.blockers]
 
 
 def test_structured_generation_returns_strict_schema_contract_for_valid_item() -> None:
@@ -275,5 +271,13 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert contract.model_input.claims_allowed == [
         "Ekologus pomaga firmom w obowiązkach związanych z BDO."
     ]
+    assert len(contract.model_input.claim_markers) == 1
+    marker = contract.model_input.claim_markers[0]
+    assert marker.claim_id == "claim_service_scope"
+    assert marker.claim_text == "Ekologus pomaga firmom w obowiązkach związanych z BDO."
+    assert marker.claim_type == "service_claim"
+    assert marker.status == "allowed_with_evidence"
+    assert marker.evidence_ids == ["ev_wp_bdo"]
+    assert marker.reviewer_id is None
     assert contract.model_input.human_review_questions
     assert "gotowej do publikacji" in contract.system_instruction

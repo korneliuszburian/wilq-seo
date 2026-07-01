@@ -182,9 +182,7 @@ def _structured_output() -> dict[str, object]:
                 "heading": "Kogo dotyczy BDO",
                 "body_markdown": "BDO trzeba sprawdzić na podstawie sytuacji firmy.",
                 "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
-                "claims_used": [
-                    "Ekologus pomaga firmom uporządkować obowiązki BDO."
-                ],
+                "claims_used": ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
             }
         ],
         "faq": ["Czy każda firma musi mieć BDO?"],
@@ -228,6 +226,19 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
     assert contract["model_input"]["sections"][0]["evidence_ids"] == [
         "ev_gsc_bdo",
         "ev_wp_bdo",
+    ]
+    assert contract["model_input"]["claim_markers"] == [
+        {
+            "claim_id": "claim_general_bdo",
+            "claim_text": "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+            "claim_type": "service_claim",
+            "status": "allowed_with_evidence",
+            "evidence_ids": ["ev_wp_bdo"],
+            "reviewer_id": "wilku",
+        }
+    ]
+    assert contract["model_input"]["claims_allowed"] == [
+        "Ekologus pomaga firmom uporządkować obowiązki BDO."
     ]
     assert contract["output_schema"]["additionalProperties"] is False
 
@@ -298,9 +309,7 @@ def test_structured_draft_runtime_api_blocks_live_mode() -> None:
     result = response.json()["runtime_result"]
     assert result["status"] == "blocked"
     assert result["external_call_attempted"] is False
-    assert "live_generation_disabled" in {
-        blocker["code"] for blocker in result["blockers"]
-    }
+    assert "live_generation_disabled" in {blocker["code"] for blocker in result["blockers"]}
 
 
 def test_structured_draft_runtime_api_blocks_live_without_sdk_client(
@@ -431,9 +440,7 @@ def test_structured_draft_preview_api_blocks_claim_outside_contract() -> None:
     assert generation.status_code == 200
     contract = generation.json()["structured_generation_result"]["contract"]
     output = _structured_output()
-    output["sections"][0]["claims_used"].append(
-        "Ekologus gwarantuje pełną zgodność po kontakcie."
-    )
+    output["sections"][0]["claims_used"].append("Ekologus gwarantuje pełną zgodność po kontakcie.")
 
     response = TestClient(app).post(
         "/api/content/work-items/structured-draft-preview",
@@ -443,6 +450,4 @@ def test_structured_draft_preview_api_blocks_claim_outside_contract() -> None:
     assert response.status_code == 200
     result = response.json()["preview_result"]
     assert result["preview"] is None
-    assert [blocker["code"] for blocker in result["blockers"]] == [
-        "unknown_claim_reference"
-    ]
+    assert [blocker["code"] for blocker in result["blockers"]] == ["unknown_claim_reference"]

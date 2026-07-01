@@ -7,7 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field
 from wilq.content.briefs.sales import ContentSalesBrief
 from wilq.content.claims.ledger import (
     ContentClaimLedger,
+    ContentClaimStatus,
+    ContentClaimType,
     claim_ledger_allows_draft,
+    publish_ready_claims,
 )
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.workflow.models import ContentWorkItem, content_workflow_blockers
@@ -51,6 +54,17 @@ class StructuredDraftSourceFact(BaseModel):
     summary: str
 
 
+class StructuredDraftClaimMarker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    claim_id: str
+    claim_text: str
+    claim_type: ContentClaimType
+    status: ContentClaimStatus
+    evidence_ids: list[str] = Field(default_factory=list)
+    reviewer_id: str | None = None
+
+
 class StructuredDraftSectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -78,6 +92,7 @@ class StructuredDraftGenerationInput(BaseModel):
     cta_direction: str
     sections: list[StructuredDraftSectionInput] = Field(default_factory=list)
     source_facts: list[StructuredDraftSourceFact] = Field(default_factory=list)
+    claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
     claims_allowed: list[str] = Field(default_factory=list)
     claims_removed_or_blocked: list[str] = Field(default_factory=list)
     human_review_questions: list[str] = Field(default_factory=list)
@@ -115,9 +130,7 @@ class StructuredDraftOutput(BaseModel):
 class StructuredDraftGenerationContract(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_name: Literal["wilq_content_structured_draft_v1"] = (
-        "wilq_content_structured_draft_v1"
-    )
+    schema_name: Literal["wilq_content_structured_draft_v1"] = "wilq_content_structured_draft_v1"
     strict_schema: bool = True
     model_input: StructuredDraftGenerationInput
     output_schema: dict[str, object]
@@ -196,6 +209,17 @@ def build_structured_draft_generation_contract(
                 summary=fact.summary,
             )
             for fact in sales_brief.source_facts
+        ],
+        claim_markers=[
+            StructuredDraftClaimMarker(
+                claim_id=entry.id,
+                claim_text=entry.claim_text,
+                claim_type=entry.claim_type,
+                status=entry.status,
+                evidence_ids=entry.evidence_ids,
+                reviewer_id=entry.reviewer_id,
+            )
+            for entry in publish_ready_claims(claim_ledger)
         ],
         claims_allowed=draft_package.claims_used,
         claims_removed_or_blocked=draft_package.claims_removed_or_blocked,
@@ -357,6 +381,7 @@ def _user_instruction(model_input: StructuredDraftGenerationInput) -> str:
         f"Odbiorca: {model_input.target_reader}. "
         f"Problem kupującego: {model_input.buyer_problem}. "
         "Każda sekcja musi wskazywać użyte identyfikatory dowodów. "
+        "Używaj wyłącznie claimów z claim_markers/claims_allowed. "
         "Zwróć wynik zgodny ze ścisłym schematem."
     )
 

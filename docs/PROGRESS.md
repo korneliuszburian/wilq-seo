@@ -224,6 +224,11 @@ API status later contradicts this state.
   review when runtime output uses a claim absent from
   `contract.model_input.claims_allowed`. This catches invented output claims at
   the preview boundary, before they can look like a reviewable draft.
+- Structured draft generation now exposes `claim_markers` in
+  `contract.model_input`: claim ID, text, type, status, evidence IDs and
+  reviewer ID from the Claim Ledger. `claims_allowed` stays for backward
+  compatibility, but future gates can reason from typed source-claim-marker
+  metadata instead of text-only claims.
 - WordPress draft handoff audit lineage is hardened: audit evidence must overlap
   with the approved human review evidence and draft package evidence map, or
   handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
@@ -1714,6 +1719,11 @@ API status later contradicts this state.
 - `rtk uv run ruff check wilq/briefing/content_diagnostics.py tests/test_content_diagnostics.py`
 - `rtk uv run mypy wilq/briefing/content_diagnostics.py`
 - `rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+- `rtk uv run pytest tests/content/test_structured_generation_api.py tests/content/test_structured_draft_generation.py tests/content/test_structured_draft_preview.py -q`
+- `rtk uv run ruff check wilq/content/drafts/structured_generation.py tests/content/test_structured_generation_api.py tests/content/test_structured_draft_generation.py`
+- `rtk uv run mypy wilq/content/drafts/structured_generation.py`
+- `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
+- `rtk pnpm --dir packages/shared-schemas typecheck`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`
 - `rtk uv run pytest tests/test_api_contracts.py -q -k 'workflow_label_fallbacks_do_not_expose_raw_values or workflow_missing_contract_detail_fallback_explains_complete_process or workflows_are_decision_backed_operator_contracts'`
 - `rtk uv run python scripts/context_pack_language_guard.py --api-base http://127.0.0.1:8000`

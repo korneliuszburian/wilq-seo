@@ -527,6 +527,11 @@ Stop and record a blocker if:
   decisions when fresh primary content evidence exists. Ahrefs remains useful
   as a review/gap source, but stale Ahrefs must not outrank a fresh
   GSC/WordPress `refresh_or_merge` next step in the general marketer queue.
+- Goal 006 claim-gate slices should keep migrating the `ekologus-ai`
+  source-claim-marker pattern into WILQ API contracts. Structured generation
+  now carries typed `claim_markers` beside backward-compatible
+  `claims_allowed`, so future preview/quality gates can reason from claim ID,
+  type, status, evidence and reviewer metadata instead of text matching alone.
 
 ## Outcomes & Retrospective
 

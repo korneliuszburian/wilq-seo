@@ -574,6 +574,16 @@ describe("Content work item workflow schemas", () => {
                   summary: "GSC pokazuje popyt na temat BDO."
                 }
               ],
+              claim_markers: [
+                {
+                  claim_id: "claim_general_bdo",
+                  claim_text: "Ekologus pomaga firmom uporządkować obowiązki BDO.",
+                  claim_type: "service_claim",
+                  status: "allowed_with_evidence",
+                  evidence_ids: ["ev_wp_bdo"],
+                  reviewer_id: "wilku"
+                }
+              ],
               claims_allowed: ["Ekologus pomaga firmom uporządkować obowiązki BDO."],
               claims_removed_or_blocked: [],
               human_review_questions: ["Czy to brzmi jak Ekologus?"]

@@ -527,6 +527,30 @@ export const StructuredDraftSourceFactSchema = z.object({
   summary: z.string()
 });
 
+export const StructuredDraftClaimMarkerSchema = z.object({
+  claim_id: z.string(),
+  claim_text: z.string(),
+  claim_type: z.enum([
+    "service_claim",
+    "legal_requirement_claim",
+    "risk_claim",
+    "guarantee_claim",
+    "performance_claim",
+    "seo_claim",
+    "business_outcome_claim",
+    "environmental_claim"
+  ]),
+  status: z.enum([
+    "allowed_with_evidence",
+    "allowed_general",
+    "needs_human_review",
+    "blocked",
+    "blocked_until_measurement"
+  ]),
+  evidence_ids: z.array(z.string()).default([]),
+  reviewer_id: z.string().nullable().optional()
+});
+
 export const StructuredDraftSectionInputSchema = z.object({
   heading: z.string(),
   purpose: z.string(),
@@ -550,6 +574,7 @@ export const StructuredDraftGenerationInputSchema = z.object({
   cta_direction: z.string(),
   sections: z.array(StructuredDraftSectionInputSchema).default([]),
   source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
+  claim_markers: z.array(StructuredDraftClaimMarkerSchema).default([]),
   claims_allowed: z.array(z.string()).default([]),
   claims_removed_or_blocked: z.array(z.string()).default([]),
   human_review_questions: z.array(z.string()).default([])
