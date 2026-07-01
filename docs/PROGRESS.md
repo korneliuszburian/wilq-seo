@@ -362,6 +362,11 @@ API status later contradicts this state.
   `status=source_backed_review_required`, `service_card_count=6`, gaps
   `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
   `can_edit_cards=false`.
+- Service Profile now surfaces redacted `ekologus-ai` private source proposals
+  for review without compiling them into cards. Live proof after stack restart:
+  `proposal_count=2`, `review_required_count=2`, `approved_count=0`,
+  `redacted=true`, `ready_for_daily_content=false` and
+  `production_depth_status=source_backed_review_required`.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity

@@ -182,6 +182,12 @@ Endpoint: `GET /api/content/service-profile`; dashboard route:
 gaps `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
 `can_edit_cards=False`.
 
+Redacted private-source proposal display is implemented under Beads task
+`wilq-seo-8ye`. Service Profile now shows two `ekologus-ai` review-required
+proposals (`Eko-Opieka` and `Audyt zgodności`) with `approved_count=0` and
+`redacted=true`; they do not compile into cards or unlock daily-content
+readiness.
+
 Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
 `ContentDraftVariantsResult` now exposes the recommended variant, comparison
 dimensions, a `magic_score_used=false` policy and a safe next step. The first

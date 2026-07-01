@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,6 +11,10 @@ from wilq.content.knowledge.cards import (
     ContentKnowledgeClaimRule,
     ContentKnowledgeProductionDepthReadiness,
     content_knowledge_cards_response,
+)
+from wilq.content.knowledge.private_source_proposals import (
+    PrivateSourceProposal,
+    ekologus_private_source_proposal_registry,
 )
 from wilq.content.knowledge.source_facts import (
     ContentKnowledgeLifecycleStatus,
@@ -93,6 +98,9 @@ class ContentServiceProfilePrivateSourceProposalSummary(BaseModel):
     proposal_count: int
     review_required_count: int
     approved_count: int
+    proposal_source_labels: list[str] = Field(default_factory=list)
+    review_required_proposal_ids: list[str] = Field(default_factory=list)
+    redacted: bool
     safe_next_step: str
 
 
@@ -128,6 +136,7 @@ class ContentServiceProfileTechnicalTrace(BaseModel):
     knowledge_card_endpoint: str
     source_fact_count: int
     source_fact_ids: list[str] = Field(default_factory=list)
+    private_source_proposal_ids: list[str] = Field(default_factory=list)
     private_source_protocol_doc: str
 
 
@@ -153,6 +162,7 @@ class ContentServiceProfileResponse(BaseModel):
 def content_service_profile_response() -> ContentServiceProfileResponse:
     knowledge = content_knowledge_cards_response()
     source_fact_registry = ekologus_source_fact_registry()
+    private_proposal_registry = ekologus_private_source_proposal_registry()
     cards = knowledge.cards
     service_sections = [_service_section(card) for card in cards if card.card_type == "service"]
     coverage_gaps = _coverage_gaps(cards)
@@ -178,7 +188,9 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         coverage_summary=_coverage_summary(
             cards=cards,
             private_candidate_count=sum(
-                1 for fact in source_fact_registry.facts if fact.source_type == "private_candidate"
+                1
+                for proposal in private_proposal_registry.proposals
+                if proposal.source_type == "private_candidate"
             ),
             missing_required_area_count=len(coverage_gaps),
             status_label=knowledge.production_depth_readiness.status_label,
@@ -197,15 +209,8 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             for card in cards
             if card.card_type == "evidence_requirement" or card.evidence_requirements
         ],
-        private_source_proposal_summary=ContentServiceProfilePrivateSourceProposalSummary(
-            proposal_protocol_available=True,
-            proposal_count=0,
-            review_required_count=0,
-            approved_count=0,
-            safe_next_step=(
-                "Użyj protokołu private source proposals dopiero po metadata-only "
-                "intake i decyzji ownera."
-            ),
+        private_source_proposal_summary=_private_source_proposal_summary(
+            private_proposal_registry.proposals
         ),
         coverage_gaps=coverage_gaps,
         review_actions=_review_actions(coverage_gaps),
@@ -213,8 +218,44 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
             knowledge_card_endpoint="/api/content/knowledge-cards",
             source_fact_count=source_fact_registry.fact_count,
             source_fact_ids=[fact.source_id for fact in source_fact_registry.facts],
+            private_source_proposal_ids=[
+                proposal.proposal_id for proposal in private_proposal_registry.proposals
+            ],
             private_source_protocol_doc="docs/architecture/private-source-proposal-protocol.md",
         ),
+    )
+
+
+def _private_source_proposal_summary(
+    proposals: list[PrivateSourceProposal],
+) -> ContentServiceProfilePrivateSourceProposalSummary:
+    review_required = [
+        proposal for proposal in proposals if proposal.review_status == "review_required"
+    ]
+    approved = [proposal for proposal in proposals if proposal.review_status == "approved"]
+    if review_required:
+        safe_next_step = (
+            "Pokaż redacted propozycje Wilkowi i zdecyduj, czy któraś ma stać się "
+            "reviewed internal source fact; żadna nie odblokowuje production-depth."
+        )
+    else:
+        safe_next_step = (
+            "Użyj protokołu private source proposals dopiero po metadata-only "
+            "intake i decyzji ownera."
+        )
+    return ContentServiceProfilePrivateSourceProposalSummary(
+        proposal_protocol_available=True,
+        proposal_count=len(proposals),
+        review_required_count=len(review_required),
+        approved_count=len(approved),
+        proposal_source_labels=_unique(
+            proposal.source_locator_label for proposal in proposals
+        ),
+        review_required_proposal_ids=[
+            proposal.proposal_id for proposal in review_required
+        ],
+        redacted=True,
+        safe_next_step=safe_next_step,
     )
 
 
@@ -395,3 +436,11 @@ def _redacted_lineage(lineage: list[str]) -> list[str]:
         for item in lineage
         if item.startswith("https://") or item.startswith("docs/") or item.startswith("wilq/")
     ]
+
+
+def _unique(values: Iterable[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        if value and value not in result:
+            result.append(value)
+    return result

@@ -313,7 +313,15 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         for section in response.service_sections
     )
     assert response.private_source_proposal_summary.proposal_protocol_available is True
-    assert response.private_source_proposal_summary.proposal_count == 0
+    assert response.private_source_proposal_summary.proposal_count == 2
+    assert response.private_source_proposal_summary.review_required_count == 2
+    assert response.private_source_proposal_summary.approved_count == 0
+    assert response.private_source_proposal_summary.redacted is True
+    assert response.coverage_summary.private_candidate_count == 2
+    assert response.technical_trace.private_source_proposal_ids == [
+        "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
+    ]
     assert response.review_actions
 
 

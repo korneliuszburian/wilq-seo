@@ -139,9 +139,17 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
               ? "protokół proposal dostępny"
               : "brak protokołu",
             `${data.private_source_proposal_summary.proposal_count} propozycji`,
+            `${data.private_source_proposal_summary.review_required_count} do review`,
             `${data.private_source_proposal_summary.approved_count} zatwierdzonych`
           ]}
         />
+        {data.private_source_proposal_summary.proposal_source_labels.length > 0 ? (
+          <ul className="mt-3 space-y-1 text-sm text-slate-600">
+            {data.private_source_proposal_summary.proposal_source_labels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        ) : null}
         <details className="mt-4 text-xs text-slate-500">
           <summary className="cursor-pointer font-semibold text-slate-600">Szczegóły techniczne</summary>
           <div className="mt-2 space-y-1">
@@ -220,4 +228,3 @@ function List({ label, values }: { label: string; values: string[] }) {
     </div>
   );
 }
-

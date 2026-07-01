@@ -187,9 +187,9 @@ contracts need it. The likely sequence is:
 
 1. design read-only Service Profile view model;
 2. add private proposal schema/local loader only if a local artifact exists;
-3. show proposal coverage as review-required/private in Service Profile;
+3. show proposal coverage as review-required/private in Service Profile
+   (implemented for two redacted `ekologus-ai` handoff candidates);
 4. add promotion tests before compiling approved proposals into cards.
 
 This keeps WILQ aligned with the BDOS-class pattern: controlled adapters and
 review gates around a canonical API, not prompt-only knowledge stuffing.
-

@@ -886,6 +886,7 @@ function structuredDraftGenerationContract() {
         }
       ],
       claims_allowed: [],
+      claim_markers: [],
       claims_removed_or_blocked: [],
       human_review_questions: ["Czy to brzmi jak Ekologus?"]
     },

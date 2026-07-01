@@ -366,6 +366,9 @@ export const ContentServiceProfilePrivateSourceProposalSummarySchema = z.object(
   proposal_count: z.number(),
   review_required_count: z.number(),
   approved_count: z.number(),
+  proposal_source_labels: z.array(z.string()).default([]),
+  review_required_proposal_ids: z.array(z.string()).default([]),
+  redacted: z.boolean(),
   safe_next_step: z.string()
 });
 
@@ -395,6 +398,7 @@ export const ContentServiceProfileTechnicalTraceSchema = z.object({
   knowledge_card_endpoint: z.string(),
   source_fact_count: z.number(),
   source_fact_ids: z.array(z.string()).default([]),
+  private_source_proposal_ids: z.array(z.string()).default([]),
   private_source_protocol_doc: z.string()
 });
 

@@ -45,6 +45,9 @@ describe("ServiceProfileSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
+    expect(screen.getByText("2 do review")).toBeInTheDocument();
+    expect(screen.getByText("ekologus-ai reviewed handoff: Eko-Opieka")).toBeInTheDocument();
+    expect(screen.getByText("ekologus-ai reviewed handoff: Audyt zgodności")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /promuj/i })).not.toBeInTheDocument();
   });
@@ -82,7 +85,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       approved_current_count: 0,
       stale_count: 0,
       rejected_count: 0,
-      private_candidate_count: 0,
+      private_candidate_count: 2,
       missing_required_area_count: 2,
       ready_for_daily_content: false,
       status_label: "źródła są, wymagają review",
@@ -118,9 +121,18 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
     evidence_policy_sections: [],
     private_source_proposal_summary: {
       proposal_protocol_available: true,
-      proposal_count: 0,
-      review_required_count: 0,
+      proposal_count: 2,
+      review_required_count: 2,
       approved_count: 0,
+      proposal_source_labels: [
+        "ekologus-ai reviewed handoff: Eko-Opieka",
+        "ekologus-ai reviewed handoff: Audyt zgodności"
+      ],
+      review_required_proposal_ids: [
+        "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01"
+      ],
+      redacted: true,
       safe_next_step:
         "Użyj protokołu private source proposals dopiero po metadata-only intake i decyzji ownera."
     },
@@ -141,8 +153,11 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       knowledge_card_endpoint: "/api/content/knowledge-cards",
       source_fact_count: 5,
       source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+      private_source_proposal_ids: [
+        "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
+        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01"
+      ],
       private_source_protocol_doc: "docs/architecture/private-source-proposal-protocol.md"
     }
   };
 }
-

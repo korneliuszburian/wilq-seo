@@ -1,7 +1,7 @@
 # WILQ Read-Only Service Profile Review Surface
 
 Date: 2026-07-01
-Status: design, not implemented
+Status: implemented for read-only public cards and redacted private proposal summary
 Related Beads task: `wilq-seo-94k`
 Related protocol: `docs/architecture/private-source-proposal-protocol.md`
 
@@ -44,7 +44,7 @@ The endpoint should be built from existing WILQ contracts:
 
 - `content_knowledge_cards_response()`;
 - `ekologus_source_fact_registry()`;
-- future private source proposal registry, if implemented;
+- redacted private source proposal registry for reviewed handoff candidates;
 - optional content queue coverage summary.
 
 It should not call external connectors directly. Freshness and evidence state
@@ -144,7 +144,8 @@ Known initial gaps from Goal 005:
 
 - water permit / `operat wodnoprawny` has no direct service source card;
 - source-backed public cards are still review-required, not production-depth;
-- private/internal facts have no reviewed proposal path yet;
+- private/internal proposals are visible only as redacted review-required
+  proposal summaries until a reviewed promotion path exists;
 - Service Profile write/promotion path is intentionally absent.
 
 ### `review_actions[]`
@@ -217,7 +218,7 @@ Forbidden:
 - setting `approved_current` from the UI;
 - changing lifecycle or freshness without a review/audit path;
 - storing raw private source detail in review requests;
-- treating a review request as approval.
+- treating a review request or private proposal summary as approval.
 
 ## Test Plan
 
@@ -230,7 +231,8 @@ API tests:
 - no `approved_current` or `production_depth` readiness is claimed unless the
   source facts are approved;
 - water-permit gap appears while no direct service card exists;
-- private proposal coverage, when present later, displays redacted labels only.
+- private proposal coverage displays redacted labels only and keeps
+  `approved_count=0` unless a future review/audit path approves a proposal.
 
 Shared schema tests:
 
@@ -261,4 +263,3 @@ Skill/non-interactive eval:
 
 This keeps the product useful for Wilku now while preserving the source-review
 discipline needed for BDOS-class WILQ.
-
