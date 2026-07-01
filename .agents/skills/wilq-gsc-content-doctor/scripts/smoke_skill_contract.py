@@ -137,12 +137,26 @@ def main() -> int:
             raise SystemExit(
                 "Content diagnostics GSC contract must expose partial_possible completeness"
             )
+        if api_gsc_contract.get("expected_data_delay_days_min") != 2:
+            raise SystemExit("Content diagnostics GSC contract must expose 2-day delay minimum")
+        if api_gsc_contract.get("expected_data_delay_days_max") != 3:
+            raise SystemExit("Content diagnostics GSC contract must expose 3-day delay maximum")
+        if api_gsc_contract.get("read_granularity") != "single_day_latest_available":
+            raise SystemExit("Content diagnostics GSC contract must expose single-day reads")
+        if api_gsc_contract.get("api_recommended_page_size") != 25000:
+            raise SystemExit("Content diagnostics GSC contract must expose official 25k page size")
+        if api_gsc_contract.get("api_daily_row_cap_per_search_type") != 50000:
+            raise SystemExit("Content diagnostics GSC contract must expose official 50k row cap")
         if not str(api_gsc_contract.get("summary_label") or "").strip():
             raise SystemExit("Content diagnostics GSC contract summary_label is missing")
         if "nie pełną sumą całego ruchu" not in str(
             api_gsc_contract.get("partial_detail_warning_label") or ""
         ):
             raise SystemExit("Content diagnostics GSC contract must warn about partial totals")
+        if "25 000 wierszy" not in str(api_gsc_contract.get("official_limits_label") or ""):
+            raise SystemExit("Content diagnostics GSC contract must explain official paging")
+        if "rowLimit=" not in str(api_gsc_contract.get("wilq_internal_cap_label") or ""):
+            raise SystemExit("Content diagnostics GSC contract must explain WILQ internal cap")
     gsc_refresh_evidence_ids = [
         str(evidence_id)
         for evidence_id in endpoint_evidence_ids

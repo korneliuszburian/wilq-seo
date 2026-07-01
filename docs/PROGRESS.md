@@ -464,6 +464,15 @@ API status later contradicts this state.
   `detail_data_completeness=partial_possible`, detail date `2026-06-29`,
   `rowLimit=250` and a Polish warning that query/page rows are not full traffic
   totals.
+- The same API contract now carries official GSC operational caveats:
+  `expected_data_delay_days_min=2`, `expected_data_delay_days_max=3`,
+  `read_granularity=single_day_latest_available`,
+  `api_recommended_page_size=25000` and
+  `api_daily_row_cap_per_search_type=50000`. It also distinguishes the official
+  Search Analytics paging model from WILQ's current safe internal cap
+  `rowLimit=250` / `max rows=1000`. Non-interactive proof
+  `.local-lab/evals/codex-skill/20260701T232526Z` passed after the oracle was
+  tightened to require those caveats.
 - Tactical queue now deduplicates metric facts by connector, metric name and
   dimensions before building items, choosing the newest collected fact. This
   prevents older GSC refresh evidence for the same `query,page` identity from

@@ -254,6 +254,14 @@ available-date, `search_type=web`, `detail_dimensions=query,page`,
 so skills and dashboard code no longer need to infer this from raw
 `latest_refreshes.metric_summary`.
 
+The same contract now distinguishes official Search Analytics limits from
+WILQ's smaller operating cap under Beads task `wilq-seo-llp`: typical 2-3 day
+data delay, single-day latest-available reads, official 25k page size, 50k
+daily row cap per search type, and the current WILQ `rowLimit=250` /
+`max rows=1000` query/page cap. The tightened `wilq-gsc-content-doctor`
+non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260701T232526Z`.
+
 Marketing brief action items now preserve the same refresh-first semantics as
 stale daily decisions. If a safe next action is attached to stale Merchant or
 content data, it becomes a blocker titled `Odśwież dane przed akcją` and points

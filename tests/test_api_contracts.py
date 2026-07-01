@@ -15453,18 +15453,28 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "ev_refresh_" in " ".join(gsc_contract["evidence_ids"])
     assert gsc_contract["data_availability_checked"] is True
     assert gsc_contract["date_availability_status"] == "available"
+    assert gsc_contract["expected_data_delay_days_min"] == 2
+    assert gsc_contract["expected_data_delay_days_max"] == 3
     assert gsc_contract["availability_date_start"] == "2026-06-21"
     assert gsc_contract["availability_date_end"] == "2026-06-30"
     assert gsc_contract["latest_available_detail_date"] == "2026-06-29"
     assert gsc_contract["search_type"] == "web"
     assert gsc_contract["detail_dimensions"] == "query,page"
     assert gsc_contract["detail_data_completeness"] == "partial_possible"
+    assert gsc_contract["read_granularity"] == "single_day_latest_available"
+    assert gsc_contract["api_recommended_page_size"] == 25000
+    assert gsc_contract["api_daily_row_cap_per_search_type"] == 50000
     assert gsc_contract["query_page_row_limit"] == 250
     assert gsc_contract["query_page_max_rows"] == 1000
     assert gsc_contract["query_page_rows_truncated"] is False
     assert "najnowszy dostępny dzień" in gsc_contract["summary_label"]
     assert "nie pełną sumą całego ruchu" in gsc_contract["partial_detail_warning_label"]
     assert "rowLimit=250" in gsc_contract["paging_label"]
+    assert "2-3 dniach" in gsc_contract["official_limits_label"]
+    assert "25 000 wierszy" in gsc_contract["official_limits_label"]
+    assert "50 000 wierszy" in gsc_contract["official_limits_label"]
+    assert "rowLimit=250" in gsc_contract["wilq_internal_cap_label"]
+    assert "max rows=1000" in gsc_contract["wilq_internal_cap_label"]
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
     assert "act_prepare_content_refresh_queue" in payload["action_ids"]

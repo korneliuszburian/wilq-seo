@@ -4149,6 +4149,8 @@ class ContentGscSearchAnalyticsContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     data_availability_checked: bool = False
     date_availability_status: str = ""
+    expected_data_delay_days_min: int = 2
+    expected_data_delay_days_max: int = 3
     availability_date_start: str | None = None
     availability_date_end: str | None = None
     detail_date_start: str | None = None
@@ -4157,12 +4159,17 @@ class ContentGscSearchAnalyticsContract(BaseModel):
     search_type: str = ""
     detail_dimensions: str = ""
     detail_data_completeness: str = ""
+    read_granularity: Literal["single_day_latest_available"] = "single_day_latest_available"
+    api_recommended_page_size: int = 25000
+    api_daily_row_cap_per_search_type: int = 50000
     query_page_row_limit: int | None = None
     query_page_max_rows: int | None = None
     query_page_rows_truncated: bool = False
     summary_label: str = ""
     partial_detail_warning_label: str = ""
     paging_label: str = ""
+    official_limits_label: str = ""
+    wilq_internal_cap_label: str = ""
 
 
 class ContentDiagnosticsResponse(BaseModel):

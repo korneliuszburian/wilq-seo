@@ -53,13 +53,19 @@ musi użyć metadanych z najnowszego `google_search_console` `vendor_read`:
   oznaczają, że WILQ najpierw sprawdził dostępne daty przez wymiar `date`;
 - `date_start`/`date_end` w metric summary oznaczają najnowszy dostępny dzień
   szczegółów, a nie automatycznie dzisiejszą datę;
+- `expected_data_delay_days_min=2` i `expected_data_delay_days_max=3`
+  oznaczają typowe opóźnienie dostępności danych Search Analytics;
 - `search_type=web` ogranicza interpretację do web search;
 - `detail_dimensions=query,page` i
   `detail_data_completeness=partial_possible` oznaczają, że wiersze
   query/page są sygnałem do decyzji treściowej, ale nie pełną sumą ruchu;
+- `read_granularity=single_day_latest_available`,
+  `api_recommended_page_size=25000` i
+  `api_daily_row_cap_per_search_type=50000` opisują oficjalny wzorzec
+  pobierania większych zbiorów danych;
 - `query_page_row_limit`, `query_page_max_rows` i
-  `query_page_rows_truncated` mówią, czy odczyt był stronicowany i czy wynik
-  mógł zostać ucięty.
+  `query_page_rows_truncated` mówią, jak WILQ ograniczył bieżący odczyt
+  operacyjny i czy wynik mógł zostać ucięty.
 
 W odpowiedzi dla operatora powiedz po polsku, jeśli decyzja opiera się na
 najnowszym dostępnym dniu i częściowych danych query/page. Nie obiecuj pełnej

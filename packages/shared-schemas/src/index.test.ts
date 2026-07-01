@@ -248,6 +248,8 @@ describe("ContentGscSearchAnalyticsContractSchema", () => {
     evidence_ids: ["ev_refresh_refresh_google_search_console_916af598b0fd"],
     data_availability_checked: true,
     date_availability_status: "available",
+    expected_data_delay_days_min: 2,
+    expected_data_delay_days_max: 3,
     availability_date_start: "2026-06-21",
     availability_date_end: "2026-06-30",
     detail_date_start: "2026-06-29",
@@ -256,13 +258,19 @@ describe("ContentGscSearchAnalyticsContractSchema", () => {
     search_type: "web",
     detail_dimensions: "query,page",
     detail_data_completeness: "partial_possible",
+    read_granularity: "single_day_latest_available",
+    api_recommended_page_size: 25000,
+    api_daily_row_cap_per_search_type: 50000,
     query_page_row_limit: 250,
     query_page_max_rows: 1000,
     query_page_rows_truncated: false,
     summary_label: "GSC Search Analytics: najnowszy dostępny dzień szczegółów 2026-06-29.",
     partial_detail_warning_label:
       "Dane query/page z Search Analytics są sygnałem, nie pełną sumą całego ruchu.",
-    paging_label: "Paginacja query/page: rowLimit=250, max rows=1000; wynik nie zgłasza ucięcia."
+    paging_label: "Paginacja query/page: rowLimit=250, max rows=1000; wynik nie zgłasza ucięcia.",
+    official_limits_label:
+      "Oficjalny wzorzec GSC: dane zwykle pojawiają się po 2-3 dniach.",
+    wilq_internal_cap_label: "Ten odczyt WILQ jest operacyjnie ograniczony."
   };
 
   it("accepts only the typed GSC Search Analytics read contract shape", () => {
@@ -279,6 +287,13 @@ describe("ContentGscSearchAnalyticsContractSchema", () => {
       ContentGscSearchAnalyticsContractSchema.safeParse({
         ...contract,
         query_page_rows_truncated: "false"
+      }).success
+    ).toBe(false);
+
+    expect(
+      ContentGscSearchAnalyticsContractSchema.safeParse({
+        ...contract,
+        read_granularity: "monthly_rollup"
       }).success
     ).toBe(false);
   });

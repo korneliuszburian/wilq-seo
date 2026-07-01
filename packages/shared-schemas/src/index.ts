@@ -2306,6 +2306,8 @@ export const ContentGscSearchAnalyticsContractSchema = z.object({
   evidence_ids: z.array(z.string()).default([]),
   data_availability_checked: z.boolean(),
   date_availability_status: z.string(),
+  expected_data_delay_days_min: z.number().default(2),
+  expected_data_delay_days_max: z.number().default(3),
   availability_date_start: z.string().nullable().optional(),
   availability_date_end: z.string().nullable().optional(),
   detail_date_start: z.string().nullable().optional(),
@@ -2314,12 +2316,17 @@ export const ContentGscSearchAnalyticsContractSchema = z.object({
   search_type: z.string(),
   detail_dimensions: z.string(),
   detail_data_completeness: z.string(),
+  read_granularity: z.literal("single_day_latest_available").default("single_day_latest_available"),
+  api_recommended_page_size: z.number().default(25000),
+  api_daily_row_cap_per_search_type: z.number().default(50000),
   query_page_row_limit: z.number().nullable().optional(),
   query_page_max_rows: z.number().nullable().optional(),
   query_page_rows_truncated: z.boolean(),
   summary_label: z.string(),
   partial_detail_warning_label: z.string(),
-  paging_label: z.string()
+  paging_label: z.string(),
+  official_limits_label: z.string().default(""),
+  wilq_internal_cap_label: z.string().default("")
 });
 
 export const ContentMarketerDecisionSchema = z.object({

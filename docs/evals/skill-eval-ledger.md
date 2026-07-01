@@ -69,6 +69,14 @@ Result:
   recommendation and one validated `act_prepare_content_refresh_queue` action.
   The output explicitly says the decision uses the newest available day and
   partial query/page data, not a full traffic or ranking-success claim.
+- Follow-up hardening under Beads `wilq-seo-llp`: `/api/content/diagnostics`
+  now also exposes official Search Analytics caveats in
+  `gsc_search_analytics_contract`: typical 2-3 day data delay,
+  `read_granularity=single_day_latest_available`,
+  `api_recommended_page_size=25000`,
+  `api_daily_row_cap_per_search_type=50000` and WILQ's current internal
+  `rowLimit=250` / `max rows=1000` cap. Tightened non-interactive oracle passed
+  at `.local-lab/evals/codex-skill/20260701T232526Z`.
 
 ## 2026-07-01 - `wilq-content-operator` eval case and harness guard
 

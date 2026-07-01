@@ -300,6 +300,17 @@ def _gsc_search_analytics_contract(
             "nie pełną sumą całego ruchu."
         ),
         paging_label=_gsc_search_analytics_paging_label(row_limit, max_rows, rows_truncated),
+        official_limits_label=(
+            "Oficjalny wzorzec GSC: dane zwykle pojawiają się po 2-3 dniach; "
+            "dla pełniejszych odczytów pobieraj pojedynczy dzień i stronicuj "
+            "do 25 000 wierszy na żądanie, maksymalnie 50 000 wierszy dziennie "
+            "dla danego typu wyszukiwania."
+        ),
+        wilq_internal_cap_label=(
+            "Ten odczyt WILQ jest operacyjnie ograniczony do query/page "
+            f"rowLimit={row_limit or 'unknown'} i max rows={max_rows or 'unknown'}; "
+            "to bezpieczny sygnał decyzyjny, nie eksport całego Search Analytics."
+        ),
     )
 
 
