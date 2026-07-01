@@ -161,6 +161,13 @@ commit raw internal materials or let private review-required facts unlock
 production-depth cards. The next useful WILQ slices are read-only Service
 Profile review and/or a private source-proposal schema.
 
+Private source proposal protocol is designed in
+`docs/architecture/private-source-proposal-protocol.md` under Beads task
+`wilq-seo-wtf`. It is a design contract only: no automatic import, no raw
+private text, no paths/filenames/contact data, and no production-depth unlock
+without review/eval. Future implementation should start with read-only Service
+Profile coverage display.
+
 ## In Scope
 
 Goal 005 includes:

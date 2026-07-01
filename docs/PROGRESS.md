@@ -238,6 +238,13 @@ API status later contradicts this state.
   owner review -> import proof/eval. It should feed future local-only or
   redacted source proposals and read-only Service Profile review, not automatic
   RAG, raw private source facts, special packets or production-depth cards.
+- Private source proposals now have an explicit design protocol in
+  `docs/architecture/private-source-proposal-protocol.md` under Beads task
+  `wilq-seo-wtf`. The proposal layer maps private materials to existing
+  `ContentSourceFact` enums only after metadata-only intake, owner/audience/risk
+  decision, schema-gated condensation, review and eval. It forbids raw private
+  text, full paths, filenames, contact data and protected snippets in committed
+  WILQ artifacts.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity

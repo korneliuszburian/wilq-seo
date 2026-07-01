@@ -94,6 +94,12 @@ First Goal 005 source-pack proof:
   catalog start as local-only/redacted `review_required` proposals and do not
   unlock `approved_current` cards or production-depth readiness without WILQ
   review.
+- `docs/architecture/private-source-proposal-protocol.md` defines the WILQ
+  private source proposal design. It reuses existing source-fact concepts
+  (`private_candidate`, `reviewed_internal`, `private_local`, `redacted_only`,
+  `review_required`, `approved`) and adds a fail-closed review protocol before
+  any private proposal can become a reviewed source fact or appear in a
+  read-only Service Profile.
 
 ## Non-Negotiable Rules
 
