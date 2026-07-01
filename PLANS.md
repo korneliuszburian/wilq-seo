@@ -223,6 +223,11 @@ available dates first, use the latest available day for detailed query/page
 facts, page with `rowLimit`/`startRow`, and keep the stored result bounded and
 sanitized.
 
+Content diagnostics evidence is now condensed through the same latest metric
+fact identity rule as tactical queue under Beads task `wilq-seo-alf`. This
+keeps GSC/content skill context focused on current proof instead of dragging
+stale duplicate refresh IDs into every operator answer.
+
 ## In Scope
 
 Goal 005 includes:

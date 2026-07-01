@@ -4,6 +4,7 @@ from collections.abc import Iterable
 
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.briefing.metric_fact_identity import latest_metric_facts_by_identity
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -109,6 +110,7 @@ def build_content_diagnostics(
         metric_facts if metric_facts is not None else _content_metric_facts(CONTENT_CONNECTOR_IDS)
     )
     metric_facts = [content_metric_fact_with_api_label(fact) for fact in metric_facts]
+    metric_facts = latest_metric_facts_by_identity(metric_facts)
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
     all_tactical_items = (

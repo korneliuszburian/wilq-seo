@@ -278,6 +278,10 @@ API status later contradicts this state.
   prevents older GSC refresh evidence for the same `query,page` identity from
   polluting the current content decision metrics; section-level repetition of
   the same tactical item remains a view-model concern.
+- Content diagnostics now uses the same latest-fact identity condensation
+  before building sections and response evidence. `wilq-gsc-content-doctor`
+  smoke after stack restart passed with the evidence trace reduced to 15
+  current proof IDs instead of dozens of stale WordPress/GSC refresh IDs.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private
