@@ -1104,6 +1104,12 @@ Current outcome:
   `uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`,
   focused Ruff, focused mypy, changed-file complexity audit and
   `git diff --check`.
+- Goal 003 per-item state slice `wilq-seo-cdy` started. First green sub-slice
+  added selected-work-item snapshot, human-review and audit endpoints for
+  concrete queue item IDs. Focused tests prove review/audit for one queue item
+  do not unlock another item and blocked queue items do not get fake workflow
+  snapshots. The Beads issue remains open because persisted generated output
+  and quality-review state will be added when those domains land.
 
 Current risk:
 

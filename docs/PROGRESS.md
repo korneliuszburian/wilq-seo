@@ -92,6 +92,14 @@ API status later contradicts this state.
   public final canonical URLs and one Ahrefs review candidate blocked because
   it has no final canonical URL. Dev/preview URLs are rejected as final
   canonical targets.
+- Goal 003 per-item state slice `wilq-seo-cdy` is in progress. Current
+  sub-slice added selected-work-item snapshot, human review and audit endpoints:
+  `GET /api/content/work-items/{work_item_id}/snapshot`,
+  `POST /api/content/work-items/{work_item_id}/human-review` and
+  `POST /api/content/work-items/{work_item_id}/audit`. Tests prove review/audit
+  for item A do not unlock item B, and blocked queue items do not receive fake
+  workflow snapshots. Persisted generated output and quality-review state remain
+  in scope for later `wilq-seo-cdy` sub-slices after those domains exist.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
@@ -1149,6 +1157,7 @@ API status later contradicts this state.
 ## Recent Verification Commands
 
 - `rtk uv run pytest tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run pytest tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
 - `rtk uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`
 - `rtk uv run ruff check wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py wilq/content/workflow/api.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_queue_api.py`
 - `rtk uv run mypy wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py tests/content/test_content_work_item_queue_api.py`

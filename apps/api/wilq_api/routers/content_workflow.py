@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
+from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
@@ -28,6 +30,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
     build_content_work_item_diagnostics_snapshot_response,
+    build_content_work_item_diagnostics_snapshot_response_for_work_item,
     build_content_work_item_draft_package_response,
     build_content_work_item_human_review_response,
     build_content_work_item_measurement_window_response,
@@ -76,6 +79,16 @@ def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
     )
 
 
+@router.get(
+    "/api/content/work-items/{work_item_id}/snapshot",
+    response_model=ContentWorkItemWorkflowSnapshotResponse,
+)
+def content_work_item_snapshot_for_selected_item(
+    work_item_id: str,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    return _snapshot_for_work_item_or_404(work_item_id)
+
+
 @router.post(
     "/api/content/work-items/snapshot/human-review",
     response_model=ContentWorkItemHumanReviewResponse,
@@ -87,6 +100,23 @@ def content_work_item_snapshot_human_review(
         build_content_diagnostics(),
         request,
     )
+    if response.wordpress_handoff_allowed and response.review is not None:
+        content_workflow_store().save_human_review(response.review)
+    return response
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/human-review",
+    response_model=ContentWorkItemHumanReviewResponse,
+)
+def content_work_item_human_review_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemSnapshotHumanReviewRequest,
+) -> ContentWorkItemHumanReviewResponse:
+    response = _snapshot_for_work_item_or_404(
+        work_item_id,
+        human_review=request.review,
+    ).human_review
     if response.wordpress_handoff_allowed and response.review is not None:
         content_workflow_store().save_human_review(response.review)
     return response
@@ -107,6 +137,25 @@ def content_work_item_snapshot_audit(
         request,
         human_review=review,
     )
+    if response.handoff_result.handoff is not None:
+        content_workflow_store().save_audit(request.audit)
+    return response
+
+
+@router.post(
+    "/api/content/work-items/{work_item_id}/audit",
+    response_model=ContentWorkItemWordPressDraftHandoffResponse,
+)
+def content_work_item_audit_for_selected_item(
+    work_item_id: str,
+    request: ContentWorkItemSnapshotAuditRequest,
+) -> ContentWorkItemWordPressDraftHandoffResponse:
+    review = content_workflow_store().latest_human_review(work_item_id)
+    response = _snapshot_for_work_item_or_404(
+        work_item_id,
+        human_review=review,
+        audit=request.audit,
+    ).wordpress_handoff
     if response.handoff_result.handoff is not None:
         content_workflow_store().save_audit(request.audit)
     return response
@@ -210,3 +259,34 @@ def content_work_item_measurement_window(
     request: ContentWorkItemMeasurementWindowRequest,
 ) -> ContentWorkItemMeasurementWindowResponse:
     return build_content_work_item_measurement_window_response(request)
+
+
+def _snapshot_for_work_item_or_404(
+    work_item_id: str,
+    *,
+    human_review: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
+) -> ContentWorkItemWorkflowSnapshotResponse:
+    diagnostics = build_content_diagnostics()
+    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        work_item_id,
+        human_review=human_review,
+        audit=audit,
+    )
+    if snapshot is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Content work item is not available for the gated workflow.",
+        )
+    review = content_workflow_store().latest_human_review(work_item_id)
+    if human_review is None and review is not None:
+        audit_record = content_workflow_store().latest_audit_for_review(review.id)
+        snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+            diagnostics,
+            work_item_id,
+            human_review=review,
+            audit=audit_record,
+        )
+        assert snapshot is not None
+    return snapshot

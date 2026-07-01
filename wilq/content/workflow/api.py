@@ -454,6 +454,38 @@ def build_content_work_item_diagnostics_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
+    return _build_content_work_item_diagnostics_snapshot_response_from_decision(
+        decision,
+        human_review=human_review,
+        audit=audit,
+    )
+
+
+def build_content_work_item_diagnostics_snapshot_response_for_work_item(
+    diagnostics: ContentDiagnosticsResponse,
+    work_item_id: str,
+    human_review: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
+) -> ContentWorkItemWorkflowSnapshotResponse | None:
+    decision = _select_content_work_item_decision_for_work_item(
+        diagnostics.decision_queue,
+        work_item_id,
+    )
+    if decision is None:
+        return None
+    return _build_content_work_item_diagnostics_snapshot_response_from_decision(
+        decision,
+        human_review=human_review,
+        audit=audit,
+    )
+
+
+def _build_content_work_item_diagnostics_snapshot_response_from_decision(
+    decision: ContentDecisionItem,
+    *,
+    human_review: ContentHumanReview | None = None,
+    audit: ContentWordPressDraftAuditEnvelope | None = None,
+) -> ContentWorkItemWorkflowSnapshotResponse:
     item = content_work_item_from_decision(decision)
     inventory_record = content_inventory_record_from_decision(decision)
     assert inventory_record is not None
@@ -751,6 +783,24 @@ def _select_content_work_item_decision(
         and decision.evidence_ids
         and decision.source_connectors
     )
+
+
+def _select_content_work_item_decision_for_work_item(
+    decisions: list[ContentDecisionItem],
+    work_item_id: str,
+) -> ContentDecisionItem | None:
+    for decision in decisions:
+        if f"content_work_item_{decision.id}" != work_item_id:
+            continue
+        if (
+            decision.status == "ready"
+            and decision.final_canonical_url
+            and decision.evidence_ids
+            and decision.source_connectors
+        ):
+            return decision
+        return None
+    return None
 
 
 def _inventory_and_preflight(
