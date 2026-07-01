@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.knowledge.source_facts import (
+    ContentKnowledgeLifecycleStatus,
+    ContentSourceFact,
+    ekologus_source_facts,
+    knowledge_lifecycle_from_review_status,
+)
 from wilq.content.workflow.models import ContentWorkItem
 
 ContentKnowledgeCardType = Literal[
@@ -60,6 +67,9 @@ class ContentKnowledgeCard(BaseModel):
     evidence_requirements: list[str] = Field(default_factory=list)
     measurement_sensitive_claims: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
+    source_fact_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    lifecycle_status: ContentKnowledgeLifecycleStatus | None = None
     confidence: float
     freshness: str
     usage_notes: list[str] = Field(default_factory=list)
@@ -112,6 +122,14 @@ class ContentKnowledgeCardsResponse(BaseModel):
 
 @lru_cache(maxsize=1)
 def ekologus_content_knowledge_cards() -> tuple[ContentKnowledgeCard, ...]:
+    return (
+        *ekologus_seed_content_knowledge_cards(),
+        *compile_source_facts_to_knowledge_cards(ekologus_source_facts()),
+    )
+
+
+@lru_cache(maxsize=1)
+def ekologus_seed_content_knowledge_cards() -> tuple[ContentKnowledgeCard, ...]:
     return (
         _environmental_compliance_service_card(),
         _consultation_cta_card(),
@@ -182,6 +200,8 @@ def _environmental_compliance_service_card() -> ContentKnowledgeCard:
             "docs/PROGRESS.md",
             "wilq/content/claims/ledger.py",
         ],
+        source_connectors=["internal_wilq_contract"],
+        lifecycle_status="seeded_contract_proof",
         confidence=0.88,
         freshness="seeded_goal_004",
         usage_notes=[
@@ -240,6 +260,8 @@ def _consultation_cta_card() -> ContentKnowledgeCard:
             "CTA musi wynikać z dopasowania usługi, intencji i claim policy.",
         ],
         source_lineage=["docs/goals/archive/004-goal.md", "wilq/content/quality/review.py"],
+        source_connectors=["internal_wilq_contract"],
+        lifecycle_status="seeded_contract_proof",
         confidence=0.84,
         freshness="seeded_goal_004",
         usage_notes=["CTA ma być konkretne, ale defensywne wobec claimów."],
@@ -275,6 +297,8 @@ def _live_evidence_requirement_card() -> ContentKnowledgeCard:
             "docs/goals/archive/004-goal.md",
             "wilq/content/enrichment/opportunity.py",
         ],
+        source_connectors=["internal_wilq_contract"],
+        lifecycle_status="seeded_contract_proof",
         confidence=0.95,
         freshness="seeded_goal_004",
         usage_notes=[
@@ -282,6 +306,77 @@ def _live_evidence_requirement_card() -> ContentKnowledgeCard:
             "Karta wiedzy nie zastępuje live evidence ani source connectora.",
         ],
     )
+
+
+def compile_source_facts_to_knowledge_cards(
+    facts: Iterable[ContentSourceFact],
+) -> tuple[ContentKnowledgeCard, ...]:
+    grouped: dict[str, list[ContentSourceFact]] = defaultdict(list)
+    for fact in facts:
+        if fact.review_status == "rejected":
+            continue
+        if fact.privacy_class != "commit_safe":
+            continue
+        grouped[fact.target_card_id].append(fact)
+
+    cards: list[ContentKnowledgeCard] = []
+    for card_id, card_facts in grouped.items():
+        first = card_facts[0]
+        lifecycle_status = _combined_lifecycle_status(card_facts)
+        freshness_date = max(fact.freshness_date for fact in card_facts)
+        freshness_prefix = {
+            "approved_current": "reviewed",
+            "stale": "stale",
+            "source_backed_review_required": "public_site_review_required",
+            "seeded_contract_proof": "seeded",
+            "rejected": "rejected",
+        }[lifecycle_status]
+        cards.append(
+            ContentKnowledgeCard(
+                id=card_id,
+                card_type=cast(ContentKnowledgeCardType, first.target_card_type),
+                title=first.target_card_title,
+                summary=_compile_summary(card_facts),
+                service_fit_terms=_unique(
+                    term for fact in card_facts for term in fact.service_fit_terms
+                ),
+                buyer_problem_terms=_unique(
+                    term for fact in card_facts for term in fact.buyer_problem_terms
+                ),
+                buyer_triggers=_unique(
+                    trigger for fact in card_facts for trigger in fact.buyer_triggers
+                ),
+                cta_patterns=_unique(
+                    pattern for fact in card_facts for pattern in fact.cta_patterns
+                ),
+                allowed_claims=_unique(
+                    claim for fact in card_facts for claim in fact.allowed_claims
+                ),
+                claims_needing_review=_source_fact_review_claim_rules(card_id, card_facts),
+                forbidden_claims=_source_fact_forbidden_claim_rules(card_id, card_facts),
+                evidence_requirements=_unique(
+                    requirement
+                    for fact in card_facts
+                    for requirement in fact.evidence_requirements
+                ),
+                source_lineage=_unique(fact.source_url_or_path for fact in card_facts),
+                source_fact_ids=[fact.source_id for fact in card_facts],
+                source_connectors=_unique(
+                    connector for fact in card_facts for connector in fact.source_connectors
+                ),
+                lifecycle_status=lifecycle_status,
+                confidence=min(fact.confidence for fact in card_facts),
+                freshness=f"{freshness_prefix}_{freshness_date}",
+                usage_notes=_unique(
+                    note for fact in card_facts for note in fact.usage_notes
+                )
+                + [
+                    "Karta została skompilowana z source facts; nie zastępuje "
+                    "live evidence IDs ani source connectors."
+                ],
+            )
+        )
+    return tuple(cards)
 
 
 def content_knowledge_cards_response() -> ContentKnowledgeCardsResponse:
@@ -298,12 +393,16 @@ def content_knowledge_production_depth_readiness(
     cards: Iterable[ContentKnowledgeCard],
 ) -> ContentKnowledgeProductionDepthReadiness:
     card_list = list(cards)
-    seeded_cards = [card for card in card_list if card.freshness == "seeded_goal_004"]
+    seeded_cards = [
+        card for card in card_list if _card_lifecycle_status(card) == "seeded_contract_proof"
+    ]
     review_required_cards = [
-        card for card in card_list if "review_required" in card.freshness
+        card
+        for card in card_list
+        if _card_lifecycle_status(card) in {"source_backed_review_required", "stale"}
     ]
     production_cards = [
-        card for card in card_list if card.freshness.startswith("reviewed_")
+        card for card in card_list if _card_lifecycle_status(card) == "approved_current"
     ]
     blockers: list[str] = []
     if seeded_cards:
@@ -436,12 +535,86 @@ def required_content_knowledge_card_ids(match: ContentKnowledgeCardMatch) -> lis
     return _unique(ids)
 
 
+def _combined_lifecycle_status(
+    facts: Iterable[ContentSourceFact],
+) -> ContentKnowledgeLifecycleStatus:
+    statuses = {knowledge_lifecycle_from_review_status(fact.review_status) for fact in facts}
+    if "source_backed_review_required" in statuses:
+        return "source_backed_review_required"
+    if "stale" in statuses:
+        return "stale"
+    if statuses == {"approved_current"}:
+        return "approved_current"
+    return "source_backed_review_required"
+
+
+def _compile_summary(facts: Iterable[ContentSourceFact]) -> str:
+    fact_list = list(facts)
+    if len(fact_list) == 1:
+        return fact_list[0].extracted_fact
+    return " ".join(fact.extracted_fact for fact in fact_list)
+
+
+def _source_fact_review_claim_rules(
+    card_id: str,
+    facts: Iterable[ContentSourceFact],
+) -> list[ContentKnowledgeClaimRule]:
+    rules: list[ContentKnowledgeClaimRule] = []
+    for fact in facts:
+        lifecycle_status = knowledge_lifecycle_from_review_status(fact.review_status)
+        if lifecycle_status != "approved_current":
+            rules.append(
+                _claim_rule(
+                    f"{card_id}_{fact.source_id}_requires_review",
+                    "source_backed_knowledge_claim",
+                    "needs_human_review",
+                    "Source fact wymaga review",
+                    "Publiczne źródło Ekologus wspiera analizę, ale nie odblokowuje "
+                    "production-depth briefu bez review Wilka/ownera.",
+                    ["source_fact", "human_review"],
+                )
+            )
+    return rules
+
+
+def _source_fact_forbidden_claim_rules(
+    card_id: str,
+    facts: Iterable[ContentSourceFact],
+) -> list[ContentKnowledgeClaimRule]:
+    return [
+        _claim_rule(
+            f"{card_id}_blocked_{_slug(blocked_claim)}",
+            "blocked_source_fact_claim",
+            "blocked",
+            "Claim zablokowany przez source fact",
+            blocked_claim,
+            ["human_review"],
+        )
+        for fact in facts
+        for blocked_claim in fact.blocked_claims
+    ]
+
+
+def _card_lifecycle_status(card: ContentKnowledgeCard) -> ContentKnowledgeLifecycleStatus:
+    if card.lifecycle_status is not None:
+        return card.lifecycle_status
+    if card.freshness == "seeded_goal_004":
+        return "seeded_contract_proof"
+    if "review_required" in card.freshness:
+        return "source_backed_review_required"
+    if card.freshness.startswith("reviewed_"):
+        return "approved_current"
+    if card.freshness.startswith("stale_"):
+        return "stale"
+    return "source_backed_review_required"
+
+
 def _matching_cards(
     cards: Iterable[ContentKnowledgeCard],
     search_text: str,
     card_type: ContentKnowledgeCardType,
 ) -> list[ContentKnowledgeCard]:
-    return [
+    matches = [
         card
         for card in cards
         if card.card_type == card_type
@@ -451,6 +624,18 @@ def _matching_cards(
             if term.lower() not in BROAD_SERVICE_FIT_TERMS
         )
     ]
+    return sorted(matches, key=_match_rank)
+
+
+def _match_rank(card: ContentKnowledgeCard) -> tuple[int, float]:
+    lifecycle_rank = {
+        "approved_current": 0,
+        "source_backed_review_required": 1,
+        "stale": 2,
+        "seeded_contract_proof": 3,
+        "rejected": 4,
+    }[_card_lifecycle_status(card)]
+    return (lifecycle_rank, -card.confidence)
 
 
 def _claim_rule(
@@ -491,6 +676,10 @@ def _blocker(
 
 def _search_text(values: Iterable[object]) -> str:
     return " ".join(str(value).lower() for value in values if value)
+
+
+def _slug(value: str) -> str:
+    return "".join(char if char.isalnum() else "_" for char in value.lower()).strip("_")
 
 
 def _unique(values: Iterable[object]) -> list[str]:

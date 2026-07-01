@@ -1,0 +1,520 @@
+{
+  "facts": [
+    {
+      "source_id": "ekologus_public_consulting_outsourcing_offer_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/doradztwo-i-outsourcing-ekologiczny/",
+      "extracted_fact": "Publiczna oferta Ekologus obejmuje doradztwo i outsourcing ekologiczny, dokumentację środowiskową oraz wsparcie w obszarach BDO, KOBIZE, opłat środowiskowych, odpadów i opakowań.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.76,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarancja uniknięcia kary",
+        "gwarancja zgodności prawnej",
+        "rozstrzygnięcie obowiązku konkretnej firmy bez review"
+      ],
+      "target_card_id": "ekologus_service_environmental_consulting_outsourcing",
+      "target_card_type": "service",
+      "target_card_title": "Doradztwo i outsourcing środowiskowy",
+      "service_fit_terms": [
+        "doradztwo środowiskowe",
+        "outsourcing ekologiczny",
+        "bdo",
+        "kobize",
+        "odpady",
+        "opakowani",
+        "opłaty środowiskowe"
+      ],
+      "buyer_problem_terms": [
+        "nie wie jakie obowiązki",
+        "brak dokumentacji",
+        "sprawozdanie",
+        "ewidencja odpadów"
+      ],
+      "buyer_triggers": [
+        "porządkowanie dokumentacji środowiskowej",
+        "przygotowanie do sprawozdawczości BDO lub KOBIZE",
+        "potrzeba stałego wsparcia w obowiązkach środowiskowych"
+      ],
+      "cta_patterns": [
+        "Skonsultuj obowiązki środowiskowe dla swojej firmy.",
+        "Przygotuj dokumenty do sprawdzenia przez eksperta Ekologus."
+      ],
+      "allowed_claims": [
+        "Ekologus opisuje doradztwo i outsourcing ekologiczny jako obszar swojej oferty.",
+        "Treść może edukacyjnie wskazać, co warto przygotować przed konsultacją."
+      ],
+      "evidence_requirements": [
+        "Publiczny URL Ekologus potwierdza zakres usługi, ale nie zastępuje GSC/WordPress/GA4 evidence dla rekomendacji treści.",
+        "Current-law, deadline, rate and penalty phrasing requires human review."
+      ],
+      "usage_notes": [
+        "Używaj jako source-backed review-required service fact, nie jako zatwierdzonej production-depth karty."
+      ]
+    },
+    {
+      "source_id": "ekologus_public_bdo_faq_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+      "extracted_fact": "Publiczny artykuł Ekologus omawia BDO z perspektywy przedsiębiorcy i może wspierać edukacyjne tematy o rejestracji, ewidencji oraz sprawozdawczości.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.79,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "na pewno musisz zarejestrować firmę w BDO",
+        "unikniesz kary",
+        "gwarantujemy zgodność"
+      ],
+      "target_card_id": "ekologus_service_bdo_reporting",
+      "target_card_type": "service",
+      "target_card_title": "BDO i sprawozdawczość środowiskowa",
+      "service_fit_terms": [
+        "bdo",
+        "sprawozdawczość",
+        "ewidencja odpadów",
+        "rejestr bdo",
+        "kobize"
+      ],
+      "buyer_problem_terms": [
+        "nie wiem czy dotyczy mnie bdo",
+        "termin sprawozdania",
+        "ewidencja",
+        "rejestracja"
+      ],
+      "buyer_triggers": [
+        "zbliża się termin sprawozdawczy",
+        "firma chce sprawdzić obowiązki BDO",
+        "trzeba uporządkować ewidencję odpadów"
+      ],
+      "cta_patterns": [
+        "Sprawdź z ekspertem, jakie dokumenty BDO wymagają weryfikacji.",
+        "Przygotuj opis działalności i zapytaj Ekologus o zakres obowiązków."
+      ],
+      "allowed_claims": [
+        "Ekologus publikuje edukacyjne materiały o BDO dla przedsiębiorców.",
+        "Treść może opisywać pytania, które warto zadać przed pracą nad BDO."
+      ],
+      "evidence_requirements": [
+        "GSC/WordPress evidence is required before recommending a BDO content update.",
+        "Company-specific obligation and penalty claims require human review."
+      ],
+      "usage_notes": [
+        "Nie kopiuj aktualnych terminów ani stawek bez osobnego, świeżego review."
+      ]
+    },
+    {
+      "source_id": "ekologus_public_training_offer_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/szkolenia/",
+      "extracted_fact": "Publiczna oferta szkoleń Ekologus obejmuje obszary środowiskowe takie jak powietrze, pozwolenia, emisje, odpady, opakowania, woda, ścieki, inwestycje, gleba, KOBIZE, opłaty, sprawozdawczość, REACH/CLP, systemy zarządzania i BHP.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.73,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "uczestnik po szkoleniu ma gwarantowaną zgodność",
+        "aktualna cena lub dostępność bez review",
+        "certyfikat bez potwierdzenia oferty"
+      ],
+      "target_card_id": "ekologus_service_environmental_training",
+      "target_card_type": "service",
+      "target_card_title": "Szkolenia środowiskowe",
+      "service_fit_terms": [
+        "szkolenia",
+        "warsztaty",
+        "kobize",
+        "bdo",
+        "reach",
+        "clp",
+        "opłaty środowiskowe"
+      ],
+      "buyer_problem_terms": [
+        "zespół nie zna obowiązków",
+        "potrzeba praktycznego szkolenia",
+        "przygotowanie pracowników"
+      ],
+      "buyer_triggers": [
+        "firma wdraża obowiązki środowiskowe",
+        "zespół potrzebuje szkolenia z BDO, KOBIZE lub opłat",
+        "zmienia się zakres obowiązków pracowników"
+      ],
+      "cta_patterns": [
+        "Zapytaj o szkolenie dopasowane do zakresu obowiązków zespołu.",
+        "Sprawdź z Ekologus, które tematy szkoleniowe pasują do Twojej firmy."
+      ],
+      "allowed_claims": [
+        "Ekologus opisuje szkolenia środowiskowe jako część oferty.",
+        "Treść może wskazać obszary szkoleniowe wymienione na stronie oferty."
+      ],
+      "evidence_requirements": [
+        "Current dates, prices, availability and certificates require human review.",
+        "GSC/WordPress evidence is required before recommending a training content update."
+      ],
+      "usage_notes": [
+        "Karta nie potwierdza aktualnego harmonogramu szkoleń."
+      ]
+    },
+    {
+      "source_id": "ekologus_public_remediation_offer_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/oferta/rekultywacje-i-remediacje/",
+      "extracted_fact": "Publiczna oferta Ekologus opisuje rekultywacje i remediacje, pobieranie próbek gleby lub wód podziemnych, analizy laboratoryjne oraz przygotowanie planów remediacji.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.74,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "gwarantowany wynik oczyszczenia",
+        "gwarantowana decyzja urzędu",
+        "gwarantowane bezpieczeństwo terenu"
+      ],
+      "target_card_id": "ekologus_service_remediation_monitoring",
+      "target_card_type": "service",
+      "target_card_title": "Rekultywacje, remediacje i monitoring",
+      "service_fit_terms": [
+        "rekultywacja",
+        "remediacja",
+        "monitoring",
+        "gleba",
+        "wody podziemne",
+        "próbki"
+      ],
+      "buyer_problem_terms": [
+        "zanieczyszczony teren",
+        "ryzyko środowiskowe gruntu",
+        "potrzeba badań gleby"
+      ],
+      "buyer_triggers": [
+        "inwestycja wymaga sprawdzenia stanu środowiska",
+        "firma potrzebuje planu remediacji",
+        "trzeba zweryfikować zanieczyszczenie gruntu lub wód"
+      ],
+      "cta_patterns": [
+        "Opisz lokalizację i cel badań przed rozmową z Ekologus.",
+        "Zapytaj o zakres badań i plan remediacji dla konkretnego terenu."
+      ],
+      "allowed_claims": [
+        "Ekologus opisuje rekultywacje i remediacje jako obszar oferty.",
+        "Treść może edukacyjnie wyjaśniać, kiedy potrzebna jest analiza gruntu lub wód."
+      ],
+      "evidence_requirements": [
+        "Technical feasibility, accredited scope and method choice require human review.",
+        "GSC/WordPress evidence is required before recommending remediation content work."
+      ],
+      "usage_notes": [
+        "Nie zamieniaj tej karty w obietnicę wyniku technicznego lub decyzji urzędu."
+      ]
+    },
+    {
+      "source_id": "ekologus_public_sorbent_article_2026_07_01",
+      "source_type": "public_site",
+      "privacy_class": "commit_safe",
+      "source_url_or_path": "https://www.ekologus.pl/sorbenty-czym-sa-jak-dzialaja-i-dlaczego-warto-je-stosowac/",
+      "extracted_fact": "Publiczny artykuł Ekologus omawia sorbenty i ich typowe zastosowania, co może wspierać edukacyjne tematy produktowe.",
+      "scope": "evidence_requirement",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.7,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "public_site"
+      ],
+      "blocked_claims": [
+        "rekomendacja produktu bez Merchant/shop evidence",
+        "gwarancja kompatybilności",
+        "gwarancja bezpieczeństwa lub zgodności"
+      ],
+      "target_card_id": "ekologus_evidence_product_shop_requirements",
+      "target_card_type": "evidence_requirement",
+      "target_card_title": "Wymagania dowodowe dla treści produktowych",
+      "service_fit_terms": [
+        "sorbent",
+        "sorbenty",
+        "zestawy awaryjne",
+        "wyciek",
+        "produkt"
+      ],
+      "buyer_problem_terms": [
+        "jaki sorbent wybrać",
+        "zabezpieczenie wycieku",
+        "produkt do awarii"
+      ],
+      "buyer_triggers": [
+        "użytkownik szuka produktu lub zastosowania sorbentu",
+        "treść przechodzi z edukacji w intencję produktową"
+      ],
+      "cta_patterns": [
+        "Przed CTA produktowym sprawdź dostępność i dane produktu w Merchant/shop.",
+        "Jeżeli brakuje danych sklepu, zostań przy edukacyjnym CTA do konsultacji."
+      ],
+      "allowed_claims": [
+        "Treść może edukacyjnie omawiać typowe zastosowania sorbentów po review.",
+        "Product CTA wymaga osobnego dowodu produktowego."
+      ],
+      "evidence_requirements": [
+        "Merchant/shop evidence is required before product availability, price, stock or recommendation claims.",
+        "Safety and compatibility claims require human review."
+      ],
+      "usage_notes": [
+        "Publiczny artykuł nie wystarcza do rekomendacji zakupu ani claimów o dostępności produktu."
+      ]
+    },
+    {
+      "source_id": "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+      "source_type": "reviewed_internal",
+      "privacy_class": "redacted_only",
+      "source_url_or_path": "https://github.com/rekurencja/ekologus-ai/blob/8ee3cb237306bd4e8bc6eba674fcb64a607379a6/materials_clean/approved/KB_001_EKO_OPIEKA.cleaned.md",
+      "extracted_fact": "Ekologus-ai opisuje Eko-Opiekę i Eko Kalendarz jako aktywny P0 kierunek abonamentowy dla obecnych i dawnych klientów z realnymi obowiązkami środowiskowymi, terminami, decyzjami i ryzykami.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.82,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ],
+      "blocked_claims": [
+        "obiecanie klientowi pełnej zgodności bez audytu i review",
+        "sprzedaż jako program IT zamiast opieki eksperckiej",
+        "użycie danych obecnych klientów w publicznej treści"
+      ],
+      "target_card_id": "ekologus_service_eko_opieka_calendar",
+      "target_card_type": "service",
+      "target_card_title": "Eko-Opieka i Eko Kalendarz",
+      "service_fit_terms": [
+        "eko-opieka",
+        "eko kalendarz",
+        "abonament",
+        "monitoring obowiązków",
+        "terminy",
+        "decyzje"
+      ],
+      "buyer_problem_terms": [
+        "klient nie pilnuje terminów",
+        "ryzyko opóźnień",
+        "brak cyklicznej kontroli obowiązków",
+        "potrzeba przypomnień"
+      ],
+      "buyer_triggers": [
+        "obecny lub dawny klient ma decyzje i terminy środowiskowe",
+        "zakład potrzebuje cyklicznej koordynacji obowiązków",
+        "firma chce zmniejszyć ryzyko przegapienia raportu lub kontroli"
+      ],
+      "cta_patterns": [
+        "Zaproponuj przegląd decyzji i terminów przed ofertą abonamentu.",
+        "Poproś o decyzje i dokumenty, żeby zbudować Eko Kalendarz."
+      ],
+      "allowed_claims": [
+        "Eko-Opieka może być przedstawiana jako cykliczna opieka nad terminami, decyzjami i obowiązkami po review.",
+        "Treść może mówić o uporządkowaniu obowiązków, nie o gwarancji zgodności."
+      ],
+      "evidence_requirements": [
+        "WILQ review is required before this private candidate can become approved_current.",
+        "Public content must not expose customer lists, examples or private operational details from ekologus-ai."
+      ],
+      "usage_notes": [
+        "Kandydat z ekologus-ai jest prywatnym source factem do Service Profile i UAT, nie automatyczną kartą produkcyjną."
+      ]
+    },
+    {
+      "source_id": "ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
+      "source_type": "reviewed_internal",
+      "privacy_class": "redacted_only",
+      "source_url_or_path": "https://github.com/rekurencja/ekologus-ai/blob/8ee3cb237306bd4e8bc6eba674fcb64a607379a6/materials_clean/approved/KB_003_AUDYT_ZGODNOSCI.cleaned.md",
+      "extracted_fact": "Ekologus-ai opisuje audyt zgodności środowiskowej jako produkt wejściowy dla zakładów, które chcą rozpoznać ryzyka, braki, decyzje, dokumentację i możliwe kolejne działania.",
+      "scope": "service",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.81,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ],
+      "blocked_claims": [
+        "pełna interpretacja prawna bez płatnego etapu i człowieka",
+        "gwarancja braku kar",
+        "publikowanie szczegółów audytowych klienta"
+      ],
+      "target_card_id": "ekologus_service_environmental_compliance_audit",
+      "target_card_type": "service",
+      "target_card_title": "Audyt zgodności środowiskowej",
+      "service_fit_terms": [
+        "audyt zgodności",
+        "eko-przegląd",
+        "ryzyka środowiskowe",
+        "decyzje administracyjne",
+        "dokumentacja"
+      ],
+      "buyer_problem_terms": [
+        "zakład nie wie gdzie ma ryzyka",
+        "brak aktualnego przeglądu",
+        "zmiana instalacji lub decyzji",
+        "kontrola lub wezwanie urzędu"
+      ],
+      "buyer_triggers": [
+        "firma jest przed kontrolą albo po wezwaniu urzędu",
+        "zakład zmienił proces, instalację lub zarząd",
+        "dawny klient wraca po dłuższej przerwie"
+      ],
+      "cta_patterns": [
+        "Zaproponuj płatny audyt jako pierwszy bezpieczny krok.",
+        "Poproś o decyzje, dokumenty i opis zmian w zakładzie."
+      ],
+      "allowed_claims": [
+        "Audyt może być opisany jako rozpoznanie ryzyk, braków i kolejnych działań po review.",
+        "Treść może prowadzić do płatnego etapu zamiast darmowej interpretacji prawnej."
+      ],
+      "evidence_requirements": [
+        "Human/legal review is required for penalty, authority and company-specific obligation claims.",
+        "Live GSC/WordPress evidence is still required before recommending a content update."
+      ],
+      "usage_notes": [
+        "Nie używać kwot kar ani szczegółów klienta w publicznym materiale bez osobnego review."
+      ]
+    },
+    {
+      "source_id": "ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01",
+      "source_type": "reviewed_internal",
+      "privacy_class": "redacted_only",
+      "source_url_or_path": "https://github.com/rekurencja/ekologus-ai/blob/8ee3cb237306bd4e8bc6eba674fcb64a607379a6/materials_clean/approved/KB_014_STYL_MARKI_JEZYK_EKOLOGUS.cleaned.md",
+      "extracted_fact": "Ekologus-ai definiuje styl marki jako konkretny, spokojny, ekspercki, bez pustych sloganów, bez agencyjnego tonu i bez obietnic gwarantowanego wyniku.",
+      "scope": "claim_policy",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.84,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ],
+      "blocked_claims": [
+        "puste slogany agencyjne",
+        "gwarantowany wynik",
+        "straszenie bez powodu",
+        "pełna interpretacja prawna w darmowej treści"
+      ],
+      "target_card_id": "ekologus_claim_policy_brand_voice",
+      "target_card_type": "claim_policy",
+      "target_card_title": "Styl marki i claim policy Ekologus",
+      "service_fit_terms": [
+        "styl marki",
+        "język",
+        "claim policy",
+        "treść",
+        "brief"
+      ],
+      "buyer_problem_terms": [
+        "treść brzmi generycznie",
+        "tekst jest agencyjny",
+        "brakuje konkretnego następnego kroku"
+      ],
+      "buyer_triggers": [
+        "WILQ przygotowuje brief, draft albo quality review",
+        "treść dotyczy ryzyka, kontroli, obowiązków lub usługi eksperckiej"
+      ],
+      "cta_patterns": [
+        "Każda treść ma mieć jasny, bezpieczny następny krok.",
+        "CTA ma prowadzić do konsultacji, audytu, monitoringu, szkolenia albo sprzedaży bez gwarancji wyniku."
+      ],
+      "allowed_claims": [
+        "Treść może być konkretna, spokojna i ekspercka po review.",
+        "Treść powinna pokazywać konsekwencję biznesową i następny krok."
+      ],
+      "evidence_requirements": [
+        "Brand voice candidate requires WILQ review before it becomes an approved content quality gate.",
+        "Legal/high-risk claims remain human-review gated."
+      ],
+      "usage_notes": [
+        "Dobry kandydat na quality-review rule, ale jeszcze nie zatwierdzony w WILQ jako production gate."
+      ]
+    },
+    {
+      "source_id": "ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01",
+      "source_type": "reviewed_internal",
+      "privacy_class": "redacted_only",
+      "source_url_or_path": "https://github.com/rekurencja/ekologus-ai/blob/8ee3cb237306bd4e8bc6eba674fcb64a607379a6/materials_clean/approved/KB_021_BEZPIECZENSTWO_PRAWNE_POUFNOSC_ZGODY.cleaned.md",
+      "extracted_fact": "Ekologus-ai wymaga, aby bezpieczeństwo prawne, poufność, zgody i minimalizacja danych miały pierwszeństwo przed sprzedażą w materiałach wysokiego ryzyka.",
+      "scope": "claim_policy",
+      "freshness_date": "2026-07-01",
+      "confidence": 0.84,
+      "review_status": "review_required",
+      "reviewer": null,
+      "evidence_ids": [],
+      "source_connectors": [
+        "ekologus_ai_private_source_catalog"
+      ],
+      "blocked_claims": [
+        "pełna interpretacja prawna bez weryfikacji człowieka",
+        "poufne dane klientów w materiale marketingowym",
+        "podszywanie automatyzacji pod człowieka",
+        "gwarantowany wynik administracyjny"
+      ],
+      "target_card_id": "ekologus_claim_policy_legal_safety",
+      "target_card_type": "claim_policy",
+      "target_card_title": "Bezpieczeństwo prawne, poufność i zgody",
+      "service_fit_terms": [
+        "prawo",
+        "poufność",
+        "zgody",
+        "legal review",
+        "kontrola",
+        "wioś",
+        "urząd"
+      ],
+      "buyer_problem_terms": [
+        "wysokie ryzyko prawne",
+        "dane klienta",
+        "kontrola",
+        "odpowiedzialność"
+      ],
+      "buyer_triggers": [
+        "temat dotyczy kar, kontroli, urzędu, danych osobowych lub decyzji administracyjnej",
+        "materiał może trafić do klienta lub publicznie"
+      ],
+      "cta_patterns": [
+        "Oznacz wysokie ryzyko i skieruj materiał do człowieka.",
+        "Najpierw zabezpiecz firmę, potem sprzedawaj."
+      ],
+      "allowed_claims": [
+        "Treść może wskazać potrzebę przeglądu eksperckiego zamiast udzielać pełnej interpretacji.",
+        "Treść może mówić o procesie i bezpiecznym następnym kroku."
+      ],
+      "evidence_requirements": [
+        "High-risk legal, penalty, authority and personal-data claims require human review.",
+        "No confidential customer data may be exposed in public content."
+      ],
+      "usage_notes": [
+        "Kandydat powinien blokować publiczne drafty wysokiego ryzyka bez review."
+      ]
+    }
+  ]
+}

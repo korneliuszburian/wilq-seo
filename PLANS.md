@@ -116,6 +116,42 @@ That is enough for Goal 004 contract proof. It is not yet enough to claim deep
 Ekologus knowledge coverage across real services, buyer problems, triggers,
 CTA patterns, claim policies and evidence requirements.
 
+Goal 005 now has the first data-driven source-fact layer:
+
+- `wilq/content/knowledge/source_facts.json` stores commit-safe public
+  Ekologus facts from the source pack.
+- `wilq/content/knowledge/source_facts.py` validates source type, privacy,
+  review state, freshness, evidence IDs, source connectors and blocked claims.
+- `wilq/content/knowledge/cards.py` compiles those facts into
+  `source_backed_review_required` cards and keeps seeded cards as contract
+  guardrails.
+
+This is still not production-depth knowledge. Public source facts support
+analysis and UAT only until owner/Wilku review marks the relevant facts
+approved.
+
+First `ekologus-ai` reuse must use the existing knowledge/source-fact/card
+layer. Do not add a separate endpoint or dashboard surface for the same
+knowledge unless a reviewed artifact/UAT proves that the existing content
+workflow cannot use it. The right operator output is a normal brief, draft,
+current-state summary, question list or handoff markdown for Wilku/owner
+review. Keep `ekologus-ai` facts redacted and review-required until explicit
+review promotes them.
+
+The broader product roadmap is now summarized in
+`docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current maturity against the
+long-term BDOS-class bar is estimated at `35-45%`: the API-first safety/content
+foundation is substantial, while reviewed knowledge depth, UAT, claim-level
+generation gating, measurement provenance, optimizer depth and write execution
+remain unfinished.
+
+Public `ekologus-ai` audit is recorded in
+`docs/audits/005-2026-07-01-ekologus-ai-reuse-audit.md` and Beads task
+`wilq-seo-5fd`. Reuse the old repository as a contract/source-pattern catalog,
+not as a revived product. The strongest candidates for WILQ are evidence pack,
+source claim markers, generation gate, quarantine/post-output validation,
+Guardian rules, strategy evidence hydration and marketer usefulness rubric.
+
 ## In Scope
 
 Goal 005 includes:
@@ -334,6 +370,10 @@ Stop and record a blocker if:
   production knowledge. Source-backed public cards remain review-required until
   owner/Wilku approval. The matcher no longer lets broad environmental terms
   alone unlock a service card.
+- 2026-07-01: Master roadmap and abandoned `ekologus-ai` reuse audit added.
+  WILQ should port selected content-safety contracts into the existing API
+  workflow, especially Claim Ledger and Generation Gate candidates, instead of
+  adding another Wilku packet/product layer.
 
 ## Surprises & Discoveries
 

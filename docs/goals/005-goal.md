@@ -54,6 +54,30 @@ First Goal 005 source-pack proof:
   Seeded Goal 004 cards are explicitly `seeded_contract_proof` and
   `ready_for_daily_content=false`; public source-backed cards remain review
   required until owner/Wilku approval.
+- Public source facts are now data-driven in
+  `wilq/content/knowledge/source_facts.json` and validated by
+  `wilq/content/knowledge/source_facts.py`. `cards.py` compiles commit-safe
+  public facts into review-required cards with `source_fact_ids`,
+  `source_connectors`, lifecycle status, blocked claims and human-review gates.
+  This removes hardcoded public-service expansion from `cards.py`, but does not
+  make those cards production-depth or replace live evidence IDs/source
+  connectors.
+- `ekologus-ai` can be used as a reviewed internal knowledge source for WILQ
+  content work, especially `materials_clean/approved` and
+  `master_strategy/master_strategy.yaml`. Use it to generate normal artifacts
+  for Wilku/owner review: briefs, draft content, current-state summaries,
+  questions and handoff markdowns. Do not create a special API/UI product layer
+  for “packets” unless an artifact/UAT proves that the workflow needs it.
+  Redacted review-required facts may support analysis and drafting, but they do
+  not unlock production-depth readiness until reviewed in WILQ.
+- `docs/roadmap/bdos-class-wilq-master-roadmap.md` records the current
+  BDOS-class WILQ roadmap and estimates overall maturity at `35-45%`.
+- `docs/audits/005-2026-07-01-ekologus-ai-reuse-audit.md` records the public
+  `ekologus-ai` reuse audit. The strongest reusable contracts are evidence
+  pack, source claim markers, generation gate, output quarantine,
+  post-output validation, Guardian rules, strategy evidence hydration and
+  marketer usefulness rubric. These should feed WILQ API/schema work, not a
+  second product brain.
 
 ## Non-Negotiable Rules
 

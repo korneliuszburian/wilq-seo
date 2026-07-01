@@ -212,6 +212,14 @@ export const ContentKnowledgeClaimRuleSchema = z.object({
   required_evidence_types: z.array(z.string()).default([])
 });
 
+export const ContentKnowledgeLifecycleStatusSchema = z.enum([
+  "seeded_contract_proof",
+  "source_backed_review_required",
+  "approved_current",
+  "stale",
+  "rejected"
+]);
+
 export const ContentKnowledgeCardSchema = z.object({
   id: z.string(),
   card_type: z.enum([
@@ -235,6 +243,9 @@ export const ContentKnowledgeCardSchema = z.object({
   evidence_requirements: z.array(z.string()).default([]),
   measurement_sensitive_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
   source_lineage: z.array(z.string()).default([]),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  lifecycle_status: ContentKnowledgeLifecycleStatusSchema.nullable().optional(),
   confidence: z.number(),
   freshness: z.string(),
   usage_notes: z.array(z.string()).default([])

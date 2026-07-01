@@ -113,6 +113,47 @@ API status later contradicts this state.
   `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`,
   `rtk pnpm test` and `rtk pnpm typecheck` in `packages/shared-schemas`, plus
   dashboard API tests/typecheck.
+- Goal 005 source-fact registry slice is implemented. Public Ekologus source
+  material now lives in `wilq/content/knowledge/source_facts.json` and validates
+  through `wilq/content/knowledge/source_facts.py`; `cards.py` compiles
+  commit-safe public facts into lifecycle-aware `source_backed_review_required`
+  cards with source fact IDs, source connectors, blocked claims and review
+  gates. The API still reports `ready_for_daily_content=false`; these cards
+  support analysis/UAT only until owner/Wilku review marks facts approved.
+  Focused proofs passed: `rtk uv run pytest tests/content -q`,
+  `rtk uv run ruff check wilq/content/knowledge tests/content/test_content_knowledge_cards.py`,
+  `rtk pnpm --filter @wilq/shared-schemas test` and
+  `rtk pnpm typecheck` in `packages/shared-schemas`.
+- Goal 005 first `ekologus-ai` reuse slice now treats
+  `materials_clean/approved` as a reviewed internal knowledge source for WILQ,
+  not as a separate UI module. Redacted review-required source facts can inform
+  content briefs, drafts, quality checks and handoff artifacts, but they do not
+  compile into production-depth cards or daily-content readiness until reviewed
+  in WILQ. Wilku-facing outputs should be ordinary repo artifacts or content
+  drafts/briefs written in plain Polish, not a special “packet” product layer.
+- First ordinary Wilku artifact from `ekologus-ai` now lives at
+  `docs/handoffs/2026-07-01-wilku-eko-opieka-review.md`. It gives a
+  human-readable Eko-Opieka/Eko Kalendarz current-state summary, draft angles,
+  safe/unsafe wording and exact questions to ask Wilku. This is the intended
+  handoff shape before any new endpoint/dashboard work.
+- Second ordinary Wilku artifact now lives at
+  `docs/handoffs/2026-07-01-wilku-audyt-zgodnosci-review.md`. It frames Audyt
+  zgodności as a possible product wejściowy with draft angles, safe/unsafe
+  wording and questions for Wilku, still without claiming legal/publication
+  readiness.
+- Master roadmap for "better BDOS.ai" direction now lives at
+  `docs/roadmap/bdos-class-wilq-master-roadmap.md`. Current overall WILQ
+  maturity is estimated at `35-45%`: the API/safety/content workflow foundation
+  is real, but reviewed Ekologus knowledge, Wilku UAT, claim-level generation
+  safety, measurement provenance, BDOS-grade Ads/Merchant optimizers and write
+  execution remain the large gaps.
+- Public abandoned `ekologus-ai` reuse audit is recorded in
+  `docs/audits/005-2026-07-01-ekologus-ai-reuse-audit.md` under Beads task
+  `wilq-seo-5fd`. The reusable breakthrough is not the old CLI; it is the
+  contract chain: source manifest -> evidence pack -> source claim markers ->
+  generation gate -> quarantine -> post-output validation -> operator review ->
+  marketer usefulness report. Port selected contracts into WILQ API; do not run
+  `ekologus-ai` as a second product brain.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

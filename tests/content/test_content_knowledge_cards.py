@@ -8,12 +8,18 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.content.knowledge.cards import (
     ContentKnowledgeCard,
+    compile_source_facts_to_knowledge_cards,
     content_knowledge_card_blockers,
     content_knowledge_cards_response,
     content_knowledge_production_depth_readiness,
     ekologus_content_knowledge_cards,
+    ekologus_seed_content_knowledge_cards,
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
+)
+from wilq.content.knowledge.source_facts import (
+    ContentSourceFact,
+    ekologus_source_fact_registry,
 )
 from wilq.content.workflow.models import ContentWorkItem
 
@@ -51,6 +57,37 @@ def test_ekologus_content_knowledge_cards_are_typed_and_seeded() -> None:
     assert service_card.forbidden_claims
     assert service_card.measurement_sensitive_claims
     assert "bdo" in service_card.service_fit_terms
+    assert service_card.lifecycle_status == "seeded_contract_proof"
+
+
+def test_source_fact_registry_loads_commit_safe_public_facts() -> None:
+    registry = ekologus_source_fact_registry()
+
+    assert registry.fact_count >= 5
+    bdo_fact = next(
+        fact for fact in registry.facts if fact.source_id == "ekologus_public_bdo_faq_2026_07_01"
+    )
+    assert bdo_fact.source_type == "public_site"
+    assert bdo_fact.privacy_class == "commit_safe"
+    assert bdo_fact.review_status == "review_required"
+    assert bdo_fact.source_connectors == ["public_site"]
+    assert bdo_fact.blocked_claims
+
+
+def test_source_facts_compile_to_review_required_cards() -> None:
+    cards = compile_source_facts_to_knowledge_cards(ekologus_source_fact_registry().facts)
+
+    bdo_card = next(card for card in cards if card.id == "ekologus_service_bdo_reporting")
+    assert bdo_card.lifecycle_status == "source_backed_review_required"
+    assert bdo_card.freshness == "public_site_review_required_2026-07-01"
+    assert bdo_card.source_fact_ids == ["ekologus_public_bdo_faq_2026_07_01"]
+    assert bdo_card.source_connectors == ["public_site"]
+    assert "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/" in (
+        bdo_card.source_lineage
+    )
+    assert bdo_card.claims_needing_review
+    assert any("unikniesz kary" in rule.reason for rule in bdo_card.forbidden_claims)
+    assert "ekologus_service_eko_opieka_calendar" not in {card.id for card in cards}
 
 
 def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -> None:
@@ -58,9 +95,13 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
 
     assert response.card_count == len(response.cards)
     assert "docs/goals/archive/004-goal.md" in response.source_lineage
-    assert response.production_depth_readiness.status == "seeded_contract_proof"
+    assert "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/" in response.source_lineage
+    assert response.production_depth_readiness.status == "source_backed_review_required"
     assert response.production_depth_readiness.ready_for_daily_content is False
-    assert response.production_depth_readiness.seeded_card_count == len(response.cards)
+    assert response.production_depth_readiness.seeded_card_count == len(
+        ekologus_seed_content_knowledge_cards()
+    )
+    assert response.production_depth_readiness.source_backed_review_required_count >= 5
     assert response.production_depth_readiness.production_depth_card_count == 0
     evidence_card = next(
         card for card in response.cards if card.id == "ekologus_evidence_live_connector_requirement"
@@ -73,7 +114,9 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
 
 
 def test_internal_seeded_cards_cannot_claim_production_depth_readiness() -> None:
-    readiness = content_knowledge_production_depth_readiness(ekologus_content_knowledge_cards())
+    readiness = content_knowledge_production_depth_readiness(
+        ekologus_seed_content_knowledge_cards()
+    )
 
     assert readiness.status == "seeded_contract_proof"
     assert readiness.ready_for_daily_content is False
@@ -92,6 +135,7 @@ def test_source_backed_cards_still_require_review_before_daily_content() -> None
             source_lineage=[
                 "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
             ],
+            lifecycle_status="source_backed_review_required",
             confidence=0.74,
             freshness="public_site_review_required_2026-07-01",
         )
@@ -110,14 +154,50 @@ def test_work_item_matches_required_service_cta_claim_and_evidence_cards() -> No
 
     assert match.blockers == []
     assert match.service_card is not None
+    assert match.service_card.id == "ekologus_service_bdo_reporting"
+    assert match.service_card.lifecycle_status == "source_backed_review_required"
     assert match.cta_cards
     assert match.claim_policy_cards
     assert match.evidence_requirement_cards
-    assert required_content_knowledge_card_ids(match) == [
-        "ekologus_service_environmental_compliance",
-        "ekologus_cta_consultation_without_guarantee",
-        "ekologus_evidence_live_connector_requirement",
+    required_ids = required_content_knowledge_card_ids(match)
+    assert required_ids[0] == "ekologus_service_bdo_reporting"
+    assert "ekologus_cta_consultation_without_guarantee" in required_ids
+    assert "ekologus_evidence_live_connector_requirement" in required_ids
+
+
+def test_rejected_or_private_source_facts_do_not_compile_to_cards() -> None:
+    facts = [
+        ContentSourceFact(
+            source_id="private_fact",
+            source_type="private_candidate",
+            privacy_class="private_local",
+            source_url_or_path="/private/source.md",
+            extracted_fact="Private candidate should not be committed as a card.",
+            scope="service",
+            freshness_date="2026-07-01",
+            confidence=0.6,
+            review_status="review_required",
+            target_card_id="private_card",
+            target_card_type="service",
+            target_card_title="Private card",
+        ),
+        ContentSourceFact(
+            source_id="rejected_fact",
+            source_type="reviewed_internal",
+            privacy_class="commit_safe",
+            source_url_or_path="docs/review.md",
+            extracted_fact="Rejected fact should not compile.",
+            scope="service",
+            freshness_date="2026-07-01",
+            confidence=0.6,
+            review_status="rejected",
+            target_card_id="rejected_card",
+            target_card_type="service",
+            target_card_title="Rejected card",
+        ),
     ]
+
+    assert compile_source_facts_to_knowledge_cards(facts) == ()
 
 
 def test_unknown_topic_blocks_required_service_and_cta_cards() -> None:
@@ -168,5 +248,5 @@ def test_content_knowledge_cards_endpoint_exposes_typed_cards() -> None:
         "ekologus_evidence_live_connector_requirement",
     }
     assert "docs/goals/archive/004-goal.md" in payload["source_lineage"]
-    assert payload["production_depth_readiness"]["status"] == "seeded_contract_proof"
+    assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
     assert payload["production_depth_readiness"]["ready_for_daily_content"] is False
