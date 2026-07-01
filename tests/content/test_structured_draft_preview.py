@@ -57,6 +57,7 @@ def _contract(*, include_claim_markers: bool = True) -> StructuredDraftGeneratio
                 else []
             ),
             claims_allowed=["Ekologus pomaga firmom uporządkować obowiązki BDO."],
+            claims_removed_or_blocked=["Ta treść zwiększy liczbę leadów."],
             human_review_questions=["Czy to brzmi jak Ekologus?"],
         ),
         output_schema=structured_draft_output_schema(),
@@ -166,6 +167,19 @@ def test_structured_draft_preview_blocks_claim_marker_without_section_evidence()
     assert result.preview is None
     assert [blocker.code for blocker in result.blockers] == ["claim_missing_required_evidence"]
     assert "ev_wp_bdo" in result.blockers[0].next_step
+
+
+def test_structured_draft_preview_requires_forbidden_claim_acknowledgement() -> None:
+    result = build_structured_draft_preview(
+        output=_output(forbidden_claims_avoided=[]),
+        contract=_contract(),
+    )
+
+    assert result.preview is None
+    assert [blocker.code for blocker in result.blockers] == [
+        "missing_forbidden_claim_acknowledgement"
+    ]
+    assert "Ta treść zwiększy liczbę leadów." in result.blockers[0].next_step
 
 
 def test_structured_draft_preview_keeps_text_only_claim_contract_compatible() -> None:

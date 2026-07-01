@@ -367,6 +367,11 @@ requirements and blocked/review-required knowledge constraints into
 `model_input`, keeping review-required knowledge visible to runtime/preview/
 quality gates instead of burying it in prose.
 
+Structured draft preview now requires forbidden-claim acknowledgement under
+Beads task `wilq-seo-dfu`: every `claims_removed_or_blocked` item from the
+generation contract must appear in `forbidden_claims_avoided`, otherwise
+preview blocks with `missing_forbidden_claim_acknowledgement`.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate

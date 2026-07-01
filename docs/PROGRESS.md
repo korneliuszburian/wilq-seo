@@ -350,6 +350,11 @@ API status later contradicts this state.
   Brief into `contract.model_input` and shared schemas. The runtime receives
   typed evidence requirements, blocked/review-required claim constraints and
   card lineage as contract data, not only prose in the system instruction.
+- Structured draft preview now blocks
+  `missing_forbidden_claim_acknowledgement` when model output does not list all
+  `claims_removed_or_blocked` from the generation contract in
+  `forbidden_claims_avoided`. This prevents the runtime from silently ignoring
+  forbidden/removed claims while still passing preview.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and
