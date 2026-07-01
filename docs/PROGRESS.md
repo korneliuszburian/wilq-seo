@@ -156,8 +156,13 @@ API status later contradicts this state.
   traces, metric facts and blocked claims in route/API data. Eighth green
   sub-slice extracts pure Ads number/cost/percentage/status formatting into
   `lib/adsFormatting.ts` with focused tests, reducing Ads Doctor utility
-  ownership before broader panel extraction. Broader Ads extraction and
-  zombie/copy cleanup remain in this Beads task.
+  ownership before broader panel extraction. Ninth green sub-slice extracts
+  the Ads negative-keyword candidate panel into
+  `components/AdsNegativeKeywordCandidatesPanel.tsx`, centralizes campaign/ad
+  group fallback labels in `lib/adsLabels.ts`, and keeps the static Ads route
+  guard checking `preview_card`/`payload_preview` invariants across the route
+  and extracted panel. Broader Ads extraction and zombie/copy cleanup remain in
+  this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and

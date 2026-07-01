@@ -7744,6 +7744,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    const negativeKeywordPanelSource = readFileSync(
+      "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
+      "utf8"
+    );
     const traceLineSource = readFileSync("src/components/TraceLine.tsx", "utf8");
     expect(routeSource).not.toContain('empty="brak"');
     expect(traceLineSource).not.toContain('empty = "brak"');
@@ -7798,7 +7802,9 @@ describe("WILQ dashboard", () => {
       "{share.advertising_channel_type_label} / {share.campaign_status_label}"
     );
     expect(routeSource).not.toContain("} / koszt{\" \"}");
-    expect(routeSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
+    expect(negativeKeywordPanelSource).not.toContain(
+      "{candidate.review_priority} / {candidate.review_score}"
+    );
     expect(routeSource).not.toContain("{row.keyword_text} / {row.match_type_label}");
     expect(routeSource).not.toContain("row.blocked_claim_labels.slice(0, 2).join");
     expect(routeSource).not.toContain("row.human_review_gate_labels.slice(0, 2).join");
@@ -7812,8 +7818,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");
     expect(routeSource).not.toContain("Wspólne budget_id");
     expect(routeSource).not.toContain("ID budżetu:");
-    expect(routeSource).toContain("candidate.preview_card");
-    expect(routeSource).not.toContain("candidate.payload_preview");
+    expect(negativeKeywordPanelSource).toContain("candidate.preview_card");
+    expect(negativeKeywordPanelSource).not.toContain("candidate.payload_preview");
     expect(routeSource).toContain("row.missing_read_contract_summary_label");
     expect(routeSource).toContain("row.human_review_gate_summary_label");
     expect(routeSource).not.toContain("adsCampaignTriageNextStep");
