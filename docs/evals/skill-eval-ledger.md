@@ -67,13 +67,14 @@ Result:
 - Harness prompt was tightened: `validation_state="validated"` is allowed only
   for a real ActionObject with non-empty `action_id`; workflow gates must use
   `pending_validation`, `blocked` or `missing`.
-- Re-run attempts after the prompt fix are externally blocked by Codex usage
-  limit, not by WILQ API, the skill case or the grader. Proof traces:
-  `.local-lab/evals/codex-skill/20260701T202245Z/wilq-content-operator/trace.jsonl`
-  and
-  `.local-lab/evals/codex-skill/20260701T202326Z/wilq-content-operator/trace.jsonl`.
-  Both contain the same Codex error: `You've hit your usage limit ... try again
-  at 10:23 PM`, with empty stderr and no `result.json`.
+- Fresh re-run after the prompt fix passed:
+  `.local-lab/evals/codex-skill/20260701T212839Z/summary.json`.
+  Result: `operator_usefulness_score=4`, `blocked=true`, six evidence IDs,
+  two recommendations and six action candidates. The output chose
+  `content_work_item_content_decision_https___www_ekologus_pl` in `refresh`
+  mode, used GSC/WordPress/GA4/Ahrefs evidence, kept workflow gates without
+  fake `validated` ActionObjects, and blocked publish-ready, final article,
+  SEO success, lead/revenue and destructive update claims.
 
 ## 2026-06-27 - Marketing brief blocker cleanup proof
 

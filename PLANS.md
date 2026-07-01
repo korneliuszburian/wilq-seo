@@ -238,6 +238,13 @@ gate under Beads task `wilq-seo-odx`: if a section uses an
 `allowed_with_evidence` Claim Ledger entry but omits that claim's required
 evidence IDs, the review blocks with `claim_missing_required_evidence`.
 
+`wilq-content-operator` now has a completed non-interactive Codex eval pass
+after the ActionObject validation prompt fix. Proof:
+`.local-lab/evals/codex-skill/20260701T212839Z/summary.json`; result
+`operator_usefulness_score=4`, `blocked=true`, six evidence IDs, two
+recommendations and six action candidates, with publish/final article/success
+claims blocked.
+
 ## In Scope
 
 Goal 005 includes:

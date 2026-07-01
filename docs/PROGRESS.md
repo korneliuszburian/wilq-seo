@@ -190,8 +190,12 @@ API status later contradicts this state.
   all 13 WILQ skills covered. The first live Codex eval caught a useful harness
   issue: workflow gates without `action_id` must not be marked
   `validation_state="validated"`. `scripts/codex_skill_eval.sh` now states that
-  rule explicitly. A re-run is pending because Codex returned a usage-limit
-  blocker until 22:23.
+  rule explicitly. Fresh re-run passed at
+  `.local-lab/evals/codex-skill/20260701T212839Z/summary.json` with
+  `operator_usefulness_score=4`, `blocked=true`, six evidence IDs, two
+  recommendations and six action candidates. The output preserved workflow
+  gate states without fake ActionObject validation and blocked publish/final
+  article/SEO success/lead/revenue/destructive-update claims.
 - Content diagnostics decision ranking is now freshness-aware for secondary
   gap sources. If Ahrefs is stale while GSC and WordPress have fresh ready
   content evidence, `/api/content/diagnostics` promotes the GSC/WordPress
