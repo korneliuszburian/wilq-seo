@@ -164,6 +164,19 @@ def test_wordpress_handoff_requires_matching_draft_package() -> None:
     _assert_operator_blockers_have_no_jargon(result.blockers)
 
 
+def test_wordpress_handoff_requires_audit_evidence_lineage() -> None:
+    result = build_content_wordpress_draft_handoff(
+        item=_item(),
+        draft_package=_draft_package(),
+        human_review=_review(evidence_ids=["ev_gsc_bdo"]),
+        audit=_audit(evidence_ids=["ev_other"]),
+    )
+
+    assert result.handoff is None
+    assert "audit_evidence_mismatch" in [blocker.code for blocker in result.blockers]
+    _assert_operator_blockers_have_no_jargon(result.blockers)
+
+
 def test_wordpress_handoff_updates_workflow_as_prepared_or_created() -> None:
     result = build_content_wordpress_draft_handoff(
         item=_item(wordpress_handoff_status="missing", wordpress_post_id=None),

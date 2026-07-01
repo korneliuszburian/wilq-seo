@@ -206,6 +206,11 @@ Structured draft preview now has the matching early gate under Beads task
 `wilq-seo-eva`: preview blocks `unknown_claim_reference` when runtime output
 uses a claim not present in `contract.model_input.claims_allowed`.
 
+WordPress draft handoff audit lineage is hardened under Beads task
+`wilq-seo-unp`: audit evidence must overlap with the approved human review
+evidence and the draft package evidence map, otherwise handoff blocks with
+`audit_evidence_mismatch`.
+
 ## In Scope
 
 Goal 005 includes:

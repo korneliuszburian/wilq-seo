@@ -27,6 +27,7 @@ ContentWordPressDraftHandoffBlockerCode = Literal[
     "missing_audit",
     "audit_human_review_mismatch",
     "missing_audit_evidence",
+    "audit_evidence_mismatch",
 ]
 
 
@@ -120,7 +121,7 @@ def content_wordpress_draft_handoff_blockers(
     blockers.extend(_final_url_blockers(item))
     blockers.extend(_draft_package_blockers(item, draft_package))
     blockers.extend(_human_review_blockers(item, draft_package, human_review))
-    blockers.extend(_audit_blockers(audit, human_review))
+    blockers.extend(_audit_blockers(audit, human_review, draft_package))
     return blockers
 
 
@@ -246,6 +247,7 @@ def _human_review_blockers(
 def _audit_blockers(
     audit: ContentWordPressDraftAuditEnvelope | None,
     human_review: ContentHumanReview | None,
+    draft_package: ContentDraftPackage | None,
 ) -> list[ContentWordPressDraftHandoffBlocker]:
     if audit is None:
         return [
@@ -267,6 +269,32 @@ def _audit_blockers(
                 "Dodaj dowody do audytu.",
             )
         )
+    else:
+        audit_evidence = set(audit.evidence_ids)
+        if (
+            human_review is not None
+            and human_review.evidence_ids
+            and audit_evidence.isdisjoint(human_review.evidence_ids)
+        ):
+            blockers.append(
+                _blocker(
+                    "audit_evidence_mismatch",
+                    "Audyt nie wskazuje sprawdzonych dowodów",
+                    "Audyt przekazania musi zachować dowody, które sprawdził człowiek.",
+                    "Powiąż audyt z dowodami ze sprawdzenia człowieka.",
+                )
+            )
+        if draft_package is not None:
+            draft_evidence = set(draft_package_evidence(draft_package))
+            if draft_evidence and audit_evidence.isdisjoint(draft_evidence):
+                blockers.append(
+                    _blocker(
+                        "audit_evidence_mismatch",
+                        "Audyt nie wskazuje dowodów szkicu",
+                        "Audyt przekazania musi zachować dowody użyte w paczce szkicu.",
+                        "Powiąż audyt z dowodami z paczki szkicu.",
+                    )
+                )
     if human_review is not None and audit.human_review_id != human_review.id:
         blockers.append(
             _blocker(

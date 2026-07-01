@@ -215,6 +215,10 @@ API status later contradicts this state.
   review when runtime output uses a claim absent from
   `contract.model_input.claims_allowed`. This catches invented output claims at
   the preview boundary, before they can look like a reviewable draft.
+- WordPress draft handoff audit lineage is hardened: audit evidence must overlap
+  with the approved human review evidence and draft package evidence map, or
+  handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
+  allowed WordPress path.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or
