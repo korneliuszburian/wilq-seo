@@ -75,6 +75,28 @@ def main() -> int:
     packed_content = pack.get("content_diagnostics", {})
     packed_evidence_ids = packed_content.get("evidence_ids") or []
     endpoint_evidence_ids = content_diagnostics.get("evidence_ids") or []
+    gsc_refresh_runs = request_json(
+        args.api_base,
+        "GET",
+        "/api/connectors/google_search_console/refresh-runs",
+    )
+    latest_gsc_refresh_evidence_id = _latest_completed_vendor_refresh_evidence_id(
+        gsc_refresh_runs
+    )
+    gsc_refresh_evidence_ids = [
+        str(evidence_id)
+        for evidence_id in endpoint_evidence_ids
+        if str(evidence_id).startswith("ev_refresh_refresh_google_search_console_")
+    ]
+    if latest_gsc_refresh_evidence_id is not None:
+        if latest_gsc_refresh_evidence_id not in gsc_refresh_evidence_ids:
+            raise SystemExit(
+                "Content diagnostics must include latest completed GSC refresh evidence"
+            )
+        if len(gsc_refresh_evidence_ids) > 1:
+            raise SystemExit(
+                "Content diagnostics must not include stale duplicate GSC refresh evidence IDs"
+            )
     if not set(packed_evidence_ids).issubset(set(endpoint_evidence_ids)):
         raise SystemExit("Context pack content_diagnostics evidence IDs are not endpoint subset")
     if any("_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids):
@@ -244,6 +266,8 @@ def main() -> int:
                         "_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids
                     ),
                     "gsc_query_page_metric_fact_count": gsc_query_page_fact_count,
+                    "latest_gsc_refresh_evidence_id": latest_gsc_refresh_evidence_id,
+                    "gsc_refresh_evidence_ids": gsc_refresh_evidence_ids,
                     "blocker_count": content_diagnostics.get("blocker_count"),
                     "section_ids": [
                         section.get("id") for section in content_diagnostics.get("sections", [])
@@ -303,6 +327,23 @@ def _decision_trace(decisions: Any) -> list[dict[str, Any]]:
         for item in decisions
         if isinstance(item, dict)
     ]
+
+
+def _latest_completed_vendor_refresh_evidence_id(runs: Any) -> str | None:
+    if not isinstance(runs, list):
+        return None
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        if run.get("mode") != "vendor_read":
+            continue
+        if run.get("status") != "completed" or run.get("vendor_data_collected") is not True:
+            continue
+        for evidence_id in run.get("evidence_ids") or []:
+            text = str(evidence_id)
+            if text.startswith("ev_refresh_refresh_google_search_console_"):
+                return text
+    return None
 
 
 if __name__ == "__main__":

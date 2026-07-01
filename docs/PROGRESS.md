@@ -282,6 +282,10 @@ API status later contradicts this state.
   before building sections and response evidence. `wilq-gsc-content-doctor`
   smoke after stack restart passed with the evidence trace reduced to 15
   current proof IDs instead of dozens of stale WordPress/GSC refresh IDs.
+- `wilq-gsc-content-doctor` smoke now guards that content diagnostics includes
+  the latest completed GSC vendor-read evidence and at most one
+  `ev_refresh_refresh_google_search_console_*` ID. This turns the evidence
+  condensation fix into a regression gate for future skill/API changes.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

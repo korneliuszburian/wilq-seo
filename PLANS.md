@@ -228,6 +228,11 @@ fact identity rule as tactical queue under Beads task `wilq-seo-alf`. This
 keeps GSC/content skill context focused on current proof instead of dragging
 stale duplicate refresh IDs into every operator answer.
 
+`wilq-gsc-content-doctor` smoke now guards this behavior under Beads task
+`wilq-seo-uk3`: live skill proof fails if content diagnostics includes stale
+duplicate GSC refresh evidence instead of the latest completed vendor-read
+evidence.
+
 ## In Scope
 
 Goal 005 includes:
