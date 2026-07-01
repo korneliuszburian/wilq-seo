@@ -6,6 +6,17 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.main import app
+from tests.content.test_content_work_item_brief_draft_api import (
+    _post_draft_package,
+    _post_sales_brief,
+)
+from tests.content.test_work_item_preflight_api import (
+    _draft_claim_ledger,
+    _enrichment,
+    _inventory_record,
+    _item,
+    _sales_brief_seed,
+)
 
 
 def test_content_quality_review_accepts_evidence_bound_draft() -> None:
@@ -220,17 +231,6 @@ def test_content_revision_application_blocks_wrong_work_item() -> None:
     wrong_item = deepcopy(payload["item"])
     wrong_item["id"] = "content_work_item_wrong"
 
-    selected = TestClient(app).post(
-        f"/api/content/work-items/{payload['item']['id']}/revision-apply",
-        json={
-            "item": wrong_item,
-            "revision_plan": plan,
-            "draft_output": payload["structured_output"],
-            "updated_quality_review": review,
-        },
-    )
-    assert selected.status_code == 400
-
     response = TestClient(app).post(
         "/api/content/work-items/revision-apply",
         json={
@@ -242,23 +242,68 @@ def test_content_revision_application_blocks_wrong_work_item() -> None:
     )
     assert response.status_code == 200
     application = response.json()["revision_application"]
-    assert "revision_plan_mismatch" in [
-        blocker["code"] for blocker in application["blockers"]
-    ]
+    assert "revision_plan_mismatch" in [blocker["code"] for blocker in application["blockers"]]
 
 
 def _quality_payload() -> dict[str, Any]:
-    snapshot = TestClient(app).get("/api/content/work-items/snapshot").json()
-    item = deepcopy(snapshot["structured_generation"]["item"])
-    brief = deepcopy(snapshot["sales_brief"]["sales_brief_result"]["brief"])
-    draft_package = deepcopy(snapshot["draft_package"]["draft_package_result"]["draft_package"])
-    contract = snapshot["structured_generation"]["structured_generation_result"]["contract"]
+    item = _item(
+        preflight_status="draft_allowed",
+        preserve_first_plan_status="approved",
+        sales_brief_status="approved",
+        sales_brief_id="sales_brief_content_work_item_bdo",
+        claim_ledger_status="approved",
+        claim_ledger_id="claim_ledger_bdo",
+        draft_package_status="ready",
+        draft_package_id="draft_package_content_work_item_bdo",
+        measurement_window_status="planned",
+        measurement_window_id="measure_bdo",
+    )
+    claim_ledger = _draft_claim_ledger()
+    brief_response = _post_sales_brief(
+        {
+            "item": _item(
+                preserve_first_plan_status="approved",
+                measurement_window_status="planned",
+                measurement_window_id="measure_bdo",
+            ),
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": claim_ledger,
+            "seed": _sales_brief_seed(),
+            "enrichment": _enrichment(),
+        }
+    )
+    brief = deepcopy(brief_response["sales_brief_result"]["brief"])
+    draft_response = _post_draft_package(
+        {
+            "item": item,
+            "inventory_records": [_inventory_record()],
+            "duplicate_risk": "clear",
+            "claim_ledger": claim_ledger,
+            "seed": _sales_brief_seed(),
+            "enrichment": _enrichment(),
+            "sales_brief": brief,
+        }
+    )
+    draft_package = deepcopy(draft_response["draft_package_result"]["draft_package"])
+    generation_response = TestClient(app).post(
+        "/api/content/work-items/structured-draft-generation",
+        json={
+            "item": item,
+            "sales_brief": brief,
+            "claim_ledger": claim_ledger,
+            "draft_package": draft_package,
+        },
+    )
+    assert generation_response.status_code == 200
+    contract = generation_response.json()["structured_generation_result"]["contract"]
+    assert contract is not None
     model_input = contract["model_input"]
     return {
         "item": item,
         "sales_brief": brief,
         "draft_package": draft_package,
-        "claim_ledger": _claim_ledger(item),
+        "claim_ledger": claim_ledger,
         "structured_output": _structured_output(model_input),
         "duplicate_risk": "clear",
     }

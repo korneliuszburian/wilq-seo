@@ -233,6 +233,13 @@ API status later contradicts this state.
   claim whose marker requires evidence, that section must reference the marker
   evidence IDs or preview blocks with `claim_missing_required_evidence`. Text-only
   legacy contracts without `claim_markers` remain backward-compatible.
+- Quality-review API tests no longer depend on the current live
+  `/api/content/work-items/snapshot` decision. They now build a deterministic
+  BDO ready chain through the same Sales Brief, Draft Package and Structured
+  Generation API helpers before review/revision assertions. Live snapshot
+  semantics still need a separate follow-up because the freshness-ranked
+  homepage decision can correctly block Sales Brief on missing service/CTA
+  knowledge cards.
 - WordPress draft handoff audit lineage is hardened: audit evidence must overlap
   with the approved human review evidence and draft package evidence map, or
   handoff blocks with `audit_evidence_mismatch`. Draft-only remains the only
@@ -1729,6 +1736,10 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_structured_draft_preview.py tests/content/test_structured_generation_api.py -q`
 - `rtk uv run ruff check wilq/content/drafts/preview.py tests/content/test_structured_draft_preview.py`
 - `rtk uv run mypy wilq/content/drafts/preview.py`
+- `rtk uv run pytest tests/content/test_content_quality_review_api.py -q`
+- `rtk uv run pytest tests/content/test_content_work_item_brief_draft_api.py tests/content/test_structured_generation_api.py -q`
+- `rtk uv run ruff check tests/content/test_content_quality_review_api.py wilq/content/workflow/api.py`
+- `rtk uv run mypy wilq/content/workflow/api.py`
 - `rtk pnpm --filter @wilq/shared-schemas test -- index.test.ts --runInBand`
 - `rtk pnpm --dir packages/shared-schemas typecheck`
 - `rtk pnpm --dir apps/dashboard test -- WorkflowPanels.test.tsx --runInBand`

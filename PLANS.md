@@ -536,6 +536,10 @@ Stop and record a blocker if:
   blocks a section that uses a marker-backed claim without referencing that
   claim's required evidence IDs. This keeps faithfulness local to the section,
   not only global to the whole draft.
+- Workflow tests should distinguish deterministic ready-chain fixtures from the
+  live diagnostics snapshot. The live snapshot may legitimately block Sales
+  Brief/draft when the top freshness-ranked decision lacks production-depth
+  service or CTA knowledge cards.
 
 ## Outcomes & Retrospective
 

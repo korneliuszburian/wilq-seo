@@ -156,8 +156,7 @@ def build_content_work_item_sales_brief_response(
             claim_ledger=request.claim_ledger,
             seed=request.seed,
             enrichment=request.enrichment,
-            knowledge_match=request.knowledge_match
-            or match_content_knowledge_cards(request.item),
+            knowledge_match=request.knowledge_match or match_content_knowledge_cards(request.item),
         ),
     )
 
@@ -180,8 +179,7 @@ def build_content_work_item_draft_package_response(
             claim_ledger=request.claim_ledger,
             seed=request.seed,
             enrichment=request.enrichment,
-            knowledge_match=request.knowledge_match
-            or match_content_knowledge_cards(request.item),
+            knowledge_match=request.knowledge_match or match_content_knowledge_cards(request.item),
         )
     )
     return ContentWorkItemDraftPackageResponse(
@@ -626,6 +624,7 @@ def _snapshot_sales_brief(
             claim_ledger=claim_ledger,
             seed=seed,
             enrichment=enrichment,
+            knowledge_match=match_content_knowledge_cards(item),
         )
     )
 
@@ -653,6 +652,7 @@ def _snapshot_draft_package(
             claim_ledger=claim_ledger,
             seed=seed,
             enrichment=enrichment,
+            knowledge_match=match_content_knowledge_cards(item),
             sales_brief=brief,
         )
     )
