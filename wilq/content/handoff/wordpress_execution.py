@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from wilq.content.drafts.package import ContentDraftPackage
 from wilq.content.handoff.wordpress import ContentWordPressDraftHandoff
@@ -22,6 +22,8 @@ ContentWordPressDraftExecutionBlockerCode = Literal[
 
 
 class ContentWordPressDraftPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     connector: Literal["wordpress_ekologus"] = "wordpress_ekologus"
     endpoint_kind: Literal["posts"] = "posts"
     post_status: Literal["draft"] = "draft"
@@ -34,15 +36,31 @@ class ContentWordPressDraftPayload(BaseModel):
 
 
 class ContentWordPressDraftExecutionBlocker(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     code: ContentWordPressDraftExecutionBlockerCode
     label: str
     reason: str
     next_step: str
 
 
+class ContentWordPressDraftExecutionBoundary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    allowed_operation: Literal["create_wordpress_draft"] = "create_wordpress_draft"
+    dry_run_default: bool = True
+    live_write_enabled: bool = False
+    live_adapter_configured: bool = False
+    publish_allowed: Literal[False] = False
+    destructive_update_allowed: Literal[False] = False
+
+
 class ContentWordPressDraftExecutionResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: ContentWordPressDraftExecutionStatus
     mode: ContentWordPressDraftExecutionMode
+    boundary: ContentWordPressDraftExecutionBoundary
     payload: ContentWordPressDraftPayload | None = None
     wordpress_post_id: str | None = None
     external_write_attempted: bool = False
@@ -68,6 +86,10 @@ def execute_content_wordpress_draft_handoff(
         return ContentWordPressDraftExecutionResult(
             status="blocked",
             mode=mode,
+            boundary=_execution_boundary(
+                live_write_enabled=live_write_enabled,
+                create_draft=create_draft,
+            ),
             blockers=blockers,
         )
 
@@ -80,6 +102,10 @@ def execute_content_wordpress_draft_handoff(
         return ContentWordPressDraftExecutionResult(
             status="dry_run_ready",
             mode=mode,
+            boundary=_execution_boundary(
+                live_write_enabled=live_write_enabled,
+                create_draft=create_draft,
+            ),
             payload=payload,
             external_write_attempted=False,
         )
@@ -90,6 +116,10 @@ def execute_content_wordpress_draft_handoff(
     return ContentWordPressDraftExecutionResult(
         status="created",
         mode=mode,
+        boundary=_execution_boundary(
+            live_write_enabled=live_write_enabled,
+            create_draft=create_draft,
+        ),
         payload=payload,
         wordpress_post_id=wordpress_post_id,
         external_write_attempted=True,
@@ -204,6 +234,17 @@ def _live_write_blockers(
             )
         ]
     return []
+
+
+def _execution_boundary(
+    *,
+    live_write_enabled: bool,
+    create_draft: Callable[[ContentWordPressDraftPayload], str] | None,
+) -> ContentWordPressDraftExecutionBoundary:
+    return ContentWordPressDraftExecutionBoundary(
+        live_write_enabled=live_write_enabled,
+        live_adapter_configured=create_draft is not None,
+    )
 
 
 def _content_markdown_from_draft_package(draft_package: ContentDraftPackage) -> str:

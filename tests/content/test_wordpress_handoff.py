@@ -202,6 +202,12 @@ def test_wordpress_draft_execution_dry_run_returns_draft_only_payload() -> None:
 
     assert result.status == "dry_run_ready"
     assert result.mode == "dry_run"
+    assert result.boundary.allowed_operation == "create_wordpress_draft"
+    assert result.boundary.dry_run_default is True
+    assert result.boundary.live_write_enabled is False
+    assert result.boundary.live_adapter_configured is False
+    assert result.boundary.publish_allowed is False
+    assert result.boundary.destructive_update_allowed is False
     assert result.external_write_attempted is False
     assert result.wordpress_post_id is None
     assert result.blockers == []
@@ -292,6 +298,9 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
     created_payload_titles: list[str] = []
 
     def create_draft(payload) -> str:  # type: ignore[no-untyped-def]
+        assert payload.post_status == "draft"
+        assert payload.publish_allowed is False
+        assert payload.destructive_update_allowed is False
         created_payload_titles.append(payload.title)
         return "123"
 
@@ -304,6 +313,11 @@ def test_wordpress_draft_execution_live_mode_uses_explicit_adapter_only() -> Non
     )
 
     assert result.status == "created"
+    assert result.boundary.allowed_operation == "create_wordpress_draft"
+    assert result.boundary.live_write_enabled is True
+    assert result.boundary.live_adapter_configured is True
+    assert result.boundary.publish_allowed is False
+    assert result.boundary.destructive_update_allowed is False
     assert result.external_write_attempted is True
     assert result.wordpress_post_id == "123"
     assert created_payload_titles == ["BDO dla firm: co sprawdzić"]

@@ -42,6 +42,13 @@ def _sales_brief() -> dict[str, object]:
         "id": "sales_brief_content_work_item_bdo",
         "work_item_id": "content_work_item_bdo",
         "topic": "BDO dla firm",
+        "operations_context": {
+            "enrichment_id": "content_enrichment_content_work_item_bdo",
+            "intent_label": "informacyjno-usługowy",
+            "recommended_mode": "refresh",
+            "safe_next_step": "Przygotuj szkic wyłącznie po bramkach WILQ.",
+            "source_fact_ids": ["ev_gsc_bdo"],
+        },
         "target_reader": "właściciel firmy",
         "buyer_problem": "nie wie, jak podejść do BDO",
         "buyer_trigger": "zbliża się kontrola",
@@ -64,6 +71,18 @@ def _sales_brief() -> dict[str, object]:
                 "summary": "GSC pokazuje popyt na temat BDO.",
             }
         ],
+        "knowledge_card_ids": [
+            "content_knowledge_service_bdo",
+            "content_knowledge_cta_consultation",
+        ],
+        "knowledge_constraints": [
+            {
+                "card_id": "content_knowledge_service_bdo",
+                "constraint_type": "service_fit",
+                "label": "Dopasuj treść do usługi Ekologus",
+                "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+            }
+        ],
         "forbidden_claims": [],
         "missing_evidence": [],
         "evidence_ids": ["ev_gsc_bdo", "ev_wp_bdo"],
@@ -71,6 +90,10 @@ def _sales_brief() -> dict[str, object]:
         "measurement_plan": {
             "measurement_window_id": "measurement_window_content_work_item_bdo",
             "metrics_to_watch": ["GSC clicks"],
+            "baseline_source_connectors": ["google_search_console"],
+            "baseline_evidence_ids": ["ev_gsc_bdo"],
+            "measurement_readiness_label": "pomiar zaplanowany",
+            "measurement_readiness_reason": "WILQ ma bazowy dowód i okno obserwacji.",
             "earliest_verdict_note": "Nie oceniaj przed końcem okna.",
             "success_claim_rule": "Nie claimuj sukcesu bez danych.",
         },

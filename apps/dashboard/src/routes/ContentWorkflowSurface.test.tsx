@@ -1119,6 +1119,14 @@ function wordpressDraftExecutionResponse(): ContentWorkItemWordPressDraftExecuti
     execution_result: {
       status: "dry_run_ready",
       mode: "dry_run",
+      boundary: {
+        allowed_operation: "create_wordpress_draft",
+        dry_run_default: true,
+        live_write_enabled: false,
+        live_adapter_configured: false,
+        publish_allowed: false,
+        destructive_update_allowed: false
+      },
       payload: {
         connector: "wordpress_ekologus",
         endpoint_kind: "posts",

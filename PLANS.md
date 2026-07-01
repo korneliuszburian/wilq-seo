@@ -653,9 +653,20 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 - Focused proof for the bounded revision application slice: content quality
   review/API and content workflow contract-inventory pytest subset, Ruff,
   mypy, changed-file complexity audit and `git diff --check` passed.
+- WordPress draft-only adapter boundary slice `wilq-seo-03a` made the execution
+  contract explicit. Every execution result now carries a typed boundary with
+  the only allowed operation (`create_wordpress_draft`), dry-run default state,
+  live-write/adapter readiness and structural `publish_allowed=false` plus
+  `destructive_update_allowed=false`. The API still blocks live write by
+  default, while the domain proof for an explicitly supplied adapter can create
+  only a draft payload.
+- Focused proof for the WordPress boundary slice: WordPress execution/handoff,
+  content workflow end-to-end and adversarial pytest subset, shared-schema
+  Vitest, dashboard API/route Vitest, dashboard typecheck, Ruff, source mypy,
+  Fallow audit, changed-file complexity audit and `git diff --check` passed.
 - Next product slice should come from `bd ready --json`; current likely
-  candidates are `wilq-seo-03a` WordPress draft-only adapter boundary or
-  `wilq-seo-prk` conservative measurement outcome interpretation.
+  candidates are `wilq-seo-prk` conservative measurement outcome interpretation
+  or `wilq-seo-wr4` content operator skill/UAT harness.
 
 2026-06-30:
 
@@ -802,11 +813,11 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 Current next action:
 
 Goal 004 is active. `wilq-seo-xlw`, `wilq-seo-6kd`, `wilq-seo-a3t`,
-`wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0` and `wilq-seo-a09` are closed.
-Continue from `bd ready --json`; the next product slice is whichever ready
-Goal 004 task is highest priority, likely the WordPress draft-only adapter
-boundary (`wilq-seo-03a`) or conservative measurement outcome interpreter
-(`wilq-seo-prk`).
+`wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0`, `wilq-seo-a09` and
+`wilq-seo-03a` are closed. Continue from `bd ready --json`; the next product
+slice is whichever ready Goal 004 task is highest priority, likely the
+conservative measurement outcome interpreter (`wilq-seo-prk`) or content
+operator skill/UAT harness (`wilq-seo-wr4`).
 
 Completed Goal 002 extraction context:
 

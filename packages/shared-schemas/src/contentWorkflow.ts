@@ -653,9 +653,19 @@ export const ContentWordPressDraftExecutionBlockerSchema = z.object({
   next_step: z.string()
 });
 
+export const ContentWordPressDraftExecutionBoundarySchema = z.object({
+  allowed_operation: z.literal("create_wordpress_draft"),
+  dry_run_default: z.boolean(),
+  live_write_enabled: z.boolean(),
+  live_adapter_configured: z.boolean(),
+  publish_allowed: z.literal(false),
+  destructive_update_allowed: z.literal(false)
+});
+
 export const ContentWordPressDraftExecutionResultSchema = z.object({
   status: z.enum(["dry_run_ready", "created", "blocked"]),
   mode: z.enum(["dry_run", "live"]),
+  boundary: ContentWordPressDraftExecutionBoundarySchema,
   payload: ContentWordPressDraftExecutionPayloadSchema.nullable().optional(),
   wordpress_post_id: z.string().nullable().optional(),
   external_write_attempted: z.boolean(),

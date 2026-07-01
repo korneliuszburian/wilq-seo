@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
@@ -63,7 +63,7 @@ def _post_wordpress_execution(payload: dict[str, Any]) -> dict[str, Any]:
         json=payload,
     )
     assert response.status_code == 200
-    data = response.json()
+    data = cast(dict[str, Any], response.json())
     assert sorted(data) == ["execution_result"]
     return data
 
@@ -83,6 +83,14 @@ def test_wordpress_execution_api_returns_draft_only_dry_run() -> None:
     assert result["external_write_attempted"] is False
     assert result["wordpress_post_id"] is None
     assert result["blockers"] == []
+    assert result["boundary"] == {
+        "allowed_operation": "create_wordpress_draft",
+        "dry_run_default": True,
+        "live_write_enabled": False,
+        "live_adapter_configured": False,
+        "publish_allowed": False,
+        "destructive_update_allowed": False,
+    }
     payload = result["payload"]
     assert payload["connector"] == "wordpress_ekologus"
     assert payload["endpoint_kind"] == "posts"
@@ -108,6 +116,10 @@ def test_wordpress_execution_api_blocks_live_write() -> None:
     assert result["status"] == "blocked"
     assert result["payload"] is None
     assert result["external_write_attempted"] is False
+    assert result["boundary"]["live_write_enabled"] is False
+    assert result["boundary"]["live_adapter_configured"] is False
+    assert result["boundary"]["publish_allowed"] is False
+    assert result["boundary"]["destructive_update_allowed"] is False
     assert [blocker["code"] for blocker in result["blockers"]] == [
         "live_write_not_enabled"
     ]

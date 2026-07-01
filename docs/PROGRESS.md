@@ -105,9 +105,17 @@ API status later contradicts this state.
   cannot free-regenerate, keeps `publish_ready=false` and
   `wordpress_write_allowed=false`, and selected routes reject wrong-work-item
   requests before any application result.
+- Goal 004 WordPress draft-only adapter boundary slice `wilq-seo-03a` is
+  implemented. `ContentWordPressDraftExecutionResult` now exposes an explicit
+  execution boundary: allowed operation is only `create_wordpress_draft`,
+  dry-run is the default, API responses report whether live write and an
+  adapter are configured, and `publish_allowed=false` plus
+  `destructive_update_allowed=false` are part of the typed contract. The public
+  API still blocks live writes by default; the domain-level live proof requires
+  an explicit adapter and still passes only a `post_status=draft` payload.
 - The next Goal 004 product slice should come from `bd ready --json`; current
-  likely candidates are `wilq-seo-03a` WordPress draft-only adapter boundary or
-  `wilq-seo-prk` conservative measurement outcome interpretation.
+  likely candidates are `wilq-seo-prk` conservative measurement outcome
+  interpretation or `wilq-seo-wr4` content operator skill/UAT harness.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.
