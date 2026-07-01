@@ -7744,6 +7744,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     const routeSource = readFileSync("src/routes/AdsDoctorSurface.tsx", "utf8");
+    const campaignPanelsSource = readFileSync(
+      "src/components/AdsCampaignPanels.tsx",
+      "utf8"
+    );
     const negativeKeywordPanelSource = readFileSync(
       "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
       "utf8"
@@ -7787,8 +7791,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("primaryDecision.blocked_claim_summary_label");
     expect(routeSource).toContain("primaryDecision.missing_read_contract_summary_label");
     expect(routeSource).toContain("business_context_read_contract.status_label");
-    expect(routeSource).toContain("row.advertising_channel_type_label");
-    expect(routeSource).toContain("row.campaign_status_label");
+    expect(campaignPanelsSource).toContain("row.advertising_channel_type_label");
+    expect(campaignPanelsSource).toContain("row.campaign_status_label");
     expect(routeSource).toContain("row.budget_period_label");
     expect(routeSource).toContain("row.blocked_claim_summary_label");
     expect(routeSource).toContain("row.human_review_gate_summary_label");
@@ -7800,7 +7804,8 @@ describe("WILQ dashboard", () => {
     );
     expect(routeSource).not.toContain("{row.review_priority} / {row.review_score}");
     expect(routeSource).not.toContain("{row.review_priority} / wynik {row.review_score}");
-    expect(routeSource).toContain("adsMissingChannelLabel");
+    expect(campaignPanelsSource).toContain("adsMissingChannelLabel");
+    expect(campaignPanelsSource).toContain("adsMissingCampaignStatusLabel");
     expect(routeSource).not.toContain("{row.advertising_channel_type_label} / {row.budget_period_label}");
     expect(routeSource).not.toContain(
       "{share.advertising_channel_type_label} / {share.campaign_status_label}"

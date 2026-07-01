@@ -164,8 +164,12 @@ API status later contradicts this state.
   and extracted panel. Tenth green sub-slice extracts Ads search-term summary,
   n-gram, safety and keyword-context tables into
   `components/AdsSearchTermPanels.tsx`, reducing Ads Doctor route ownership and
-  carrying the static source guards over to the extracted module. Broader Ads
-  extraction and zombie/copy cleanup remain in this Beads task.
+  carrying the static source guards over to the extracted module. Eleventh
+  green sub-slice extracts Ads campaign metric, triage and derived-KPI panels
+  into `components/AdsCampaignPanels.tsx`, moves campaign channel/status
+  fallback labels into `lib/adsLabels.ts`, and keeps source guards pointed at
+  the new module. Broader Ads extraction and zombie/copy cleanup remain in this
+  Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
