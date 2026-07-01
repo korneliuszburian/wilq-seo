@@ -72,6 +72,7 @@ def main() -> int:
     decision_queue = content_diagnostics.get("decision_queue")
     if not isinstance(decision_queue, list):
         raise SystemExit("Content diagnostics must expose decision_queue")
+    api_gsc_contract = content_diagnostics.get("gsc_search_analytics_contract")
     packed_content = pack.get("content_diagnostics", {})
     packed_evidence_ids = packed_content.get("evidence_ids") or []
     endpoint_evidence_ids = content_diagnostics.get("evidence_ids") or []
@@ -121,6 +122,27 @@ def main() -> int:
             raise SystemExit(
                 "Latest GSC vendor_read must mark query/page data as partial_possible"
             )
+    if content_diagnostics.get("live_data_available") is True:
+        if not isinstance(api_gsc_contract, dict):
+            raise SystemExit("Content diagnostics must expose GSC Search Analytics contract")
+        if api_gsc_contract.get("data_availability_checked") is not True:
+            raise SystemExit("Content diagnostics GSC contract must check date availability")
+        if api_gsc_contract.get("date_availability_status") != "available":
+            raise SystemExit("Content diagnostics GSC contract must record available status")
+        if api_gsc_contract.get("search_type") != "web":
+            raise SystemExit("Content diagnostics GSC contract must pin search_type=web")
+        if api_gsc_contract.get("detail_dimensions") != "query,page":
+            raise SystemExit("Content diagnostics GSC contract must expose query,page dimensions")
+        if api_gsc_contract.get("detail_data_completeness") != "partial_possible":
+            raise SystemExit(
+                "Content diagnostics GSC contract must expose partial_possible completeness"
+            )
+        if not str(api_gsc_contract.get("summary_label") or "").strip():
+            raise SystemExit("Content diagnostics GSC contract summary_label is missing")
+        if "nie pełną sumą całego ruchu" not in str(
+            api_gsc_contract.get("partial_detail_warning_label") or ""
+        ):
+            raise SystemExit("Content diagnostics GSC contract must warn about partial totals")
     gsc_refresh_evidence_ids = [
         str(evidence_id)
         for evidence_id in endpoint_evidence_ids
@@ -303,6 +325,7 @@ def main() -> int:
                     "context_pack_has_ahrefs_evidence": any(
                         "_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids
                     ),
+                    "api_gsc_search_analytics_contract": api_gsc_contract,
                     "gsc_search_analytics_contract": {
                         "data_availability_checked": latest_gsc_refresh_summary.get(
                             "data_availability_checked"

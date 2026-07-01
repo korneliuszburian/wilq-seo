@@ -17,6 +17,7 @@ import {
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
   ContentServiceProfilePrivateSourceProposalSectionSchema,
+  ContentGscSearchAnalyticsContractSchema,
   StructuredDraftPreviewBlockerSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
@@ -236,6 +237,48 @@ describe("ContentServiceProfilePrivateSourceProposalSectionSchema", () => {
       ContentServiceProfilePrivateSourceProposalSectionSchema.safeParse({
         ...proposal,
         risk_tier: "comfortable"
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentGscSearchAnalyticsContractSchema", () => {
+  const contract = {
+    source_connector: "google_search_console",
+    evidence_ids: ["ev_refresh_refresh_google_search_console_916af598b0fd"],
+    data_availability_checked: true,
+    date_availability_status: "available",
+    availability_date_start: "2026-06-21",
+    availability_date_end: "2026-06-30",
+    detail_date_start: "2026-06-29",
+    detail_date_end: "2026-06-29",
+    latest_available_detail_date: "2026-06-29",
+    search_type: "web",
+    detail_dimensions: "query,page",
+    detail_data_completeness: "partial_possible",
+    query_page_row_limit: 250,
+    query_page_max_rows: 1000,
+    query_page_rows_truncated: false,
+    summary_label: "GSC Search Analytics: najnowszy dostępny dzień szczegółów 2026-06-29.",
+    partial_detail_warning_label:
+      "Dane query/page z Search Analytics są sygnałem, nie pełną sumą całego ruchu.",
+    paging_label: "Paginacja query/page: rowLimit=250, max rows=1000; wynik nie zgłasza ucięcia."
+  };
+
+  it("accepts only the typed GSC Search Analytics read contract shape", () => {
+    expect(ContentGscSearchAnalyticsContractSchema.safeParse(contract).success).toBe(true);
+
+    expect(
+      ContentGscSearchAnalyticsContractSchema.safeParse({
+        ...contract,
+        source_connector: "ahrefs"
+      }).success
+    ).toBe(false);
+
+    expect(
+      ContentGscSearchAnalyticsContractSchema.safeParse({
+        ...contract,
+        query_page_rows_truncated: "false"
       }).success
     ).toBe(false);
   });

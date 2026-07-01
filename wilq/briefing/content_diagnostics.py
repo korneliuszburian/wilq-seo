@@ -52,6 +52,7 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
+    ContentGscSearchAnalyticsContract,
     ContentPreflightResponse,
     MetricFact,
     OpportunityDomain,
@@ -183,6 +184,7 @@ def build_content_diagnostics(
         latest_refreshes=[content_refresh_with_api_label(refresh) for refresh in latest_refreshes],
         live_data_available=live_data_available,
         live_data_status_label=content_live_data_status_label(live_data_available),
+        gsc_search_analytics_contract=_gsc_search_analytics_contract(latest_refreshes),
         query_page_count=query_page_count,
         matched_inventory_count=matched_inventory_count,
         operator_summary=build_content_operator_summary(
@@ -253,6 +255,103 @@ def _latest_refreshes(connector_ids: Iterable[str]) -> list[ConnectorRefreshRun]
         if runs:
             latest.append(runs[0])
     return latest
+
+
+def _gsc_search_analytics_contract(
+    latest_refreshes: Iterable[ConnectorRefreshRun],
+) -> ContentGscSearchAnalyticsContract | None:
+    refresh = next(
+        (
+            item
+            for item in latest_refreshes
+            if item.connector_id == "google_search_console"
+            and item.status == ConnectorRefreshStatus.completed
+            and item.vendor_data_collected
+        ),
+        None,
+    )
+    if refresh is None:
+        return None
+    summary = refresh.metric_summary
+    if summary.get("api") != "search_console_search_analytics":
+        return None
+    detail_date_end = _optional_text(summary.get("date_end"))
+    row_limit = _optional_int(summary.get("query_page_row_limit"))
+    max_rows = _optional_int(summary.get("query_page_max_rows"))
+    rows_truncated = _bool_metric(summary.get("query_page_rows_truncated"))
+    return ContentGscSearchAnalyticsContract(
+        evidence_ids=refresh.evidence_ids,
+        data_availability_checked=_bool_metric(summary.get("data_availability_checked")),
+        date_availability_status=_text(summary.get("date_availability_status")),
+        availability_date_start=_optional_text(summary.get("availability_date_start")),
+        availability_date_end=_optional_text(summary.get("availability_date_end")),
+        detail_date_start=_optional_text(summary.get("date_start")),
+        detail_date_end=detail_date_end,
+        latest_available_detail_date=detail_date_end,
+        search_type=_text(summary.get("search_type")),
+        detail_dimensions=_text(summary.get("detail_dimensions")),
+        detail_data_completeness=_text(summary.get("detail_data_completeness")),
+        query_page_row_limit=row_limit,
+        query_page_max_rows=max_rows,
+        query_page_rows_truncated=rows_truncated,
+        summary_label=_gsc_search_analytics_summary_label(detail_date_end),
+        partial_detail_warning_label=(
+            "Dane query/page z Search Analytics są sygnałem do decyzji treściowej, "
+            "nie pełną sumą całego ruchu."
+        ),
+        paging_label=_gsc_search_analytics_paging_label(row_limit, max_rows, rows_truncated),
+    )
+
+
+def _gsc_search_analytics_summary_label(detail_date_end: str | None) -> str:
+    if detail_date_end:
+        return (
+            "GSC Search Analytics: najnowszy dostępny dzień szczegółów "
+            f"{detail_date_end}; query/page może być częściowe."
+        )
+    return "GSC Search Analytics: brak potwierdzonego dnia szczegółów query/page."
+
+
+def _gsc_search_analytics_paging_label(
+    row_limit: int | None,
+    max_rows: int | None,
+    rows_truncated: bool,
+) -> str:
+    if row_limit is None or max_rows is None:
+        return "Brak potwierdzonej informacji o stronicowaniu query/page."
+    truncation = "wynik mógł zostać ucięty" if rows_truncated else "wynik nie zgłasza ucięcia"
+    return f"Paginacja query/page: rowLimit={row_limit}, max rows={max_rows}; {truncation}."
+
+
+def _optional_text(value: object) -> str | None:
+    text = _text(value)
+    return text or None
+
+
+def _text(value: object) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def _optional_int(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return None
+
+
+def _bool_metric(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() == "true"
+    if isinstance(value, int):
+        return value != 0
+    return False
 
 
 def _primary_content_data_available(

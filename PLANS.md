@@ -247,6 +247,13 @@ contract fields and fails if they are missing. The non-interactive proof at
 validated `act_prepare_content_refresh_queue`, while keeping query/page rows
 as `partial_possible` signals from the newest available day.
 
+The Search Analytics caveat is now API-owned under Beads task `wilq-seo-5y8`.
+`/api/content/diagnostics` exposes `gsc_search_analytics_contract` with
+available-date, `search_type=web`, `detail_dimensions=query,page`,
+`detail_data_completeness=partial_possible`, paging and Polish warning labels,
+so skills and dashboard code no longer need to infer this from raw
+`latest_refreshes.metric_summary`.
+
 Marketing brief action items now preserve the same refresh-first semantics as
 stale daily decisions. If a safe next action is attached to stale Merchant or
 content data, it becomes a blocker titled `Odśwież dane przed akcją` and points

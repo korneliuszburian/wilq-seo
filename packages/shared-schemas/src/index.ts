@@ -2301,6 +2301,27 @@ export const ContentOperatorSummarySchema = z.object({
   metric_tiles: z.record(z.string(), z.union([z.string(), z.number()])).default({})
 });
 
+export const ContentGscSearchAnalyticsContractSchema = z.object({
+  source_connector: z.literal("google_search_console"),
+  evidence_ids: z.array(z.string()).default([]),
+  data_availability_checked: z.boolean(),
+  date_availability_status: z.string(),
+  availability_date_start: z.string().nullable().optional(),
+  availability_date_end: z.string().nullable().optional(),
+  detail_date_start: z.string().nullable().optional(),
+  detail_date_end: z.string().nullable().optional(),
+  latest_available_detail_date: z.string().nullable().optional(),
+  search_type: z.string(),
+  detail_dimensions: z.string(),
+  detail_data_completeness: z.string(),
+  query_page_row_limit: z.number().nullable().optional(),
+  query_page_max_rows: z.number().nullable().optional(),
+  query_page_rows_truncated: z.boolean(),
+  summary_label: z.string(),
+  partial_detail_warning_label: z.string(),
+  paging_label: z.string()
+});
+
 export const ContentMarketerDecisionSchema = z.object({
   id: z.string(),
   technical_decision_id: z.string(),
@@ -2337,6 +2358,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   latest_refreshes: z.array(ConnectorRefreshRunSchema),
   live_data_available: z.boolean(),
   live_data_status_label: z.string().default(""),
+  gsc_search_analytics_contract: ContentGscSearchAnalyticsContractSchema.nullable().optional(),
   query_page_count: z.number(),
   matched_inventory_count: z.number(),
   operator_summary: ContentOperatorSummarySchema,

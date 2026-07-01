@@ -457,6 +457,13 @@ API status later contradicts this state.
   `operator_usefulness_score=4`, six evidence IDs and a validated
   `act_prepare_content_refresh_queue`, while the output states that GSC
   query/page rows are `partial_possible` signals from the newest available day.
+- `/api/content/diagnostics` now exposes an API-owned
+  `gsc_search_analytics_contract` instead of requiring skills or dashboard
+  code to scrape `latest_refreshes.metric_summary`. Live proof after stack
+  restart returned `search_type=web`, `detail_dimensions=query,page`,
+  `detail_data_completeness=partial_possible`, detail date `2026-06-29`,
+  `rowLimit=250` and a Polish warning that query/page rows are not full traffic
+  totals.
 - Tactical queue now deduplicates metric facts by connector, metric name and
   dimensions before building items, choosing the newest collected fact. This
   prevents older GSC refresh evidence for the same `query,page` identity from

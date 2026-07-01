@@ -15305,7 +15305,23 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
             summary="Odczyt GSC zakończony przez test adapter.",
             external_call_attempted=True,
             vendor_data_collected=True,
-            metric_summary={"clicks": 12, "impressions": 120},
+            metric_summary={
+                "api": "search_console_search_analytics",
+                "clicks": 12,
+                "impressions": 120,
+                "data_availability_checked": "true",
+                "date_availability_status": "available",
+                "availability_date_start": "2026-06-21",
+                "availability_date_end": "2026-06-30",
+                "date_start": "2026-06-29",
+                "date_end": "2026-06-29",
+                "search_type": "web",
+                "detail_dimensions": "query,page",
+                "detail_data_completeness": "partial_possible",
+                "query_page_row_limit": 250,
+                "query_page_max_rows": 1000,
+                "query_page_rows_truncated": "false",
+            },
             metric_facts=[
                 VendorMetricFact(
                     "clicks",
@@ -15432,6 +15448,23 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert all(refresh["connector_label"] for refresh in payload["latest_refreshes"])
     assert payload["live_data_available"] is True
     assert payload["live_data_status_label"] == "dane GSC i WordPress dostępne"
+    gsc_contract = payload["gsc_search_analytics_contract"]
+    assert gsc_contract["source_connector"] == "google_search_console"
+    assert "ev_refresh_" in " ".join(gsc_contract["evidence_ids"])
+    assert gsc_contract["data_availability_checked"] is True
+    assert gsc_contract["date_availability_status"] == "available"
+    assert gsc_contract["availability_date_start"] == "2026-06-21"
+    assert gsc_contract["availability_date_end"] == "2026-06-30"
+    assert gsc_contract["latest_available_detail_date"] == "2026-06-29"
+    assert gsc_contract["search_type"] == "web"
+    assert gsc_contract["detail_dimensions"] == "query,page"
+    assert gsc_contract["detail_data_completeness"] == "partial_possible"
+    assert gsc_contract["query_page_row_limit"] == 250
+    assert gsc_contract["query_page_max_rows"] == 1000
+    assert gsc_contract["query_page_rows_truncated"] is False
+    assert "najnowszy dostępny dzień" in gsc_contract["summary_label"]
+    assert "nie pełną sumą całego ruchu" in gsc_contract["partial_detail_warning_label"]
+    assert "rowLimit=250" in gsc_contract["paging_label"]
     assert payload["query_page_count"] >= 1
     assert payload["matched_inventory_count"] >= 1
     assert "act_prepare_content_refresh_queue" in payload["action_ids"]

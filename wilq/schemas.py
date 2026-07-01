@@ -4144,6 +4144,27 @@ class ContentPreflightResponse(BaseModel):
         return self
 
 
+class ContentGscSearchAnalyticsContract(BaseModel):
+    source_connector: Literal["google_search_console"] = "google_search_console"
+    evidence_ids: list[str] = Field(default_factory=list)
+    data_availability_checked: bool = False
+    date_availability_status: str = ""
+    availability_date_start: str | None = None
+    availability_date_end: str | None = None
+    detail_date_start: str | None = None
+    detail_date_end: str | None = None
+    latest_available_detail_date: str | None = None
+    search_type: str = ""
+    detail_dimensions: str = ""
+    detail_data_completeness: str = ""
+    query_page_row_limit: int | None = None
+    query_page_max_rows: int | None = None
+    query_page_rows_truncated: bool = False
+    summary_label: str = ""
+    partial_detail_warning_label: str = ""
+    paging_label: str = ""
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -4152,6 +4173,7 @@ class ContentDiagnosticsResponse(BaseModel):
     latest_refreshes: list[ConnectorRefreshRun] = Field(default_factory=list)
     live_data_available: bool
     live_data_status_label: str = ""
+    gsc_search_analytics_contract: ContentGscSearchAnalyticsContract | None = None
     query_page_count: int = 0
     matched_inventory_count: int = 0
     operator_summary: ContentOperatorSummary
