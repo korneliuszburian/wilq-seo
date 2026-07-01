@@ -17,6 +17,7 @@ from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
 )
+from wilq.content.knowledge.service_profile import content_service_profile_response
 from wilq.content.knowledge.source_facts import (
     ContentSourceFact,
     ekologus_source_fact_registry,
@@ -292,3 +293,58 @@ def test_content_knowledge_cards_endpoint_exposes_typed_cards() -> None:
     assert "docs/goals/archive/004-goal.md" in payload["source_lineage"]
     assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
     assert payload["production_depth_readiness"]["ready_for_daily_content"] is False
+
+
+def test_service_profile_response_is_read_only_and_review_gated() -> None:
+    response = content_service_profile_response()
+
+    assert response.workspace_id == "ekologus"
+    assert response.read_only is True
+    assert response.review_policy.can_edit_cards is False
+    assert response.review_policy.can_promote_facts is False
+    assert response.review_policy.can_request_review is True
+    assert response.coverage_summary.ready_for_daily_content is False
+    assert response.coverage_summary.source_backed_review_required_count >= 5
+    assert response.coverage_summary.approved_current_count == 0
+    assert response.service_sections
+    assert any(
+        section.card_id == "ekologus_service_bdo_reporting"
+        and section.status == "source_backed_review_required"
+        for section in response.service_sections
+    )
+    assert response.private_source_proposal_summary.proposal_protocol_available is True
+    assert response.private_source_proposal_summary.proposal_count == 0
+    assert response.review_actions
+
+
+def test_service_profile_exposes_water_permit_gap_without_fake_card() -> None:
+    response = content_service_profile_response()
+
+    gap = next(
+        gap for gap in response.coverage_gaps if gap.gap_id == "gap_service_operat_wodnoprawny"
+    )
+    assert gap.severity == "blocker"
+    assert gap.needed_source_type == "public_site_or_reviewed_internal_service_fact"
+    assert "content_work_item_operat_wodnoprawny" in gap.example_work_item_ids
+    assert not any(
+        section.card_id == "ekologus_service_operat_wodnoprawny"
+        for section in response.service_sections
+    )
+
+
+def test_content_service_profile_endpoint_exposes_read_only_view_model() -> None:
+    app = FastAPI()
+    app.include_router(router)
+    response = TestClient(app).get("/api/content/service-profile")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["read_only"] is True
+    assert payload["review_policy"]["can_edit_cards"] is False
+    assert payload["review_policy"]["can_promote_facts"] is False
+    assert payload["coverage_summary"]["ready_for_daily_content"] is False
+    assert payload["production_depth_readiness"]["status"] == "source_backed_review_required"
+    assert {gap["gap_id"] for gap in payload["coverage_gaps"]} >= {
+        "gap_service_operat_wodnoprawny",
+        "gap_no_approved_current_cards",
+    }

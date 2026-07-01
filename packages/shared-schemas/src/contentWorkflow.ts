@@ -303,6 +303,118 @@ export const ContentKnowledgeCardMatchSchema = z.object({
   blockers: z.array(ContentKnowledgeCardBlockerSchema).default([])
 });
 
+export const ContentServiceProfileReviewPolicySchema = z.object({
+  can_edit_cards: z.boolean(),
+  can_promote_facts: z.boolean(),
+  can_request_review: z.boolean(),
+  review_required_label: z.string(),
+  blocked_write_reason: z.string()
+});
+
+export const ContentServiceProfileCoverageSummarySchema = z.object({
+  card_count: z.number(),
+  service_card_count: z.number(),
+  seeded_contract_proof_count: z.number(),
+  source_backed_review_required_count: z.number(),
+  approved_current_count: z.number(),
+  stale_count: z.number(),
+  rejected_count: z.number(),
+  private_candidate_count: z.number(),
+  missing_required_area_count: z.number(),
+  ready_for_daily_content: z.boolean(),
+  status_label: z.string(),
+  safe_next_step: z.string()
+});
+
+export const ContentServiceProfileServiceSectionSchema = z.object({
+  card_id: z.string(),
+  title: z.string(),
+  status: ContentKnowledgeLifecycleStatusSchema,
+  status_label: z.string(),
+  summary: z.string(),
+  source_fact_ids: z.array(z.string()).default([]),
+  source_connector_labels: z.array(z.string()).default([]),
+  source_lineage_labels: z.array(z.string()).default([]),
+  freshness_label: z.string(),
+  confidence_label: z.string(),
+  service_fit_terms: z.array(z.string()).default([]),
+  buyer_problem_terms: z.array(z.string()).default([]),
+  buyer_triggers: z.array(z.string()).default([]),
+  cta_patterns: z.array(z.string()).default([]),
+  allowed_claims: z.array(z.string()).default([]),
+  claims_needing_review: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  forbidden_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  evidence_requirements: z.array(z.string()).default([]),
+  usage_notes: z.array(z.string()).default([]),
+  safe_next_step: z.string(),
+  review_request_hint: z.string()
+});
+
+export const ContentServiceProfilePolicySectionSchema = z.object({
+  card_id: z.string(),
+  title: z.string(),
+  status: ContentKnowledgeLifecycleStatusSchema,
+  claims_needing_review: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  forbidden_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  measurement_sensitive_claims: z.array(ContentKnowledgeClaimRuleSchema).default([]),
+  evidence_requirements: z.array(z.string()).default([]),
+  safe_next_step: z.string()
+});
+
+export const ContentServiceProfilePrivateSourceProposalSummarySchema = z.object({
+  proposal_protocol_available: z.boolean(),
+  proposal_count: z.number(),
+  review_required_count: z.number(),
+  approved_count: z.number(),
+  safe_next_step: z.string()
+});
+
+export const ContentServiceProfileCoverageGapSchema = z.object({
+  gap_id: z.string(),
+  area: z.string(),
+  severity: z.enum(["blocker", "review_required", "thin", "stale"]),
+  label: z.string(),
+  reason: z.string(),
+  needed_source_type: z.string(),
+  safe_next_step: z.string(),
+  example_work_item_ids: z.array(z.string()).default([])
+});
+
+export const ContentServiceProfileReviewActionSchema = z.object({
+  action_id: z.string(),
+  mode: z.enum(["prepare", "review_request"]),
+  label: z.string(),
+  reason: z.string(),
+  blocked_write_claim: z.string(),
+  required_human_role: z.string(),
+  target_card_id: z.string().nullable().optional(),
+  gap_id: z.string().nullable().optional()
+});
+
+export const ContentServiceProfileTechnicalTraceSchema = z.object({
+  knowledge_card_endpoint: z.string(),
+  source_fact_count: z.number(),
+  source_fact_ids: z.array(z.string()).default([]),
+  private_source_protocol_doc: z.string()
+});
+
+export const ContentServiceProfileResponseSchema = z.object({
+  workspace_id: z.string(),
+  workspace_label: z.string(),
+  generated_at: z.string(),
+  read_only: z.boolean(),
+  review_policy: ContentServiceProfileReviewPolicySchema,
+  production_depth_readiness: ContentKnowledgeProductionDepthReadinessSchema,
+  coverage_summary: ContentServiceProfileCoverageSummarySchema,
+  service_sections: z.array(ContentServiceProfileServiceSectionSchema).default([]),
+  claim_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
+  evidence_policy_sections: z.array(ContentServiceProfilePolicySectionSchema).default([]),
+  private_source_proposal_summary: ContentServiceProfilePrivateSourceProposalSummarySchema,
+  coverage_gaps: z.array(ContentServiceProfileCoverageGapSchema).default([]),
+  review_actions: z.array(ContentServiceProfileReviewActionSchema).default([]),
+  technical_trace: ContentServiceProfileTechnicalTraceSchema
+});
+
 export const ContentSalesBriefSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -998,6 +1110,9 @@ export type ContentKnowledgeProductionDepthReadiness = z.infer<
 >;
 export type ContentKnowledgeCardsResponse = z.infer<
   typeof ContentKnowledgeCardsResponseSchema
+>;
+export type ContentServiceProfileResponse = z.infer<
+  typeof ContentServiceProfileResponseSchema
 >;
 export type ContentWorkItemDraftPackageResponse = z.infer<
   typeof ContentWorkItemDraftPackageResponseSchema

@@ -10,6 +10,7 @@ import {
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemSnapshotResponseSchema,
+  ContentServiceProfileResponseSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
@@ -20,6 +21,113 @@ import {
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema
 } from "./index";
+
+describe("ContentServiceProfileResponseSchema", () => {
+  it("accepts the read-only Service Profile contract", () => {
+    const parsed = ContentServiceProfileResponseSchema.parse({
+      workspace_id: "ekologus",
+      workspace_label: "Ekologus",
+      generated_at: "2026-07-01T00:00:00Z",
+      read_only: true,
+      review_policy: {
+        can_edit_cards: false,
+        can_promote_facts: false,
+        can_request_review: true,
+        review_required_label: "Review required.",
+        blocked_write_reason: "No direct knowledge writes."
+      },
+      production_depth_readiness: {
+        status: "source_backed_review_required",
+        status_label: "źródła są, wymagają review",
+        ready_for_daily_content: false,
+        seeded_card_count: 3,
+        source_backed_review_required_count: 5,
+        production_depth_card_count: 0,
+        blocker_labels: ["Brakuje zatwierdzonych kart."]
+      },
+      coverage_summary: {
+        card_count: 8,
+        service_card_count: 5,
+        seeded_contract_proof_count: 3,
+        source_backed_review_required_count: 5,
+        approved_current_count: 0,
+        stale_count: 0,
+        rejected_count: 0,
+        private_candidate_count: 0,
+        missing_required_area_count: 1,
+        ready_for_daily_content: false,
+        status_label: "źródła są, wymagają review",
+        safe_next_step: "Review cards."
+      },
+      service_sections: [
+        {
+          card_id: "ekologus_service_bdo_reporting",
+          title: "BDO",
+          status: "source_backed_review_required",
+          status_label: "wymaga review",
+          summary: "BDO service card.",
+          source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+          source_connector_labels: ["public_site"],
+          source_lineage_labels: ["https://www.ekologus.pl/bdo/"],
+          freshness_label: "public_site_review_required_2026-07-01",
+          confidence_label: "średnia",
+          service_fit_terms: ["bdo"],
+          buyer_problem_terms: [],
+          buyer_triggers: [],
+          cta_patterns: [],
+          allowed_claims: [],
+          claims_needing_review: [],
+          forbidden_claims: [],
+          evidence_requirements: [],
+          usage_notes: [],
+          safe_next_step: "Review.",
+          review_request_hint: "Ask owner."
+        }
+      ],
+      claim_policy_sections: [],
+      evidence_policy_sections: [],
+      private_source_proposal_summary: {
+        proposal_protocol_available: true,
+        proposal_count: 0,
+        review_required_count: 0,
+        approved_count: 0,
+        safe_next_step: "Use private proposal protocol."
+      },
+      coverage_gaps: [
+        {
+          gap_id: "gap_service_operat_wodnoprawny",
+          area: "operat wodnoprawny",
+          severity: "blocker",
+          label: "Brak karty usługi",
+          reason: "Missing direct source.",
+          needed_source_type: "public_site_or_reviewed_internal_service_fact",
+          safe_next_step: "Add source fact.",
+          example_work_item_ids: ["content_work_item_operat_wodnoprawny"]
+        }
+      ],
+      review_actions: [
+        {
+          action_id: "service_profile_request_knowledge_review",
+          mode: "review_request",
+          label: "Poproś o review",
+          reason: "Review required.",
+          blocked_write_claim: "No write.",
+          required_human_role: "Wilku"
+        }
+      ],
+      technical_trace: {
+        knowledge_card_endpoint: "/api/content/knowledge-cards",
+        source_fact_count: 5,
+        source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+        private_source_protocol_doc: "docs/architecture/private-source-proposal-protocol.md"
+      }
+    });
+
+    expect(parsed.read_only).toBe(true);
+    expect(parsed.review_policy.can_edit_cards).toBe(false);
+    expect(parsed.coverage_gaps[0]?.gap_id).toBe("gap_service_operat_wodnoprawny");
+  });
+});
 
 describe("MerchantDiagnosticsResponseSchema", () => {
   it("accepts Merchant price-impact readiness decisions returned by the API", () => {

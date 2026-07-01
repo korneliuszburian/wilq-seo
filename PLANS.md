@@ -175,15 +175,21 @@ view model should aggregate existing cards/source facts into Polish service
 coverage, claim rules, evidence requirements, source lineage, gaps and blocked
 write policy. V1 has no card editing and no fact promotion.
 
+Read-only Service Profile v1 is implemented under Beads task `wilq-seo-lmm`.
+Endpoint: `GET /api/content/service-profile`; dashboard route:
+`/service-profile`. Live smoke after stack restart returned
+`read_only=True`, `status=source_backed_review_required`, `service_card_count=6`,
+gaps `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
+`can_edit_cards=False`.
+
 ## In Scope
 
 Goal 005 includes:
 
 1. Knowledge-card depth audit against real Ekologus services, buyer problems,
    buyer triggers, CTA patterns, claim constraints and evidence requirements.
-2. Implement read-only Ekologus Service Profile/review design so Wilku can
-   inspect card status, source lineage, freshness and missing coverage without
-   editing code.
+2. Use the implemented read-only Ekologus Service Profile/review surface in
+   Wilku UAT and future private proposal review.
 3. First real Wilku content UAT, or explicit owner defer with residual risk.
 4. Sales Brief v2 signal-quality audit across current queue candidates,
    connector freshness/density and enrichment usefulness.

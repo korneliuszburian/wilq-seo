@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
+from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsResponse,
@@ -28,6 +29,7 @@ from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
+    ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     ("GET", "/api/content/work-items/snapshot"): ContentWorkItemWorkflowSnapshotResponse,
     (
@@ -143,7 +145,13 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
     for route in router.routes:
         if not isinstance(route, APIRoute):
             continue
-        if not route.path.startswith(("/api/content/work-items", "/api/content/knowledge-cards")):
+        if not route.path.startswith(
+            (
+                "/api/content/work-items",
+                "/api/content/knowledge-cards",
+                "/api/content/service-profile",
+            )
+        ):
             continue
         for method in route.methods or set():
             if method in {"HEAD", "OPTIONS"}:

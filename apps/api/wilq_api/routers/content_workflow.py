@@ -12,6 +12,10 @@ from wilq.content.knowledge.cards import (
     ContentKnowledgeCardsResponse,
     content_knowledge_cards_response,
 )
+from wilq.content.knowledge.service_profile import (
+    ContentServiceProfileResponse,
+    content_service_profile_response,
+)
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
     build_content_work_item_blocked_snapshot_response_for_work_item,
@@ -86,6 +90,14 @@ router = APIRouter()
 )
 def content_knowledge_cards() -> ContentKnowledgeCardsResponse:
     return content_knowledge_cards_response()
+
+
+@router.get(
+    "/api/content/service-profile",
+    response_model=ContentServiceProfileResponse,
+)
+def content_service_profile() -> ContentServiceProfileResponse:
+    return content_service_profile_response()
 
 
 @router.get(

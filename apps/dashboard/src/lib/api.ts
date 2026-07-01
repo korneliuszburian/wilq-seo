@@ -10,6 +10,7 @@ import {
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentKnowledgeCardsResponseSchema,
+  ContentServiceProfileResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
   ContentWorkItemDraftPackageRequestSchema,
@@ -69,6 +70,7 @@ import {
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
   type ContentKnowledgeCardsResponse,
+  type ContentServiceProfileResponse,
   type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
@@ -228,6 +230,10 @@ export function getContentPreflight(): Promise<ContentPreflightResponse> {
 
 export function getContentKnowledgeCards(): Promise<ContentKnowledgeCardsResponse> {
   return apiGet("/api/content/knowledge-cards", ContentKnowledgeCardsResponseSchema);
+}
+
+export function getContentServiceProfile(): Promise<ContentServiceProfileResponse> {
+  return apiGet("/api/content/service-profile", ContentServiceProfileResponseSchema);
 }
 
 export function getContentWorkItemQueue(): Promise<ContentWorkItemQueueResponse> {
@@ -523,6 +529,7 @@ export type {
   CommandCenterResponse,
   ContentDiagnosticsResponse,
   ContentKnowledgeCardsResponse,
+  ContentServiceProfileResponse,
   ContentPreflightResponse,
   ContentOpportunityEnrichment,
   ContentOpportunityEnrichmentResponse,

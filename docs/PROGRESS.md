@@ -252,6 +252,14 @@ API status later contradicts this state.
   coverage gaps, blocked write policy and non-persistent review requests.
   Direct card edits, fact promotion and private-source exposure stay blocked
   until a future ActionObject/audit path exists.
+- Read-only Service Profile implementation is live under Beads task
+  `wilq-seo-lmm`: `GET /api/content/service-profile` returns typed
+  `read_only=true` coverage over existing knowledge cards/source facts, shared
+  schemas parse the contract, and `/service-profile` renders Polish dashboard
+  panels. Live smoke after stack restart returned
+  `status=source_backed_review_required`, `service_card_count=6`, gaps
+  `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
+  `can_edit_cards=false`.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity
