@@ -138,8 +138,11 @@ API status later contradicts this state.
   now validate shared Zod request schemas instead of accepting `unknown`, API
   errors include HTTP status/detail with a timeout boundary, and shared schemas
   expose typed preflight, sales brief, draft package, human review, WordPress
-  draft handoff and measurement window requests. Diagnostic surface primitives,
-  Ads extraction and zombie/copy cleanup remain in this Beads task.
+  draft handoff and measurement window requests. Second green sub-slice removes
+  the route-to-route import between Ads Doctor and Custom Segments by moving the
+  shared custom segment panels into `components/AdsCustomSegmentPanels.tsx`.
+  Diagnostic surface primitives, broader Ads extraction and zombie/copy cleanup
+  remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and

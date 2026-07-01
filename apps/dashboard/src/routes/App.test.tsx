@@ -7912,30 +7912,35 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
-    const routeSource = readFileSync("src/routes/CustomSegmentsDiagnosticSurface.tsx", "utf8");
-    expect(routeSource).toContain("missing_read_contract_labels");
-    expect(routeSource).toContain("blocked_claim_labels");
-    expect(routeSource).toContain("validation_status_label");
-    expect(routeSource).toContain("candidate.evidence_summary_label");
-    expect(routeSource).toContain("row.evidence_summary_label");
-    expect(routeSource).toContain("contract.evidence_summary_label");
-    expect(routeSource).toContain("contract.action_summary_label");
-    expect(routeSource).toContain("contract.missing_read_contract_summary_label");
-    expect(routeSource).toContain("contract.operator_review_gate_summary_label");
-    expect(routeSource).toContain("candidate.preview_card");
-    expect(routeSource).not.toContain('empty="brak"');
-    expect(routeSource).not.toContain("{candidate.intent} / pewność:");
-    expect(routeSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
-    expect(routeSource).not.toContain(" / średnie miesięczne wyszukiwania:");
-    expect(routeSource).not.toContain(" / konkurencja:");
-    expect(routeSource).not.toContain("candidate.payload_preview");
-    expect(routeSource).not.toContain("contract.missing_read_contracts.length");
-    expect(routeSource).not.toContain("contract.operator_review_gates.length");
-    expect(routeSource).not.toContain("formatCustomSegmentsEvidenceCount");
-    expect(routeSource).not.toContain("formatCustomSegmentsActionCount");
-    expect(routeSource).not.toContain("from \"./marketingLabels\"");
-    expect(routeSource).not.toContain(".map(adsMissingReadContractLabel)");
-    expect(routeSource).not.toContain(".map(adsBlockedClaimLabel)");
+    const customSegmentsSource = [
+      "src/routes/CustomSegmentsDiagnosticSurface.tsx",
+      "src/components/AdsCustomSegmentPanels.tsx"
+    ]
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
+    expect(customSegmentsSource).toContain("missing_read_contract_labels");
+    expect(customSegmentsSource).toContain("blocked_claim_labels");
+    expect(customSegmentsSource).toContain("validation_status_label");
+    expect(customSegmentsSource).toContain("candidate.evidence_summary_label");
+    expect(customSegmentsSource).toContain("row.evidence_summary_label");
+    expect(customSegmentsSource).toContain("contract.evidence_summary_label");
+    expect(customSegmentsSource).toContain("contract.action_summary_label");
+    expect(customSegmentsSource).toContain("contract.missing_read_contract_summary_label");
+    expect(customSegmentsSource).toContain("contract.operator_review_gate_summary_label");
+    expect(customSegmentsSource).toContain("candidate.preview_card");
+    expect(customSegmentsSource).not.toContain('empty="brak"');
+    expect(customSegmentsSource).not.toContain("{candidate.intent} / pewność:");
+    expect(customSegmentsSource).not.toContain("{candidate.review_priority} / {candidate.review_score}");
+    expect(customSegmentsSource).not.toContain(" / średnie miesięczne wyszukiwania:");
+    expect(customSegmentsSource).not.toContain(" / konkurencja:");
+    expect(customSegmentsSource).not.toContain("candidate.payload_preview");
+    expect(customSegmentsSource).not.toContain("contract.missing_read_contracts.length");
+    expect(customSegmentsSource).not.toContain("contract.operator_review_gates.length");
+    expect(customSegmentsSource).not.toContain("formatCustomSegmentsEvidenceCount");
+    expect(customSegmentsSource).not.toContain("formatCustomSegmentsActionCount");
+    expect(customSegmentsSource).not.toContain("from \"./marketingLabels\"");
+    expect(customSegmentsSource).not.toContain(".map(adsMissingReadContractLabel)");
+    expect(customSegmentsSource).not.toContain(".map(adsBlockedClaimLabel)");
   });
 
   it("legacy operating routes do not fall back to registry dumps", async () => {

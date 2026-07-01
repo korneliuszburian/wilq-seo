@@ -15,12 +15,12 @@ import {
   MetricTile,
   PlainChipRow
 } from "../components/OperatorPrimitives";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import { ActionFocus } from "./ActionPanels";
 import {
   AdsCustomSegmentAudienceForecastPanel,
   AdsCustomSegmentCandidatesPanel
-} from "./CustomSegmentsDiagnosticSurface";
+} from "../components/AdsCustomSegmentPanels";
+import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { ActionFocus } from "./ActionPanels";
 import { ActionPreviewCard } from "../components/ActionPreviewCard";
 
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;

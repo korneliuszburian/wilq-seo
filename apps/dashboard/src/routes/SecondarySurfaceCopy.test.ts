@@ -7,7 +7,8 @@ const ROUTE_SOURCES = [
   "src/routes/BriefWorkflowSurface.tsx",
   "src/routes/LocaloDiagnosticSurface.tsx",
   "src/routes/AhrefsDiagnosticSurface.tsx",
-  "src/routes/CustomSegmentsDiagnosticSurface.tsx"
+  "src/routes/CustomSegmentsDiagnosticSurface.tsx",
+  "src/components/AdsCustomSegmentPanels.tsx"
 ];
 
 describe("secondary route empty-state copy", () => {
