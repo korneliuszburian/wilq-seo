@@ -192,8 +192,12 @@ API status later contradicts this state.
   sub-slice consolidates scattered static copy/source/status tests into
   `routes/operatorSafetyGuards.test.ts`, preserving the operator-safety
   assertions while removing misleading `*Copy`, `*Source` and badge-usage test
-  names from the route tree. Connector scope clarity remains in this Beads
-  task.
+  names from the route tree. Eighteenth green sub-slice exposes connector scope
+  clarity through existing API-owned `risk_notes`: WordPress now says
+  inventory/draft-only handoff with publish/destructive updates blocked, Localo
+  says access is not ranking/GBP-write proof, social publishing remains outside
+  the current content workflow, and the Registry renders these notes without
+  React inventing connector readiness. This keeps frozen schema files clean.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and

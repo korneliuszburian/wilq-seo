@@ -28,6 +28,11 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
             <StatusBadge value={connector.status} label={connector.status_label} />
           </div>
           <div className="mt-4 text-xs text-slate-600">
+            {connector.risk_notes ? (
+              <p className="mb-3 rounded-md border border-line bg-slate-50 p-2 text-slate-600">
+                Zakres i bezpieczeństwo: {connector.risk_notes}
+              </p>
+            ) : null}
             {connector.missing_credentials.length > 0 ? (
               <div>
                 <div className="mb-1 font-medium text-wait">Brakujące ustawienia dostępu</div>

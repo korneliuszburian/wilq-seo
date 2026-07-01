@@ -285,6 +285,7 @@ def compact_connector_status_for_operator_context(
         "missing_credentials": (
             missing_credentials if isinstance(missing_credentials, list) else []
         ),
+        "risk_notes": dumped.get("risk_notes"),
         "capability_count": len(capabilities) if isinstance(capabilities, list) else 0,
         "supported_action_count": (
             len(supported_actions) if isinstance(supported_actions, list) else 0

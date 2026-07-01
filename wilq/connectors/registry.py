@@ -151,7 +151,10 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("local_visibility_task", "gbp_post_candidate"),
         "Localo API/MCP limits apply.",
         "Depends on Localo subscription.",
-        "Local visibility writes must be audited.",
+        (
+            "Localo jest źródłem gotowości i lokalnego kontekstu; sam dostęp nie "
+            "potwierdza rankingów, GBP write ani poprawy widoczności."
+        ),
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -171,7 +174,11 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
-        "Content writes can publish client-facing changes.",
+        (
+            "WordPress ekologus.pl służy do inventory i draft-only handoff; "
+            "publish i destructive update pozostają zablokowane poza osobnym "
+            "review/audit action model."
+        ),
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -187,7 +194,10 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("product_content_refresh", "product_draft_update"),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
-        "Shop content writes can affect product claims.",
+        (
+            "WordPress sklepu służy do inventory i draft-only pracy produktowej; "
+            "publish i nadpisywanie wymagają osobnego review/audit action model."
+        ),
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -199,7 +209,10 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("linkedin_post_candidate",),
         "LinkedIn API permissions and organization roles apply.",
         "No direct API cost expected.",
-        "Publishing requires organization permission and sprawdzenie przez człowieka.",
+        (
+            "Social publishing jest poza bieżącym content workflow; wymaga osobnych "
+            "uprawnień, review i akcji publikacji."
+        ),
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -211,7 +224,10 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("facebook_post_candidate",),
         "Meta API permissions and app review apply.",
         "No direct API cost expected.",
-        "Publishing requires Page permission and sprawdzenie przez człowieka.",
+        (
+            "Social publishing jest poza bieżącym content workflow; wymaga osobnych "
+            "uprawnień, review i akcji publikacji."
+        ),
         "credential_presence",
     ),
     ConnectorDefinition(
@@ -223,7 +239,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("codex_context_pack", "codex_exec_schema_smoke"),
         "Codex usage limits and model/runtime availability apply.",
         "May consume OpenAI/Codex credits depending on auth path.",
-        "Runtime cannot bypass evidence/action validation.",
+        "Runtime operatorski nie jest produkcyjnym autorem treści i nie omija WILQ API.",
         "runtime_presence",
     ),
 )

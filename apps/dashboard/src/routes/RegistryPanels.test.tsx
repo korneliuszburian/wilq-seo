@@ -68,6 +68,8 @@ describe("RegistryPanels", () => {
             available_credential_sources: ["repo_env"],
             credential_source_summary_label: "1 źródło",
             freshness: { state: "missing" },
+            risk_notes: "Zapis Ads wymaga ActionObject, review człowieka i audit eventu.",
+            health_check: "credential_presence",
             supported_actions: []
           } satisfies ConnectorStatus)
         ]}
@@ -76,6 +78,11 @@ describe("RegistryPanels", () => {
 
     expect(screen.getByText("Google Ads")).toBeInTheDocument();
     expect(screen.getByText("Źródło danych sprawdzane przez WILQ.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Zakres i bezpieczeństwo: Zapis Ads wymaga ActionObject, review człowieka i audit eventu."
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText("Brakujące ustawienia dostępu")).toBeInTheDocument();
     expect(screen.getByText("1 pole")).toBeInTheDocument();
     expect(screen.getByText("Źródła konfiguracji: 1 źródło")).toBeInTheDocument();

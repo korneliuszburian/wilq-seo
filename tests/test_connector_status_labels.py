@@ -45,6 +45,26 @@ def test_connector_status_unknown_fallback_is_neutral_polish_copy() -> None:
     assert connector_status_label("vendor_status_that_drifted") == ("status źródła do sprawdzenia")
 
 
+def test_connector_status_exposes_operator_scope_in_risk_notes() -> None:
+    sheets = get_connector_status("google_sheets")
+    wordpress = get_connector_status("wordpress_ekologus")
+    localo = get_connector_status("localo")
+
+    assert sheets is not None
+    assert sheets.status == ConnectorStatusValue.disabled
+    assert sheets.risk_notes is not None
+    assert "Disabled for current Ekologus operator scope" in sheets.risk_notes
+
+    assert wordpress is not None
+    assert wordpress.risk_notes is not None
+    assert "draft-only handoff" in wordpress.risk_notes
+    assert "publish i destructive update pozostają zablokowane" in wordpress.risk_notes
+
+    assert localo is not None
+    assert localo.risk_notes is not None
+    assert "sam dostęp nie potwierdza rankingów" in localo.risk_notes
+
+
 def test_connector_status_uses_latest_successful_vendor_read(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

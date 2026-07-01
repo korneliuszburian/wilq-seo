@@ -16,6 +16,11 @@ export const ConnectorStatusSchema = z.object({
     state: z.string(),
     notes: z.string().nullable().optional()
   }),
+  error: z.string().nullable().optional(),
+  rate_limit_notes: z.string().nullable().optional(),
+  cost_notes: z.string().nullable().optional(),
+  risk_notes: z.string().nullable().optional(),
+  health_check: z.string().default(""),
   supported_actions: z.array(z.string())
 });
 
