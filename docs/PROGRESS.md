@@ -293,15 +293,14 @@ API status later contradicts this state.
   has all 14 diagnostics decisions; non-interactive eval passed with
   `operator_usefulness_score=4`.
 - Goal 005 Sales Brief v2 signal-quality audit is recorded in
-  `docs/audits/005-2026-07-01-sales-brief-signal-quality.md`. Result: connector
-  freshness is not the main blocker; `bdo co to` is the safest first UAT
-  candidate, `zielony ład co to` is reviewable but has generic service mapping,
-  `magazynowanie odpadów` now has source-backed review-required waste/packaging
-  knowledge for brief review, `operat wodnoprawny` remains blocked by missing
-  direct service knowledge, and the Ahrefs `beczki` candidate is correctly
-  blocked but snapshot currently returns 404 instead of a typed blocked surface.
-  A source-fact lineage bug was fixed so GSC source facts no longer inherit
-  WordPress evidence IDs.
+  `docs/audits/005-2026-07-01-sales-brief-signal-quality.md`. That audit found
+  `bdo co to` as the strongest UAT candidate at audit time, but current UAT
+  preparation must follow live API state. Live queue proof on 2026-07-01 now
+  shows `queue_status=blocked`, one actionable candidate
+  `content_work_item_content_decision_https___www_ekologus_pl`, and no `bdo co
+  to` item in the active queue. Use the live UAT packet and
+  `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` before presenting
+  candidate choice to Wilku.
 - Goal 005 waste-storage knowledge slice `wilq-seo-nlz` added
   `ekologus_public_waste_packaging_obligations_2026_07_01` as a commit-safe
   source fact compiled into `ekologus_service_waste_packaging_obligations`
@@ -457,11 +456,10 @@ API status later contradicts this state.
   application, human review, WordPress draft-only execution and measurement
   outcome endpoints while forbidding direct OpenAI calls, direct WordPress
   calls, `publish_ready=true`, dev canonical usage and early success claims.
-  Its smoke proves 5 live content candidates, 4 actionable refresh candidates,
-  BDO as the selected refresh item, GSC/WordPress evidence, WordPress execution
-  blocked by default, and measurement outcome `not_ready`. The UAT harness
-  prints a live 3-5 item Wilku packet from API queue/enrichment instead of a
-  static report.
+  Historical smoke proved a BDO selected refresh item, but current live queue
+  state has moved. The UAT harness now prints a live 3-5 item Wilku packet from
+  API queue/enrichment plus Service Profile readiness instead of relying on a
+  static BDO control payload.
 - Goal 004 UI/API hardening slice `wilq-seo-4wi` is implemented. First green
   sub-slice tightens the dashboard API boundary: content workflow POST helpers
   now validate shared Zod request schemas instead of accepting `unknown`, API
