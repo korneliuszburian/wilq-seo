@@ -21,6 +21,45 @@ ContentDraftVariantKind = Literal[
     "faq_supporting",
 ]
 
+ContentDraftVariantSelectionDimensionName = Literal[
+    "evidence_coverage",
+    "service_fit",
+    "buyer_problem_fit",
+    "cta_fit",
+    "duplicate_risk",
+    "quality_review_dependency",
+]
+
+ContentDraftVariantSelectionStatus = Literal[
+    "pass",
+    "review_required",
+    "blocked",
+    "not_applicable",
+]
+
+
+class ContentDraftVariantSelectionPolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = "content_draft_variant_selection_guard_v1"
+    label: str = "Jawny wybór wariantu bez magic score"
+    magic_score_used: Literal[False] = False
+    rules: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class ContentDraftVariantComparisonDimension(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    variant_id: str
+    variant_kind: ContentDraftVariantKind
+    dimension: ContentDraftVariantSelectionDimensionName
+    status: ContentDraftVariantSelectionStatus
+    label: str
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+
 
 class ContentDraftVariant(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -44,6 +83,31 @@ class ContentDraftVariantsResult(BaseModel):
 
     variants: list[ContentDraftVariant] = Field(default_factory=list)
     blockers: list[StructuredDraftGenerationBlocker] = Field(default_factory=list)
+    recommended_variant_id: str | None = None
+    comparison_dimensions: list[ContentDraftVariantComparisonDimension] = Field(
+        default_factory=list
+    )
+    selection_policy: ContentDraftVariantSelectionPolicy = Field(
+        default_factory=lambda: ContentDraftVariantSelectionPolicy(
+            rules=[
+                "Wariant może być rekomendowany tylko z evidence_ids i source_connectors.",
+                "Refresh zachowujący canonical wygrywa przy preserve-first plan.",
+                "Wariant usługowy wymaga human review, gdy wiedza jest review-required.",
+                "FAQ jest wariantem wspierającym, nie domyślnym wariantem głównym.",
+                "Żaden wariant nie odblokowuje publikacji ani WordPress write.",
+            ],
+            blocked_claims=[
+                "publish_ready",
+                "wordpress_write_allowed",
+                "seo_success_before_measurement",
+                "service_or_penalty_guarantee",
+            ],
+        )
+    )
+    safe_next_step: str = (
+        "Wybierz rekomendowany wariant do quality review; publikacja i WordPress write "
+        "pozostają zablokowane."
+    )
 
 
 def build_content_draft_variants(
@@ -61,7 +125,13 @@ def build_content_draft_variants(
         draft_kind="section_draft",
     )
     if base_generation.blockers:
-        return ContentDraftVariantsResult(blockers=base_generation.blockers)
+        return ContentDraftVariantsResult(
+            blockers=base_generation.blockers,
+            safe_next_step=(
+                "Uzupełnij Sales Brief, Claim Ledger i Draft Package przed wyborem "
+                "wariantu."
+            ),
+        )
     if sales_brief is None or claim_ledger is None or draft_package is None:
         raise RuntimeError("Draft variants passed generation blockers with missing input.")
 
@@ -82,7 +152,12 @@ def build_content_draft_variants(
             draft_kind="section_draft",
         )
         if generation_result.blockers:
-            return ContentDraftVariantsResult(blockers=generation_result.blockers)
+            return ContentDraftVariantsResult(
+                blockers=generation_result.blockers,
+                safe_next_step=(
+                    "Usuń blokery structured generation przed porównaniem wariantów."
+                ),
+            )
         variants.append(
             ContentDraftVariant(
                 id=f"draft_variant_{variant_kind}_{item.id}",
@@ -97,7 +172,21 @@ def build_content_draft_variants(
                 claims_removed_or_blocked=draft_package.claims_removed_or_blocked,
             )
         )
-    return ContentDraftVariantsResult(variants=variants)
+    recommended_variant_id = _recommended_variant_id(
+        item=item,
+        sales_brief=sales_brief,
+        variants=variants,
+    )
+    return ContentDraftVariantsResult(
+        variants=variants,
+        recommended_variant_id=recommended_variant_id,
+        comparison_dimensions=_comparison_dimensions(
+            item=item,
+            sales_brief=sales_brief,
+            variants=variants,
+        ),
+        safe_next_step=_safe_next_step(recommended_variant_id),
+    )
 
 
 def _variant_kinds(sales_brief: ContentSalesBrief) -> list[ContentDraftVariantKind]:
@@ -192,3 +281,243 @@ def _variant_note(
     if variant_kind == "faq_supporting":
         return "Odpowiadaj krótko, z dowodami i bez nowych claimów."
     return "Zachowaj preserve-first: ulepsz istniejącą treść zamiast tworzyć duplikat."
+
+
+def _recommended_variant_id(
+    *,
+    item: ContentWorkItem,
+    sales_brief: ContentSalesBrief,
+    variants: list[ContentDraftVariant],
+) -> str | None:
+    if not variants:
+        return None
+    if not sales_brief.evidence_ids or not sales_brief.source_connectors:
+        return None
+
+    variant_by_kind = {variant.variant_kind: variant for variant in variants}
+    recommended_mode = sales_brief.operations_context.recommended_mode
+    if (
+        item.preserve_first_plan_status == "approved"
+        or recommended_mode == "refresh"
+    ) and "preserve_first_refresh" in variant_by_kind:
+        return variant_by_kind["preserve_first_refresh"].id
+    if sales_brief.buyer_problem and "problem_led" in variant_by_kind:
+        return variant_by_kind["problem_led"].id
+    return variants[0].id
+
+
+def _comparison_dimensions(
+    *,
+    item: ContentWorkItem,
+    sales_brief: ContentSalesBrief,
+    variants: list[ContentDraftVariant],
+) -> list[ContentDraftVariantComparisonDimension]:
+    dimensions: list[ContentDraftVariantComparisonDimension] = []
+    for variant in variants:
+        dimensions.extend(
+            [
+                _dimension(
+                    variant,
+                    "evidence_coverage",
+                    _evidence_status(sales_brief),
+                    "Pokrycie dowodami",
+                    _evidence_reason(sales_brief),
+                    sales_brief,
+                ),
+                _dimension(
+                    variant,
+                    "service_fit",
+                    _service_fit_status(sales_brief, variant.variant_kind),
+                    "Dopasowanie usługi",
+                    _service_fit_reason(sales_brief, variant.variant_kind),
+                    sales_brief,
+                ),
+                _dimension(
+                    variant,
+                    "buyer_problem_fit",
+                    _buyer_problem_status(sales_brief, variant.variant_kind),
+                    "Dopasowanie problemu kupującego",
+                    _buyer_problem_reason(sales_brief, variant.variant_kind),
+                    sales_brief,
+                ),
+                _dimension(
+                    variant,
+                    "cta_fit",
+                    _cta_status(sales_brief),
+                    "CTA bez zakazanych obietnic",
+                    _cta_reason(sales_brief),
+                    sales_brief,
+                ),
+                _dimension(
+                    variant,
+                    "duplicate_risk",
+                    _duplicate_risk_status(item, variant.variant_kind),
+                    "Ryzyko duplikacji / canonical",
+                    _duplicate_risk_reason(item, variant.variant_kind),
+                    sales_brief,
+                ),
+                _dimension(
+                    variant,
+                    "quality_review_dependency",
+                    "review_required",
+                    "Zależność od quality review",
+                    (
+                        "Każdy wariant pozostaje szkicem do kontroli claim ledger, "
+                        "human review i bez zapisu do WordPress."
+                    ),
+                    sales_brief,
+                ),
+            ]
+        )
+    return dimensions
+
+
+def _dimension(
+    variant: ContentDraftVariant,
+    dimension: ContentDraftVariantSelectionDimensionName,
+    status: ContentDraftVariantSelectionStatus,
+    label: str,
+    reason: str,
+    sales_brief: ContentSalesBrief,
+) -> ContentDraftVariantComparisonDimension:
+    return ContentDraftVariantComparisonDimension(
+        variant_id=variant.id,
+        variant_kind=variant.variant_kind,
+        dimension=dimension,
+        status=status,
+        label=label,
+        reason=reason,
+        evidence_ids=sales_brief.evidence_ids,
+        source_connectors=sales_brief.source_connectors,
+    )
+
+
+def _evidence_status(
+    sales_brief: ContentSalesBrief,
+) -> ContentDraftVariantSelectionStatus:
+    if sales_brief.missing_evidence:
+        return "blocked"
+    if not sales_brief.evidence_ids or not sales_brief.source_connectors:
+        return "blocked"
+    return "pass"
+
+
+def _evidence_reason(sales_brief: ContentSalesBrief) -> str:
+    if sales_brief.missing_evidence:
+        return "Brief ma brakujące wymagania dowodowe, więc wariant nie może być wybrany."
+    if not sales_brief.evidence_ids or not sales_brief.source_connectors:
+        return "Brak evidence_ids albo source_connectors blokuje rekomendację wariantu."
+    return "Wariant dziedziczy evidence_ids i source_connectors z Sales Brief."
+
+
+def _service_fit_status(
+    sales_brief: ContentSalesBrief,
+    variant_kind: ContentDraftVariantKind,
+) -> ContentDraftVariantSelectionStatus:
+    if not sales_brief.service_fit:
+        return "blocked"
+    if _knowledge_needs_review(sales_brief):
+        return "review_required"
+    if variant_kind == "faq_supporting":
+        return "not_applicable"
+    return "pass"
+
+
+def _service_fit_reason(
+    sales_brief: ContentSalesBrief,
+    variant_kind: ContentDraftVariantKind,
+) -> str:
+    if not sales_brief.service_fit:
+        return "Brak service fit blokuje wariant usługowy."
+    if _knowledge_needs_review(sales_brief):
+        return "Service fit istnieje, ale knowledge constraints wymagają review ownera."
+    if variant_kind == "faq_supporting":
+        return "FAQ wspiera temat, ale nie powinien być główną stroną usługową."
+    return f"Wariant może korzystać z service fit: {sales_brief.service_fit}"
+
+
+def _buyer_problem_status(
+    sales_brief: ContentSalesBrief,
+    variant_kind: ContentDraftVariantKind,
+) -> ContentDraftVariantSelectionStatus:
+    if not sales_brief.buyer_problem:
+        return "blocked"
+    if variant_kind in {"problem_led", "preserve_first_refresh"}:
+        return "pass"
+    return "review_required"
+
+
+def _buyer_problem_reason(
+    sales_brief: ContentSalesBrief,
+    variant_kind: ContentDraftVariantKind,
+) -> str:
+    if not sales_brief.buyer_problem:
+        return "Brak problemu kupującego blokuje wybór wariantu."
+    if variant_kind == "problem_led":
+        return f"Ten wariant bezpośrednio prowadzi od problemu: {sales_brief.buyer_problem}"
+    if variant_kind == "preserve_first_refresh":
+        return "Refresh może zachować istniejący URL i dopisać problem bez duplikacji."
+    return "Wariant nie prowadzi od problemu klienta, więc wymaga kontroli roli w treści."
+
+
+def _cta_status(sales_brief: ContentSalesBrief) -> ContentDraftVariantSelectionStatus:
+    if not sales_brief.cta_direction:
+        return "blocked"
+    if sales_brief.forbidden_claims:
+        return "review_required"
+    return "pass"
+
+
+def _cta_reason(sales_brief: ContentSalesBrief) -> str:
+    if not sales_brief.cta_direction:
+        return "Brak CTA blokuje wybór wariantu."
+    if sales_brief.forbidden_claims:
+        return "CTA istnieje, ale forbidden claims muszą zostać sprawdzone w quality review."
+    return f"CTA jest dostępne bez odblokowania publikacji: {sales_brief.cta_direction}"
+
+
+def _duplicate_risk_status(
+    item: ContentWorkItem,
+    variant_kind: ContentDraftVariantKind,
+) -> ContentDraftVariantSelectionStatus:
+    if item.duplicate_status != "checked":
+        return "review_required"
+    if item.preserve_first_plan_status == "approved":
+        if variant_kind == "preserve_first_refresh":
+            return "pass"
+        return "review_required"
+    return "pass"
+
+
+def _duplicate_risk_reason(
+    item: ContentWorkItem,
+    variant_kind: ContentDraftVariantKind,
+) -> str:
+    if item.duplicate_status != "checked":
+        return "Duplicate/canonical risk nie został w pełni sprawdzony."
+    if item.preserve_first_plan_status == "approved":
+        if variant_kind == "preserve_first_refresh":
+            return "Preserve-first plan jest zatwierdzony, więc refresh jest najbezpieczniejszy."
+        return "Nowy układ może zwiększyć ryzyko duplikacji, więc wymaga kontroli."
+    return "Duplicate/canonical check nie blokuje tego wariantu."
+
+
+def _knowledge_needs_review(sales_brief: ContentSalesBrief) -> bool:
+    review_markers = {"source_backed_knowledge_claim", "review_required", "stale"}
+    return any(
+        constraint.constraint_type in review_markers
+        or "review" in constraint.reason.lower()
+        for constraint in sales_brief.knowledge_constraints
+    )
+
+
+def _safe_next_step(recommended_variant_id: str | None) -> str:
+    if recommended_variant_id is None:
+        return (
+            "Nie wybieraj wariantu: uzupełnij evidence_ids, source_connectors i blokery "
+            "briefu przed quality review."
+        )
+    return (
+        f"Sprawdź wariant {recommended_variant_id} w quality review; publikacja i "
+        "WordPress write pozostają zablokowane."
+    )

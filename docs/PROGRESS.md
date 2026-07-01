@@ -192,6 +192,13 @@ API status later contradicts this state.
   `validation_state="validated"`. `scripts/codex_skill_eval.sh` now states that
   rule explicitly. A re-run is pending because Codex returned a usage-limit
   blocker until 22:23.
+- Draft variant selection guard is implemented in
+  `wilq/content/drafts/variants.py`: variant results now expose
+  `recommended_variant_id`, explicit comparison dimensions, `magic_score_used=false`
+  policy and a safe next step. The guard recommends the preserve-first refresh
+  for approved refresh work, keeps all variants non-publishable/non-WordPress,
+  and compares by evidence coverage, service fit, buyer problem, CTA, duplicate
+  risk and quality-review dependency instead of a fake score.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or

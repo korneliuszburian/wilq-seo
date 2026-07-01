@@ -182,6 +182,12 @@ Endpoint: `GET /api/content/service-profile`; dashboard route:
 gaps `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`, and
 `can_edit_cards=False`.
 
+Draft variant selection guard is implemented under Beads task `wilq-seo-87i`.
+`ContentDraftVariantsResult` now exposes the recommended variant, comparison
+dimensions, a `magic_score_used=false` policy and a safe next step. The first
+rule favors preserve-first refresh when the work item already has an approved
+refresh plan; all variants remain non-publishable and WordPress-write blocked.
+
 ## In Scope
 
 Goal 005 includes:
@@ -193,9 +199,10 @@ Goal 005 includes:
 3. First real Wilku content UAT, or explicit owner defer with residual risk.
 4. Sales Brief v2 signal-quality audit across current queue candidates,
    connector freshness/density and enrichment usefulness.
-5. Evidence-based draft variant selection guard design: no fake score, no new
-   generation flow, just API-owned comparison by evidence coverage, service
-   fit, buyer problem, CTA fit, duplicate risk and quality findings.
+5. Use the implemented evidence-based draft variant selection guard: no fake
+   score, no new generation flow, just API-owned comparison by evidence
+   coverage, service fit, buyer problem, CTA fit, duplicate risk and
+   quality-review dependency.
 6. Focused blockers/tests for missing required knowledge or weak signals.
 
 ## Out Of Scope

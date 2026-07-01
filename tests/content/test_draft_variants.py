@@ -73,6 +73,36 @@ def test_draft_variants_build_structured_contracts_without_publish_or_wordpress(
         "service_led",
         "faq_supporting",
     ]
+    assert (
+        result.recommended_variant_id
+        == "draft_variant_preserve_first_refresh_content_work_item_bdo"
+    )
+    assert result.selection_policy.magic_score_used is False
+    payload = result.model_dump()
+    assert "score" not in payload
+    assert all("score" not in variant for variant in payload["variants"])
+    assert all("variant_score" not in variant for variant in payload["variants"])
+    assert result.safe_next_step.startswith(
+        "Sprawdź wariant draft_variant_preserve_first_refresh_content_work_item_bdo"
+    )
+    preserve_dimensions = [
+        dimension
+        for dimension in result.comparison_dimensions
+        if dimension.variant_kind == "preserve_first_refresh"
+    ]
+    assert {dimension.dimension for dimension in preserve_dimensions} == {
+        "evidence_coverage",
+        "service_fit",
+        "buyer_problem_fit",
+        "cta_fit",
+        "duplicate_risk",
+        "quality_review_dependency",
+    }
+    assert {
+        dimension.dimension
+        for dimension in preserve_dimensions
+        if dimension.status == "pass"
+    } >= {"evidence_coverage", "duplicate_risk"}
     for variant in result.variants:
         assert variant.publish_ready is False
         assert variant.wordpress_write_allowed is False
@@ -112,6 +142,10 @@ def test_draft_variants_block_without_sales_brief_claim_gate_or_draft_package() 
         "missing_claim_ledger",
         "missing_draft_package",
     } <= {blocker.code for blocker in result.blockers}
+    assert result.recommended_variant_id is None
+    assert result.comparison_dimensions == []
+    assert result.selection_policy.magic_score_used is False
+    assert result.safe_next_step.startswith("Uzupełnij Sales Brief")
 
 
 def test_draft_variants_api_returns_typed_variants_without_wordpress_write() -> None:
@@ -132,6 +166,12 @@ def test_draft_variants_api_returns_typed_variants_without_wordpress_write() -> 
     data = response.json()["draft_variants_result"]
     assert data["blockers"] == []
     assert len(data["variants"]) == 4
+    assert (
+        data["recommended_variant_id"]
+        == "draft_variant_preserve_first_refresh_content_work_item_bdo"
+    )
+    assert data["selection_policy"]["magic_score_used"] is False
+    assert len(data["comparison_dimensions"]) == 24
     assert all(variant["publish_ready"] is False for variant in data["variants"])
     assert all(variant["wordpress_write_allowed"] is False for variant in data["variants"])
 

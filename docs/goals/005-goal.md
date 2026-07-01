@@ -111,6 +111,11 @@ First Goal 005 source-pack proof:
   It is read-only, renders source-backed review-required service coverage,
   exposes `operat wodnoprawny` as a blocker gap, and blocks card edits/fact
   promotion in the API-owned review policy.
+- Draft variant selection now has an API-owned evidence guard. The draft
+  variants response exposes `recommended_variant_id`, comparison dimensions,
+  `magic_score_used=false`, blocked claim policy and a safe next step. It
+  recommends preserve-first refresh for approved refresh work and keeps all
+  variants blocked from publish/WordPress write until quality and human review.
 
 ## Non-Negotiable Rules
 
@@ -143,7 +148,8 @@ First Goal 005 source-pack proof:
    Wilku UAT and future private source proposal display.
 5. Audit Sales Brief v2 signal quality across queue candidates and enrichment
    source facts.
-6. Define evidence-based draft variant comparison without fake scores.
+6. Use the implemented evidence-based draft variant comparison without fake
+   scores.
 7. Run one real Wilku content UAT session or record explicit owner defer with
    residual risk.
 
