@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ClipboardCheck } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
+import { DiagnosticDecisionCard } from "../components/DiagnosticDecisionCard";
 import {
   DiagnosticSurfaceShell,
   DiagnosticSurfaceUnavailable
@@ -10,7 +11,6 @@ import {
 import { MetricFactChips } from "../components/MetricFactChips";
 import {
   BlockerNotice,
-  LabelChipRow,
   LoadingBand,
   MetricTile,
   PlainChipRow
@@ -209,32 +209,20 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
   );
 
   return (
-    <article className="rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <LabelChipRow
-            chips={[
-              { label: "Źródło", value: "Localo" },
-              { label: "Typ", value: decision.decision_type_label },
-              { label: "Priorytet", value: decision.priority_label }
-            ]}
-          />
-          <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
-        </div>
-        <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
-          {decision.status_label}
-        </span>
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-700">{decision.summary}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
-      <p className="mt-3 text-sm font-semibold leading-6 text-ink">{decision.next_step}</p>
-      {marketerMetricTiles.length > 0 ? (
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {marketerMetricTiles.map(([label, value]) => (
-            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
-          ))}
-        </div>
-      ) : null}
+    <DiagnosticDecisionCard
+      id={decision.id}
+      chips={[
+        { label: "Źródło", value: "Localo" },
+        { label: "Typ", value: decision.decision_type_label },
+        { label: "Priorytet", value: decision.priority_label }
+      ]}
+      title={decision.title}
+      statusLabel={decision.status_label}
+      summary={decision.summary}
+      rationale={decision.rationale}
+      nextStep={decision.next_step}
+      metricTiles={marketerMetricTiles}
+    >
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine label="Dostęp" values={[decision.access_status_label]} />
         <TraceLine
@@ -259,7 +247,7 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
       {decision.metric_facts.length > 0 ? (
         <MetricFactChips facts={decision.metric_facts.slice(0, 6)} />
       ) : null}
-    </article>
+    </DiagnosticDecisionCard>
   );
 }
 

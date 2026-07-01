@@ -151,8 +151,10 @@ API status later contradicts this state.
   decisions remain API-data driven in the route. Sixth green sub-slice adds
   `components/SafetyGatePanel.tsx` and migrates the Demand Gen and Localo
   guard/evidence sections onto it without changing API-owned safety data.
-  Broader Ads extraction, DecisionCard primitives and zombie/copy cleanup remain
-  in this Beads task.
+  Seventh green sub-slice adds `components/DiagnosticDecisionCard.tsx` and
+  migrates Ahrefs/Localo decision cards onto it while keeping domain-specific
+  traces, metric facts and blocked claims in route/API data. Broader Ads
+  extraction and zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
