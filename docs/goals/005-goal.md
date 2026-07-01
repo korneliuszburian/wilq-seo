@@ -50,6 +50,10 @@ First Goal 005 source-pack proof:
   BDO/reporting, waste/packaging, training, remediation/monitoring, sorbent
   product content and Zielony Lad education. These are source inputs for
   reviewed cards, not automatic approval for production-depth claims.
+- Content knowledge-card responses now expose `production_depth_readiness`.
+  Seeded Goal 004 cards are explicitly `seeded_contract_proof` and
+  `ready_for_daily_content=false`; public source-backed cards remain review
+  required until owner/Wilku approval.
 
 ## Non-Negotiable Rules
 
@@ -164,6 +168,8 @@ Initial slices:
   pack.
 - `wilq-seo-lt1` - expand typed Ekologus knowledge cards from reviewed sources.
 - `wilq-seo-t13` - add knowledge-card production-depth guard tests.
+- `wilq-seo-409` - evaluate private Ekologus Brain source catalog relevance
+  without automatic integration.
 - `wilq-seo-94k` - design read-only Ekologus Service Profile review surface.
 - `wilq-seo-jst` - run first real Wilku content UAT or record explicit defer.
 - `wilq-seo-n8r` - audit Sales Brief v2 signal quality.

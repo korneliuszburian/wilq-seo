@@ -356,7 +356,16 @@ function contentKnowledgeCardsResponse() {
       }
     ],
     card_count: 1,
-    source_lineage: ["docs/goals/archive/004-goal.md"]
+    source_lineage: ["docs/goals/archive/004-goal.md"],
+    production_depth_readiness: {
+      status: "seeded_contract_proof",
+      status_label: "seed proof, nie produkcyjna wiedza",
+      ready_for_daily_content: false,
+      seeded_card_count: 1,
+      source_backed_review_required_count: 0,
+      production_depth_card_count: 0,
+      blocker_labels: ["Brakuje zatwierdzonych production-depth kart usług Ekologus."]
+    }
   };
 }
 

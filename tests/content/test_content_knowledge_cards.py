@@ -7,8 +7,10 @@ from fastapi.testclient import TestClient
 
 from apps.api.wilq_api.routers.content_workflow import router
 from wilq.content.knowledge.cards import (
+    ContentKnowledgeCard,
     content_knowledge_card_blockers,
     content_knowledge_cards_response,
+    content_knowledge_production_depth_readiness,
     ekologus_content_knowledge_cards,
     match_content_knowledge_cards,
     required_content_knowledge_card_ids,
@@ -56,6 +58,10 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
 
     assert response.card_count == len(response.cards)
     assert "docs/goals/archive/004-goal.md" in response.source_lineage
+    assert response.production_depth_readiness.status == "seeded_contract_proof"
+    assert response.production_depth_readiness.ready_for_daily_content is False
+    assert response.production_depth_readiness.seeded_card_count == len(response.cards)
+    assert response.production_depth_readiness.production_depth_card_count == 0
     evidence_card = next(
         card for card in response.cards if card.id == "ekologus_evidence_live_connector_requirement"
     )
@@ -64,6 +70,39 @@ def test_knowledge_cards_response_exposes_lineage_without_replacing_evidence() -
         for requirement in evidence_card.evidence_requirements
     )
     assert any("nie zastępuje" in note for note in evidence_card.usage_notes)
+
+
+def test_internal_seeded_cards_cannot_claim_production_depth_readiness() -> None:
+    readiness = content_knowledge_production_depth_readiness(ekologus_content_knowledge_cards())
+
+    assert readiness.status == "seeded_contract_proof"
+    assert readiness.ready_for_daily_content is False
+    assert readiness.production_depth_card_count == 0
+    assert any("production-depth" in label for label in readiness.blocker_labels)
+
+
+def test_source_backed_cards_still_require_review_before_daily_content() -> None:
+    cards = [
+        ContentKnowledgeCard(
+            id="ekologus_service_bdo_reporting",
+            card_type="service",
+            title="BDO i sprawozdawczość",
+            summary="Publiczna strona Ekologus potwierdza temat BDO.",
+            service_fit_terms=["bdo"],
+            source_lineage=[
+                "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+            ],
+            confidence=0.74,
+            freshness="public_site_review_required_2026-07-01",
+        )
+    ]
+
+    readiness = content_knowledge_production_depth_readiness(cards)
+
+    assert readiness.status == "source_backed_review_required"
+    assert readiness.ready_for_daily_content is False
+    assert readiness.source_backed_review_required_count == 1
+    assert readiness.production_depth_card_count == 0
 
 
 def test_work_item_matches_required_service_cta_claim_and_evidence_cards() -> None:
@@ -98,6 +137,23 @@ def test_unknown_topic_blocks_required_service_and_cta_cards() -> None:
     assert "missing_evidence_requirement_card" not in blocker_codes
 
 
+def test_broad_environmental_terms_do_not_overmatch_as_service_card() -> None:
+    match = match_content_knowledge_cards(
+        _item(
+            id="content_work_item_generic_environmental_obligation",
+            topic="Obowiązki środowiskowe firmy",
+            source_public_url="https://ekologus.pl/obowiazki-srodowiskowe/",
+            final_canonical_url="https://ekologus.pl/obowiazki-srodowiskowe/",
+            intended_final_url="https://ekologus.pl/obowiazki-srodowiskowe/",
+            evidence_ids=["ev_gsc_obowiazki_srodowiskowe"],
+        )
+    )
+
+    blocker_codes = {blocker.code for blocker in content_knowledge_card_blockers(match)}
+    assert match.service_card is None
+    assert "missing_service_card" in blocker_codes
+
+
 def test_content_knowledge_cards_endpoint_exposes_typed_cards() -> None:
     app = FastAPI()
     app.include_router(router)
@@ -112,3 +168,5 @@ def test_content_knowledge_cards_endpoint_exposes_typed_cards() -> None:
         "ekologus_evidence_live_connector_requirement",
     }
     assert "docs/goals/archive/004-goal.md" in payload["source_lineage"]
+    assert payload["production_depth_readiness"]["status"] == "seeded_contract_proof"
+    assert payload["production_depth_readiness"]["ready_for_daily_content"] is False

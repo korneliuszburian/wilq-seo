@@ -104,6 +104,20 @@ API status later contradicts this state.
   slice, but it does not approve production-depth cards: legal/environmental/
   risk/product/current-law claims remain review-gated, and Wilku/owner review is
   still needed before treating cards as fully approved Ekologus knowledge.
+- Goal 005 production-depth guard slice `wilq-seo-t13` is implemented with a
+  typed `production_depth_readiness` guard on content knowledge-card responses.
+  Current seeded cards are explicitly `seeded_contract_proof` and
+  `ready_for_daily_content=false`; public source-backed cards will still be
+  `source_backed_review_required` until reviewed. The matcher also blocks broad
+  environmental terms from overmatching as a service card. Focused proofs passed:
+  `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`,
+  `rtk pnpm test` and `rtk pnpm typecheck` in `packages/shared-schemas`, plus
+  dashboard API tests/typecheck.
+- User noted a separate private `krn-ekologus-brain` project and internal
+  Ekologus knowledge bases. This is recorded as potential future source context
+  only. It is not an active WILQ SEO integration and must not pull private
+  client documents, attachments, emails or phone details into committed
+  `wilq-seo` docs/cards. Follow-up: `wilq-seo-409`.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity

@@ -240,6 +240,20 @@ export const ContentKnowledgeCardSchema = z.object({
   usage_notes: z.array(z.string()).default([])
 });
 
+export const ContentKnowledgeProductionDepthReadinessSchema = z.object({
+  status: z.enum([
+    "seeded_contract_proof",
+    "source_backed_review_required",
+    "production_depth"
+  ]),
+  status_label: z.string(),
+  ready_for_daily_content: z.boolean(),
+  seeded_card_count: z.number(),
+  source_backed_review_required_count: z.number(),
+  production_depth_card_count: z.number(),
+  blocker_labels: z.array(z.string()).default([])
+});
+
 export const ContentKnowledgeCardBlockerSchema = z.object({
   code: z.string(),
   label: z.string(),
@@ -263,7 +277,8 @@ export const ContentKnowledgeCardBlockerSchema = z.object({
 export const ContentKnowledgeCardsResponseSchema = z.object({
   cards: z.array(ContentKnowledgeCardSchema).default([]),
   card_count: z.number(),
-  source_lineage: z.array(z.string()).default([])
+  source_lineage: z.array(z.string()).default([]),
+  production_depth_readiness: ContentKnowledgeProductionDepthReadinessSchema
 });
 
 export const ContentKnowledgeCardMatchSchema = z.object({
@@ -942,6 +957,9 @@ export type ContentWorkItemSalesBriefRequest = z.input<
   typeof ContentWorkItemSalesBriefRequestSchema
 >;
 export type ContentKnowledgeCard = z.infer<typeof ContentKnowledgeCardSchema>;
+export type ContentKnowledgeProductionDepthReadiness = z.infer<
+  typeof ContentKnowledgeProductionDepthReadinessSchema
+>;
 export type ContentKnowledgeCardsResponse = z.infer<
   typeof ContentKnowledgeCardsResponseSchema
 >;

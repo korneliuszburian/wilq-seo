@@ -23,6 +23,13 @@ ContentKnowledgeClaimStatus = Literal[
     "blocked",
     "blocked_until_measurement",
 ]
+ContentKnowledgeProductionDepthStatus = Literal[
+    "seeded_contract_proof",
+    "source_backed_review_required",
+    "production_depth",
+]
+
+BROAD_SERVICE_FIT_TERMS = frozenset({"obowiązk", "sprawozd", "środowisk", "zgodność"})
 
 
 class ContentKnowledgeClaimRule(BaseModel):
@@ -82,12 +89,25 @@ class ContentKnowledgeCardMatch(BaseModel):
     blockers: list[ContentKnowledgeCardBlocker] = Field(default_factory=list)
 
 
+class ContentKnowledgeProductionDepthReadiness(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ContentKnowledgeProductionDepthStatus
+    status_label: str
+    ready_for_daily_content: bool
+    seeded_card_count: int
+    source_backed_review_required_count: int
+    production_depth_card_count: int
+    blocker_labels: list[str] = Field(default_factory=list)
+
+
 class ContentKnowledgeCardsResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     cards: list[ContentKnowledgeCard] = Field(default_factory=list)
     card_count: int
     source_lineage: list[str] = Field(default_factory=list)
+    production_depth_readiness: ContentKnowledgeProductionDepthReadiness
 
 
 @lru_cache(maxsize=1)
@@ -270,6 +290,50 @@ def content_knowledge_cards_response() -> ContentKnowledgeCardsResponse:
         cards=cards,
         card_count=len(cards),
         source_lineage=_unique(line for card in cards for line in card.source_lineage),
+        production_depth_readiness=content_knowledge_production_depth_readiness(cards),
+    )
+
+
+def content_knowledge_production_depth_readiness(
+    cards: Iterable[ContentKnowledgeCard],
+) -> ContentKnowledgeProductionDepthReadiness:
+    card_list = list(cards)
+    seeded_cards = [card for card in card_list if card.freshness == "seeded_goal_004"]
+    review_required_cards = [
+        card for card in card_list if "review_required" in card.freshness
+    ]
+    production_cards = [
+        card for card in card_list if card.freshness.startswith("reviewed_")
+    ]
+    blockers: list[str] = []
+    if seeded_cards:
+        blockers.append("Część kart to seed/contract proof, nie zatwierdzona wiedza usługowa.")
+    if review_required_cards:
+        blockers.append("Część kart ma źródła publiczne, ale nadal wymaga review Wilka/ownera.")
+    if not production_cards:
+        blockers.append("Brakuje zatwierdzonych production-depth kart usług Ekologus.")
+
+    if production_cards and not seeded_cards and not review_required_cards:
+        status: ContentKnowledgeProductionDepthStatus = "production_depth"
+        label = "wiedza usługowa zatwierdzona"
+        ready = True
+    elif review_required_cards:
+        status = "source_backed_review_required"
+        label = "źródła są, wymagają review"
+        ready = False
+    else:
+        status = "seeded_contract_proof"
+        label = "seed proof, nie produkcyjna wiedza"
+        ready = False
+
+    return ContentKnowledgeProductionDepthReadiness(
+        status=status,
+        status_label=label,
+        ready_for_daily_content=ready,
+        seeded_card_count=len(seeded_cards),
+        source_backed_review_required_count=len(review_required_cards),
+        production_depth_card_count=len(production_cards),
+        blocker_labels=blockers,
     )
 
 
@@ -381,7 +445,11 @@ def _matching_cards(
         card
         for card in cards
         if card.card_type == card_type
-        and any(term.lower() in search_text for term in card.service_fit_terms)
+        and any(
+            term.lower() in search_text
+            for term in card.service_fit_terms
+            if term.lower() not in BROAD_SERVICE_FIT_TERMS
+        )
     ]
 
 

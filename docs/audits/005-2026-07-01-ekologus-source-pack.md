@@ -61,7 +61,17 @@ are not commit-safe source material. They may support private proof or UAT
 packets, but committed cards must store only sanitized source lineage, evidence
 IDs and review metadata.
 
-This slice did not inspect or commit private credential/source contents.
+The owner also noted that a separate local project, `krn-ekologus-brain`, and
+internal Ekologus shared-drive knowledge bases exist for decision-compliance,
+historical documentation, obligations, schedules, expert-legal opinions,
+sorbents and onboarding. Treat this as a potential private source catalog, not
+as WILQ SEO input by default. Do not copy customer documents, attachments,
+emails, phone numbers, private paths or unreviewed client examples into
+`wilq-seo`. Future use requires a separate sanitized review path and explicit
+Goal 005 promotion.
+
+This slice did not inspect or commit private credential/source contents, client
+attachments or customer documents.
 
 ## Source-Backed Card Candidates
 

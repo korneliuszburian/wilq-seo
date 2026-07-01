@@ -210,6 +210,8 @@ Initial slices:
 - `wilq-seo-ciz` - collect source-backed Ekologus service and claim source pack.
 - `wilq-seo-lt1` - expand typed Ekologus knowledge cards from reviewed sources.
 - `wilq-seo-t13` - add knowledge-card production-depth guard tests.
+- `wilq-seo-409` - evaluate private Ekologus Brain source catalog relevance
+  for Goal 005; this is not an automatic integration.
 
 This section is a recovery index only. Operational status lives in Beads.
 
@@ -326,6 +328,12 @@ Stop and record a blocker if:
   sorbents/product content and Zielony Lad education. The pack is source
   material for `wilq-seo-lt1`, not an approval to mark cards production-depth
   without Wilku/owner review.
+- 2026-07-01: Production-depth guard slice `wilq-seo-t13` added
+  `production_depth_readiness` to the content knowledge-card contract. Seeded
+  cards now report `seeded_contract_proof` and cannot be treated as daily-use
+  production knowledge. Source-backed public cards remain review-required until
+  owner/Wilku approval. The matcher no longer lets broad environmental terms
+  alone unlock a service card.
 
 ## Surprises & Discoveries
 
@@ -337,6 +345,9 @@ Stop and record a blocker if:
   they still need strict claim policy: public marketing copy must not become a
   WILQ guarantee, and stale article deadlines/rates cannot become current-law
   claims.
+- A separate private project, `krn-ekologus-brain`, and internal Ekologus
+  knowledge bases exist. They may be useful later, but Goal 005 must treat them
+  as private source context to evaluate, not as automatic WILQ SEO input.
 
 ## Decision Log
 
@@ -355,6 +366,9 @@ Stop and record a blocker if:
 - Source-backed card expansion may proceed from public Ekologus URLs only as
   review-required/claim-gated cards unless Wilku or the owner approves them as
   current service knowledge.
+- Private Ekologus Brain/customer-document material is not commit-safe lineage.
+  Any future use needs a sanitized review path and explicit promotion in a
+  later slice.
 
 ## Outcomes & Retrospective
 
