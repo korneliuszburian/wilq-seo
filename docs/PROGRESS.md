@@ -181,7 +181,11 @@ API status later contradicts this state.
   guards. Fourteenth green sub-slice extracts Ads operator summary, start-here
   decisions, optimizer readiness and decision cards into
   `components/AdsOperatorSummaryPanels.tsx`, keeping source guards on the
-  extracted module and reducing `AdsDoctorSurface.tsx` to 628 lines. Broader Ads
+  extracted module and reducing `AdsDoctorSurface.tsx` to 628 lines. Fifteenth
+  green sub-slice extracts the full Ads metric/evidence and diagnostic-table
+  composer into `components/AdsMetricEvidencePanel.tsx`, keeps static guards on
+  the extracted module, and reduces `AdsDoctorSurface.tsx` to 442 lines while
+  Fallow changed-scope duplication drops to 6 clone groups. Broader Ads
   extraction and zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
