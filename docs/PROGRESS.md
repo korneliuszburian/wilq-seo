@@ -273,6 +273,11 @@ API status later contradicts this state.
   Live proof `refresh_google_search_console_b545c32e13f1` completed on
   2026-07-01 with available range 2026-06-21..2026-06-30, detail date
   2026-06-29, 703 rows and `query_page_rows_truncated=false`.
+- Tactical queue now deduplicates metric facts by connector, metric name and
+  dimensions before building items, choosing the newest collected fact. This
+  prevents older GSC refresh evidence for the same `query,page` identity from
+  polluting the current content decision metrics; section-level repetition of
+  the same tactical item remains a view-model concern.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

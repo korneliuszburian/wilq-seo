@@ -457,7 +457,33 @@ def _tactical_metric_facts(
     facts: list[MetricFact] = []
     for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
         facts.extend(facts_by_connector.get(connector_id, []))
-    return facts
+    return _latest_metric_facts_by_identity(facts)
+
+
+def _latest_metric_facts_by_identity(facts: Iterable[MetricFact]) -> list[MetricFact]:
+    latest: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
+    for fact in facts:
+        key = (
+            fact.source_connector,
+            fact.name,
+            tuple(sorted(fact.dimensions.items())),
+        )
+        current = latest.get(key)
+        if current is None or _metric_fact_is_newer(fact, current):
+            latest[key] = fact
+    return list(latest.values())
+
+
+def _metric_fact_is_newer(candidate: MetricFact, current: MetricFact) -> bool:
+    if candidate.collected_at is not None and current.collected_at is not None:
+        if candidate.collected_at != current.collected_at:
+            return candidate.collected_at > current.collected_at
+        return candidate.evidence_id > current.evidence_id
+    if candidate.collected_at is not None:
+        return True
+    if current.collected_at is not None:
+        return False
+    return candidate.evidence_id > current.evidence_id
 
 
 def _tactical_connector_fact_limit(connector_id: str) -> int:
