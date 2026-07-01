@@ -885,6 +885,14 @@ function structuredDraftGenerationContract() {
           summary: "GSC pokazuje popyt na temat BDO."
         }
       ],
+      knowledge_constraints: [
+        {
+          card_id: "ekologus_evidence_live_connector_requirement",
+          constraint_type: "evidence_requirement",
+          label: "Live evidence i source connector są wymagane",
+          reason: "Brak evidence ID oznacza brak rekomendacji."
+        }
+      ],
       claims_allowed: [],
       claim_markers: [],
       claims_removed_or_blocked: [],

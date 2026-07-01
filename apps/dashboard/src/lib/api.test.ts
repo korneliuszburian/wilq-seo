@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ContentWorkItem } from "@wilq/shared-schemas";
 
 import {
   getContentKnowledgeCards,
@@ -475,7 +476,7 @@ function opportunityEnrichmentResponse() {
   };
 }
 
-function workItem(overrides: Record<string, unknown> = {}) {
+function workItem(overrides: Partial<ContentWorkItem> = {}): ContentWorkItem {
   return {
     id: "content_work_item_bdo",
     topic: "BDO dla firm",

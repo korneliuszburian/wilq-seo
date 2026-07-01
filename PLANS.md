@@ -233,6 +233,11 @@ actions inside the existing UAT harness. Live proof on 2026-07-01 returned
 Service Profile gaps and two private review actions. This is UAT preparation,
 not proof that Wilku completed the session.
 
+Goal 005 dashboard typecheck is restored under Beads task `wilq-seo-ttb`.
+Stale test fixtures now use the current typed `ContentWorkItem` and structured
+draft generation contract, including `knowledge_constraints`, so the dashboard
+quality gate no longer blocks broad verification for unrelated fixture drift.
+
 `wilq-content-operator` evals now require refresh-first language when stale
 brief decisions appear. The non-interactive proof at
 `.local-lab/evals/codex-skill/20260701T222739Z/summary.json` passed with
