@@ -153,8 +153,11 @@ API status later contradicts this state.
   guard/evidence sections onto it without changing API-owned safety data.
   Seventh green sub-slice adds `components/DiagnosticDecisionCard.tsx` and
   migrates Ahrefs/Localo decision cards onto it while keeping domain-specific
-  traces, metric facts and blocked claims in route/API data. Broader Ads
-  extraction and zombie/copy cleanup remain in this Beads task.
+  traces, metric facts and blocked claims in route/API data. Eighth green
+  sub-slice extracts pure Ads number/cost/percentage/status formatting into
+  `lib/adsFormatting.ts` with focused tests, reducing Ads Doctor utility
+  ownership before broader panel extraction. Broader Ads extraction and
+  zombie/copy cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
