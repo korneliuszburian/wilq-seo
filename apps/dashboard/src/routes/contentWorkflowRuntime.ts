@@ -7,6 +7,7 @@ import {
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemStructuredDraftGenerationResponse,
   type ContentWorkItemWordPressDraftHandoffResponse,
+  type ContentWorkItemSnapshotResponse,
   type ContentWorkItemWorkflowSnapshotResponse
 } from "../lib/api";
 
@@ -30,8 +31,11 @@ export async function loadContentWorkflowSnapshot(
 }
 
 function workflowSnapshotFromApi(
-  snapshot: ContentWorkItemWorkflowSnapshotResponse
+  snapshot: ContentWorkItemSnapshotResponse
 ): ContentWorkflowSnapshot {
+  if (snapshot.response_type === "blocked_snapshot") {
+    throw new Error(snapshot.safe_next_step);
+  }
   return {
     preflight: snapshot.preflight,
     salesBrief: snapshot.sales_brief,

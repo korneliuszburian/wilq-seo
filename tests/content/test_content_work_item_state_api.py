@@ -68,7 +68,7 @@ def test_selected_content_work_item_state_is_isolated(
     ]
 
 
-def test_blocked_queue_item_does_not_get_fake_workflow_snapshot(
+def test_blocked_queue_item_returns_typed_blocked_snapshot_without_fake_workflow(
     monkeypatch: Any,
     tmp_path: Path,
 ) -> None:
@@ -81,8 +81,15 @@ def test_blocked_queue_item_does_not_get_fake_workflow_snapshot(
 
     response = client.get(f"/api/content/work-items/{blocked['work_item_id']}/snapshot")
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Content work item is not available for the gated workflow."
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["response_type"] == "blocked_snapshot"
+    assert payload["work_item_id"] == blocked["work_item_id"]
+    assert payload["recommended_mode"] == "block"
+    assert payload["blockers"]
+    assert payload["candidate"]["work_item_id"] == blocked["work_item_id"]
+    assert "preflight" not in payload
+    assert "sales_brief" not in payload
 
 
 def test_selected_content_work_item_output_and_quality_state_is_isolated(

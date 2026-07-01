@@ -28,7 +28,7 @@ Relevant fresh evidence from the current local API:
 
 | Candidate | State | Signal Quality | Main Cause |
 | --- | --- | --- | --- |
-| `beczki` / Ahrefs gap | blocked | blocked | Ahrefs gap has evidence, but no final canonical URL, unresolved duplicate/inventory risk and blocked measurement. Snapshot currently returns HTTP 404 instead of a typed blocked workflow response. |
+| `beczki` / Ahrefs gap | blocked | typed blocked snapshot | Ahrefs gap has evidence, but no final canonical URL, unresolved duplicate/inventory risk and blocked measurement. Snapshot now returns `blocked_snapshot` with blockers instead of HTTP 404. |
 | `bdo co to` | brief built | usable for review | GSC + WordPress evidence, existing URL, ready enrichment, measurement ready to plan, Sales Brief has 3 source facts and 15 knowledge constraints. |
 | `zielony ład co to` | brief built | thin but reviewable | GSC + WordPress evidence and existing URL are present, but service fit is still generic: `sprawdzenie dopasowania do oferty Ekologus przed szkicem`. Needs Wilku/source review before strong service framing. |
 | `operat wodnoprawny` | brief blocked | blocked by knowledge | GSC + WordPress evidence and enrichment are ready, but Sales Brief blocks with `missing_required_knowledge_card`. |
@@ -61,19 +61,18 @@ Relevant fresh evidence from the current local API:
    filters source fact evidence by connector where the evidence IDs expose the
    connector lineage.
 
-6. Blocked Ahrefs candidates need a better UAT surface. Queue and enrichment are
-   typed and correctly blocked, but snapshot returns HTTP 404. During Wilku UAT,
-   a blocked work item should ideally return a typed blocker instead of a missing
-   route experience.
+6. Blocked Ahrefs candidates now have a typed UAT surface. Queue and enrichment
+   are typed and correctly blocked, and snapshot returns `blocked_snapshot`
+   instead of HTTP 404. WILQ does not fabricate a full workflow snapshot for a
+   candidate without inventory/canonical resolution.
 
 ## Exact Follow-Ups
 
 - `wilq-seo-nlz`: added a source-backed review-required card for
   `magazynowanie odpadów`; `operat wodnoprawny` remains blocked until a direct
   public/reviewed service source exists.
-- `wilq-seo-ad8`: return a typed snapshot blocker for blocked Ahrefs content
-  candidates, or explicitly document that blocked candidates stop before
-  snapshot.
+- `wilq-seo-ad8`: completed. Blocked Ahrefs content candidates return typed
+  `blocked_snapshot` responses without fake workflow fields.
 - Use `bdo co to` as the safest first Wilku UAT candidate.
 - Use `zielony ład co to` as a source-trace/service-fit review question for
   Wilku.
@@ -97,4 +96,5 @@ wordpress_ekologus ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6 Spis WordP
 knowledge_card ekologus_service_waste_packaging_obligations source_backed_review_required
 snapshot magazynowanie odpadów brief_built=True blockers=[]
 snapshot operat wodnoprawny brief_built=False blockers=[missing_required_knowledge_card]
+snapshot beczki response_type=blocked_snapshot blockers=[duplicate_risk_unresolved, missing_inventory_resolution, missing_final_canonical, duplicate_gate_not_checked]
 ```

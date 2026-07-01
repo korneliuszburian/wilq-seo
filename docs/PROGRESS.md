@@ -210,14 +210,22 @@ API status later contradicts this state.
   `draft_allowed=false`; `operat wodnoprawny` still blocks with
   `missing_required_knowledge_card` until a direct public/reviewed source
   exists.
+- Goal 005 blocked Ahrefs snapshot slice `wilq-seo-ad8` replaced the selected
+  work-item snapshot HTTP 404 for blocked `beczki` with typed
+  `blocked_snapshot`. Live proof: status 200, `recommended_mode=block`,
+  blockers `duplicate_risk_unresolved`, `missing_inventory_resolution`,
+  `missing_final_canonical`, `duplicate_gate_not_checked`, and no fake
+  `preflight`/Sales Brief fields.
 - Official Google Ads developer-toolkit sources are now tracked as WILQ Ads
   implementation patterns: MCP read-only account discovery/search/resource
   metadata, API Explorer live HTTP/JSON prototyping, Query Builder field
   discovery, Query Validator GAQL compatibility checks and Developer Assistant
   mission-control/skills architecture. They are patterns for WILQ API
   adapters/evals, not substitutes for WILQ evidence, ActionObjects or Google
-  developer-token approval. Search Console API overview is tracked as the wider
-  GSC source beyond Search Analytics.
+  developer-token approval. Search Console API overview and Search Analytics
+  guides are tracked as the wider GSC source beyond query/page metrics; WILQ GSC
+  reads must account for date availability checks, typical 2-3 day delay,
+  `rowLimit`/`startRow` paging and partial-detail caveats.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

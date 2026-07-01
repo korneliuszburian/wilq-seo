@@ -35,11 +35,11 @@ import {
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
+  ContentWorkItemSnapshotResponseSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
-  ContentWorkItemWorkflowSnapshotResponseSchema,
   ConnectorStatusSchema,
   DemandGenReadinessContractSchema,
   EvidenceSchema,
@@ -96,6 +96,7 @@ import {
   type ContentWorkItemStructuredDraftRuntimeResponse,
   type ContentWorkItemSnapshotAuditRequest,
   type ContentWorkItemSnapshotHumanReviewRequest,
+  type ContentWorkItemSnapshotResponse,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
   type ContentWorkItemWordPressDraftHandoffRequest,
@@ -235,14 +236,14 @@ export function getContentWorkItemQueue(): Promise<ContentWorkItemQueueResponse>
 
 export function getContentWorkItemSnapshot(
   workItemId?: string
-): Promise<ContentWorkItemWorkflowSnapshotResponse> {
+): Promise<ContentWorkItemSnapshotResponse> {
   const path =
     workItemId === undefined
       ? "/api/content/work-items/snapshot"
       : `/api/content/work-items/${encodeURIComponent(workItemId)}/snapshot`;
   return apiGet(
     path,
-    ContentWorkItemWorkflowSnapshotResponseSchema
+    ContentWorkItemSnapshotResponseSchema
   );
 }
 
@@ -543,6 +544,7 @@ export type {
   ContentWorkItemSalesBriefResponse,
   ContentWorkItemSnapshotAuditRequest,
   ContentWorkItemSnapshotHumanReviewRequest,
+  ContentWorkItemSnapshotResponse,
   ContentWorkItemStructuredDraftGenerationRequest,
   ContentWorkItemStructuredDraftGenerationResponse,
   ContentWorkItemStructuredDraftPreviewRequest,

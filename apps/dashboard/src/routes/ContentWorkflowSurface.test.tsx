@@ -715,6 +715,7 @@ function workflowSnapshot({
     ? workItem({ human_review_status: "approved", human_review_id: review.id })
     : workItem({ human_review_status: "missing", human_review_id: null });
   return {
+    response_type: "workflow_snapshot",
     preflight: {
       item: workItem(),
       inventory_resolution: inventoryResolution(),

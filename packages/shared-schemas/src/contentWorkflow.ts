@@ -870,6 +870,7 @@ export const ContentWorkflowOperatorStepSchema = z.object({
 });
 
 export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
+  response_type: z.literal("workflow_snapshot").default("workflow_snapshot"),
   preflight: ContentWorkItemPreflightResponseSchema,
   sales_brief: ContentWorkItemSalesBriefResponseSchema,
   draft_package: ContentWorkItemDraftPackageResponseSchema,
@@ -879,6 +880,30 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   measurement_window: ContentWorkItemMeasurementWindowResponseSchema,
   operator_steps: z.array(ContentWorkflowOperatorStepSchema).default([])
 });
+
+export const ContentWorkItemBlockedSnapshotResponseSchema = z.object({
+  response_type: z.literal("blocked_snapshot"),
+  work_item_id: z.string(),
+  decision_id: z.string(),
+  title: z.string(),
+  topic: z.string(),
+  status_label: z.string(),
+  reason: z.string(),
+  safe_next_step: z.string(),
+  recommended_mode: z.string(),
+  preflight_status: z.string(),
+  blockers: z.array(ContentWorkItemQueueBlockerSchema).default([]),
+  ...ContentEvidenceTraceFields,
+  candidate: ContentWorkItemQueueCandidateSchema
+});
+
+export const ContentWorkItemSnapshotResponseSchema = z.discriminatedUnion(
+  "response_type",
+  [
+    ContentWorkItemWorkflowSnapshotResponseSchema,
+    ContentWorkItemBlockedSnapshotResponseSchema
+  ]
+);
 
 export const ContentOpportunityEnrichmentBlockerSchema = z.object({
   code: z.string(),
@@ -1054,6 +1079,12 @@ export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema
+>;
+export type ContentWorkItemBlockedSnapshotResponse = z.infer<
+  typeof ContentWorkItemBlockedSnapshotResponseSchema
+>;
+export type ContentWorkItemSnapshotResponse = z.infer<
+  typeof ContentWorkItemSnapshotResponseSchema
 >;
 export type ContentOpportunityEnrichment = z.infer<
   typeof ContentOpportunityEnrichmentSchema

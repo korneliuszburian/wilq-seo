@@ -156,6 +156,8 @@ describe("content workflow API helpers", () => {
 
     const snapshot = await getContentWorkItemSnapshot();
 
+    expect(snapshot.response_type).toBe("workflow_snapshot");
+    if (snapshot.response_type !== "workflow_snapshot") throw new Error("Expected workflow snapshot");
     expect(snapshot.preflight.item.id).toBe("content_work_item_bdo");
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/content/work-items/snapshot"
@@ -371,6 +373,7 @@ function contentKnowledgeCardsResponse() {
 
 function workflowSnapshot() {
   return {
+    response_type: "workflow_snapshot",
     preflight: responseByPath["/api/content/work-items/preflight"],
     sales_brief: responseByPath["/api/content/work-items/sales-brief"],
     draft_package: responseByPath["/api/content/work-items/draft-package"],

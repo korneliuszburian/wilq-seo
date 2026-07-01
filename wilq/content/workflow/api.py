@@ -74,6 +74,7 @@ from wilq.content.review.human import (
 )
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.contracts import (
+    ContentWorkItemBlockedSnapshotResponse,
     ContentWorkItemDraftPackageRequest,
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsRequest,
@@ -115,6 +116,7 @@ from wilq.content.workflow.decision_mapping import (
     content_work_item_from_decision,
 )
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.queue import build_content_work_item_queue_response
 from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
 
 
@@ -453,6 +455,38 @@ def _build_content_work_item_diagnostics_snapshot_response_from_decision(
         enrichment=build_content_opportunity_enrichment(decision),
         human_review_record=human_review,
         audit=audit,
+    )
+
+
+def build_content_work_item_blocked_snapshot_response_for_work_item(
+    diagnostics: ContentDiagnosticsResponse,
+    work_item_id: str,
+) -> ContentWorkItemBlockedSnapshotResponse | None:
+    queue = build_content_work_item_queue_response(diagnostics)
+    candidate = next(
+        (
+            candidate
+            for candidate in queue.candidates
+            if candidate.work_item_id == work_item_id and candidate.recommended_mode == "block"
+        ),
+        None,
+    )
+    if candidate is None:
+        return None
+    return ContentWorkItemBlockedSnapshotResponse(
+        work_item_id=candidate.work_item_id,
+        decision_id=candidate.decision_id,
+        title=candidate.title,
+        topic=candidate.topic,
+        status_label=candidate.status_label,
+        reason=candidate.reason,
+        safe_next_step=candidate.safe_next_step,
+        recommended_mode=candidate.recommended_mode,
+        preflight_status=candidate.preflight_status,
+        blockers=candidate.blockers,
+        evidence_ids=candidate.evidence_ids,
+        source_connectors=candidate.source_connectors,
+        candidate=candidate,
     )
 
 

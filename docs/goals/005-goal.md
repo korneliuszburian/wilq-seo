@@ -84,8 +84,8 @@ First Goal 005 source-pack proof:
   `magazynowanie odpadów` as now supported by source-backed review-required
   waste/packaging knowledge, `operat wodnoprawny` as still blocked by missing
   direct service knowledge, and the Ahrefs `beczki` candidate as correctly
-  blocked but needing a typed snapshot blocker instead of HTTP 404. The audit
-  also fixed source-fact connector/evidence lineage for enrichment facts.
+  blocked with a typed `blocked_snapshot` instead of HTTP 404. The audit also
+  fixed source-fact connector/evidence lineage for enrichment facts.
 
 ## Non-Negotiable Rules
 

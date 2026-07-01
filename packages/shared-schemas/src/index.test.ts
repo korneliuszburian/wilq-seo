@@ -9,6 +9,7 @@ import {
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemSnapshotAuditRequestSchema,
   ContentWorkItemSnapshotHumanReviewRequestSchema,
+  ContentWorkItemSnapshotResponseSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
@@ -896,6 +897,66 @@ describe("Content work item workflow schemas", () => {
             summary: "nie wie, jak podejść do BDO"
           }
         ]
+      }).success
+    ).toBe(true);
+  });
+
+  it("accepts a typed blocked content workflow snapshot", () => {
+    const blocker = {
+      code: "missing_final_canonical",
+      label: "Brakuje finalnego adresu",
+      reason: "Szkic nie może powstać bez publicznego docelowego adresu.",
+      next_step: "Ustal finalny adres na ekologus.pl.",
+      decision_id: "content_decision_ahrefs_gap_records_review",
+      evidence_ids: ["ev_ahrefs_gap"],
+      source_connectors: ["ahrefs"]
+    };
+    const candidate = {
+      work_item_id: "content_work_item_content_decision_ahrefs_gap_records_review",
+      decision_id: "content_decision_ahrefs_gap_records_review",
+      title: "Ahrefs: zweryfikuj luki SEO przed planem treści",
+      topic: "beczki",
+      priority: 18,
+      recommended_mode: "block",
+      recommended_mode_label: "zablokuj pisanie",
+      status_label: "wymaga sprawdzenia przed pisaniem",
+      reason: "Brak istniejącego rekordu nie oznacza jeszcze, że wolno tworzyć nowy URL.",
+      evidence_ids: ["ev_ahrefs_gap"],
+      source_connectors: ["ahrefs"],
+      source_connector_labels: ["Ahrefs"],
+      source_public_url: null,
+      final_canonical_url: null,
+      intended_final_url: null,
+      preview_url: null,
+      preflight_status: "blocked",
+      preflight_status_label: "zablokowane",
+      duplicate_canonical_risk_summary: "Brak istniejącego rekordu.",
+      measurement_readiness: {
+        status: "blocked",
+        label: "pomiar zablokowany",
+        reason: "Brak finalnego adresu.",
+        source_connectors: []
+      },
+      safe_next_step: "Sprawdź podobne treści i finalny adres.",
+      blockers: [blocker]
+    };
+
+    expect(
+      ContentWorkItemSnapshotResponseSchema.safeParse({
+        response_type: "blocked_snapshot",
+        work_item_id: candidate.work_item_id,
+        decision_id: candidate.decision_id,
+        title: candidate.title,
+        topic: candidate.topic,
+        status_label: candidate.status_label,
+        reason: candidate.reason,
+        safe_next_step: candidate.safe_next_step,
+        recommended_mode: candidate.recommended_mode,
+        preflight_status: candidate.preflight_status,
+        blockers: [blocker],
+        evidence_ids: ["ev_ahrefs_gap"],
+        source_connectors: ["ahrefs"],
+        candidate
       }).success
     ).toBe(true);
   });

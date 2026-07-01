@@ -81,6 +81,8 @@ WILQ must produce:
 | Google Search Central docs | https://developers.google.com/search/docs | Technical SEO and Search feature constraints. |
 | Google Search Console API overview | https://developers.google.com/webmaster-tools | REST access to Search Console properties, sitemaps, Search Analytics and URL testing; WILQ should expose only permission-backed, evidence-tagged reads. |
 | Google Search Console Search Analytics API | https://developers.google.com/webmaster-tools/v1/searchanalytics/query | Query/page evidence contract for clicks, impressions, CTR and position. |
+| Search Analytics query guide | https://developers.google.com/webmaster-tools/v1/how-tos/search_analytics | GSC read contracts must check available dates first, account for typical 2-3 day data delay, paginate with `rowLimit`/`startRow`, and label detailed page/query/country/device reads as potentially partial. |
+| Search Analytics performance data guide | https://developers.google.com/webmaster-tools/v1/how-tos/all-your-data | Daily one-day reads, 25k-row paging and aggregation-by-page/site caveats inform WILQ freshness and completeness blockers. |
 | Ahrefs content gap analysis | https://ahrefs.com/blog/content-gap-analysis/ | Gap workflow: competitor terms only after inventory/cannibalization check. |
 | Ahrefs keyword research | https://ahrefs.com/seo/keyword-research | Traffic potential and intent grouping as context, not unsupported forecasts. |
 | SEO strategy evolution research | https://www.tandfonline.com/doi/full/10.1080/23311975.2025.2491678 | Content quality, technical SEO and user experience as integrated SEO criteria. |

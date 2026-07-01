@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -56,6 +57,7 @@ from wilq.content.quality.revision_apply import ContentRevisionApplication
 from wilq.content.review.human import ContentHumanReview, ContentHumanReviewBlocker
 from wilq.content.workflow import operator_steps as workflow_steps
 from wilq.content.workflow.models import ContentWorkItem
+from wilq.content.workflow.queue import ContentWorkItemQueueBlocker, ContentWorkItemQueueCandidate
 
 
 class ContentWorkItemPreflightRequest(BaseModel):
@@ -249,6 +251,7 @@ class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
 
 
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
+    response_type: Literal["workflow_snapshot"] = "workflow_snapshot"
     preflight: ContentWorkItemPreflightResponse
     sales_brief: ContentWorkItemSalesBriefResponse
     draft_package: ContentWorkItemDraftPackageResponse
@@ -259,6 +262,28 @@ class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
     operator_steps: list[workflow_steps.ContentWorkflowOperatorStep] = Field(
         default_factory=list
     )
+
+
+class ContentWorkItemBlockedSnapshotResponse(BaseModel):
+    response_type: Literal["blocked_snapshot"] = "blocked_snapshot"
+    work_item_id: str
+    decision_id: str
+    title: str
+    topic: str
+    status_label: str
+    reason: str
+    safe_next_step: str
+    recommended_mode: str
+    preflight_status: str
+    blockers: list[ContentWorkItemQueueBlocker] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    candidate: ContentWorkItemQueueCandidate
+
+
+ContentWorkItemSnapshotResponse = (
+    ContentWorkItemWorkflowSnapshotResponse | ContentWorkItemBlockedSnapshotResponse
+)
 
 
 class ContentWorkItemSnapshotHumanReviewRequest(BaseModel):

@@ -14,6 +14,7 @@ from wilq.content.knowledge.cards import (
 )
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
+    build_content_work_item_blocked_snapshot_response_for_work_item,
     build_content_work_item_diagnostics_snapshot_response,
     build_content_work_item_diagnostics_snapshot_response_for_work_item,
     build_content_work_item_draft_package_response,
@@ -57,6 +58,7 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
     ContentWorkItemSnapshotHumanReviewRequest,
+    ContentWorkItemSnapshotResponse,
     ContentWorkItemStructuredDraftGenerationRequest,
     ContentWorkItemStructuredDraftGenerationResponse,
     ContentWorkItemStructuredDraftPreviewRequest,
@@ -114,12 +116,12 @@ def content_work_item_snapshot() -> ContentWorkItemWorkflowSnapshotResponse:
 
 @router.get(
     "/api/content/work-items/{work_item_id}/snapshot",
-    response_model=ContentWorkItemWorkflowSnapshotResponse,
+    response_model=ContentWorkItemSnapshotResponse,
 )
 def content_work_item_snapshot_for_selected_item(
     work_item_id: str,
-) -> ContentWorkItemWorkflowSnapshotResponse:
-    return _snapshot_for_work_item_or_404(work_item_id)
+) -> ContentWorkItemSnapshotResponse:
+    return _snapshot_for_work_item_or_blocked_or_404(work_item_id)
 
 
 @router.get(
@@ -461,6 +463,38 @@ def _snapshot_for_work_item_or_404(
                 detail="Content work item is not available after review lookup.",
             )
     return snapshot
+
+
+def _snapshot_for_work_item_or_blocked_or_404(
+    work_item_id: str,
+) -> ContentWorkItemSnapshotResponse:
+    diagnostics = build_content_diagnostics()
+    snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+        diagnostics,
+        work_item_id,
+    )
+    if snapshot is not None:
+        review = content_workflow_store().latest_human_review(work_item_id)
+        if review is None:
+            return snapshot
+        audit_record = content_workflow_store().latest_audit_for_review(review.id)
+        reviewed_snapshot = build_content_work_item_diagnostics_snapshot_response_for_work_item(
+            diagnostics,
+            work_item_id,
+            human_review=review,
+            audit=audit_record,
+        )
+        return snapshot if reviewed_snapshot is None else reviewed_snapshot
+    blocked_snapshot = build_content_work_item_blocked_snapshot_response_for_work_item(
+        diagnostics,
+        work_item_id,
+    )
+    if blocked_snapshot is not None:
+        return blocked_snapshot
+    raise HTTPException(
+        status_code=404,
+        detail="Content work item is not available for the gated workflow.",
+    )
 
 
 def _ensure_contract_matches_work_item(
