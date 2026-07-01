@@ -361,6 +361,12 @@ evidence-backed entries now carry `source_connectors`, missing connector
 lineage blocks with `missing_source_connector`, and structured generation claim
 markers preserve connector lineage beside evidence IDs.
 
+Structured draft generation now exposes Sales Brief `knowledge_constraints`
+under Beads task `wilq-seo-tfk`. Generation contracts carry typed evidence
+requirements and blocked/review-required knowledge constraints into
+`model_input`, keeping review-required knowledge visible to runtime/preview/
+quality gates instead of burying it in prose.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate

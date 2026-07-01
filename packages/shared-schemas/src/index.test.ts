@@ -607,6 +607,14 @@ describe("Content work item workflow schemas", () => {
                   summary: "GSC pokazuje popyt na temat BDO."
                 }
               ],
+              knowledge_constraints: [
+                {
+                  card_id: "content_knowledge_service_bdo",
+                  constraint_type: "service_fit",
+                  label: "Dopasuj treść do usługi Ekologus",
+                  reason: "Szkic musi wspierać realną usługę, nie ogólny SEO tekst."
+                }
+              ],
               claim_markers: [
                 {
                   claim_id: "claim_general_bdo",

@@ -66,6 +66,15 @@ class StructuredDraftClaimMarker(BaseModel):
     reviewer_id: str | None = None
 
 
+class StructuredDraftKnowledgeConstraint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    card_id: str
+    constraint_type: str
+    label: str
+    reason: str
+
+
 class StructuredDraftSectionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -93,6 +102,7 @@ class StructuredDraftGenerationInput(BaseModel):
     cta_direction: str
     sections: list[StructuredDraftSectionInput] = Field(default_factory=list)
     source_facts: list[StructuredDraftSourceFact] = Field(default_factory=list)
+    knowledge_constraints: list[StructuredDraftKnowledgeConstraint] = Field(default_factory=list)
     claim_markers: list[StructuredDraftClaimMarker] = Field(default_factory=list)
     claims_allowed: list[str] = Field(default_factory=list)
     claims_removed_or_blocked: list[str] = Field(default_factory=list)
@@ -210,6 +220,15 @@ def build_structured_draft_generation_contract(
                 summary=fact.summary,
             )
             for fact in sales_brief.source_facts
+        ],
+        knowledge_constraints=[
+            StructuredDraftKnowledgeConstraint(
+                card_id=constraint.card_id,
+                constraint_type=constraint.constraint_type,
+                label=constraint.label,
+                reason=constraint.reason,
+            )
+            for constraint in sales_brief.knowledge_constraints
         ],
         claim_markers=[
             StructuredDraftClaimMarker(
@@ -372,7 +391,9 @@ def _system_instruction() -> str:
         "Jesteś runtime'em WILQ do przygotowania szkicu treści po polsku. "
         "Pisz wyłącznie z przekazanych faktów, dowodów i dozwolonych twierdzeń. "
         "Nie oznaczaj treści jako gotowej do publikacji. Nie obiecuj pozycji, "
-        "leadów, przychodu, pełnej zgodności prawnej ani efektu bez dowodu."
+        "leadów, przychodu, pełnej zgodności prawnej ani efektu bez dowodu. "
+        "Ograniczenia wiedzy z knowledge_constraints są bramkami bezpieczeństwa, "
+        "nie inspiracją do dodawania nowych twierdzeń."
     )
 
 

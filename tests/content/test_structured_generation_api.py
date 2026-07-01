@@ -224,6 +224,14 @@ def test_structured_draft_generation_api_returns_strict_contract() -> None:
     assert contract["publish_ready"] is False
     assert contract["model_input"]["final_canonical_url"] == "https://ekologus.pl/bdo/"
     assert contract["model_input"]["source_facts"][0]["evidence_id"] == "ev_gsc_bdo"
+    assert contract["model_input"]["knowledge_constraints"] == [
+        {
+            "card_id": "content_knowledge_service_bdo",
+            "constraint_type": "service_fit",
+            "label": "Dopasuj treść do usługi Ekologus",
+            "reason": "Szkic musi wspierać realną usługę, nie ogólny SEO tekst.",
+        }
+    ]
     assert contract["model_input"]["sections"][0]["evidence_ids"] == [
         "ev_gsc_bdo",
         "ev_wp_bdo",

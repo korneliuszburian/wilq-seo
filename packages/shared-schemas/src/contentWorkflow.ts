@@ -578,6 +578,13 @@ export const StructuredDraftClaimMarkerSchema = z.object({
   reviewer_id: z.string().nullable().optional()
 });
 
+export const StructuredDraftKnowledgeConstraintSchema = z.object({
+  card_id: z.string(),
+  constraint_type: z.string(),
+  label: z.string(),
+  reason: z.string()
+});
+
 export const StructuredDraftSectionInputSchema = z.object({
   heading: z.string(),
   purpose: z.string(),
@@ -601,6 +608,7 @@ export const StructuredDraftGenerationInputSchema = z.object({
   cta_direction: z.string(),
   sections: z.array(StructuredDraftSectionInputSchema).default([]),
   source_facts: z.array(StructuredDraftSourceFactSchema).default([]),
+  knowledge_constraints: z.array(StructuredDraftKnowledgeConstraintSchema).default([]),
   claim_markers: z.array(StructuredDraftClaimMarkerSchema).default([]),
   claims_allowed: z.array(z.string()).default([]),
   claims_removed_or_blocked: z.array(z.string()).default([]),

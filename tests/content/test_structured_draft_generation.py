@@ -269,6 +269,12 @@ def test_structured_generation_returns_strict_schema_contract_for_valid_item() -
     assert contract.model_input.final_canonical_url == "https://ekologus.pl/bdo/"
     assert contract.model_input.preview_url == "https://ekologus.dev.proudsite.pl/bdo/"
     assert contract.model_input.source_facts[0].evidence_id == "ev_gsc_bdo"
+    assert contract.model_input.knowledge_constraints
+    constraint_types = {
+        constraint.constraint_type for constraint in contract.model_input.knowledge_constraints
+    }
+    assert "evidence_requirement" in constraint_types
+    assert constraint_types & {"blocked", "needs_human_review"}
     assert contract.model_input.sections[0].evidence_ids == ["ev_gsc_bdo", "ev_wp_bdo"]
     assert contract.model_input.claims_allowed == [
         "Ekologus pomaga firmom w obowiązkach związanych z BDO."
