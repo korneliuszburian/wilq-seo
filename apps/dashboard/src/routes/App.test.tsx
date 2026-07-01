@@ -7748,6 +7748,10 @@ describe("WILQ dashboard", () => {
       "src/components/AdsCampaignPanels.tsx",
       "utf8"
     );
+    const budgetRecommendationPanelsSource = readFileSync(
+      "src/components/AdsBudgetRecommendationPanels.tsx",
+      "utf8"
+    );
     const negativeKeywordPanelSource = readFileSync(
       "src/components/AdsNegativeKeywordCandidatesPanel.tsx",
       "utf8"
@@ -7793,10 +7797,10 @@ describe("WILQ dashboard", () => {
     expect(routeSource).toContain("business_context_read_contract.status_label");
     expect(campaignPanelsSource).toContain("row.advertising_channel_type_label");
     expect(campaignPanelsSource).toContain("row.campaign_status_label");
-    expect(routeSource).toContain("row.budget_period_label");
-    expect(routeSource).toContain("row.blocked_claim_summary_label");
-    expect(routeSource).toContain("row.human_review_gate_summary_label");
-    expect(routeSource).toContain("row.changed_field_summary_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.budget_period_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.blocked_claim_summary_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.human_review_gate_summary_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.changed_field_summary_label");
     expect(routeSource).not.toContain("{decision.decision_type_label} / {decision.status_label}");
     expect(routeSource).not.toContain("{item.status_label} / {item.risk_label}");
     expect(routeSource).not.toContain(
@@ -7823,8 +7827,8 @@ describe("WILQ dashboard", () => {
     expect(routeSource).not.toContain("decision.blocked_claim_labels.slice(0, 3)");
     expect(routeSource).not.toContain("primaryDecision.blocked_claim_labels");
     expect(routeSource).not.toContain("row.payload_preview.operation_type_label");
-    expect(routeSource).toContain("row.recommendation_type_label");
-    expect(routeSource).toContain("row.preview_card");
+    expect(budgetRecommendationPanelsSource).toContain("row.recommendation_type_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.preview_card");
     expect(routeSource).not.toContain("Operacja: {row.payload_preview.operation_type_label}");
     expect(routeSource).not.toContain("Wspólne budget_id");
     expect(routeSource).not.toContain("ID budżetu:");
@@ -7833,7 +7837,7 @@ describe("WILQ dashboard", () => {
     expect(searchTermPanelsSource).toContain("contract.operator_review_gate_summary_label");
     expect(searchTermPanelsSource).toContain("contract.blocked_claim_summary_label");
     expect(routeSource).toContain("row.missing_read_contract_summary_label");
-    expect(routeSource).toContain("row.human_review_gate_summary_label");
+    expect(budgetRecommendationPanelsSource).toContain("row.human_review_gate_summary_label");
     expect(routeSource).not.toContain("adsCampaignTriageNextStep");
     expect(routeSource).not.toContain("row.missing_read_contract_labels");
     expect(routeSource).not.toContain("row.blocked_claim_labels");

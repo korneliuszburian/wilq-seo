@@ -168,8 +168,13 @@ API status later contradicts this state.
   green sub-slice extracts Ads campaign metric, triage and derived-KPI panels
   into `components/AdsCampaignPanels.tsx`, moves campaign channel/status
   fallback labels into `lib/adsLabels.ts`, and keeps source guards pointed at
-  the new module. Broader Ads extraction and zombie/copy cleanup remain in this
-  Beads task.
+  the new module. Twelfth green sub-slice extracts Ads budget pacing, shared
+  budget distribution, recommendation, impression-share and change-history
+  panels into `components/AdsBudgetRecommendationPanels.tsx`, moves budget/date/
+  preview fallback labels into `lib/adsLabels.ts`, and keeps static source guards
+  pointed at the extracted module for budget/recommendation fields and
+  `preview_card`/`payload_preview` safety. Broader Ads extraction and zombie/copy
+  cleanup remain in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
