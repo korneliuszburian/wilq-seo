@@ -100,6 +100,12 @@ First Goal 005 source-pack proof:
   `review_required`, `approved`) and adds a fail-closed review protocol before
   any private proposal can become a reviewed source fact or appear in a
   read-only Service Profile.
+- `docs/architecture/service-profile-review-surface.md` defines the read-only
+  Service Profile design. The first version is API-owned, Polish-facing and
+  review-only: it shows production-depth readiness, service coverage, claim
+  rules, evidence requirements, source lineage, private proposal summaries and
+  gaps, while blocking card edits and fact promotion until a future validated
+  ActionObject/audit path exists.
 
 ## Non-Negotiable Rules
 
@@ -128,7 +134,8 @@ First Goal 005 source-pack proof:
 2. Identify exact missing cards or stale/thin card areas.
 3. Add or plan focused blockers/tests so missing required knowledge stops Sales
    Brief and draft work.
-4. Design or implement a read-only Service Profile/review surface for Wilku.
+4. Implement the read-only Service Profile/review surface for Wilku from
+   `docs/architecture/service-profile-review-surface.md`.
 5. Audit Sales Brief v2 signal quality across queue candidates and enrichment
    source facts.
 6. Define evidence-based draft variant comparison without fake scores.
@@ -158,8 +165,9 @@ Goal 005 is complete only when:
    named with exact next actions.
 3. Missing required knowledge produces typed blockers or a documented blocker
    explains why implementation needs owner/source input.
-4. Service Profile read/review path is designed or implemented with no direct
-   ungated card editing.
+4. Service Profile read/review path is implemented from the current design, or
+   a blocker explains why implementation needs owner/source input; no direct
+   ungated card editing exists.
 5. Sales Brief v2 signal quality is audited for current queue candidates and
    weak signal causes are assigned to connector freshness, sparse data or model
    interpretation.

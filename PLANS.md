@@ -168,14 +168,22 @@ private text, no paths/filenames/contact data, and no production-depth unlock
 without review/eval. Future implementation should start with read-only Service
 Profile coverage display.
 
+Read-only Service Profile review surface is designed in
+`docs/architecture/service-profile-review-surface.md` under Beads task
+`wilq-seo-94k`. Proposed endpoint: `GET /api/content/service-profile`. The
+view model should aggregate existing cards/source facts into Polish service
+coverage, claim rules, evidence requirements, source lineage, gaps and blocked
+write policy. V1 has no card editing and no fact promotion.
+
 ## In Scope
 
 Goal 005 includes:
 
 1. Knowledge-card depth audit against real Ekologus services, buyer problems,
    buyer triggers, CTA patterns, claim constraints and evidence requirements.
-2. Read-only Ekologus Service Profile/review design so Wilku can inspect card
-   status, source lineage, freshness and missing coverage without editing code.
+2. Implement read-only Ekologus Service Profile/review design so Wilku can
+   inspect card status, source lineage, freshness and missing coverage without
+   editing code.
 3. First real Wilku content UAT, or explicit owner defer with residual risk.
 4. Sales Brief v2 signal-quality audit across current queue candidates,
    connector freshness/density and enrichment usefulness.

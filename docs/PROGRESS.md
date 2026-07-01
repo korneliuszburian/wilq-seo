@@ -245,6 +245,13 @@ API status later contradicts this state.
   decision, schema-gated condensation, review and eval. It forbids raw private
   text, full paths, filenames, contact data and protected snippets in committed
   WILQ artifacts.
+- Read-only Service Profile review surface is designed in
+  `docs/architecture/service-profile-review-surface.md` under Beads task
+  `wilq-seo-94k`. The proposed `GET /api/content/service-profile` view model
+  aggregates existing knowledge cards/source facts into Polish review sections,
+  coverage gaps, blocked write policy and non-persistent review requests.
+  Direct card edits, fact promotion and private-source exposure stay blocked
+  until a future ActionObject/audit path exists.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity
