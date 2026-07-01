@@ -66,6 +66,7 @@ def _claim_ledger(*, blocked: bool = False) -> ContentClaimLedger:
             claim_text="Ta treść zwiększy liczbę leadów.",
             claim_type="business_outcome_claim",
             evidence_ids=["ev_gsc_bdo"],
+            source_connectors=["google_search_console"],
             measurement_window_ready=False,
         )
         if blocked
@@ -74,6 +75,7 @@ def _claim_ledger(*, blocked: bool = False) -> ContentClaimLedger:
             claim_text="Ekologus pomaga firmom w obowiązkach związanych z BDO.",
             claim_type="service_claim",
             evidence_ids=["ev_wp_bdo"],
+            source_connectors=["wordpress_ekologus"],
         )
     )
     return ContentClaimLedger(

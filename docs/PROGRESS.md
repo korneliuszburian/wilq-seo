@@ -342,6 +342,10 @@ API status later contradicts this state.
   generated ledgers and structured draft claim markers preserve the connector
   lineage so later preview/review gates can show not just the evidence ID, but
   the data source behind it.
+- Draft Package tests are realigned with the Claim Ledger source-connector
+  contract: allowed evidence-backed fixture claims now carry source connectors,
+  so the focused draft/claim/structured-generation chain passes under the same
+  no-source-no-recommendation rule.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and
