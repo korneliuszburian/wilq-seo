@@ -310,6 +310,69 @@
     ]
   },
   {
+    "skill": "wilq-content-operator",
+    "surface_path": "/content-workflow",
+    "messy_task_pl": "Przeprowadź mnie po ludzku przez jedną sesję tworzenia treści w WILQ: wybierz temat z kolejki, pokaż enrichment, brief, blokady claimów, quality/human review, WordPress draft-only i pomiar. Nie pisz finalnego artykułu, nie publikuj i nie obiecuj efektu SEO.",
+    "expected_connectors": [
+      "google_search_console",
+      "wordpress_ekologus"
+    ],
+    "required_source_connectors": [
+      "google_search_console",
+      "wordpress_ekologus"
+    ],
+    "expected_terms_pl": [
+      "Content Operations",
+      "content_workflow",
+      "/content-workflow",
+      "queue_status",
+      "ready",
+      "selected_work_item_id",
+      "content_work_item",
+      "selected_mode",
+      "refresh",
+      "candidate_count",
+      "enrichment",
+      "knowledge_card_count",
+      "preflight",
+      "brief sprzedażowy",
+      "draft package",
+      "quality review",
+      "human review",
+      "WordPress",
+      "draft-only",
+      "wordpress_execution_status",
+      "blocked",
+      "measurement_outcome_status",
+      "not_ready",
+      "publish_blocked",
+      "success_claim_blocked_until_measurement",
+      "destructive_update_blocked",
+      "measurement window",
+      "nie publikuj",
+      "nie pisz finalnego artykułu"
+    ],
+    "expected_no_action_ids": true,
+    "expected_blocked": true,
+    "blocked_claim_terms": [
+      "publikacja w WordPress",
+      "publish_ready=true",
+      "finalny artykuł",
+      "sukces SEO",
+      "wzrost pozycji",
+      "wzrost liczby leadów",
+      "wpływ na przychód",
+      "destrukcyjna aktualizacja"
+    ],
+    "forbidden_action_ids": [
+      "act_prepare_linkedin_social_drafts",
+      "act_prepare_facebook_social_drafts",
+      "act_review_ga4_tracking_quality",
+      "act_review_merchant_feed_issues",
+      "act_prepare_ads_campaign_review_queue"
+    ]
+  },
+  {
     "skill": "wilq-social-publisher",
     "surface_path": "/social-publisher",
     "task_pl": "Przygotuj bezpieczny do sprawdzenia kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",

@@ -185,6 +185,13 @@ API status later contradicts this state.
   non-interactive threshold `operator_usefulness_score >= 4`. Freshness handling
   is part of the gate: stale connector snapshots require refresh, repair path or
   blocker before recommendation.
+- `wilq-content-operator` now has a realistic non-interactive eval case in
+  `docs/evals/cases/wilq-skill-eval-cases.json`. Static coverage passes with
+  all 13 WILQ skills covered. The first live Codex eval caught a useful harness
+  issue: workflow gates without `action_id` must not be marked
+  `validation_state="validated"`. `scripts/codex_skill_eval.sh` now states that
+  rule explicitly. A re-run is pending because Codex returned a usage-limit
+  blocker until 22:23.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or

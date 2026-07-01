@@ -34,6 +34,43 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-07-01 - `wilq-content-operator` eval case and harness guard
+
+Purpose:
+
+- Add the missing non-interactive Codex eval case for `wilq-content-operator`.
+- Exercise a realistic Polish Content Operations session: queue, enrichment,
+  preflight, Sales Brief, draft package, quality review, human review,
+  WordPress draft-only and measurement window.
+- Catch weak skill behavior around workflow gates, blocked claims and
+  ActionObject validation semantics.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- `wilq-content-operator` smoke passed: queue ready, selected mode `refresh`,
+  evidence from `google_search_console` and `wordpress_ekologus`, publish
+  blocked, destructive update blocked, WordPress execution blocked and
+  measurement outcome `not_ready`.
+- Static eval coverage passed with `case_count=13`, `skill_dir_count=13`,
+  `missing_skill_cases=[]`, `warning_count=0`.
+- First non-interactive Codex eval produced a useful answer
+  (`operator_usefulness_score=4`) but failed the grader because it marked two
+  workflow-gate rows as `validation_state="validated"` without `action_id`.
+- Harness prompt was tightened: `validation_state="validated"` is allowed only
+  for a real ActionObject with non-empty `action_id`; workflow gates must use
+  `pending_validation`, `blocked` or `missing`.
+- Re-run is externally blocked by Codex usage limit:
+  `You've hit your usage limit ... try again at 10:23 PM`. This is not a WILQ
+  API or eval-case failure. Re-run the same command after the usage window.
+
 ## 2026-06-27 - Marketing brief blocker cleanup proof
 
 Purpose:
