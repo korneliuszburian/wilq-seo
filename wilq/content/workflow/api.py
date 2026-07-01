@@ -48,6 +48,7 @@ from wilq.content.inventory.records import (
 from wilq.content.knowledge.cards import (
     match_content_knowledge_cards,
 )
+from wilq.content.measurement.outcome import interpret_content_measurement_outcome
 from wilq.content.measurement.window import (
     ContentDateRange,
     apply_content_measurement_window_to_work_item,
@@ -79,6 +80,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementOutcomeRequest,
+    ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowRequest,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
@@ -385,6 +388,18 @@ def build_content_work_item_measurement_window_response(
             if measurement_result.window is not None
             else []
         ),
+    )
+
+
+def build_content_work_item_measurement_outcome_response(
+    request: ContentWorkItemMeasurementOutcomeRequest,
+) -> ContentWorkItemMeasurementOutcomeResponse:
+    return ContentWorkItemMeasurementOutcomeResponse(
+        outcome=interpret_content_measurement_outcome(
+            window=request.window,
+            observed_metrics=request.observed_metrics,
+            as_of=request.as_of,
+        )
     )
 
 

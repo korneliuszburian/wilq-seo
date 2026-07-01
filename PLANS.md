@@ -664,9 +664,20 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
   content workflow end-to-end and adversarial pytest subset, shared-schema
   Vitest, dashboard API/route Vitest, dashboard typecheck, Ruff, source mypy,
   Fallow audit, changed-file complexity audit and `git diff --check` passed.
+- Conservative measurement outcome interpreter slice `wilq-seo-prk` added
+  `POST /api/content/work-items/measurement-outcome` and a deterministic
+  `ContentMeasurementOutcomeInterpretation`. It returns `not_ready`,
+  `insufficient_data`, `noisy_inconclusive`, `directional_improvement`,
+  `likely_underperformance` or `measured_success`, refuses outcome claims before
+  `earliest_verdict_date`, requires observed metric values with evidence IDs
+  and preserves limitations instead of claiming causality theater.
+- Focused proof for the measurement outcome slice: measurement outcome/window
+  and content workflow contract-inventory pytest subset, shared-schema Vitest,
+  Ruff, source mypy, Fallow audit, changed-file complexity audit and
+  `git diff --check` passed.
 - Next product slice should come from `bd ready --json`; current likely
-  candidates are `wilq-seo-prk` conservative measurement outcome interpretation
-  or `wilq-seo-wr4` content operator skill/UAT harness.
+  candidates are `wilq-seo-wr4` content operator skill/UAT harness or
+  `wilq-seo-akt` anti-slop execution guard.
 
 2026-06-30:
 
@@ -814,10 +825,10 @@ Current next action:
 
 Goal 004 is active. `wilq-seo-xlw`, `wilq-seo-6kd`, `wilq-seo-a3t`,
 `wilq-seo-dtj`, `wilq-seo-8xc`, `wilq-seo-ao0`, `wilq-seo-a09` and
-`wilq-seo-03a` are closed. Continue from `bd ready --json`; the next product
-slice is whichever ready Goal 004 task is highest priority, likely the
-conservative measurement outcome interpreter (`wilq-seo-prk`) or content
-operator skill/UAT harness (`wilq-seo-wr4`).
+`wilq-seo-03a` and `wilq-seo-prk` are closed. Continue from `bd ready --json`;
+the next product slice is whichever ready Goal 004 task is highest priority,
+likely the content operator skill/UAT harness (`wilq-seo-wr4`) or anti-slop
+execution guard (`wilq-seo-akt`).
 
 Completed Goal 002 extraction context:
 

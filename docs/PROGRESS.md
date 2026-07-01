@@ -113,9 +113,17 @@ API status later contradicts this state.
   `destructive_update_allowed=false` are part of the typed contract. The public
   API still blocks live writes by default; the domain-level live proof requires
   an explicit adapter and still passes only a `post_status=draft` payload.
+- Goal 004 conservative measurement outcome interpreter slice `wilq-seo-prk`
+  is implemented. `POST /api/content/work-items/measurement-outcome` returns a
+  typed interpretation with statuses `not_ready`, `insufficient_data`,
+  `noisy_inconclusive`, `directional_improvement`, `likely_underperformance`
+  and `measured_success`. The interpreter refuses early claims before
+  `earliest_verdict_date`, requires observed values plus evidence IDs, keeps
+  directional signals separate from public success claims, and records
+  limitations so WILQ does not pretend full causality.
 - The next Goal 004 product slice should come from `bd ready --json`; current
-  likely candidates are `wilq-seo-prk` conservative measurement outcome
-  interpretation or `wilq-seo-wr4` content operator skill/UAT harness.
+  likely candidates are `wilq-seo-wr4` content operator skill/UAT harness or
+  `wilq-seo-akt` anti-slop execution guard.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.

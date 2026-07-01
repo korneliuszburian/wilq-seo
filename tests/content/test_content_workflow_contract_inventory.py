@@ -9,6 +9,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewResponse,
@@ -103,6 +104,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "POST",
         "/api/content/work-items/measurement-window",
     ): ContentWorkItemMeasurementWindowResponse,
+    (
+        "POST",
+        "/api/content/work-items/measurement-outcome",
+    ): ContentWorkItemMeasurementOutcomeResponse,
 }
 
 

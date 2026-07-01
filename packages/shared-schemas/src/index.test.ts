@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
+  ContentWorkItemMeasurementOutcomeResponseSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemSalesBriefResponseSchema,
@@ -721,6 +722,26 @@ describe("Content work item workflow schemas", () => {
           blockers: []
         },
         outcome_blockers: [blocker]
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentWorkItemMeasurementOutcomeResponseSchema.safeParse({
+        outcome: {
+          id: "measurement_outcome_measurement_window_content_work_item_bdo",
+          work_item_id: "content_work_item_bdo",
+          measurement_window_id: "measurement_window_content_work_item_bdo",
+          status: "measured_success",
+          status_label: "Zmiana pozytywna w mierzonych danych",
+          conclusion: "Metryki poprawiły się, ale bez udawania pełnej przyczynowości.",
+          confidence: "medium",
+          evidence_ids: ["ev_gsc_bdo"],
+          source_connectors: ["google_search_console"],
+          limitations: ["To nie jest pełny dowód przyczyny."],
+          success_claim_allowed: true,
+          queue_feedback_allowed: true,
+          safe_next_step: "Zapisz wynik jako pozytywny sygnał."
+        }
       }).success
     ).toBe(true);
 

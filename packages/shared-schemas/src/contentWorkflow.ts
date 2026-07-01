@@ -707,11 +707,52 @@ export const ContentMeasurementWindowBuildResultSchema = z.object({
   blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentMeasurementObservedMetricSchema = z.object({
+  metric: z.string(),
+  baseline_value: z.number().nullable().optional(),
+  observation_value: z.number().nullable().optional(),
+  source_connector: z.string(),
+  evidence_ids: z.array(z.string()).default([])
+});
+
+export const ContentMeasurementOutcomeInterpretationSchema = z.object({
+  id: z.string(),
+  work_item_id: z.string(),
+  measurement_window_id: z.string(),
+  status: z.enum([
+    "not_ready",
+    "insufficient_data",
+    "noisy_inconclusive",
+    "directional_improvement",
+    "likely_underperformance",
+    "measured_success"
+  ]),
+  status_label: z.string(),
+  conclusion: z.string(),
+  confidence: z.enum(["none", "low", "medium", "high"]),
+  evidence_ids: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([]),
+  limitations: z.array(z.string()).default([]),
+  success_claim_allowed: z.boolean(),
+  queue_feedback_allowed: z.boolean(),
+  safe_next_step: z.string()
+});
+
 export const ContentWorkItemMeasurementWindowResponseSchema = z.object({
   item: ContentWorkItemSchema,
   updated_item: ContentWorkItemSchema,
   measurement_window_result: ContentMeasurementWindowBuildResultSchema,
   outcome_blockers: z.array(ContentWorkflowBlockerSchema).default([])
+});
+
+export const ContentWorkItemMeasurementOutcomeRequestSchema = z.object({
+  window: ContentMeasurementWindowSchema,
+  observed_metrics: z.array(ContentMeasurementObservedMetricSchema).default([]),
+  as_of: z.string()
+});
+
+export const ContentWorkItemMeasurementOutcomeResponseSchema = z.object({
+  outcome: ContentMeasurementOutcomeInterpretationSchema
 });
 
 export const ContentWorkflowOperatorStepSchema = z.object({
@@ -872,6 +913,15 @@ export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
 >;
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
+>;
+export type ContentMeasurementOutcomeInterpretation = z.infer<
+  typeof ContentMeasurementOutcomeInterpretationSchema
+>;
+export type ContentWorkItemMeasurementOutcomeRequest = z.infer<
+  typeof ContentWorkItemMeasurementOutcomeRequestSchema
+>;
+export type ContentWorkItemMeasurementOutcomeResponse = z.infer<
+  typeof ContentWorkItemMeasurementOutcomeResponseSchema
 >;
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<

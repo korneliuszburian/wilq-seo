@@ -20,6 +20,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemDraftVariantsResponse,
     ContentWorkItemHumanReviewRequest,
     ContentWorkItemHumanReviewResponse,
+    ContentWorkItemMeasurementOutcomeRequest,
+    ContentWorkItemMeasurementOutcomeResponse,
     ContentWorkItemMeasurementWindowRequest,
     ContentWorkItemMeasurementWindowResponse,
     ContentWorkItemPreflightRequest,
@@ -50,6 +52,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_draft_package_response,
     build_content_work_item_draft_variants_response,
     build_content_work_item_human_review_response,
+    build_content_work_item_measurement_outcome_response,
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
     build_content_work_item_quality_review_response,
@@ -411,6 +414,16 @@ def content_work_item_measurement_window(
     request: ContentWorkItemMeasurementWindowRequest,
 ) -> ContentWorkItemMeasurementWindowResponse:
     return build_content_work_item_measurement_window_response(request)
+
+
+@router.post(
+    "/api/content/work-items/measurement-outcome",
+    response_model=ContentWorkItemMeasurementOutcomeResponse,
+)
+def content_work_item_measurement_outcome(
+    request: ContentWorkItemMeasurementOutcomeRequest,
+) -> ContentWorkItemMeasurementOutcomeResponse:
+    return build_content_work_item_measurement_outcome_response(request)
 
 
 def _snapshot_for_work_item_or_404(

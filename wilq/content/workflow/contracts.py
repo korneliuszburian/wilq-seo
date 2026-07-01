@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from pydantic import BaseModel, Field
 
 from wilq.content.briefs.sales import (
@@ -36,9 +38,14 @@ from wilq.content.inventory.records import (
     ContentInventoryResolution,
 )
 from wilq.content.knowledge.cards import ContentKnowledgeCardMatch
+from wilq.content.measurement.outcome import (
+    ContentMeasurementObservedMetric,
+    ContentMeasurementOutcomeInterpretation,
+)
 from wilq.content.measurement.window import (
     ContentDateRange,
     ContentMeasurementMetric,
+    ContentMeasurementWindow,
     ContentMeasurementWindowBlocker,
     ContentMeasurementWindowBuildResult,
 )
@@ -229,6 +236,16 @@ class ContentWorkItemMeasurementWindowResponse(BaseModel):
     updated_item: ContentWorkItem
     measurement_window_result: ContentMeasurementWindowBuildResult
     outcome_blockers: list[ContentMeasurementWindowBlocker] = Field(default_factory=list)
+
+
+class ContentWorkItemMeasurementOutcomeRequest(BaseModel):
+    window: ContentMeasurementWindow
+    observed_metrics: list[ContentMeasurementObservedMetric] = Field(default_factory=list)
+    as_of: date
+
+
+class ContentWorkItemMeasurementOutcomeResponse(BaseModel):
+    outcome: ContentMeasurementOutcomeInterpretation
 
 
 class ContentWorkItemWorkflowSnapshotResponse(BaseModel):
