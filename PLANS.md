@@ -233,6 +233,11 @@ persists `detail_data_completeness=partial_possible` for `query,page` reads, so
 later diagnostics and skills can use those rows as SEO decision signals without
 treating them as full traffic totals.
 
+Marketing brief action items now preserve the same refresh-first semantics as
+stale daily decisions. If a safe next action is attached to stale Merchant or
+content data, it becomes a blocker titled `Odśwież dane przed akcją` and points
+to the stale source labels before any review, queue or draft handoff step.
+
 The UAT packet now also exposes the Service Profile private proposal promotion
 checklist under Beads task `wilq-seo-0pk`: `promotion_ready=false`, blocked
 reason and five required conditions before reviewed source facts. This keeps

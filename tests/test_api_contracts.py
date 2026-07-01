@@ -5269,16 +5269,32 @@ def test_marketing_brief_makes_stale_daily_decisions_refresh_first() -> None:
         connector_health=[],
         codex_operator_status={},
     )
+    action = ActionObject(
+        id="act_review_merchant_feed_issues",
+        title="Przygotuj kolejkę przeglądu pliku produktowego Merchant Center",
+        domain=OpportunityDomain.merchant,
+        connector="google_merchant_center",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_stale"],
+        human_diagnosis="Merchant Center ma kolejkę do sprawdzenia.",
+        recommended_reason="Otwórz widok Merchant i sprawdź kolejkę problemów.",
+        payload={"action_type": "merchant_review"},
+        validation_status="not_validated",
+        created_by="test",
+    )
 
     brief = build_marketing_brief(
         connectors=[],
         refresh_runs=[],
-        actions=[],
+        actions=[action],
         command_center=command_center,
     )
     sections = {section.id: section for section in brief.sections}
     metric_item = sections["what_we_know"].items[0]
     blocker_item = sections["what_blocks_us"].items[0]
+    action_item = sections["safe_next_actions"].items[0]
     recommendation_item = sections["recommended_focus"].items[0]
 
     assert metric_item.kind == "blocker"
@@ -5293,6 +5309,14 @@ def test_marketing_brief_makes_stale_daily_decisions_refresh_first() -> None:
     assert blocker_item.blocker_reason == "dane wymagają odświeżenia przed rekomendacją"
     assert "refresh-first" in blocker_item.summary
     assert blocker_item.action_ids == ["act_review_merchant_feed_issues"]
+
+    assert action_item.kind == "blocker"
+    assert action_item.title.startswith("Odśwież dane przed akcją:")
+    assert action_item.blocker_reason == "dane wymagają odświeżenia przed rekomendacją"
+    assert "refresh-first" in action_item.summary
+    assert action_item.next_step.startswith("Najpierw odśwież dane źródłowe: Merchant Center")
+    assert "Dopiero po świeżym odczycie" in action_item.next_step
+    assert action_item.risk == ActionRisk.medium
 
     assert recommendation_item.title.startswith("Odśwież dane przed decyzją:")
     assert recommendation_item.blocker_reason == (

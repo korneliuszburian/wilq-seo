@@ -183,6 +183,11 @@ API status later contradicts this state.
   `refresh-first` / `dane wymagają odświeżenia` / `odśwież dane źródłowe`
   language. The eval prompt no longer seeds `ActionObject` into
   operator-facing output.
+- Marketing brief `safe_next_actions` now mirrors refresh-first stale decision
+  handling. Live proof after stack restart on 2026-07-01 showed Merchant,
+  content refresh and WordPress draft handoff actions rendered as `kind=blocker`
+  with `Odśwież dane przed akcją`, `refresh-first` summaries and concrete stale
+  source labels before any review step.
 - Goal 005 content UAT result proof now has a deterministic checker:
   `scripts/record_goal_005_content_uat_result.py`. It validates the filled
   session result fields for selected work item, blocker understanding, Service

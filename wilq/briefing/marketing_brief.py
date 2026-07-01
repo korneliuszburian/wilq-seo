@@ -425,6 +425,8 @@ def _decision_observation_summary_for_brief(decision: DailyDecision) -> str:
 
 
 def _decision_action_summary(decision: DailyDecision) -> str:
+    if _decision_requires_refresh(decision):
+        return _refresh_first_summary(decision, _decision_observation_summary(decision))
     return (
         f"Ta akcja dotyczy decyzji: {decision.title}. Sprawdź podgląd zmian, "
         "blokady i dowody zanim potraktujesz ją jako gotową do zapisu."
@@ -760,19 +762,31 @@ def _action_item_from_decision(
     decision: DailyDecision,
     index: int,
 ) -> MarketingBriefItem:
+    requires_refresh = _decision_requires_refresh(decision)
     return MarketingBriefItem(
         id=f"brief_action_{action.id}",
-        title=action.title,
-        kind="action",
+        title=_decision_action_title(action, decision),
+        kind="blocker" if requires_refresh else "action",
         priority=min(40 + index, 59),
         source_connectors=decision.source_connectors or [action.connector],
         evidence_ids=decision.evidence_ids,
         action_ids=[action.id],
         metric_facts=[],
         summary=_decision_action_summary(decision),
-        next_step=decision.bezpieczny_next_step,
-        risk=max(action.risk, decision.risk, key=_risk_rank),
+        next_step=_decision_next_step_for_brief(decision),
+        risk=(
+            max(action.risk, _decision_risk_for_brief(decision), key=_risk_rank)
+            if requires_refresh
+            else max(action.risk, decision.risk, key=_risk_rank)
+        ),
+        blocker_reason=_decision_refresh_blocker_reason(decision),
     )
+
+
+def _decision_action_title(action: ActionObject, decision: DailyDecision) -> str:
+    if not _decision_requires_refresh(decision):
+        return action.title
+    return f"Odśwież dane przed akcją: {action.title}"
 
 
 def _risk_rank(risk: ActionRisk) -> int:
