@@ -352,6 +352,22 @@
       "nie publikuj",
       "nie pisz finalnego artykułu"
     ],
+    "required_decision_terms_pl": [
+      "/content-workflow",
+      "selected_work_item_id",
+      "selected_mode",
+      "refresh",
+      "enrichment",
+      "preflight",
+      "brief sprzedażowy",
+      "quality review",
+      "human review",
+      "WordPress",
+      "draft-only",
+      "measurement window",
+      "nie publikuj",
+      "nie pisz finalnego artykułu"
+    ],
     "expected_no_action_ids": true,
     "expected_blocked": true,
     "blocked_claim_terms": [

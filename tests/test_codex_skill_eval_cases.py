@@ -571,6 +571,26 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         assert isinstance(messy_task, str)
         assert len(messy_task) > 80
 
+    content_operator_case = cases["wilq-content-operator"]
+    assert set(content_operator_case["required_decision_terms_pl"]).issuperset(
+        {
+            "/content-workflow",
+            "selected_work_item_id",
+            "selected_mode",
+            "refresh",
+            "enrichment",
+            "preflight",
+            "brief sprzedażowy",
+            "quality review",
+            "human review",
+            "WordPress",
+            "draft-only",
+            "measurement window",
+            "nie publikuj",
+            "nie pisz finalnego artykułu",
+        }
+    )
+
 
 def test_codex_skill_eval_harness_validates_route_markers() -> None:
     harness = HARNESS_PATH.read_text(encoding="utf-8")
@@ -583,6 +603,9 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "expected knowledge_card_id missing",
         "expected expert_rule_id missing",
         "required_source_connectors",
+        "required_decision_terms_pl",
+        "expected decision term missing from actionable output",
+        "Nie wystarczy wrzucić ich wyłącznie do `notes`",
         "blocked must be",
         "expected no action_ids",
         "forbidden action_id present",

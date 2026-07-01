@@ -245,6 +245,11 @@ after the ActionObject validation prompt fix. Proof:
 recommendations and six action candidates, with publish/final article/success
 claims blocked.
 
+The eval harness now supports `required_decision_terms_pl`, used first by
+`wilq-content-operator`, so critical workflow markers must appear in actionable
+output rather than only in `notes`. Hardened proof:
+`.local-lab/evals/codex-skill/20260701T213328Z/summary.json`.
+
 ## In Scope
 
 Goal 005 includes:

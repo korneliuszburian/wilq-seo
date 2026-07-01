@@ -117,6 +117,7 @@ case = cases[skill]
 connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
 surface_path = case.get("surface_path")
 expected_terms = case.get("expected_terms_pl", [])
+required_decision_terms = case.get("required_decision_terms_pl", [])
 expected_action_ids = case.get("expected_action_ids", [])
 expected_validated_action_ids = case.get("expected_validated_action_ids", [])
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
@@ -165,6 +166,14 @@ expected_terms_instruction = (
     "`operator_next_step`, rekomendacjach albo akcjach do sprawdzenia. Nie pomijaj "
     f"markerów route/evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
     if expected_terms
+    else ""
+)
+required_decision_terms_instruction = (
+    "\n<required_decision_terms>\nTe markery muszą pojawić się w części decyzyjnej "
+    "wyniku: `operator_next_step`, `blocked_reason`, rekomendacjach albo "
+    "`action_candidates`. Nie wystarczy wrzucić ich wyłącznie do `notes`: "
+    f"{', '.join(required_decision_terms)}.\n</required_decision_terms>\n"
+    if required_decision_terms
     else ""
 )
 expected_actions_instruction = (
@@ -234,6 +243,7 @@ Zadanie: {task_pl}
 {surface_instruction}
 {messy_task_instruction}
 {expected_terms_instruction}
+{required_decision_terms_instruction}
 {expected_actions_instruction}
 {expected_validated_actions_instruction}
 {expected_lineage_instruction}
@@ -426,6 +436,15 @@ texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
 texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
 combined_text = " ".join(texts)
 combined_json_text = json.dumps(data, ensure_ascii=False)
+decision_text_parts = [
+    data.get("operator_next_step", ""),
+    data.get("blocked_reason") or "",
+]
+decision_text_parts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
+decision_text_parts.extend(rec.get("blocked_reason") or "" for rec in data.get("recommendations", []))
+decision_text_parts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
+decision_text_parts.extend(action.get("blocked_reason") or "" for action in data.get("action_candidates", []))
+decision_text = " ".join(decision_text_parts)
 if not re.search(r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]", combined_text):
     errors.append("no Polish diacritics found in operator-facing JSON values")
 
@@ -457,6 +476,9 @@ for term in case.get("expected_terms_pl", []):
         continue
     if term.lower() not in combined_json_text.lower():
         errors.append(f"expected route term missing from final JSON: {term}")
+for term in case.get("required_decision_terms_pl", []):
+    if term.lower() not in decision_text.lower():
+        errors.append(f"expected decision term missing from actionable output: {term}")
 
 for term in case.get("forbidden_terms_pl", []):
     if term.lower() in combined_json_text.lower():

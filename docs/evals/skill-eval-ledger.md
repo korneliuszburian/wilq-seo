@@ -75,6 +75,12 @@ Result:
   mode, used GSC/WordPress/GA4/Ahrefs evidence, kept workflow gates without
   fake `validated` ActionObjects, and blocked publish-ready, final article,
   SEO success, lead/revenue and destructive update claims.
+- Follow-up harness hardening added `required_decision_terms_pl` so critical
+  workflow terms must appear in `operator_next_step`, `blocked_reason`,
+  recommendations or action candidates, not only in `notes`. Fresh proof:
+  `.local-lab/evals/codex-skill/20260701T213328Z/summary.json` passed with
+  `operator_usefulness_score=4`, `blocked=true`, six evidence IDs, two
+  recommendations and four action candidates.
 
 ## 2026-06-27 - Marketing brief blocker cleanup proof
 

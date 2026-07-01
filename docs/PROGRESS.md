@@ -196,6 +196,10 @@ API status later contradicts this state.
   recommendations and six action candidates. The output preserved workflow
   gate states without fake ActionObject validation and blocked publish/final
   article/SEO success/lead/revenue/destructive-update claims.
+- The Codex skill eval harness now supports `required_decision_terms_pl`; these
+  markers must appear in actionable output, not only in `notes`. The hardened
+  `wilq-content-operator` eval passed at
+  `.local-lab/evals/codex-skill/20260701T213328Z/summary.json`.
 - Content diagnostics decision ranking is now freshness-aware for secondary
   gap sources. If Ahrefs is stale while GSC and WordPress have fresh ready
   content evidence, `/api/content/diagnostics` promotes the GSC/WordPress
