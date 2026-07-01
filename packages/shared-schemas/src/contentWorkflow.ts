@@ -700,9 +700,25 @@ export const StructuredDraftPreviewSchema = StructuredDraftOutputSchema.omit({
   claims_needing_review: true
 });
 
+export const StructuredDraftPreviewBlockerCodeSchema = z.enum([
+  "missing_output",
+  "missing_contract",
+  "claims_need_review",
+  "missing_source_facts",
+  "section_missing_evidence",
+  "unknown_evidence_reference",
+  "unknown_claim_reference",
+  "claim_missing_required_evidence",
+  "missing_forbidden_claim_acknowledgement"
+]);
+
+export const StructuredDraftPreviewBlockerSchema = ContentBlockerBaseSchema.extend({
+  code: StructuredDraftPreviewBlockerCodeSchema
+});
+
 export const StructuredDraftPreviewResultSchema = z.object({
   preview: StructuredDraftPreviewSchema.nullable().optional(),
-  blockers: z.array(ContentWorkflowBlockerSchema).default([])
+  blockers: z.array(StructuredDraftPreviewBlockerSchema).default([])
 });
 
 export const ContentWorkItemStructuredDraftGenerationRequestSchema = z.object({

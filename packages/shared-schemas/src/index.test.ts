@@ -15,6 +15,7 @@ import {
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
   ContentQualityFindingSchema,
+  StructuredDraftPreviewBlockerSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
@@ -186,6 +187,28 @@ describe("ContentQualityFindingSchema", () => {
         next_step: "Dodaj kod do kontraktu przed użyciem.",
         evidence_ids: [],
         source_connectors: []
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("StructuredDraftPreviewBlockerSchema", () => {
+  it("accepts only known structured preview blocker codes", () => {
+    expect(
+      StructuredDraftPreviewBlockerSchema.safeParse({
+        code: "missing_forbidden_claim_acknowledgement",
+        label: "Szkic nie potwierdza uniknięcia zakazanych claimów",
+        reason: "Podgląd wymaga jawnego potwierdzenia.",
+        next_step: "Uzupełnij listę unikniętych claimów."
+      }).success
+    ).toBe(true);
+
+    expect(
+      StructuredDraftPreviewBlockerSchema.safeParse({
+        code: "new_unreviewed_preview_gate",
+        label: "Nieznany kod",
+        reason: "Nie powinien przejść shared schema.",
+        next_step: "Dodaj kod do kontraktu przed użyciem."
       }).success
     ).toBe(false);
   });

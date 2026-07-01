@@ -362,6 +362,9 @@ API status later contradicts this state.
   enum instead of any string, including
   `missing_forbidden_claim_acknowledgement`. Dashboard/API tests now catch
   unregistered quality finding codes before they reach the UI.
+- Shared schemas also type structured draft preview blocker codes with a
+  preview-specific enum, so unknown preview gate codes are rejected before the
+  dashboard treats them as valid workflow blockers.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and

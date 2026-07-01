@@ -379,6 +379,10 @@ requirement.
 Shared schemas now type quality finding codes under Beads task `wilq-seo-hc2`;
 unknown quality gate codes no longer pass the TypeScript/Zod contract silently.
 
+Shared schemas now also type structured preview blocker codes under Beads task
+`wilq-seo-y5x`, using a preview-specific enum instead of the generic workflow
+blocker schema.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate
