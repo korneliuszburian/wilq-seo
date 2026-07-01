@@ -319,6 +319,13 @@ Stop and record a blocker if:
   Follow-up tasks created for source pack (`wilq-seo-ciz`), source-backed card
   expansion (`wilq-seo-lt1`) and production-depth guard tests (`wilq-seo-t13`).
   Focused proof passed: `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
+- 2026-07-01: Source-backed Ekologus source pack completed in
+  `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public `ekologus.pl`
+  sources give commit-safe candidates for environmental consulting/outsourcing,
+  BDO/reporting, waste/packaging obligations, training, remediation/monitoring,
+  sorbents/product content and Zielony Lad education. The pack is source
+  material for `wilq-seo-lt1`, not an approval to mark cards production-depth
+  without Wilku/owner review.
 
 ## Surprises & Discoveries
 
@@ -326,6 +333,10 @@ Stop and record a blocker if:
   operations: one service card covers BDO/odpady/Zielony Lad together.
 - UAT harness proof is not the same as Wilku UAT. Treat it as preparation, not
   validation.
+- Official public Ekologus pages are enough to create reviewed candidates, but
+  they still need strict claim policy: public marketing copy must not become a
+  WILQ guarantee, and stale article deadlines/rates cannot become current-law
+  claims.
 
 ## Decision Log
 
@@ -341,6 +352,9 @@ Stop and record a blocker if:
   stale; provenance remains valid.
 - Do not expand cards from memory. Production-depth cards require reviewed
   Ekologus source lineage or an explicit source blocker.
+- Source-backed card expansion may proceed from public Ekologus URLs only as
+  review-required/claim-gated cards unless Wilku or the owner approves them as
+  current service knowledge.
 
 ## Outcomes & Retrospective
 

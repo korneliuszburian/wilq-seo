@@ -95,6 +95,15 @@ API status later contradicts this state.
   `wilq-seo-ciz`, expand reviewed typed cards `wilq-seo-lt1`, and add
   production-depth guard tests `wilq-seo-t13`. Focused proof passed:
   `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`.
+- Goal 005 source-pack slice `wilq-seo-ciz` produced
+  `docs/audits/005-2026-07-01-ekologus-source-pack.md`. Public Ekologus pages
+  now give commit-safe source candidates for environmental consulting/
+  outsourcing, BDO/reporting, waste/packaging obligations, training,
+  remediation/monitoring, sorbents/product content and Zielony Lad education.
+  This removes the "no source material" blocker for the next card-expansion
+  slice, but it does not approve production-depth cards: legal/environmental/
+  risk/product/current-law claims remain review-gated, and Wilku/owner review is
+  still needed before treating cards as fully approved Ekologus knowledge.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity

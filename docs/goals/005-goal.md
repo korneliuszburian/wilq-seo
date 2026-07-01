@@ -41,6 +41,16 @@ contains three seeded cards:
 
 These prove the contract, not deep Ekologus coverage.
 
+First Goal 005 source-pack proof:
+
+- `docs/audits/005-2026-07-01-knowledge-depth-audit.md` classifies the current
+  cards as typed seeds/thin production coverage.
+- `docs/audits/005-2026-07-01-ekologus-source-pack.md` collects public
+  `ekologus.pl` source candidates for environmental consulting/outsourcing,
+  BDO/reporting, waste/packaging, training, remediation/monitoring, sorbent
+  product content and Zielony Lad education. These are source inputs for
+  reviewed cards, not automatic approval for production-depth claims.
+
 ## Non-Negotiable Rules
 
 - WILQ API owns product logic.
@@ -150,6 +160,10 @@ Initial slices:
 
 - `wilq-seo-9do` - recovery and plan alignment.
 - `wilq-seo-3lk` - audit Ekologus knowledge-card depth.
+- `wilq-seo-ciz` - collect source-backed Ekologus service and claim source
+  pack.
+- `wilq-seo-lt1` - expand typed Ekologus knowledge cards from reviewed sources.
+- `wilq-seo-t13` - add knowledge-card production-depth guard tests.
 - `wilq-seo-94k` - design read-only Ekologus Service Profile review surface.
 - `wilq-seo-jst` - run first real Wilku content UAT or record explicit defer.
 - `wilq-seo-n8r` - audit Sales Brief v2 signal quality.
