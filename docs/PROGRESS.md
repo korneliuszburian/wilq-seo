@@ -9,7 +9,7 @@ Goal 001 contract: `docs/goals/001-goal.md`
 
 ## Current Readout
 
-Date: 2026-06-30
+Date: 2026-07-01
 
 - WILQ is the system/product.
 - Wilku is the human marketer/operator persona.
@@ -21,8 +21,8 @@ Date: 2026-06-30
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Beads (`bd`) is the operational task graph for current work. Run `bd prime`
-  and `bd ready --json` after recovery. Active Goal 002 epic:
-  `wilq-seo-zu4`. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
+  and `bd ready --json` after recovery. Active Goal 003 epic:
+  `wilq-seo-u6u`. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -36,8 +36,8 @@ Date: 2026-06-30
 - Real marketer UAT for Goal 001 is explicitly deferred by the owner in
   `docs/handoffs/2026-06-30-owner-defer-marketer-uat.json`. This does not
   claim that UAT happened. It means the current cockpit may be treated as a
-  verified review surface while WILQ moves to Goal 002 content-production work
-  before presenting it as a real content workflow to Wilku.
+  verified review surface while WILQ moves through Goal 003 content-quality work
+  before presenting it as a daily content workbench to Wilku.
 
 ## Live Connector State
 
@@ -60,8 +60,12 @@ API status later contradicts this state.
   explicitly deferred real marketer UAT until WILQ has a stronger content
   production workflow.
 - Goal 002: Content Production Engine bez slopu is completed as the first safe
-  content draft-preparation layer. Any next product goal should be created as a
-  separate goal instead of extending Goal 002 by stealth.
+  content draft-preparation layer.
+- Goal 003: Content Quality Workbench is now active under Beads epic
+  `wilq-seo-u6u`. The goal is not "more writing"; it is multi-item content
+  queue, gated live Structured Outputs, deterministic quality review,
+  evidence-bound revision planning, Polish marketer workflow and draft-only
+  WordPress boundary.
 - WILQ may now be described as a safe content draft-preparation workflow for
   one diagnostics-derived Ekologus item: evidence, inventory/canonical check,
   duplicate gate, preflight, preserve-first plan, sales brief, claim gate,
@@ -80,6 +84,9 @@ API status later contradicts this state.
   adversarial operator checks and local orchestration; it must not become the
   production writer or a second product brain.
 - Goal 002 Beads epic `wilq-seo-zu4` is closed.
+- Goal 003 plan lives in `docs/goals/003-goal.md`.
+- Goal 003 recovery and plan alignment task `wilq-seo-ik5` is closed. First
+  implementation slice is `wilq-seo-d7c`: API-owned multi-item content queue.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
@@ -187,8 +194,8 @@ API status later contradicts this state.
   passed.
 - Beads task `wilq-seo-x4u` is closed. The content diagnostics extraction
   baseline is complete enough to move from cleanup into product workflow slices.
-  Next ready Goal 002 feature work is `wilq-seo-wiz` for `ContentWorkItem`
-  workflow state and `wilq-seo-acy` for Content Inventory v1.
+  The Goal 002 feature slices that followed this baseline are now closed; use
+  `bd ready --json` for the active Goal 003 queue.
 - Beads task `wilq-seo-wiz` is closed. `wilq/content/workflow/models.py` now
   defines a typed `ContentWorkItem` and workflow blockers for evidence, source
   connectors, inventory, public final canonical URL, duplicate gate, preflight,

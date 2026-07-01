@@ -1,10 +1,11 @@
-# PLANS.md - Goal 002 Content Production Engine
+# PLANS.md - Goal 003 Content Quality Workbench
 
-This is the long-running ExecPlan for the next WILQ product layer.
+This is the long-running ExecPlan for the active WILQ product layer.
 
 Current cleanup truth remains in `PLAN.md`, `docs/PROGRESS.md`,
-`docs/goals/001-goal.md` and Beads. This file describes the durable path for
-Goal 002 and must stay restartable without chat history.
+`docs/goals/001-goal.md`, `docs/goals/003-goal.md` and Beads. This file
+describes the durable path for Goal 003 and must stay restartable without chat
+history.
 
 ## How To Use This File
 
@@ -22,15 +23,16 @@ Goal 002 and must stay restartable without chat history.
 
 ## Active Goal
 
-Goal 002: Content Production Engine bez slopu.
+Goal 003: Content Quality Workbench.
 
-Status: completed on 2026-06-30. Beads epic `wilq-seo-zu4` is closed.
+Status: active. Beads epic `wilq-seo-u6u`.
 
 Outcome:
 
-WILQ can take one real Ekologus content item from evidence to a safe WordPress
-draft handoff and measurement window without skipping preflight, preserve-first
-planning, sales brief, claim ledger or human review.
+Wilku can work with a small queue of real diagnostics-derived Ekologus content
+candidates, choose a candidate, generate a gated structured draft, run
+deterministic quality review, receive evidence-bound revision instructions and
+prepare draft-only WordPress output without live publication or SEO slop.
 
 This goal does not build:
 
@@ -40,6 +42,17 @@ This goal does not build:
 - broad RAG/vector memory,
 - Ads/Merchant/Localo write automation,
 - agency admin, billing or workspace switching.
+
+Goal 002 baseline:
+
+Goal 002 is complete. WILQ already proves one diagnostics-derived Ekologus
+content item can pass evidence, source connectors, inventory/canonical
+resolution, duplicate check, preflight, preserve-first planning, sales brief,
+claim gate, draft package, human review, audit, WordPress draft-only
+handoff/execution dry-run and measurement window. Primary proof:
+
+- `tests/content/test_content_workflow_end_to_end.py`
+- `docs/handoffs/2026-06-30-goal-002-completion-audit.md`
 
 ## Product Thesis
 
@@ -52,20 +65,26 @@ Ahrefs, Ads, Merchant or Localo signals to interpret outcomes and improve the
 next content decision. Measurement is a planning requirement now and a success
 or failure verdict only after the observation window has usable data.
 
-Content production must follow this path:
+Goal 003 content production must extend this path:
 
 ```text
-evidence bundle
--> content inventory
--> canonical / duplicate / cannibalization check
--> preflight verdict
--> preserve-first decision
--> sales brief
--> claim ledger
--> draft package
--> human review
--> WordPress draft handoff
--> measurement window
+content opportunity queue
+-> selected ContentWorkItem
+-> source connector/evidence validation
+-> inventory/canonical/duplicate/cannibalization check
+-> ContentPreflight
+-> preserve-first mode
+-> Sales Brief
+-> Claim Ledger
+-> Draft Package
+-> SDK Structured Outputs generation
+-> Structured Draft Preview
+-> Quality Review
+-> Revision Plan
+-> Human Review
+-> Audit
+-> WordPress draft-only handoff/execution
+-> Measurement Window
 ```
 
 ## Naming And URL Semantics
@@ -154,19 +173,23 @@ and move behavior out instead of adding another branch to the monolith.
 
 ## Beads Operational Graph
 
-Goal 002 epic:
+Active Goal 003 epic:
 
-- `wilq-seo-zu4` - Goal 002: Content Production Engine bez slopu.
+- `wilq-seo-u6u` - Goal 003: Content Quality Workbench.
 
-Current first ready slice:
+Completed planning slice:
 
-- `wilq-seo-0zb` - Goal 002 anti-slop baseline.
+- `wilq-seo-ik5` - Goal 003 recovery and plan alignment.
 
-The graph already contains child work for API router extraction, content domain
-extraction, ContentWorkItem, Content Inventory v1, ContentPreflight v2, Sales
-Brief v1, Claim Ledger v1, Draft Package v1, Human Review v1, WordPress Draft
-Handoff v1 and Content Measurement Window v1. Use `bd ready --json` for the
-authoritative operational queue.
+First implementation slice:
+
+- `wilq-seo-d7c` - Goal 003 content queue API.
+
+The graph already contains child work for the content queue API, per-item
+workflow state, deterministic quality review, gated live Structured Outputs,
+revision planning, `/content-workflow` queue UI, adversarial content evals and
+changed-code anti-slop budgets. Use `bd ready --json` for the authoritative
+operational queue.
 
 ## Milestone A - Close Goal 001 Without False UAT Claims
 
@@ -498,27 +521,27 @@ Tests prove outcome claims are blocked before the measurement window is ready.
 
 ## Final Completion Definition
 
-Goal 002 is complete only when one real Ekologus content item passes:
+Goal 003 is complete only when WILQ proves the content workbench can handle a
+small real Ekologus queue and one gated draft-quality loop:
 
 ```text
-ContentWorkItem
--> evidence IDs
--> source connectors
--> inventory/canonical resolution
--> duplicate/cannibalization check
--> preflight verdict
--> preserve-first plan
--> sales brief
--> claim ledger
--> draft package
+content queue with at least 3 candidates or typed blockers
+-> selected ContentWorkItem
+-> per-item persisted state
+-> gated SDK Structured Outputs generation
+-> structured draft preview
+-> deterministic quality review
+-> evidence-bound revision plan
 -> human review
--> WordPress draft handoff
+-> audit
+-> WordPress draft-only handoff/execution
 -> measurement window
 ```
 
 No skipped gates. No prompt-only product logic. No dev URL as canonical. No
-WordPress publish. No unsupported marketing claims. No new monolith growth. No
-dashboard logic fork.
+WordPress publish. No destructive update. No generated `publish_ready=true`. No
+unsupported marketing claims. No outcome claim before the measurement window is
+ready. No new feature growth in frozen monolith files. No dashboard logic fork.
 
 ## Progress
 
@@ -666,8 +689,12 @@ dashboard logic fork.
 
 Current next action:
 
-Continue with the next ready extraction slice from `bd ready --json`.
-Current ready/in-progress Goal 002 slices are:
+Continue with the active Goal 003 queue from `bd ready --json`.
+Current Goal 003 first slice:
+
+- `wilq-seo-ik5` - recovery and plan alignment.
+
+Completed Goal 002 extraction context:
 
 - `wilq-seo-hdl` - behavior-preserving API router extraction, closed after the
   Codex router slice.
