@@ -1,6 +1,6 @@
 # Goal 003 - Content Quality Workbench
 
-Status: active.
+Status: completed on 2026-07-01.
 
 Beads epic: `wilq-seo-u6u`.
 
@@ -60,6 +60,36 @@ Ekologus:
    update.
 9. Measurement window exists before any outcome interpretation.
 10. Adversarial evals prove the main gates cannot be skipped.
+
+## Completion Proof
+
+Goal 003 is complete against the scope above. The closing implementation slices
+were committed and pushed as:
+
+- `e38add2f` - adversarial content workflow gates.
+- `71c92731` - per-item persisted content workflow state.
+- `f5ad6d38` - changed-code anti-slop complexity budgets.
+
+Focused verification passed:
+
+```bash
+rtk uv run pytest tests/content -q
+rtk uv run pytest tests/test_audit_complexity.py -q
+rtk pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx
+rtk pnpm --filter @wilq/dashboard lint
+rtk pnpm -C apps/dashboard typecheck
+rtk pnpm fallow:audit
+rtk uv run python scripts/audit_complexity.py --changed --limit 5
+rtk git diff --check
+```
+
+`rtk scripts/verify.sh` was attempted during closure. It failed before
+Goal-003-specific gates on the known legacy full-Ruff baseline
+(`E501`/`UP037` in historical files such as `tests/test_api_contracts.py`,
+`wilq/briefing/command_center.py`, `wilq/briefing/merchant_diagnostics.py`,
+`wilq/briefing/marketing_brief.py` and `wilq/schemas.py`). Follow-up Beads task
+`wilq-seo-8re` tracks restoring the full repo-level verify gate. This is not a
+Goal 003 product blocker, but it remains repo cleanup debt.
 
 ## Non-Goals
 

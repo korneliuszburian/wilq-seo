@@ -25,7 +25,7 @@ history.
 
 Goal 003: Content Quality Workbench.
 
-Status: active. Beads epic `wilq-seo-u6u`.
+Status: completed on 2026-07-01. Beads epic `wilq-seo-u6u`.
 
 Outcome:
 
@@ -173,7 +173,7 @@ and move behavior out instead of adding another branch to the monolith.
 
 ## Beads Operational Graph
 
-Active Goal 003 epic:
+Completed Goal 003 epic:
 
 - `wilq-seo-u6u` - Goal 003: Content Quality Workbench.
 
@@ -695,10 +695,9 @@ ready. No new feature growth in frozen monolith files. No dashboard logic fork.
 
 Current next action:
 
-Continue with the active Goal 003 queue from `bd ready --json`.
-Current Goal 003 first slice:
-
-- `wilq-seo-ik5` - recovery and plan alignment.
+Goal 003 is complete. Continue from `bd ready --json`; current open work is
+historical Goal 001 cleanup and the full `scripts/verify.sh` Ruff-baseline
+follow-up `wilq-seo-8re`.
 
 Completed Goal 002 extraction context:
 
@@ -1140,8 +1139,8 @@ Current outcome:
   `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
   `uv run python scripts/audit_complexity.py --changed --allow-frozen` and
   `git diff --check`.
-- Goal 003 adversarial content eval slice `wilq-seo-0t7` is complete pending
-  final commit/push. A focused API-level adversarial suite now attempts to
+- Goal 003 adversarial content eval slice `wilq-seo-0t7` is closed and pushed.
+  A focused API-level adversarial suite now attempts to
   bypass the workflow with dev canonical URLs, missing evidence/source
   connectors, missing preflight, forged claim-gate payloads, missing measurement
   windows, `publish_ready=true`, forbidden guarantee claims, WordPress publish
@@ -1154,8 +1153,8 @@ Current outcome:
   the focused queue/generation/quality/state pytest set, Ruff for changed Python
   files, mypy for `structured_generation.py` and
   `scripts/audit_complexity.py --changed --allow-frozen`.
-- Goal 003 anti-slop budget slice `wilq-seo-9l1` is complete pending final
-  commit/push. `scripts/audit_complexity.py --changed` now enforces per-slice
+- Goal 003 anti-slop budget slice `wilq-seo-9l1` is closed and pushed.
+  `scripts/audit_complexity.py --changed` now enforces per-slice
   changed Python budgets: file <= 800 LOC, function <= 100 lines, function <=
   25 branches and class <= 300 lines. Frozen growth files remain a separate
   blocker. `tests/test_audit_complexity.py` proves budget detection, unchanged
@@ -1164,6 +1163,17 @@ Current outcome:
   `uv run ruff check scripts/audit_complexity.py tests/test_audit_complexity.py`,
   `uv run mypy scripts/audit_complexity.py` and
   `uv run python scripts/audit_complexity.py --changed`.
+- Goal 003 final focused proof passed on 2026-07-01:
+  `uv run pytest tests/content -q`,
+  `uv run pytest tests/test_audit_complexity.py -q`,
+  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
+  `pnpm --filter @wilq/dashboard lint`,
+  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
+  `uv run python scripts/audit_complexity.py --changed --limit 5` and
+  `git diff --check`.
+- `scripts/verify.sh` was attempted during closure and failed on the known
+  legacy full-Ruff baseline before Goal-003-specific checks. Beads follow-up
+  `wilq-seo-8re` tracks restoring full repo-level verify.
 
 Current risk:
 

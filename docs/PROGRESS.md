@@ -21,8 +21,8 @@ Date: 2026-07-01
 - WILQ API is the product brain. Dashboard and Codex skills consume typed API
   contracts, source connectors and WILQ-described evidence.
 - Beads (`bd`) is the operational task graph for current work. Run `bd prime`
-  and `bd ready --json` after recovery. Active Goal 003 epic:
-  `wilq-seo-u6u`. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
+  and `bd ready --json` after recovery. Goal 003 epic `wilq-seo-u6u` is
+  completed. Historical Goal 001 cleanup epic: `wilq-seo-6rw`.
 - Marketer-facing UI and skill output must use Polish operating language.
 - Marketer-facing text must defend itself: every empty, missing or blocked
   state has to say what it means for the next decision, not just that data is
@@ -61,8 +61,8 @@ API status later contradicts this state.
   production workflow.
 - Goal 002: Content Production Engine bez slopu is completed as the first safe
   content draft-preparation layer.
-- Goal 003: Content Quality Workbench is now active under Beads epic
-  `wilq-seo-u6u`. The goal is not "more writing"; it is multi-item content
+- Goal 003: Content Quality Workbench is completed under Beads epic
+  `wilq-seo-u6u`. The goal was not "more writing"; it is multi-item content
   queue, gated live Structured Outputs, deterministic quality review,
   evidence-bound revision planning, Polish marketer workflow and draft-only
   WordPress boundary.
@@ -150,8 +150,8 @@ API status later contradicts this state.
   instead of the target file and hit unrelated existing failures in
   `ActionDetailRoute.test.tsx` and `App.test.tsx`; the precise Vitest command
   above is the valid proof for this slice.
-- Goal 003 adversarial content eval slice `wilq-seo-0t7` is complete pending
-  final commit/push. `tests/content/test_content_workflow_adversarial_gates.py`
+- Goal 003 adversarial content eval slice `wilq-seo-0t7` is closed and pushed.
+  `tests/content/test_content_workflow_adversarial_gates.py`
   now attacks dev URL as canonical, missing evidence/source connector, missing
   preflight, missing claim gate, missing measurement window, `publish_ready=true`,
   forbidden guarantee claims, WordPress publish/live write, premature measurement
@@ -160,12 +160,23 @@ API status later contradicts this state.
   `content_workflow_blockers(item, "prepare_draft")` before trusting supplied
   brief/claim/draft payloads, so forged payloads cannot bypass missing workflow
   state.
-- Goal 003 anti-slop budget slice `wilq-seo-9l1` is complete pending final
-  commit/push. `scripts/audit_complexity.py --changed` now fails changed Python
+- Goal 003 anti-slop budget slice `wilq-seo-9l1` is closed and pushed.
+  `scripts/audit_complexity.py --changed` now fails changed Python
   files that exceed the current per-slice budgets: file > 800 LOC, function >
   100 lines, function > 25 branches or class > 300 lines. Frozen growth files
   remain a separate blocker. `tests/test_audit_complexity.py` covers budget
   detection, unchanged legacy hotspot exclusion and clean budget reporting.
+- Goal 003 final focused proof passed on 2026-07-01:
+  `uv run pytest tests/content -q`,
+  `uv run pytest tests/test_audit_complexity.py -q`,
+  `pnpm -C apps/dashboard exec vitest run src/routes/ContentWorkflowSurface.test.tsx`,
+  `pnpm --filter @wilq/dashboard lint`,
+  `pnpm -C apps/dashboard typecheck`, `pnpm fallow:audit`,
+  `uv run python scripts/audit_complexity.py --changed --limit 5` and
+  `git diff --check`.
+- `scripts/verify.sh` was attempted during Goal 003 closure and failed on the
+  known legacy full-Ruff baseline before Goal-003-specific checks. Follow-up
+  Beads task `wilq-seo-8re` tracks restoring the full repo-level verify gate.
 - Goal 002 content domain extraction has started under `wilq-seo-x4u`.
   Canonical/public URL semantics moved from
   `wilq/briefing/content_diagnostics.py` to `wilq/content/canonical/urls.py`.
@@ -262,8 +273,9 @@ API status later contradicts this state.
   passed.
 - Beads task `wilq-seo-x4u` is closed. The content diagnostics extraction
   baseline is complete enough to move from cleanup into product workflow slices.
-  The Goal 002 feature slices that followed this baseline are now closed; use
-  `bd ready --json` for the active Goal 003 queue.
+  The Goal 002 feature slices that followed this baseline are now closed. Goal
+  003 is also closed; use `bd ready --json` for the next unblocked cleanup or
+  product work.
 - Beads task `wilq-seo-wiz` is closed. `wilq/content/workflow/models.py` now
   defines a typed `ContentWorkItem` and workflow blockers for evidence, source
   connectors, inventory, public final canonical URL, duplicate gate, preflight,
