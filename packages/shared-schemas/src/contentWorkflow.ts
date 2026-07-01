@@ -145,6 +145,13 @@ export const ContentWorkItemPreflightResponseSchema = z.object({
   preflight_verdict: ContentPreflightVerdictSchema
 });
 
+export const ContentInventoryDuplicateRiskSchema = z.enum([
+  "unknown",
+  "clear",
+  "review_required",
+  "high"
+]);
+
 export const ContentClaimReferenceSchema = z.object({
   claim_id: z.string().optional(),
   id: z.string().optional(),
@@ -159,6 +166,21 @@ export const ContentSalesBriefSourceFactSchema = z.object({
   evidence_id: z.string(),
   source_connector: z.string(),
   summary: z.string()
+});
+
+export const ContentSalesBriefSeedSchema = z.object({
+  target_reader: z.string(),
+  buyer_problem: z.string(),
+  buyer_trigger: z.string(),
+  search_intent: z.string(),
+  service_fit: z.string(),
+  h1_direction: z.string(),
+  h2_direction: z.array(z.string()).default([]),
+  faq_direction: z.array(z.string()).default([]),
+  cta_direction: z.string(),
+  internal_link_direction: z.array(z.string()).default([]),
+  source_facts: z.array(ContentSalesBriefSourceFactSchema).default([]),
+  missing_evidence: z.array(z.string()).default([])
 });
 
 export const ContentSalesBriefOperationsContextSchema = z.object({
@@ -244,6 +266,17 @@ export const ContentKnowledgeCardsResponseSchema = z.object({
   source_lineage: z.array(z.string()).default([])
 });
 
+export const ContentKnowledgeCardMatchSchema = z.object({
+  work_item_id: z.string(),
+  service_card: ContentKnowledgeCardSchema.nullable().optional(),
+  buyer_problem_cards: z.array(ContentKnowledgeCardSchema).default([]),
+  cta_cards: z.array(ContentKnowledgeCardSchema).default([]),
+  claim_policy_cards: z.array(ContentKnowledgeCardSchema).default([]),
+  evidence_requirement_cards: z.array(ContentKnowledgeCardSchema).default([]),
+  measurement_sensitive_cards: z.array(ContentKnowledgeCardSchema).default([]),
+  blockers: z.array(ContentKnowledgeCardBlockerSchema).default([])
+});
+
 export const ContentSalesBriefSchema = z.object({
   id: z.string(),
   work_item_id: z.string(),
@@ -323,6 +356,31 @@ export const ContentWorkItemDraftPackageResponseSchema = z.object({
   preflight_verdict: ContentPreflightVerdictSchema,
   sales_brief_result: ContentSalesBriefBuildResultSchema,
   draft_package_result: ContentDraftPackageBuildResultSchema
+});
+
+export const ContentWorkItemPreflightRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  inventory_records: z.array(ContentInventoryRecordSchema).default([]),
+  duplicate_risk: ContentInventoryDuplicateRiskSchema.default("unknown")
+});
+
+const ContentWorkItemBriefRequestFields = {
+  item: ContentWorkItemSchema,
+  inventory_records: z.array(ContentInventoryRecordSchema).default([]),
+  duplicate_risk: ContentInventoryDuplicateRiskSchema.default("unknown"),
+  claim_ledger: z.unknown(),
+  seed: ContentSalesBriefSeedSchema,
+  enrichment: z.lazy(() => ContentOpportunityEnrichmentSchema).nullable().optional(),
+  knowledge_match: ContentKnowledgeCardMatchSchema.nullable().optional()
+};
+
+export const ContentWorkItemSalesBriefRequestSchema = z.object({
+  ...ContentWorkItemBriefRequestFields
+});
+
+export const ContentWorkItemDraftPackageRequestSchema = z.object({
+  ...ContentWorkItemBriefRequestFields,
+  sales_brief: ContentSalesBriefSchema.nullable().optional()
 });
 
 export const StructuredDraftSourceFactSchema = z.object({
@@ -589,6 +647,13 @@ export const ContentWorkItemHumanReviewResponseSchema = z.object({
   wordpress_handoff_allowed: z.boolean()
 });
 
+export const ContentWorkItemHumanReviewRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  review: ContentHumanReviewSchema.nullable().optional(),
+  draft_package: ContentDraftPackageSchema.nullable().optional(),
+  claim_ledger: z.unknown().nullable().optional()
+});
+
 export const ContentWorkItemSnapshotHumanReviewRequestSchema = z.object({
   review: ContentHumanReviewSchema
 });
@@ -632,6 +697,13 @@ export const ContentWordPressDraftHandoffResultSchema = z.object({
 export const ContentWorkItemWordPressDraftHandoffResponseSchema = z.object({
   item: ContentWorkItemSchema,
   handoff_result: ContentWordPressDraftHandoffResultSchema
+});
+
+export const ContentWorkItemWordPressDraftHandoffRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  draft_package: ContentDraftPackageSchema.nullable().optional(),
+  human_review: ContentHumanReviewSchema.nullable().optional(),
+  audit: ContentWordPressDraftAuditEnvelopeSchema.nullable().optional()
 });
 
 export const ContentWordPressDraftExecutionPayloadSchema = z.object({
@@ -745,6 +817,15 @@ export const ContentWorkItemMeasurementWindowResponseSchema = z.object({
   outcome_blockers: z.array(ContentWorkflowBlockerSchema).default([])
 });
 
+export const ContentWorkItemMeasurementWindowRequestSchema = z.object({
+  item: ContentWorkItemSchema,
+  handoff: ContentWordPressDraftHandoffSchema.nullable().optional(),
+  baseline_period: ContentDateRangeSchema,
+  observation_period: ContentDateRangeSchema,
+  allowed_metrics: z.array(z.string()).default([]),
+  source_connectors: z.array(z.string()).default([])
+});
+
 export const ContentWorkItemMeasurementOutcomeRequestSchema = z.object({
   window: ContentMeasurementWindowSchema,
   observed_metrics: z.array(ContentMeasurementObservedMetricSchema).default([]),
@@ -851,8 +932,14 @@ export type ContentWorkItemQueueResponse = z.infer<typeof ContentWorkItemQueueRe
 export type ContentWorkItemPreflightResponse = z.infer<
   typeof ContentWorkItemPreflightResponseSchema
 >;
+export type ContentWorkItemPreflightRequest = z.input<
+  typeof ContentWorkItemPreflightRequestSchema
+>;
 export type ContentWorkItemSalesBriefResponse = z.infer<
   typeof ContentWorkItemSalesBriefResponseSchema
+>;
+export type ContentWorkItemSalesBriefRequest = z.input<
+  typeof ContentWorkItemSalesBriefRequestSchema
 >;
 export type ContentKnowledgeCard = z.infer<typeof ContentKnowledgeCardSchema>;
 export type ContentKnowledgeCardsResponse = z.infer<
@@ -861,19 +948,22 @@ export type ContentKnowledgeCardsResponse = z.infer<
 export type ContentWorkItemDraftPackageResponse = z.infer<
   typeof ContentWorkItemDraftPackageResponseSchema
 >;
-export type ContentWorkItemStructuredDraftGenerationRequest = z.infer<
+export type ContentWorkItemDraftPackageRequest = z.input<
+  typeof ContentWorkItemDraftPackageRequestSchema
+>;
+export type ContentWorkItemStructuredDraftGenerationRequest = z.input<
   typeof ContentWorkItemStructuredDraftGenerationRequestSchema
 >;
 export type ContentWorkItemStructuredDraftGenerationResponse = z.infer<
   typeof ContentWorkItemStructuredDraftGenerationResponseSchema
 >;
-export type ContentWorkItemStructuredDraftRuntimeRequest = z.infer<
+export type ContentWorkItemStructuredDraftRuntimeRequest = z.input<
   typeof ContentWorkItemStructuredDraftRuntimeRequestSchema
 >;
 export type ContentWorkItemStructuredDraftRuntimeResponse = z.infer<
   typeof ContentWorkItemStructuredDraftRuntimeResponseSchema
 >;
-export type ContentWorkItemStructuredDraftPreviewRequest = z.infer<
+export type ContentWorkItemStructuredDraftPreviewRequest = z.input<
   typeof ContentWorkItemStructuredDraftPreviewRequestSchema
 >;
 export type ContentWorkItemStructuredDraftPreviewResponse = z.infer<
@@ -881,13 +971,13 @@ export type ContentWorkItemStructuredDraftPreviewResponse = z.infer<
 >;
 export type ContentQualityReview = z.infer<typeof ContentQualityReviewSchema>;
 export type ContentRevisionPlan = z.infer<typeof ContentRevisionPlanSchema>;
-export type ContentWorkItemQualityReviewRequest = z.infer<
+export type ContentWorkItemQualityReviewRequest = z.input<
   typeof ContentWorkItemQualityReviewRequestSchema
 >;
 export type ContentWorkItemQualityReviewResponse = z.infer<
   typeof ContentWorkItemQualityReviewResponseSchema
 >;
-export type ContentWorkItemRevisionPlanRequest = z.infer<
+export type ContentWorkItemRevisionPlanRequest = z.input<
   typeof ContentWorkItemRevisionPlanRequestSchema
 >;
 export type ContentWorkItemRevisionPlanResponse = z.infer<
@@ -896,16 +986,22 @@ export type ContentWorkItemRevisionPlanResponse = z.infer<
 export type ContentWorkItemHumanReviewResponse = z.infer<
   typeof ContentWorkItemHumanReviewResponseSchema
 >;
-export type ContentWorkItemSnapshotHumanReviewRequest = z.infer<
+export type ContentWorkItemHumanReviewRequest = z.input<
+  typeof ContentWorkItemHumanReviewRequestSchema
+>;
+export type ContentWorkItemSnapshotHumanReviewRequest = z.input<
   typeof ContentWorkItemSnapshotHumanReviewRequestSchema
 >;
-export type ContentWorkItemSnapshotAuditRequest = z.infer<
+export type ContentWorkItemSnapshotAuditRequest = z.input<
   typeof ContentWorkItemSnapshotAuditRequestSchema
 >;
 export type ContentWorkItemWordPressDraftHandoffResponse = z.infer<
   typeof ContentWorkItemWordPressDraftHandoffResponseSchema
 >;
-export type ContentWorkItemWordPressDraftExecutionRequest = z.infer<
+export type ContentWorkItemWordPressDraftHandoffRequest = z.input<
+  typeof ContentWorkItemWordPressDraftHandoffRequestSchema
+>;
+export type ContentWorkItemWordPressDraftExecutionRequest = z.input<
   typeof ContentWorkItemWordPressDraftExecutionRequestSchema
 >;
 export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
@@ -914,10 +1010,13 @@ export type ContentWorkItemWordPressDraftExecutionResponse = z.infer<
 export type ContentWorkItemMeasurementWindowResponse = z.infer<
   typeof ContentWorkItemMeasurementWindowResponseSchema
 >;
+export type ContentWorkItemMeasurementWindowRequest = z.input<
+  typeof ContentWorkItemMeasurementWindowRequestSchema
+>;
 export type ContentMeasurementOutcomeInterpretation = z.infer<
   typeof ContentMeasurementOutcomeInterpretationSchema
 >;
-export type ContentWorkItemMeasurementOutcomeRequest = z.infer<
+export type ContentWorkItemMeasurementOutcomeRequest = z.input<
   typeof ContentWorkItemMeasurementOutcomeRequestSchema
 >;
 export type ContentWorkItemMeasurementOutcomeResponse = z.infer<

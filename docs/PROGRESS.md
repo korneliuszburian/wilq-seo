@@ -133,11 +133,18 @@ API status later contradicts this state.
   blocked by default, and measurement outcome `not_ready`. The UAT harness
   prints a live 3-5 item Wilku packet from API queue/enrichment instead of a
   static report.
-- The next Goal 004 product slice should come from `bd ready --json`; current
-  likely candidate is `wilq-seo-akt` anti-slop execution guard.
+- Goal 004 UI/API hardening slice `wilq-seo-4wi` is in progress. First green
+  sub-slice tightens the dashboard API boundary: content workflow POST helpers
+  now validate shared Zod request schemas instead of accepting `unknown`, API
+  errors include HTTP status/detail with a timeout boundary, and shared schemas
+  expose typed preflight, sales brief, draft package, human review, WordPress
+  draft handoff and measurement window requests. Diagnostic surface primitives,
+  Ads extraction and zombie/copy cleanup remain in this Beads task.
+- The next Goal 004 product work should continue from `bd ready --json`; current
+  active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
-  evaluate through a future `wilq-content-operator` skill, but must not become
-  the production writer, direct OpenAI caller or direct WordPress client.
+  evaluate through `wilq-content-operator`, but must not become the production
+  writer, direct OpenAI caller or direct WordPress client.
 - Goal 001 cleanup is no longer blocked by missing UAT input because the owner
   explicitly deferred real marketer UAT until WILQ has a stronger content
   production workflow.

@@ -12,15 +12,20 @@ import {
   ContentKnowledgeCardsResponseSchema,
   ContentPreflightResponseSchema,
   ContentOpportunityEnrichmentResponseSchema,
+  ContentWorkItemDraftPackageRequestSchema,
   ContentWorkItemDraftPackageResponseSchema,
+  ContentWorkItemHumanReviewRequestSchema,
   ContentWorkItemHumanReviewResponseSchema,
+  ContentWorkItemMeasurementWindowRequestSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
+  ContentWorkItemPreflightRequestSchema,
   ContentWorkItemPreflightResponseSchema,
   ContentWorkItemQualityReviewRequestSchema,
   ContentWorkItemQualityReviewResponseSchema,
   ContentWorkItemQueueResponseSchema,
   ContentWorkItemRevisionPlanRequestSchema,
   ContentWorkItemRevisionPlanResponseSchema,
+  ContentWorkItemSalesBriefRequestSchema,
   ContentWorkItemSalesBriefResponseSchema,
   ContentWorkItemStructuredDraftGenerationRequestSchema,
   ContentWorkItemStructuredDraftGenerationResponseSchema,
@@ -32,6 +37,7 @@ import {
   ContentWorkItemSnapshotHumanReviewRequestSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
+  ContentWorkItemWordPressDraftHandoffRequestSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ConnectorStatusSchema,
@@ -66,9 +72,13 @@ import {
   type ContentPreflightResponse,
   type ContentOpportunityEnrichment,
   type ContentOpportunityEnrichmentResponse,
+  type ContentWorkItemDraftPackageRequest,
   type ContentWorkItemDraftPackageResponse,
+  type ContentWorkItemHumanReviewRequest,
   type ContentWorkItemHumanReviewResponse,
+  type ContentWorkItemMeasurementWindowRequest,
   type ContentWorkItemMeasurementWindowResponse,
+  type ContentWorkItemPreflightRequest,
   type ContentWorkItemPreflightResponse,
   type ContentWorkItemQualityReviewRequest,
   type ContentWorkItemQualityReviewResponse,
@@ -76,6 +86,7 @@ import {
   type ContentWorkItemQueueResponse,
   type ContentWorkItemRevisionPlanRequest,
   type ContentWorkItemRevisionPlanResponse,
+  type ContentWorkItemSalesBriefRequest,
   type ContentWorkItemSalesBriefResponse,
   type ContentWorkItemStructuredDraftGenerationRequest,
   type ContentWorkItemStructuredDraftGenerationResponse,
@@ -87,6 +98,7 @@ import {
   type ContentWorkItemSnapshotHumanReviewRequest,
   type ContentWorkItemWordPressDraftExecutionRequest,
   type ContentWorkItemWordPressDraftExecutionResponse,
+  type ContentWorkItemWordPressDraftHandoffRequest,
   type ContentWorkItemWordPressDraftHandoffResponse,
   type ContentWorkItemWorkflowSnapshotResponse,
   type ConnectorRefreshRun,
@@ -111,27 +123,68 @@ import {
 import { z } from "zod";
 
 const API_BASE = import.meta.env.VITE_WILQ_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_TIMEOUT_MS = 30_000;
 
-type ApiSchema<T> = {
-  parse: (data: unknown) => T;
-};
+type ApiSchema<T extends z.ZodTypeAny> = T;
 
-async function apiGet<T>(path: string, schema: ApiSchema<T>): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`);
+async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  if (typeof AbortController === "undefined") {
+    return fetch(`${API_BASE}${path}`, init);
+  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      ...init,
+      signal: init?.signal ?? controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function apiErrorMessage(response: Response, path: string): Promise<string> {
+  let detail = "";
+  try {
+    const body: unknown = await response.json();
+    if (typeof body === "object" && body !== null && "detail" in body) {
+      const rawDetail = (body as { detail?: unknown }).detail;
+      const serializedDetail = JSON.stringify(rawDetail);
+      detail =
+        typeof rawDetail === "string"
+          ? rawDetail
+          : (serializedDetail ?? String(rawDetail)).slice(0, 500);
+    }
+  } catch {
+    detail = "";
+  }
+  const suffix = detail ? `: ${detail}` : "";
+  return `API request failed: ${path} (${response.status})${suffix}`;
+}
+
+async function apiGet<T extends z.ZodTypeAny>(
+  path: string,
+  schema: ApiSchema<T>
+): Promise<z.infer<T>> {
+  const response = await apiFetch(path);
   if (!response.ok) {
-    throw new Error(`API request failed: ${path}`);
+    throw new Error(await apiErrorMessage(response, path));
   }
   return schema.parse(await response.json());
 }
 
-async function apiPost<T>(path: string, schema: ApiSchema<T>, body?: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+async function apiPost<T extends z.ZodTypeAny>(
+  path: string,
+  schema: ApiSchema<T>,
+  body?: unknown
+): Promise<z.infer<T>> {
+  const response = await apiFetch(path, {
     method: "POST",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body)
   });
   if (!response.ok) {
-    throw new Error(`API request failed: ${path}`);
+    throw new Error(await apiErrorMessage(response, path));
   }
   return schema.parse(await response.json());
 }
@@ -203,32 +256,32 @@ export function getContentWorkItemEnrichment(
 }
 
 export function postContentWorkItemPreflight(
-  request: unknown
+  request: ContentWorkItemPreflightRequest
 ): Promise<ContentWorkItemPreflightResponse> {
   return apiPost(
     "/api/content/work-items/preflight",
     ContentWorkItemPreflightResponseSchema,
-    request
+    ContentWorkItemPreflightRequestSchema.parse(request)
   );
 }
 
 export function postContentWorkItemSalesBrief(
-  request: unknown
+  request: ContentWorkItemSalesBriefRequest
 ): Promise<ContentWorkItemSalesBriefResponse> {
   return apiPost(
     "/api/content/work-items/sales-brief",
     ContentWorkItemSalesBriefResponseSchema,
-    request
+    ContentWorkItemSalesBriefRequestSchema.parse(request)
   );
 }
 
 export function postContentWorkItemDraftPackage(
-  request: unknown
+  request: ContentWorkItemDraftPackageRequest
 ): Promise<ContentWorkItemDraftPackageResponse> {
   return apiPost(
     "/api/content/work-items/draft-package",
     ContentWorkItemDraftPackageResponseSchema,
-    request
+    ContentWorkItemDraftPackageRequestSchema.parse(request)
   );
 }
 
@@ -298,12 +351,12 @@ export function postContentWorkItemRevisionPlan(
 }
 
 export function postContentWorkItemHumanReview(
-  request: unknown
+  request: ContentWorkItemHumanReviewRequest
 ): Promise<ContentWorkItemHumanReviewResponse> {
   return apiPost(
     "/api/content/work-items/human-review",
     ContentWorkItemHumanReviewResponseSchema,
-    request
+    ContentWorkItemHumanReviewRequestSchema.parse(request)
   );
 }
 
@@ -338,12 +391,12 @@ export function saveContentWorkItemSnapshotAudit(
 }
 
 export function postContentWorkItemWordPressDraftHandoff(
-  request: unknown
+  request: ContentWorkItemWordPressDraftHandoffRequest
 ): Promise<ContentWorkItemWordPressDraftHandoffResponse> {
   return apiPost(
     "/api/content/work-items/wordpress-draft-handoff",
     ContentWorkItemWordPressDraftHandoffResponseSchema,
-    request
+    ContentWorkItemWordPressDraftHandoffRequestSchema.parse(request)
   );
 }
 
@@ -358,12 +411,12 @@ export function postContentWorkItemWordPressDraftExecution(
 }
 
 export function postContentWorkItemMeasurementWindow(
-  request: unknown
+  request: ContentWorkItemMeasurementWindowRequest
 ): Promise<ContentWorkItemMeasurementWindowResponse> {
   return apiPost(
     "/api/content/work-items/measurement-window",
     ContentWorkItemMeasurementWindowResponseSchema,
-    request
+    ContentWorkItemMeasurementWindowRequestSchema.parse(request)
   );
 }
 
@@ -471,10 +524,14 @@ export type {
   ContentKnowledgeCardsResponse,
   ContentPreflightResponse,
   ContentOpportunityEnrichment,
-  ContentWorkItemDraftPackageResponse,
-  ContentWorkItemHumanReviewResponse,
-  ContentWorkItemMeasurementWindowResponse,
   ContentOpportunityEnrichmentResponse,
+  ContentWorkItemDraftPackageRequest,
+  ContentWorkItemDraftPackageResponse,
+  ContentWorkItemHumanReviewRequest,
+  ContentWorkItemHumanReviewResponse,
+  ContentWorkItemMeasurementWindowRequest,
+  ContentWorkItemMeasurementWindowResponse,
+  ContentWorkItemPreflightRequest,
   ContentWorkItemPreflightResponse,
   ContentWorkItemQualityReviewRequest,
   ContentWorkItemQualityReviewResponse,
@@ -482,6 +539,7 @@ export type {
   ContentWorkItemQueueResponse,
   ContentWorkItemRevisionPlanRequest,
   ContentWorkItemRevisionPlanResponse,
+  ContentWorkItemSalesBriefRequest,
   ContentWorkItemSalesBriefResponse,
   ContentWorkItemSnapshotAuditRequest,
   ContentWorkItemSnapshotHumanReviewRequest,
@@ -493,6 +551,7 @@ export type {
   ContentWorkItemStructuredDraftRuntimeResponse,
   ContentWorkItemWordPressDraftExecutionRequest,
   ContentWorkItemWordPressDraftExecutionResponse,
+  ContentWorkItemWordPressDraftHandoffRequest,
   ContentWorkItemWordPressDraftHandoffResponse,
   ContentWorkItemWorkflowSnapshotResponse,
   ConnectorRefreshRun,

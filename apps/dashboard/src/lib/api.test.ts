@@ -180,8 +180,16 @@ describe("content workflow API helpers", () => {
     await getContentWorkItemSnapshot("content_work_item_bdo");
     await getContentWorkItemEnrichment("content_work_item_bdo");
     await postContentWorkItemPreflight({ item: workItem() });
-    await postContentWorkItemSalesBrief({ item: workItem(), claim_ledger: {}, seed: {} });
-    await postContentWorkItemDraftPackage({ item: workItem(), claim_ledger: {}, seed: {} });
+    await postContentWorkItemSalesBrief({
+      item: workItem(),
+      claim_ledger: {},
+      seed: salesBriefSeed()
+    });
+    await postContentWorkItemDraftPackage({
+      item: workItem(),
+      claim_ledger: {},
+      seed: salesBriefSeed()
+    });
     await postContentWorkItemStructuredDraftGeneration({
       item: workItem(),
       sales_brief: salesBrief(),
@@ -283,6 +291,35 @@ describe("content workflow API helpers", () => {
       "/api/content/work-items/wordpress-draft-execution",
       "/api/content/work-items/measurement-window"
     ]);
+  });
+
+  it("surfaces API error status and detail for operator debugging", async () => {
+    const fetchMock = vi.fn(async () => {
+      return {
+        ok: false,
+        status: 422,
+        json: async () => ({ detail: "missing_source_connector" })
+      } as Response;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getContentWorkItemQueue()).rejects.toThrow(
+      "API request failed: /api/content/work-items/queue (422): missing_source_connector"
+    );
+  });
+
+  it("validates content workflow request bodies before calling the API", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(() =>
+      postContentWorkItemSalesBrief({
+        item: workItem(),
+        claim_ledger: {},
+        seed: {}
+      } as Parameters<typeof postContentWorkItemSalesBrief>[0])
+    ).toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -639,6 +676,29 @@ function salesBrief() {
     },
     human_review_required: true,
     draft_allowed: false
+  };
+}
+
+function salesBriefSeed() {
+  return {
+    target_reader: "właściciel firmy",
+    buyer_problem: "nie wie, jak podejść do BDO",
+    buyer_trigger: "zbliża się kontrola",
+    search_intent: "informacyjno-usługowy",
+    service_fit: "obsługa środowiskowa",
+    h1_direction: "BDO dla firm",
+    h2_direction: ["Kogo dotyczy BDO"],
+    faq_direction: ["Czy każda firma musi mieć BDO?"],
+    cta_direction: "Skontaktuj się z Ekologus.",
+    internal_link_direction: ["https://ekologus.pl/kontakt/"],
+    source_facts: [
+      {
+        evidence_id: "ev_gsc_bdo",
+        source_connector: "google_search_console",
+        summary: "GSC pokazuje popyt na temat BDO."
+      }
+    ],
+    missing_evidence: []
   };
 }
 
