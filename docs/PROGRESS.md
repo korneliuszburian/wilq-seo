@@ -233,6 +233,10 @@ API status later contradicts this state.
   claim whose marker requires evidence, that section must reference the marker
   evidence IDs or preview blocks with `claim_missing_required_evidence`. Text-only
   legacy contracts without `claim_markers` remain backward-compatible.
+- Quality Review now applies the same claim-evidence guard at the final review
+  boundary: a structured draft section that uses an `allowed_with_evidence`
+  Claim Ledger entry must carry that claim's required evidence IDs, or review
+  blocks with `claim_missing_required_evidence`.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured

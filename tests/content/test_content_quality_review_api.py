@@ -47,6 +47,27 @@ def test_content_quality_review_blocks_missing_section_evidence() -> None:
     assert review["evidence_coverage"]["status"] == "blocked"
 
 
+def test_content_quality_review_blocks_claim_without_required_section_evidence() -> None:
+    payload = _quality_payload()
+    payload["structured_output"]["sections"][0]["evidence_ids"] = ["ev_gsc_bdo"]
+    payload["structured_output"]["source_facts_used"] = ["ev_gsc_bdo", "ev_wp_bdo"]
+
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+
+    assert response.status_code == 200
+    review = response.json()["quality_review"]
+    assert review["verdict"] == "blocked"
+    assert "claim_missing_required_evidence" in _blocker_codes(review)
+    assert review["claim_safety"]["status"] == "blocked"
+    blocker = next(
+        blocker
+        for blocker in review["blockers"]
+        if blocker["code"] == "claim_missing_required_evidence"
+    )
+    assert blocker["affected_section"] == payload["structured_output"]["sections"][0]["heading"]
+    assert blocker["evidence_ids"] == ["ev_wp_bdo"]
+
+
 def test_content_quality_review_blocks_forbidden_claims_and_publish_ready_package() -> None:
     payload = _quality_payload()
     forbidden_claim = "WILQ gwarantuje wzrost leadów po publikacji."

@@ -233,6 +233,11 @@ stale duplicate refresh IDs into every operator answer.
 duplicate GSC refresh evidence instead of the latest completed vendor-read
 evidence.
 
+Quality Review now carries claim-marker faithfulness through the final review
+gate under Beads task `wilq-seo-odx`: if a section uses an
+`allowed_with_evidence` Claim Ledger entry but omits that claim's required
+evidence IDs, the review blocks with `claim_missing_required_evidence`.
+
 ## In Scope
 
 Goal 005 includes:

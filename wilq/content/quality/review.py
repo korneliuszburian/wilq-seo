@@ -34,6 +34,7 @@ ContentQualityFindingCode = Literal[
     "claim_ledger_blocks_quality",
     "unsupported_claim_used",
     "forbidden_claim_used",
+    "claim_missing_required_evidence",
     "duplicate_risk_not_clear",
     "missing_measurement_window",
     "weak_cta",
@@ -168,6 +169,7 @@ def build_content_quality_review(
                 "claim_ledger_blocks_quality",
                 "unsupported_claim_used",
                 "forbidden_claim_used",
+                "claim_missing_required_evidence",
             },
         ),
         duplicate_risk=_dimension(
@@ -459,6 +461,31 @@ def _claim_findings(
                 source_connectors=item.source_connectors,
             )
         )
+    claim_evidence_by_text = {
+        entry.claim_text: set(entry.evidence_ids)
+        for entry in claim_ledger.entries
+        if entry.status == "allowed_with_evidence" and entry.evidence_ids
+    }
+    for section in structured_output.sections:
+        section_evidence = set(section.evidence_ids)
+        for claim in section.claims_used:
+            required_evidence = claim_evidence_by_text.get(claim)
+            if not required_evidence or required_evidence.issubset(section_evidence):
+                continue
+            missing_evidence = sorted(required_evidence.difference(section_evidence))
+            findings.append(
+                _finding(
+                    "claim_missing_required_evidence",
+                    "blocker",
+                    "Twierdzenie nie ma wymaganych dowodów w sekcji",
+                    "Sekcja używa claimu z Claim Ledger, ale nie wskazuje wszystkich "
+                    "dowodów wymaganych dla tego twierdzenia.",
+                    "Dodaj wymagane dowody do sekcji albo usuń claim: " + claim,
+                    affected_section=section.heading,
+                    evidence_ids=missing_evidence,
+                    source_connectors=item.source_connectors,
+                )
+            )
     return findings
 
 
