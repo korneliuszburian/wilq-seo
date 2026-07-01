@@ -199,6 +199,13 @@ API status later contradicts this state.
   for approved refresh work, keeps all variants non-publishable/non-WordPress,
   and compares by evidence coverage, service fit, buyer problem, CTA, duplicate
   risk and quality-review dependency instead of a fake score.
+- Content measurement outcome provenance is hardened in
+  `wilq/content/measurement/outcome.py`: observed metrics must now carry
+  matching `work_item_id`, `measurement_window_id`, `content_url`,
+  `metric_fact_ids`, `refresh_run_ids`, evidence IDs, allowed metric names and
+  source connectors from the measurement window before WILQ can return
+  directional or success states. Missing lineage fails closed as
+  `insufficient_data`.
 - `wilq-ads-doctor` was tightened after a fresh Ads read
   `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
   handling and either full `GET /api/ads/diagnostics` or

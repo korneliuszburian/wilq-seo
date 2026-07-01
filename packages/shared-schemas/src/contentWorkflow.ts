@@ -922,7 +922,12 @@ export const ContentMeasurementObservedMetricSchema = z.object({
   baseline_value: z.number().nullable().optional(),
   observation_value: z.number().nullable().optional(),
   source_connector: z.string(),
-  evidence_ids: z.array(z.string()).default([])
+  evidence_ids: z.array(z.string()).default([]),
+  metric_fact_ids: z.array(z.string()).default([]),
+  refresh_run_ids: z.array(z.string()).default([]),
+  work_item_id: z.string().nullable().optional(),
+  measurement_window_id: z.string().nullable().optional(),
+  content_url: z.string().nullable().optional()
 });
 
 export const ContentMeasurementOutcomeInterpretationSchema = z.object({
@@ -942,6 +947,8 @@ export const ContentMeasurementOutcomeInterpretationSchema = z.object({
   confidence: z.enum(["none", "low", "medium", "high"]),
   evidence_ids: z.array(z.string()).default([]),
   source_connectors: z.array(z.string()).default([]),
+  metric_fact_ids: z.array(z.string()).default([]),
+  refresh_run_ids: z.array(z.string()).default([]),
   limitations: z.array(z.string()).default([]),
   success_claim_allowed: z.boolean(),
   queue_feedback_allowed: z.boolean(),

@@ -188,6 +188,13 @@ dimensions, a `magic_score_used=false` policy and a safe next step. The first
 rule favors preserve-first refresh when the work item already has an approved
 refresh plan; all variants remain non-publishable and WordPress-write blocked.
 
+Measurement outcome provenance is hardened under Beads task `wilq-seo-708`.
+`ContentMeasurementObservedMetric` must now tie every usable observation to
+metric facts, connector refresh runs, the exact work item, measurement window,
+content URL, allowed metric and allowed connector. Missing lineage returns
+`insufficient_data`; it cannot produce `directional_improvement` or
+`measured_success`.
+
 ## In Scope
 
 Goal 005 includes:

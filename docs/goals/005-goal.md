@@ -116,6 +116,10 @@ First Goal 005 source-pack proof:
   `magic_score_used=false`, blocked claim policy and a safe next step. It
   recommends preserve-first refresh for approved refresh work and keeps all
   variants blocked from publish/WordPress write until quality and human review.
+- Measurement outcome interpretation now requires explicit metric provenance:
+  metric fact IDs, connector refresh run IDs, matching work item/window/URL,
+  evidence IDs, allowed metrics and allowed source connectors. Missing
+  provenance blocks outcome interpretation as `insufficient_data`.
 
 ## Non-Negotiable Rules
 
