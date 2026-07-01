@@ -10,6 +10,7 @@ import {
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
   ContentPreflightResponseSchema,
+  ContentOpportunityEnrichmentResponseSchema,
   ContentWorkItemDraftPackageResponseSchema,
   ContentWorkItemHumanReviewResponseSchema,
   ContentWorkItemMeasurementWindowResponseSchema,
@@ -61,6 +62,8 @@ import {
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
   type ContentPreflightResponse,
+  type ContentOpportunityEnrichment,
+  type ContentOpportunityEnrichmentResponse,
   type ContentWorkItemDraftPackageResponse,
   type ContentWorkItemHumanReviewResponse,
   type ContentWorkItemMeasurementWindowResponse,
@@ -181,6 +184,15 @@ export function getContentWorkItemSnapshot(
   return apiGet(
     path,
     ContentWorkItemWorkflowSnapshotResponseSchema
+  );
+}
+
+export function getContentWorkItemEnrichment(
+  workItemId: string
+): Promise<ContentOpportunityEnrichmentResponse> {
+  return apiGet(
+    `/api/content/work-items/${encodeURIComponent(workItemId)}/enrichment`,
+    ContentOpportunityEnrichmentResponseSchema
   );
 }
 
@@ -451,9 +463,11 @@ export type {
   CommandCenterResponse,
   ContentDiagnosticsResponse,
   ContentPreflightResponse,
+  ContentOpportunityEnrichment,
   ContentWorkItemDraftPackageResponse,
   ContentWorkItemHumanReviewResponse,
   ContentWorkItemMeasurementWindowResponse,
+  ContentOpportunityEnrichmentResponse,
   ContentWorkItemPreflightResponse,
   ContentWorkItemQualityReviewRequest,
   ContentWorkItemQualityReviewResponse,

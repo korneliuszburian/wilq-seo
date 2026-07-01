@@ -596,6 +596,24 @@ Goal 003 completion proof is archived in `docs/goals/archive/003-goal.md`.
 
 ## Progress
 
+2026-07-01:
+
+- Goal 004 epic `wilq-seo-2qq` is active. Planning slice `wilq-seo-xlw` and
+  contract-freeze slice `wilq-seo-6kd` are closed.
+- Content opportunity enrichment slice `wilq-seo-a3t` added
+  `GET /api/content/work-items/{work_item_id}/enrichment`, typed
+  `ContentOpportunityEnrichment` contracts and a Polish `/content-workflow`
+  panel that shows buyer problem, trigger, service fit, CTA hypothesis, source
+  facts and measurement baseline. The slice is API-owned, deterministic and
+  blocks missing work item, missing evidence/source connectors, dev canonical
+  misuse and missing service fit instead of inventing recommendations.
+- Focused proof for the enrichment slice: content enrichment/API contract
+  pytest subset, dashboard API/route Vitest subset, dashboard typecheck, Ruff,
+  mypy, changed-file complexity audit, Fallow audit and `git diff --check`
+  passed.
+- Next product slice: `wilq-seo-dtj`, typed Ekologus knowledge cards consumed
+  by enrichment and Sales Brief v2.
+
 2026-06-30:
 
 - Goal 001 real marketer UAT was explicitly deferred by the owner in

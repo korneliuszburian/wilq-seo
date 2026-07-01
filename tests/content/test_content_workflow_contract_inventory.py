@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.routers.content_workflow import router
+from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.workflow.api import (
     ContentWorkItemDraftPackageResponse,
     ContentWorkItemHumanReviewResponse,
@@ -27,6 +28,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
         "GET",
         "/api/content/work-items/{work_item_id}/snapshot",
     ): ContentWorkItemWorkflowSnapshotResponse,
+    (
+        "GET",
+        "/api/content/work-items/{work_item_id}/enrichment",
+    ): ContentOpportunityEnrichmentResponse,
     (
         "POST",
         "/api/content/work-items/snapshot/human-review",

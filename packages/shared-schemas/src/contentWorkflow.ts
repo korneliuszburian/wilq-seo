@@ -632,6 +632,76 @@ export const ContentWorkItemWorkflowSnapshotResponseSchema = z.object({
   operator_steps: z.array(ContentWorkflowOperatorStepSchema).default([])
 });
 
+export const ContentOpportunityEnrichmentBlockerSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  reason: z.string(),
+  next_step: z.string(),
+  ...ContentEvidenceTraceFields
+});
+
+export const ContentOpportunitySourceFactSchema = z.object({
+  id: z.string(),
+  signal_kind: z.enum([
+    "gsc_query",
+    "gsc_page",
+    "ga4_behavior",
+    "ahrefs_gap",
+    "ads_search_term",
+    "merchant_service_signal",
+    "wordpress_inventory",
+    "measurement"
+  ]),
+  label: z.string(),
+  summary: z.string(),
+  ...ContentEvidenceTraceFields,
+  metric_value: z.union([z.number(), z.string()]).nullable().optional(),
+  source_url: z.string().nullable().optional()
+});
+
+export const ContentOpportunityMeasurementBaselineSchema = z.object({
+  status: z.enum(["ready_to_plan", "blocked"]),
+  label: z.string(),
+  reason: z.string(),
+  metrics_to_watch: z.array(z.string()).default([]),
+  ...ContentEvidenceTraceFields
+});
+
+export const ContentOpportunityEnrichmentSchema = z.object({
+  id: z.string(),
+  work_item_id: z.string(),
+  decision_id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  status_label: z.string(),
+  title: z.string(),
+  topic: z.string(),
+  recommended_mode: z.string(),
+  recommended_mode_label: z.string(),
+  intent: z.enum([
+    "informational_service",
+    "service_comparison",
+    "compliance_risk",
+    "measurement_fix",
+    "gap_review",
+    "unknown"
+  ]),
+  intent_label: z.string(),
+  buyer_problem: z.string(),
+  buyer_trigger: z.string(),
+  service_fit: z.string(),
+  cta_hypothesis: z.string(),
+  source_facts: z.array(ContentOpportunitySourceFactSchema).default([]),
+  measurement_baseline: ContentOpportunityMeasurementBaselineSchema,
+  blockers: z.array(ContentOpportunityEnrichmentBlockerSchema).default([]),
+  ...ContentEvidenceTraceFields,
+  ...ContentSafeNextStepField
+});
+
+export const ContentOpportunityEnrichmentResponseSchema = z.object({
+  enrichment: ContentOpportunityEnrichmentSchema.nullable().optional(),
+  blockers: z.array(ContentOpportunityEnrichmentBlockerSchema).default([])
+});
+
 export type ContentWorkItem = z.infer<typeof ContentWorkItemSchema>;
 export type ContentWorkItemQueueCandidate = z.infer<
   typeof ContentWorkItemQueueCandidateSchema
@@ -702,4 +772,10 @@ export type ContentWorkItemMeasurementWindowResponse = z.infer<
 export type ContentWorkflowOperatorStep = z.infer<typeof ContentWorkflowOperatorStepSchema>;
 export type ContentWorkItemWorkflowSnapshotResponse = z.infer<
   typeof ContentWorkItemWorkflowSnapshotResponseSchema
+>;
+export type ContentOpportunityEnrichment = z.infer<
+  typeof ContentOpportunityEnrichmentSchema
+>;
+export type ContentOpportunityEnrichmentResponse = z.infer<
+  typeof ContentOpportunityEnrichmentResponseSchema
 >;

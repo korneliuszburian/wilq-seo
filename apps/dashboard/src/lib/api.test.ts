@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
   postContentWorkItemDraftPackage,
@@ -22,6 +23,7 @@ import {
 
 const responseByPath: Record<string, unknown> = {
   "/api/content/work-items/queue": contentQueueResponse(),
+  "/api/content/work-items/content_work_item_bdo/enrichment": opportunityEnrichmentResponse(),
   "/api/content/work-items/preflight": {
     item: workItem(),
     inventory_resolution: inventoryResolution(),
@@ -173,6 +175,7 @@ describe("content workflow API helpers", () => {
 
     await getContentWorkItemQueue();
     await getContentWorkItemSnapshot("content_work_item_bdo");
+    await getContentWorkItemEnrichment("content_work_item_bdo");
     await postContentWorkItemPreflight({ item: workItem() });
     await postContentWorkItemSalesBrief({ item: workItem(), claim_ledger: {}, seed: {} });
     await postContentWorkItemDraftPackage({ item: workItem(), claim_ledger: {}, seed: {} });
@@ -255,6 +258,7 @@ describe("content workflow API helpers", () => {
     expect(fetchMock.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
       "/api/content/work-items/queue",
       "/api/content/work-items/content_work_item_bdo/snapshot",
+      "/api/content/work-items/content_work_item_bdo/enrichment",
       "/api/content/work-items/preflight",
       "/api/content/work-items/sales-brief",
       "/api/content/work-items/draft-package",
@@ -319,7 +323,7 @@ function contentQueueResponse() {
         preflight_status_label: "można przygotować szkic",
         duplicate_canonical_risk_summary: "Finalny canonical jest publiczny.",
         measurement_readiness: {
-          status: "ready",
+          status: "ready_to_plan",
           label: "pomiar gotowy",
           reason: "GSC i GA4 są dostępne.",
           source_connectors: ["google_search_console", "google_analytics_4"]
@@ -331,6 +335,53 @@ function contentQueueResponse() {
     blockers: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
     source_connectors: ["google_search_console", "wordpress_ekologus"]
+  };
+}
+
+function opportunityEnrichmentResponse() {
+  return {
+    enrichment: {
+      id: "content_opportunity_enrichment_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      decision_id: "content_decision_bdo",
+      status: "ready" as const,
+      status_label: "gotowe do pracy nad treścią",
+      title: "BDO dla firm",
+      topic: "BDO dla firm",
+      recommended_mode: "refresh",
+      recommended_mode_label: "odśwież istniejącą treść",
+      intent: "compliance_risk" as const,
+      intent_label: "intencja ryzyka lub obowiązku",
+      buyer_problem: "Firma chce zrozumieć obowiązki BDO bez ryzyka błędu.",
+      buyer_trigger: "obawa przed błędem formalnym, terminem albo kontrolą",
+      service_fit: "obsługa środowiskowa i zgodność obowiązków",
+      cta_hypothesis: "Zaproponuj konsultację obowiązków bez gwarancji wyniku.",
+      source_facts: [
+        {
+          id: "source_fact_queries_bdo",
+          signal_kind: "gsc_query" as const,
+          label: "Zapytania GSC",
+          summary: "bdo dla firm",
+          evidence_ids: ["ev_gsc_bdo"],
+          source_connectors: ["google_search_console"],
+          metric_value: null,
+          source_url: "https://ekologus.pl/bdo/"
+        }
+      ],
+      measurement_baseline: {
+        status: "ready_to_plan" as const,
+        label: "baza pomiaru do zaplanowania",
+        reason: "WILQ może planować pomiar, ale nie może claimować efektu.",
+        metrics_to_watch: ["gsc_clicks", "gsc_impressions"],
+        evidence_ids: ["ev_gsc_bdo"],
+        source_connectors: ["google_search_console"]
+      },
+      blockers: [],
+      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      safe_next_step: "Przygotuj preserve-first brief."
+    },
+    blockers: []
   };
 }
 

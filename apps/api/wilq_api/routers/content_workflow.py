@@ -3,6 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.content.enrichment.opportunity import (
+    ContentOpportunityEnrichmentResponse,
+    build_content_opportunity_enrichment_response,
+)
 from wilq.content.handoff.wordpress import ContentWordPressDraftAuditEnvelope
 from wilq.content.review.human import ContentHumanReview
 from wilq.content.workflow.api import (
@@ -93,6 +97,21 @@ def content_work_item_snapshot_for_selected_item(
     work_item_id: str,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     return _snapshot_for_work_item_or_404(work_item_id)
+
+
+@router.get(
+    "/api/content/work-items/{work_item_id}/enrichment",
+    response_model=ContentOpportunityEnrichmentResponse,
+)
+def content_work_item_enrichment(
+    work_item_id: str,
+) -> ContentOpportunityEnrichmentResponse:
+    diagnostics = build_content_diagnostics()
+    return build_content_opportunity_enrichment_response(
+        diagnostics,
+        work_item_id,
+        queue=build_content_work_item_queue_response(diagnostics),
+    )
 
 
 @router.post(

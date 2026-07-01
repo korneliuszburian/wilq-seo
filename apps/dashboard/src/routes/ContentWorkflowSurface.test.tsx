@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getContentWorkItemEnrichment,
   getContentWorkItemQueue,
   getContentWorkItemSnapshot,
   postContentWorkItemQualityReview,
@@ -12,6 +13,7 @@ import {
   saveContentWorkItemSnapshotAudit,
   saveContentWorkItemSnapshotHumanReview,
   type ContentWorkItemQualityReviewResponse,
+  type ContentOpportunityEnrichmentResponse,
   type ContentWorkItemQueueResponse,
   type ContentWorkItemRevisionPlanResponse,
   type ContentWorkItemStructuredDraftPreviewResponse,
@@ -26,6 +28,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
   return {
     ...actual,
+    getContentWorkItemEnrichment: vi.fn(),
     getContentWorkItemQueue: vi.fn(),
     getContentWorkItemSnapshot: vi.fn(),
     postContentWorkItemQualityReview: vi.fn(),
@@ -40,6 +43,7 @@ vi.mock("../lib/api", async (importOriginal) => {
 
 describe("ContentWorkflowSurface", () => {
   beforeEach(() => {
+    vi.mocked(getContentWorkItemEnrichment).mockResolvedValue(contentOpportunityEnrichmentResponse());
     vi.mocked(getContentWorkItemQueue).mockResolvedValue(contentQueueResponse());
     vi.mocked(getContentWorkItemSnapshot).mockResolvedValue(workflowSnapshot());
     vi.mocked(postContentWorkItemQualityReview).mockResolvedValue(qualityReviewResponse());
@@ -99,6 +103,12 @@ describe("ContentWorkflowSurface", () => {
       "Okno pomiaru"
     ]);
     expect(screen.getAllByText("BDO dla firm")[0]).toBeInTheDocument();
+    expect(screen.getByText("Wzbogacenie tematu")).toBeInTheDocument();
+    expect(screen.getByText(/Firma chce wiedzieć, czy musi aktualizować obowiązki BDO/))
+      .toBeInTheDocument();
+    expect(screen.getByText("informacyjno-usługowa")).toBeInTheDocument();
+    expect(screen.getByText("obsługa środowiskowa Ekologus")).toBeInTheDocument();
+    expect(screen.getByText("GSC pokazuje popyt na temat BDO.")).toBeInTheDocument();
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
@@ -516,6 +526,52 @@ function contentQueueResponse(): ContentWorkItemQueueResponse {
     blockers: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo", "ev_gsc_green_deal", "ev_wp_green_deal"],
     source_connectors: ["google_search_console", "wordpress_ekologus", "ahrefs"]
+  };
+}
+
+function contentOpportunityEnrichmentResponse(): ContentOpportunityEnrichmentResponse {
+  return {
+    enrichment: {
+      id: "content_opportunity_enrichment_content_work_item_bdo",
+      work_item_id: "content_work_item_bdo",
+      decision_id: "decision_bdo",
+      title: "BDO dla firm",
+      topic: "BDO dla firm",
+      recommended_mode: "refresh",
+      recommended_mode_label: "odśwież istniejącą treść",
+      status: "ready",
+      status_label: "gotowe do pracy nad treścią",
+      intent: "informational_service",
+      intent_label: "informacyjno-usługowa",
+      buyer_problem:
+        "Firma chce wiedzieć, czy musi aktualizować obowiązki BDO i co zrobić przed kontaktem z doradcą.",
+      buyer_trigger: "Zbliża się termin lub kontrola obowiązków środowiskowych.",
+      service_fit: "obsługa środowiskowa Ekologus",
+      cta_hypothesis: "Zaproponuj krótką konsultację obowiązków BDO.",
+      source_facts: [
+        {
+          id: "source_fact_decision_bdo_0",
+          signal_kind: "gsc_query",
+          label: "Popyt z GSC",
+          summary: "GSC pokazuje popyt na temat BDO.",
+          evidence_ids: ["ev_gsc_bdo"],
+          source_connectors: ["google_search_console"]
+        }
+      ],
+      measurement_baseline: {
+        status: "ready_to_plan",
+        label: "pomiar do zaplanowania",
+        reason: "WILQ ma dowody GSC i publiczny adres do baseline.",
+        metrics_to_watch: ["GSC clicks", "GSC impressions"],
+        source_connectors: ["google_search_console"],
+        evidence_ids: ["ev_gsc_bdo"]
+      },
+      blockers: [],
+      evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],
+      source_connectors: ["google_search_console", "wordpress_ekologus"],
+      safe_next_step: "Przejdź do briefu i claim gate."
+    },
+    blockers: []
   };
 }
 

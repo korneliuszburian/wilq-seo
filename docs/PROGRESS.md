@@ -70,9 +70,18 @@ API status later contradicts this state.
   dashboard API helper coverage for queue/snapshot/generation/quality/revision/
   review/audit/WordPress/measurement paths, and selected-work-item mutations for
   preview, quality review and revision plan.
-- The next Goal 004 product slice is `wilq-seo-a3t`: production content
-  opportunity enrichment per `work_item_id`, built on the frozen contract and
-  without broad RAG, fake scores or prompt-only keyword research.
+- Goal 004 opportunity enrichment slice `wilq-seo-a3t` is implemented.
+  `GET /api/content/work-items/{work_item_id}/enrichment` returns typed,
+  evidence-bound `ContentOpportunityEnrichment` with intent, buyer problem,
+  buyer trigger, service fit, CTA hypothesis, source facts, measurement
+  baseline and typed blockers. `/content-workflow` renders this enrichment in
+  Polish as a marketer-facing "why this topic matters" panel. The slice avoids
+  broad RAG, fake scores and prompt-only keyword research; missing work items,
+  missing evidence/source connectors, invalid dev canonical and missing service
+  fit become blockers instead of recommendations.
+- The next Goal 004 product slice is `wilq-seo-dtj`: typed Ekologus knowledge
+  cards for services, buyer problems, claim constraints, CTA options and proof
+  requirements, consumed by enrichment and the operations-grade Sales Brief.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
   evaluate through a future `wilq-content-operator` skill, but must not become
   the production writer, direct OpenAI caller or direct WordPress client.
