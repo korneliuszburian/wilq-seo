@@ -6673,3 +6673,39 @@ Result:
   `claims_allowed`, `claim_markers`, `claims_used`, Generation Gate,
   `unsupported_claim_used` and `claim_missing_required_evidence` while keeping
   publishing, final article, SEO success and revenue claims blocked.
+
+## 2026-07-01 - content-operator refresh-first eval hardening
+
+Purpose:
+
+- Keep `wilq-content-operator` aligned with the API change that treats stale
+  daily brief decisions as refresh-first blockers, not current operational
+  recommendations.
+- Require non-interactive Codex output to tell Wilku that stale source data
+  requires refresh before draft/review work.
+- Remove a harness prompt leak that seeded the technical term `ActionObject`
+  into operator-facing answers.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+git diff --check
+```
+
+Result:
+
+- Static eval coverage stayed clean: 13 WILQ skills, zero hard gaps, zero
+  warnings.
+- Targeted non-interactive proof passed at
+  `.local-lab/evals/codex-skill/20260701T222739Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs,
+  2 recommendations and 4 action candidates.
+- The generated decision explicitly included `refresh-first`,
+  `dane wymagają odświeżenia` and `odśwież dane źródłowe` in decision fields,
+  while keeping WordPress publishing, final article, SEO success and revenue
+  claims blocked.
+- The final operator-facing JSON no longer leaked the technical term
+  `ActionObject`.

@@ -176,6 +176,13 @@ API status later contradicts this state.
   UAT packet into questions, current blockers, source trace IDs and result
   fields to fill during the actual session. It is preparation only, not UAT
   proof.
+- `wilq-content-operator` non-interactive eval now requires refresh-first
+  handling for stale brief decisions. The targeted proof at
+  `.local-lab/evals/codex-skill/20260701T222739Z/summary.json` passed with
+  `operator_usefulness_score=4`, `blocked=true`, six evidence IDs and explicit
+  `refresh-first` / `dane wymagają odświeżenia` / `odśwież dane źródłowe`
+  language. The eval prompt no longer seeds `ActionObject` into
+  operator-facing output.
 - Goal 005 content UAT result proof now has a deterministic checker:
   `scripts/record_goal_005_content_uat_result.py`. It validates the filled
   session result fields for selected work item, blocker understanding, Service

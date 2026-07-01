@@ -219,6 +219,14 @@ actions inside the existing UAT harness. Live proof on 2026-07-01 returned
 Service Profile gaps and two private review actions. This is UAT preparation,
 not proof that Wilku completed the session.
 
+`wilq-content-operator` evals now require refresh-first language when stale
+brief decisions appear. The non-interactive proof at
+`.local-lab/evals/codex-skill/20260701T222739Z/summary.json` passed with
+`operator_usefulness_score=4`, `blocked=true`, six evidence IDs and decision
+text that tells Wilku to refresh source data before draft/review work. The
+eval harness no longer seeds the technical term `ActionObject` into
+operator-facing output.
+
 The UAT packet now also exposes the Service Profile private proposal promotion
 checklist under Beads task `wilq-seo-0pk`: `promotion_ready=false`, blocked
 reason and five required conditions before reviewed source facts. This keeps

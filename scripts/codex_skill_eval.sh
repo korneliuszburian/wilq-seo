@@ -280,9 +280,9 @@ Oczekiwane connector surfaces: {connectors}
   dla niej niepusty `blocked_reason`; preferuj jednak top-level
   `blocked_reason`, `notes` albo action candidate ze stanem `blocked`.
 - Nie proponuj zapisu zmian bez zweryfikowanej propozycji w WILQ i jawnej zgody użytkownika.
-- `validation_state="validated"` jest dozwolone tylko dla realnego ActionObject
+- `validation_state="validated"` jest dozwolone tylko dla realnej akcji WILQ
   z niepustym `action_id`. Dla bramek workflow, endpointów check-only albo
-  kroków bez ActionObject używaj `pending_validation`, `blocked` albo `missing`.
+  kroków bez `action_id` używaj `pending_validation`, `blocked` albo `missing`.
 - Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
 - Identyfikatory endpointów, connectorów, dowodów, szans i akcji zostaw w
   polach technicznych bez tłumaczenia, ale nie używaj ich jako widocznych
