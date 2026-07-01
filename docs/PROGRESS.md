@@ -148,6 +148,12 @@ API status later contradicts this state.
   `approved_count=0`, `ready_for_daily_content=false`. These actions help
   Wilku decide what to review next, but they do not promote private proposals
   into source facts or knowledge cards.
+- Private proposal review now includes an API-owned promotion checklist in the
+  Service Profile. Live proof after stack restart on 2026-07-01:
+  `promotion_ready=false`, `promotion_checklist` has 5 items,
+  `approved_count=0`, `review_required_count=2`. This tells Wilku what must be
+  true before a private proposal can become a reviewed source fact, while still
+  blocking automatic promotion.
 - The `wilq-content-operator` UAT packet now includes live Service Profile
   evidence instead of only queue/enrichment items. Live proof on 2026-07-01:
   `uat_readiness.status=blocked_for_full_uat`,

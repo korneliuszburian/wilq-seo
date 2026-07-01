@@ -143,9 +143,21 @@ function ServiceProfileLoaded({ data }: { data: ContentServiceProfileResponse })
               : "brak protokołu",
             `${data.private_source_proposal_summary.proposal_count} propozycji`,
             `${data.private_source_proposal_summary.review_required_count} do review`,
-            `${data.private_source_proposal_summary.approved_count} zatwierdzonych`
+            `${data.private_source_proposal_summary.approved_count} zatwierdzonych`,
+            data.private_source_proposal_summary.promotion_ready
+              ? "promocja gotowa"
+              : "promocja zablokowana"
           ]}
         />
+        <div className="mt-4 rounded-md border border-wait/30 bg-wait/10 p-3">
+          <p className="text-sm leading-6 text-wait">
+            {data.private_source_proposal_summary.promotion_blocked_reason}
+          </p>
+          <List
+            label="Warunki przed reviewed source fact"
+            values={data.private_source_proposal_summary.promotion_checklist}
+          />
+        </div>
         {data.private_source_proposal_summary.proposal_source_labels.length > 0 ? (
           <ul className="mt-3 space-y-1 text-sm text-slate-600">
             {data.private_source_proposal_summary.proposal_source_labels.map((label) => (

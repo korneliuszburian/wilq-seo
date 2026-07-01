@@ -91,6 +91,13 @@ describe("ContentServiceProfileResponseSchema", () => {
         proposal_count: 2,
         review_required_count: 2,
         approved_count: 0,
+        promotion_ready: false,
+        promotion_checklist: [
+          "Wilku albo owner potwierdza, że propozycja opisuje realną ofertę Ekologus.",
+          "Źródło zostaje streszczone jako redacted/source-safe fact bez raw private text."
+        ],
+        promotion_blocked_reason:
+          "Brak zatwierdzenia człowieka i reviewed source fact.",
         proposal_source_labels: ["ekologus-ai reviewed handoff: Eko-Opieka"],
         review_required_proposal_ids: ["private_proposal_ekologus_ai_eko_opieka_2026_07_01"],
         redacted: true,

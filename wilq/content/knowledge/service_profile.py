@@ -98,6 +98,9 @@ class ContentServiceProfilePrivateSourceProposalSummary(BaseModel):
     proposal_count: int
     review_required_count: int
     approved_count: int
+    promotion_ready: bool
+    promotion_checklist: list[str] = Field(default_factory=list)
+    promotion_blocked_reason: str
     proposal_source_labels: list[str] = Field(default_factory=list)
     review_required_proposal_ids: list[str] = Field(default_factory=list)
     redacted: bool
@@ -251,6 +254,18 @@ def _private_source_proposal_summary(
         proposal_count=len(proposals),
         review_required_count=len(review_required),
         approved_count=len(approved),
+        promotion_ready=False,
+        promotion_checklist=[
+            "Wilku albo owner potwierdza, że propozycja opisuje realną ofertę Ekologus.",
+            "Źródło zostaje streszczone jako redacted/source-safe fact bez raw private text.",
+            "Owner wskazuje dozwolone claimy, claimy wymagające review i claimy zakazane.",
+            "WILQ zapisuje reviewer, freshness date, confidence i evidence/source lineage.",
+            "Focused eval potwierdza, że karta nie odblokowuje legal/product/performance claimów.",
+        ],
+        promotion_blocked_reason=(
+            "Brak zatwierdzenia człowieka i reviewed source fact; Service Profile pokazuje "
+            "tylko propozycje review, bez promocji do wiedzy produkcyjnej."
+        ),
         proposal_source_labels=_unique(
             proposal.source_locator_label for proposal in proposals
         ),

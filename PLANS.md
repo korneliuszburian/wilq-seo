@@ -196,6 +196,14 @@ states that no private proposal is promoted into a source fact or knowledge
 card. Live API proof on 2026-07-01 returned `private_review_action_count=2`,
 `approved_count=0` and `ready_for_daily_content=false`.
 
+Private proposal review now includes a promotion checklist under Beads task
+`wilq-seo-n1o`. The checklist is API-owned and rendered in Service Profile:
+owner confirmation, redacted/source-safe condensation, claim policy, reviewer/
+freshness/confidence/lineage and focused eval are required before any reviewed
+source fact can exist. Live proof after stack restart on 2026-07-01 returned
+`promotion_ready=false`, five checklist items, `approved_count=0` and
+`review_required_count=2`.
+
 The `wilq-content-operator` UAT packet now consumes
 `GET /api/content/service-profile` under Beads task `wilq-seo-0bv`. It reports
 Service Profile gaps, production-depth readiness and private proposal review

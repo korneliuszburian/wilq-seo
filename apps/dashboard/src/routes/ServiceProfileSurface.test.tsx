@@ -46,6 +46,9 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("BDO i sprawozdawczość środowiskowa")).toBeInTheDocument();
     expect(screen.getByText("Źródła prywatne")).toBeInTheDocument();
     expect(screen.getByText("2 do review")).toBeInTheDocument();
+    expect(screen.getByText("promocja zablokowana")).toBeInTheDocument();
+    expect(screen.getByText("Warunki przed reviewed source fact")).toBeInTheDocument();
+    expect(screen.getByText(/Brak zatwierdzenia człowieka/)).toBeInTheDocument();
     expect(screen.getByText("ekologus-ai reviewed handoff: Eko-Opieka")).toBeInTheDocument();
     expect(screen.getByText("ekologus-ai reviewed handoff: Audyt zgodności")).toBeInTheDocument();
     expect(screen.getByText("Akcje review")).toBeInTheDocument();
@@ -128,6 +131,13 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       proposal_count: 2,
       review_required_count: 2,
       approved_count: 0,
+      promotion_ready: false,
+      promotion_checklist: [
+        "Wilku albo owner potwierdza, że propozycja opisuje realną ofertę Ekologus.",
+        "Źródło zostaje streszczone jako redacted/source-safe fact bez raw private text."
+      ],
+      promotion_blocked_reason:
+        "Brak zatwierdzenia człowieka i reviewed source fact; Service Profile pokazuje tylko propozycje review.",
       proposal_source_labels: [
         "ekologus-ai reviewed handoff: Eko-Opieka",
         "ekologus-ai reviewed handoff: Audyt zgodności"

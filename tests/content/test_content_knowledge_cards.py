@@ -316,6 +316,11 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.private_source_proposal_summary.proposal_count == 2
     assert response.private_source_proposal_summary.review_required_count == 2
     assert response.private_source_proposal_summary.approved_count == 0
+    assert response.private_source_proposal_summary.promotion_ready is False
+    assert len(response.private_source_proposal_summary.promotion_checklist) >= 5
+    assert "Brak zatwierdzenia człowieka" in (
+        response.private_source_proposal_summary.promotion_blocked_reason
+    )
     assert response.private_source_proposal_summary.redacted is True
     assert response.coverage_summary.private_candidate_count == 2
     assert response.technical_trace.private_source_proposal_ids == [
