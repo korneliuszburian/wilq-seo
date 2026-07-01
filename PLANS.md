@@ -1121,6 +1121,10 @@ Current outcome:
   the API exposes it at `POST /api/content/work-items/revision-plan`. It allows
   only explicit fixes from `needs_changes`, returns `no_changes_needed` for a
   clean quality review and refuses to bypass hard blockers from quality review.
+- Goal 003 gated live Structured Outputs slice `wilq-seo-8qd` is closed as a
+  proof/typing slice. The existing runtime remains disabled by default for live
+  calls, blocks missing SDK clients, parses fake SDK strict output and preserves
+  `publish_ready=false` without WordPress write or publication.
 
 Current risk:
 

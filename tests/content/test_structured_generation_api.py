@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
@@ -336,7 +338,9 @@ def test_structured_draft_runtime_api_can_use_gated_sdk_client(
     assert result["external_call_attempted"] is True
     assert result["output"]["publish_ready"] is False
     assert result["output"]["source_facts_used"] == ["ev_gsc_bdo", "ev_wp_bdo"]
-    assert fake_client.responses.calls[0]["text"]["format"]["strict"] is True
+    text_payload = cast(dict[str, Any], fake_client.responses.calls[0]["text"])
+    format_payload = cast(dict[str, Any], text_payload["format"])
+    assert format_payload["strict"] is True
 
 
 def test_structured_draft_preview_api_returns_marketer_preview() -> None:

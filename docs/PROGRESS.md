@@ -114,6 +114,11 @@ API status later contradicts this state.
   `needs_changes` fixes, returns `no_changes_needed` for clean drafts and stays
   blocked when quality review has hard blockers such as missing measurement,
   claim risk or duplicate/canonical risk.
+- Goal 003 gated live Structured Outputs slice `wilq-seo-8qd` is closed as a
+  proof/typing slice. Existing runtime tests prove live generation is disabled
+  by default, live mode without SDK client is blocked, fake SDK strict output is
+  parsed, `publish_ready=false` is preserved and no WordPress write/publication
+  is attempted.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
@@ -1174,6 +1179,7 @@ API status later contradicts this state.
 - `rtk uv run pytest tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
 - `rtk uv run pytest tests/content/test_content_quality_review_api.py -q`
 - `rtk uv run pytest tests/content/test_content_quality_review_api.py tests/content/test_content_work_item_state_api.py tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run pytest tests/content/test_structured_generation_api.py -q`
 - `rtk uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`
 - `rtk uv run ruff check wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py wilq/content/workflow/api.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_queue_api.py`
 - `rtk uv run mypy wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py tests/content/test_content_work_item_queue_api.py`
