@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ClipboardCheck, ShieldAlert } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
 import {
@@ -15,6 +15,7 @@ import {
   MetricTile,
   PlainChipRow
 } from "../components/OperatorPrimitives";
+import { SafetyGatePanel } from "../components/SafetyGatePanel";
 import { TraceLine } from "../components/TraceLine";
 
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
@@ -76,23 +77,11 @@ export function LocaloDiagnosticSurface() {
       <LocaloOperatorSummary data={data} />
       <LocaloDiagnosticProof data={data} />
 
-      <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-            <ShieldAlert aria-hidden="true" size={18} />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Brama bezpieczeństwa Localo i profilu firmy w Google
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Sam dostęp do Localo potwierdza tylko możliwość odczytu danych. WILQ nie publikuje
-              postów w profilu firmy w Google, nie zmienia profilu i nie obiecuje poprawy
-              widoczności bez danych rankingów i profilu firmy w Google, akcji do sprawdzenia
-              oraz audytu.
-            </p>
-          </div>
-        </div>
+      <SafetyGatePanel
+        className="mt-6"
+        title="Brama bezpieczeństwa Localo i profilu firmy w Google"
+        description="Sam dostęp do Localo potwierdza tylko możliwość odczytu danych. WILQ nie publikuje postów w profilu firmy w Google, nie zmienia profilu i nie obiecuje poprawy widoczności bez danych rankingów i profilu firmy w Google, akcji do sprawdzenia oraz audytu."
+      >
         <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
           <TraceLine
             label="Dowody"
@@ -117,7 +106,7 @@ export function LocaloDiagnosticSurface() {
             )}
           />
         </div>
-      </section>
+      </SafetyGatePanel>
     </DiagnosticSurfaceShell>
   );
 }

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { ShieldAlert } from "lucide-react";
 
 import { type ActionPreviewCardViewModel, getDemandGenDiagnostics } from "../lib/api";
 import {
@@ -7,6 +6,7 @@ import {
   DiagnosticSurfaceUnavailable
 } from "../components/DiagnosticSurfaceShell";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { SafetyGatePanel } from "../components/SafetyGatePanel";
 import { StatusBadge } from "../components/StatusBadge";
 import { TraceLine } from "../components/TraceLine";
 
@@ -208,21 +208,10 @@ export function DemandGenDiagnosticSurface() {
         ) : null}
       </section>
 
-      <section className="rounded-md border border-line bg-white p-4">
-        <div className="mb-3 flex items-start gap-3">
-          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-            <ShieldAlert aria-hidden="true" size={18} />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Dowody i warunki sprawdzenia Demand Gen
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-              To jest sprawdzenie gotowości, nie kreator kampanii. Brakujące
-              dane są jawne i muszą powstać w API przed rekomendacjami.
-            </p>
-          </div>
-        </div>
+      <SafetyGatePanel
+        title="Dowody i warunki sprawdzenia Demand Gen"
+        description="To jest sprawdzenie gotowości, nie kreator kampanii. Brakujące dane są jawne i muszą powstać w API przed rekomendacjami."
+      >
         <div className="grid gap-2 text-xs text-slate-600">
           <TraceLine
             label="Dostępne dane"
@@ -251,7 +240,7 @@ export function DemandGenDiagnosticSurface() {
           />
         </div>
         <p className="mt-4 text-sm font-medium text-ink">{data.next_step}</p>
-      </section>
+      </SafetyGatePanel>
     </DiagnosticSurfaceShell>
   );
 }

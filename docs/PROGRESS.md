@@ -148,8 +148,11 @@ API status later contradicts this state.
   decisions, evidence and blocked-claim handling in the route/API data. Fifth
   green sub-slice migrates Localo onto the same shell, so the shared diagnostic
   chrome now covers Demand Gen, Ahrefs and Localo while Localo safety/evidence
-  decisions remain API-data driven in the route.
-  Broader Ads extraction and zombie/copy cleanup remain in this Beads task.
+  decisions remain API-data driven in the route. Sixth green sub-slice adds
+  `components/SafetyGatePanel.tsx` and migrates the Demand Gen and Localo
+  guard/evidence sections onto it without changing API-owned safety data.
+  Broader Ads extraction, DecisionCard primitives and zombie/copy cleanup remain
+  in this Beads task.
 - The next Goal 004 product work should continue from `bd ready --json`; current
   active task is `wilq-seo-4wi`.
 - Goal 004 must keep WILQ API as the product brain. Codex may orchestrate and
