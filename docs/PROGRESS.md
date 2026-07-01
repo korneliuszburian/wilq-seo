@@ -142,12 +142,17 @@ API status later contradicts this state.
   wording and questions for Wilku, still without claiming legal/publication
   readiness.
 - Service Profile now exposes non-persistent review requests for the two
-  redacted `ekologus-ai` private proposals. Live API proof on 2026-07-01:
+  redacted `ekologus-ai` private proposals. These proposals are now compiled
+  from redacted `reviewed_internal` service facts in
+  `wilq/content/knowledge/source_facts.json`, not maintained as a second
+  hardcoded catalog. Live API proof on 2026-07-02:
   `private_review_action_count=2`, targets
-  `ekologus_service_eko_opieka` and `ekologus_service_audyt_zgodnosci`,
-  `approved_count=0`, `ready_for_daily_content=false`. These actions help
-  Wilku decide what to review next, but they do not promote private proposals
-  into source facts or knowledge cards.
+  `ekologus_service_eko_opieka_calendar` and
+  `ekologus_service_environmental_compliance_audit`, `approved_count=0`,
+  `ready_for_daily_content=false`, `source_type=reviewed_internal`,
+  `privacy_class=redacted_only` and `scope=service`. These actions help Wilku
+  decide what to review next, but they do not promote private proposals into
+  approved facts or knowledge cards.
 - Service Profile now also exposes redacted per-proposal details for private
   source proposals: target card, source class, review status, support level,
   risk tier, confidence label, blocked claims and safe next step. Live proof on

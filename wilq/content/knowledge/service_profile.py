@@ -111,6 +111,10 @@ class ContentServiceProfilePrivateSourceProposalSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     proposal_id: str
+    source_id: str
+    source_type: str
+    privacy_class: str
+    scope: str
     target_card_id: str
     target_card_title: str
     source_class_label: str
@@ -213,11 +217,7 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
         production_depth_readiness=knowledge.production_depth_readiness,
         coverage_summary=_coverage_summary(
             cards=cards,
-            private_candidate_count=sum(
-                1
-                for proposal in private_proposal_registry.proposals
-                if proposal.source_type == "private_candidate"
-            ),
+            private_candidate_count=private_proposal_registry.proposal_count,
             missing_required_area_count=len(coverage_gaps),
             status_label=knowledge.production_depth_readiness.status_label,
             ready_for_daily_content=knowledge.production_depth_readiness.ready_for_daily_content,
@@ -264,6 +264,10 @@ def _private_source_proposal_sections(
     return [
         ContentServiceProfilePrivateSourceProposalSection(
             proposal_id=proposal.proposal_id,
+            source_id=proposal.source_id,
+            source_type=proposal.source_type,
+            privacy_class=proposal.privacy_class,
+            scope=proposal.scope,
             target_card_id=proposal.target_card_id,
             target_card_title=proposal.target_card_title,
             source_class_label=proposal.source_class_label,

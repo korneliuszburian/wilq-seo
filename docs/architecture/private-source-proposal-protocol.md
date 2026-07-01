@@ -1,7 +1,7 @@
 # WILQ Private Source Proposal Protocol
 
 Date: 2026-07-01
-Status: design, not implemented
+Status: implemented for read-only source-fact-derived Service Profile proposals; promotion path still blocked
 Related Beads task: `wilq-seo-wtf`
 Input audit:
 `docs/audits/005-2026-07-01-ekologus-brain-source-catalog-audit.md`
@@ -188,7 +188,8 @@ contracts need it. The likely sequence is:
 1. design read-only Service Profile view model;
 2. add private proposal schema/local loader only if a local artifact exists;
 3. show proposal coverage as review-required/private in Service Profile
-   (implemented for two redacted `ekologus-ai` handoff candidates);
+   (implemented for two redacted `ekologus-ai` service source facts compiled
+   from `source_facts.json`);
 4. add promotion tests before compiling approved proposals into cards.
 
 This keeps WILQ aligned with the BDOS-class pattern: controlled adapters and

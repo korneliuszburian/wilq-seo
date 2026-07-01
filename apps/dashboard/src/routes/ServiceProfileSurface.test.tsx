@@ -159,8 +159,13 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
     },
     private_source_proposals: [
       {
-        proposal_id: "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
-        target_card_id: "ekologus_service_eko_opieka",
+        proposal_id:
+          "private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+        source_id: "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+        source_type: "reviewed_internal",
+        privacy_class: "redacted_only",
+        scope: "service",
+        target_card_id: "ekologus_service_eko_opieka_calendar",
         target_card_title: "Eko-Opieka / Eko Kalendarz",
         source_class_label: "review-required internal service context",
         source_locator_label: "ekologus-ai reviewed handoff: Eko-Opieka",

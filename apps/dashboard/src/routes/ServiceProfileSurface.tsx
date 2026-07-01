@@ -200,6 +200,9 @@ function PrivateProposalCards({ proposals }: { proposals: PrivateProposal[] }) {
           <PlainChipRow
             className="mt-3"
             values={[
+              proposal.source_type,
+              proposal.privacy_class,
+              `scope: ${proposal.scope}`,
               proposal.source_class_label,
               `support: ${proposal.support_level}`,
               `risk: ${proposal.risk_tier}`,

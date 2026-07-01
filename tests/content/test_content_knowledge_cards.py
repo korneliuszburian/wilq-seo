@@ -324,8 +324,23 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     assert response.private_source_proposal_summary.redacted is True
     assert len(response.private_source_proposals) == 2
     assert {proposal.target_card_id for proposal in response.private_source_proposals} == {
-        "ekologus_service_eko_opieka",
-        "ekologus_service_audyt_zgodnosci",
+        "ekologus_service_eko_opieka_calendar",
+        "ekologus_service_environmental_compliance_audit",
+    }
+    assert {proposal.source_id for proposal in response.private_source_proposals} == {
+        "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+        "ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
+    }
+    assert all(
+        proposal.source_type == "reviewed_internal"
+        for proposal in response.private_source_proposals
+    )
+    assert all(
+        proposal.privacy_class == "redacted_only"
+        for proposal in response.private_source_proposals
+    )
+    assert "ekologus_claim_policy_brand_voice" not in {
+        proposal.target_card_id for proposal in response.private_source_proposals
     }
     assert all(proposal.redacted for proposal in response.private_source_proposals)
     assert all(not proposal.promotion_allowed for proposal in response.private_source_proposals)
@@ -336,8 +351,8 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     )
     assert response.coverage_summary.private_candidate_count == 2
     assert response.technical_trace.private_source_proposal_ids == [
-        "private_proposal_ekologus_ai_eko_opieka_2026_07_01",
-        "private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
+        "private_proposal_ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01",
+        "private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01",
     ]
     assert response.review_actions
     private_review_actions = [
@@ -346,8 +361,8 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         if action.action_id.startswith("service_profile_review_private_proposal_")
     ]
     assert {action.target_card_id for action in private_review_actions} == {
-        "ekologus_service_eko_opieka",
-        "ekologus_service_audyt_zgodnosci",
+        "ekologus_service_eko_opieka_calendar",
+        "ekologus_service_environmental_compliance_audit",
     }
     assert all(action.mode == "review_request" for action in private_review_actions)
     assert all("nie promuje" in action.blocked_write_claim for action in private_review_actions)

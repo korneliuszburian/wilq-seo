@@ -188,13 +188,21 @@ proposals (`Eko-Opieka` and `Audyt zgodności`) with `approved_count=0` and
 `redacted=true`; they do not compile into cards or unlock daily-content
 readiness.
 
+Under Beads task `wilq-seo-dtx`, those Service Profile proposals are now
+compiled from redacted `reviewed_internal` service facts in
+`source_facts.json` instead of a separate hardcoded proposal tuple. The live
+payload exposes sanitized lineage (`source_id`, `source_type`,
+`privacy_class`, `scope`) and keeps claim-policy private facts out of the
+service-proposal display until the Claim Ledger layer needs them.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
-review requests for `ekologus_service_eko_opieka` and
-`ekologus_service_audyt_zgodnosci`, while `blocked_write_claim` explicitly
-states that no private proposal is promoted into a source fact or knowledge
-card. Live API proof on 2026-07-01 returned `private_review_action_count=2`,
-`approved_count=0` and `ready_for_daily_content=false`.
+review requests for `ekologus_service_eko_opieka_calendar` and
+`ekologus_service_environmental_compliance_audit`, while
+`blocked_write_claim` explicitly states that no private proposal is promoted
+into an approved fact or knowledge card. Live API proof on 2026-07-02 returned
+`private_review_action_count=2`, `approved_count=0` and
+`ready_for_daily_content=false`.
 
 Redacted per-proposal details are implemented under Beads task `wilq-seo-0ap`.
 Service Profile now shows target card, source class, review status, support

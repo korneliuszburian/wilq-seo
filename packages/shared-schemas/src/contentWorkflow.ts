@@ -442,6 +442,17 @@ export const ContentServiceProfilePrivateSourceProposalRiskTierSchema = z.enum([
 
 export const ContentServiceProfilePrivateSourceProposalSectionSchema = z.object({
   proposal_id: z.string(),
+  source_id: z.string(),
+  source_type: z.enum(["private_candidate", "reviewed_internal"]),
+  privacy_class: z.enum(["private_local", "redacted_only"]),
+  scope: z.enum([
+    "service",
+    "buyer_problem",
+    "cta",
+    "claim_policy",
+    "evidence_requirement",
+    "metric_signal"
+  ]),
   target_card_id: z.string(),
   target_card_title: z.string(),
   source_class_label: z.string(),

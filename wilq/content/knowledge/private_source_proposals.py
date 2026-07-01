@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from wilq.content.knowledge.source_facts import ContentSourceFact, ekologus_source_facts
+
 PrivateSourceProposalType = Literal["private_candidate", "reviewed_internal"]
 PrivateSourceProposalPrivacyClass = Literal["private_local", "redacted_only"]
 PrivateSourceProposalReviewStatus = Literal["review_required", "approved", "rejected", "stale"]
@@ -58,61 +60,10 @@ class PrivateSourceProposalRegistry(BaseModel):
 
 @lru_cache(maxsize=1)
 def ekologus_private_source_proposals() -> tuple[PrivateSourceProposal, ...]:
-    return (
-        PrivateSourceProposal(
-            proposal_id="private_proposal_ekologus_ai_eko_opieka_2026_07_01",
-            source_id="ekologus_ai_review_eko_opieka",
-            source_type="private_candidate",
-            privacy_class="redacted_only",
-            source_locator_label="ekologus-ai reviewed handoff: Eko-Opieka",
-            scope="service",
-            freshness_date="2026-07-01",
-            freshness_status="current",
-            confidence=0.66,
-            review_status="review_required",
-            owner_role="Wilku albo owner oferty Ekologus",
-            audience="company_wide",
-            risk_tier="medium",
-            source_class_label="review-required internal service context",
-            target_card_id="ekologus_service_eko_opieka",
-            target_card_title="Eko-Opieka / Eko Kalendarz",
-            support_level="partial",
-            blocked_claims=[
-                "obietnica stałej zgodności",
-                "gwarancja wykonania obowiązków bez danych klienta",
-            ],
-            safe_next_step=(
-                "Pokazać Wilkowi zwykły handoff i zdecydować, czy tworzyć "
-                "reviewed internal source fact."
-            ),
-        ),
-        PrivateSourceProposal(
-            proposal_id="private_proposal_ekologus_ai_audyt_zgodnosci_2026_07_01",
-            source_id="ekologus_ai_review_audyt_zgodnosci",
-            source_type="private_candidate",
-            privacy_class="redacted_only",
-            source_locator_label="ekologus-ai reviewed handoff: Audyt zgodności",
-            scope="service",
-            freshness_date="2026-07-01",
-            freshness_status="current",
-            confidence=0.64,
-            review_status="review_required",
-            owner_role="Wilku albo owner oferty Ekologus",
-            audience="company_wide",
-            risk_tier="medium",
-            source_class_label="review-required internal service context",
-            target_card_id="ekologus_service_audyt_zgodnosci",
-            target_card_title="Audyt zgodności środowiskowej",
-            support_level="partial",
-            blocked_claims=[
-                "gwarancja braku kar",
-                "wiążąca ocena zgodności bez review eksperta",
-            ],
-            safe_next_step=(
-                "Użyć jako pytania do review oferty; nie tworzyć production-depth "
-                "karty bez decyzji człowieka."
-            ),
-        ),
+    return tuple(
+        _proposal_from_source_fact(fact)
+        for fact in ekologus_source_facts()
+        if _is_private_service_proposal_fact(fact)
     )
 
 
@@ -122,3 +73,49 @@ def ekologus_private_source_proposal_registry() -> PrivateSourceProposalRegistry
         proposals=proposals,
         proposal_count=len(proposals),
     )
+
+
+def _is_private_service_proposal_fact(fact: ContentSourceFact) -> bool:
+    return (
+        fact.source_type == "reviewed_internal"
+        and fact.privacy_class == "redacted_only"
+        and fact.review_status == "review_required"
+        and fact.scope == "service"
+        and "ekologus_ai_private_source_catalog" in fact.source_connectors
+    )
+
+
+def _proposal_from_source_fact(fact: ContentSourceFact) -> PrivateSourceProposal:
+    return PrivateSourceProposal(
+        proposal_id=f"private_proposal_{fact.source_id}",
+        source_id=fact.source_id,
+        source_type="reviewed_internal",
+        privacy_class="redacted_only",
+        source_locator_label=_source_locator_label(fact),
+        scope=fact.scope,
+        freshness_date=fact.freshness_date,
+        freshness_status="current",
+        confidence=fact.confidence,
+        review_status="review_required",
+        reviewer=fact.reviewer,
+        owner_role="Wilku albo owner oferty Ekologus",
+        audience="company_wide",
+        risk_tier="medium",
+        source_class_label="review-required internal service source fact",
+        target_card_id=fact.target_card_id,
+        target_card_title=fact.target_card_title,
+        support_level="partial",
+        blocked_claims=fact.blocked_claims,
+        safe_next_step=(
+            "Pokaż Wilkowi zwykły handoff i zdecyduj, czy ten redacted source "
+            "fact może przejść review; nie odblokowuj production-depth bez decyzji człowieka."
+        ),
+    )
+
+
+def _source_locator_label(fact: ContentSourceFact) -> str:
+    if "KB_001_EKO_OPIEKA" in fact.source_url_or_path:
+        return "ekologus-ai reviewed handoff: Eko-Opieka"
+    if "KB_003_AUDYT_ZGODNOSCI" in fact.source_url_or_path:
+        return "ekologus-ai reviewed handoff: Audyt zgodności"
+    return f"ekologus-ai reviewed handoff: {fact.target_card_title}"

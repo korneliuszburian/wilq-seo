@@ -100,6 +100,10 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
     private_proposal_details = [
         {
             "proposal_id": proposal.get("proposal_id"),
+            "source_id": proposal.get("source_id"),
+            "source_type": proposal.get("source_type"),
+            "privacy_class": proposal.get("privacy_class"),
+            "scope": proposal.get("scope"),
             "target_card_title": proposal.get("target_card_title"),
             "review_status": proposal.get("review_status"),
             "support_level": proposal.get("support_level"),
@@ -126,7 +130,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         ),
         "coverage_gaps": coverage_gaps,
         "private_source_proposals": {
-            "candidate_count": private_summary.get("candidate_count"),
+            "proposal_count": private_summary.get("proposal_count"),
             "review_required_count": private_summary.get("review_required_count"),
             "approved_count": private_summary.get("approved_count"),
             "promotion_ready": private_summary.get("promotion_ready"),
