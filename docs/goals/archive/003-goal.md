@@ -69,6 +69,8 @@ were committed and pushed as:
 - `e38add2f` - adversarial content workflow gates.
 - `71c92731` - per-item persisted content workflow state.
 - `f5ad6d38` - changed-code anti-slop complexity budgets.
+- `94f3ef07` - Goal 003 closure docs.
+- `14994a94` - restored full repo-level verification gate.
 
 Focused verification passed:
 
@@ -83,13 +85,16 @@ rtk uv run python scripts/audit_complexity.py --changed --limit 5
 rtk git diff --check
 ```
 
-`rtk scripts/verify.sh` was attempted during closure. It failed before
-Goal-003-specific gates on the known legacy full-Ruff baseline
-(`E501`/`UP037` in historical files such as `tests/test_api_contracts.py`,
-`wilq/briefing/command_center.py`, `wilq/briefing/merchant_diagnostics.py`,
-`wilq/briefing/marketing_brief.py` and `wilq/schemas.py`). Follow-up Beads task
-`wilq-seo-8re` tracks restoring the full repo-level verify gate. This is not a
-Goal 003 product blocker, but it remains repo cleanup debt.
+Full repo-level verification passed after the closure follow-up:
+
+```bash
+rtk scripts/verify.sh
+```
+
+The gate covered full Python tests (`483 passed, 1 warning`), dashboard/unit
+tests (`102 passed`), security/dependency checks, API smoke, skill structure
+smoke, skill API smoke, Playwright dashboard proof (`14 passed`) and dashboard
+production build. Follow-up Beads task `wilq-seo-8re` is closed.
 
 ## Non-Goals
 
