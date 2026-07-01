@@ -358,6 +358,10 @@ API status later contradicts this state.
 - Quality Review now mirrors that same forbidden-claim acknowledgement gate, so
   direct quality-review calls cannot bypass preview by omitting
   `forbidden_claims_avoided` for claims removed or blocked by the draft package.
+- Shared schemas now type `ContentQualityFinding.code` as the known quality gate
+  enum instead of any string, including
+  `missing_forbidden_claim_acknowledgement`. Dashboard/API tests now catch
+  unregistered quality finding codes before they reach the UI.
 - Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
   connector hardening. Current skill proof still shows `candidate_count=3`,
   `actionable_candidate_count=1`, `queue_status=blocked` and

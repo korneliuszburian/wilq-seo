@@ -376,6 +376,9 @@ Quality Review mirrors that gate under Beads task `wilq-seo-ygb`, so direct
 quality-review calls cannot bypass preview's blocked-claim acknowledgement
 requirement.
 
+Shared schemas now type quality finding codes under Beads task `wilq-seo-hc2`;
+unknown quality gate codes no longer pass the TypeScript/Zod contract silently.
+
 Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
 The current WILQ packet is useful for showing blockers and traceability, but
 not for closing full UAT: live proof still has only one actionable candidate

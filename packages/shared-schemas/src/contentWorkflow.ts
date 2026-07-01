@@ -742,8 +742,31 @@ export const ContentQualityDimensionSchema = z.object({
   reason: z.string()
 });
 
+export const ContentQualityFindingCodeSchema = z.enum([
+  "missing_draft_package",
+  "draft_package_mismatch",
+  "draft_package_marked_publish_ready",
+  "missing_structured_output",
+  "section_missing_evidence",
+  "unknown_evidence_reference",
+  "missing_claim_ledger",
+  "claim_ledger_blocks_quality",
+  "unsupported_claim_used",
+  "forbidden_claim_used",
+  "claim_missing_required_evidence",
+  "missing_forbidden_claim_acknowledgement",
+  "duplicate_risk_not_clear",
+  "missing_measurement_window",
+  "weak_cta",
+  "missing_service_fit",
+  "missing_search_intent",
+  "missing_buyer_problem",
+  "missing_internal_links",
+  "non_polish_language"
+]);
+
 export const ContentQualityFindingSchema = z.object({
-  code: z.string(),
+  code: ContentQualityFindingCodeSchema,
   severity: z.enum(["blocker", "needs_changes", "info"]),
   label: z.string(),
   reason: z.string(),

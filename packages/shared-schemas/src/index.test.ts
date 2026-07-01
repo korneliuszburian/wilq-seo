@@ -14,6 +14,7 @@ import {
   ContentWorkItemStructuredDraftGenerationResponseSchema,
   ContentWorkItemStructuredDraftPreviewResponseSchema,
   ContentWorkItemStructuredDraftRuntimeResponseSchema,
+  ContentQualityFindingSchema,
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
@@ -159,6 +160,34 @@ describe("ContentServiceProfileResponseSchema", () => {
     expect(parsed.review_policy.can_edit_cards).toBe(false);
     expect(parsed.coverage_gaps[0]?.gap_id).toBe("gap_service_operat_wodnoprawny");
     expect(parsed.private_source_proposals[0]?.promotion_allowed).toBe(false);
+  });
+});
+
+describe("ContentQualityFindingSchema", () => {
+  it("accepts only known quality gate codes", () => {
+    expect(
+      ContentQualityFindingSchema.safeParse({
+        code: "missing_forbidden_claim_acknowledgement",
+        severity: "blocker",
+        label: "Szkic nie potwierdza uniknięcia zakazanych claimów",
+        reason: "Ocena jakości wymaga jawnego potwierdzenia.",
+        next_step: "Uzupełnij listę unikniętych claimów.",
+        evidence_ids: ["ev_wp_bdo"],
+        source_connectors: ["wordpress_ekologus"]
+      }).success
+    ).toBe(true);
+
+    expect(
+      ContentQualityFindingSchema.safeParse({
+        code: "new_unreviewed_quality_gate",
+        severity: "blocker",
+        label: "Nieznany kod",
+        reason: "Nie powinien przejść shared schema.",
+        next_step: "Dodaj kod do kontraktu przed użyciem.",
+        evidence_ids: [],
+        source_connectors: []
+      }).success
+    ).toBe(false);
   });
 });
 
