@@ -86,13 +86,18 @@ API status later contradicts this state.
 - Goal 002 Beads epic `wilq-seo-zu4` is closed.
 - Goal 003 plan lives in `docs/goals/003-goal.md`.
 - Goal 003 recovery and plan alignment task `wilq-seo-ik5` is closed. First
-  implementation slice is `wilq-seo-d7c`: API-owned multi-item content queue.
+  implementation slice `wilq-seo-d7c` added the API-owned multi-item content
+  queue at `GET /api/content/work-items/queue`. The queue currently derives 5
+  candidates from content diagnostics: 4 actionable refresh candidates with
+  public final canonical URLs and one Ahrefs review candidate blocked because
+  it has no final canonical URL. Dev/preview URLs are rejected as final
+  canonical targets.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,
-  functions, classes and frozen-file growth risk. Latest changed-code audit
-  reports 250 Python files, 90,920 non-empty Python LOC and no changed frozen
-  growth files in the current slice.
+  functions, classes and frozen-file growth risk. Latest Goal 003 changed-code
+  audit reports 253 Python files, 91,397 non-empty Python LOC, 6 changed files
+  and no changed frozen growth files in the current slice.
 - Historical quality debt is now explicit: full Ruff reports 68 issues, mypy
   reports 5 existing type errors in `content_refresh.py`/`main.py`, and Fallow
   reports 21.0% TypeScript duplication with 13 functions above threshold.
@@ -1143,6 +1148,12 @@ API status later contradicts this state.
 
 ## Recent Verification Commands
 
+- `rtk uv run pytest tests/content/test_content_work_item_queue_api.py -q`
+- `rtk uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`
+- `rtk uv run ruff check wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py wilq/content/workflow/api.py apps/api/wilq_api/routers/content_workflow.py tests/content/test_content_work_item_queue_api.py`
+- `rtk uv run mypy wilq/content/workflow/decision_mapping.py wilq/content/workflow/queue.py tests/content/test_content_work_item_queue_api.py`
+- `rtk uv run python scripts/audit_complexity.py --changed --allow-frozen`
+- `rtk git diff --check`
 - `rtk pnpm --dir apps/dashboard typecheck`
 - `rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand`
 - `rtk pnpm --dir apps/dashboard lint`

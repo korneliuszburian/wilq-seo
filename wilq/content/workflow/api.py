@@ -8,10 +8,9 @@ from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
     ContentSalesBriefSeed,
-    ContentSalesBriefSourceFact,
     build_content_sales_brief,
 )
-from wilq.content.claims.ledger import ContentClaimLedger, ContentClaimLedgerEntry
+from wilq.content.claims.ledger import ContentClaimLedger
 from wilq.content.drafts.openai_runtime import (
     OpenAIClientProtocol,
     OpenAIStructuredDraftRuntimeMode,
@@ -73,6 +72,12 @@ from wilq.content.review.human import (
     apply_content_human_review_to_work_item,
     content_human_review_allows_wordpress_handoff,
     content_human_review_blockers,
+)
+from wilq.content.workflow.decision_mapping import (
+    content_claim_ledger_from_work_item,
+    content_inventory_record_from_decision,
+    content_sales_brief_seed_from_decision,
+    content_work_item_from_decision,
 )
 from wilq.content.workflow.models import ContentWorkItem
 from wilq.schemas import ContentDecisionItem, ContentDiagnosticsResponse
@@ -449,12 +454,14 @@ def build_content_work_item_diagnostics_snapshot_response(
     audit: ContentWordPressDraftAuditEnvelope | None = None,
 ) -> ContentWorkItemWorkflowSnapshotResponse:
     decision = _select_content_work_item_decision(diagnostics.decision_queue)
-    item = _work_item_from_decision(decision)
+    item = content_work_item_from_decision(decision)
+    inventory_record = content_inventory_record_from_decision(decision)
+    assert inventory_record is not None
     return _build_content_work_item_snapshot_response(
         item=item,
-        inventory_records=[_inventory_record_from_decision(decision)],
-        claim_ledger=_claim_ledger_from_decision(item),
-        seed=_sales_brief_seed_from_decision(decision),
+        inventory_records=[inventory_record],
+        claim_ledger=content_claim_ledger_from_work_item(item),
+        seed=content_sales_brief_seed_from_decision(decision),
         human_review_record=human_review,
         audit=audit,
     )
@@ -744,102 +751,6 @@ def _select_content_work_item_decision(
         and decision.evidence_ids
         and decision.source_connectors
     )
-
-
-def _work_item_from_decision(decision: ContentDecisionItem) -> ContentWorkItem:
-    return ContentWorkItem(
-        id=f"content_work_item_{decision.id}",
-        topic=decision.title,
-        source_public_url=decision.source_public_url or decision.page,
-        final_canonical_url=decision.final_canonical_url,
-        intended_final_url=decision.intended_final_url or decision.final_canonical_url,
-        preview_url=decision.preview_url,
-        evidence_ids=decision.evidence_ids,
-        source_connectors=decision.source_connectors,
-        inventory_status="resolved",
-        canonical_status="resolved",
-        duplicate_status="checked",
-    )
-
-
-def _inventory_record_from_decision(decision: ContentDecisionItem) -> ContentInventoryRecord:
-    assert decision.final_canonical_url is not None
-    return ContentInventoryRecord(
-        id=f"inventory_{decision.id}",
-        url=decision.source_public_url or decision.page or decision.final_canonical_url,
-        final_canonical_url=decision.final_canonical_url,
-        intended_final_url=decision.intended_final_url or decision.final_canonical_url,
-        preview_url=decision.preview_url,
-        content_status="published" if decision.wordpress_match == "found" else "unknown",
-        source_connectors=decision.source_connectors,
-        evidence_ids=decision.evidence_ids,
-        title=decision.title,
-        h1=decision.title,
-        topic_tags=[decision.primary_query] if decision.primary_query else decision.queries[:3],
-    )
-
-
-def _claim_ledger_from_decision(item: ContentWorkItem) -> ContentClaimLedger:
-    evidence_id = item.evidence_ids[0]
-    return ContentClaimLedger(
-        id=f"claim_ledger_{item.id}",
-        work_item_id=item.id,
-        reviewed_by="wilku",
-        entries=[
-            ContentClaimLedgerEntry(
-                id=f"claim_service_{item.id}",
-                claim_text=f"Ekologus może pomóc użytkownikowi w temacie: {item.topic}.",
-                claim_type="service_claim",
-                status="allowed_with_evidence",
-                evidence_ids=[evidence_id],
-                reason="Claim jest ogólną deklaracją usługi i ma przypisany dowód źródłowy.",
-                reviewer_id="wilku",
-            )
-        ],
-    )
-
-
-def _sales_brief_seed_from_decision(decision: ContentDecisionItem) -> ContentSalesBriefSeed:
-    primary_query = decision.primary_query or (
-        decision.queries[0] if decision.queries else decision.title
-    )
-    return ContentSalesBriefSeed(
-        target_reader="osoba odpowiedzialna za decyzję środowiskową w firmie",
-        buyer_problem=decision.summary or decision.title,
-        buyer_trigger=f"użytkownik szuka informacji lub pomocy dla tematu: {primary_query}",
-        search_intent="informacyjno-usługowy",
-        service_fit="sprawdzenie, czy temat pasuje do usługi Ekologus przed szkicem",
-        h1_direction=decision.title,
-        h2_direction=_decision_h2_direction(decision),
-        faq_direction=[f"Co trzeba sprawdzić przed działaniem w temacie: {primary_query}?"],
-        cta_direction="Zaproponuj kontakt w celu sprawdzenia sytuacji firmy bez obietnicy wyniku.",
-        internal_link_direction=["https://ekologus.pl/kontakt/"],
-        source_facts=[
-            ContentSalesBriefSourceFact(
-                evidence_id=evidence_id,
-                source_connector=_source_connector_for_evidence(decision, index),
-                summary=_source_fact_summary(decision, evidence_id),
-            )
-            for index, evidence_id in enumerate(decision.evidence_ids)
-        ],
-        missing_evidence=[],
-    )
-
-
-def _decision_h2_direction(decision: ContentDecisionItem) -> list[str]:
-    if decision.queries:
-        return [f"Co wiemy z zapytań: {query}" for query in decision.queries[:2]]
-    return ["Co pokazują dane", "Co sprawdzić przed publikacją"]
-
-
-def _source_connector_for_evidence(decision: ContentDecisionItem, index: int) -> str:
-    if index < len(decision.source_connectors):
-        return decision.source_connectors[index]
-    return decision.source_connectors[0]
-
-
-def _source_fact_summary(decision: ContentDecisionItem, evidence_id: str) -> str:
-    return f"Dowód {evidence_id} wspiera decyzję: {decision.title}."
 
 
 def _inventory_and_preflight(

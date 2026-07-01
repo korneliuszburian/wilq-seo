@@ -184,6 +184,12 @@ Completed planning slice:
 First implementation slice:
 
 - `wilq-seo-d7c` - Goal 003 content queue API.
+- Result: `GET /api/content/work-items/queue` now returns an API-owned
+  diagnostics-derived queue. Current runtime evidence exposes 5 candidates:
+  4 actionable refresh candidates with evidence/source connectors/public final
+  canonical URLs and 1 Ahrefs review candidate blocked before writing because
+  it has no final canonical URL. Dev/preview URLs remain rejected as final
+  canonical targets.
 
 The graph already contains child work for the content queue API, per-item
 workflow state, deterministic quality review, gated live Structured Outputs,
@@ -1077,6 +1083,27 @@ Current outcome:
   approved claim gate, ready draft package, structured draft evidence mapping,
   human review, audit, draft-only WordPress handoff/execution dry-run and the
   measurement blocker. It still does not publish or write to `ekologus.pl`.
+
+2026-07-01:
+
+- Goal 003 content queue API slice `wilq-seo-d7c` added
+  `GET /api/content/work-items/queue`. The endpoint derives candidates from the
+  existing content diagnostics `decision_queue` and returns Polish API-owned
+  view models with work item ID, recommended mode, evidence IDs, source
+  connectors, URL semantics, preflight state, duplicate/canonical summary,
+  measurement readiness, safe next step and blockers.
+- The queue currently returns 5 diagnostics-derived candidates: 4 actionable
+  refresh candidates and 1 blocked Ahrefs review candidate. The blocked
+  candidate stays visible as source signal but cannot proceed to writing without
+  a public final canonical URL.
+- `ContentDecisionItem -> ContentWorkItem` mapping moved into
+  `wilq/content/workflow/decision_mapping.py` so the snapshot and queue share
+  one conversion path instead of duplicating behavior.
+- Focused proof passed:
+  `uv run pytest tests/content/test_content_work_item_queue_api.py -q`,
+  `uv run pytest tests/content/test_content_workflow_end_to_end.py tests/content/test_work_item_preflight_api.py::test_content_work_item_snapshot_is_derived_from_content_diagnostics -q`,
+  focused Ruff, focused mypy, changed-file complexity audit and
+  `git diff --check`.
 
 Current risk:
 

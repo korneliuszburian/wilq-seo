@@ -41,9 +41,21 @@ from wilq.content.workflow.api import (
     build_content_work_item_wordpress_draft_execution_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
+from wilq.content.workflow.queue import (
+    ContentWorkItemQueueResponse,
+    build_content_work_item_queue_response,
+)
 from wilq.content.workflow.store import content_workflow_store
 
 router = APIRouter()
+
+
+@router.get(
+    "/api/content/work-items/queue",
+    response_model=ContentWorkItemQueueResponse,
+)
+def content_work_item_queue() -> ContentWorkItemQueueResponse:
+    return build_content_work_item_queue_response(build_content_diagnostics())
 
 
 @router.get(
