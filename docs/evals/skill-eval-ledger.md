@@ -67,9 +67,13 @@ Result:
 - Harness prompt was tightened: `validation_state="validated"` is allowed only
   for a real ActionObject with non-empty `action_id`; workflow gates must use
   `pending_validation`, `blocked` or `missing`.
-- Re-run is externally blocked by Codex usage limit:
-  `You've hit your usage limit ... try again at 10:23 PM`. This is not a WILQ
-  API or eval-case failure. Re-run the same command after the usage window.
+- Re-run attempts after the prompt fix are externally blocked by Codex usage
+  limit, not by WILQ API, the skill case or the grader. Proof traces:
+  `.local-lab/evals/codex-skill/20260701T202245Z/wilq-content-operator/trace.jsonl`
+  and
+  `.local-lab/evals/codex-skill/20260701T202326Z/wilq-content-operator/trace.jsonl`.
+  Both contain the same Codex error: `You've hit your usage limit ... try again
+  at 10:23 PM`, with empty stderr and no `result.json`.
 
 ## 2026-06-27 - Marketing brief blocker cleanup proof
 
