@@ -79,6 +79,14 @@ API status later contradicts this state.
   or explicitly owner-deferred with residual risk. Initial Service Profile work
   is read-only plus review/flag semantics; ungated knowledge-card writes remain
   out of scope.
+- Second-opinion follow-up after Goal 005 activation: the reported loose
+  `unknown` request typing for core content POSTs is stale in the current repo;
+  `api.ts` validates preflight, Sales Brief, draft package, human review and
+  measurement-window requests through shared Zod schemas. The still-valid risk
+  is measurement provenance: `wilq-seo-708` tracks whether measurement outcome
+  interpretation is tied to metric_store facts, connector refresh/JobRun
+  lineage, evidence IDs and the original content decision before any broader
+  usefulness claim.
 - Goal 004: Content Operations Layer is completed under Beads epic
   `wilq-seo-2qq`. It delivered the safe content operations mechanics and typed
   architecture, not a proven daily-use content product: queue candidate -> opportunity

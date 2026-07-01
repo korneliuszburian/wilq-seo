@@ -206,6 +206,7 @@ Initial slices:
 - `wilq-seo-jst` - run first real Wilku content UAT or record explicit defer.
 - `wilq-seo-n8r` - audit Sales Brief v2 signal quality.
 - `wilq-seo-87i` - define evidence-based draft variant selection guard.
+- `wilq-seo-708` - harden measurement outcome provenance for content decisions.
 
 This section is a recovery index only. Operational status lives in Beads.
 
@@ -304,6 +305,11 @@ Stop and record a blocker if:
   selection slices created.
 - 2026-07-01: Current knowledge implementation inspected. It has three seeded
   cards, so Goal 005 starts from "contract proof exists, depth unverified".
+- 2026-07-01: Second-opinion follow-up checked against local code. The reported
+  `unknown` content POST request gap is already fixed in `api.ts` and shared
+  schemas. A real remaining measurement risk was filed as `wilq-seo-708`:
+  outcome interpretation needs explicit metric_store/JobRun/evidence
+  provenance before WILQ can claim hard measurement usefulness.
 
 ## Surprises & Discoveries
 
@@ -321,6 +327,9 @@ Stop and record a blocker if:
   exists.
 - Variant selection must be evidence-based dimensions/blockers, not a fake
   score.
+- Measurement outcome hardening is a Goal 005 support slice, not a replacement
+  for knowledge depth and UAT. The request-typing part of that second opinion is
+  stale; provenance remains valid.
 
 ## Outcomes & Retrospective
 
