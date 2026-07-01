@@ -361,6 +361,12 @@ evidence-backed entries now carry `source_connectors`, missing connector
 lineage blocks with `missing_source_connector`, and structured generation claim
 markers preserve connector lineage beside evidence IDs.
 
+Wilku content UAT preparation was refreshed under Beads task `wilq-seo-jst`.
+The current WILQ packet is useful for showing blockers and traceability, but
+not for closing full UAT: live proof still has only one actionable candidate
+and `queue_status=blocked`. Keep `wilq-seo-jst` open until Wilku completes the
+session or the owner records an explicit defer.
+
 `wilq-content-operator` now has a completed non-interactive Codex eval pass
 after the ActionObject validation prompt fix. Proof:
 `.local-lab/evals/codex-skill/20260701T212839Z/summary.json`; result

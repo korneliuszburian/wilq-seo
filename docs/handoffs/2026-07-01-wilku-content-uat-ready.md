@@ -1,6 +1,7 @@
 # Wilku Content UAT - przygotowanie sesji
 
 Data przygotowania: 2026-07-01
+Ostatnia aktualizacja: 2026-07-02 00:50 CEST
 
 Status: gotowe do pokazania jako sesja review/blokad i traceability, nie jako
 ukończony UAT.
@@ -11,11 +12,28 @@ content/merchant są zablokowane przez nieświeże dane. Pełny UAT nadal jest
 zablokowany przez brak production-depth Service Profile i review prywatnych
 propozycji.
 
+Aktualizacja po hardeningu Claim Ledger: claimy oznaczone jako
+`allowed_with_evidence` muszą mieć teraz nie tylko `evidence_ids`, ale też
+`source_connectors`. Brak źródła danych blokuje gotowość szkicu przez
+`missing_source_connector`. Dzięki temu pytanie "skąd to wzięło?" nie kończy
+się samym technicznym ID dowodu, tylko prowadzi do konkretnego źródła danych.
+
 Źródło live:
 
 ```bash
 rtk uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 3 --format markdown
 ```
+
+Ostatnie sprawdzenie skilla:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Wynik ostatniego smoke: `candidate_count=3`, `actionable_candidate_count=1`,
+`queue_status=blocked`, `uat_queue_ready=true`, `workflow_blocked=true`,
+wybrany work item:
+`content_work_item_content_decision_https___www_ekologus_pl`.
 
 ## Co sprawdzamy
 
@@ -27,7 +45,9 @@ przez developera:
 - czy prywatne propozycje z `ekologus-ai` są czytelne jako materiał do review,
   a nie jako zatwierdzona wiedza;
 - czy przy obecnej kolejce Wilku umie wskazać bezpieczny następny krok;
-- czy na pytanie "skąd to wzięło?" widzi evidence IDs i source connectors.
+- czy na pytanie "skąd to wzięło?" widzi evidence IDs i source connectors;
+- czy rozumie, że claim z dowodem bez źródła danych jest teraz blokowany, a nie
+  przepychany do szkicu.
 
 ## Aktualny stan WILQ
 
@@ -39,6 +59,8 @@ UAT readiness:
   propozycje wymagają review Wilka/ownera, kolejka content workflow ma status
   `blocked`;
 - liczba gotowych kandydatów w kolejce: 1.
+- kolejka: `candidate_count=3`, `actionable_candidate_count=1`,
+  `queue_status=blocked`.
 - świeże proof IDs po odświeżeniu źródeł:
   `refresh_google_merchant_center_a04a45a6e6fd`,
   `refresh_ahrefs_5eee21244cff`,
@@ -138,10 +160,12 @@ Zadaj dokładnie te pytania i wpisz odpowiedzi w sekcji wyników:
 5. Czy widzisz, że te prywatne propozycje nie są jeszcze zatwierdzoną wiedzą?
 6. Gdy pytasz "skąd to wzięło?", czy evidence IDs i source connectors są
    wystarczające?
-7. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
+7. Czy blokada `missing_source_connector` jest zrozumiała po ludzku jako "brak
+   źródła danych dla twierdzenia"?
+8. Czy `https://www.ekologus.pl/` jako kandydat refresh ma dla Ciebie sens, czy
    lepiej wymusić bardziej konkretny temat, np. BDO?
-8. Co jest najbardziej generyczne/off-brand w tej ścieżce?
-9. Jaki jeden następny krok zrobiłbyś po tej sesji?
+9. Co jest najbardziej generyczne/off-brand w tej ścieżce?
+10. Jaki jeden następny krok zrobiłbyś po tej sesji?
 
 ## Wynik sesji
 

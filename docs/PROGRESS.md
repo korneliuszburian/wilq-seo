@@ -342,6 +342,11 @@ API status later contradicts this state.
   generated ledgers and structured draft claim markers preserve the connector
   lineage so later preview/review gates can show not just the evidence ID, but
   the data source behind it.
+- Wilku content UAT handoff was refreshed on 2026-07-02 after the Claim Ledger
+  connector hardening. Current skill proof still shows `candidate_count=3`,
+  `actionable_candidate_count=1`, `queue_status=blocked` and
+  `workflow_blocked=true`; therefore `wilq-seo-jst` remains open/in-progress
+  until a real Wilku session or explicit owner defer is recorded.
 - Quality-review API tests no longer depend on the current live
   `/api/content/work-items/snapshot` decision. They now build a deterministic
   BDO ready chain through the same Sales Brief, Draft Package and Structured
