@@ -167,7 +167,9 @@ API status later contradicts this state.
   `gap_service_operat_wodnoprawny` and `gap_no_approved_current_cards`,
   `private_review_action_count=2`. It now also carries private proposal
   `promotion_ready=false`, the promotion blocked reason and the 5-item
-  promotion checklist from Service Profile. This prepares Goal 005 UAT without
+  promotion checklist from Service Profile. Live proof on 2026-07-02 added
+  `private_proposal_details`: 2 redacted details with support/risk/blocked
+  claims and `promotion_allowed=false`. This prepares Goal 005 UAT without
   claiming that Wilku completed the session.
 - A normal Wilku-ready UAT handoff now lives at
   `docs/handoffs/2026-07-01-wilku-content-uat-ready.md`. It condenses the live

@@ -97,6 +97,22 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "service_profile_review_private_proposal_"
         )
     ]
+    private_proposal_details = [
+        {
+            "proposal_id": proposal.get("proposal_id"),
+            "target_card_title": proposal.get("target_card_title"),
+            "review_status": proposal.get("review_status"),
+            "support_level": proposal.get("support_level"),
+            "risk_tier": proposal.get("risk_tier"),
+            "confidence_label": proposal.get("confidence_label"),
+            "blocked_claims": proposal.get("blocked_claims") or [],
+            "safe_next_step": proposal.get("safe_next_step"),
+            "promotion_allowed": proposal.get("promotion_allowed"),
+            "redacted": proposal.get("redacted"),
+        }
+        for proposal in as_list(profile.get("private_source_proposals"))
+        if isinstance(proposal, dict)
+    ]
     return {
         "endpoint": "/api/content/service-profile",
         "read_only": profile.get("read_only"),
@@ -118,6 +134,7 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "promotion_checklist": private_summary.get("promotion_checklist") or [],
             "redacted": private_summary.get("redacted"),
         },
+        "private_proposal_details": private_proposal_details,
         "private_review_actions": private_review_actions,
     }
 
@@ -317,6 +334,24 @@ def main() -> int:
             print("- warunki przed reviewed source fact:")
             for item in promotion_checklist:
                 print(f"  - {item}")
+    proposal_details = service_profile_md.get("private_proposal_details")
+    if isinstance(proposal_details, list) and proposal_details:
+        print("- szczegóły private proposals:")
+        for raw_proposal in proposal_details:
+            if not isinstance(raw_proposal, dict):
+                continue
+            blocked_claims = [
+                str(value) for value in raw_proposal.get("blocked_claims") or []
+            ]
+            print(
+                f"  - {raw_proposal.get('target_card_title')}: "
+                f"status={raw_proposal.get('review_status')}, "
+                f"support={raw_proposal.get('support_level')}, "
+                f"risk={raw_proposal.get('risk_tier')}, "
+                f"promotion_allowed={raw_proposal.get('promotion_allowed')}"
+            )
+            if blocked_claims:
+                print(f"    claimy zablokowane: {', '.join(blocked_claims)}")
     gaps = service_profile_md.get("coverage_gaps")
     if isinstance(gaps, list) and gaps:
         print("- luki:")

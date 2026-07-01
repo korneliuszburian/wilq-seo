@@ -69,6 +69,15 @@ Promotion checklist dla private proposals:
   review-required i zakazane, a WILQ musi zapisać reviewer/freshness/confidence/
   lineage oraz przejść focused eval.
 
+Redacted proposal details do sprawdzenia:
+
+- Eko-Opieka / Eko Kalendarz: `review_required`, support `partial`, risk
+  `medium`, promotion allowed `false`; zablokowane claimy obejmują obietnicę
+  stałej zgodności i gwarancję wykonania obowiązków bez danych klienta.
+- Audyt zgodności środowiskowej: `review_required`, support `partial`, risk
+  `medium`, promotion allowed `false`; zablokowane claimy obejmują gwarancję
+  braku kar i wiążącą ocenę zgodności bez review eksperta.
+
 ## Kandydaci z kolejki
 
 ### GA4 tracking gap

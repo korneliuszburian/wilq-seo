@@ -68,6 +68,8 @@ def test_wilq_content_operator_skill_is_api_orchestrator_not_writer() -> None:
         "Service Profile nie jest production-depth",
         "promotion_checklist",
         "warunki przed reviewed source fact",
+        "private_proposal_details",
+        "szczegóły private proposals",
         "Private proposal review action nie promuje faktu ani karty wiedzy.",
         "Dev URL nie jest canonical",
         "WordPress pozostaje draft-only",

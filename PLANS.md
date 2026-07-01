@@ -225,6 +225,12 @@ reason and five required conditions before reviewed source facts. This keeps
 Wilku's UAT packet aligned with the Service Profile view model after the
 promotion-checklist slice.
 
+The UAT packet now carries redacted private proposal details under Beads task
+`wilq-seo-aev`: target, review status, support, risk, blocked claims and
+`promotion_allowed=false` for both proposals. This lets Wilku inspect the
+private source candidates during UAT without opening another surface and
+without exposing raw private text.
+
 The `wilq-content-operator` non-interactive eval oracle is tightened under
 Beads task `wilq-seo-6ah`: output must include Service Profile and private
 proposal promotion markers (`/api/content/service-profile`,
