@@ -12,6 +12,14 @@ WILQ API pozostaje kanoniczne dla identyfikatorów dowodów, identyfikatory szan
 
 Pobierz `GET /api/ads/diagnostics` przed analizą Ads. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i użyj osadzonego `ads_diagnostics` jako consistency check, także opcjonalnego `blocked_handoff`. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego źródła danych, gdy gotowość ma znaczenie.
 
+Jeżeli użytkownik prosi o pełną kolejkę Ads albo miesza wiele obszarów naraz
+budżety, rekomendacje, kampanie, wyszukiwane hasła, wykluczenia i segmenty,
+pobierz `POST /api/codex/context-pack` z
+`{"skill":"wilq-ads-doctor","full_context":true}` albo oprzyj listę decyzji na
+pełnym `GET /api/ads/diagnostics`. Domyślny skillowy context-pack może być
+skompaktowany, więc nie wolno go opisywać jako pełnej kolejki, jeśli zawiera
+mniej decyzji niż `/api/ads/diagnostics`.
+
 Wymagane źródła danych:
 
 - `google_ads`
@@ -23,9 +31,9 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Akcje do sprawdzenia`, `Sprawdzenie w WILQ` i `Następny krok`. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans i identyfikatory akcji zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość źródeł danych, `blocked_handoff.status` jeśli istnieje, i znane blokady.
+1. `Status`: zasięg API, gotowość źródeł danych, świeżość ostatniego odczytu, `blocked_handoff.status` jeśli istnieje, i znane blokady. Jeśli odczyt jest stary, najpierw wskaż read-only refresh albo blokadę świeżości.
 2. `Dowody`: Ads diagnostics identyfikatorów sekcji, identyfikatory dowodów, identyfikatory źródeł danych, status ostatniego odczytu, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
-3. `Diagnoza`: co wspiera `/api/ads/diagnostics`, z niepewnością, jeśli dowody są zagregowane, stare, niepełne albo zablokowane przez OAuth. Używaj `allowed_metrics`, `missing_read_contracts` i `blocked_claims` z kontraktów API zamiast własnych reguł w opisie.
+3. `Diagnoza`: 3-5 priorytetów review w kolejności działania, nie dump wszystkich pól. Wyjaśnij krótko, co wspiera `/api/ads/diagnostics`, z niepewnością, jeśli dowody są zagregowane, stare, niepełne albo zablokowane przez OAuth. Używaj `allowed_metrics`, `missing_read_contracts` i `blocked_claims` z kontraktów API zamiast własnych reguł w opisie.
 4. `Akcje do sprawdzenia`: identyfikatory szans i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia. Akcje do sprawdzenia opisuj jako kolejkę sprawdzenia bezpieczeństwa, dopóki akcja nie ma wsparcia sprawdzonego w WILQ zapisu zmian, potwierdzenia i audytu.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.

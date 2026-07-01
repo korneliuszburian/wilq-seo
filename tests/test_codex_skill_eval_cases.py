@@ -126,7 +126,10 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "Google Ads",
                 "google_ads",
                 "ads_diagnostics",
+                "full_context",
                 "live_data_available",
+                "świeżość",
+                "priorytet",
                 "campaign",
                 "ads_review_budget_context",
                 "budget_pacing_read_contract",
@@ -660,6 +663,14 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
     assert '"ads_diagnostics": {' in ads_smoke_script
     assert "blocked_handoff" in ads_skill_doc
+    assert '"full_context":true' in ads_skill_doc
+    assert "Domyślny context-pack może być skompaktowany" in ads_skill_doc
+    assert "mniej decyzji niż `/api/ads/diagnostics`" in ads_skill_doc
+    assert "mode=vendor_read" in ads_skill_doc
+    assert "3-5 priorytetów review" in ads_skill_doc
+    assert '"full_context": True' in ads_smoke_script
+    assert "Full Ads context-pack decision_queue differs from endpoint" in ads_smoke_script
+    assert '"full_context_decision_count": len(full_pack_decision_queue)' in ads_smoke_script
     assert "Live Ads diagnostics must not expose OAuth blocked_handoff" in ads_smoke_script
     assert "Blocked Ads diagnostics must expose blocked_handoff" in ads_smoke_script
     ads_validation_call = (

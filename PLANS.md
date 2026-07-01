@@ -394,6 +394,12 @@ Stop and record a blocker if:
   audit and default `operator_usefulness_score >= 4`. Stale snapshots are not
   acceptable as final workflow value; skills must refresh, provide repair path
   or block conclusions before action.
+- 2026-07-01: `wilq-ads-doctor` hardened for BDOS-style operator usefulness:
+  broad Ads questions must handle freshness and use full diagnostics/full
+  context for the complete review queue, while final output should prioritize
+  3-5 review decisions instead of dumping every API field. Keyword Planner
+  remains blocked by Google Ads developer token permissible-use/access state,
+  not by WILQ credentials.
 
 ## Surprises & Discoveries
 

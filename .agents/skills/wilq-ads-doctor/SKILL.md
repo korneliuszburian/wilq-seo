@@ -33,9 +33,10 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy sprawdzaniu ścieżki skill/API.
 3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, zmarnowanego kosztu, wyszukiwanych haseł, jakości kampanii, rekomendacji lub wykluczających słów kluczowych.
 4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`, `budget_pacing_read_contract`, `recommendations_read_contract`, `impression_share_read_contract`, `change_history_read_contract`, `search_terms_read_contract`, `search_term_safety_read_contract`, `keyword_match_context_read_contract`, `keyword_planner_read_contract`, `custom_segments_read_contract`, `negative_keywords_read_contract`, ID akcji przeglądu kampanii i identyfikatory akcji.
-5. Endpointów refresh źródeł danych używaj tylko do jawnych odczytów danych i tylko gdy źródło danych jest skonfigurowane.
-6. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
-7. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
+5. Gdy użytkownik pyta szeroko o całą kolejkę Ads, czyli budżety, rekomendacje, wskaźniki kampanii, wyszukiwane hasła, wykluczenia i segmenty niestandardowe naraz, pobierz też `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor","full_context":true}` albo użyj pełnego `GET /api/ads/diagnostics` jako kompletnej kolejki decyzji. Domyślny context-pack może być skompaktowany i nie wolno go przedstawiać jako pełnej kolejki, jeśli ma mniej decyzji niż `/api/ads/diagnostics`.
+6. Jeśli ostatni odczyt Google Ads jest stary albo connector status wskazuje stale/requires_refresh, uruchom read-only refresh `POST /api/connectors/google_ads/refresh` z `mode=vendor_read`, o ile źródło danych jest skonfigurowane i użytkownik pyta o aktualny stan. Jeżeli refresh nie jest możliwy, zacznij odpowiedź od blokady świeżości i nie dawaj decyzji operacyjnych na podstawie starego snapshotu.
+7. Sprawdź istniejącą akcję przez `POST /api/actions/{action_id}/validate` przed rekomendacją zapisu zmian.
+8. W podstawowej odpowiedzi używaj polskich podsumowań dowodów i źródeł danych. Techniczne identyfikatory źródeł danych, dowodów, szans i akcji dodawaj tylko jako ślad techniczny, gdy API je udostępnia.
 
 </workflow>
 
@@ -92,6 +93,8 @@ Używaj kontraktów z `/api/ads/diagnostics` jako źródła prawdy:
 <output_contract>
 
 Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, akcje do sprawdzenia w WILQ, blokady i następne bezpieczne kroki.
+
+Szerokie pytania Ads odpowiadaj jak operator, nie jak eksport diagnostyki: najpierw 3-5 priorytetów review, potem najważniejsze blokady, a pełne listy decyzji/metryk streszczaj tylko wtedy, gdy użytkownik o nie prosi. Nie wypisuj wszystkich pól API, jeżeli nie zmieniają kolejności działania.
 
 Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. Identyfikatory API, identyfikatory źródeł danych, identyfikatory dowodów, identyfikatory szans, identyfikatory akcji, ścieżki endpointów i wartości enumów zostaw bez zmian.
 

@@ -17,7 +17,7 @@ VALIDATED_ACTION_IDS = [
     "act_prepare_custom_segments_from_search_terms",
     "act_prepare_negative_keyword_review_queue",
 ]
-MAX_CONTEXT_PACK_BYTES = 200_000
+MAX_CONTEXT_PACK_BYTES = 260_000
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -75,6 +75,12 @@ def main() -> int:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
     ads_diagnostics = request_json(args.api_base, "GET", "/api/ads/diagnostics")
+    full_pack = request_json(
+        args.api_base,
+        "POST",
+        "/api/codex/context-pack",
+        {"skill": SKILL_NAME, "full_context": True},
+    )
     if ads_diagnostics.get("language") != "pl-PL":
         raise SystemExit("Ads diagnostics language must be pl-PL")
     if not isinstance(ads_diagnostics.get("sections"), list) or not ads_diagnostics["sections"]:
@@ -127,6 +133,13 @@ def main() -> int:
     custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
+    full_pack_decision_queue = full_pack.get("ads_diagnostics", {}).get("decision_queue") or []
+    endpoint_decision_ids = [decision.get("id") for decision in decision_queue]
+    full_pack_decision_ids = [decision.get("id") for decision in full_pack_decision_queue]
+    if full_pack_decision_ids != endpoint_decision_ids:
+        raise SystemExit("Full Ads context-pack decision_queue differs from endpoint")
+    if len(pack_decision_queue) > len(decision_queue):
+        raise SystemExit("Default Ads context-pack decision_queue cannot exceed endpoint")
     validate_context_lineage(pack)
     pack_optimizer_readiness_contract = (
         pack.get("ads_diagnostics", {}).get("optimizer_readiness_contract") or {}
@@ -1023,6 +1036,8 @@ def main() -> int:
                 "action_count": len(pack.get("active_action_objects") or []),
                 "action_validations": action_validations,
                 "context_pack_bytes": pack_bytes,
+                "context_pack_decision_count": len(pack_decision_queue),
+                "full_context_decision_count": len(full_pack_decision_queue),
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

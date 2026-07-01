@@ -185,6 +185,13 @@ API status later contradicts this state.
   non-interactive threshold `operator_usefulness_score >= 4`. Freshness handling
   is part of the gate: stale connector snapshots require refresh, repair path or
   blocker before recommendation.
+- `wilq-ads-doctor` was tightened after a fresh Ads read
+  `refresh_google_ads_be7011a4a261`: broad Ads prompts now require freshness
+  handling and either full `GET /api/ads/diagnostics` or
+  `context-pack full_context=true` before claiming a full review queue. The
+  smoke proves default context-pack has 5 compacted decisions while full context
+  has all 14 diagnostics decisions; non-interactive eval passed with
+  `operator_usefulness_score=4`.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private
