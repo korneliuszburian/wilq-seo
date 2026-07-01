@@ -60,6 +60,15 @@ Private review actions:
 Obie akcje mają ten sam warunek bezpieczeństwa: to nie promuje private proposal
 do source fact ani knowledge card.
 
+Promotion checklist dla private proposals:
+
+- status: `promotion_ready=false`;
+- powód blokady: brak zatwierdzenia człowieka i reviewed source fact;
+- przed reviewed source fact Wilku/owner musi potwierdzić realną ofertę,
+  zgodzić się na redacted/source-safe fact, wskazać claimy dozwolone,
+  review-required i zakazane, a WILQ musi zapisać reviewer/freshness/confidence/
+  lineage oraz przejść focused eval.
+
 ## Kandydaci z kolejki
 
 ### GA4 tracking gap

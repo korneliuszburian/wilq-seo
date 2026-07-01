@@ -113,6 +113,9 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "candidate_count": private_summary.get("candidate_count"),
             "review_required_count": private_summary.get("review_required_count"),
             "approved_count": private_summary.get("approved_count"),
+            "promotion_ready": private_summary.get("promotion_ready"),
+            "promotion_blocked_reason": private_summary.get("promotion_blocked_reason"),
+            "promotion_checklist": private_summary.get("promotion_checklist") or [],
             "redacted": private_summary.get("redacted"),
         },
         "private_review_actions": private_review_actions,
@@ -303,6 +306,17 @@ def main() -> int:
     print(f"- production-depth: {service_profile_md['production_depth_ready']}")
     print(f"- status: {service_profile_md['status_label']}")
     print(f"- następny krok: {service_profile_md['safe_next_step']}")
+    private_proposals = service_profile_md.get("private_source_proposals")
+    if isinstance(private_proposals, dict):
+        print(f"- promocja private proposals: {private_proposals.get('promotion_ready')}")
+        blocked_reason = private_proposals.get("promotion_blocked_reason")
+        if blocked_reason:
+            print(f"- blokada promocji: {blocked_reason}")
+        promotion_checklist = private_proposals.get("promotion_checklist")
+        if isinstance(promotion_checklist, list) and promotion_checklist:
+            print("- warunki przed reviewed source fact:")
+            for item in promotion_checklist:
+                print(f"  - {item}")
     gaps = service_profile_md.get("coverage_gaps")
     if isinstance(gaps, list) and gaps:
         print("- luki:")

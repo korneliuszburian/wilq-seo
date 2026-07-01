@@ -212,6 +212,12 @@ actions inside the existing UAT harness. Live proof on 2026-07-01 returned
 Service Profile gaps and two private review actions. This is UAT preparation,
 not proof that Wilku completed the session.
 
+The UAT packet now also exposes the Service Profile private proposal promotion
+checklist under Beads task `wilq-seo-0pk`: `promotion_ready=false`, blocked
+reason and five required conditions before reviewed source facts. This keeps
+Wilku's UAT packet aligned with the Service Profile view model after the
+promotion-checklist slice.
+
 The first Wilku-ready handoff for Goal 005 UAT is prepared at
 `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` under Beads task
 `wilq-seo-w8o`. It is a normal review artifact generated from live UAT packet
