@@ -238,6 +238,16 @@ proposal promotion markers (`/api/content/service-profile`,
 skill smoke now also fetches `GET /api/marketing/brief` and exposes
 `brief_items`, so blocked queue runs still carry route-level marketing context.
 
+The same `wilq-content-operator` eval is hardened further under Beads task
+`wilq-seo-0aj`: actionable output must now surface Claim Ledger / generation
+gate markers (`Claim Ledger`, `claims_allowed`, `claim_markers`,
+`unsupported_claim_used`, `claim_missing_required_evidence`). This is an eval
+quality bar only; it does not add a new content flow or bypass the existing WILQ
+API claim gates. Targeted non-interactive proof passed at
+`.local-lab/evals/codex-skill/20260701T221439Z/summary.json` with
+`operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs, 2 recommendations
+and 6 action candidates.
+
 The first Wilku-ready handoff for Goal 005 UAT is prepared at
 `docs/handoffs/2026-07-01-wilku-content-uat-ready.md` under Beads task
 `wilq-seo-w8o`. It is a normal review artifact generated from live UAT packet

@@ -244,6 +244,15 @@ API status later contradicts this state.
   Its smoke script now fetches `GET /api/marketing/brief` and returns
   `brief_items` even when the live queue is blocked, keeping route context
   available for Codex evals.
+- The `wilq-content-operator` non-interactive eval now also requires explicit
+  Claim Ledger / generation-gate markers in actionable output: `Claim Ledger`,
+  `claims_allowed`, `claim_markers`, `unsupported_claim_used` and
+  `claim_missing_required_evidence`. This keeps operator answers from passing
+  with generic content workflow prose that does not surface claim safety.
+  Targeted proof passed at
+  `.local-lab/evals/codex-skill/20260701T221439Z/summary.json` with
+  `operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs,
+  2 recommendations and 6 action candidates.
 - The Codex skill eval harness now supports `required_decision_terms_pl`; these
   markers must appear in actionable output, not only in `notes`. The hardened
   `wilq-content-operator` eval passed at

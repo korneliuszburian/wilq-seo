@@ -6642,3 +6642,34 @@ Result:
   `destructive_update_blocked=true` and measurement outcome `not_ready`.
 - UAT harness produced a live 5-item Wilku packet with one blocked Ahrefs
   candidate and four refresh candidates backed by GSC and WordPress evidence.
+
+## 2026-07-01 - content-operator Claim Ledger eval hardening
+
+Purpose:
+
+- Raise the `wilq-content-operator` non-interactive eval from generic workflow
+  narration to explicit Claim Ledger / generation-gate handling.
+- Require actionable output to surface `Claim Ledger`, `claims_allowed`,
+  `claim_markers`, `unsupported_claim_used` and
+  `claim_missing_required_evidence`.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python scripts/audit_skill_eval_coverage.py --strict
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Static eval coverage stayed clean: 13 WILQ skills, zero hard gaps, zero
+  warnings.
+- Targeted non-interactive proof passed at
+  `.local-lab/evals/codex-skill/20260701T221439Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=true`, 6 evidence IDs,
+  2 recommendations and 6 action candidates.
+- The generated operator answer explicitly included Claim Ledger,
+  `claims_allowed`, `claim_markers`, `claims_used`, Generation Gate,
+  `unsupported_claim_used` and `claim_missing_required_evidence` while keeping
+  publishing, final article, SEO success and revenue claims blocked.
