@@ -15791,6 +15791,8 @@ def test_gsc_vendor_read_uses_search_analytics(
         lambda scopes: "gsc-access-token",
     )
 
+    seen_requests: list[dict[str, Any]] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "searchconsole.googleapis.com"
         assert (
@@ -15798,10 +15800,56 @@ def test_gsc_vendor_read_uses_search_analytics(
         )
         assert request.headers["authorization"] == "Bearer gsc-access-token"
         body = json.loads(request.content.decode())
-        assert body["dimensions"] == ["query", "page"]
-        assert body["rowLimit"] == 10
         assert "startDate" in body
         assert "endDate" in body
+        seen_requests.append(body)
+        if body["dimensions"] == ["date"]:
+            assert body["rowLimit"] == 10
+            return httpx.Response(
+                200,
+                json={
+                    "rows": [
+                        {
+                            "keys": ["2026-06-27"],
+                            "clicks": 10,
+                            "impressions": 100,
+                            "ctr": 0.1,
+                            "position": 5.0,
+                        },
+                        {
+                            "keys": ["2026-06-28"],
+                            "clicks": 12,
+                            "impressions": 120,
+                            "ctr": 0.1,
+                            "position": 4.5,
+                        },
+                    ]
+                },
+            )
+        assert body["dimensions"] == ["query", "page"]
+        assert body["rowLimit"] == 250
+        assert body["startDate"] == "2026-06-28"
+        assert body["endDate"] == "2026-06-28"
+        if body["startRow"] == 0:
+            return httpx.Response(
+                200,
+                json={
+                    "rows": [
+                        {
+                            "keys": [
+                                f"odpady przemysłowe {index}",
+                                f"https://ekologus.pl/oferta/{index}/",
+                            ],
+                            "clicks": 1,
+                            "impressions": 10,
+                            "ctr": 0.1,
+                            "position": 4.5,
+                        }
+                        for index in range(250)
+                    ]
+                },
+            )
+        assert body["startRow"] == 250
         return httpx.Response(
             200,
             json={
@@ -15825,16 +15873,31 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.status == ConnectorRefreshStatus.completed
     assert result.external_call_attempted is True
     assert result.vendor_data_collected is True
-    assert result.metric_summary["row_count"] == 1
-    assert result.metric_summary["clicks"] == 12
-    assert result.metric_summary["impressions"] == 120
+    assert result.metric_summary["row_count"] == 251
+    assert result.metric_summary["clicks"] == 262
+    assert result.metric_summary["impressions"] == 2620
     assert result.metric_summary["ctr"] == 0.1
     assert result.metric_summary["average_position"] == 4.5
+    assert result.metric_summary["date_start"] == "2026-06-28"
+    assert result.metric_summary["date_end"] == "2026-06-28"
+    assert result.metric_summary["data_availability_checked"] == "true"
+    assert result.metric_summary["date_availability_status"] == "available"
+    assert result.metric_summary["availability_date_start"] <= "2026-06-28"
+    assert result.metric_summary["availability_date_end"] >= "2026-06-28"
+    assert result.metric_summary["query_page_row_limit"] == 250
+    assert result.metric_summary["query_page_max_rows"] == 1000
+    assert result.metric_summary["query_page_rows_truncated"] == "false"
+    assert [request["dimensions"] for request in seen_requests] == [
+        ["date"],
+        ["query", "page"],
+        ["query", "page"],
+    ]
+    assert [request.get("startRow") for request in seen_requests[1:]] == [0, 250]
     assert result.metric_facts[0].name == "clicks"
-    assert result.metric_facts[0].value == 12
+    assert result.metric_facts[0].value == 1
     assert result.metric_facts[0].dimensions == {
-        "query": "odpady przemysłowe",
-        "page": "https://ekologus.pl/oferta/",
+        "query": "odpady przemysłowe 0",
+        "page": "https://ekologus.pl/oferta/0/",
     }
 
 

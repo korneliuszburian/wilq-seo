@@ -265,6 +265,11 @@ API status later contradicts this state.
   guides are tracked as the wider GSC source beyond query/page metrics; WILQ GSC
   reads must account for date availability checks, typical 2-3 day delay,
   `rowLimit`/`startRow` paging and partial-detail caveats.
+- Google Search Console vendor read now implements the first official
+  Search Analytics pattern: it checks available dates with `dimensions=["date"]`,
+  selects the latest available day, then reads `query,page` facts through
+  bounded `rowLimit`/`startRow` paging. The adapter records availability and
+  paging metadata instead of pretending a stale or missing day is complete data.
 - User noted a separate private `krn-ekologus-brain` project and internal
   Ekologus knowledge bases. This is recorded as potential future source context
   only. It is not an active WILQ SEO integration and must not pull private

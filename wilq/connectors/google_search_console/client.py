@@ -13,6 +13,9 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
 GSC_READONLY_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
 GSC_API_BASE = "https://searchconsole.googleapis.com/webmasters/v3"
+GSC_AVAILABILITY_LOOKBACK_DAYS = 10
+GSC_QUERY_PAGE_ROW_LIMIT = 250
+GSC_QUERY_PAGE_MAX_ROWS = 1000
 
 
 def refresh_search_console_site_summary(
@@ -70,28 +73,75 @@ def _fetch_site_summary(
     site_url: str,
     access_token: str,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    date_start, date_end = _default_date_range()
-    response = client.post(
-        f"{GSC_API_BASE}/sites/{quote(site_url, safe='')}/searchAnalytics/query",
-        headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+    availability_start, availability_end = _default_availability_range()
+    endpoint = f"{GSC_API_BASE}/sites/{quote(site_url, safe='')}/searchAnalytics/query"
+    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    availability_response = client.post(
+        endpoint,
+        headers=headers,
         json={
-            "startDate": date_start,
-            "endDate": date_end,
-            "dimensions": ["query", "page"],
-            "rowLimit": 10,
+            "startDate": availability_start,
+            "endDate": availability_end,
+            "dimensions": ["date"],
+            "rowLimit": GSC_AVAILABILITY_LOOKBACK_DAYS,
         },
     )
-    response.raise_for_status()
+    availability_response.raise_for_status()
+    available_date = _latest_available_date(availability_response.json())
+    if available_date is None:
+        return (
+            {
+                "api": "search_console_search_analytics",
+                "date_start": availability_start,
+                "date_end": availability_end,
+                "row_count": 0,
+                "clicks": 0,
+                "impressions": 0,
+                "ctr": 0.0,
+                "average_position": 0.0,
+                "data_availability_checked": "true",
+                "date_availability_status": "no_available_date",
+                "availability_date_start": availability_start,
+                "availability_date_end": availability_end,
+                "query_page_row_limit": GSC_QUERY_PAGE_ROW_LIMIT,
+                "query_page_max_rows": GSC_QUERY_PAGE_MAX_ROWS,
+                "query_page_rows_truncated": "false",
+            },
+            [],
+        )
+    rows: list[dict[str, Any]] = []
+    start_row = 0
+    while start_row < GSC_QUERY_PAGE_MAX_ROWS:
+        response = client.post(
+            endpoint,
+            headers=headers,
+            json={
+                "startDate": available_date,
+                "endDate": available_date,
+                "dimensions": ["query", "page"],
+                "rowLimit": GSC_QUERY_PAGE_ROW_LIMIT,
+                "startRow": start_row,
+            },
+        )
+        response.raise_for_status()
+        page_rows = _payload_rows(response.json())
+        rows.extend(page_rows)
+        if len(page_rows) < GSC_QUERY_PAGE_ROW_LIMIT:
+            break
+        start_row += GSC_QUERY_PAGE_ROW_LIMIT
     return _summarize_search_analytics_response(
-        response.json(),
-        date_start=date_start,
-        date_end=date_end,
+        {"rows": rows[:GSC_QUERY_PAGE_MAX_ROWS]},
+        date_start=available_date,
+        date_end=available_date,
+        availability_date_start=availability_start,
+        availability_date_end=availability_end,
+        rows_truncated=len(rows) >= GSC_QUERY_PAGE_MAX_ROWS,
     )
 
 
-def _default_date_range() -> tuple[str, str]:
+def _default_availability_range() -> tuple[str, str]:
     end = datetime.now(UTC).date() - timedelta(days=1)
-    start = end - timedelta(days=27)
+    start = end - timedelta(days=GSC_AVAILABILITY_LOOKBACK_DAYS - 1)
     return start.isoformat(), end.isoformat()
 
 
@@ -100,10 +150,11 @@ def _summarize_search_analytics_response(
     *,
     date_start: str,
     date_end: str,
+    availability_date_start: str | None = None,
+    availability_date_end: str | None = None,
+    rows_truncated: bool = False,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    rows = payload.get("rows", []) if isinstance(payload, dict) else []
-    if not isinstance(rows, list):
-        rows = []
+    rows = _payload_rows(payload)
     clicks = 0
     impressions = 0
     weighted_position = 0.0
@@ -140,9 +191,34 @@ def _summarize_search_analytics_response(
             "impressions": impressions,
             "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
             "average_position": round(weighted_position / impressions, 4) if impressions else 0.0,
+            "data_availability_checked": "true",
+            "date_availability_status": "available",
+            "availability_date_start": availability_date_start or date_start,
+            "availability_date_end": availability_date_end or date_end,
+            "query_page_row_limit": GSC_QUERY_PAGE_ROW_LIMIT,
+            "query_page_max_rows": GSC_QUERY_PAGE_MAX_ROWS,
+            "query_page_rows_truncated": str(rows_truncated).lower(),
         },
         metric_facts,
     )
+
+
+def _payload_rows(payload: Any) -> list[dict[str, Any]]:
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _latest_available_date(payload: Any) -> str | None:
+    available_dates: list[str] = []
+    for row in _payload_rows(payload):
+        keys = row.get("keys", [])
+        if isinstance(keys, list) and keys and isinstance(keys[0], str) and keys[0]:
+            available_dates.append(keys[0])
+    if not available_dates:
+        return None
+    return max(available_dates)
 
 
 def _http_failure_result(exc: httpx.HTTPStatusError) -> VendorReadResult:

@@ -217,6 +217,12 @@ claims, human-review claim types without a reviewer, or measurement-dependent
 claim types without measurement. The existing draft, quality review and
 publish-ready paths inherit this gate through `claim_ledger_blockers`.
 
+Google Search Console vendor read is aligned with the first official
+Search Analytics ingestion pattern under Beads task `wilq-seo-kr8`: check
+available dates first, use the latest available day for detailed query/page
+facts, page with `rowLimit`/`startRow`, and keep the stored result bounded and
+sanitized.
+
 ## In Scope
 
 Goal 005 includes:
