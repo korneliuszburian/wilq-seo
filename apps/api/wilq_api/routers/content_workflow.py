@@ -16,6 +16,8 @@ from wilq.content.workflow.api import (
     ContentWorkItemPreflightResponse,
     ContentWorkItemQualityReviewRequest,
     ContentWorkItemQualityReviewResponse,
+    ContentWorkItemRevisionPlanRequest,
+    ContentWorkItemRevisionPlanResponse,
     ContentWorkItemSalesBriefRequest,
     ContentWorkItemSalesBriefResponse,
     ContentWorkItemSnapshotAuditRequest,
@@ -38,6 +40,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_measurement_window_response,
     build_content_work_item_preflight_response,
     build_content_work_item_quality_review_response,
+    build_content_work_item_revision_plan_response,
     build_content_work_item_sales_brief_response,
     build_content_work_item_snapshot_audit_response,
     build_content_work_item_snapshot_human_review_response,
@@ -232,6 +235,16 @@ def content_work_item_quality_review(
     request: ContentWorkItemQualityReviewRequest,
 ) -> ContentWorkItemQualityReviewResponse:
     return build_content_work_item_quality_review_response(request)
+
+
+@router.post(
+    "/api/content/work-items/revision-plan",
+    response_model=ContentWorkItemRevisionPlanResponse,
+)
+def content_work_item_revision_plan(
+    request: ContentWorkItemRevisionPlanRequest,
+) -> ContentWorkItemRevisionPlanResponse:
+    return build_content_work_item_revision_plan_response(request)
 
 
 @router.post(

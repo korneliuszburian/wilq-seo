@@ -70,6 +70,10 @@ from wilq.content.quality.review import (
     ContentQualityReview,
     build_content_quality_review,
 )
+from wilq.content.quality.revision import (
+    ContentRevisionPlan,
+    build_content_revision_plan,
+)
 from wilq.content.review.human import (
     ContentHumanReview,
     ContentHumanReviewBlocker,
@@ -174,6 +178,16 @@ class ContentWorkItemQualityReviewRequest(BaseModel):
 class ContentWorkItemQualityReviewResponse(BaseModel):
     item: ContentWorkItem
     quality_review: ContentQualityReview
+
+
+class ContentWorkItemRevisionPlanRequest(BaseModel):
+    item: ContentWorkItem
+    quality_review: ContentQualityReview | None = None
+
+
+class ContentWorkItemRevisionPlanResponse(BaseModel):
+    item: ContentWorkItem
+    revision_plan: ContentRevisionPlan
 
 
 class ContentWorkItemHumanReviewRequest(BaseModel):
@@ -391,6 +405,18 @@ def build_content_work_item_quality_review_response(
             claim_ledger=request.claim_ledger,
             sales_brief=request.sales_brief,
             duplicate_risk=request.duplicate_risk,
+        ),
+    )
+
+
+def build_content_work_item_revision_plan_response(
+    request: ContentWorkItemRevisionPlanRequest,
+) -> ContentWorkItemRevisionPlanResponse:
+    return ContentWorkItemRevisionPlanResponse(
+        item=request.item,
+        revision_plan=build_content_revision_plan(
+            item=request.item,
+            quality_review=request.quality_review,
         ),
     )
 

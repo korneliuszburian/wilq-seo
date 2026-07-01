@@ -108,6 +108,12 @@ API status later contradicts this state.
   measurement windows; weak CTA returns revision instructions instead of a fake
   SEO score. The first version is schema/rule-based and does not use an LLM
   judge.
+- Goal 003 revision plan slice `wilq-seo-56w` is closed.
+  `POST /api/content/work-items/revision-plan` turns `ContentQualityReview`
+  findings into bounded revision instructions. It allows only explicit
+  `needs_changes` fixes, returns `no_changes_needed` for clean drafts and stays
+  blocked when quality review has hard blockers such as missing measurement,
+  claim risk or duplicate/canonical risk.
 - Goal 002 anti-slop baseline proof lives in
   `docs/handoffs/2026-06-30-goal-002-anti-slop-baseline.md`.
 - `scripts/audit_complexity.py` now reports Python LOC, largest files,

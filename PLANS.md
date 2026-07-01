@@ -1116,6 +1116,11 @@ Current outcome:
   The review blocks missing evidence mapping, forbidden claims, publish-ready
   draft packages, unresolved duplicate risk and missing measurement windows.
   Weak CTA produces typed revision instructions, not an SEO score or LLM judge.
+- Goal 003 revision plan slice `wilq-seo-56w` is closed.
+  `wilq/content/quality/revision.py` adds a bounded `ContentRevisionPlan`, and
+  the API exposes it at `POST /api/content/work-items/revision-plan`. It allows
+  only explicit fixes from `needs_changes`, returns `no_changes_needed` for a
+  clean quality review and refuses to bypass hard blockers from quality review.
 
 Current risk:
 

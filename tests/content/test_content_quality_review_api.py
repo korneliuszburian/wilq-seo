@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Any
+from typing import Any, cast
 
 from fastapi.testclient import TestClient
 
@@ -98,6 +98,72 @@ def test_content_quality_review_returns_revision_instruction_for_weak_cta() -> N
     assert review["revision_instructions"]
 
 
+def test_content_revision_plan_allows_only_bounded_changes_for_needs_changes() -> None:
+    payload = _quality_payload()
+    payload["structured_output"]["cta"] = "kliknij tutaj"
+    review = _quality_review(payload)
+
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-plan",
+        json={
+            "item": payload["item"],
+            "quality_review": review,
+        },
+    )
+
+    assert response.status_code == 200
+    plan = response.json()["revision_plan"]
+    assert plan["status"] == "ready"
+    assert plan["draft_revision_allowed"] is True
+    assert plan["blockers"] == []
+    assert plan["instructions"][0]["change"] == "Dopisz konkretne CTA bez obietnicy wyniku."
+    assert plan["safe_next_step"] == (
+        "Wykonaj tylko wskazane poprawki i uruchom ocenę jakości ponownie."
+    )
+
+
+def test_content_revision_plan_blocks_when_quality_review_is_blocked() -> None:
+    payload = _quality_payload()
+    payload["item"]["measurement_window_status"] = "missing"
+    payload["item"]["measurement_window_id"] = None
+    review = _quality_review(payload)
+
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-plan",
+        json={
+            "item": payload["item"],
+            "quality_review": review,
+        },
+    )
+
+    assert response.status_code == 200
+    plan = response.json()["revision_plan"]
+    assert plan["status"] == "blocked"
+    assert plan["draft_revision_allowed"] is False
+    assert [blocker["code"] for blocker in plan["blockers"]] == ["quality_review_blocked"]
+    assert "measurement" in plan["safe_next_step"].lower()
+
+
+def test_content_revision_plan_skips_when_no_changes_are_needed() -> None:
+    payload = _quality_payload()
+    review = _quality_review(payload)
+
+    response = TestClient(app).post(
+        "/api/content/work-items/revision-plan",
+        json={
+            "item": payload["item"],
+            "quality_review": review,
+        },
+    )
+
+    assert response.status_code == 200
+    plan = response.json()["revision_plan"]
+    assert plan["status"] == "no_changes_needed"
+    assert plan["draft_revision_allowed"] is False
+    assert plan["instructions"] == []
+    assert plan["blockers"] == []
+
+
 def _quality_payload() -> dict[str, Any]:
     snapshot = TestClient(app).get("/api/content/work-items/snapshot").json()
     item = deepcopy(snapshot["structured_generation"]["item"])
@@ -113,6 +179,13 @@ def _quality_payload() -> dict[str, Any]:
         "structured_output": _structured_output(model_input),
         "duplicate_risk": "clear",
     }
+
+
+def _quality_review(payload: dict[str, Any]) -> dict[str, Any]:
+    response = TestClient(app).post("/api/content/work-items/quality-review", json=payload)
+    assert response.status_code == 200
+    data = cast(dict[str, Any], response.json())
+    return cast(dict[str, Any], data["quality_review"])
 
 
 def _claim_ledger(item: dict[str, Any]) -> dict[str, Any]:
