@@ -240,6 +240,14 @@ actions inside the existing UAT harness. Live proof on 2026-07-01 returned
 Service Profile gaps and two private review actions. This is UAT preparation,
 not proof that Wilku completed the session.
 
+Under Beads task `wilq-seo-0ff`, the same UAT packet now separates public
+service-card review requests from private proposal review requests. Live proof
+on 2026-07-02 returned 6 `public_service_review_actions`, 2
+`private_review_actions`, 10 total Service Profile review actions and explicit
+UAT blockers for public service review, private proposal review and
+non-production-depth readiness. This keeps the Wilku handoff concrete without
+creating a separate endpoint or promoting source facts automatically.
+
 Goal 005 dashboard typecheck is restored under Beads task `wilq-seo-ttb`.
 Stale test fixtures now use the current typed `ContentWorkItem` and structured
 draft generation contract, including `knowledge_constraints`, so the dashboard

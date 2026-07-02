@@ -80,7 +80,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       review_required_label:
         "Wiedza review-required może wspierać analizę i UAT, ale nie odblokowuje production-depth treści.",
       blocked_write_reason:
-        "Edycja kart i promocja faktów wymagają osobnego ActionObject, review człowieka i audytu."
+        "Edycja kart i promocja faktów wymagają osobnej zatwierdzonej akcji, review człowieka i audytu."
     },
     production_depth_readiness: {
       status: "source_backed_review_required",

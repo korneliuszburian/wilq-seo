@@ -82,6 +82,24 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
         for gap in as_list(profile.get("coverage_gaps"))
         if isinstance(gap, dict)
     ]
+    review_actions = [
+        action
+        for action in as_list(profile.get("review_actions"))
+        if isinstance(action, dict)
+    ]
+    public_service_review_actions = [
+        {
+            "action_id": action.get("action_id"),
+            "label": action.get("label"),
+            "reason": action.get("reason"),
+            "blocked_write_claim": action.get("blocked_write_claim"),
+            "required_human_role": action.get("required_human_role"),
+            "target_card_id": action.get("target_card_id"),
+            "mode": action.get("mode"),
+        }
+        for action in review_actions
+        if str(action.get("action_id") or "").startswith("service_profile_review_card_")
+    ]
     private_review_actions = [
         {
             "action_id": action.get("action_id"),
@@ -90,12 +108,10 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "blocked_write_claim": action.get("blocked_write_claim"),
             "required_human_role": action.get("required_human_role"),
             "target_card_id": action.get("target_card_id"),
+            "mode": action.get("mode"),
         }
-        for action in as_list(profile.get("review_actions"))
-        if isinstance(action, dict)
-        and str(action.get("action_id") or "").startswith(
-            "service_profile_review_private_proposal_"
-        )
+        for action in review_actions
+        if str(action.get("action_id") or "").startswith("service_profile_review_private_proposal_")
     ]
     private_proposal_details = [
         {
@@ -139,6 +155,15 @@ def service_profile_uat_summary(api_base: str) -> dict[str, Any]:
             "redacted": private_summary.get("redacted"),
         },
         "private_proposal_details": private_proposal_details,
+        "review_action_summary": {
+            "total_count": len(review_actions),
+            "public_service_review_count": len(public_service_review_actions),
+            "private_review_count": len(private_review_actions),
+            "review_request_count": sum(
+                1 for action in review_actions if action.get("mode") == "review_request"
+            ),
+        },
+        "public_service_review_actions": public_service_review_actions,
         "private_review_actions": private_review_actions,
     }
 
@@ -217,6 +242,8 @@ def uat_readiness(
         blockers.append("brak gotowego itemu contentowego bez blockerów")
     if service_profile.get("production_depth_ready") is not True:
         blockers.append("Service Profile nie jest production-depth")
+    if service_profile.get("public_service_review_actions"):
+        blockers.append("publiczne karty usług wymagają review Wilka/ownera")
     if service_profile.get("private_review_actions"):
         blockers.append("prywatne propozycje wymagają review Wilka/ownera")
     if queue.get("queue_status") == "blocked":
@@ -274,8 +301,8 @@ def main() -> int:
         "items": items,
         "uat_tasks": [
             (
-                "Sprawdź Service Profile: powiedz, które luki i private review "
-                "actions blokują production-depth."
+                "Sprawdź Service Profile: powiedz, które luki, public service review "
+                "actions i private review actions blokują production-depth."
             ),
             "Wybierz jeden item, który da się odświeżyć albo scalić bez tworzenia duplikatu.",
             "Wskaż blocker, który jasno mówi, dlaczego nie wolno jeszcze pisać.",
@@ -291,6 +318,7 @@ def main() -> int:
             "Brak evidence ID oznacza brak rekomendacji.",
             "Brak source connector oznacza brak rekomendacji.",
             "Review-required wiedza może wspierać UAT, ale nie odblokowuje production-depth.",
+            "Public service review action nie promuje faktu ani karty wiedzy.",
             "Private proposal review action nie promuje faktu ani karty wiedzy.",
             "Dev URL nie jest canonical ani SEO evidence.",
             "WordPress pozostaje draft-only albo podgląd zmian.",
@@ -327,6 +355,14 @@ def main() -> int:
     print(f"- production-depth: {service_profile_md['production_depth_ready']}")
     print(f"- status: {service_profile_md['status_label']}")
     print(f"- następny krok: {service_profile_md['safe_next_step']}")
+    review_action_summary = service_profile_md.get("review_action_summary")
+    if isinstance(review_action_summary, dict):
+        print(
+            "- akcje review: "
+            f"{review_action_summary.get('total_count')} razem, "
+            f"{review_action_summary.get('public_service_review_count')} publicznych usług, "
+            f"{review_action_summary.get('private_review_count')} prywatnych propozycji"
+        )
     private_proposals = service_profile_md.get("private_source_proposals")
     if isinstance(private_proposals, dict):
         print(f"- promocja private proposals: {private_proposals.get('promotion_ready')}")
@@ -364,6 +400,16 @@ def main() -> int:
                 print(
                     f"  - `{raw_gap.get('gap_id')}`: {raw_gap.get('label')} "
                     f"({raw_gap.get('severity')})"
+                )
+    public_actions = service_profile_md.get("public_service_review_actions")
+    if isinstance(public_actions, list) and public_actions:
+        print("- public service review actions:")
+        for raw_action in public_actions:
+            if isinstance(raw_action, dict):
+                print(
+                    f"  - `{raw_action.get('action_id')}` "
+                    f"({raw_action.get('target_card_id')}): "
+                    f"{raw_action.get('label')} -> {raw_action.get('blocked_write_claim')}"
                 )
     actions = service_profile_md.get("private_review_actions")
     if isinstance(actions, list) and actions:

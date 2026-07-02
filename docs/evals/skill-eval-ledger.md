@@ -6791,3 +6791,33 @@ Result:
   claims blocked.
 - The final operator-facing JSON no longer leaked the technical term
   `ActionObject`.
+
+## 2026-07-02 - content-operator Service Profile review action UAT packet
+
+Purpose:
+
+- Keep the `wilq-content-operator` UAT packet aligned with Service Profile after
+  public per-service review actions were added.
+- Show Wilku public service-card review requests and private proposal review
+  requests as separate buckets, without adding another endpoint or promoting
+  facts automatically.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_wilq_content_operator_skill.py -q
+uv run ruff check .agents/skills/wilq-content-operator/scripts/build_uat_packet.py tests/test_wilq_content_operator_skill.py
+uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5 --format json
+uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000 --require-uat-queue
+git diff --check
+```
+
+Result:
+
+- Focused pytest passed: 2 tests, including a unit proof that public and private
+  review actions are separated in the packet summary.
+- Live UAT packet returned `public_service_review_count=6`,
+  `private_review_count=2`, `review_request_count=9` and `total_count=10`.
+- Full UAT remains blocked by non-production-depth Service Profile, public
+  service review, private proposal review and blocked queue state. This is UAT
+  preparation, not human UAT completion.

@@ -210,8 +210,8 @@ def content_service_profile_response() -> ContentServiceProfileResponse:
                 "ale nie odblokowuje production-depth treści."
             ),
             blocked_write_reason=(
-                "Edycja kart i promocja faktów wymagają osobnego ActionObject, "
-                "review człowieka i audytu."
+                "Edycja kart i promocja faktów wymagają osobnej zatwierdzonej "
+                "akcji, review człowieka i audytu."
             ),
         ),
         production_depth_readiness=knowledge.production_depth_readiness,
@@ -480,7 +480,7 @@ def _review_actions(
                     ),
                     blocked_write_claim=(
                         "To nie promuje source fact ani knowledge card; "
-                        "potrzebny jest osobny ActionObject i audyt."
+                        "potrzebna jest osobna zatwierdzona akcja i audyt."
                     ),
                     required_human_role="Wilku albo owner wiedzy Ekologus",
                     target_card_id=card.id,

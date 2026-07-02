@@ -184,7 +184,11 @@ API status later contradicts this state.
   `promotion_ready=false`, the promotion blocked reason and the 5-item
   promotion checklist from Service Profile. Live proof on 2026-07-02 added
   `private_proposal_details`: 2 redacted details with support/risk/blocked
-  claims and `promotion_allowed=false`. This prepares Goal 005 UAT without
+  claims and `promotion_allowed=false`. A later 2026-07-02 proof now also
+  separates `public_service_review_actions` from `private_review_actions`:
+  6 public service-card reviews, 2 private proposal reviews, 10 review actions
+  total, and UAT blockers for public service review, private proposal review
+  and non-production-depth Service Profile. This prepares Goal 005 UAT without
   claiming that Wilku completed the session.
 - Goal 005 dashboard verification gate is restored: stale dashboard test
   fixtures now satisfy the current `ContentWorkItem` and structured draft
