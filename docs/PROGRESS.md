@@ -362,6 +362,14 @@ API status later contradicts this state.
   a non-blocked recommendation label, so the skill output contract now keeps
   audience/return/performance/write claims in blocker fields instead of segment
   recommendation copy.
+- `wilq-demand-gen-operator` now has a live non-interactive blocker proof at
+  `.local-lab/evals/codex-skill/20260702T015421Z/summary.json`. Result:
+  `operator_usefulness_score=4`, `blocked=true`, all hard gates true, no
+  failure tags, 8 evidence IDs, 0 recommendations and validated
+  `act_review_demand_gen_readiness`. Manual inspection of an earlier passing
+  run found a malformed top-level evidence ID with whitespace, so
+  `scripts/codex_skill_eval.sh` now rejects whitespace/empty identifiers in
+  top-level lineage IDs and action IDs.
   The Ads case blocks CPA, ROAS, budget scaling, recommendation writes,
   campaign writes and negative-keyword writes without full review/audit while
   avoiding brittle exact wording for areas already proven by validated actions.

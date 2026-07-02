@@ -476,6 +476,27 @@ if "expected_blocked" in case and data.get("blocked") is not case["expected_bloc
 if case.get("expected_blocked") is True and not data.get("blocked_reason"):
     errors.append("blocked_reason must be non-empty when blocked=true is expected")
 
+for field in (
+    "evidence_ids",
+    "source_connectors",
+    "opportunity_ids",
+    "knowledge_card_ids",
+    "expert_rule_ids",
+):
+    for value in data.get(field, []):
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{field} contains an empty or non-string identifier")
+            continue
+        if re.search(r"\s", value):
+            errors.append(f"{field} contains whitespace in identifier: {value!r}")
+
+for idx, action in enumerate(data.get("action_candidates", []), start=1):
+    action_id = action.get("action_id")
+    if action_id is not None and (
+        not isinstance(action_id, str) or not action_id.strip() or re.search(r"\s", action_id)
+    ):
+        errors.append(f"action candidate {idx} has invalid action_id: {action_id!r}")
+
 texts = [data.get("operator_next_step", ""), data.get("notes", "")]
 texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
 texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))

@@ -7043,3 +7043,42 @@ Result:
   `review_reason`, and explicit blockers for `audience_forecast_read_contract`,
   `forecast_or_audience_size`, `missing_forecast` and
   `keyword_planner_enrichment`.
+
+## 2026-07-02 - Demand Gen live eval and lineage ID guard
+
+Purpose:
+
+- Test `wilq-demand-gen-operator` against live Demand Gen diagnostics.
+- Ensure the skill blocks Demand Gen readiness, creative-quality,
+  asset-effectiveness, campaign-change and performance-growth claims when WILQ
+  has no Demand Gen rows.
+- Harden the eval harness so top-level lineage IDs cannot contain whitespace or
+  malformed empty identifiers.
+
+Focused proof:
+
+```bash
+bash -n scripts/codex_skill_eval.sh
+scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+uv run python scripts/audit_skill_eval_coverage.py --strict
+```
+
+Result:
+
+- Initial proof passed at
+  `.local-lab/evals/codex-skill/20260702T015313Z/summary.json`, but manual
+  inspection exposed a malformed top-level evidence ID with whitespace.
+- The harness now validates top-level `evidence_ids`, `source_connectors`,
+  `opportunity_ids`, `knowledge_card_ids`, `expert_rule_ids` and action IDs for
+  empty/whitespace identifiers.
+- Passing proof after the guard is stored at
+  `.local-lab/evals/codex-skill/20260702T015421Z/summary.json`.
+- Result: `operator_usefulness_score=4`, `blocked=true`, `failure_tags=[]`,
+  all hard gates true, 8 evidence IDs, 0 recommendations and 1 validated action
+  candidate.
+- Validated action candidate: `act_review_demand_gen_readiness`.
+- The output used `/api/demand-gen/diagnostics` and correctly blocked Demand
+  Gen recommendations because `demand_gen_campaign_rows`,
+  `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,
+  `demand_gen_landing_quality_by_campaign` and
+  `demand_gen_campaign_mode_review` were empty.
