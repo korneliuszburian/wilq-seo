@@ -150,6 +150,13 @@ API status later contradicts this state.
   usefulness and 9/10 for claim blocking. The dashboard first screen now leads
   with `GA4: co dziś zrobić`, `Kolejność pracy` and `Najpierw pomiar` cards for
   `(not set)` rows before traffic-quality decisions.
+- `wilq-ga4-analyst` passed deterministic smoke and non-interactive eval after
+  the latest lineage/dashboard hardening; artifact:
+  `.local-lab/evals/codex-skill/20260702T131857Z`. Score 5,
+  `failure_tags=[]`. The useful output orders the work as measurement
+  blockers first, landing-page/WordPress mapping second and traffic-quality
+  review third, while blocking ROAS, revenue, conversion-drop, GA4-write and
+  "measurement fixed" claims.
 - Merchant usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-merchant-start-card.md`. Live Merchant data is
   fresh (`refresh_google_merchant_center_a04a45a6e6fd`, about 12.8h,

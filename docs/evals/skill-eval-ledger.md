@@ -261,6 +261,39 @@ Result:
   shows `GA4: co dziś zrobić`, `Kolejność pracy` and first-screen
   `Najpierw pomiar` cards.
 
+## 2026-07-02 - GA4 Analyst post-hardening eval
+
+Purpose:
+
+- Verify that `wilq-ga4-analyst` still gives a marketer-useful answer after
+  Command Center lineage and dashboard first-screen hardening.
+- Check that the skill separates measurement blockers from traffic-quality
+  review and does not turn GA4 behavior metrics into ROAS, revenue or
+  conversion conclusions.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T131857Z/wilq-ga4-analyst/result.json`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- Smoke proof: `google_analytics_4` is configured,
+  `ga4_diagnostics.live_data_available=true`, `decision_count=4`,
+  `evidence_count=14` and `act_review_ga4_tracking_quality` validates as
+  `valid=true`.
+- The answer gives a usable order of work: first handle `fix_measurement`
+  `(not set)` rows, then confirm landing-page/WordPress mapping, then review
+  traffic quality for non-`(not set)` rows.
+- The skill blocks or limits unsupported claims about opłacalność, ROI,
+  przychód, spadek konwersji, współczynnik konwersji, zwrot z reklam, zapis w
+  GA4 and naprawiony pomiar.
+
 ## 2026-07-02 - Merchant dashboard usefulness review
 
 Purpose:
