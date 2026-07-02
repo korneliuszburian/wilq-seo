@@ -244,6 +244,11 @@ longer look equivalent to production evidence: `production`,
 experimental review workflows, Google Sheets as optional-disabled and OpenAI
 Codex as operator runtime rather than a marketing connector.
 
+Dashboard route/nav/status now has one typed source of truth in
+`apps/dashboard/src/routes/surfaceRegistry.ts`. `App.tsx` reads
+`generatedSurfaceRoutes`, `Shell.tsx` reads `primarySurfaceRoutes`, and tests
+block reintroducing separate `operatingRoutes` / `primaryRoutes` arrays.
+
 Under Beads task `wilq-seo-x51h`, Service Profile review actions now expose
 API-owned `review_requirements`, also aligned with
 `scripts/record_service_profile_review_result.py`. The dashboard and UAT packet

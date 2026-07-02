@@ -192,6 +192,12 @@ API status later contradicts this state.
   than a marketing data source. Dashboard connector access summary uses these
   fields so placeholder/review-only surfaces do not look like daily-production
   evidence.
+- Dashboard surface registry slice on 2026-07-02 adds
+  `apps/dashboard/src/routes/surfaceRegistry.ts` as the single typed source for
+  route path, nav visibility, family and status. `App.tsx` now generates
+  operating routes from `generatedSurfaceRoutes`, while `Shell.tsx` renders nav
+  from `primarySurfaceRoutes`. Placeholder/experimental routes remain routable
+  only when deliberately classified, not by accidental hidden arrays.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

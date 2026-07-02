@@ -30,6 +30,7 @@ import {
   OpportunitiesSurface,
   WorkflowsSurface
 } from "./OperatingRouteSurfaces";
+import { generatedSurfaceRoutes } from "./surfaceRegistry";
 
 export { createWilqQueryClient } from "../lib/queryClient";
 
@@ -79,30 +80,6 @@ const MerchantDiagnosticSurface = lazy(() =>
     default: module.MerchantDiagnosticSurface
   }))
 );
-
-const operatingRoutes = [
-  "/ads-doctor",
-  "/ads-doctor/search-terms",
-  "/ads-doctor/custom-segments",
-  "/ads-doctor/demand-gen",
-  "/ads-doctor/scaling",
-  "/ads-doctor/seasonality",
-  "/ads-doctor/recommendations",
-  "/ga4",
-  "/ahrefs",
-  "/localo",
-  "/merchant",
-  "/content-workflow",
-  "/service-profile",
-  "/content-planner",
-  "/content-inventory",
-  "/social-publisher",
-  "/google-sheets",
-  "/knowledge",
-  "/codex-runs",
-  "/security",
-  "/settings"
-];
 
 const dedicatedRouteRenderers: Record<string, () => ReactNode> = {
   "/ads-doctor": () => (
@@ -225,7 +202,7 @@ const evidenceDetailRoute = createRoute({
   component: () => <DetailSurface kind="evidence" />
 });
 
-const generatedRoutes = operatingRoutes.map((path) =>
+const generatedRoutes = generatedSurfaceRoutes.map(({ path }) =>
   createRoute({
     getParentRoute: () => rootRoute,
     path,

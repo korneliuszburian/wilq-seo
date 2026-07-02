@@ -1,29 +1,5 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
-  Boxes,
-  ClipboardList,
-  Database,
-  FileText,
-  Megaphone,
-  Settings,
-  ShoppingBag
-} from "lucide-react";
-
-const primaryRoutes = [
-  { to: "/command-center", label: "Centrum pracy", icon: Activity },
-  { to: "/merchant", label: "Merchant", icon: ShoppingBag },
-  { to: "/content-planner", label: "Treści", icon: FileText },
-  { to: "/ads-doctor", label: "Google Ads", icon: Megaphone },
-  { to: "/ga4", label: "GA4", icon: BarChart3 },
-  { to: "/workflows", label: "Procesy", icon: Boxes },
-  { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
-  { to: "/actions", label: "Akcje", icon: ClipboardList },
-  { to: "/knowledge", label: "Baza wiedzy", icon: Database },
-  { to: "/settings", label: "Ustawienia", icon: Settings }
-];
+import { primarySurfaceRoutes } from "../routes/surfaceRegistry";
 
 export function Shell() {
   return (
@@ -36,12 +12,13 @@ export function Shell() {
           </div>
         </div>
         <nav className="space-y-1 p-3">
-          {primaryRoutes.map((route) => {
+          {primarySurfaceRoutes.map((route) => {
             const Icon = route.icon;
+            if (!Icon) return null;
             return (
               <Link
-                key={route.to}
-                to={route.to}
+                key={route.path}
+                to={route.path}
                 className="flex h-10 items-center gap-3 rounded-md px-3 text-sm text-slate-700 hover:bg-slate-100 [&.active]:bg-ink [&.active]:text-white"
               >
                 <Icon aria-hidden="true" size={17} />
@@ -55,10 +32,10 @@ export function Shell() {
         <header className="sticky top-0 z-10 border-b border-line bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="text-base font-semibold">WILQ</div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {primaryRoutes.map((route) => (
+            {primarySurfaceRoutes.map((route) => (
               <Link
-                key={route.to}
-                to={route.to}
+                key={route.path}
+                to={route.path}
                 className="whitespace-nowrap rounded-md border border-line px-3 py-2 text-xs [&.active]:border-ink [&.active]:bg-ink [&.active]:text-white"
               >
                 {route.label}
