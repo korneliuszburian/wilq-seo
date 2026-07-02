@@ -152,6 +152,15 @@ Minimalny wynik review dla tych policy proposals:
 
 Sprawdzenie wyniku:
 
+Najpierw wygeneruj aktualny JSON wejściowy z live Service Profile, bo pola
+review są własnością API i mogą się rozszerzać razem z kontraktem:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py --print-input-example --review-type private_source_proposals --api-base http://127.0.0.1:8000 > .local-lab/proof/service-profile-policy-review-input-YYYYMMDD.json
+```
+
+Po uzupełnieniu decyzji Wilka/ownera sprawdź wynik:
+
 ```bash
 rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-policy-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
 ```

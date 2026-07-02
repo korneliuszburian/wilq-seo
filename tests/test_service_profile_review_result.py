@@ -4,6 +4,7 @@ import pytest
 
 from scripts.record_service_profile_review_result import (
     PRIVATE_DECISION_BOOLEAN_FIELDS,
+    build_input_example,
     build_review_result_report,
     render_markdown,
 )
@@ -86,6 +87,53 @@ def test_private_recorder_fields_match_service_profile_review_requirements() -> 
             if requirement.required and requirement.field in recorder_fields
         }
         assert private_required_fields == recorder_fields
+
+
+def test_service_profile_review_input_example_uses_live_private_requirements() -> None:
+    example = build_input_example(
+        _live_context(),
+        review_type="private_source_proposals",
+    )
+
+    assert example["review_type"] == "private_source_proposals"
+    assert example["scope_label"] == "prywatne propozycje ekologus-ai"
+    assert example["reviewer"] == "<imię reviewera>"
+    assert "promotion nadal wymaga osobnego" in example["_instruction"]
+    assert len(example["decisions"]) == 1
+
+    decision = example["decisions"][0]
+    assert decision["action_id"] == "renamed_private_eko_opieka_review"
+    assert decision["target_card_id"] == "ekologus_service_eko_opieka_calendar"
+    assert decision["decision"] == "approve|needs_changes|stale|reject"
+    assert decision["source_trace_clear"] == "tak|nie"
+    assert decision["blocked_claims_reviewed"] == "tak|nie"
+    for field in PRIVATE_DECISION_BOOLEAN_FIELDS:
+        assert decision[field] == "tak|nie"
+
+
+def test_service_profile_review_input_example_tracks_new_live_required_field() -> None:
+    live_context = _live_context()
+    review_actions = live_context["service_profile"]["review_actions"]  # type: ignore[index]
+    private_action = review_actions[2]
+    private_action["review_requirements"] = [
+        *private_action["review_requirements"],
+        {
+            "field": "owner_retention_note_confirmed",
+            "label": "czy owner potwierdził notatkę retencji",
+            "requirement_type": "boolean",
+            "required": True,
+        },
+    ]
+
+    example = build_input_example(
+        live_context,
+        review_type="private_source_proposals",
+    )
+
+    assert (
+        example["decisions"][0]["owner_retention_note_confirmed"]  # type: ignore[index]
+        == "tak|nie"
+    )
 
 
 def test_service_profile_review_result_records_blocking_decision_with_follow_up() -> None:

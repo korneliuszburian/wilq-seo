@@ -118,6 +118,14 @@ live API status later contradicts this state.
   service/policy and allowed decision options. The report still blocks
   completion without real UAT/defer, but now says exactly what Wilku should
   review next.
+- Service Profile review recorder can now generate a live JSON input example
+  from API-owned `review_actions` and `review_requirements`:
+  `scripts/record_service_profile_review_result.py --print-input-example
+  --review-type private_source_proposals --api-base http://127.0.0.1:8000`.
+  Live proof on 2026-07-02 returned five private `ekologus-ai` proposal
+  decisions and six public service-card decisions. This makes review practical
+  without hand-copying action IDs, but still does not promote facts, cards or
+  production-depth readiness.
 - Goal 005 UAT input now recommends the full review set before any completion
   claim: WILQ model, plain "co pokazać Wilkowi" guide, BDO review artifact and
   `ekologus-ai` policy review artifact. It now also includes the social history

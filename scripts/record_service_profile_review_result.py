@@ -62,8 +62,22 @@ def main() -> int:
             "Nie promuje kart i nie edytuje source facts."
         )
     )
-    parser.add_argument("input", help="Ścieżka do JSON z wynikiem review")
+    parser.add_argument("input", nargs="?", help="Ścieżka do JSON z wynikiem review")
     parser.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    parser.add_argument(
+        "--review-type",
+        choices=tuple(sorted(REVIEW_TYPES)),
+        default=DEFAULT_REVIEW_TYPE,
+        help="Zakres review używany przy generowaniu przykładu wejścia.",
+    )
+    parser.add_argument(
+        "--print-input-example",
+        action="store_true",
+        help=(
+            "Wypisz JSON do uzupełnienia na podstawie live review_actions i "
+            "review_requirements. Nie zapisuje wyniku review."
+        ),
+    )
     parser.add_argument(
         "--api-base",
         help="Opcjonalnie sprawdza action/card IDs przeciw live Service Profile.",
@@ -71,6 +85,18 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
+        if args.print_input_example:
+            if not args.api_base:
+                raise RuntimeError("--print-input-example wymaga --api-base")
+            live_context = load_live_context(args.api_base)
+            example = build_input_example(
+                live_context,
+                review_type=args.review_type,
+            )
+            print(json.dumps(example, ensure_ascii=False, indent=2))
+            return 0
+        if not args.input:
+            raise RuntimeError("Podaj ścieżkę input albo użyj --print-input-example")
         payload = load_json(Path(args.input))
         live_context = load_live_context(args.api_base) if args.api_base else None
         report = build_review_result_report(payload, live_context=live_context)
@@ -83,6 +109,83 @@ def main() -> int:
     else:
         print(render_markdown(report))
     return 0
+
+
+def build_input_example(
+    live_context: dict[str, Any],
+    *,
+    review_type: str,
+) -> dict[str, Any]:
+    if review_type not in REVIEW_TYPES:
+        raise RuntimeError(
+            "review_type musi mieć wartość "
+            f"{' albo '.join(sorted(REVIEW_TYPES))}"
+        )
+    profile = live_context.get("service_profile")
+    if not isinstance(profile, dict):
+        raise RuntimeError("Live Service Profile must be an object")
+    required_fields_by_action = live_required_review_fields(
+        live_context,
+        review_type=review_type,
+    )
+    actions = [
+        action
+        for action in raw_list(profile.get("review_actions"))
+        if isinstance(action, dict)
+        and str(action.get("review_scope") or "").strip()
+        in review_scopes_for_type(review_type)
+    ]
+    decisions = [
+        input_example_decision(action, required_fields_by_action)
+        for action in actions
+    ]
+    return {
+        "review_type": review_type,
+        "data_review": "<YYYY-MM-DD>",
+        "reviewer": "<imię reviewera>",
+        "scope_label": scope_label_for_review_type(review_type),
+        "decisions": decisions,
+        "follow_up_beads": [
+            "<wymagane tylko gdy jakaś decyzja nie jest approve albo ma pole = nie>"
+        ],
+        "_instruction": (
+            "Uzupełnij placeholdery i usuń _instruction przed zapisem wyniku. "
+            "Ten JSON jest wygenerowany z live Service Profile review_actions; "
+            "promotion nadal wymaga osobnego, audytowanego kroku."
+        ),
+    }
+
+
+def input_example_decision(
+    action: dict[str, Any],
+    required_fields_by_action: dict[str, tuple[dict[str, Any], ...]],
+) -> dict[str, Any]:
+    action_id = str(action.get("action_id") or "").strip()
+    decision: dict[str, Any] = {
+        "action_id": action_id,
+        "target_card_id": str(action.get("target_card_id") or "").strip(),
+        "decision": "approve|needs_changes|stale|reject",
+        "notes": "<krótka decyzja Wilka/ownera i powód>",
+    }
+    for requirement in required_fields_by_action.get(action_id, ()):
+        field = str(requirement.get("field") or "").strip()
+        if not field or field in decision:
+            continue
+        requirement_type = str(requirement.get("requirement_type") or "text").strip()
+        if requirement_type == "boolean":
+            decision[field] = "tak|nie"
+        else:
+            decision[field] = f"<{field}>"
+    decision["follow_up_beads"] = [
+        "<opcjonalnie: bead albo krótki follow-up dla tej decyzji>"
+    ]
+    return decision
+
+
+def scope_label_for_review_type(review_type: str) -> str:
+    if review_type == "private_source_proposals":
+        return "prywatne propozycje ekologus-ai"
+    return "publiczne karty usług"
 
 
 def load_json(path: Path) -> dict[str, Any]:

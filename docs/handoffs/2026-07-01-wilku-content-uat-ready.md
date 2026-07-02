@@ -138,11 +138,20 @@ fact ani knowledge card; potrzebna jest osobna zatwierdzona akcja i audyt.
 
 Wynik public service review można zapisać osobnym, fail-closed raportem:
 
+Najpierw wygeneruj aktualny JSON wejściowy z live Service Profile, żeby nie
+przepisywać action ID i wymaganych pól ręcznie:
+
+```bash
+rtk uv run python scripts/record_service_profile_review_result.py --print-input-example --review-type public_service_cards --api-base http://127.0.0.1:8000 > .local-lab/proof/service-profile-review-input-YYYYMMDD.json
+```
+
+Potem uzupełnij decyzje Wilka/ownera i sprawdź wynik:
+
 ```bash
 rtk uv run python scripts/record_service_profile_review_result.py .local-lab/proof/service-profile-review-result-YYYYMMDD.json --api-base http://127.0.0.1:8000 --format markdown
 ```
 
-Minimalny format wyniku review:
+Minimalny format pojedynczej decyzji po uzupełnieniu:
 
 ```json
 {
@@ -156,13 +165,6 @@ Minimalny format wyniku review:
       "decision": "approve",
       "source_trace_clear": "tak",
       "blocked_claims_reviewed": "tak",
-      "data_classes_confirmed": "tak",
-      "source_block_refs_confirmed": "tak",
-      "freshness_status_confirmed": "tak",
-      "audience_scope_confirmed": "tak",
-      "retention_decision_confirmed": "tak",
-      "deletion_path_confirmed": "tak",
-      "eval_gates_confirmed": "tak",
       "notes": "co Wilku zatwierdził albo co wymaga zmiany"
     }
   ],
