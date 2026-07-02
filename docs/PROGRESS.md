@@ -134,7 +134,9 @@ API status later contradicts this state.
   proposals requiring review, 0% production-depth service readiness, 0%
   approved source facts and `ready_for_daily_content=false`. The next review
   order is claim policy first, then evidence policy, then private service
-  proposals.
+  proposals. `scripts/pre_demo_gate.sh` now runs this audit before demos, so
+  WILQ cannot present the current knowledge layer as production-depth by
+  accident.
 - Claim Ledger / structured generation gates are now auditable through
   `scripts/claim_ledger_gate_audit.py`. Proof on 2026-07-02: 10/10 checks
   passed. WILQ blocks guarantees, legal claims without human review, business

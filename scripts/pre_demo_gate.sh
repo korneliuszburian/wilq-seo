@@ -109,6 +109,7 @@ run_step "local stack status" scripts/local_stack.sh status
 run_step "API health" curl -fsS --max-time 5 "${api_base%/}/api/health"
 run_step "live contract smoke" uv run python scripts/live_contract_smoke.py --api-base "$api_base"
 run_step "dashboard usefulness audit" uv run python scripts/dashboard_usefulness_audit.py --api-base "$api_base"
+run_step "source fact coverage audit" uv run python scripts/source_fact_coverage_audit.py
 run_step "claim ledger generation gate audit" uv run python scripts/claim_ledger_gate_audit.py
 run_step "context-pack language guard" uv run python scripts/context_pack_language_guard.py --api-base "$api_base"
 
