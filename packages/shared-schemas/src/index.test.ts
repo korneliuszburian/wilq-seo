@@ -20,6 +20,7 @@ import {
   ContentQualityFindingSchema,
   ContentWorkItemSchema,
   ContentClaimLedgerSchema,
+  ContentClaimReferenceSchema,
   ContentDraftPackageSchema,
   ContentKnowledgeConstraintTypeSchema,
   ContentRecommendedModeSchema,
@@ -535,6 +536,34 @@ describe("ContentClaimLedgerSchema", () => {
             claim_type: "marketing_vibe_claim"
           }
         ]
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentClaimReferenceSchema", () => {
+  const claimReference = {
+    claim_id: "claim_bdo_penalty",
+    claim_text: "Ekologus gwarantuje uniknięcie kar BDO.",
+    claim_type: "guarantee_claim",
+    status: "blocked",
+    evidence_ids: ["ev_content_claim_ledger_bdo"],
+    source_connectors: ["wilq_claim_ledger"],
+    reason: "Claim wymaga blokady w ledgerze."
+  };
+
+  it("rejects unknown claim reference enums", () => {
+    expect(ContentClaimReferenceSchema.safeParse(claimReference).success).toBe(true);
+    expect(
+      ContentClaimReferenceSchema.safeParse({
+        ...claimReference,
+        claim_type: "marketing_vibe_claim"
+      }).success
+    ).toBe(false);
+    expect(
+      ContentClaimReferenceSchema.safeParse({
+        ...claimReference,
+        status: "approved_by_prompt"
       }).success
     ).toBe(false);
   });

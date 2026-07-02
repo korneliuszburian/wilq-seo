@@ -204,18 +204,6 @@ export const ContentInventoryDuplicateRiskSchema = z.enum([
   "high"
 ]);
 
-export const ContentClaimReferenceSchema = z.object({
-  claim_id: z.string().optional(),
-  id: z.string().optional(),
-  claim_text: z.string().optional(),
-  claim_type: z.string().optional(),
-  status: z.string().optional(),
-  evidence_ids: z.array(z.string()).optional(),
-  source_connectors: z.array(z.string()).optional(),
-  reviewer_id: z.string().nullable().optional(),
-  reason: z.string().optional()
-});
-
 export const ContentClaimTypeSchema = z.enum([
   "service_claim",
   "legal_requirement_claim",
@@ -236,6 +224,18 @@ export const ContentClaimStatusSchema = z.enum([
 ]);
 
 export const ContentClaimStrengthSchema = z.enum(["strong", "weak"]);
+
+export const ContentClaimReferenceSchema = z.object({
+  claim_id: z.string().optional(),
+  id: z.string().optional(),
+  claim_text: z.string().optional(),
+  claim_type: ContentClaimTypeSchema.optional(),
+  status: ContentClaimStatusSchema.optional(),
+  evidence_ids: z.array(z.string()).optional(),
+  source_connectors: z.array(z.string()).optional(),
+  reviewer_id: z.string().nullable().optional(),
+  reason: z.string().optional()
+});
 
 export const ContentClaimLedgerEntrySchema = z.object({
   id: z.string(),
