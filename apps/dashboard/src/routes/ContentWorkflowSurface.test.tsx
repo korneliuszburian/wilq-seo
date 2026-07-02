@@ -113,6 +113,8 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("sygnał użyteczny, ale wymaga review")).toBeInTheDocument();
     expect(screen.getByText(/Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji/))
       .toBeInTheDocument();
+    expect(screen.getByText("Ograniczenia wiedzy i dowody")).toBeInTheDocument();
+    expect(screen.getByText(/ev_content_service_profile_source_facts/)).toBeInTheDocument();
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();

@@ -618,7 +618,9 @@ function ContentWorkflowHeader({ topic }: { topic: string }) {
 
 function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
   const item = data.preflight.item;
-  const signalQuality = data.salesBrief.sales_brief_result.brief?.signal_quality ?? null;
+  const salesBrief = data.salesBrief.sales_brief_result.brief;
+  const signalQuality = salesBrief?.signal_quality ?? null;
+  const knowledgeConstraints = salesBrief?.knowledge_constraints.slice(0, 3) ?? [];
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -635,6 +637,25 @@ function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
               ? signalQuality.reason
               : "Sales Brief jest zablokowany, więc WILQ nie pokazuje jakości sygnału jako rekomendacji."}
           </p>
+          {knowledgeConstraints.length ? (
+            <div className="mt-3 rounded-md border border-line bg-surface p-3 text-sm">
+              <div className="font-semibold text-ink">Ograniczenia wiedzy i dowody</div>
+              <ul className="mt-2 space-y-2">
+                {knowledgeConstraints.map((constraint) => (
+                  <li key={`${constraint.card_id}-${constraint.constraint_type}-${constraint.reason}`}>
+                    <span className="font-medium text-slate-700">{constraint.label}</span>
+                    <span className="text-slate-600">: {constraint.reason}</span>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Dowody WILQ:{" "}
+                      {constraint.evidence_ids.length
+                        ? constraint.evidence_ids.join(", ")
+                        : "brak dowodu przy tym ograniczeniu"}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
         <div className="grid gap-2 text-sm sm:grid-cols-3">
           <FactTile label="Dowody" value={`Dowody: ${unique(item.evidence_ids).length}`} />

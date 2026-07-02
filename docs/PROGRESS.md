@@ -186,6 +186,10 @@ API status later contradicts this state.
   `metrics_persisted=false` as successful vendor reads. If no usable earlier
   success exists, freshness becomes unknown with an explicit incomplete-read
   note instead of a normal fresh/green state.
+- Content Workflow now renders Sales Brief knowledge constraints with their
+  WILQ evidence IDs in the operator-facing proof panel. Wilku can see why a
+  brief is review-required and which proof handle supports that constraint
+  without opening raw JSON.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

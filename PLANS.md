@@ -1060,6 +1060,10 @@ Stop and record a blocker if:
   `metrics_persisted=false` refreshes as successful vendor reads. A connector
   with only such an incomplete run is surfaced as freshness `unknown` with a
   Polish incomplete-read note instead of a normal fresh state.
+- 2026-07-02: Content Workflow now renders Sales Brief knowledge constraints
+  with their WILQ evidence IDs in the proof summary. This makes the new
+  `knowledge_constraints[].evidence_ids` field useful for Wilku review, not
+  only for API/model input.
 
 ## Surprises & Discoveries
 
