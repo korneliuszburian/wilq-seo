@@ -209,13 +209,25 @@ live API status later contradicts this state.
   structured generation remains `publish_ready=false`, WordPress handoff is
   blocked by `missing_human_review` and `missing_audit`, and measurement success
   remains blocked by `measurement_window_not_ready`.
-- WordPress authoring direction: Ekologus likely uses ACF Flexible Content, so
-  the next WordPress element slice should inventory real ACF layouts and define
-  a typed `ACF Flexible Content` section contract before any custom block,
-  Interactivity API or Abilities API work. Interactivity API remains useful
-  later for interactive blocks, and Abilities API can become a discovery bridge,
-  but the first production path should map WILQ draft-only packages to existing
-  ACF layouts with ActionObject preview/review/audit.
+- WordPress authoring discovery slice is implemented as read-only API
+  contract. `/api/content/wordpress/authoring-profile` exposes REST readiness,
+  ACF/Flexible Content layout readiness, WP-CLI/helper fallback readiness and a
+  draft-only write boundary. `/api/content/work-items/wordpress-authoring-
+  payload-preview` maps an approved handoff plus draft package to an ACF
+  Flexible Content payload preview when a field-group export/layout contract is
+  available; it never publishes, never performs a vendor write and keeps
+  ActionObject review/audit as the required write contract. Live SSH proof on
+  2026-07-02: SSH login works and main docroot is
+  `/var/www/vhosts/ekologus.pl/httpdocs`. The hosting `/usr/local/bin/wp` was a
+  broken placeholder, so WILQ installed user-scoped WP-CLI under the SSH user
+  and created `~/.local/bin/wilq-wp-readonly`, a read-only wrapper outside the
+  WordPress docroot. The wrapper uses Plesk PHP 8.3 with `mysqli`, blocks
+  write-capable commands such as `post create`, and allows only selected
+  discovery commands for the configured docroot. Live API now reports WP-CLI
+  fallback as `configured`, ACF Pro is active, and ACF field groups are visible
+  (`Strona główna`, `Podstrona`, `Hero`, `Nasze usługi`, etc.). Current live
+  blocker: `acf_flexible_layouts_missing_wp_cli_ready`, meaning the next step
+  is extracting typed field/layout definitions from those field groups.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
@@ -28,6 +29,9 @@ from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
     ContentWordPressDraftHandoff,
     ContentWordPressDraftHandoffResult,
+)
+from wilq.content.handoff.wordpress_authoring import (
+    ContentWordPressAuthoringPayloadPreviewResult,
 )
 from wilq.content.handoff.wordpress_execution import (
     ContentWordPressDraftExecutionMode,
@@ -222,6 +226,17 @@ class ContentWorkItemWordPressDraftExecutionRequest(BaseModel):
 
 class ContentWorkItemWordPressDraftExecutionResponse(BaseModel):
     execution_result: ContentWordPressDraftExecutionResult
+
+
+class ContentWorkItemWordPressAuthoringPayloadPreviewRequest(BaseModel):
+    handoff: ContentWordPressDraftHandoff | None = None
+    draft_package: ContentDraftPackage | None = None
+    authoring_profile: WordPressAuthoringProfile | None = None
+
+
+class ContentWorkItemWordPressAuthoringPayloadPreviewResponse(BaseModel):
+    authoring_profile: WordPressAuthoringProfile
+    preview_result: ContentWordPressAuthoringPayloadPreviewResult
 
 
 class ContentWorkItemMeasurementWindowRequest(BaseModel):

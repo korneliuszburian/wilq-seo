@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.routing import APIRoute
 
 from apps.api.wilq_api.routers.content_workflow import router
+from wilq.connectors.wordpress.authoring import WordPressAuthoringProfile
 from wilq.content.enrichment.opportunity import ContentOpportunityEnrichmentResponse
 from wilq.content.knowledge.cards import ContentKnowledgeCardsResponse
 from wilq.content.knowledge.service_profile import ContentServiceProfileResponse
@@ -20,6 +21,7 @@ from wilq.content.workflow.api import (
     ContentWorkItemStructuredDraftGenerationResponse,
     ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeResponse,
+    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffResponse,
     ContentWorkItemWorkflowSnapshotResponse,
@@ -30,6 +32,7 @@ from wilq.content.workflow.queue import ContentWorkItemQueueResponse
 CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ("GET", "/api/content/knowledge-cards"): ContentKnowledgeCardsResponse,
     ("GET", "/api/content/service-profile"): ContentServiceProfileResponse,
+    ("GET", "/api/content/wordpress/authoring-profile"): WordPressAuthoringProfile,
     ("GET", "/api/content/work-items/queue"): ContentWorkItemQueueResponse,
     ("GET", "/api/content/work-items/snapshot"): ContentWorkItemWorkflowSnapshotResponse,
     (
@@ -105,6 +108,10 @@ CONTENT_WORKFLOW_RESPONSE_MODELS = {
     ): ContentWorkItemWordPressDraftExecutionResponse,
     (
         "POST",
+        "/api/content/work-items/wordpress-authoring-payload-preview",
+    ): ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
+    (
+        "POST",
         "/api/content/work-items/measurement-window",
     ): ContentWorkItemMeasurementWindowResponse,
     (
@@ -150,6 +157,7 @@ def _content_workflow_routes() -> dict[tuple[str, str], APIRoute]:
                 "/api/content/work-items",
                 "/api/content/knowledge-cards",
                 "/api/content/service-profile",
+                "/api/content/wordpress",
             )
         ):
             continue

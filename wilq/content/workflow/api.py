@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from wilq.connectors.wordpress.authoring import build_wordpress_authoring_profile
 from wilq.content.briefs.sales import (
     ContentSalesBrief,
     ContentSalesBriefBuildResult,
@@ -35,6 +36,9 @@ from wilq.content.enrichment.opportunity import (
 from wilq.content.handoff.wordpress import (
     ContentWordPressDraftAuditEnvelope,
     build_content_wordpress_draft_handoff,
+)
+from wilq.content.handoff.wordpress_authoring import (
+    build_content_wordpress_authoring_payload_preview,
 )
 from wilq.content.handoff.wordpress_execution import (
     execute_content_wordpress_draft_handoff,
@@ -103,6 +107,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeRequest,
     ContentWorkItemStructuredDraftRuntimeResponse,
+    ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffRequest,
@@ -356,6 +362,22 @@ def build_content_work_item_wordpress_draft_execution_response(
             draft_package=request.draft_package,
             mode=request.mode,
             live_write_enabled=False,
+        ),
+    )
+
+
+def build_content_work_item_wordpress_authoring_payload_preview_response(
+    request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+) -> ContentWorkItemWordPressAuthoringPayloadPreviewResponse:
+    profile = request.authoring_profile or build_wordpress_authoring_profile(
+        "wordpress_ekologus"
+    )
+    return ContentWorkItemWordPressAuthoringPayloadPreviewResponse(
+        authoring_profile=profile,
+        preview_result=build_content_wordpress_authoring_payload_preview(
+            handoff=request.handoff,
+            draft_package=request.draft_package,
+            authoring_profile=profile,
         ),
     )
 

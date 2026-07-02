@@ -3,6 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.connectors.wordpress.authoring import (
+    WordPressAuthoringProfile,
+    build_wordpress_authoring_profile,
+)
 from wilq.content.enrichment.opportunity import (
     ContentOpportunityEnrichmentResponse,
     build_content_opportunity_enrichment_response,
@@ -36,6 +40,7 @@ from wilq.content.workflow.api import (
     build_content_work_item_structured_draft_generation_response,
     build_content_work_item_structured_draft_preview_response,
     build_content_work_item_structured_draft_runtime_response,
+    build_content_work_item_wordpress_authoring_payload_preview_response,
     build_content_work_item_wordpress_draft_execution_response,
     build_content_work_item_wordpress_draft_handoff_response,
 )
@@ -69,6 +74,8 @@ from wilq.content.workflow.contracts import (
     ContentWorkItemStructuredDraftPreviewResponse,
     ContentWorkItemStructuredDraftRuntimeRequest,
     ContentWorkItemStructuredDraftRuntimeResponse,
+    ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+    ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
     ContentWorkItemWordPressDraftExecutionRequest,
     ContentWorkItemWordPressDraftExecutionResponse,
     ContentWorkItemWordPressDraftHandoffRequest,
@@ -98,6 +105,14 @@ def content_knowledge_cards() -> ContentKnowledgeCardsResponse:
 )
 def content_service_profile() -> ContentServiceProfileResponse:
     return content_service_profile_response()
+
+
+@router.get(
+    "/api/content/wordpress/authoring-profile",
+    response_model=WordPressAuthoringProfile,
+)
+def content_wordpress_authoring_profile() -> WordPressAuthoringProfile:
+    return build_wordpress_authoring_profile("wordpress_ekologus")
 
 
 @router.get(
@@ -420,6 +435,16 @@ def content_work_item_wordpress_draft_execution(
     request: ContentWorkItemWordPressDraftExecutionRequest,
 ) -> ContentWorkItemWordPressDraftExecutionResponse:
     return build_content_work_item_wordpress_draft_execution_response(request)
+
+
+@router.post(
+    "/api/content/work-items/wordpress-authoring-payload-preview",
+    response_model=ContentWorkItemWordPressAuthoringPayloadPreviewResponse,
+)
+def content_work_item_wordpress_authoring_payload_preview(
+    request: ContentWorkItemWordPressAuthoringPayloadPreviewRequest,
+) -> ContentWorkItemWordPressAuthoringPayloadPreviewResponse:
+    return build_content_work_item_wordpress_authoring_payload_preview_response(request)
 
 
 @router.post(
