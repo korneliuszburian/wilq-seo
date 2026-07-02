@@ -234,6 +234,52 @@ Result:
   writes, recommendation apply, targeting writes, campaign writes and negative
   keyword writes without preview, human confirmation and audit.
 
+## 2026-07-02 - Content Operator usefulness eval
+
+Purpose:
+
+- Verify that `wilq-content-operator` leads one WILQ Content Operations session
+  through queue/enrichment/preflight/brief/Claim Ledger/draft-review gates,
+  instead of becoming a freeform article generator.
+- Confirm that blocked queue state, Service Profile review requirements,
+  WordPress draft-only semantics and measurement-window boundaries remain
+  visible and useful for Wilku.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-content-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk uv run python .agents/skills/wilq-content-operator/scripts/build_uat_packet.py --api-base http://127.0.0.1:8000 --limit 5 --format json
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-content-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T155226Z`.
+- `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
+  gates true.
+- Source connectors used: `google_analytics_4`, `ahrefs`,
+  `google_search_console` and `wordpress_ekologus`.
+- Evidence lineage included six evidence IDs, including
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`,
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`,
+  `ev_refresh_refresh_ahrefs_5eee21244cff` and
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966`.
+- The skill selected
+  `content_work_item_content_decision_https___www_ekologus_pl` with
+  `selected_mode=refresh`, `candidate_count=3`, `actionable_candidate_count=1`
+  and `queue_status=blocked`.
+- Safe operator path: refresh source data, then check enrichment, preflight,
+  Sales Brief, Claim Ledger, draft package, quality review, human review,
+  WordPress draft-only and measurement window.
+- The output correctly blocked final article writing, `publish_ready=true`,
+  WordPress publication, destructive updates, SEO/lead/revenue success claims
+  and measurement outcome claims before human review and observation window.
+- The UAT packet remained honest: full content UAT is blocked until Service
+  Profile review, public/private review actions and follow-up decisions are
+  recorded.
+
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 
 Purpose:

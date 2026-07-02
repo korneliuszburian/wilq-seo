@@ -123,6 +123,13 @@ live API status later contradicts this state.
   change history; validates four review actions; and blocks CPA, ROAS, wasted
   budget, budget writes, recommendation apply and negative keyword writes
   without preview, human confirmation and audit.
+- Content Operator usefulness proof: non-interactive eval for
+  `wilq-content-operator` passed with `operator_usefulness_score=5` and
+  `blocked=true`. It selects the refresh work item
+  `content_work_item_content_decision_https___www_ekologus_pl`, keeps the queue
+  honest as blocked, and requires enrichment, preflight, Sales Brief, Claim
+  Ledger, draft package, quality review, human review, WordPress draft-only and
+  measurement window before any final article, publication or success claim.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets
