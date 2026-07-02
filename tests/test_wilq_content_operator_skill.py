@@ -194,6 +194,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                 {
                     "action_id": "service_profile_review_card_ekologus_service_bdo_reporting",
                     "mode": "review_request",
+                    "review_scope": "public_service_card",
+                    "priority": "medium",
                     "label": "Sprawdź BDO",
                     "reason": "Źródło publiczne wymaga decyzji właściciela.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -206,6 +208,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                         "ekologus_ai_eko_opieka_2026_07_01"
                     ),
                     "mode": "review_request",
+                    "review_scope": "private_service_proposal",
+                    "priority": "medium",
                     "label": "Sprawdź prywatną propozycję",
                     "reason": "Prywatne źródło wymaga sanitizacji.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -218,6 +222,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                         "ekologus_ai_brand_voice_2026_07_01"
                     ),
                     "mode": "review_request",
+                    "review_scope": "private_claim_policy_proposal",
+                    "priority": "high",
                     "label": "Sprawdź prywatną politykę claimów",
                     "reason": "Prywatne źródło claim-policy wymaga decyzji.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -290,6 +296,10 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert summary["public_service_review_actions"][0]["target_card_id"] == (
         "ekologus_service_bdo_reporting"
     )
+    assert summary["public_service_review_actions"][0]["review_scope"] == (
+        "public_service_card"
+    )
+    assert summary["public_service_review_actions"][0]["priority"] == "medium"
     assert summary["private_review_actions"][0]["target_card_id"] == (
         "ekologus_service_environmental_consulting_outsourcing"
     )
@@ -299,6 +309,10 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     assert summary["private_policy_review_actions"][0]["target_card_id"] == (
         "ekologus_claim_policy_brand_voice"
     )
+    assert summary["private_policy_review_actions"][0]["review_scope"] == (
+        "private_claim_policy_proposal"
+    )
+    assert summary["private_policy_review_actions"][0]["priority"] == "high"
     recorders = summary["review_result_recorders"]
     assert recorders["recorder_script"] == "scripts/record_service_profile_review_result.py"
     assert recorders["public_review"]["review_type"] == "public_service_cards"

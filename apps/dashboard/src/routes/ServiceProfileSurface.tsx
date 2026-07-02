@@ -284,6 +284,12 @@ function ReviewActions({
               <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
                 {action.mode}
               </span>
+              <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
+                {action.review_scope}
+              </span>
+              <span className="rounded-md border border-line px-2 py-0.5 text-xs text-slate-600">
+                {action.priority}
+              </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">{action.reason}</p>
             <p className="mt-2 text-xs leading-5 text-slate-500">

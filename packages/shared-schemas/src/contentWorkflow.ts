@@ -488,6 +488,15 @@ export const ContentServiceProfileCoverageGapSchema = z.object({
 export const ContentServiceProfileReviewActionSchema = z.object({
   action_id: z.string(),
   mode: z.enum(["prepare", "review_request"]),
+  review_scope: z.enum([
+    "general_knowledge_review",
+    "public_service_card",
+    "coverage_gap",
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal"
+  ]),
+  priority: z.enum(["high", "medium", "low"]),
   label: z.string(),
   reason: z.string(),
   blocked_write_claim: z.string(),

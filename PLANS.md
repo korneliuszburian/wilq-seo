@@ -207,6 +207,12 @@ on 2026-07-02 returned `total_count=12`, `review_request_count=11`,
 `private_service_review_count=2` and `private_policy_review_count=2`; the UAT
 packet consumes the same API-owned summary.
 
+Under Beads task `wilq-seo-pcgz`, every Service Profile review action now also
+has API-owned `review_scope` and `priority`. Private `ekologus-ai` service
+proposal actions are `private_service_proposal` / `medium`, while brand/legal
+claim-policy actions are `private_claim_policy_proposal` / `high`; dashboard
+and the UAT packet render these fields instead of parsing action IDs.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and

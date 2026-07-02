@@ -89,6 +89,10 @@ describe("ServiceProfileSurface", () => {
       .toBeInTheDocument();
     expect(screen.getByText("Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus"))
       .toBeInTheDocument();
+    expect(screen.getByText("private_service_proposal")).toBeInTheDocument();
+    expect(screen.getByText("private_claim_policy_proposal")).toBeInTheDocument();
+    expect(screen.getAllByText("medium").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
@@ -303,6 +307,8 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       {
         action_id: "service_profile_review_private_proposal_ekologus_ai_eko_opieka_2026_07_01",
         mode: "review_request",
+        review_scope: "private_service_proposal",
+        priority: "medium",
         label: "Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz",
         reason:
           "ekologus-ai reviewed handoff: Eko-Opieka jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
@@ -313,6 +319,8 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
       {
         action_id: "service_profile_review_private_proposal_ekologus_ai_brand_voice_2026_07_01",
         mode: "review_request",
+        review_scope: "private_claim_policy_proposal",
+        priority: "high",
         label: "Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus",
         reason:
           "ekologus-ai reviewed handoff: Styl marki jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",

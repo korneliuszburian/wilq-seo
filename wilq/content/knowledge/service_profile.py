@@ -23,6 +23,15 @@ from wilq.content.knowledge.source_facts import (
 
 ServiceProfileGapSeverity = Literal["blocker", "review_required", "thin", "stale"]
 ServiceProfileReviewActionMode = Literal["prepare", "review_request"]
+ServiceProfileReviewActionPriority = Literal["high", "medium", "low"]
+ServiceProfileReviewActionScope = Literal[
+    "general_knowledge_review",
+    "public_service_card",
+    "coverage_gap",
+    "private_service_proposal",
+    "private_claim_policy_proposal",
+    "private_evidence_policy_proposal",
+]
 
 
 class ContentServiceProfileReviewPolicy(BaseModel):
@@ -152,6 +161,8 @@ class ContentServiceProfileReviewAction(BaseModel):
 
     action_id: str
     mode: ServiceProfileReviewActionMode
+    review_scope: ServiceProfileReviewActionScope
+    priority: ServiceProfileReviewActionPriority
     label: str
     reason: str
     blocked_write_claim: str
@@ -481,6 +492,8 @@ def _review_actions(
         ContentServiceProfileReviewAction(
             action_id="service_profile_request_knowledge_review",
             mode="review_request",
+            review_scope="general_knowledge_review",
+            priority="medium",
             label="Poproś o review wiedzy usługowej",
             reason=(
                 "Karty review-required nie mogą odblokować production-depth "
@@ -500,6 +513,8 @@ def _review_actions(
                 ContentServiceProfileReviewAction(
                     action_id=f"service_profile_review_card_{card.id}",
                     mode="review_request",
+                    review_scope="public_service_card",
+                    priority="medium",
                     label=f"Sprawdź kartę usługi: {card.title}",
                     reason=(
                         "Karta ma publiczne źródło, ale wymaga decyzji człowieka "
@@ -518,6 +533,8 @@ def _review_actions(
             ContentServiceProfileReviewAction(
                 action_id=f"service_profile_review_{gap.gap_id}",
                 mode="prepare",
+                review_scope="coverage_gap",
+                priority="high" if gap.severity == "blocker" else "medium",
                 label=f"Przygotuj review: {gap.label}",
                 reason=gap.reason,
                 blocked_write_claim="To jest przygotowanie review, nie edycja knowledge base.",
@@ -532,6 +549,8 @@ def _review_actions(
             ContentServiceProfileReviewAction(
                 action_id=f"service_profile_review_{proposal.proposal_id}",
                 mode="review_request",
+                review_scope=_private_review_action_scope(proposal),
+                priority=_private_review_action_priority(proposal),
                 label=f"Sprawdź prywatną propozycję: {proposal.target_card_title}",
                 reason=(
                     f"{proposal.source_locator_label} jest redacted i review-required; "
@@ -545,6 +564,24 @@ def _review_actions(
             )
         )
     return actions
+
+
+def _private_review_action_scope(
+    proposal: PrivateSourceProposal,
+) -> ServiceProfileReviewActionScope:
+    if proposal.scope == "service":
+        return "private_service_proposal"
+    if proposal.scope == "evidence_requirement":
+        return "private_evidence_policy_proposal"
+    return "private_claim_policy_proposal"
+
+
+def _private_review_action_priority(
+    proposal: PrivateSourceProposal,
+) -> ServiceProfileReviewActionPriority:
+    if proposal.scope in {"claim_policy", "evidence_requirement"}:
+        return "high"
+    return "medium"
 
 
 def _review_action_summary(

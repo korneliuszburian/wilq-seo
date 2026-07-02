@@ -137,6 +137,11 @@ API status later contradicts this state.
   `total_count=12`, `review_request_count=11`, `prepare_count=1`,
   `public_service_review_count=6`, `private_review_count=4`,
   `private_service_review_count=2`, `private_policy_review_count=2`.
+- Service Profile review actions now expose `review_scope` and `priority`.
+  Live private `ekologus-ai` actions split service proposals as
+  `private_service_proposal` / `medium` and claim-policy proposals as
+  `private_claim_policy_proposal` / `high`; dashboard and UAT packet render the
+  typed fields directly.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

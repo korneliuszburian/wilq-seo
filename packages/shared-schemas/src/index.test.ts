@@ -151,6 +151,8 @@ describe("ContentServiceProfileResponseSchema", () => {
         {
           action_id: "service_profile_request_knowledge_review",
           mode: "review_request",
+          review_scope: "general_knowledge_review",
+          priority: "medium",
           label: "Poproś o review",
           reason: "Review required.",
           blocked_write_claim: "No write.",
