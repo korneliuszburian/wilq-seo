@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.goal_005_completion_check import (
     blocked_report,
     build_completion_report,
+    goal_005_next_uat_input,
     goal_005_pre_demo_audit_summary,
     render_markdown,
     uat_live_provenance_summary,
@@ -28,6 +29,8 @@ def test_goal_005_completion_check_blocks_without_uat_or_defer() -> None:
     ] == 0
     assert report["pre_demo_audits"]["claim_ledger_gate"]["publish_ready_locked"] is True
     assert report["pre_demo_audits"]["skill_eval_coverage"]["hard_gap_count"] == 0
+    assert report["next_uat_input"]["available"] is True
+    assert report["next_uat_input"]["selected_work_item"] == "<work_item_id_z_uat_packet>"
 
 
 def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
@@ -52,6 +55,61 @@ def test_goal_005_pre_demo_audit_summary_tracks_current_gates() -> None:
         "latest_skill_eval_results"
     ]["skill_count"]
     assert summary["latest_skill_eval_results"]["minimum_score"] >= 4
+
+
+def test_goal_005_next_uat_input_prefers_live_actionable_candidate(monkeypatch) -> None:
+    from scripts import record_goal_005_content_uat_result
+
+    def fake_live_context(api_base: str) -> dict[str, object]:
+        assert api_base == "http://127.0.0.1:8000"
+        return {
+            "queue": {
+                "candidates": [
+                    {
+                        "work_item_id": (
+                            "content_work_item_content_decision_ahrefs_gap_records_review"
+                        ),
+                        "recommended_mode": "block",
+                        "source_connectors": ["ahrefs"],
+                    },
+                    {
+                        "work_item_id": (
+                            "content_work_item_content_decision_https___www_ekologus_pl"
+                        ),
+                        "recommended_mode": "refresh",
+                        "final_canonical_url": "https://www.ekologus.pl/",
+                        "source_public_url": "https://www.ekologus.pl/",
+                        "preflight_status": "plan_allowed",
+                        "source_connectors": [
+                            "google_search_console",
+                            "wordpress_ekologus",
+                        ],
+                    },
+                ]
+            },
+            "sales_brief_traces": {
+                "content_work_item_content_decision_https___www_ekologus_pl": {
+                    "status": "ready",
+                }
+            },
+        }
+
+    monkeypatch.setattr(
+        record_goal_005_content_uat_result,
+        "load_live_uat_context",
+        fake_live_context,
+    )
+
+    next_input = goal_005_next_uat_input(api_base="http://127.0.0.1:8000")
+
+    assert next_input["available"] is True
+    assert next_input["selected_work_item"] == (
+        "content_work_item_content_decision_https___www_ekologus_pl"
+    )
+    assert next_input["fillable_input"]["wybrany_work_item"] == (
+        "content_work_item_content_decision_https___www_ekologus_pl"
+    )
+    assert "--api-base http://127.0.0.1:8000" in next_input["print_input_command"]
 
 
 def test_goal_005_pre_demo_audit_summary_can_include_dashboard_usefulness(
@@ -225,6 +283,8 @@ def test_goal_005_completion_check_renders_uat_sales_brief_provenance() -> None:
     assert "production_depth=0%" in markdown
     assert "publish_ready_locked=true" in markdown
     assert "Latest skill eval results" in markdown
+    assert "Następny input UAT" in markdown
+    assert "Komenda do wygenerowania JSON" in markdown
     assert "Sales Brief status: `blocked`" in markdown
     assert "Sales Brief blocker: Brakuje karty usługi; Brakuje karty CTA" in markdown
     assert "Sales Brief constraint evidence: ev_content_service_profile_source_facts" in markdown

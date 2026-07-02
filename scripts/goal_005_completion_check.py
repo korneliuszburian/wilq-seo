@@ -10,6 +10,7 @@ from scripts.audit_skill_eval_coverage import build_report as build_skill_eval_c
 from scripts.claim_ledger_gate_audit import build_report as build_claim_ledger_gate_report
 from scripts.dashboard_usefulness_audit import build_report as build_dashboard_usefulness_report
 from scripts.record_goal_005_content_uat_result import (
+    build_content_uat_input_example,
     build_content_uat_result_report,
     load_json,
 )
@@ -82,11 +83,13 @@ def build_completion_report(
     api_base: str | None = None,
 ) -> dict[str, Any]:
     pre_demo_audits = goal_005_pre_demo_audit_summary(api_base=api_base)
+    next_uat_input = goal_005_next_uat_input(api_base=api_base)
     missing_docs = [str(path) for path in REQUIRED_DOCS if not path.exists()]
     if missing_docs:
         return blocked_report(
             "required_goal_005_docs",
             missing_docs,
+            next_uat_input=next_uat_input,
             pre_demo_audits=pre_demo_audits,
         )
 
@@ -109,6 +112,7 @@ def build_completion_report(
                     ],
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
         if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
@@ -136,11 +140,13 @@ def build_completion_report(
                     "Use this as follow-up evidence, or provide explicit owner defer.",
                 ],
                 uat_live_provenance=uat_report.get("live_provenance_summary"),
+                next_uat_input=next_uat_input,
                 pre_demo_audits=pre_demo_audits,
             )
         return blocked_report(
             "valid_goal_005_uat_result",
             uat_report["errors"],
+            next_uat_input=next_uat_input,
             pre_demo_audits=pre_demo_audits,
         )
 
@@ -163,6 +169,7 @@ def build_completion_report(
         return blocked_report(
             "valid_goal_005_owner_defer",
             defer_report["errors"],
+            next_uat_input=next_uat_input,
             pre_demo_audits=pre_demo_audits,
         )
 
@@ -172,6 +179,7 @@ def build_completion_report(
             "Provide --uat-result with a validated Goal 005 UAT JSON, or",
             "provide --owner-defer with explicit owner defer and residual risk.",
         ],
+        next_uat_input=next_uat_input,
         pre_demo_audits=pre_demo_audits,
     )
 
@@ -251,6 +259,38 @@ def goal_005_pre_demo_audit_summary(api_base: str | None = None) -> dict[str, An
             "knowledge_lineage_count": knowledge_surface.get("lineage_count"),
         }
     return summary
+
+
+def goal_005_next_uat_input(api_base: str | None = None) -> dict[str, Any]:
+    live_context: dict[str, Any] | None = None
+    if api_base:
+        try:
+            from scripts.record_goal_005_content_uat_result import load_live_uat_context
+
+            live_context = load_live_uat_context(api_base)
+        except RuntimeError as error:
+            return {
+                "available": False,
+                "blocked_reason": str(error),
+                "selected_work_item": "<work_item_id_z_uat_packet>",
+                "review_artifacts": [],
+                "print_input_command": (
+                    "rtk uv run python scripts/record_goal_005_content_uat_result.py "
+                    f"--print-input-example --api-base {api_base}"
+                ),
+            }
+    example = build_content_uat_input_example(live_context=live_context)
+    return {
+        "available": True,
+        "selected_work_item": example["wybrany_work_item"],
+        "review_artifacts": example.get("pokazane_materialy_review", []),
+        "print_input_command": (
+            "rtk uv run python scripts/record_goal_005_content_uat_result.py "
+            + "--print-input-example"
+            + (f" --api-base {api_base}" if api_base else "")
+        ),
+        "fillable_input": example,
+    }
 
 
 def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str, Any]:
@@ -357,6 +397,7 @@ def blocked_report(
     details: list[str],
     *,
     uat_live_provenance: dict[str, Any] | None = None,
+    next_uat_input: dict[str, Any] | None = None,
     pre_demo_audits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
@@ -364,6 +405,7 @@ def blocked_report(
         "missing_input": missing_input,
         "details": details,
         "uat_live_provenance": uat_live_provenance,
+        "next_uat_input": next_uat_input or goal_005_next_uat_input(),
         "pre_demo_audits": pre_demo_audits or goal_005_pre_demo_audit_summary(),
         "safe_scope": (
             "Service Profile, materiały review i UAT packet można pokazać jako "
@@ -402,6 +444,9 @@ def render_markdown(report: dict[str, Any]) -> str:
         if report.get("uat_live_provenance"):
             lines.extend(["", "## Live UAT provenance"])
             lines.extend(render_uat_live_provenance(report["uat_live_provenance"]))
+        if report.get("next_uat_input"):
+            lines.extend(["", "## Następny input UAT"])
+            lines.extend(render_next_uat_input(report["next_uat_input"]))
         if report.get("pre_demo_audits"):
             lines.extend(["", "## Pre-demo gates"])
             lines.extend(render_pre_demo_audits(report["pre_demo_audits"]))
@@ -450,6 +495,22 @@ def render_uat_live_provenance(value: dict[str, Any]) -> list[str]:
         "- Production-depth ready: "
         + ("tak" if value.get("production_depth_ready") is True else "nie"),
     ]
+
+
+def render_next_uat_input(value: dict[str, Any]) -> list[str]:
+    artifacts = value.get("review_artifacts") or []
+    lines = [
+        "- Dostępny: " + ("tak" if value.get("available") is True else "nie"),
+        f"- Wybrany work item: `{value.get('selected_work_item') or 'brak'}`",
+        f"- Komenda do wygenerowania JSON: `{value.get('print_input_command') or 'brak'}`",
+    ]
+    if value.get("blocked_reason"):
+        lines.append(f"- Blokada pobrania live inputu: {value['blocked_reason']}")
+    lines.append(
+        "- Materiały review: "
+        + (", ".join(f"`{artifact}`" for artifact in artifacts) or "brak")
+    )
+    return lines
 
 
 def render_pre_demo_audits(value: dict[str, Any]) -> list[str]:

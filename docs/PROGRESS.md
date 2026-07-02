@@ -107,6 +107,12 @@ live API status later contradicts this state.
   API queue it selects
   `content_work_item_content_decision_https___www_ekologus_pl`, the actionable
   homepage refresh candidate, instead of blocked GA4/Ahrefs review-only items.
+- Goal 005 completion guard now surfaces the next UAT input directly in the
+  blocked report. `scripts/goal_005_completion_check.py --api-base
+  http://127.0.0.1:8000 --format json` still blocks completion without real
+  UAT/defer, but returns `next_uat_input.selected_work_item` plus the fillable
+  JSON command for the homepage candidate, so the next Wilku session does not
+  require hunting through helper scripts.
 - Daily Command usefulness proof: non-interactive eval for
   `wilq-daily-command` passed with `operator_usefulness_score=5`, 20 evidence
   IDs, eight source connectors and four validated daily actions. The first safe
