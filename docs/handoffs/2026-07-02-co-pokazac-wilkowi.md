@@ -49,6 +49,40 @@ Zapytaj:
 3. Którą część chcesz zobaczyć jako pierwszą: wiedzę usług, treści, Ads/GA4,
    czy social/history?
 
+### Najbliższe decyzje review w Service Profile
+
+Powiedz:
+
+> WILQ nie zatwierdza sam wiedzy z `ekologus-ai`. Robi z niej kolejkę decyzji
+> dla człowieka. Najpierw warto przejrzeć te pięć rzeczy, bo od nich zależy,
+> czy system będzie mógł robić mniej generyczne briefy i bezpieczniejsze
+> treści.
+
+Pokaż kolejkę:
+
+1. `service_profile_review_private_proposal_ekologus_ai_kb021_legal_safety_review_candidate_2026_07_01`
+   - zakres: bezpieczeństwo prawne, poufność, zgody;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+2. `service_profile_review_private_proposal_ekologus_ai_kb014_brand_voice_review_candidate_2026_07_01`
+   - zakres: styl marki i claim policy Ekologus;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+3. `service_profile_review_private_proposal_ekologus_ai_evidence_policy_source_trace_review_candidate_2026_07_02`
+   - zakres: source trace i evidence pack dla prywatnych/reviewed źródeł;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+4. `service_profile_review_private_proposal_ekologus_ai_kb003_audyt_zgodnosci_review_candidate_2026_07_01`
+   - zakres: Audyt zgodności środowiskowej;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+5. `service_profile_review_card_ekologus_service_bdo_reporting`
+   - zakres: BDO i sprawozdawczość środowiskowa;
+   - decyzja: `approve`, `needs_changes`, `stale` albo `reject`.
+
+Zapytaj:
+
+1. Czy te nazwy decyzji są zrozumiałe?
+2. Czy najpierw sprawdzamy politykę claimów i bezpieczeństwo, czy konkretną
+   usługę BDO?
+3. Co musi się zmienić, żeby którąkolwiek z tych kart można było zatwierdzić?
+
 ### Co znaczy 13/13 skill eval
 
 Powiedz:
