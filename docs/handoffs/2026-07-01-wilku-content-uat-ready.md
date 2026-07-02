@@ -403,6 +403,11 @@ materiałów startowych:
 - `docs/handoffs/2026-07-02-wilq-marketing-content-model.md`;
 - `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md`.
 
+To ostrzeżenie nie unieważnia samego raportu UAT, ale blokuje claim
+domknięcia Goal 005 w `scripts/goal_005_completion_check.py`. Pełny proof
+użyteczności dla Wilka musi zaczynać się od prostego modelu WILQ, nie od samych
+technicznych handoffów.
+
 ## Kryterium przejścia dalej
 
 Pełny Goal 005 UAT można uznać za wykonany dopiero, gdy Wilku realnie przejdzie

@@ -82,6 +82,24 @@ def build_completion_report(
 
     if uat_result is not None:
         uat_report = validate_uat_result(uat_result, api_base=api_base)
+        if (
+            uat_report["valid"]
+            and uat_report["overall_status"] == "ready_for_full_content_uat"
+            and uat_report.get("missing_recommended_review_artifacts")
+        ):
+            return blocked_report(
+                "goal_005_required_review_artifacts",
+                [
+                    "UAT result is valid, but it skipped recommended plain-language "
+                    "review artifacts.",
+                    "Show these artifacts to Wilku before claiming Goal 005 completion:",
+                    *[
+                        str(artifact)
+                        for artifact in uat_report["missing_recommended_review_artifacts"]
+                    ],
+                ],
+                uat_live_provenance=uat_report.get("live_provenance_summary"),
+            )
         if uat_report["valid"] and uat_report["overall_status"] == "ready_for_full_content_uat":
             return {
                 "status": "complete_with_uat",
@@ -151,6 +169,9 @@ def validate_uat_result(path: Path, *, api_base: str | None = None) -> dict[str,
         "overall_status": report["overall_status"],
         "selected_work_item": report["selected_work_item"],
         "shown_review_artifacts": report["shown_review_artifacts"],
+        "missing_recommended_review_artifacts": report[
+            "missing_recommended_review_artifacts"
+        ],
         "live_provenance_summary": uat_live_provenance_summary(
             report.get("live_provenance")
         ),
