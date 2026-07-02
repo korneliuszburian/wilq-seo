@@ -615,6 +615,13 @@ Result:
   `channel`, `published_at`, `topic`, `service`, `claim`, `cta`, `format`,
   `post_url_or_id` and `source_evidence_id`. It blocks publication, social
   performance, revenue/ROAS and "no historical repetition" claims.
+- Current replay proof after the latest Goal 005 eval slice is stored at
+  `.local-lab/evals/codex-skill/20260702T160931Z`. It again passed with
+  `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true, kept
+  `mode=review_only` / `publish_allowed=false`, validated
+  `act_prepare_linkedin_social_drafts` and `act_prepare_facebook_social_drafts`,
+  and required `source_evidence_id` in metadata-only social history before any
+  duplicate-free claim.
 
 ## 2026-07-02 - GA4 dashboard usefulness review
 
