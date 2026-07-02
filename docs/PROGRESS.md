@@ -247,7 +247,9 @@ live API status later contradicts this state.
   to `social_draft_context` so historical-post blockers are measured without
   counting unrelated context-pack actions. `scripts/pre_demo_gate.sh` now runs
   this audit after the live contract smoke. Current per-screen snapshot is
-  stored in `docs/evals/dashboard-usefulness-audit.md`.
+  stored in `docs/evals/dashboard-usefulness-audit.md`; reference surfaces
+  such as Actions, Opportunities and Knowledge now show safe operator use
+  instead of an empty next-step cell.
 - Source fact / Service Profile coverage is now auditable as a concise Wilku
   readiness report through `scripts/source_fact_coverage_audit.py`. Proof on
   2026-07-02: 12 source facts, 13 review actions, 5 private `ekologus-ai`

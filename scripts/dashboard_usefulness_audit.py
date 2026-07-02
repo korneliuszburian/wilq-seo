@@ -41,6 +41,7 @@ class SurfaceSpec:
     requires_lineage: bool = False
     requires_blocker_or_blocked_claim: bool = False
     requires_polish_contract: bool = False
+    reference_next_step: str | None = None
     demo_priority: int = 50
 
 
@@ -196,6 +197,10 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         "/api/actions",
         requires_evidence=False,
         requires_source_connector=False,
+        reference_next_step=(
+            "Użyj po wybraniu konkretnej akcji z Centrum pracy; to rejestr "
+            "dowodów, walidacji i blokad, nie kolejka startowa."
+        ),
         demo_priority=70,
     ),
     SurfaceSpec(
@@ -207,6 +212,10 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         "/api/opportunities",
         requires_evidence=False,
         requires_source_connector=False,
+        reference_next_step=(
+            "Użyj jako rejestr szans po Centrum pracy; decyzję uruchamiaj "
+            "przez powiązaną akcję i dowody."
+        ),
         demo_priority=75,
     ),
     SurfaceSpec(
@@ -231,6 +240,10 @@ SURFACES: tuple[SurfaceSpec, ...] = (
         requires_source_connector=False,
         requires_records=True,
         requires_lineage=True,
+        reference_next_step=(
+            "Użyj do trace i review źródeł wiedzy; sama karta nie oznacza "
+            "production-depth bez zatwierdzenia."
+        ),
         demo_priority=85,
     ),
 )
@@ -312,6 +325,9 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
     record_count = _record_count(payload)
     lineage_count = len(_find_unique_values(payload, "source_lineage"))
     safe_next_steps = _safe_next_steps(payload)
+    sample_next_steps = safe_next_steps[:3]
+    if not sample_next_steps and spec.reference_next_step:
+        sample_next_steps = [spec.reference_next_step]
     language = payload.get("language") if isinstance(payload, dict) else None
     has_blockers = _has_blockers(payload)
 
@@ -380,7 +396,7 @@ def evaluate_surface(spec: SurfaceSpec, fetch_result: dict[str, Any]) -> dict[st
         "sample_source_connectors": source_connectors[:4],
         "sample_action_ids": action_ids[:4],
         "sample_blocked_claims": blocked_claims[:4],
-        "sample_next_steps": safe_next_steps[:3],
+        "sample_next_steps": sample_next_steps,
         "errors": errors,
     }
 

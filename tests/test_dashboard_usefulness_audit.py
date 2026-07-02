@@ -256,6 +256,44 @@ def test_action_ids_are_detected_from_singular_review_action_fields() -> None:
     assert result["sample_action_ids"] == ["service_profile_review_private_proposal_abc"]
 
 
+def test_reference_surface_can_explain_safe_operator_use_without_decision_queue() -> None:
+    audit = load_module()
+    spec = audit.SurfaceSpec(
+        "actions",
+        "/actions",
+        "Akcje",
+        "registry",
+        "production",
+        "/api/actions",
+        requires_evidence=False,
+        requires_source_connector=False,
+        reference_next_step=(
+            "Użyj po wybraniu konkretnej akcji z Centrum pracy; to rejestr, "
+            "nie kolejka startowa."
+        ),
+    )
+
+    result = audit.evaluate_surface(
+        spec,
+        {
+            "payload": [
+                {
+                    "action_id": "act_prepare_content_refresh_queue",
+                    "evidence_ids": ["ev_content"],
+                }
+            ],
+            "errors": [],
+        },
+    )
+
+    assert result["readiness"] == "demo_ready"
+    assert result["safe_next_step_count"] == 0
+    assert result["sample_next_steps"] == [
+        "Użyj po wybraniu konkretnej akcji z Centrum pracy; to rejestr, "
+        "nie kolejka startowa."
+    ]
+
+
 def test_knowledge_surface_requires_nonempty_records() -> None:
     audit = load_module()
     spec = audit.SurfaceSpec(
