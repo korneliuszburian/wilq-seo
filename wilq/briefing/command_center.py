@@ -54,6 +54,7 @@ from wilq.schemas import (
     OpportunityDomain,
     TacticalQueueItem,
     TacticalQueueResponse,
+    connector_refresh_has_live_data,
     utc_now,
 )
 from wilq.storage.local_state import local_state_store
@@ -1309,11 +1310,7 @@ def _tactical_items_for_latest_refresh(
 
 
 def _refresh_has_live_data(run: ConnectorRefreshRun | None) -> bool:
-    return (
-        run is not None
-        and run.status == ConnectorRefreshStatus.completed
-        and run.vendor_data_collected
-    )
+    return connector_refresh_has_live_data(run)
 
 
 def _first_numeric_fact(facts: list[MetricFact], name: str) -> float:
@@ -1886,7 +1883,7 @@ def _latest_successful_localo_mcp_run(
 ) -> ConnectorRefreshRun | None:
     for run in runs:
         if (
-            run.status == ConnectorRefreshStatus.completed
+            connector_refresh_has_live_data(run)
             and run.metric_summary.get("api") == "localo_mcp_oauth_probe"
             and run.metric_summary.get("mcp_initialize_status") == 200
         ):

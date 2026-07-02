@@ -4,7 +4,13 @@ from collections.abc import Iterable
 
 from wilq.evidence.registry import connector_evidence_id
 from wilq.operator_labels import source_connector_label
-from wilq.schemas import ActionRisk, ConnectorRefreshRun, ContentDecisionItem
+from wilq.schemas import (
+    ActionRisk,
+    ConnectorRefreshRun,
+    ContentDecisionItem,
+    connector_refresh_has_live_data,
+    connector_refresh_run_status_label,
+)
 
 
 def content_vendor_read_blocker_decision(
@@ -68,6 +74,13 @@ def content_blocker_reason(
     latest = next((run for run in latest_refreshes if run.connector_id == connector_id), None)
     if latest and latest.errors:
         return latest.errors[0]
+    if (
+        latest
+        and latest.vendor_data_collected
+        and not connector_refresh_has_live_data(latest)
+        and not latest.metrics_persisted
+    ):
+        return f"Odczyt źródła jest niepełny: {connector_refresh_run_status_label(latest)}"
     if latest and latest.summary:
         return latest.summary
     return f"Brak wykonanego odczytu danych dla: {source_connector_label(connector_id)}."

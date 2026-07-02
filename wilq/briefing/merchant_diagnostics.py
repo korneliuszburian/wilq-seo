@@ -43,6 +43,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
     utc_now,
 )
@@ -164,10 +165,7 @@ def build_merchant_diagnostics(
     metric_facts = [_merchant_metric_fact_with_labels(fact) for fact in metric_facts]
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
-        or (
-            latest_refresh.status == ConnectorRefreshStatus.completed
-            and latest_refresh.vendor_data_collected
-        )
+        or connector_refresh_has_live_data(latest_refresh)
     )
     trusted_facts = metric_facts if live_data_available else []
     tactical_items = [

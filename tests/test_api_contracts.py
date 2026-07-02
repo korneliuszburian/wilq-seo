@@ -210,6 +210,7 @@ from wilq.schemas import (
     OpportunityDomain,
     TacticalQueueItem,
     TacticalQueueResponse,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
 )
 from wilq.security.redaction import redact_mapping
@@ -1584,7 +1585,11 @@ def test_connector_refresh_run_labels_incomplete_metric_persistence() -> None:
     )
 
     assert run.status_label == "odczyt niepełny - metryki nieutrwalone"
+    assert connector_refresh_has_live_data(run) is False
     assert connector_refresh_run_status_label(run) == "odczyt niepełny - metryki nieutrwalone"
+
+    trusted_run = run.model_copy(update={"metrics_persisted": True})
+    assert connector_refresh_has_live_data(trusted_run) is True
 
 
 def test_operator_label_fallbacks_do_not_humanize_raw_unknown_enums() -> None:
@@ -6224,11 +6229,28 @@ def test_ga4_diagnostics_exposes_incomplete_metric_persistence(
         summary="GA4 vendor read completed, but metrics were not persisted.",
     )
     local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="active_users",
+                value=20,
+                dimensions={
+                    "landing_page": "/oferta/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Test",
+                },
+            )
+        ],
+    )
 
     response = client.get("/api/ga4/diagnostics")
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["live_data_available"] is False
+    assert payload["freshness_assessment"]["state"] == "blocked"
+    assert "odczyt niepełny - metryki nieutrwalone" in payload["freshness_assessment"]["summary"]
     assert payload["latest_refresh"]["metrics_persisted"] is False
     assert payload["latest_refresh"]["status_label"] == "odczyt niepełny - metryki nieutrwalone"
     assert payload["latest_refresh_status_label"] == "odczyt niepełny - metryki nieutrwalone"

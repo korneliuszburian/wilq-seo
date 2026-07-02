@@ -24,6 +24,7 @@ from wilq.schemas import (
     MarketingBriefItem,
     MarketingBriefSection,
     MetricFact,
+    connector_refresh_has_live_data,
 )
 from wilq.storage.metric_store import metric_store
 
@@ -255,7 +256,7 @@ def _latest_successful_localo_mcp_run(
     )
     for run in sorted_runs:
         if (
-            run.status == ConnectorRefreshStatus.completed
+            connector_refresh_has_live_data(run)
             and run.metric_summary.get("api") == "localo_mcp_oauth_probe"
             and run.metric_summary.get("mcp_initialize_status") == 200
         ):
@@ -633,9 +634,7 @@ def _metric_fact_allowed_by_latest_refresh(
     latest_run = latest_runs.get(fact.source_connector)
     if latest_run is None:
         return True
-    return (
-        latest_run.status == ConnectorRefreshStatus.completed and latest_run.vendor_data_collected
-    )
+    return connector_refresh_has_live_data(latest_run)
 
 
 def _blocker_items(
@@ -649,11 +648,7 @@ def _blocker_items(
         if connector.id in OPTIONAL_BRIEF_BLOCKER_CONNECTORS:
             continue
         latest_run = latest_runs.get(connector.id)
-        has_successful_read = (
-            latest_run is not None
-            and latest_run.status == ConnectorRefreshStatus.completed
-            and latest_run.vendor_data_collected
-        )
+        has_successful_read = connector_refresh_has_live_data(latest_run)
         if has_successful_read:
             continue
         has_blocked_run = latest_run is not None and latest_run.status in {
@@ -970,7 +965,7 @@ def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None)
         return "dostęp Localo wymaga dokończenia połączenia"
     if run and run.errors:
         return run.errors[0]
-    if run and run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
+    if connector_refresh_has_live_data(run):
         return "źródło danych ma zakończony odczyt"
     if run:
         return _refresh_reason_from_metrics(connector.id, run)
@@ -983,7 +978,7 @@ def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None)
 
 def _refresh_reason_from_metrics(connector_id: str, run: ConnectorRefreshRun) -> str:
     metrics = run.metric_summary
-    if run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
+    if connector_refresh_has_live_data(run):
         if connector_id == "google_analytics_4":
             return (
                 "odczyt GA4 zakończony; "

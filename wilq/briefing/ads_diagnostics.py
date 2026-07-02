@@ -120,8 +120,8 @@ from wilq.schemas import (
     AdsStrategyReviewReadinessContract,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
-    ConnectorRefreshStatus,
     MetricFact,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
 )
 from wilq.storage.metric_store import metric_store
@@ -382,8 +382,7 @@ def build_ads_diagnostics(
     metric_facts = _ads_metric_facts_for_view(view, latest_refresh)
     latest_refresh_collected_data = (
         latest_refresh is not None
-        and latest_refresh.status == ConnectorRefreshStatus.completed
-        and latest_refresh.vendor_data_collected
+        and connector_refresh_has_live_data(latest_refresh)
     )
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
@@ -1045,6 +1044,8 @@ def _ads_metric_facts_for_view(
         latest_evidence_facts = metric_store().list_metric_facts_by_evidence_ids(
             latest_refresh.evidence_ids
         )
+        if not latest_refresh.metrics_persisted:
+            return latest_evidence_facts
         if latest_evidence_facts:
             return latest_evidence_facts
         if (
@@ -1112,8 +1113,7 @@ def _oauth_or_live_section(
 ) -> AdsDiagnosticSection:
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
     has_completed_live_refresh = (
-        latest_refresh is not None
-        and latest_refresh.status == ConnectorRefreshStatus.completed
+        connector_refresh_has_live_data(latest_refresh)
         and bool(metric_facts)
     )
     if has_completed_live_refresh:

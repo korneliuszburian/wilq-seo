@@ -31,6 +31,7 @@ ekologus-access-pack-*/
 credentials/
 !wilq/credentials/
 !wilq/credentials/**
+wilq/credentials/__pycache__/
 *oauth-client*.json
 *application_default_credentials*.json
 

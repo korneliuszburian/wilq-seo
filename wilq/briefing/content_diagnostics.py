@@ -49,7 +49,6 @@ from wilq.operator_labels import (
 from wilq.schemas import (
     ActionObject,
     ConnectorRefreshRun,
-    ConnectorRefreshStatus,
     ContentDecisionItem,
     ContentDiagnosticsResponse,
     ContentGscSearchAnalyticsContract,
@@ -57,6 +56,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    connector_refresh_has_live_data,
 )
 from wilq.storage.metric_store import metric_store
 
@@ -265,8 +265,7 @@ def _gsc_search_analytics_contract(
             item
             for item in latest_refreshes
             if item.connector_id == "google_search_console"
-            and item.status == ConnectorRefreshStatus.completed
-            and item.vendor_data_collected
+            and connector_refresh_has_live_data(item)
         ),
         None,
     )
@@ -421,7 +420,7 @@ def _primary_content_data_available(
         latest = latest_by_connector.get(connector_id)
         if latest is None:
             continue
-        if latest.status != ConnectorRefreshStatus.completed or not latest.vendor_data_collected:
+        if not connector_refresh_has_live_data(latest):
             return False
     return True
 

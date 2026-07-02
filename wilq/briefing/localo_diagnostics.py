@@ -24,6 +24,7 @@ from wilq.schemas import (
     LocaloOperatorSummary,
     LocaloReadContractStatus,
     MetricFact,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
 )
 from wilq.storage.metric_store import metric_store
@@ -261,7 +262,7 @@ def _latest_relevant_localo_refresh(
 
 def _is_successful_mcp_probe(run: ConnectorRefreshRun) -> bool:
     return (
-        run.status == ConnectorRefreshStatus.completed
+        connector_refresh_has_live_data(run)
         and run.metric_summary.get("api") == "localo_mcp_oauth_probe"
         and int(run.metric_summary.get("mcp_initialize_status", 0)) == 200
     )
@@ -283,6 +284,8 @@ def _localo_metric_fact_with_label(fact: MetricFact) -> MetricFact:
 
 
 def _metric_facts_for_refresh(run: ConnectorRefreshRun | None) -> list[MetricFact]:
+    if run is not None and not run.metrics_persisted:
+        return []
     if run and run.evidence_ids:
         facts = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
         if facts:

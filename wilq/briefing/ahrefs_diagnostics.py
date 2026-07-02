@@ -21,6 +21,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
 )
 from wilq.storage.metric_store import metric_store
@@ -469,8 +470,7 @@ def _latest_relevant_ahrefs_refresh(
     for run in refresh_runs:
         if (
             run.mode.value == "vendor_read"
-            and run.status == ConnectorRefreshStatus.completed
-            and run.vendor_data_collected
+            and connector_refresh_has_live_data(run)
         ):
             return run
     return refresh_runs[0] if refresh_runs else None

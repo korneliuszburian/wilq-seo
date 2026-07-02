@@ -24,6 +24,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    connector_refresh_has_live_data,
     connector_refresh_run_status_label,
     utc_now,
 )
@@ -120,10 +121,7 @@ def build_ga4_diagnostics(
     metric_facts = [_ga4_metric_fact_with_marketer_labels(fact) for fact in metric_facts]
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
-        or (
-            latest_refresh.status == ConnectorRefreshStatus.completed
-            and latest_refresh.vendor_data_collected
-        )
+        or connector_refresh_has_live_data(latest_refresh)
     )
     trusted_facts = metric_facts if live_data_available else []
     source_tactical_items = (
@@ -591,10 +589,7 @@ def _ga4_freshness_assessment(
 
     completed_at = latest_refresh.completed_at or latest_refresh.started_at
     age_hours = round((utc_now() - completed_at).total_seconds() / 3600, 2)
-    if (
-        latest_refresh.status != ConnectorRefreshStatus.completed
-        or not latest_refresh.vendor_data_collected
-    ):
+    if not connector_refresh_has_live_data(latest_refresh):
         return Ga4FreshnessAssessment(
             state="blocked",
             latest_refresh_id=latest_refresh.id,
@@ -604,7 +599,7 @@ def _ga4_freshness_assessment(
             requires_refresh=True,
             summary=(
                 "Ostatni odczyt GA4 nie zakończył się pełnym pobraniem metryk. "
-                f"Status odczytu: {_ga4_refresh_status_label(latest_refresh.status)}."
+                f"Status odczytu: {_ga4_refresh_status_label(latest_refresh)}."
             ),
             next_step=(
                 "Napraw blocker odczytu i uruchom ponownie odczyt danych GA4 przed "
@@ -1197,6 +1192,8 @@ def _ga4_blocker_reason(latest_refresh: ConnectorRefreshRun | None) -> str:
         return f"GA4 refresh blocked: {', '.join(latest_refresh.errors) or latest_refresh.summary}"
     if latest_refresh.status == ConnectorRefreshStatus.failed:
         return f"GA4 refresh failed: {', '.join(latest_refresh.errors) or latest_refresh.summary}"
+    if not latest_refresh.metrics_persisted:
+        return "Ostatni GA4 refresh nie utrwalił metryk."
     if not latest_refresh.vendor_data_collected:
         return "Ostatni GA4 refresh nie zebrał vendor data."
     return latest_refresh.summary

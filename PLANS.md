@@ -243,6 +243,11 @@ labels that state as `odczyt niepełny - metryki nieutrwalone` in the run itself
 major diagnostics and the dashboard refresh-run list, so an operator does not
 treat an incomplete refresh as normal evidence.
 
+That same edge case is now part of the data-trust gate: completed vendor reads
+must also have `metrics_persisted=true` before they unlock trusted facts,
+`live_data_available`, content vendor-read preflight, command-center decisions
+or Marketing Brief blocker clearance.
+
 Connector status now carries product-scope metadata so roadmap surfaces no
 longer look equivalent to production evidence: `production`,
 `optional_disabled`, `experimental` and `runtime`, plus

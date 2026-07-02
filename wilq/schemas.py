@@ -250,6 +250,15 @@ def connector_refresh_run_status_label(run: ConnectorRefreshRun) -> str:
     return connector_refresh_status_label(run.status)
 
 
+def connector_refresh_has_live_data(run: ConnectorRefreshRun | None) -> bool:
+    return (
+        run is not None
+        and run.status == ConnectorRefreshStatus.completed
+        and run.vendor_data_collected
+        and run.metrics_persisted
+    )
+
+
 class MetricFact(BaseModel):
     name: str
     metric_label: str = ""

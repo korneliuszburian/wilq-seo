@@ -190,6 +190,11 @@ API status later contradicts this state.
   Merchant, Ads, Localo, Ahrefs and content diagnostics inherit the label, and
   the dashboard refresh-run list shows metric persistence directly instead of a
   normal green refresh.
+- Follow-up trust gate hardening now also requires persisted metrics before a
+  completed vendor read can unlock `live_data_available`, trusted facts,
+  command-center/brief blocker clearance or content vendor-read preflight. This
+  prevents a hard-crash edge case from reusing old metric facts as current
+  evidence.
 - Connector scope clarity slice on 2026-07-02 adds API-owned
   `product_scope`, `product_scope_label` and `active_for_daily_work` to
   connector status. Live `/api/connectors` now marks Google Ads and other core

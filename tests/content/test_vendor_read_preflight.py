@@ -40,6 +40,15 @@ def test_content_blocker_reason_prefers_refresh_error_then_summary() -> None:
     assert content_blocker_reason(refreshes, "wordpress_ekologus") == "WordPress bez wpisów."
 
 
+def test_content_blocker_reason_flags_incomplete_metric_persistence() -> None:
+    refresh = _refresh("google_search_console", summary="Odczyt GSC zakończony.")
+    refresh = refresh.model_copy(update={"vendor_data_collected": True, "metrics_persisted": False})
+
+    assert content_blocker_reason([refresh], "google_search_console") == (
+        "Odczyt źródła jest niepełny: odczyt niepełny - metryki nieutrwalone"
+    )
+
+
 def test_refresh_or_connector_evidence_ids_falls_back_to_connector_evidence() -> None:
     assert refresh_or_connector_evidence_ids([], "google_search_console") == [
         "ev_connector_google_search_console_status"
