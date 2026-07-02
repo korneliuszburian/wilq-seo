@@ -229,6 +229,12 @@
         "evidence_backed_reasoning": {
           "type": "boolean"
         },
+        "first_action_clear": {
+          "type": "boolean"
+        },
+        "why_this_first_clear": {
+          "type": "boolean"
+        },
         "notes_pl": {
           "type": "string"
         }
@@ -239,6 +245,8 @@
         "blocked_claims_handled",
         "workflow_specific_interpretation",
         "evidence_backed_reasoning",
+        "first_action_clear",
+        "why_this_first_clear",
         "notes_pl"
       ]
     },

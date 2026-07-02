@@ -331,6 +331,10 @@ Oczekiwane connector surfaces: {connectors}
     route/diagnostics/action contract zamiast generycznej porady marketingowej.
   - `evidence_backed_reasoning=true`, gdy decyzja wynika z identyfikatorów dowodów,
     źródeł danych i danych ze smoke/API.
+  - `first_action_clear=true`, gdy odpowiedź mówi prostym językiem, co zrobić
+    najpierw.
+  - `why_this_first_clear=true`, gdy odpowiedź wyjaśnia, dlaczego ten krok jest
+    pierwszy teraz, a nie tylko wymienia listę route'ów albo akcji.
   - `notes_pl` krótko wyjaśnia po polsku, dlaczego decyzja jest użyteczna albo
     co blokuje pełną decyzję.
 - Pole `eval_rubric` jest obowiązkowe. Ustaw
@@ -520,6 +524,8 @@ decision_quality_required = {
     "blocked_claims_handled": "blocked_claims_handled must be true",
     "workflow_specific_interpretation": "workflow_specific_interpretation must be true",
     "evidence_backed_reasoning": "evidence_backed_reasoning must be true",
+    "first_action_clear": "first_action_clear must be true",
+    "why_this_first_clear": "why_this_first_clear must be true",
 }
 for field, message in decision_quality_required.items():
     if decision_quality.get(field) is not True:

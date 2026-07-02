@@ -18,6 +18,14 @@
       "Google Ads",
       "Localo poza daily_decisions"
     ],
+    "required_decision_terms_pl": [
+      "co zrobić najpierw",
+      "dlaczego teraz",
+      "dowody",
+      "blokada",
+      "następny bezpieczny krok"
+    ],
+    "minimum_operator_usefulness_score": 5,
     "expected_action_ids": [
       "act_review_merchant_feed_issues",
       "act_prepare_content_refresh_queue",

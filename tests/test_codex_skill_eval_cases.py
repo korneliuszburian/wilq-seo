@@ -545,6 +545,16 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "rozmiar odbiorców" in custom_segments_case["blocked_claim_terms"]
     assert "zapis kierowania reklam" in custom_segments_case["blocked_claim_terms"]
     daily_case = cases["wilq-daily-command"]
+    assert daily_case["minimum_operator_usefulness_score"] == 5
+    assert set(daily_case["required_decision_terms_pl"]).issuperset(
+        {
+            "co zrobić najpierw",
+            "dlaczego teraz",
+            "dowody",
+            "blokada",
+            "następny bezpieczny krok",
+        }
+    )
     assert "localo" in daily_case["expected_connectors"]
     assert "localo" not in daily_case["required_source_connectors"]
     assert "act_review_localo_visibility_facts" in daily_case["forbidden_action_ids"]
@@ -682,6 +692,8 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "blocked_claims_handled must be true",
         "workflow_specific_interpretation must be true",
         "evidence_backed_reasoning must be true",
+        "first_action_clear must be true",
+        "why_this_first_clear must be true",
         "messy_marketer_prompt",
         "messy_task_pl",
         'task_pl = case.get("task_pl") or messy_task_pl',
@@ -708,6 +720,8 @@ def test_codex_skill_eval_schema_requires_decision_quality() -> None:
         "blocked_claims_handled",
         "workflow_specific_interpretation",
         "evidence_backed_reasoning",
+        "first_action_clear",
+        "why_this_first_clear",
         "notes_pl",
     }
     for field in (
@@ -716,6 +730,8 @@ def test_codex_skill_eval_schema_requires_decision_quality() -> None:
         "blocked_claims_handled",
         "workflow_specific_interpretation",
         "evidence_backed_reasoning",
+        "first_action_clear",
+        "why_this_first_clear",
     ):
         assert decision_quality["properties"][field]["type"] == "boolean"
     assert decision_quality["properties"]["notes_pl"]["type"] == "string"

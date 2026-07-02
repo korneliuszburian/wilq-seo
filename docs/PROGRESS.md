@@ -181,6 +181,13 @@ live API status later contradicts this state.
   for manual review, but cannot claim a topic is new, non-duplicated or safe to
   repeat until metadata-only LinkedIn/Facebook history exists. Passing proof:
   `.local-lab/evals/codex-skill/20260702T145613Z/wilq-social-publisher/result.json`.
+- Daily Command eval now has a stricter first-action clarity gate: the result
+  must state what to do first, why now, the proof, the blocker and the next safe
+  step. Passing proof:
+  `.local-lab/evals/codex-skill/20260702T150140Z/wilq-daily-command/result.json`
+  selected `/merchant` first from `daily_decisions`/`primary_next_step`,
+  validated four daily actions and kept Localo/social out of the primary day
+  queue when they are not in the command-center decisions.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production

@@ -8749,3 +8749,50 @@ Result:
   `source_evidence_id` before saying a topic is new or non-duplicated.
 - Publish access, duplicate-free claims, social performance growth, ROAS,
   revenue and unreviewed posting remain blocked.
+
+## 2026-07-02 - Daily Command first-action clarity gate
+
+Purpose:
+
+- Tighten `wilq-daily-command` from "valid daily JSON with evidence" to a
+  BDOS-class morning decision: what Wilku should do first, why now, which proof
+  supports it, what is blocked and what the next safe step is.
+- Prevent route/action marker stuffing from passing as operator usefulness.
+
+Change:
+
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `operator_usefulness_score=5` for `wilq-daily-command` plus actionable Polish
+  decision terms: `co zrobić najpierw`, `dlaczego teraz`, `dowody`, `blokada`
+  and `następny bezpieczny krok`.
+- `docs/evals/schemas/wilq-skill-eval-result.schema.json` and
+  `scripts/codex_skill_eval.sh` now require `decision_quality.first_action_clear`
+  and `decision_quality.why_this_first_clear`.
+
+Focused proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py
+rtk uv run python scripts/audit_skill_eval_coverage.py --strict
+rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T150140Z/wilq-daily-command/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, 22 evidence IDs, 4 recommendations, 4 action candidates
+  and all hard gates true.
+- The output identified `/merchant` as the first action from
+  `/command-center`, `daily_decisions` and `primary_next_step`.
+- The first-step proof used
+  `ev_refresh_refresh_google_merchant_center_a04a45a6e6fd` and
+  `ev_connector_google_merchant_center_status`.
+- The output validated `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`, `act_review_ga4_tracking_quality` and
+  `act_prepare_ads_campaign_review_queue`.
+- Localo and social were not promoted as primary daily work when absent from
+  `daily_decisions`.
+- Product reapproval, recovered revenue, automatic feed change, ROAS,
+  budget-scaling and write/apply claims remained blocked.
