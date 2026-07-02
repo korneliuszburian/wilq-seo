@@ -93,6 +93,8 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getByText("private_claim_policy_proposal")).toBeInTheDocument();
     expect(screen.getAllByText("medium").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Decyzje: approve, needs_changes, stale, reject").length)
+      .toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.queryByRole("button", { name: /edytuj/i })).not.toBeInTheDocument();
@@ -309,6 +311,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         mode: "review_request",
         review_scope: "private_service_proposal",
         priority: "medium",
+        decision_options: ["approve", "needs_changes", "stale", "reject"],
         label: "Sprawdź prywatną propozycję: Eko-Opieka / Eko Kalendarz",
         reason:
           "ekologus-ai reviewed handoff: Eko-Opieka jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",
@@ -321,6 +324,7 @@ function serviceProfileResponse(): ContentServiceProfileResponse {
         mode: "review_request",
         review_scope: "private_claim_policy_proposal",
         priority: "high",
+        decision_options: ["approve", "needs_changes", "stale", "reject"],
         label: "Sprawdź prywatną propozycję: Styl marki i claim policy Ekologus",
         reason:
           "ekologus-ai reviewed handoff: Styl marki jest redacted i review-required; może wspierać pytania UAT, ale nie production-depth.",

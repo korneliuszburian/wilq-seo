@@ -213,6 +213,12 @@ proposal actions are `private_service_proposal` / `medium`, while brand/legal
 claim-policy actions are `private_claim_policy_proposal` / `high`; dashboard
 and the UAT packet render these fields instead of parsing action IDs.
 
+Under Beads task `wilq-seo-vu8c`, every Service Profile review action also
+exposes API-owned `decision_options`, aligned with
+`scripts/record_service_profile_review_result.py`: `approve`, `needs_changes`,
+`stale` and `reject`. Dashboard and the UAT packet now show those options for
+the review queue so Wilku can record outcomes without guessing accepted values.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and

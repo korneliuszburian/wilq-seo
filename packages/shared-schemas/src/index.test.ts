@@ -153,6 +153,7 @@ describe("ContentServiceProfileResponseSchema", () => {
           mode: "review_request",
           review_scope: "general_knowledge_review",
           priority: "medium",
+          decision_options: ["approve", "needs_changes", "stale", "reject"],
           label: "Poproś o review",
           reason: "Review required.",
           blocked_write_claim: "No write.",

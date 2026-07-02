@@ -497,6 +497,7 @@ export const ContentServiceProfileReviewActionSchema = z.object({
     "private_evidence_policy_proposal"
   ]),
   priority: z.enum(["high", "medium", "low"]),
+  decision_options: z.array(z.enum(["approve", "needs_changes", "stale", "reject"])).default([]),
   label: z.string(),
   reason: z.string(),
   blocked_write_claim: z.string(),

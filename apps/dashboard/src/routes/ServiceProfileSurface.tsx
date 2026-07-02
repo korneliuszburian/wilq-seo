@@ -292,6 +292,11 @@ function ReviewActions({
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">{action.reason}</p>
+            {action.decision_options.length > 0 ? (
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Decyzje: {action.decision_options.join(", ")}
+              </p>
+            ) : null}
             <p className="mt-2 text-xs leading-5 text-slate-500">
               {action.blocked_write_claim}
             </p>

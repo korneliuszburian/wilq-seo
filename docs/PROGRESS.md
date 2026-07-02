@@ -142,6 +142,10 @@ API status later contradicts this state.
   `private_service_proposal` / `medium` and claim-policy proposals as
   `private_claim_policy_proposal` / `high`; dashboard and UAT packet render the
   typed fields directly.
+- Service Profile review actions now also expose `decision_options` aligned
+  with the review recorder: `approve`, `needs_changes`, `stale`, `reject`.
+  Live API and UAT packet both return those options on private service and
+  claim-policy review actions.
 - GA4 Analyst measurement-vs-marketing eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T025826Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, 12 evidence IDs, three

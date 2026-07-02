@@ -391,6 +391,10 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
     )
     assert all(action.priority == "medium" for action in public_service_review_actions)
     assert all(
+        action.decision_options == ["approve", "needs_changes", "stale", "reject"]
+        for action in public_service_review_actions
+    )
+    assert all(
         "nie promuje" in action.blocked_write_claim
         for action in public_service_review_actions
     )
@@ -478,6 +482,9 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
         == "private_claim_policy_proposal"
     )
     assert private_action_by_target["ekologus_claim_policy_brand_voice"].priority == "high"
+    assert private_action_by_target[
+        "ekologus_claim_policy_brand_voice"
+    ].decision_options == ["approve", "needs_changes", "stale", "reject"]
 
 
 def test_service_profile_exposes_water_permit_as_review_required_card() -> None:

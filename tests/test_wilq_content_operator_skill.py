@@ -196,6 +196,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "mode": "review_request",
                     "review_scope": "public_service_card",
                     "priority": "medium",
+                    "decision_options": ["approve", "needs_changes", "stale", "reject"],
                     "label": "Sprawdź BDO",
                     "reason": "Źródło publiczne wymaga decyzji właściciela.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -210,6 +211,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "mode": "review_request",
                     "review_scope": "private_service_proposal",
                     "priority": "medium",
+                    "decision_options": ["approve", "needs_changes", "stale", "reject"],
                     "label": "Sprawdź prywatną propozycję",
                     "reason": "Prywatne źródło wymaga sanitizacji.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -224,6 +226,7 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
                     "mode": "review_request",
                     "review_scope": "private_claim_policy_proposal",
                     "priority": "high",
+                    "decision_options": ["approve", "needs_changes", "stale", "reject"],
                     "label": "Sprawdź prywatną politykę claimów",
                     "reason": "Prywatne źródło claim-policy wymaga decyzji.",
                     "blocked_write_claim": "Ta akcja nie promuje faktu ani karty wiedzy.",
@@ -300,6 +303,12 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
         "public_service_card"
     )
     assert summary["public_service_review_actions"][0]["priority"] == "medium"
+    assert summary["public_service_review_actions"][0]["decision_options"] == [
+        "approve",
+        "needs_changes",
+        "stale",
+        "reject",
+    ]
     assert summary["private_review_actions"][0]["target_card_id"] == (
         "ekologus_service_environmental_consulting_outsourcing"
     )
@@ -313,6 +322,12 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
         "private_claim_policy_proposal"
     )
     assert summary["private_policy_review_actions"][0]["priority"] == "high"
+    assert summary["private_policy_review_actions"][0]["decision_options"] == [
+        "approve",
+        "needs_changes",
+        "stale",
+        "reject",
+    ]
     recorders = summary["review_result_recorders"]
     assert recorders["recorder_script"] == "scripts/record_service_profile_review_result.py"
     assert recorders["public_review"]["review_type"] == "public_service_cards"
