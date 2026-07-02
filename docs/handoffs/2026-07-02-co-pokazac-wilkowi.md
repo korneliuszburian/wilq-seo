@@ -14,7 +14,35 @@ Powiedz prosto:
 
 ## Co pokazać
 
-### 0. Czym realnie jest WILQ
+### Szybki status
+
+Powiedz:
+
+> WILQ ma już działające bramki przed demo. Sprawdza, czy dashboard pokazuje
+> decyzje z dowodami, czy wiedza Ekologus nie jest udawana jako production-depth,
+> czy Claim Ledger blokuje ryzykowne twierdzenia i czy skille mają evale.
+> Nadal nie zamykamy Goal 005, bo brakuje realnej sesji UAT albo świadomego
+> owner-defer.
+
+Najkrótszy stan:
+
+- dashboard usefulness: 12 powierzchni `demo_ready`, 1 `review_ready`, 0
+  zablokowanych;
+- wiedza Ekologus: 12 source facts, 5 prywatnych propozycji `ekologus-ai`,
+  0% production-depth, wszystko nadal review-required;
+- Claim Ledger: 10/10 checków, model nie może oznaczyć treści jako gotowej do
+  publikacji;
+- evale skilli: 13/13 skilli ma przypadek eval i wymagane pola outputu;
+- completion guard nadal blokuje: nie wolno mówić, że Goal 005 jest domknięty.
+
+Zapytaj:
+
+1. Czy taki status jest jasny bez tłumaczenia technicznego?
+2. Czy te blokady budują zaufanie, czy przeszkadzają w pracy?
+3. Którą część chcesz zobaczyć jako pierwszą: wiedzę usług, treści, Ads/GA4,
+   czy social/history?
+
+### 1. Czym realnie jest WILQ
 
 Pokaż:
 
@@ -35,25 +63,29 @@ Zapytaj:
 3. Jakie historyczne posty LinkedIn/Facebook możemy dodać jako metadata-only,
    żeby WILQ nie powielał tematów?
 
-### 1. Aktualny stan WILQ
+### 2. Aktualny stan WILQ
 
 Pokaż:
 
 - `docs/handoffs/2026-07-01-wilku-content-uat-ready.md`
+- `docs/handoffs/2026-07-02-wilku-claim-ledger-gate.md`
 
 Powiedz:
 
 > Tu jest aktualny stan. Najważniejsze: WILQ nie udaje, że jest gotowy do
 > finalnych treści. Blokuje pełny brief, bo brakuje zatwierdzonej karty usługi
-> i zatwierdzonego CTA.
+> i zatwierdzonego CTA. Dodatkowo ma Claim Ledger, czyli listę tego, co wolno
+> powiedzieć, co wymaga człowieka i czego model nie może przemycić do szkicu.
 
 Zapytaj:
 
 1. Czy rozumiesz, czemu WILQ jeszcze nie powinien pisać finalnej treści?
 2. Czy blocker `Brakuje karty usługi; Brakuje karty CTA` jest jasny?
-3. Czy to brzmi jak sensowna kontrola jakości, czy jak techniczny bełkot?
+3. Czy rozdział na dozwolone, wymagające review i zablokowane twierdzenia jest
+   użyteczny?
+4. Czy to brzmi jak sensowna kontrola jakości, czy jak techniczny bełkot?
 
-### 2. BDO
+### 3. BDO
 
 Pokaż:
 
@@ -72,7 +104,7 @@ Zapytaj:
 3. Co brzmi jak generyczne SEO albo AI?
 4. Jakiego claimu absolutnie nie wolno użyć?
 
-### 3. Eko-Opieka i Audyt zgodności
+### 4. Eko-Opieka i Audyt zgodności
 
 Pokaż:
 
@@ -92,7 +124,7 @@ Zapytaj:
 3. Czy te tematy nadają się na stronę, post, mailing czy rozmowę handlową?
 4. Co trzeba poprawić, zanim WILQ może zrobić brief?
 
-### 4. Styl marki i bezpieczeństwo prawne
+### 5. Styl marki i bezpieczeństwo prawne
 
 Pokaż:
 
@@ -111,6 +143,26 @@ Zapytaj:
 3. Czy claimy o WIOŚ, kontrolach, karach i decyzjach zawsze mają wymagać
    człowieka?
 4. Jakich sformułowań WILQ ma nigdy nie używać?
+
+### 6. Evale i pre-demo gate
+
+Pokaż wynik komendy, jeśli chcesz mieć dowód techniczny:
+
+```bash
+rtk scripts/pre_demo_gate.sh --skip-dashboard --skip-shared-schema --no-skills
+```
+
+Powiedz:
+
+> To jest nasz minimalny gate przed pokazaniem. Nie sprawdza tylko, czy coś się
+> odpala. Sprawdza też, czy wiedza nie udaje zatwierdzonej, czy Claim Ledger
+> nadal blokuje ryzykowne twierdzenia i czy wszystkie skille mają evale.
+
+Zapytaj:
+
+1. Czy taki gate wystarcza jako checkpoint przed pokazaniem kolejnych wersji?
+2. Czy do gate’a dodać jeszcze coś, co z Twojej perspektywy łapie realne ryzyko
+   marketingowe?
 
 ## Najważniejsze dwa pytania
 

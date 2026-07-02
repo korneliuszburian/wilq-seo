@@ -153,6 +153,11 @@ API status later contradicts this state.
   owner defer, but the blocker now also shows that source facts are
   `source_backed_review_required`, production-depth is 0%, Claim Ledger has
   10/10 checks and skill eval coverage has 13/13 cases with 0 hard gaps.
+- `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` now starts with the current
+  pre-demo truth in plain Polish: dashboard readiness, source facts still
+  review-required, Claim Ledger 10/10, skill eval coverage 13/13 and Goal 005
+  still blocked without UAT/defer. This is the short artifact to show Wilku
+  before walking through detailed BDO, Eko-Opieka, policy and gate materials.
 - Eko-Opieka usefulness review now has a short Wilku-facing decision card at
   `docs/handoffs/2026-07-02-wilku-eko-opieka-start-card.md`. Reviewer scores:
   7-8/10 as review material, 6.5/10 as marketer work saved, 3/10 as production
