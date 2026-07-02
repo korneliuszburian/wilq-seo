@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ContentWorkItem } from "@wilq/shared-schemas";
 
 import {
+  actionApiPath,
   getContentKnowledgeCards,
   getContentWorkItemEnrichment,
   getContentWorkItemQueue,
@@ -142,6 +143,27 @@ afterEach(() => {
 });
 
 describe("content workflow API helpers", () => {
+  it("encodes action IDs for every action helper path suffix", () => {
+    const actionId = "act/unsafe?x=1";
+
+    expect(actionApiPath(actionId)).toBe("/api/actions/act%2Funsafe%3Fx%3D1");
+    expect(actionApiPath(actionId, "/validate")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/validate"
+    );
+    expect(actionApiPath(actionId, "/preview")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/preview"
+    );
+    expect(actionApiPath(actionId, "/review")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/review"
+    );
+    expect(actionApiPath(actionId, "/confirm")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/confirm"
+    );
+    expect(actionApiPath(actionId, "/impact-check")).toBe(
+      "/api/actions/act%2Funsafe%3Fx%3D1/impact-check"
+    );
+  });
+
   it("gets the API-owned diagnostics-derived snapshot for the content workflow route", async () => {
     const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
       const path = new URL(String(url)).pathname;

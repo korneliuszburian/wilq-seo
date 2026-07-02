@@ -451,16 +451,20 @@ export function getActions(): Promise<ActionObject[]> {
   return apiGet("/api/actions", z.array(ActionObjectSchema));
 }
 
+export function actionApiPath(actionId: string, suffix = ""): string {
+  return `/api/actions/${encodeURIComponent(actionId)}${suffix}`;
+}
+
 export function getAction(actionId: string): Promise<ActionObject> {
-  return apiGet(`/api/actions/${encodeURIComponent(actionId)}`, ActionObjectSchema);
+  return apiGet(actionApiPath(actionId), ActionObjectSchema);
 }
 
 export function validateAction(actionId: string): Promise<ActionValidationResult> {
-  return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
+  return apiPost(actionApiPath(actionId, "/validate"), ActionValidationResultSchema);
 }
 
 export function previewAction(actionId: string): Promise<ActionPreviewResult> {
-  return apiPost(`/api/actions/${actionId}/preview`, ActionPreviewResultSchema, {
+  return apiPost(actionApiPath(actionId, "/preview"), ActionPreviewResultSchema, {
     requested_by: "operator_local_dashboard",
     max_items: 8
   });
@@ -470,21 +474,21 @@ export function reviewAction(
   actionId: string,
   request: ActionReviewRequest
 ): Promise<ActionReviewResult> {
-  return apiPost(`/api/actions/${actionId}/review`, ActionReviewResultSchema, request);
+  return apiPost(actionApiPath(actionId, "/review"), ActionReviewResultSchema, request);
 }
 
 export function confirmAction(
   actionId: string,
   request: ActionConfirmRequest
 ): Promise<ActionConfirmResult> {
-  return apiPost(`/api/actions/${actionId}/confirm`, ActionConfirmResultSchema, request);
+  return apiPost(actionApiPath(actionId, "/confirm"), ActionConfirmResultSchema, request);
 }
 
 export function impactCheckAction(
   actionId: string,
   request: ActionImpactCheckRequest
 ): Promise<ActionImpactCheckResult> {
-  return apiPost(`/api/actions/${actionId}/impact-check`, ActionImpactCheckResultSchema, request);
+  return apiPost(actionApiPath(actionId, "/impact-check"), ActionImpactCheckResultSchema, request);
 }
 
 export function getEvidence(): Promise<Evidence[]> {
