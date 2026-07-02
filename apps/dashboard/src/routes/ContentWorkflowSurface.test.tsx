@@ -109,6 +109,10 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("informacyjno-usługowa")).toBeInTheDocument();
     expect(screen.getByText("obsługa środowiskowa Ekologus")).toBeInTheDocument();
     expect(screen.getByText("GSC pokazuje popyt na temat BDO.")).toBeInTheDocument();
+    expect(screen.getByText("Jakość briefu")).toBeInTheDocument();
+    expect(screen.getByText("sygnał użyteczny, ale wymaga review")).toBeInTheDocument();
+    expect(screen.getByText(/Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji/))
+      .toBeInTheDocument();
     expect(screen.getAllByText("Szkic treści")[0]).toBeInTheDocument();
     expect(screen.getByText("WordPress zostaje w trybie szkicu")).toBeInTheDocument();
     expect(screen.getByText("Podgląd szkicu WordPress")).toBeInTheDocument();
@@ -668,6 +672,19 @@ function salesBrief() {
         reason: "Brak evidence ID oznacza brak rekomendacji."
       }
     ],
+    signal_quality: {
+      status: "review_required" as const,
+      status_label: "sygnał użyteczny, ale wymaga review",
+      reason: "Brief ma ślad dowodowy, ale wiedza nadal wymaga decyzji człowieka.",
+      evidence_id_count: 2,
+      source_connector_count: 2,
+      source_fact_count: 1,
+      missing_evidence_count: 0,
+      knowledge_constraint_count: 1,
+      review_required_knowledge_card_count: 1,
+      measurement_baseline_ready: true,
+      safe_next_step: "Pokaż brief Wilkowi z ograniczeniami wiedzy."
+    },
     forbidden_claims: [],
     missing_evidence: [],
     evidence_ids: ["ev_gsc_bdo", "ev_wp_bdo"],

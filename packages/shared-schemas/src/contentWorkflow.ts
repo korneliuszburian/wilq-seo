@@ -244,6 +244,20 @@ export const ContentSalesBriefKnowledgeConstraintSchema = z.object({
   reason: z.string()
 });
 
+export const ContentSalesBriefSignalQualitySchema = z.object({
+  status: z.enum(["strong", "review_required", "thin"]),
+  status_label: z.string(),
+  reason: z.string(),
+  evidence_id_count: z.number(),
+  source_connector_count: z.number(),
+  source_fact_count: z.number(),
+  missing_evidence_count: z.number(),
+  knowledge_constraint_count: z.number(),
+  review_required_knowledge_card_count: z.number(),
+  measurement_baseline_ready: z.boolean(),
+  safe_next_step: z.string()
+});
+
 export const ContentKnowledgeClaimRuleSchema = z.object({
   id: z.string(),
   claim_type: z.string(),
@@ -587,6 +601,7 @@ export const ContentSalesBriefSchema = z.object({
   source_facts: z.array(ContentSalesBriefSourceFactSchema).default([]),
   knowledge_card_ids: z.array(z.string()).default([]),
   knowledge_constraints: z.array(ContentSalesBriefKnowledgeConstraintSchema).default([]),
+  signal_quality: ContentSalesBriefSignalQualitySchema,
   forbidden_claims: z.array(ContentClaimReferenceSchema).default([]),
   missing_evidence: z.array(z.string()).default([]),
   evidence_ids: z.array(z.string()),

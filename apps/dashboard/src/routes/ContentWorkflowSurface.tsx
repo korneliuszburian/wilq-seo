@@ -618,6 +618,7 @@ function ContentWorkflowHeader({ topic }: { topic: string }) {
 
 function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
   const item = data.preflight.item;
+  const signalQuality = data.salesBrief.sales_brief_result.brief?.signal_quality ?? null;
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -629,11 +630,16 @@ function WorkflowProofSummary({ data }: { data: ContentWorkflowSnapshot }) {
             Finalny adres pozostaje publicznym adresem Ekologus, podgląd dev jest tylko kontekstem
             projektu, a WordPress nie dostaje publikacji automatycznej.
           </p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {signalQuality
+              ? signalQuality.reason
+              : "Sales Brief jest zablokowany, więc WILQ nie pokazuje jakości sygnału jako rekomendacji."}
+          </p>
         </div>
         <div className="grid gap-2 text-sm sm:grid-cols-3">
           <FactTile label="Dowody" value={`Dowody: ${unique(item.evidence_ids).length}`} />
           <FactTile label="Tryb" value={data.preflight.preflight_verdict.recommended_mode} />
-          <FactTile label="Adres" value="canonical publiczny" />
+          <FactTile label="Jakość briefu" value={signalQuality?.status_label ?? "brief zablokowany"} />
         </div>
       </div>
     </section>

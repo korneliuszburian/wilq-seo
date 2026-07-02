@@ -34,6 +34,7 @@ ContentSalesBriefBlockerCode = Literal[
     "missing_measurement_plan",
     "missing_required_knowledge_card",
 ]
+ContentSalesBriefSignalQualityStatus = Literal["strong", "review_required", "thin"]
 
 
 class ContentSalesBriefOperationsContext(BaseModel):
@@ -55,6 +56,20 @@ class ContentSalesBriefKnowledgeConstraint(BaseModel):
     constraint_type: str
     label: str
     reason: str
+
+
+class ContentSalesBriefSignalQuality(BaseModel):
+    status: ContentSalesBriefSignalQualityStatus
+    status_label: str
+    reason: str
+    evidence_id_count: int
+    source_connector_count: int
+    source_fact_count: int
+    missing_evidence_count: int
+    knowledge_constraint_count: int
+    review_required_knowledge_card_count: int
+    measurement_baseline_ready: bool
+    safe_next_step: str
 
 
 class ContentSalesBriefSeed(BaseModel):
@@ -117,6 +132,7 @@ class ContentSalesBrief(BaseModel):
     source_facts: list[ContentSalesBriefSourceFact] = Field(default_factory=list)
     knowledge_card_ids: list[str] = Field(default_factory=list)
     knowledge_constraints: list[ContentSalesBriefKnowledgeConstraint] = Field(default_factory=list)
+    signal_quality: ContentSalesBriefSignalQuality
     evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     forbidden_claims: list[ContentSalesBriefForbiddenClaim] = Field(default_factory=list)
@@ -189,6 +205,13 @@ def build_content_sales_brief(
             ),
             knowledge_constraints=(
                 [] if knowledge_match is None else _knowledge_constraints(knowledge_match)
+            ),
+            signal_quality=_signal_quality(
+                item=item,
+                preflight=preflight,
+                seed=seed,
+                enrichment=enrichment,
+                knowledge_match=knowledge_match,
             ),
             evidence_ids=_unique([*item.evidence_ids, *preflight.evidence_ids]),
             source_connectors=_unique(
@@ -468,6 +491,96 @@ def _knowledge_constraints(
                 )
             )
     return constraints
+
+
+def _signal_quality(
+    *,
+    item: ContentWorkItem,
+    preflight: ContentPreflightVerdict,
+    seed: ContentSalesBriefSeed,
+    enrichment: ContentOpportunityEnrichment | None,
+    knowledge_match: ContentKnowledgeCardMatch | None,
+) -> ContentSalesBriefSignalQuality:
+    evidence_ids = _unique([*item.evidence_ids, *preflight.evidence_ids])
+    source_connectors = _unique([*item.source_connectors, *preflight.source_connectors])
+    source_facts = seed.source_facts
+    missing_evidence_count = len(seed.missing_evidence)
+    knowledge_constraints = (
+        [] if knowledge_match is None else _knowledge_constraints(knowledge_match)
+    )
+    review_required_knowledge_card_count = (
+        0 if knowledge_match is None else _review_required_knowledge_card_count(knowledge_match)
+    )
+    measurement_baseline_ready = (
+        enrichment is not None
+        and enrichment.measurement_baseline.status == "ready_to_plan"
+        and bool(enrichment.measurement_baseline.evidence_ids)
+        and bool(enrichment.measurement_baseline.source_connectors)
+    )
+
+    if (
+        len(evidence_ids) < 2
+        or len(source_connectors) < 2
+        or len(source_facts) < 2
+        or not measurement_baseline_ready
+    ):
+        status: ContentSalesBriefSignalQualityStatus = "thin"
+        status_label = "sygnał cienki - tylko analiza/review"
+        reason = (
+            "Brief ma zbyt mało dowodów, connectorów, source facts albo bazę pomiaru "
+            "bez pełnego śladu."
+        )
+        safe_next_step = (
+            "Uzupełnij dowody, source facts i baseline pomiaru przed traktowaniem "
+            "briefu jako mocnego kierunku."
+        )
+    elif review_required_knowledge_card_count or missing_evidence_count or knowledge_constraints:
+        status = "review_required"
+        status_label = "sygnał użyteczny, ale wymaga review"
+        reason = (
+            "Brief ma ślad dowodowy, ale wiedza, claimy albo brakujące elementy nadal "
+            "wymagają decyzji człowieka."
+        )
+        safe_next_step = (
+            "Pokaż brief Wilkowi z ograniczeniami wiedzy i nie odblokowuj finalnego "
+            "draftu bez review."
+        )
+    else:
+        status = "strong"
+        status_label = "sygnał mocny do pracy operacyjnej"
+        reason = (
+            "Brief ma wieloźródłowy ślad dowodowy, source facts i gotową bazę pomiaru."
+        )
+        safe_next_step = "Można przejść do review briefu i claimów przed szkicem."
+
+    return ContentSalesBriefSignalQuality(
+        status=status,
+        status_label=status_label,
+        reason=reason,
+        evidence_id_count=len(evidence_ids),
+        source_connector_count=len(source_connectors),
+        source_fact_count=len(source_facts),
+        missing_evidence_count=missing_evidence_count,
+        knowledge_constraint_count=len(knowledge_constraints),
+        review_required_knowledge_card_count=review_required_knowledge_card_count,
+        measurement_baseline_ready=measurement_baseline_ready,
+        safe_next_step=safe_next_step,
+    )
+
+
+def _review_required_knowledge_card_count(match: ContentKnowledgeCardMatch) -> int:
+    cards = [
+        match.service_card,
+        *match.cta_cards[:1],
+        *match.claim_policy_cards[:1],
+        *match.evidence_requirement_cards[:1],
+    ]
+    return sum(
+        1
+        for card in cards
+        if card is not None
+        and (card.lifecycle_status or "seeded_contract_proof") != "approved_current"
+    )
 
 
 def _metrics_to_watch(

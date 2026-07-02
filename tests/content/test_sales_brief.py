@@ -236,10 +236,42 @@ def test_sales_brief_builds_structured_contract_from_valid_work_item() -> None:
     assert result.brief.measurement_plan.measurement_readiness_label == (
         "baza pomiaru do zaplanowania"
     )
+    assert result.brief.signal_quality.status == "review_required"
+    assert result.brief.signal_quality.status_label == (
+        "sygnał użyteczny, ale wymaga review"
+    )
+    assert result.brief.signal_quality.evidence_id_count == 2
+    assert result.brief.signal_quality.source_connector_count == 2
+    assert result.brief.signal_quality.source_fact_count == 2
+    assert result.brief.signal_quality.missing_evidence_count == 1
+    assert result.brief.signal_quality.review_required_knowledge_card_count >= 1
+    assert result.brief.signal_quality.measurement_baseline_ready is True
+    assert "Pokaż brief Wilkowi" in result.brief.signal_quality.safe_next_step
     assert result.brief.draft_allowed is False
     assert [claim.claim_id for claim in result.brief.forbidden_claims] == [
         "claim_more_leads"
     ]
+
+
+def test_sales_brief_marks_thin_signal_without_measurement_baseline() -> None:
+    result = _brief_result(
+        enrichment=_enrichment(
+            measurement_baseline=ContentOpportunityMeasurementBaseline(
+                status="blocked",
+                label="brak bazy pomiaru",
+                reason="Brakuje baseline z GSC/GA4.",
+                metrics_to_watch=[],
+                source_connectors=[],
+                evidence_ids=[],
+            )
+        )
+    )
+
+    assert result.blockers == []
+    assert result.brief is not None
+    assert result.brief.signal_quality.status == "thin"
+    assert result.brief.signal_quality.measurement_baseline_ready is False
+    assert "zbyt mało dowodów" in result.brief.signal_quality.reason
 
 
 def test_sales_brief_allows_water_permit_analysis_but_blocks_draft_readiness() -> None:

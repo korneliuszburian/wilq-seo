@@ -227,6 +227,18 @@ human-readable requirement labels with the field IDs. Live
 `GET /api/content/service-profile` proof returned `read_only=True`,
 `private_review_actions=4` and all private governance requirements present.
 
+Sales Brief v2 signal-quality audit is now represented in the API contract
+instead of only in tests or operator interpretation. `ContentSalesBrief` exposes
+`signal_quality` with evidence/source/source-fact counts, missing evidence,
+review-required knowledge count and measurement-baseline readiness. Dashboard
+workflow proof renders the API-owned signal label/reason so a brief can say
+`review_required` or `thin` without pretending to be production-depth. Live
+`POST /api/content/work-items/sales-brief` proof for the BDO fixture returned
+`signal_status=review_required`, `evidence_id_count=2`,
+`source_connector_count=2`, `source_fact_count=2`,
+`missing_evidence_count=1`, `review_required_knowledge_card_count=4` and
+`measurement_baseline_ready=True`.
+
 Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
 `scripts/goal_005_completion_check.py`. Completion claims require either a
 validated real UAT result or an explicit owner defer with residual risk,
