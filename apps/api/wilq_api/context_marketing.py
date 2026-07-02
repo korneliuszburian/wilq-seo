@@ -4,6 +4,11 @@ from typing import Any
 
 from apps.api.wilq_api import context_compaction
 from wilq.schemas import ActionObject, ConnectorStatus, MarketingBrief, TacticalQueueResponse
+from wilq.social.history import (
+    SOCIAL_HISTORY_MISSING_EVIDENCE_IDS,
+    SOCIAL_HISTORY_REQUIRED_SOURCES,
+    build_social_history_inventory,
+)
 
 
 def compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[str, Any]:
@@ -237,10 +242,10 @@ def social_draft_context_for_context(
                 str(item) for item in payload.get("source_connectors", []) if item
             )
         evidence_ids.extend(action.evidence_ids)
-    social_history_inventory = _social_history_inventory_context(
+    social_history_inventory = build_social_history_inventory(
         connector_status_by_id,
         missing_publish_access,
-    )
+    ).model_dump(mode="json")
     return {
         "mode": "review_only",
         "publish_allowed": False,
@@ -258,88 +263,12 @@ def social_draft_context_for_context(
         "duplicate_risk_status_label": (
             "nie oceniono ryzyka powtórzenia treści social"
         ),
-        "required_history_sources": ["linkedin", "facebook"],
-        "missing_history_evidence": [
-            "linkedin_historical_posts",
-            "facebook_historical_posts",
-        ],
+        "required_history_sources": SOCIAL_HISTORY_REQUIRED_SOURCES,
+        "missing_history_evidence": SOCIAL_HISTORY_MISSING_EVIDENCE_IDS,
         "social_history_inventory": social_history_inventory,
         "operator_next_step": (
             "Przygotuj szkice do sprawdzenia z dowodami; publikacja i claim "
             "o braku powtórzeń pozostają zablokowane do czasu konfiguracji "
             "uprawnień LinkedIn/Facebook oraz sprawdzenia historii postów."
-        ),
-    }
-
-
-def _social_history_inventory_context(
-    connector_status_by_id: dict[str, ConnectorStatus],
-    missing_publish_access: dict[str, list[str]],
-) -> dict[str, Any]:
-    required_metadata_fields = [
-        "channel",
-        "published_at",
-        "topic",
-        "service",
-        "claim",
-        "cta",
-        "format",
-        "post_url_or_id",
-        "source_evidence_id",
-    ]
-    sources = []
-    for channel in ("linkedin", "facebook"):
-        connector = connector_status_by_id.get(channel)
-        connector_access_status = (
-            "missing_credentials"
-            if channel in missing_publish_access
-            else "configured"
-            if connector and connector.configured
-            else "unavailable"
-        )
-        sources.append(
-            {
-                "channel": channel,
-                "connector_id": channel,
-                "inventory_status": "missing",
-                "connector_access_status": connector_access_status,
-                "required_evidence_id": f"{channel}_historical_posts",
-                "required_metadata_fields": required_metadata_fields,
-                "safe_collection_mode": "metadata_only",
-                "raw_post_body_allowed": False,
-            }
-        )
-    return {
-        "contract": "social_history_inventory_v1",
-        "read_only": True,
-        "status": "missing",
-        "status_label": "brak spisu historycznych postów LinkedIn/Facebook",
-        "duplicate_risk_status": "blocked_until_social_history_review",
-        "required_sources": ["linkedin", "facebook"],
-        "missing_evidence_ids": [
-            "linkedin_historical_posts",
-            "facebook_historical_posts",
-        ],
-        "sources": sources,
-        "allowed_uses": [
-            "sprawdzenie czy temat, claim albo CTA powtarza wcześniejsze posty",
-            "ocena kadencji i kąta komunikacji przed przygotowaniem szkicu",
-            "brand-voice/cadence evidence po review metadanych",
-        ],
-        "blocked_uses": [
-            "twierdzenie że temat jest nowy bez historii postów",
-            "twierdzenie że nie powielamy wcześniejszych postów",
-            "automatyczne zatwierdzenie claimów prawnych, usługowych albo produktowych",
-            "publikacja bez ActionObject review, preview, zgody i audytu",
-        ],
-        "dedupe_requirements": [
-            "porównać temat i usługę z historią LinkedIn/Facebook",
-            "porównać claim i CTA z ostatnimi postami",
-            "oznaczyć reuse jako dozwolony tylko z innym kątem albo po decyzji review",
-        ],
-        "operator_next_step": (
-            "Zbierz albo zaimportuj metadata-only historię LinkedIn/Facebook: kanał, data, "
-            "temat, usługa, claim, CTA, format i post ID. Do tego czasu WILQ może "
-            "przygotować tylko review-only kierunki postów i nie może obiecać braku powtórzeń."
         ),
     }

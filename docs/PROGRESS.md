@@ -205,6 +205,11 @@ API status later contradicts this state.
   duplicate-free claims remain blocked because LinkedIn/Facebook credentials
   are missing and `historical_social_inventory_status=missing`. Wilku-facing
   handoff: `docs/handoffs/2026-07-02-wilku-social-history-blocker.md`.
+- Social history dedupe now has a typed metadata-only contract in
+  `wilq/social/history.py`. `social_history_inventory_v1` is read-only,
+  requires only channel/date/topic/service/claim/CTA/format/post ID/source
+  evidence metadata, forbids raw post-body requirements and keeps duplicate-free
+  social claims blocked until LinkedIn/Facebook history evidence exists.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
