@@ -102,6 +102,11 @@ live API status later contradicts this state.
   live API candidate ID when `--api-base` is provided. The example intentionally
   contains placeholders and is rejected by the normal validator until Wilku's
   real answers are filled in.
+- Daily Command usefulness proof: non-interactive eval for
+  `wilq-daily-command` passed with `operator_usefulness_score=5`, 20 evidence
+  IDs, eight source connectors and four validated daily actions. The first safe
+  step is Merchant review from `primary_next_step`; GA4 and Ads claims stay
+  blocked where proof/contracts are missing.
 - Latest Goal 005 Service Profile slice: review actions expose API-owned
   `review_requirements` aligned with
   `scripts/record_service_profile_review_result.py`. Dashboard and UAT packets

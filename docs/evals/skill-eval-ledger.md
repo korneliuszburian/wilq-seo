@@ -74,6 +74,52 @@ Result:
   non-interactive eval runs still decide whether a skill's current answer is
   useful enough for a marketer.
 
+## 2026-07-02 - Daily Command usefulness eval
+
+Purpose:
+
+- Verify that `wilq-daily-command` behaves like the BDOS-style morning command
+  center: one clear first action, evidence, blockers, safe ActionObject checks
+  and no generic "check everything" advice.
+- Confirm that the skill uses `/api/dashboard/command-center` as the canonical
+  first-screen source, with `/api/marketing/brief` and the skill context-pack as
+  supporting proof.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260702T153612Z`.
+- `operator_usefulness_score=5`, `failure_tags=[]`, all hard gates true.
+- The answer used `/command-center`, `daily_decisions`, `action_plan` and
+  `primary_next_step` instead of rebuilding priority order from raw connector
+  lists.
+- First safe operator step: open `/merchant` and review the Merchant Center feed
+  issue queue through `act_review_merchant_feed_issues`.
+- Source connectors used: `google_merchant_center`, `ahrefs`,
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`,
+  `google_analytics_4`, `google_ads` and `localo`.
+- Evidence lineage included 20 evidence IDs, including
+  `ev_refresh_refresh_google_merchant_center_a04a45a6e6fd`,
+  `ev_connector_google_merchant_center_status`,
+  `ev_refresh_refresh_google_search_console_9b25d4143bea`,
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d`,
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966`,
+  `ev_connector_google_ads_status` and
+  `ev_refresh_refresh_google_ads_be7011a4a261`.
+- Validated daily actions: `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`, `act_review_ga4_tracking_quality` and
+  `act_prepare_ads_campaign_review_queue`.
+- The answer correctly blocked GA4 ROAS/revenue/conversion claims and Ads
+  profitability, wasted-budget, budget-change and negative-keyword write claims
+  without the missing business/write contracts.
+
 ## 2026-07-02 - GSC Content Doctor usefulness eval
 
 Purpose:
