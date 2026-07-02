@@ -235,6 +235,16 @@ API status later contradicts this state.
   is `missing`, duplicate-risk is `blocked_until_social_history_review`, and
   the claim `brak powtórzeń historycznych postów` is blocked until prior posts
   are reviewed.
+- Social history now has a versioned read-only inventory contract inside
+  `social_draft_context.social_history_inventory`. Live `wilq-social-publisher`
+  smoke after stack restart on 2026-07-02 shows
+  `contract=social_history_inventory_v1`, required sources `linkedin` and
+  `facebook`, missing evidence IDs `linkedin_historical_posts` and
+  `facebook_historical_posts`, metadata-only required fields
+  `channel,published_at,topic,service,claim,cta,format,post_url_or_id,source_evidence_id`,
+  `raw_post_body_allowed=false` and duplicate-free claims blocked until history
+  review. This is still not a social connector/import; it is the typed contract
+  for what WILQ must collect before dedupe/reuse claims.
 - Social Publisher history/duplication eval proof on 2026-07-02:
   `.local-lab/evals/codex-skill/20260702T081424Z`. The non-interactive eval
   passed with `operator_usefulness_score=4`, five evidence IDs, validated

@@ -19023,6 +19023,50 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "linkedin_historical_posts",
         "facebook_historical_posts",
     ]
+    history_inventory = social_context["social_history_inventory"]
+    assert history_inventory["contract"] == "social_history_inventory_v1"
+    assert history_inventory["read_only"] is True
+    assert history_inventory["status"] == "missing"
+    assert (
+        history_inventory["duplicate_risk_status"]
+        == "blocked_until_social_history_review"
+    )
+    assert history_inventory["required_sources"] == ["linkedin", "facebook"]
+    assert history_inventory["missing_evidence_ids"] == [
+        "linkedin_historical_posts",
+        "facebook_historical_posts",
+    ]
+    assert {source["channel"] for source in history_inventory["sources"]} == {
+        "linkedin",
+        "facebook",
+    }
+    assert all(
+        source["safe_collection_mode"] == "metadata_only"
+        for source in history_inventory["sources"]
+    )
+    assert all(
+        source["raw_post_body_allowed"] is False
+        for source in history_inventory["sources"]
+    )
+    assert {
+        source["connector_access_status"] for source in history_inventory["sources"]
+    } == {"missing_credentials"}
+    assert "credential_status" not in history_inventory["sources"][0]
+    assert {
+        "channel",
+        "published_at",
+        "topic",
+        "service",
+        "claim",
+        "cta",
+        "format",
+        "post_url_or_id",
+        "source_evidence_id",
+    }.issubset(history_inventory["sources"][0]["required_metadata_fields"])
+    assert "twierdzenie że temat jest nowy bez historii postów" in history_inventory[
+        "blocked_uses"
+    ]
+    assert "claim i CTA" in " ".join(history_inventory["dedupe_requirements"])
     assert "braku powtórzeń" in social_context["operator_next_step"]
     old_post_publish_claim = "post " + "published"
     old_social_growth_claim = "social performance " + "up" + "lift"

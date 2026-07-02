@@ -221,6 +221,13 @@ exposes API-owned `decision_options`, aligned with
 `stale` and `reject`. Dashboard and the UAT packet now show those options for
 the review queue so Wilku can record outcomes without guessing accepted values.
 
+Under Beads task `wilq-seo-58kj`, `social_draft_context` now exposes a
+versioned read-only `social_history_inventory_v1` contract. It names required
+LinkedIn/Facebook history evidence, metadata-only fields, blocked uses and
+dedupe requirements before WILQ can claim a topic is new or not repeated.
+Publishing and duplicate-free claims remain blocked; this is not a connector
+implementation or raw social post import.
+
 Follow-up on 2026-07-02 tightened private `ekologus-ai` proposal review
 requirements inside the same Service Profile contract. Private review actions
 now require explicit checks for data classes, source block refs, retention

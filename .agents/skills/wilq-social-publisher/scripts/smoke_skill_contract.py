@@ -124,6 +124,39 @@ def main() -> int:
         social_draft_context.get("blocked_claims") or []
     ):
         raise SystemExit("Social draft context must block historical duplicate-free claims")
+    social_history_inventory = social_draft_context.get("social_history_inventory")
+    if not isinstance(social_history_inventory, dict):
+        raise SystemExit("Social draft context missing social_history_inventory")
+    if social_history_inventory.get("contract") != "social_history_inventory_v1":
+        raise SystemExit("Social history inventory contract must be versioned")
+    if social_history_inventory.get("read_only") is not True:
+        raise SystemExit("Social history inventory must be read-only")
+    if social_history_inventory.get("status") != "missing":
+        raise SystemExit("Social history inventory must expose missing status")
+    if social_history_inventory.get("required_sources") != ["linkedin", "facebook"]:
+        raise SystemExit("Social history inventory must require LinkedIn and Facebook")
+    sources = social_history_inventory.get("sources") or []
+    if {source.get("channel") for source in sources} != {"linkedin", "facebook"}:
+        raise SystemExit("Social history inventory must expose channel requirements")
+    required_metadata_fields = {
+        field for source in sources for field in source.get("required_metadata_fields", [])
+    }
+    if not {
+        "published_at",
+        "topic",
+        "service",
+        "claim",
+        "cta",
+        "post_url_or_id",
+    }.issubset(required_metadata_fields):
+        raise SystemExit("Social history inventory must expose metadata-only fields")
+    if any(source.get("raw_post_body_allowed") for source in sources):
+        raise SystemExit("Social history inventory must not require raw post bodies")
+    access_statuses = {source.get("connector_access_status") for source in sources}
+    if "[REDACTED]" in access_statuses or None in access_statuses:
+        raise SystemExit("Social history inventory must expose non-secret access status")
+    if any("credential_status" in source for source in sources):
+        raise SystemExit("Social history inventory must avoid redacted credential_status key")
 
     action_validations = validate_core_social_actions(args.api_base, pack)
 
@@ -168,6 +201,7 @@ def main() -> int:
                     "missing_history_evidence": social_draft_context.get(
                         "missing_history_evidence"
                     ),
+                    "social_history_inventory": social_history_inventory,
                     "source_input_count": len(social_draft_context.get("source_inputs", [])),
                     "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),
