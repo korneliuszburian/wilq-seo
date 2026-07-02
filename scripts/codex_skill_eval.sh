@@ -106,12 +106,25 @@ for skill in "${skills[@]}"; do
   result_file="$skill_out/result.json"
   jsonl_file="$skill_out/trace.jsonl"
   stderr_file="$skill_out/stderr.log"
+  smoke_output_file="$skill_out/smoke.json"
+  smoke_stderr_file="$skill_out/smoke.stderr.log"
 
-  uv run python - "$cases_file" "$skill" "$api_base" >"$prompt_file" <<'PY'
+  script_name="smoke_skill_contract.py"
+  if [ "$skill" = "wilq-daily-command" ]; then
+    script_name="smoke_context_pack.py"
+  fi
+  smoke_command="uv run python .agents/skills/$skill/scripts/$script_name --api-base $api_base"
+  if ! uv run python ".agents/skills/$skill/scripts/$script_name" --api-base "$api_base" >"$smoke_output_file" 2>"$smoke_stderr_file"; then
+    echo "Smoke failed for $skill. Stderr tail:" >&2
+    tail -n 80 "$smoke_stderr_file" >&2 || true
+    exit 1
+  fi
+
+  uv run python - "$cases_file" "$skill" "$api_base" "$smoke_output_file" >"$prompt_file" <<'PY'
 import json
 import sys
 
-cases_path, skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
+cases_path, skill, api_base, smoke_output_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
 case = cases[skill]
 connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
@@ -135,6 +148,7 @@ if not task_pl:
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
+smoke_output = open(smoke_output_path, encoding="utf-8").read()
 api_instruction = (
     "Najpierw sprawdź API, pobierz /api/dashboard/command-center, /api/marketing/brief "
     "oraz context-pack przez smoke script. Potwierdź zgodność marketing_brief i "
@@ -146,9 +160,10 @@ api_instruction = (
 )
 surface_instruction = (
     f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
-    "Finalny JSON musi odzwierciedlać ten route w `notes`, `operator_next_step`, "
-    "rekomendacjach albo akcjach do sprawdzenia. Umieść dokładny marker route "
-    f"`{surface_path}` w `notes`.\n</surface>\n"
+    "Finalny JSON musi odzwierciedlać ten route w `notes`. Jeżeli route jest "
+    "przydatny dla operatora, możesz go krótko wymienić w `operator_next_step`, "
+    "ale nie zamieniaj widocznej rekomendacji w listę technicznych markerów. "
+    f"Umieść dokładny marker route `{surface_path}` w `notes`.\n</surface>\n"
     if surface_path
     else ""
 )
@@ -163,16 +178,19 @@ messy_task_instruction = (
 )
 expected_terms_instruction = (
     "\n<expected_terms>\nTo są twarde marker terms walidowane po finalnym JSON. "
-    "Jeżeli smoke/API wspiera dany marker, umieść go dosłownie w `notes`, "
-    "`operator_next_step`, rekomendacjach albo akcjach do sprawdzenia. Nie pomijaj "
-    f"markerów route/evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
+    "Jeżeli smoke/API wspiera dany marker techniczny, umieść go dosłownie w "
+    "`notes`, a nie w widocznej rekomendacji dla marketera. Pola "
+    "`operator_next_step`, `recommendations[].label_pl` i `action_candidates[].label_pl` "
+    "mają brzmieć jak normalna polska instrukcja operatorska. Nie pomijaj "
+    f"markerów route/evidence w `notes`: {', '.join(expected_terms)}.\n</expected_terms>\n"
     if expected_terms
     else ""
 )
 required_decision_terms_instruction = (
     "\n<required_decision_terms>\nTe markery muszą pojawić się w części decyzyjnej "
     "wyniku: `operator_next_step`, `blocked_reason`, rekomendacjach albo "
-    "`action_candidates`. Nie wystarczy wrzucić ich wyłącznie do `notes`: "
+    "`action_candidates`. To powinny być słowa, które marketer może zrozumieć "
+    "bez tłumaczenia surowych pól API. Nie wystarczy wrzucić ich wyłącznie do `notes`: "
     f"{', '.join(required_decision_terms)}.\n</required_decision_terms>\n"
     if required_decision_terms
     else ""
@@ -349,13 +367,21 @@ Oczekiwane connector surfaces: {connectors}
 - Jeżeli jakikolwiek hard gate jest false, dodaj właściwy `failure_tags`, ustaw
   `operator_usefulness_score` najwyżej 3 i jasno opisz problem w `notes` albo
   `blocked_reason`.
-- Wykonaj najwyżej: odczyt SKILL.md/output-contract i poniższy smoke script. Potem zakończ finalnym JSON.
-- Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli smoke script działa.
+- Smoke script został już wykonany deterministycznie przez harness przed tym
+  promptem. Nie uruchamiaj go ponownie. Możesz przeczytać SKILL.md albo
+  output-contract, jeśli potrzebujesz kontraktu językowego, ale finalny JSON ma
+  korzystać z danych w `<smoke_output>`.
+- Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli `<smoke_output>`
+  zawiera potrzebne dane.
 </rules>
 
 <smoke_command>
 {smoke_command}
 </smoke_command>
+
+<smoke_output>
+{smoke_output}
+</smoke_output>
 
 <interpretation>
 Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor`
@@ -574,6 +600,16 @@ texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
 texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
 combined_text = " ".join(texts)
 combined_json_text = json.dumps(data, ensure_ascii=False)
+visible_operator_parts = [
+    data.get("operator_next_step", ""),
+    data.get("blocked_reason") or "",
+    decision_quality.get("notes_pl", ""),
+]
+visible_operator_parts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
+visible_operator_parts.extend(rec.get("blocked_reason") or "" for rec in data.get("recommendations", []))
+visible_operator_parts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
+visible_operator_parts.extend(action.get("blocked_reason") or "" for action in data.get("action_candidates", []))
+visible_operator_text = " ".join(str(part) for part in visible_operator_parts if part)
 decision_text_parts = [
     data.get("operator_next_step", ""),
     data.get("blocked_reason") or "",
@@ -606,8 +642,26 @@ default_forbidden_operator_terms = (
     "tylko do" + " sprawdzenia",
 )
 for term in default_forbidden_operator_terms:
-    if term.lower() in combined_text.lower():
+    if term.lower() in visible_operator_text.lower():
         errors.append(f"forbidden operator-facing term present: {term}")
+
+technical_marker_pattern = re.compile(r"\b[a-z]+(?:_[a-z0-9]+){2,}\b")
+allowed_visible_markers = {
+    action.get("action_id")
+    for action in data.get("action_candidates", [])
+    if isinstance(action.get("action_id"), str)
+}
+visible_markers = [
+    marker
+    for marker in technical_marker_pattern.findall(visible_operator_text)
+    if marker not in allowed_visible_markers
+]
+if len(set(visible_markers)) > 3:
+    errors.append(
+        "operator-facing fields contain too many raw technical markers; "
+        "move API/schema markers to notes and keep visible copy in normal Polish: "
+        + ", ".join(sorted(set(visible_markers))[:8])
+    )
 
 surface_path = case.get("surface_path")
 if surface_path and surface_path not in combined_json_text:

@@ -201,12 +201,13 @@ live API status later contradicts this state.
   Ledger, draft package, quality review, human review, WordPress draft-only and
   measurement window before any final article, publication or success claim.
 - Content Operator was re-tested after making the selected content-workflow
-  queue step action-backed. The latest eval artifact is
-  `.local-lab/evals/codex-skill/20260702T191850Z`, still
-  `operator_usefulness_score=5`, `blocked=true`, six evidence IDs and all hard
-  gates true. The selected work item now exposes and validates
-  `act_prepare_content_refresh_queue`, so Wilku gets a concrete safe action
-  instead of only a descriptive blocked workflow.
+  queue step action-backed and after hardening the eval harness against
+  marker-dump operator copy. The latest eval artifact is
+  `.local-lab/evals/codex-skill/20260702T223249Z`, still
+  `operator_usefulness_score=5`, `blocked=true`, six evidence IDs, four source
+  connectors and all hard gates true. The selected work item validates
+  `act_prepare_content_refresh_queue`; visible next-step copy stays normal
+  Polish while technical markers stay in `notes`.
 - Content workflow Claim Ledger and homepage Sales Brief now produce a useful
   review-required plan for the selected homepage refresh item. WILQ added
   commit-safe public source facts for homepage service overview and contact CTA,

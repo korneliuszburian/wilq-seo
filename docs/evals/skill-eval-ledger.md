@@ -257,7 +257,7 @@ CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/c
 Result:
 
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260702T191850Z`.
+  `.local-lab/evals/codex-skill/20260702T223249Z`.
 - `operator_usefulness_score=5`, `blocked=true`, `failure_tags=[]`, all hard
   gates true.
 - Source connectors used: `google_analytics_4`, `ahrefs`,
@@ -274,6 +274,13 @@ Result:
 - The selected queue candidate now exposes and validates the concrete next
   ActionObject: `act_prepare_content_refresh_queue`, so the operator path is
   action-backed instead of only descriptive.
+- The eval harness now captures deterministic `smoke.json` before the model
+  run and injects it into the prompt. This prevents false failures where the
+  nested agent skipped the smoke command, and it lets the eval judge answer
+  usefulness rather than command-execution randomness.
+- Visible operator copy is now checked against raw marker dumps. Technical
+  route/schema markers can stay in `notes`, but recommendations, action labels
+  and the next step must stay normal Polish.
 - Safe operator path: refresh source data, then check enrichment, preflight,
   Sales Brief, Claim Ledger, draft package, quality review, human review,
   WordPress draft-only and measurement window.
