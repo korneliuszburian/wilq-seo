@@ -225,6 +225,11 @@ def review_result_recorders(
     return {
         "recorder_script": SERVICE_PROFILE_REVIEW_RECORDER,
         "command_template": command,
+        "live_review_requirements_authoritative": True,
+        "review_requirements_note": (
+            "Minimal field lists are a floor. The recorder validates the current "
+            "API-owned review_requirements for each live action_id."
+        ),
         "public_review": {
             "review_type": "public_service_cards",
             "result_report_type": "service_profile_public_card_review_result_v1",

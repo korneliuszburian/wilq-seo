@@ -245,6 +245,10 @@ API status later contradicts this state.
   results must satisfy the required governance fields currently exposed by
   `/api/content/service-profile`, and live provenance records those required
   fields without promoting source facts or unlocking production-depth.
+- The `wilq-content-operator` UAT packet now marks live
+  `review_requirements` as authoritative for Service Profile review recorder
+  payloads. Static minimal payload field lists are only a floor; the recorder
+  validates the current API-owned requirements for each live action ID.
 - Goal 005 UAT result reports now warn when
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku

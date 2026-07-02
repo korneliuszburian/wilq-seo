@@ -481,6 +481,8 @@ def test_content_operator_uat_packet_separates_public_and_private_review_actions
     )
     recorders = summary["review_result_recorders"]
     assert recorders["recorder_script"] == "scripts/record_service_profile_review_result.py"
+    assert recorders["live_review_requirements_authoritative"] is True
+    assert "API-owned review_requirements" in recorders["review_requirements_note"]
     assert recorders["public_review"]["review_type"] == "public_service_cards"
     assert recorders["public_review"]["promotion_preview"]["preview_row_count"] == 1
     assert recorders["private_review"]["review_type"] == "private_source_proposals"
