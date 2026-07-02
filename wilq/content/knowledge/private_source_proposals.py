@@ -103,6 +103,8 @@ class PrivateSourceProposal(BaseModel):
                 "private source proposals require non-empty governance lists: "
                 + ", ".join(missing_list_fields)
             )
+        if self.review_status == "approved" and not (self.reviewer or "").strip():
+            raise ValueError("approved private source proposals require reviewer")
 
         return self
 

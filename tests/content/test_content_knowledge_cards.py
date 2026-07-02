@@ -182,6 +182,12 @@ def test_private_source_proposals_require_review_governance_fields() -> None:
     with pytest.raises(ValidationError, match="safe_next_step"):
         proposal.__class__.model_validate(invalid_payload)
 
+    invalid_payload = dict(payload)
+    invalid_payload["review_status"] = "approved"
+    invalid_payload["reviewer"] = None
+    with pytest.raises(ValidationError, match="approved private source proposals"):
+        proposal.__class__.model_validate(invalid_payload)
+
 
 def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:
     with pytest.raises(ValidationError, match="redacted_only"):

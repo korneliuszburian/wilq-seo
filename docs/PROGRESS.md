@@ -133,6 +133,10 @@ API status later contradicts this state.
   requirements and usage notes cannot contain blank entries. Focused proof:
   `rtk uv run pytest tests/content/test_content_knowledge_cards.py -q`, ruff,
   mypy and `git diff --check`.
+- Approved private source proposals now require reviewer provenance at model
+  validation time, matching the approved source-fact rule and preventing future
+  ekologus-ai/private proposal states from looking approved without a named
+  human review.
 - Knowledge-card depth audit is recorded in
   `docs/audits/005-2026-07-01-knowledge-depth-audit.md`. Result: the current
   three cards are typed Goal 004 seeds and useful anti-slop guardrails, but they
