@@ -958,6 +958,10 @@ Stop and record a blocker if:
   task-specific hard gates and failure tags. Stale snapshots are not acceptable
   as final workflow value; skills must refresh, provide repair path or block
   conclusions before action.
+- 2026-07-02: Goal 005 owner defer is now a stricter proof contract, not a
+  soft postponement. It must name the exact blocked claims for Goal 005
+  completion, Wilku usefulness proof, production-depth readiness and final
+  draft/publish readiness before the completion guard accepts it.
 - 2026-07-01: `wilq-ads-doctor` hardened for BDOS-style operator usefulness:
   broad Ads questions must handle freshness and use full diagnostics/full
   context for the complete review queue, while final output should prioritize

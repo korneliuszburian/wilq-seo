@@ -31,6 +31,13 @@ OWNER_DEFER_FIELDS = {
     "next_uat_input": "nastepny_input_uat",
 }
 
+REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS = [
+    "ukończony Goal 005",
+    "realny dowód użyteczności dla Wilka",
+    "production-depth readiness",
+    "gotowość finalnego draftu albo publikacji",
+]
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -162,6 +169,18 @@ def validate_owner_defer(path: Path) -> dict[str, Any]:
         errors.append("czego_nie_wolno_twierdzic musi być niepustą listą")
     elif any(is_blank(item) for item in blocked_claims):
         errors.append("czego_nie_wolno_twierdzic nie może zawierać pustych pozycji")
+    else:
+        normalized_claims = {normalize_text(item) for item in blocked_claims}
+        missing_required_claims = [
+            claim
+            for claim in REQUIRED_OWNER_DEFER_BLOCKED_CLAIMS
+            if normalize_text(claim) not in normalized_claims
+        ]
+        if missing_required_claims:
+            errors.append(
+                "czego_nie_wolno_twierdzic musi zawierać: "
+                + ", ".join(missing_required_claims)
+            )
 
     if errors:
         return {"valid": False, "errors": errors}
@@ -247,6 +266,10 @@ def is_blank(value: Any) -> bool:
         return True
     text = str(value).strip()
     return not text or text.startswith("<") or text in {"-", "TODO", "todo"}
+
+
+def normalize_text(value: object) -> str:
+    return str(value).strip().casefold()
 
 
 if __name__ == "__main__":

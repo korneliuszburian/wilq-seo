@@ -178,6 +178,11 @@ API status later contradicts this state.
   residual risk and `nastepny_przeglad`. The completion guard returns and
   renders the exact next UAT material/input so an owner defer cannot be a vague
   postponement.
+- Goal 005 owner defer proof now must also explicitly keep the core completion
+  claims blocked: `ukończony Goal 005`,
+  `realny dowód użyteczności dla Wilka`, `production-depth readiness` and
+  `gotowość finalnego draftu albo publikacji`. A generic or softer
+  `czego_nie_wolno_twierdzic` list no longer passes the guard.
 - Runtime import audit follow-up on 2026-07-02 found that `wilq/credentials`
   existed locally but was ignored by `.gitignore`, which explained the
   GitHub-visible `wilq.credentials.runtime` 404 risk. The package is now

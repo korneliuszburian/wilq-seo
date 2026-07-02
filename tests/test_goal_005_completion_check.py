@@ -82,8 +82,10 @@ def test_goal_005_completion_check_accepts_owner_defer(tmp_path: Path) -> None:
                     "Brak realnej walidacji, czy Wilku rozumie blokady i źródła."
                 ),
                 "czego_nie_wolno_twierdzic": [
-                    "ukończony UAT",
+                    "ukończony Goal 005",
+                    "realny dowód użyteczności dla Wilka",
                     "production-depth readiness",
+                    "gotowość finalnego draftu albo publikacji",
                 ],
                 "nastepny_przeglad": "po realnej sesji z Wilkiem",
                 "nastepny_input_uat": (
@@ -131,3 +133,34 @@ def test_goal_005_owner_defer_requires_residual_risk(tmp_path: Path) -> None:
     assert report["valid"] is False
     assert "brak pola owner defer: ryzyko_rezydualne" in report["errors"]
     assert "brak pola owner defer: nastepny_input_uat" in report["errors"]
+
+
+def test_goal_005_owner_defer_requires_core_blocked_claims(tmp_path: Path) -> None:
+    defer_path = tmp_path / "goal-005-owner-defer.json"
+    defer_path.write_text(
+        json.dumps(
+            {
+                "odroczenie_goal_005_uat": True,
+                "data": "2026-07-02",
+                "osoba": "Kornel",
+                "powod": "Wilku nie jest dostępny.",
+                "co_mozna_pokazac": "Można pokazać przygotowanie.",
+                "ryzyko_rezydualne": "Brak realnej walidacji z Wilkiem.",
+                "czego_nie_wolno_twierdzic": ["ukończony UAT"],
+                "nastepny_przeglad": "po sesji",
+                "nastepny_input_uat": "Pokazać Wilkowi UAT packet.",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_owner_defer(defer_path)
+
+    assert report["valid"] is False
+    assert any(
+        "czego_nie_wolno_twierdzic musi zawierać" in error
+        and "production-depth readiness" in error
+        and "gotowość finalnego draftu albo publikacji" in error
+        for error in report["errors"]
+    )
