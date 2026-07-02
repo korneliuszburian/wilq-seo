@@ -113,6 +113,20 @@ def content_claim_entry(
             source_connectors=connectors,
             reason="Twierdzenie prawne, ryzyka albo środowiskowe wymaga decyzji człowieka.",
         )
+    if claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES and not evidence:
+        return ContentClaimLedgerEntry(
+            id=claim_id,
+            claim_text=claim_text,
+            claim_type=claim_type,
+            status="needs_human_review",
+            evidence_ids=evidence,
+            source_connectors=connectors,
+            reason=(
+                "Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
+                "ryzyka albo środowiskowego."
+            ),
+            reviewer_id=reviewer_id if human_reviewed else None,
+        )
     if evidence:
         return ContentClaimLedgerEntry(
             id=claim_id,
@@ -149,6 +163,21 @@ def claim_ledger_blockers(ledger: ContentClaimLedger) -> list[ContentClaimLedger
                     "Brakuje dowodu dla twierdzenia",
                     "Twierdzenie oznaczone jako oparte na dowodzie musi mieć podpięty dowód.",
                     "Podłącz dowód albo obniż status twierdzenia.",
+                )
+            )
+        elif (
+            entry.claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES
+            and entry.status == "needs_human_review"
+            and not entry.evidence_ids
+        ):
+            blockers.append(
+                _blocker(
+                    "missing_evidence",
+                    entry,
+                    "Brakuje dowodu dla twierdzenia po review",
+                    "Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
+                    "ryzyka albo środowiskowego.",
+                    "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
                 )
             )
         elif entry.status == "allowed_with_evidence" and not entry.source_connectors:
@@ -218,6 +247,19 @@ def _entry_consistency_blocker(
             "Twierdzenie prawne, ryzyka albo środowiskowe nie może być ogólnie "
             "dopuszczone bez zapisanej decyzji człowieka.",
             "Przekaż twierdzenie do review i zapisz osobę zatwierdzającą.",
+        )
+    if (
+        entry.claim_type in HUMAN_REVIEW_REQUIRED_CLAIM_TYPES
+        and entry.status in {"allowed_with_evidence", "allowed_general"}
+        and not entry.evidence_ids
+    ):
+        return _blocker(
+            "missing_evidence",
+            entry,
+            "Brakuje dowodu dla twierdzenia po review",
+            "Decyzja człowieka nie zastępuje dowodu dla twierdzenia prawnego, "
+            "ryzyka albo środowiskowego.",
+            "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
         )
     if (
         entry.claim_type in MEASUREMENT_REQUIRED_CLAIM_TYPES

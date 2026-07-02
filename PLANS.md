@@ -401,6 +401,11 @@ claims, human-review claim types without a reviewer, or measurement-dependent
 claim types without measurement. The existing draft, quality review and
 publish-ready paths inherit this gate through `claim_ledger_blockers`.
 
+Claim Ledger high-risk review is tightened under Beads task `wilq-seo-ixa`:
+legal, risk and environmental claims still need evidence/source proof after
+human review. A reviewed high-risk claim without evidence blocks with
+`missing_evidence` instead of becoming `allowed_general` or publish-ready.
+
 Google Search Console vendor read is aligned with the first official
 Search Analytics ingestion pattern under Beads task `wilq-seo-kr8`: check
 available dates first, use the latest available day for detailed zapytania i adresy

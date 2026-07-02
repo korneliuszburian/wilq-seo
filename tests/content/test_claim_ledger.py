@@ -118,6 +118,44 @@ def test_human_review_allows_legal_claim_only_when_supported() -> None:
     assert claim_ledger_blockers(ledger) == []
 
 
+def test_human_review_does_not_replace_evidence_for_legal_claim() -> None:
+    entry = content_claim_entry(
+        claim_id="claim_reviewed_without_evidence",
+        claim_text="Ekologus potwierdza pełną zgodność z wymaganiami środowiskowymi.",
+        claim_type="legal_requirement_claim",
+        human_reviewed=True,
+        reviewer_id="wilku",
+    )
+    ledger = _ledger(entry)
+
+    assert entry.status == "needs_human_review"
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "missing_evidence"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
+def test_forged_reviewed_environmental_claim_without_evidence_blocks_draft() -> None:
+    entry = ContentClaimLedgerEntry(
+        id="claim_forged_reviewed_environmental",
+        claim_text="Ekologus zapewnia zgodność środowiskową po audycie.",
+        claim_type="environmental_claim",
+        status="allowed_general",
+        evidence_ids=[],
+        source_connectors=[],
+        reason="Błędny ręczny wpis po review.",
+        reviewer_id="wilku",
+    )
+    ledger = _ledger(entry)
+
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "missing_evidence"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
 def test_allowed_with_evidence_status_without_source_connector_blocks_draft() -> None:
     entry = ContentClaimLedgerEntry(
         id="claim_missing_connector",
