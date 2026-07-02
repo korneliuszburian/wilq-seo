@@ -305,6 +305,18 @@ def _entry_consistency_blocker(
             "dowodu z zakończonego okna pomiaru.",
             "Zostaw twierdzenie poza szkicem do czasu dostępnego pomiaru.",
         )
+    if (
+        entry.claim_type == "service_claim"
+        and entry.status == "allowed_general"
+        and not entry.evidence_ids
+    ):
+        return _blocker(
+            "missing_evidence",
+            entry,
+            "Brakuje dowodu dla twierdzenia usługowego",
+            "Ogólne twierdzenie o usłudze nadal musi mieć źródło, zanim trafi do szkicu.",
+            "Podłącz dowód źródłowy albo zostaw twierdzenie poza szkicem.",
+        )
     return None
 
 

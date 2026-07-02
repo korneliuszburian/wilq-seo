@@ -127,6 +127,28 @@ def build_report() -> dict[str, Any]:
         )
     )
 
+    missing_evidence_service = content_claim_entry(
+        claim_id="claim_unsourced_service",
+        claim_text="Ekologus pomaga firmom w obowiązkach środowiskowych.",
+        claim_type="service_claim",
+    )
+    missing_evidence_service_ledger = _ledger([missing_evidence_service])
+    missing_evidence_service_codes = [
+        blocker.code for blocker in claim_ledger_blockers(missing_evidence_service_ledger)
+    ]
+    checks.append(
+        _check(
+            "service_claim_requires_evidence",
+            missing_evidence_service.status == "allowed_general"
+            and "missing_evidence" in missing_evidence_service_codes,
+            "Ogólne twierdzenie usługowe bez dowodu nie może wejść do szkicu.",
+            {
+                "status": missing_evidence_service.status,
+                "blockers": missing_evidence_service_codes,
+            },
+        )
+    )
+
     product_without_product_source = content_claim_entry(
         claim_id="claim_product_without_merchant",
         claim_text="Kup sorbenty Ekologus jako sprawdzone rozwiązanie dla zakładu.",

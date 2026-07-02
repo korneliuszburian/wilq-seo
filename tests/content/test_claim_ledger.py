@@ -105,6 +105,22 @@ def test_allowed_with_evidence_claim_can_be_used_in_draft() -> None:
     assert claim_source_connectors_required(ledger.entries)
 
 
+def test_service_claim_without_evidence_cannot_be_publish_ready() -> None:
+    entry = content_claim_entry(
+        claim_id="claim_unsourced_service",
+        claim_text="Ekologus pomaga firmom w obowiązkach środowiskowych.",
+        claim_type="service_claim",
+    )
+    ledger = _ledger(entry)
+
+    assert entry.status == "allowed_general"
+    assert [blocker.code for blocker in claim_ledger_blockers(ledger)] == [
+        "missing_evidence"
+    ]
+    assert publish_ready_claims(ledger) == []
+    assert not claim_ledger_allows_draft(ledger)
+
+
 def test_human_review_allows_legal_claim_only_when_supported() -> None:
     entry = content_claim_entry(
         claim_id="claim_environmental_reviewed",

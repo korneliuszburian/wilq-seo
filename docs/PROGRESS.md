@@ -119,9 +119,10 @@ live API status later contradicts this state.
   coverage, Claim Ledger gate, skill eval coverage, language guard, shared
   schemas, 13 dashboard route smokes and WILQ skill smoke contracts. It was
   rerun after adding `draft_package_claim_outside_ledger`, and the Claim Ledger
-  gate now passes 12/12 checks including `missing_product_evidence` for product
-  claims without Merchant/shop evidence. This is review/demo readiness proof, not Goal
-  005 completion or real Wilku UAT proof.
+  gate now passes 13/13 checks including `missing_evidence` for unsourced
+  service claims and `missing_product_evidence` for product claims without
+  Merchant/shop evidence. This is review/demo readiness proof, not Goal 005
+  completion or real Wilku UAT proof.
 - Daily Command usefulness proof: non-interactive eval for
   `wilq-daily-command` passed with `operator_usefulness_score=5`, 20 evidence
   IDs, eight source connectors and four validated daily actions. The first safe
@@ -241,6 +242,9 @@ live API status later contradicts this state.
   claims without Merchant or shop evidence through `missing_product_evidence`.
   Product intent from public content or SEO evidence is not enough to put a
   product CTA into generated draft language.
+- Claim Ledger now also blocks `allowed_general` service claims without
+  evidence through `missing_evidence`, so the model contract cannot receive
+  generic Ekologus service language that has no source trace.
 - Service Profile private proposal governance now exposes `freshness_status`
   and `audience` from ekologus-ai/private source proposals through backend API
   models and shared Zod schemas, so owner review can see source currency and
