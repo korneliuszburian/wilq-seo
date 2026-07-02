@@ -61,6 +61,49 @@ class PrivateSourceProposal(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     safe_next_step: str
 
+    @model_validator(mode="after")
+    def validate_governance_fields(self) -> PrivateSourceProposal:
+        required_text_fields = {
+            "proposal_id": self.proposal_id,
+            "source_id": self.source_id,
+            "source_locator_label": self.source_locator_label,
+            "owner_role": self.owner_role,
+            "source_class_label": self.source_class_label,
+            "target_card_id": self.target_card_id,
+            "target_card_title": self.target_card_title,
+            "safe_next_step": self.safe_next_step,
+        }
+        missing_text_fields = sorted(
+            field_name
+            for field_name, value in required_text_fields.items()
+            if not value.strip()
+        )
+        if missing_text_fields:
+            raise ValueError(
+                "private source proposals require non-empty fields: "
+                + ", ".join(missing_text_fields)
+            )
+
+        required_list_fields = {
+            "data_classes": self.data_classes,
+            "source_block_refs": self.source_block_refs,
+            "deletion_path": self.deletion_path,
+            "eval_case_ids": self.eval_case_ids,
+            "blocked_claims": self.blocked_claims,
+        }
+        missing_list_fields = sorted(
+            field_name
+            for field_name, values in required_list_fields.items()
+            if not values or any(not value.strip() for value in values)
+        )
+        if missing_list_fields:
+            raise ValueError(
+                "private source proposals require non-empty governance lists: "
+                + ", ".join(missing_list_fields)
+            )
+
+        return self
+
 
 class PrivateSourceProposalRegistry(BaseModel):
     model_config = ConfigDict(extra="forbid")

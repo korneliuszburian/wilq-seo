@@ -154,6 +154,28 @@ def test_private_source_proposal_registry_rejects_duplicate_proposal_ids() -> No
         )
 
 
+def test_private_source_proposals_require_review_governance_fields() -> None:
+    proposal = ekologus_private_source_proposal_registry().proposals[0]
+    payload = proposal.model_dump(mode="json")
+
+    for field_name in (
+        "data_classes",
+        "source_block_refs",
+        "deletion_path",
+        "eval_case_ids",
+        "blocked_claims",
+    ):
+        invalid_payload = dict(payload)
+        invalid_payload[field_name] = []
+        with pytest.raises(ValidationError, match=field_name):
+            proposal.__class__.model_validate(invalid_payload)
+
+    invalid_payload = dict(payload)
+    invalid_payload["safe_next_step"] = " "
+    with pytest.raises(ValidationError, match="safe_next_step"):
+        proposal.__class__.model_validate(invalid_payload)
+
+
 def test_ekologus_ai_source_facts_require_private_governance_fields() -> None:
     with pytest.raises(ValidationError, match="redacted_only"):
         ContentSourceFact(
