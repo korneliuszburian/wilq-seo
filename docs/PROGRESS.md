@@ -235,6 +235,11 @@ API status later contradicts this state.
   artifacts as a completion blocker. A UAT result can remain valid evidence,
   but it cannot close Goal 005 if Wilku was not shown the WILQ marketing/content
   model and the "co pokazać Wilkowi" guide first.
+- Informal Wilku feedback on 2026-07-02 is recorded in
+  `docs/handoffs/2026-07-02-wilku-informal-positive-feedback.md`: the user
+  reported that Wilku said the current WILQ direction/materials are very good.
+  Treat this as a strong positive direction signal, not as structured Goal 005
+  UAT completion proof.
 - Goal 005 UAT result reports now warn when
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku
