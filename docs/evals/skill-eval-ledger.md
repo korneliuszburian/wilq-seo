@@ -8325,3 +8325,39 @@ Result:
 - The output tells the marketer to start at `/command-center`, execute
   `primary_next_step`, open `/merchant`, then continue through
   `/content-planner`, `/ga4` and `/ads-doctor` without write/apply claims.
+
+## 2026-07-02 - GSC Content Doctor usefulness eval
+
+Purpose:
+
+- Verify that `wilq-gsc-content-doctor` turns GSC + WordPress evidence into a
+  concrete content decision instead of generic SEO advice.
+- Check that the skill explains Search Analytics limitations: latest available
+  day, `query,page` detail dimensions, partial data and no claims about ranking
+  uplift, full traffic diagnosis or WordPress writes.
+
+Focused proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 rtk scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Passing proof is stored at
+  `.local-lab/evals/codex-skill/20260702T130502Z/wilq-gsc-content-doctor/result.json`.
+- The eval passed with `operator_usefulness_score=5`, `blocked=false`,
+  `failure_tags=[]`, five top-level evidence IDs and all hard gates true.
+- The output chose one concrete content decision:
+  `refresh_or_merge` for `https://www.ekologus.pl/`, with GSC queries such as
+  `doradztwo ochrona środowiska`, `doradztwo środowiskowe śląsk`, `ekologus`
+  and `eko outsourcing`.
+- The output preserved the GSC limitations: latest detail date `2026-06-29`,
+  `search_type=web`, `detail_dimensions=query,page`,
+  `detail_data_completeness=partial_possible`, `query_page_row_limit=1000`,
+  `query_page_rows_truncated=false` and the expected 2-3 day Search Analytics
+  delay.
+- `act_prepare_content_refresh_queue` was validated and kept as a preview/review
+  action, with no WordPress write, ranking guarantee, lead uplift or full
+  traffic-diagnosis claim.

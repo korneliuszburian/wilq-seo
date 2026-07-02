@@ -189,6 +189,12 @@ API status later contradicts this state.
   unsupported content/result claims. The dashboard first screen now shows
   `Treści: co dziś zrobić`, `Kolejność pracy` and `Czego nie obiecywać` before
   preflight and detailed review sections.
+- `wilq-gsc-content-doctor` passed deterministic smoke and non-interactive eval
+  after the Command Center lineage work; artifact:
+  `.local-lab/evals/codex-skill/20260702T130502Z`. Score 5,
+  `failure_tags=[]`. The useful output is a concrete `refresh_or_merge`
+  decision for `https://www.ekologus.pl/`, with GSC partial-data limits and
+  `act_prepare_content_refresh_queue` validated as review-only.
 - Service Profile usefulness review now has a short Wilku-facing decision card
   at `docs/handoffs/2026-07-02-wilku-service-profile-start-card.md`. Live
   `/api/content/service-profile` returns 10 cards, 7 service cards,
