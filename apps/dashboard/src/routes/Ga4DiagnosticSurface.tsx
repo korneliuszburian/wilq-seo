@@ -307,6 +307,9 @@ function Ga4OperatorSummary({
       (decision): decision is Ga4DecisionItem =>
         decision !== undefined && decision.decision_type !== "fix_measurement"
   );
+  const measurementDecisions = data.decision_queue.filter(
+    (decision) => decision.decision_type === "fix_measurement"
+  );
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
   const actionIds = summary.action_ids;
@@ -314,13 +317,18 @@ function Ga4OperatorSummary({
     conversionReadiness.missing_read_contract_labels.length > 0
       ? conversionReadiness.missing_read_contract_labels
       : [conversionReadiness.missing_read_contract_summary_label || "dane kompletne"];
+  const workSteps = [
+    `Najpierw wyjaśnij ${summary.measurement_issue_count} problemy pomiaru: brak strony wejścia, źródła albo medium nie jest oceną kampanii.`,
+    `Potem sprawdź ${topDecisions.length} gotowe kontrole jakości ruchu: porównaj stronę wejścia, źródło, kampanię i intencję strony.`,
+    "Nie wyciągaj wniosków o zwrocie z reklam, przychodzie, opłacalności ani spadku konwersji bez osobnych dowodów kosztu, atrybucji i kontekstu konwersji."
+  ];
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Przegląd GA4
+            GA4: co dziś zrobić
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
             {summary.title}
@@ -335,6 +343,35 @@ function Ga4OperatorSummary({
           <MetricTile label="Brak WP" value={summary.wordpress_missing_count} />
         </div>
       </div>
+
+      <div className="mb-4 rounded-md border border-line bg-slate-50 p-3">
+        <h3 className="text-sm font-semibold text-ink">Kolejność pracy</h3>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
+          {workSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </div>
+
+      {measurementDecisions.length > 0 ? (
+        <div className="mb-4 rounded-md border border-risk/25 bg-risk/10 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Najpierw pomiar</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-700">
+                Te wiersze mówią o luce w danych, nie o jakości kampanii ani strony.
+                Wyjaśnij je przed oceną ruchu.
+              </p>
+            </div>
+            <StatusBadge value="blocked" label={`${measurementDecisions.length} do wyjaśnienia`} />
+          </div>
+          <div className="mt-3 grid gap-2">
+            {measurementDecisions.slice(0, 2).map((decision) => (
+              <Ga4MeasurementIssueCard key={decision.id} decision={decision} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
@@ -405,6 +442,44 @@ function Ga4OperatorSummary({
         </div>
       </div>
     </section>
+  );
+}
+
+function Ga4MeasurementIssueCard({
+  decision
+}: {
+  decision: Ga4DecisionItem;
+}) {
+  return (
+    <article className="rounded-md border border-line bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-ink">{decision.title}</h4>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {decision.decision_type_label}
+          </p>
+        </div>
+        <StatusBadge value={decision.status} label={decision.status_label} />
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.next_step}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+        {decision.landing_page_label ? (
+          <span className="rounded border border-line bg-slate-50 px-2 py-1">
+            Strona wejścia: {decision.landing_page_label}
+          </span>
+        ) : null}
+        {decision.source_medium_label ? (
+          <span className="rounded border border-line bg-slate-50 px-2 py-1">
+            Źródło: {decision.source_medium_label}
+          </span>
+        ) : null}
+        {decision.campaign_name_label ? (
+          <span className="rounded border border-line bg-slate-50 px-2 py-1">
+            Kampania: {decision.campaign_name_label}
+          </span>
+        ) : null}
+      </div>
+    </article>
   );
 }
 

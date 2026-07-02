@@ -5603,8 +5603,8 @@ const ga4Diagnostics = {
       "WILQ pokazuje grupy ruchu do kontroli stron wejścia, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o werdykcie zwrotu z reklam, twierdzeniu o przychodzie, spadku konwersji ani winie kampanii.",
     next_step:
       "Przejdź przez najważniejsze decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i sprawdź propozycję w WILQ tylko jako sprawdzenie bez zapisu.",
-    top_decision_ids: ["ga4_decision_tq_ga4_landing"],
-    measurement_issue_count: 0,
+    top_decision_ids: ["ga4_decision_tq_ga4_not_set", "ga4_decision_tq_ga4_landing"],
+    measurement_issue_count: 1,
     wordpress_missing_count: 1,
     conversion_readiness_status: "blocked",
     source_connectors: ["google_analytics_4"],
@@ -5617,6 +5617,42 @@ const ga4Diagnostics = {
     blocked_claim_labels: ["współczynnik konwersji", "werdykt zwrotu z reklam", "twierdzenie o przychodzie", "werdykt opłacalności"]
   },
   decision_queue: [
+    {
+      id: "ga4_decision_tq_ga4_not_set",
+      decision_type: "fix_measurement",
+      decision_type_label: "problem pomiaru",
+      title: "GA4: napraw pomiar - brak strony wejścia w raporcie",
+      status: "blocked",
+      status_label: "zablokowane",
+      priority: 11,
+      metric_tiles: {},
+      landing_page: "(not set)",
+      landing_page_label: "brak strony wejścia w raporcie",
+      source_medium: "google / organic",
+      source_medium_label: "google / organic",
+      campaign_name: "(organic)",
+      campaign_name_label: "(organic)",
+      wordpress_match: null,
+      wordpress_match_label: null,
+      wordpress_match_confidence: null,
+      wordpress_match_confidence_label: null,
+      wordpress_content_url: null,
+      source_connectors: ["google_analytics_4"],
+      source_connector_labels: ["GA4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      evidence_summary_label: "1 dowód źródłowy",
+      metric_facts: [],
+      action_ids: ["act_review_ga4_tracking_quality"],
+      action_summary_label: "1 akcja do sprawdzenia",
+      blocked_claims: ["werdykt zwrotu z reklam", "spadek konwersji"],
+      blocked_claim_labels: ["werdykt zwrotu z reklam", "spadek konwersji"],
+      rationale:
+        "GA4 nie zwraca strony wejścia, więc ten wiersz jest problemem pomiaru.",
+      next_step:
+        "Sprawdź landing page, źródło/medium, UTM-y i konfigurację raportu przed oceną kampanii albo strony.",
+      risk: "high",
+      risk_label: "wysokie ryzyko"
+    },
     {
       id: "ga4_decision_tq_ga4_landing",
       decision_type: "review_landing_mapping",
@@ -8331,7 +8367,14 @@ describe("WILQ dashboard", () => {
     expect(
       screen.queryByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).not.toBeInTheDocument();
+    expect(screen.getByText("GA4: co dziś zrobić")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kolejność pracy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Najpierw pomiar" })).toBeInTheDocument();
+    expect(
+      screen.getByText("GA4: napraw pomiar - brak strony wejścia w raporcie")
+    ).toBeInTheDocument();
+    expect(screen.getByText(/UTM-y i konfigurację raportu/)).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje i zdarzenia kluczowe/)).toBeInTheDocument();
@@ -8371,7 +8414,7 @@ describe("WILQ dashboard", () => {
     expect(ga4MeasurementCopy).not.toMatch(/ev_/);
     expect(ga4MeasurementCopy).not.toMatch(/act_/);
     const ga4OperatorSection = screen
-      .getByText("Przegląd GA4")
+      .getByText("GA4: co dziś zrobić")
       .closest("section");
     expect(ga4OperatorSection).not.toBeNull();
     const ga4OperatorCopy = ga4OperatorSection?.textContent ?? "";

@@ -117,6 +117,46 @@ Result:
   Dashboard now shows `Ads Doctor: co dziś zrobić` and `Kolejność pracy` before
   deeper diagnostics.
 
+## 2026-07-02 - GA4 dashboard usefulness review
+
+Purpose:
+
+- Test whether `/ga4` is useful as a marketer screen, not only as a GA4
+  diagnostics dump.
+- Verify that WILQ separates measurement gaps from marketing traffic quality
+  and blocks unsupported ROAS/revenue/conversion conclusions.
+
+Proof:
+
+```bash
+rtk uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+rtk curl -sS -m 20 http://127.0.0.1:8000/api/ga4/diagnostics
+rtk pnpm typecheck
+rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+```
+
+Result:
+
+- Start card for Wilku:
+  `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`.
+- Live GA4 diagnostics exposed 4 decisions: 2 measurement blockers for
+  `(not set)` rows and 2 ready `google / cpc` traffic-quality checks.
+- Main evidence:
+  `ev_refresh_refresh_google_analytics_4_5ebc4ba1c966`,
+  `ev_refresh_refresh_google_analytics_4_33a4b3fda0db`,
+  `ev_refresh_refresh_wordpress_ekologus_691cbe6ab27d` and
+  `ev_connector_google_analytics_4_status`.
+- Action to validate/review: `act_review_ga4_tracking_quality`.
+- Reviewer scores:
+  - GA4/analytics specialist: 8/10 for measurement-vs-marketing separation,
+    7.5/10 marketer usefulness, 9/10 claim blocking.
+  - Marketer/operator: 7/10. The main gap was that concrete `(not set)`
+    measurement cards were hidden below the first screen.
+- Main learning: the API decision queue is useful, but the first screen must
+  show the measurement blocker before quality-of-traffic cards. Dashboard now
+  shows `GA4: co dziś zrobić`, `Kolejność pracy` and first-screen
+  `Najpierw pomiar` cards.
+
 ## 2026-07-02 - `wilq-daily-command` BDOS-class morning brief eval
 
 Purpose:

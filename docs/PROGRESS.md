@@ -133,6 +133,12 @@ API status later contradicts this state.
   dashboard first screen now leads with `Ads Doctor: co dziś zrobić` and
   `Kolejność pracy`; the next gap is API-owned top blocked claim labels and
   clearer per-action preview detail.
+- GA4 usefulness review now has a short Wilku-facing decision card at
+  `docs/handoffs/2026-07-02-wilku-ga4-start-card.md`. Reviewers scored the
+  surface 8/10 for measurement-vs-marketing separation, 7-7.5/10 for marketer
+  usefulness and 9/10 for claim blocking. The dashboard first screen now leads
+  with `GA4: co dziś zrobić`, `Kolejność pracy` and `Najpierw pomiar` cards for
+  `(not set)` rows before traffic-quality decisions.
 - `scripts/record_service_profile_review_result.py` and the content-operator
   UAT packet helper now require the same private governance confirmations, so
   recorded review proof cannot omit freshness or audience/scope while the live
