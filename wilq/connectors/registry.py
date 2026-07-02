@@ -23,6 +23,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorStatusValue,
     FreshnessState,
+    connector_refresh_has_live_data,
     utc_now,
 )
 from wilq.storage.local_state import local_state_store
@@ -335,7 +336,12 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
     ] + _missing_credential_groups(definition)
     configured = not missing
     latest_success = _latest_successful_vendor_read(definition.id) if configured else None
-    freshness = _connector_freshness(configured=configured, latest_success=latest_success)
+    latest_incomplete = _latest_incomplete_vendor_read(definition.id) if configured else None
+    freshness = _connector_freshness(
+        configured=configured,
+        latest_success=latest_success,
+        latest_incomplete=latest_incomplete,
+    )
     return ConnectorStatus(
         id=definition.id,
         label=definition.label,
@@ -377,11 +383,18 @@ def get_connector_status(connector_id: str) -> ConnectorStatus | None:
 
 def _latest_successful_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:
     for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id):
+        if run.mode == ConnectorRefreshMode.vendor_read and connector_refresh_has_live_data(run):
+            return run
+    return None
+
+
+def _latest_incomplete_vendor_read(connector_id: str) -> ConnectorRefreshRun | None:
+    for run in local_state_store().list_connector_refresh_runs(connector_id=connector_id):
         if (
             run.mode == ConnectorRefreshMode.vendor_read
             and run.status == ConnectorRefreshStatus.completed
             and run.vendor_data_collected
-            and run.completed_at is not None
+            and not run.metrics_persisted
         ):
             return run
     return None
@@ -391,11 +404,22 @@ def _connector_freshness(
     *,
     configured: bool,
     latest_success: ConnectorRefreshRun | None,
+    latest_incomplete: ConnectorRefreshRun | None,
 ) -> FreshnessState:
     if not configured:
         return FreshnessState(
             state="missing",
             notes="Brakuje dostępu do źródła danych.",
+        )
+    if latest_success is None and latest_incomplete is not None:
+        incomplete_at = latest_incomplete.completed_at or latest_incomplete.started_at
+        return FreshnessState(
+            state="unknown",
+            notes=(
+                "Ostatni odczyt danych zewnętrznych jest niepełny - metryki nieutrwalone. "
+                f"Czas odczytu: {incomplete_at.isoformat()}. Uruchom odczyt ponownie przed "
+                "wnioskami z metryk."
+            ),
         )
     if latest_success is None:
         return FreshnessState(

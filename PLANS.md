@@ -1056,6 +1056,10 @@ Stop and record a blocker if:
   input now preserve knowledge-card `evidence_ids`. The source-fact evidence
   fallback therefore reaches not just Service Profile, but also the contract
   given to draft generation.
+- 2026-07-02: Connector registry no longer counts
+  `metrics_persisted=false` refreshes as successful vendor reads. A connector
+  with only such an incomplete run is surfaced as freshness `unknown` with a
+  Polish incomplete-read note instead of a normal fresh state.
 
 ## Surprises & Discoveries
 

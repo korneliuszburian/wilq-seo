@@ -103,6 +103,46 @@ def test_connector_status_uses_latest_successful_vendor_read(
     assert "udany odczyt danych zewnętrznych" in (connector.freshness.notes or "")
 
 
+def test_connector_status_does_not_treat_unpersisted_metrics_as_success(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_at = utc_now() - timedelta(minutes=10)
+    run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_incomplete_metrics",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        vendor_data_collected=True,
+        metrics_persisted=False,
+        summary="Odczyt Merchant Center zakończony, ale metryki nie zostały utrwalone.",
+    )
+
+    class FakeStateStore:
+        def list_connector_refresh_runs(
+            self,
+            connector_id: str | None = None,
+        ) -> list[ConnectorRefreshRun]:
+            assert connector_id == "google_merchant_center"
+            return [run]
+
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456789")
+    monkeypatch.setattr("wilq.connectors.registry.google_credentials_available", lambda: True)
+    monkeypatch.setattr("wilq.connectors.registry.local_state_store", lambda: FakeStateStore())
+
+    connector = get_connector_status("google_merchant_center")
+
+    assert connector is not None
+    assert connector.configured is True
+    assert connector.last_success_at is None
+    assert connector.freshness.state == "unknown"
+    assert connector.freshness.last_success_at is None
+    assert "odczyt danych zewnętrznych jest niepełny" in (
+        connector.freshness.notes or ""
+    )
+    assert "metryki nieutrwalone" in (connector.freshness.notes or "")
+
+
 def test_metric_fact_hydrates_operator_metric_label() -> None:
     fact = MetricFact(
         name="clicks",

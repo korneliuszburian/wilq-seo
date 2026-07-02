@@ -182,6 +182,10 @@ API status later contradicts this state.
   knowledge-card `evidence_ids`. This extends source-fact/card lineage into the
   actual generation contract, so review-required constraints can point to WILQ
   evidence instead of only card IDs.
+- Connector status no longer treats `completed` refresh runs with
+  `metrics_persisted=false` as successful vendor reads. If no usable earlier
+  success exists, freshness becomes unknown with an explicit incomplete-read
+  note instead of a normal fresh/green state.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
