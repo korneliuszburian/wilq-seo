@@ -393,6 +393,7 @@ export const ContentServiceProfileServiceSectionSchema = z.object({
   status_label: z.string(),
   summary: z.string(),
   source_fact_ids: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
   source_connector_labels: z.array(z.string()).default([]),
   source_lineage_labels: z.array(z.string()).default([]),
   freshness_label: z.string(),

@@ -209,6 +209,7 @@ def test_approved_source_fact_compiles_to_approved_current_with_traceability() -
     assert card.lifecycle_status == "approved_current"
     assert card.freshness == "reviewed_2026-07-02"
     assert card.source_fact_ids == ["approved_bdo_service_fact"]
+    assert card.evidence_ids == ["ev_owner_review_bdo_service_fact"]
     assert card.source_connectors == ["public_site", "owner_review"]
     assert card.source_lineage == [
         "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"

@@ -68,6 +68,7 @@ class ContentKnowledgeCard(BaseModel):
     measurement_sensitive_claims: list[ContentKnowledgeClaimRule] = Field(default_factory=list)
     source_lineage: list[str] = Field(default_factory=list)
     source_fact_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     lifecycle_status: ContentKnowledgeLifecycleStatus | None = None
     confidence: float
@@ -370,6 +371,9 @@ def compile_source_facts_to_knowledge_cards(
                 ),
                 source_lineage=_unique(fact.source_url_or_path for fact in card_facts),
                 source_fact_ids=[fact.source_id for fact in card_facts],
+                evidence_ids=_unique(
+                    evidence_id for fact in card_facts for evidence_id in fact.evidence_ids
+                ),
                 source_connectors=_unique(
                     connector for fact in card_facts for connector in fact.source_connectors
                 ),

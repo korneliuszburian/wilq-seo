@@ -1038,6 +1038,10 @@ Stop and record a blocker if:
   `approved_current`, preserves source lineage/connectors, keeps blocked claims,
   and is the only isolated source-fact path that unlocks production-depth
   readiness.
+- 2026-07-02: Compiled knowledge cards and Service Profile service sections now
+  carry `evidence_ids` from source facts. This closes the traceability gap where
+  approved facts required evidence IDs but downstream cards only exposed source
+  fact IDs and connectors.
 
 ## Surprises & Discoveries
 

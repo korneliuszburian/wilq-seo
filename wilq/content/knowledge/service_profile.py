@@ -72,6 +72,7 @@ class ContentServiceProfileServiceSection(BaseModel):
     status_label: str
     summary: str
     source_fact_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
     source_connector_labels: list[str] = Field(default_factory=list)
     source_lineage_labels: list[str] = Field(default_factory=list)
     freshness_label: str
@@ -437,6 +438,7 @@ def _service_section(card: ContentKnowledgeCard) -> ContentServiceProfileService
         status_label=_status_label(status),
         summary=card.summary,
         source_fact_ids=card.source_fact_ids,
+        evidence_ids=card.evidence_ids,
         source_connector_labels=card.source_connectors,
         source_lineage_labels=_redacted_lineage(card.source_lineage),
         freshness_label=card.freshness,

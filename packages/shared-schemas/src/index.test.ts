@@ -94,6 +94,7 @@ describe("ContentServiceProfileResponseSchema", () => {
           status_label: "wymaga review",
           summary: "BDO service card.",
           source_fact_ids: ["ekologus_public_bdo_faq_2026_07_01"],
+          evidence_ids: ["ev_owner_review_bdo_service_fact"],
           source_connector_labels: ["public_site"],
           source_lineage_labels: ["https://www.ekologus.pl/bdo/"],
           freshness_label: "public_site_review_required_2026-07-01",

@@ -182,6 +182,10 @@ API status later contradicts this state.
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only
   isolated source-fact path that unlocks production-depth readiness.
+- Compiled knowledge cards and Service Profile service sections now carry
+  `evidence_ids` from source facts. This closes the traceability gap where
+  approved facts required evidence IDs but downstream cards only exposed source
+  fact IDs and connectors.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`
