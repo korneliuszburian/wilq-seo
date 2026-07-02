@@ -317,6 +317,11 @@ API status later contradicts this state.
   shown to Wilku. Live proof with `--api-base http://127.0.0.1:8000` validates
   the current queue, Service Profile, review action counts and shown BDO,
   Eko-Opieka and Audyt zgodności handoffs without claiming UAT completion.
+- Goal 005 UAT result recorder now also requires `punkty_niezrozumienia`.
+  The report renders explicit confusion points next to source-trace questions,
+  off-brand/generic findings and follow-ups. Live proof on 2026-07-02 with
+  `--api-base http://127.0.0.1:8000` passed against the current blocked queue,
+  3 candidates, 1 actionable candidate and read-only Service Profile.
 - Service Profile now exposes non-persistent review requests for the two
   redacted `ekologus-ai` private proposals. These proposals are now compiled
   from redacted `reviewed_internal` service facts in

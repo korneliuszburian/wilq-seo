@@ -284,6 +284,7 @@ Uzupełnić po rozmowie:
 - czy public service review actions są czytelne:
 - czy private review actions są czytelne:
 - czy private policy review actions są czytelne:
+- punkty niezrozumienia:
 - pytania "skąd to wzięło?":
 - miejsca generyczne/off-brand:
 - największy brak produktu:
@@ -297,6 +298,7 @@ Walidowany format wyniku:
   "data_sesji": "YYYY-MM-DD",
   "osoba": "Wilku",
   "czas_do_zrozumienia_statusu": "np. 8 minut",
+  "punkty_niezrozumienia": "gdzie Wilku się zgubił, co wymagało tłumaczenia albo co było nieczytelne",
   "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
   "pokazane_materialy_review": [
     "docs/handoffs/2026-07-02-wilku-bdo-uat-review.md",

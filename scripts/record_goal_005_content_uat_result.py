@@ -12,6 +12,7 @@ REQUIRED_TEXT_FIELDS = {
     "data_sesji": "data sesji",
     "osoba": "osoba",
     "czas_do_zrozumienia_statusu": "czas do zrozumienia statusu",
+    "punkty_niezrozumienia": "punkty niezrozumienia",
     "wybrany_work_item": "wybrany work item",
     "pytania_skad_to_wzielo": 'pytania "skąd to wzięło?"',
     "miejsca_generyczne_off_brand": "miejsca generyczne/off-brand",
@@ -126,6 +127,7 @@ def build_content_uat_result_report(
         "time_to_status_understanding": str(
             payload["czas_do_zrozumienia_statusu"]
         ).strip(),
+        "confusion_points": str(payload["punkty_niezrozumienia"]).strip(),
         "blockers_understood": blockers_understood,
         "service_profile_clear": service_profile_clear,
         "public_service_review_actions_clear": public_actions_clear,
@@ -192,6 +194,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Work item: `{report['selected_work_item']}`",
         f"- Status: {visible_status(report['overall_status'])}",
         f"- Czas do zrozumienia statusu: {report['time_to_status_understanding']}",
+        f"- Punkty niezrozumienia: {report['confusion_points']}",
         "",
         report["safety_note"],
         "",

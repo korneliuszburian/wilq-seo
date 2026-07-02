@@ -332,6 +332,9 @@ Under Beads task `wilq-seo-3cqd`, the Goal 005 UAT result recorder now requires
 `docs/handoffs/`. The rendered UAT result lists the artifacts shown to Wilku,
 so a future completion proof cannot claim that UAT happened without naming the
 actual BDO/Eko-Opieka/Audyt or live packet materials used in the session.
+Follow-up task `wilq-seo-hc8h` also requires `punkty_niezrozumienia`, so the
+same proof captures where Wilku got confused instead of only recording elapsed
+time and final yes/no gates.
 
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
@@ -531,8 +534,9 @@ Goal 005 content UAT proof now has a deterministic result validator under
 Beads task `wilq-seo-b6u`:
 `scripts/record_goal_005_content_uat_result.py`. It validates the completed
 Wilku session JSON for selected work item, blocker understanding, Service
-Profile/private review feedback, source-trace questions, generic/off-brand
-findings, largest product gap and follow-up Beads when full UAT is blocked. It
+Profile/private review feedback, confusion points, source-trace questions,
+generic/off-brand findings, largest product gap and follow-up Beads when full
+UAT is blocked. It
 renders a safety-bounded report only; it does not run UAT, promote private
 proposals, approve knowledge cards, unlock WordPress/publishing or close
 Goal 005 by itself.

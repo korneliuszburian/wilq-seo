@@ -27,6 +27,9 @@ def test_goal_005_completion_check_accepts_uat_result(tmp_path: Path) -> None:
                 "data_sesji": "2026-07-02",
                 "osoba": "Wilku",
                 "czas_do_zrozumienia_statusu": "8 minut",
+                "punkty_niezrozumienia": (
+                    "Nie było jasne, czemu pełny UAT nadal jest zablokowany."
+                ),
                 "wybrany_work_item": (
                     "content_work_item_content_decision_https___www_ekologus_pl"
                 ),

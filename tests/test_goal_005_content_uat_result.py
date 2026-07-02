@@ -13,6 +13,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Nie było jasne, które karty są tylko review-required.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Chce widzieć publiczny URL obok evidence ID.",
@@ -31,6 +32,7 @@ def test_content_uat_result_records_follow_up_when_full_uat_blocked() -> None:
 
     assert report["report_type"] == "goal_005_content_uat_result_v1"
     assert report["selected_work_item"] == payload["wybrany_work_item"]
+    assert report["confusion_points"] == payload["punkty_niezrozumienia"]
     assert report["overall_status"] == "needs_follow_up_before_full_content_uat"
     assert report["missing_follow_up_task"] is False
     assert report["follow_up_tasks"] == [
@@ -48,6 +50,7 @@ def test_content_uat_result_records_live_packet_provenance_for_selected_item() -
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Nie było jasne, czemu BDO nie jest live work itemem.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
@@ -98,6 +101,7 @@ def test_content_uat_result_rejects_work_item_missing_from_live_packet() -> None
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Nie wiadomo, czemu ten item jest poza kolejką.",
         "wybrany_work_item": "content_work_item_fake",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
@@ -125,6 +129,7 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
         "data_sesji": "<YYYY-MM-DD>",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "-",
+        "punkty_niezrozumienia": "TODO",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "TODO",
@@ -144,6 +149,7 @@ def test_content_uat_result_rejects_placeholders_and_invalid_booleans() -> None:
     message = str(error.value)
     assert "Brak pola albo placeholder: data sesji" in message
     assert "Brak pola albo placeholder: czas do zrozumienia statusu" in message
+    assert "Brak pola albo placeholder: punkty niezrozumienia" in message
     assert 'Brak pola albo placeholder: pytania "skąd to wzięło?"' in message
     assert "czy Wilku rozumie blokady pełnego UAT musi mieć wartość tak albo nie" in message
     assert "czy można przejść do pełnego content UAT musi mieć wartość tak albo nie" in message
@@ -154,6 +160,7 @@ def test_content_uat_result_requires_existing_review_artifact() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Brak widocznego materiału review blokuje interpretację.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/brak-takiego-materialu.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
@@ -179,6 +186,7 @@ def test_content_uat_result_requires_review_artifact_list() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "8 minut",
+        "punkty_niezrozumienia": "Nie wiadomo, które materiały pokazano.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
         "miejsca_generyczne_off_brand": "Za szeroki temat strony głównej.",
@@ -203,6 +211,7 @@ def test_content_uat_result_requires_public_service_review_feedback() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "10 minut",
+        "punkty_niezrozumienia": "Brak oceny publicznych akcji review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Źródła danych były jasne.",
@@ -229,6 +238,7 @@ def test_content_uat_result_requires_follow_up_when_blocked() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "12 minut",
+        "punkty_niezrozumienia": "Nie wiadomo, co trzeba poprawić przed pełnym UAT.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Wystarczy, ale chce linki publiczne.",
@@ -256,6 +266,7 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
         "data_sesji": "2026-07-02",
         "osoba": "Wilku",
         "czas_do_zrozumienia_statusu": "6 minut",
+        "punkty_niezrozumienia": "Brak nowych punktów niezrozumienia po review.",
         "wybrany_work_item": "content_work_item_content_decision_https___www_ekologus_pl",
         "pokazane_materialy_review": ["docs/handoffs/2026-07-02-wilku-bdo-uat-review.md"],
         "pytania_skad_to_wzielo": "Evidence IDs i source connectors wystarczają.",
@@ -277,6 +288,7 @@ def test_content_uat_result_ready_only_when_all_gates_are_yes() -> None:
     markdown = render_markdown(report)
     assert "# Wynik Goal 005 content UAT" in markdown
     assert "Status: gotowe do pełnego content UAT" in markdown
+    assert "Punkty niezrozumienia" in markdown
     assert "Pytania \"skąd to wzięło?\"" in markdown
     assert "Generyczne/off-brand" in markdown
     assert "Największy brak produktu" in markdown
