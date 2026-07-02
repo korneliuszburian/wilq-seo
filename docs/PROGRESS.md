@@ -886,6 +886,13 @@ API status later contradicts this state.
   `can_promote_facts=false` and `ready_for_daily_content=false`. This gives
   Wilku review targets for brand/legal-safety rules without turning them into
   production-depth cards or automatic quality gates.
+- Service Profile private proposal review recorder now requires the private
+  governance checks exposed by the review actions:
+  `data_classes_confirmed`, `source_block_refs_confirmed`,
+  `retention_decision_confirmed`, `deletion_path_confirmed` and
+  `eval_gates_confirmed`. Live proof on 2026-07-02 accepted a real
+  `service_profile_review_private_proposal_*` action with those booleans and
+  still returned `promotion_allowed=false`.
 - Goal 005 UAT proof now separates private service proposals from private
   policy proposals. Live `wilq-content-operator` UAT packet on 2026-07-02 shows
   `public_service_review_count=6`, `private_review_count=4`,

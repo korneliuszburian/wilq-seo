@@ -30,6 +30,17 @@ REQUIRED_DECISION_BOOLEAN_FIELDS = {
     "source_trace_clear": "czy ślad źródłowy jest czytelny",
     "blocked_claims_reviewed": "czy claimy zablokowane zostały sprawdzone",
 }
+PRIVATE_DECISION_BOOLEAN_FIELDS = {
+    "data_classes_confirmed": "czy klasy danych prywatnego źródła są poprawne",
+    "source_block_refs_confirmed": (
+        "czy source block refs są wystarczające do śladu źródłowego"
+    ),
+    "retention_decision_confirmed": (
+        "czy decyzja retencji została podjęta albo świadomie zablokowana"
+    ),
+    "deletion_path_confirmed": "czy ścieżka usunięcia/odrzucenia proposal jest jasna",
+    "eval_gates_confirmed": "czy eval gates blokujące unsafe claimy są wskazane",
+}
 
 
 def main() -> int:
@@ -94,6 +105,7 @@ def build_review_result_report(
         if decision["decision"] != "approve"
         or not decision["source_trace_clear"]
         or not decision["blocked_claims_reviewed"]
+        or private_governance_blocks(decision, review_type=review_type)
     ]
     approved_count = sum(1 for decision in decisions if decision["decision"] == "approve")
     live_provenance = live_review_provenance(
@@ -174,6 +186,12 @@ def validate_payload(
         for key, label in REQUIRED_DECISION_BOOLEAN_FIELDS.items():
             if normalize_bool(raw_decision.get(key)) is None:
                 errors.append(f"Decyzja #{index}: {label} musi mieć wartość tak albo nie")
+        if review_type == "private_source_proposals":
+            for key, label in PRIVATE_DECISION_BOOLEAN_FIELDS.items():
+                if normalize_bool(raw_decision.get(key)) is None:
+                    errors.append(
+                        f"Decyzja #{index}: {label} musi mieć wartość tak albo nie"
+                    )
 
         action_id = str(raw_decision.get("action_id") or "").strip()
         target_card_id = str(raw_decision.get("target_card_id") or "").strip()
@@ -215,6 +233,13 @@ def validate_payload(
             decision_value != "approve"
             or normalize_bool(raw_decision.get("source_trace_clear")) is not True
             or normalize_bool(raw_decision.get("blocked_claims_reviewed")) is not True
+            or (
+                review_type == "private_source_proposals"
+                and any(
+                    normalize_bool(raw_decision.get(field)) is not True
+                    for field in PRIVATE_DECISION_BOOLEAN_FIELDS
+                )
+            )
         )
         has_blocking_decision = has_blocking_decision or decision_blocks
 
@@ -263,7 +288,7 @@ def safety_note_for_review_type(review_type: str) -> str:
 def normalize_decision(raw_decision: Any) -> dict[str, Any]:
     if not isinstance(raw_decision, dict):
         raise RuntimeError("Decyzja review musi być obiektem")
-    return {
+    decision = {
         "action_id": str(raw_decision["action_id"]).strip(),
         "target_card_id": str(raw_decision["target_card_id"]).strip(),
         "decision": str(raw_decision["decision"]).strip(),
@@ -272,6 +297,16 @@ def normalize_decision(raw_decision: Any) -> dict[str, Any]:
         "notes": str(raw_decision["notes"]).strip(),
         "follow_up_beads": list_payload(raw_decision.get("follow_up_beads")),
     }
+    for field in PRIVATE_DECISION_BOOLEAN_FIELDS:
+        if field in raw_decision:
+            decision[field] = normalize_bool(raw_decision[field])
+    return decision
+
+
+def private_governance_blocks(decision: dict[str, Any], *, review_type: str) -> bool:
+    if review_type != "private_source_proposals":
+        return False
+    return any(decision.get(field) is not True for field in PRIVATE_DECISION_BOOLEAN_FIELDS)
 
 
 def load_live_context(api_base: str) -> dict[str, Any]:
@@ -484,9 +519,12 @@ def render_markdown(report: dict[str, Any]) -> str:
                 f"- ślad źródłowy czytelny: {visible_bool(decision['source_trace_clear'])}",
                 "- claimy zablokowane sprawdzone: "
                 f"{visible_bool(decision['blocked_claims_reviewed'])}",
-                f"- notatki: {decision['notes']}",
             ]
         )
+        for field in PRIVATE_DECISION_BOOLEAN_FIELDS:
+            if field in decision:
+                lines.append(f"- {field}: {visible_bool(decision[field])}")
+        lines.append(f"- notatki: {decision['notes']}")
         for task in decision["follow_up_beads"]:
             lines.append(f"- follow-up: {task}")
         lines.append("")

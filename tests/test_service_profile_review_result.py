@@ -94,6 +94,11 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
                 "decision": "approve",
                 "source_trace_clear": "tak",
                 "blocked_claims_reviewed": "tak",
+                "data_classes_confirmed": "tak",
+                "source_block_refs_confirmed": "tak",
+                "retention_decision_confirmed": "tak",
+                "deletion_path_confirmed": "tak",
+                "eval_gates_confirmed": "tak",
                 "notes": "Redacted opis wystarcza do przygotowania osobnego promotion request.",
             }
         ],
@@ -108,6 +113,11 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     assert report["promotion_allowed"] is False
     assert "nie zapisuje raw private text" in report["safety_note"]
     assert report["safe_next_step"].startswith("Przygotuj osobny, audytowany private")
+    assert report["decisions"][0]["data_classes_confirmed"] is True
+    assert report["decisions"][0]["source_block_refs_confirmed"] is True
+    assert report["decisions"][0]["retention_decision_confirmed"] is True
+    assert report["decisions"][0]["deletion_path_confirmed"] is True
+    assert report["decisions"][0]["eval_gates_confirmed"] is True
     assert report["live_provenance"] == {
         "api_base": "http://127.0.0.1:8000",
         "service_profile_read_only": True,
@@ -128,6 +138,43 @@ def test_service_profile_review_result_records_private_proposal_review_without_p
     markdown = render_markdown(report)
     assert "service_profile_private_proposal_review_result_v1" in markdown
     assert "Promotion allowed: nie" in markdown
+    assert "retention_decision_confirmed: tak" in markdown
+
+
+def test_service_profile_review_result_requires_private_governance_checks() -> None:
+    payload = {
+        "review_type": "private_source_proposals",
+        "data_review": "2026-07-02",
+        "reviewer": "Wilku",
+        "scope_label": "prywatne propozycje ekologus-ai",
+        "decisions": [
+            {
+                "action_id": (
+                    "service_profile_review_private_proposal_"
+                    "ekologus_ai_kb001_eko_opieka_review_candidate_2026_07_01"
+                ),
+                "target_card_id": "ekologus_service_eko_opieka_calendar",
+                "decision": "approve",
+                "source_trace_clear": "tak",
+                "blocked_claims_reviewed": "tak",
+                "data_classes_confirmed": "tak",
+                "source_block_refs_confirmed": "tak",
+                "retention_decision_confirmed": "nie",
+                "deletion_path_confirmed": "tak",
+                "notes": "Brakuje eval gates i decyzji retencji.",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError) as error:
+        build_review_result_report(payload, live_context=_live_context())
+
+    message = str(error.value)
+    assert (
+        "czy eval gates blokujące unsafe claimy są wskazane musi mieć wartość tak albo nie"
+        in message
+    )
+    assert "Blokujące decyzje review wymagają follow_up_beads" in message
 
 
 def test_service_profile_review_result_rejects_public_action_in_private_mode() -> None:

@@ -336,6 +336,13 @@ Follow-up task `wilq-seo-hc8h` also requires `punkty_niezrozumienia`, so the
 same proof captures where Wilku got confused instead of only recording elapsed
 time and final yes/no gates.
 
+Under Beads task `wilq-seo-kwqo`, private Service Profile proposal review
+results must now confirm the governance fields already exposed by private
+review actions: data classes, source block refs, retention decision, deletion
+path and eval gates. A private proposal can only become ready for a separate
+promotion request after those booleans are explicit, and even then the recorder
+keeps `promotion_allowed=false`.
+
 Non-persistent review actions for those private proposals are implemented
 under Beads task `wilq-seo-eb1`. Service Profile now gives Wilku concrete
 review requests for `ekologus_service_eko_opieka_calendar` and
