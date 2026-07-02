@@ -186,6 +186,9 @@ API status later contradicts this state.
   `evidence_ids` from source facts. This closes the traceability gap where
   approved facts required evidence IDs but downstream cards only exposed source
   fact IDs and connectors.
+- Mixed source-fact lifecycle is regression-tested: if an approved fact and a
+  review-required fact compile into the same card, the card remains
+  `source_backed_review_required` and cannot unlock production-depth readiness.
 - Goal 005 completion is now guarded by
   `scripts/goal_005_completion_check.py`. It fails closed unless given a
   validated real UAT result from `scripts/record_goal_005_content_uat_result.py`

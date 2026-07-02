@@ -1042,6 +1042,9 @@ Stop and record a blocker if:
   carry `evidence_ids` from source facts. This closes the traceability gap where
   approved facts required evidence IDs but downstream cards only exposed source
   fact IDs and connectors.
+- 2026-07-02: Mixed source-fact lifecycle is regression-tested: if an approved
+  fact and a review-required fact compile into the same card, the card remains
+  `source_backed_review_required` and cannot unlock production-depth readiness.
 
 ## Surprises & Discoveries
 

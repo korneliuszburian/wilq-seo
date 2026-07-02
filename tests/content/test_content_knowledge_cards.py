@@ -226,6 +226,69 @@ def test_approved_source_fact_compiles_to_approved_current_with_traceability() -
     assert readiness.production_depth_card_count == 1
 
 
+def test_mixed_source_fact_review_state_stays_review_required() -> None:
+    approved_fact = ContentSourceFact(
+        source_id="approved_bdo_service_fact",
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path="https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        extracted_fact="Ekologus opisuje wsparcie przedsiębiorców w obowiązkach BDO.",
+        scope="service",
+        freshness_date="2026-07-02",
+        confidence=0.82,
+        review_status="approved",
+        reviewer="Wilku",
+        evidence_ids=["ev_owner_review_bdo_service_fact"],
+        source_connectors=["public_site", "owner_review"],
+        target_card_id="ekologus_service_bdo_reporting",
+        target_card_type="service",
+        target_card_title="BDO i sprawozdawczość",
+        service_fit_terms=["bdo"],
+    )
+    review_required_fact = ContentSourceFact(
+        source_id="review_required_bdo_deadline_fact",
+        source_type="public_site",
+        privacy_class="commit_safe",
+        source_url_or_path="https://www.ekologus.pl/bdo-terminy/",
+        extracted_fact=(
+            "Publiczna strona wspomina o terminach BDO, ale wymaga review "
+            "przed użyciem jako aktualny claim."
+        ),
+        scope="claim_policy",
+        freshness_date="2026-07-02",
+        confidence=0.7,
+        review_status="review_required",
+        source_connectors=["public_site"],
+        blocked_claims=["aktualna gwarantowana data złożenia sprawozdania BDO"],
+        target_card_id="ekologus_service_bdo_reporting",
+        target_card_type="service",
+        target_card_title="BDO i sprawozdawczość",
+        service_fit_terms=["bdo"],
+    )
+
+    cards = compile_source_facts_to_knowledge_cards(
+        [approved_fact, review_required_fact]
+    )
+
+    assert len(cards) == 1
+    card = cards[0]
+    assert card.lifecycle_status == "source_backed_review_required"
+    assert card.evidence_ids == ["ev_owner_review_bdo_service_fact"]
+    assert card.source_fact_ids == [
+        "approved_bdo_service_fact",
+        "review_required_bdo_deadline_fact",
+    ]
+    assert card.claims_needing_review
+    assert any(
+        "aktualna gwarantowana data" in rule.reason for rule in card.forbidden_claims
+    )
+
+    readiness = content_knowledge_production_depth_readiness(cards)
+    assert readiness.status == "source_backed_review_required"
+    assert readiness.ready_for_daily_content is False
+    assert readiness.production_depth_card_count == 0
+
+
 def test_service_profile_exposes_private_policy_proposals_without_promotion() -> None:
     profile = content_service_profile_response()
 
