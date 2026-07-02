@@ -138,6 +138,13 @@ live API status later contradicts this state.
   `act_prepare_content_refresh_queue`, and keeps `partial_possible` GSC
   query/page data from becoming ranking, lead, publication or full-traffic
   claims.
+- Ahrefs Gap Finder usefulness proof: replayed non-interactive eval for
+  `wilq-ahrefs-gap-finder` passed at
+  `.local-lab/evals/codex-skill/20260702T161306Z` with
+  `operator_usefulness_score=5`. It treats `gap_read_contract.status=ready`
+  and `gap_record_count=8` as a review-only Ahrefs gap queue, keeps
+  `action_count=0` honest instead of inventing an ActionObject, and blocks
+  traffic-growth/authority-growth claims.
 - Social Publisher usefulness proof: non-interactive eval replay passed at
   `.local-lab/evals/codex-skill/20260702T160931Z` with
   `operator_usefulness_score=5`. It stays review-only with
