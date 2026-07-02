@@ -537,7 +537,22 @@ def test_service_profile_response_is_read_only_and_review_gated() -> None:
             "ekologus_claim_policy_brand_voice"
         ].review_requirements
         if requirement.required
-    } >= required_review_fields
+    } >= {
+        *required_review_fields,
+        "data_classes_confirmed",
+        "source_block_refs_confirmed",
+        "retention_decision_confirmed",
+        "deletion_path_confirmed",
+        "eval_gates_confirmed",
+    }
+    assert any(
+        requirement.field == "retention_decision_confirmed"
+        and requirement.blocking_rule
+        and "pending_owner_decision" in requirement.blocking_rule
+        for requirement in private_action_by_target[
+            "ekologus_claim_policy_brand_voice"
+        ].review_requirements
+    )
     assert any(
         requirement.field == "follow_up_beads" and requirement.blocking_rule
         for requirement in private_action_by_target[

@@ -219,6 +219,14 @@ exposes API-owned `decision_options`, aligned with
 `stale` and `reject`. Dashboard and the UAT packet now show those options for
 the review queue so Wilku can record outcomes without guessing accepted values.
 
+Follow-up on 2026-07-02 tightened private `ekologus-ai` proposal review
+requirements inside the same Service Profile contract. Private review actions
+now require explicit checks for data classes, source block refs, retention
+decision, deletion path and eval gates; dashboard review cards render
+human-readable requirement labels with the field IDs. Live
+`GET /api/content/service-profile` proof returned `read_only=True`,
+`private_review_actions=4` and all private governance requirements present.
+
 Under Beads task `wilq-seo-pred`, Goal 005 completion is fail-closed through
 `scripts/goal_005_completion_check.py`. Completion claims require either a
 validated real UAT result or an explicit owner defer with residual risk,

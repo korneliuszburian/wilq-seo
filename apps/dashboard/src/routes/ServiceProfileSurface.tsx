@@ -309,7 +309,7 @@ function ReviewActions({
                 Wymagane pola:{" "}
                 {action.review_requirements
                   .filter((requirement) => requirement.required)
-                  .map((requirement) => requirement.field)
+                  .map((requirement) => `${requirement.label} (${requirement.field})`)
                   .join(", ")}
                 {action.review_requirements.some(
                   (requirement) => requirement.field === "follow_up_beads"

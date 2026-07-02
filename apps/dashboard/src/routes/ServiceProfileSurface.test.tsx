@@ -104,8 +104,16 @@ describe("ServiceProfileSurface", () => {
     expect(screen.getAllByText("high").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Decyzje: approve, needs_changes, stale, reject").length)
       .toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText(/Wymagane pola: action_id, target_card_id/).length)
+    expect(
+      screen.getAllByText(/Wymagane pola: action ID z live Service Profile \(action_id\)/)
+        .length
+    )
       .toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText(
+        /czy decyzja retencji została podjęta albo świadomie zablokowana \(retention_decision_confirmed\)/
+      ).length
+    ).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/follow_up_beads przy blokadzie/).length)
       .toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/To nie promuje private proposal/).length)
@@ -428,6 +436,38 @@ function reviewRequirementsFixture(): ContentServiceProfileResponse["review_acti
       field: "notes",
       label: "notatki review",
       requirement_type: "text",
+      required: true
+    },
+    {
+      field: "data_classes_confirmed",
+      label: "czy klasy danych prywatnego źródła są poprawne",
+      requirement_type: "boolean",
+      required: true
+    },
+    {
+      field: "source_block_refs_confirmed",
+      label: "czy source block refs są wystarczające do śladu źródłowego",
+      requirement_type: "boolean",
+      required: true
+    },
+    {
+      field: "retention_decision_confirmed",
+      label: "czy decyzja retencji została podjęta albo świadomie zablokowana",
+      requirement_type: "boolean",
+      required: true,
+      blocking_rule:
+        "Nie wolno promować prywatnej propozycji, gdy retention_decision pozostaje pending_owner_decision bez świadomej decyzji ownera."
+    },
+    {
+      field: "deletion_path_confirmed",
+      label: "czy ścieżka usunięcia/odrzucenia proposal jest jasna",
+      requirement_type: "boolean",
+      required: true
+    },
+    {
+      field: "eval_gates_confirmed",
+      label: "czy eval gates blokujące unsafe claimy są wskazane",
+      requirement_type: "boolean",
       required: true
     },
     {

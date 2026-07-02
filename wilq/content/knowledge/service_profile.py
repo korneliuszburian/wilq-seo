@@ -516,6 +516,7 @@ def _review_actions(
 ) -> list[ContentServiceProfileReviewAction]:
     decision_options = _review_decision_options()
     review_requirements = _review_requirements()
+    private_review_requirements = _private_review_requirements()
     actions = [
         ContentServiceProfileReviewAction(
             action_id="service_profile_request_knowledge_review",
@@ -586,7 +587,7 @@ def _review_actions(
                 review_scope=_private_review_action_scope(proposal),
                 priority=_private_review_action_priority(proposal),
                 decision_options=decision_options,
-                review_requirements=review_requirements,
+                review_requirements=private_review_requirements,
                 label=f"Sprawdź prywatną propozycję: {proposal.target_card_title}",
                 reason=(
                     f"{proposal.source_locator_label} jest redacted i review-required; "
@@ -653,6 +654,46 @@ def _review_requirements() -> list[ContentServiceProfileReviewRequirement]:
                 "Wymagane, gdy decision != approve albo source_trace_clear/"
                 "blocked_claims_reviewed nie są true."
             ),
+        ),
+    ]
+
+
+def _private_review_requirements() -> list[ContentServiceProfileReviewRequirement]:
+    return [
+        *_review_requirements(),
+        ContentServiceProfileReviewRequirement(
+            field="data_classes_confirmed",
+            label="czy klasy danych prywatnego źródła są poprawne",
+            requirement_type="boolean",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="source_block_refs_confirmed",
+            label="czy source block refs są wystarczające do śladu źródłowego",
+            requirement_type="boolean",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="retention_decision_confirmed",
+            label="czy decyzja retencji została podjęta albo świadomie zablokowana",
+            requirement_type="boolean",
+            required=True,
+            blocking_rule=(
+                "Nie wolno promować prywatnej propozycji, gdy retention_decision "
+                "pozostaje pending_owner_decision bez świadomej decyzji ownera."
+            ),
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="deletion_path_confirmed",
+            label="czy ścieżka usunięcia/odrzucenia proposal jest jasna",
+            requirement_type="boolean",
+            required=True,
+        ),
+        ContentServiceProfileReviewRequirement(
+            field="eval_gates_confirmed",
+            label="czy eval gates blokujące unsafe claimy są wskazane",
+            requirement_type="boolean",
+            required=True,
         ),
     ]
 
