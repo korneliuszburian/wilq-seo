@@ -30,7 +30,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 1. `Status`: zasięg API, gotowość źródeł danych i znane blokady.
 2. `Dowody`: `social_draft_context`, `source_inputs`, identyfikatory dowodów, identyfikatory źródeł danych, notatki o świeżości i podsumowania metryk wyłącznie z WILQ API.
 3. `Diagnoza`: co wspierają dowody, z niepewnością gdy dowody są zagregowane, stare albo niepełne.
-4. `Akcje do sprawdzenia`: użyj `social_draft_context.source_inputs`, `draft_action_ids`, `draft_constraints`, `missing_publish_access` i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
+4. `Akcje do sprawdzenia`: użyj `social_draft_context.source_inputs`, `draft_action_ids`, `draft_constraints`, `missing_publish_access`, `historical_social_inventory_status`, `duplicate_risk_status` i identyfikatory akcji, gdy są dostępne; w przeciwnym razie opisz brakujące dane źródłowe albo dowody potrzebne do ich utworzenia.
 5. `Sprawdzenie w WILQ`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed zapisem zmian.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
@@ -42,6 +42,7 @@ Odmów albo obniż odpowiedź do raportu blokad, gdy:
 - Wymagane źródło danych ma status `missing_credentials`, `disabled` albo niepowodzenie dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w pakiecie kontekstu, dowodach, odczytach źródeł danych, regułach eksperckich ani akcjach do sprawdzenia.
 - Pakiet kontekstu skilla nie zawiera `social_draft_context`.
+- `historical_social_inventory_status` ma wartość `missing`; wtedy nie wolno twierdzić, że temat nie powiela wcześniejszych postów LinkedIn/Facebook.
 - Użytkownik prosi o zapis zmian bez akcji do sprawdzenia w WILQ i jawnej zgody.
 
 ## Reguły dowodów

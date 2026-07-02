@@ -1101,6 +1101,16 @@ Stop and record a blocker if:
   `pokazane_materialy_review`. The UAT record stays valid, but the markdown
   report tells the operator that Wilku was shown only the more technical
   backing material.
+- 2026-07-02: `AGENTS.md` now pins WILQ as a BDOS-class Marketing Operating
+  System for the whole Ekologus loop, not just marketing copy or content
+  generation. The product map names Daily Command, Evidence Engine, Knowledge
+  Compiler, Service Profile, Content Ops, Ads Doctor, GA4 Analyst, GSC Content
+  Doctor, Merchant Operator, Localo Operator, Social Publisher, Action Engine,
+  Measurement Loop and Eval Harness.
+- 2026-07-02: Social draft readiness now includes historical-post
+  anti-duplication blockers. The social context reports missing historical
+  LinkedIn/Facebook inventory, blocks duplicate-free social claims, and the
+  roadmap adds a future Social Inventory and Reuse Guard layer.
 
 ## Surprises & Discoveries
 

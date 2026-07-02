@@ -4427,6 +4427,14 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 "no_publishing_without_connector_credentials"
                 in action["payload"]["draft_constraints"]
             )
+            assert (
+                "require_social_history_duplicate_review"
+                in action["payload"]["draft_constraints"]
+            )
+            assert (
+                "brak powtórzeń historycznych postów"
+                in action["payload"]["blocked_claims"]
+            )
             assert {"ev_connector_linkedin_status", "ev_connector_facebook_status"}.issubset(
                 set(action["evidence_ids"])
             )
@@ -18994,10 +19002,28 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "evidence_id",
     }.issubset(social_context["source_inputs"][0])
     assert "no_publishing_without_connector_credentials" in social_context["draft_constraints"]
+    assert "require_social_history_duplicate_review" in social_context["draft_constraints"]
     assert "opublikowanie posta" in social_context["blocked_claims"]
     assert "wzrost skuteczności social" in social_context["blocked_claims"]
+    assert "brak powtórzeń historycznych postów" in social_context["blocked_claims"]
     assert "przychód" in social_context["blocked_claims"]
     assert "wzrost konwersji" in social_context["blocked_claims"]
+    assert social_context["historical_social_inventory_status"] == "missing"
+    assert (
+        social_context["historical_social_inventory_status_label"]
+        == "brak spisu historycznych postów"
+    )
+    assert social_context["duplicate_risk_status"] == "blocked_until_social_history_review"
+    assert (
+        social_context["duplicate_risk_status_label"]
+        == "nie oceniono ryzyka powtórzenia treści social"
+    )
+    assert social_context["required_history_sources"] == ["linkedin", "facebook"]
+    assert social_context["missing_history_evidence"] == [
+        "linkedin_historical_posts",
+        "facebook_historical_posts",
+    ]
+    assert "braku powtórzeń" in social_context["operator_next_step"]
     old_post_publish_claim = "post " + "published"
     old_social_growth_claim = "social performance " + "up" + "lift"
     assert old_post_publish_claim not in social_context["blocked_claims"]

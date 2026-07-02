@@ -225,6 +225,16 @@ API status later contradicts this state.
   `docs/handoffs/2026-07-02-co-pokazac-wilkowi.md` is not listed in
   `pokazane_materialy_review`. This is non-blocking, but it protects Wilku
   review from starting with only technical handoffs.
+- `AGENTS.md` now defines WILQ as a BDOS-class Marketing Operating System for
+  the full Ekologus marketing loop: SEO, content, Ads, GA4, Merchant, Localo,
+  WordPress, social readiness, knowledge, safe actions, measurement and
+  learning. Do not narrow WILQ to "marketing copy/content generation" in future
+  sessions.
+- Social publishing readiness now has an explicit historical-post blocker in
+  the API-owned `social_draft_context`: historical LinkedIn/Facebook inventory
+  is `missing`, duplicate-risk is `blocked_until_social_history_review`, and
+  the claim `brak powtórzeń historycznych postów` is blocked until prior posts
+  are reviewed.
 - The approved source-fact happy path is regression-tested too: a reviewed fact
   with evidence IDs and source connectors compiles to `approved_current`,
   preserves source lineage/connectors, keeps blocked claims, and is the only

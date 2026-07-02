@@ -116,6 +116,14 @@ def main() -> int:
         raise SystemExit("Social draft context must expose source_inputs")
     if not social_draft_context.get("missing_publish_access"):
         raise SystemExit("Social draft context must expose missing publish access blockers")
+    if social_draft_context.get("historical_social_inventory_status") != "missing":
+        raise SystemExit("Social draft context must expose missing historical social inventory")
+    if social_draft_context.get("duplicate_risk_status") != "blocked_until_social_history_review":
+        raise SystemExit("Social draft context must block duplicate-free social claims")
+    if "brak powtórzeń historycznych postów" not in (
+        social_draft_context.get("blocked_claims") or []
+    ):
+        raise SystemExit("Social draft context must block historical duplicate-free claims")
 
     action_validations = validate_core_social_actions(args.api_base, pack)
 
@@ -151,6 +159,15 @@ def main() -> int:
                     "mode": social_draft_context.get("mode"),
                     "publish_allowed": social_draft_context.get("publish_allowed"),
                     "missing_publish_access": social_draft_context.get("missing_publish_access"),
+                    "historical_social_inventory_status": social_draft_context.get(
+                        "historical_social_inventory_status"
+                    ),
+                    "duplicate_risk_status": social_draft_context.get(
+                        "duplicate_risk_status"
+                    ),
+                    "missing_history_evidence": social_draft_context.get(
+                        "missing_history_evidence"
+                    ),
                     "source_input_count": len(social_draft_context.get("source_inputs", [])),
                     "source_inputs": social_draft_context.get("source_inputs", [])[:4],
                     "draft_action_ids": social_draft_context.get("draft_action_ids", []),

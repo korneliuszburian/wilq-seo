@@ -497,6 +497,10 @@
       "social_draft_context",
       "publish_allowed",
       "missing_publish_access",
+      "historical_social_inventory_status",
+      "duplicate_risk_status",
+      "histori",
+      "powtórzeń",
       "source_inputs",
       "do sprawdzenia w WILQ",
       "LinkedIn",
@@ -515,6 +519,7 @@
     "blocked_claim_terms": [
       "opublikowanie posta",
       "wzrost skuteczności social",
+      "brak powtórzeń historycznych postów",
       "zwrot z reklam",
       "przychód"
     ]

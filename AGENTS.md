@@ -4,6 +4,65 @@
 
 This repository builds WILQ Marketing Operating System for Ekologus. WILQ is the system/product, Wilku is the human marketer/operator persona, and Ekologus is the first depth-first workspace/client. Codex Desktop/CLI is the primary operator runtime.
 
+WILQ is not only a content tool. WILQ is a BDOS-class Marketing Operating
+System for Ekologus: one local API-first decision and execution layer for SEO,
+content, Google Ads, GA4, Merchant/products, Localo/local visibility, WordPress,
+social publishing readiness, expert knowledge, safe actions, measurement and
+learning. "Better BDOS" means BDOS-grade safety and operational speed applied
+to the whole Ekologus marketing loop, not a prompt pack, static reports or a
+loose set of generated artifacts.
+
+The product shape to preserve:
+
+- `WILQ Daily Command`: says what Wilku should do today from live evidence,
+  blockers, source freshness and safe next actions.
+- `WILQ Evidence Engine`: every recommendation names source connectors,
+  evidence IDs, freshness and missing contracts; no evidence means no
+  recommendation.
+- `WILQ Knowledge Compiler`: public/reviewed/private source facts become
+  reviewed knowledge cards with lifecycle, confidence, freshness and blocked
+  claims; raw private material never becomes prompt stuffing.
+- `WILQ Service Profile`: shows which Ekologus services, CTAs, buyer problems,
+  claim policies and evidence requirements are approved, review-required,
+  stale, rejected or missing.
+- `WILQ Content Ops`: queue -> enrichment -> inventory/canonical/duplicate
+  checks -> Sales Brief -> Claim Ledger -> draft package -> quality review ->
+  human review -> WordPress draft-only -> measurement window -> learning
+  proposal.
+- `WILQ Ads Doctor`: reviews budgets, campaign metrics, recommendations,
+  search terms, n-grams, negative keywords, custom segments, bidding/readiness
+  and change impact with Google Ads API constraints and ActionObject safety.
+- `WILQ GA4 Analyst`: separates traffic-quality problems from measurement
+  problems and blocks ROAS/revenue/conversion claims without the required
+  proof.
+- `WILQ GSC Content Doctor`: finds pages/queries to refresh, merge, create or
+  block using GSC, WordPress inventory, duplicate/canonical gates and service
+  knowledge.
+- `WILQ Merchant Operator`: reviews feed issues, product readiness, price/
+  availability evidence and Shopping/PMax blockers without claiming revenue or
+  reapproval without contracts.
+- `WILQ Localo Operator`: reviews local visibility readiness, GBP/local
+  evidence and missing Localo contracts without inventing rankings.
+- `WILQ Social Publisher`: turns approved insights into review-only LinkedIn/
+  Facebook draft directions, but must check historical social inventory and
+  duplicate risk before claiming a topic is new or safe to repeat.
+- `WILQ Action Engine`: every write-capable path goes through ActionObject
+  validation, preview, review, confirmation, safety gates and audit. No direct
+  vendor mutation from prompts or skills.
+- `WILQ Measurement Loop`: published/updated work creates observation windows,
+  compares real GSC/GA4/WordPress/Ads/Merchant evidence and creates learning
+  proposals, not automatic success claims or knowledge rewrites.
+- `WILQ Eval Harness`: every skill and major workflow must be tested with
+  deterministic smoke scripts plus non-interactive Codex evals for Polish
+  output, evidence IDs, source connectors, blocked claims and useful operator
+  next steps.
+
+Use BDOS as the quality bar for operational ergonomics and safety:
+diagnostics in seconds, evidence-first recommendations, preview before change,
+API traps encoded in code, auditability, local credentials, and domain knowledge
+condensed into structured rules. Do not copy BDOS scope literally: WILQ's
+domain is the full Ekologus marketing system, not only Google Ads.
+
 ## Recovery index
 
 After context loss, read:

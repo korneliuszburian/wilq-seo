@@ -2207,6 +2207,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "write_in_polish",
             "no_performance_claims_without_source_metric",
             "no_publishing_without_connector_credentials",
+            "require_social_history_duplicate_review",
             "require_human_review_before_apply",
         ],
         "source_inputs": _social_source_inputs(social_metrics),
@@ -2215,6 +2216,7 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
             "przychód",
             "wzrost konwersji",
             "wdrożona poprawka produktu",
+            "brak powtórzeń historycznych postów",
         ],
         "destructive": False,
     }
@@ -5398,6 +5400,9 @@ def _action_gate_label(value: str) -> str | None:
         ),
         "no_publishing_without_connector_credentials": (
             "bez publikacji bez danych dostępowych źródła"
+        ),
+        "require_social_history_duplicate_review": (
+            "sprawdź historię postów przed twierdzeniem, że temat się nie powtarza"
         ),
         "require_human_review_before_apply": "człowiek sprawdza przed zapisem",
         "confirm_target_roas_or_cpa": (

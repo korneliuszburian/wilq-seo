@@ -212,7 +212,11 @@ def social_draft_context_for_context(
     }
     source_inputs: list[dict[str, Any]] = []
     draft_constraints: list[str] = []
-    blocked_claims = ["opublikowanie posta", "wzrost skuteczności social"]
+    blocked_claims = [
+        "opublikowanie posta",
+        "wzrost skuteczności social",
+        "brak powtórzeń historycznych postów",
+    ]
     source_metric_names: list[str] = []
     source_connectors: list[str] = []
     evidence_ids: list[str] = []
@@ -244,8 +248,20 @@ def social_draft_context_for_context(
         "source_metric_names": sorted(set(source_metric_names)),
         "source_connectors": sorted(set(source_connectors)),
         "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
+        "historical_social_inventory_status": "missing",
+        "historical_social_inventory_status_label": "brak spisu historycznych postów",
+        "duplicate_risk_status": "blocked_until_social_history_review",
+        "duplicate_risk_status_label": (
+            "nie oceniono ryzyka powtórzenia treści social"
+        ),
+        "required_history_sources": ["linkedin", "facebook"],
+        "missing_history_evidence": [
+            "linkedin_historical_posts",
+            "facebook_historical_posts",
+        ],
         "operator_next_step": (
-            "Przygotuj szkice do sprawdzenia z dowodami; publikacja pozostaje "
-            "zablokowana do czasu konfiguracji uprawnień LinkedIn/Facebook."
+            "Przygotuj szkice do sprawdzenia z dowodami; publikacja i claim "
+            "o braku powtórzeń pozostają zablokowane do czasu konfiguracji "
+            "uprawnień LinkedIn/Facebook oraz sprawdzenia historii postów."
         ),
     }

@@ -97,6 +97,10 @@ post-publication measurement proof and write execution are not done.
   buckets and safe Shopping/PMax recommendations.
 - Full reporting layer: daily/monthly review with change history, blockers,
   source freshness, actions and observed outcomes.
+- Social Inventory and anti-duplication: historical LinkedIn/Facebook posts,
+  topic/claim/CTA/channel metadata, duplicate-risk checks and brand-voice
+  evidence before claiming a new social direction is not repeating prior
+  content.
 - Write execution beyond safe supported ActionObject types.
 - Multi-client abstraction. Ekologus should work deeply first.
 
@@ -178,6 +182,19 @@ the existing WILQ content workflow.
 - Turn command center into a daily/monthly operating cockpit.
 - Show what changed, why it matters, what is blocked, what can safely be done
   today and what was learned after publication/action.
+
+### Goal 010 Candidate: Social Inventory And Reuse Guard
+
+- Build read-only inventory for historical LinkedIn/Facebook posts.
+- Store sanitized metadata: channel, date, topic, service, claim, CTA, format,
+  source link/post ID and optional observed aggregate outcomes.
+- Add duplicate-risk and reuse checks before generating social draft
+  directions: same topic too soon, same claim/CTA repeated, or allowed reuse
+  only with a different angle.
+- Use history as brand-voice and cadence evidence, not as automatic factual
+  approval for service/legal/product claims.
+- Keep publishing blocked until LinkedIn/Facebook credentials, review actions
+  and audit paths are implemented.
 
 ## Practical Percentages
 
