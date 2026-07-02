@@ -260,7 +260,11 @@ live API status later contradicts this state.
   field previews for the real `podstrona` layout: `glowny_opis` is shown as a
   group with `lead`/`opis`, and `elementy` is shown as `flexible_content` with
   a clear note that layout/row choice still needs separate review instead of a
-  fake flat value.
+  fake flat value. The `elementy` preview now also returns one dry-run
+  `row_candidate` for manual review with mapped text fields
+  (`tresc`, `opis`, `podtytul`, `tytul`) and source evidence IDs, while
+  `publish_allowed=false`, `destructive_update_allowed=false` and
+  `external_write_attempted=false`.
 - Content Strategist usefulness proof: replayed non-interactive eval for
   `wilq-content-strategist` passed at
   `.local-lab/evals/codex-skill/20260702T162005Z` with

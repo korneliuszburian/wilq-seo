@@ -335,6 +335,13 @@ def test_wordpress_authoring_payload_preview_prefers_content_layout(
     assert "wybór layoutu/wierszy" in (previews["elementy"].note or "")
     repeater_nested = {field.field_name: field for field in previews["elementy"].nested_values}
     assert "Wyjaśnij obowiązki" in (repeater_nested["opis"].value_preview or "")
+    row_candidates = previews["elementy"].row_candidates
+    assert len(row_candidates) == 1
+    assert row_candidates[0].row_type == "acf_repeater_row"
+    assert row_candidates[0].review_status == "review_required"
+    assert row_candidates[0].evidence_ids == ["ev_gsc_bdo"]
+    assert "nie zapisuje nic w WordPress" in row_candidates[0].note
+    assert [field.field_name for field in row_candidates[0].field_values] == ["opis"]
 
 
 def test_wordpress_authoring_payload_preview_blocks_without_acf_contract() -> None:

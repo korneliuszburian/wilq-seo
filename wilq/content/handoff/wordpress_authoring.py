@@ -34,6 +34,28 @@ class ContentWordPressAuthoringPreviewBlocker(BaseModel):
     next_step: str
 
 
+class ContentWordPressRowCandidateField(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    field_label: str
+    field_type: str
+    value_preview: str | None = None
+    safe_to_autofill: bool = False
+    note: str | None = None
+
+
+class ContentWordPressFieldRowCandidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    row_type: Literal["acf_repeater_row", "acf_flexible_content_row"]
+    row_label: str
+    review_status: Literal["review_required"] = "review_required"
+    note: str
+    field_values: list[ContentWordPressRowCandidateField] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class ContentWordPressFieldValuePreview(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -44,6 +66,7 @@ class ContentWordPressFieldValuePreview(BaseModel):
     safe_to_autofill: bool = False
     note: str | None = None
     nested_values: list[ContentWordPressFieldValuePreview] = Field(default_factory=list)
+    row_candidates: list[ContentWordPressFieldRowCandidate] = Field(default_factory=list)
 
 
 class ContentWordPressFlexibleSectionPayload(BaseModel):
@@ -283,6 +306,7 @@ def _field_preview(
 ) -> ContentWordPressFieldValuePreview:
     nested = [_field_preview(sub_field, section) for sub_field in field.sub_fields]
     value = _field_scalar_value(field, section)
+    row_candidates = _row_candidates(field, section, nested=nested)
     note = _field_preview_note(field, value=value, nested=nested)
     return ContentWordPressFieldValuePreview(
         field_name=field.name,
@@ -292,7 +316,101 @@ def _field_preview(
         safe_to_autofill=bool(value) or any(item.safe_to_autofill for item in nested),
         note=note,
         nested_values=nested,
+        row_candidates=row_candidates,
     )
+
+
+def _row_candidates(
+    field: WordPressAcfField,
+    section: ContentDraftSection,
+    *,
+    nested: list[ContentWordPressFieldValuePreview],
+) -> list[ContentWordPressFieldRowCandidate]:
+    if field.field_type not in {"repeater", "flexible_content"}:
+        return []
+    mapped_fields = _row_candidate_fields(nested)
+    if not mapped_fields:
+        return []
+    row_type: Literal["acf_repeater_row", "acf_flexible_content_row"] = (
+        "acf_flexible_content_row"
+        if field.field_type == "flexible_content"
+        else "acf_repeater_row"
+    )
+    label = (
+        f"Wiersz do ręcznego przeglądu: {section.heading}"
+        if section.heading
+        else "Wiersz do ręcznego przeglądu z paczki szkicu"
+    )
+    return [
+        ContentWordPressFieldRowCandidate(
+            row_type=row_type,
+            row_label=label,
+            note=(
+                "WILQ proponuje tylko kandydat wiersza ACF do ręcznego przeglądu; "
+                "nie wybiera finalnego layoutu i nie zapisuje nic w WordPress."
+            ),
+            field_values=mapped_fields,
+            evidence_ids=section.evidence_ids,
+        )
+    ]
+
+
+def _row_candidate_fields(
+    nested: list[ContentWordPressFieldValuePreview],
+) -> list[ContentWordPressRowCandidateField]:
+    fields: list[ContentWordPressRowCandidateField] = []
+    seen: set[tuple[str, str]] = set()
+    for item in sorted(nested, key=_row_candidate_field_score, reverse=True):
+        if not item.value_preview or not item.safe_to_autofill:
+            continue
+        if item.field_type in {
+            "image",
+            "file",
+            "post_object",
+            "google_map",
+            "select",
+            "true_false",
+        }:
+            continue
+        key = (item.field_name, item.field_label)
+        if key in seen:
+            continue
+        seen.add(key)
+        fields.append(
+            ContentWordPressRowCandidateField(
+                field_name=item.field_name,
+                field_label=item.field_label,
+                field_type=item.field_type,
+                value_preview=item.value_preview,
+                safe_to_autofill=item.safe_to_autofill,
+                note=item.note,
+            )
+        )
+        if len(fields) >= 4:
+            break
+    return fields
+
+
+def _row_candidate_field_score(item: ContentWordPressFieldValuePreview) -> int:
+    text = f"{item.field_name} {item.field_label} {item.field_type}".lower()
+    words = set(text.replace("_", " ").replace("-", " ").split())
+    score = 0
+    if item.value_preview:
+        score += 20
+    for token in ("tytul", "title", "heading", "naglowek", "nagłówek"):
+        if token in words:
+            score += 8
+    for token in ("opis", "content", "tresc", "treść", "body", "wysiwyg"):
+        if token in words:
+            score += 7
+    for token in ("lead", "intro", "podtytul", "podtytuł"):
+        if token in words:
+            score += 5
+    if item.field_type == "group":
+        score -= 3
+    if item.field_type in {"repeater", "flexible_content"}:
+        score -= 10
+    return score
 
 
 def _field_scalar_value(field: WordPressAcfField, section: ContentDraftSection) -> str | None:
@@ -334,9 +452,9 @@ def _field_preview_note(
         if any(item.safe_to_autofill for item in nested):
             return (
                 "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, "
-                "ale wybór layoutu/wierszy wymaga osobnego review."
+                "ale wybór layoutu/wierszy wymaga osobnego ręcznego przeglądu."
             )
-        return "Pole zagnieżdżone wymaga osobnego layoutu, mediów albo ręcznego review."
+        return "Pole zagnieżdżone wymaga osobnego layoutu, mediów albo ręcznego przeglądu."
     if value is not None:
         return None
     if field.required:

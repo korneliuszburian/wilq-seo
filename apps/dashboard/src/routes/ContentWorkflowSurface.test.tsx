@@ -425,7 +425,11 @@ describe("ContentWorkflowSurface", () => {
     expect(screen.getByText("Główny opis (glowny_opis)")).toBeInTheDocument();
     expect(screen.getByText("Lead (lead)")).toBeInTheDocument();
     expect(screen.getByText("Elementy (elementy)")).toBeInTheDocument();
-    expect(screen.getByText(/wybór layoutu\/wierszy wymaga osobnego review/))
+    expect(screen.getByText(/Kandydat wiersza ACF/)).toBeInTheDocument();
+    expect(screen.getByText(/Wiersz do ręcznego przeglądu: Kogo dotyczy BDO/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Dowody: ev_gsc_bdo/)).toBeInTheDocument();
+    expect(screen.getByText(/wybór layoutu\/wierszy wymaga osobnego ręcznego przeglądu/))
       .toBeInTheDocument();
     expect(screen.getByText(/Publikacja i nadpisywanie pozostają zablokowane/))
       .toBeInTheDocument();
@@ -1325,7 +1329,8 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
               value_preview: "Kogo dotyczy BDO",
               safe_to_autofill: true,
               note: null,
-              nested_values: []
+              nested_values: [],
+              row_candidates: []
             },
             {
               field_name: "glowny_opis",
@@ -1343,7 +1348,8 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
                   value_preview: "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus.",
                   safe_to_autofill: true,
                   note: null,
-                  nested_values: []
+                  nested_values: [],
+                  row_candidates: []
                 },
                 {
                   field_name: "opis",
@@ -1353,9 +1359,11 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
                     "Wyjaśnij, kiedy temat BDO wymaga sprawdzenia z Ekologus i które dowody WILQ używa w szkicu.",
                   safe_to_autofill: true,
                   note: null,
-                  nested_values: []
+                  nested_values: [],
+                  row_candidates: []
                 }
-              ]
+              ],
+              row_candidates: []
             },
             {
               field_name: "elementy",
@@ -1364,7 +1372,7 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
               value_preview: null,
               safe_to_autofill: true,
               note:
-                "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, ale wybór layoutu/wierszy wymaga osobnego review.",
+                "Pole zagnieżdżone: WILQ pokazuje możliwe mapowanie pod pól, ale wybór layoutu/wierszy wymaga osobnego ręcznego przeglądu.",
               nested_values: [
                 {
                   field_name: "opis",
@@ -1373,7 +1381,28 @@ function wordpressAuthoringPayloadPreviewResponse(): ContentWorkItemWordPressAut
                   value_preview: "Opis sekcji do sprawdzenia.",
                   safe_to_autofill: true,
                   note: null,
-                  nested_values: []
+                  nested_values: [],
+                  row_candidates: []
+                }
+              ],
+              row_candidates: [
+                {
+                  row_type: "acf_flexible_content_row",
+                  row_label: "Wiersz do ręcznego przeglądu: Kogo dotyczy BDO",
+                  review_status: "review_required",
+                  note:
+                    "WILQ proponuje tylko kandydat wiersza ACF do ręcznego przeglądu; nie wybiera finalnego layoutu i nie zapisuje nic w WordPress.",
+                  field_values: [
+                    {
+                      field_name: "opis",
+                      field_label: "Opis",
+                      field_type: "wysiwyg",
+                      value_preview: "Opis sekcji do sprawdzenia.",
+                      safe_to_autofill: true,
+                      note: null
+                    }
+                  ],
+                  evidence_ids: ["ev_gsc_bdo"]
                 }
               ]
             }

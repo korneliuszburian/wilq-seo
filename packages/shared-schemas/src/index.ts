@@ -3459,7 +3459,44 @@ type ContentWordPressFieldValuePreviewShape = {
   safe_to_autofill: boolean;
   note?: string | null;
   nested_values: ContentWordPressFieldValuePreviewShape[];
+  row_candidates: ContentWordPressFieldRowCandidateShape[];
 };
+
+type ContentWordPressRowCandidateFieldShape = {
+  field_name: string;
+  field_label: string;
+  field_type: string;
+  value_preview?: string | null;
+  safe_to_autofill: boolean;
+  note?: string | null;
+};
+
+type ContentWordPressFieldRowCandidateShape = {
+  row_type: "acf_repeater_row" | "acf_flexible_content_row";
+  row_label: string;
+  review_status: "review_required";
+  note: string;
+  field_values: ContentWordPressRowCandidateFieldShape[];
+  evidence_ids: string[];
+};
+
+const ContentWordPressRowCandidateFieldSchema = z.object({
+  field_name: z.string(),
+  field_label: z.string(),
+  field_type: z.string(),
+  value_preview: z.string().nullable().optional(),
+  safe_to_autofill: z.boolean(),
+  note: z.string().nullable().optional()
+});
+
+const ContentWordPressFieldRowCandidateSchema = z.object({
+  row_type: z.enum(["acf_repeater_row", "acf_flexible_content_row"]),
+  row_label: z.string(),
+  review_status: z.literal("review_required"),
+  note: z.string(),
+  field_values: z.array(ContentWordPressRowCandidateFieldSchema).default([]),
+  evidence_ids: z.array(z.string()).default([])
+});
 
 const ContentWordPressFieldValuePreviewSchema: z.ZodType<
   ContentWordPressFieldValuePreviewShape
@@ -3471,7 +3508,8 @@ const ContentWordPressFieldValuePreviewSchema: z.ZodType<
     value_preview: z.string().nullable().optional(),
     safe_to_autofill: z.boolean(),
     note: z.string().nullable().optional(),
-    nested_values: z.array(ContentWordPressFieldValuePreviewSchema).default([])
+    nested_values: z.array(ContentWordPressFieldValuePreviewSchema).default([]),
+    row_candidates: z.array(ContentWordPressFieldRowCandidateSchema).default([])
   })
 );
 

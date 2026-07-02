@@ -31,6 +31,7 @@ import {
   ContentWorkItemWordPressDraftExecutionRequestSchema,
   ContentWorkItemWordPressDraftExecutionResponseSchema,
   ContentWorkItemWordPressDraftHandoffResponseSchema,
+  ContentWordPressAuthoringPayloadPreviewResultSchema,
   ContentWorkItemWorkflowSnapshotResponseSchema,
   ContentPreflightResponseSchema,
   MerchantDiagnosticsResponseSchema,
@@ -102,6 +103,73 @@ describe("SocialHistoryInventorySourceSchema", () => {
       SocialHistoryInventorySourceSchema.safeParse({
         ...validSource,
         raw_post_body_allowed: true
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe("ContentWordPressAuthoringPayloadPreviewResultSchema", () => {
+  it("accepts review-only ACF row candidates without write permissions", () => {
+    const preview = {
+      status: "ready",
+      mode: "dry_run",
+      connector: "wordpress_ekologus",
+      endpoint_kind: "posts",
+      post_status: "draft",
+      flexible_content_field_name: "podstrona",
+      sections: [
+        {
+          layout_name: "podstrona",
+          layout_label: "Podstrona",
+          section_heading: "Kogo dotyczy BDO",
+          field_values: { elementy: null },
+          field_previews: [
+            {
+              field_name: "elementy",
+              field_label: "Elementy",
+              field_type: "flexible_content",
+              value_preview: null,
+              safe_to_autofill: true,
+              note: "Pole zagnieżdżone wymaga ręcznego przeglądu.",
+              nested_values: [],
+              row_candidates: [
+                {
+                  row_type: "acf_flexible_content_row",
+                  row_label: "Wiersz do ręcznego przeglądu: Kogo dotyczy BDO",
+                  review_status: "review_required",
+                  note: "Bez zapisu w WordPress.",
+                  field_values: [
+                    {
+                      field_name: "opis",
+                      field_label: "Opis",
+                      field_type: "wysiwyg",
+                      value_preview: "Opis sekcji do sprawdzenia.",
+                      safe_to_autofill: true,
+                      note: null
+                    }
+                  ],
+                  evidence_ids: ["ev_gsc_bdo"]
+                }
+              ]
+            }
+          ],
+          missing_required_fields: [],
+          evidence_ids: ["ev_gsc_bdo"]
+        }
+      ],
+      publish_allowed: false,
+      destructive_update_allowed: false,
+      external_write_attempted: false,
+      required_action_contract: "actionobject_validate_preview_review_confirm_audit",
+      blockers: []
+    };
+
+    expect(ContentWordPressAuthoringPayloadPreviewResultSchema.safeParse(preview).success)
+      .toBe(true);
+    expect(
+      ContentWordPressAuthoringPayloadPreviewResultSchema.safeParse({
+        ...preview,
+        publish_allowed: true
       }).success
     ).toBe(false);
   });
