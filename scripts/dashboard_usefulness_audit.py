@@ -616,7 +616,10 @@ def _dedupe(values: list[str]) -> list[str]:
 
 
 def _markdown_cell(value: str) -> str:
-    return value.replace("|", "\\|").replace("\n", " ")[:180]
+    escaped = value.replace("|", "\\|").replace("\n", " ").strip()
+    if len(escaped) <= 180:
+        return escaped
+    return escaped[:177].rstrip() + "..."
 
 
 if __name__ == "__main__":
